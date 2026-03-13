@@ -165,7 +165,7 @@ DIGITS = DIGIT+
 
 ### 3.7 Whitespace and Layout
 
-Whitespace (spaces and tabs) is insignificant except within strings. Newlines are significant as statement terminators — each field declaration, mapping entry, or annotation occupies one logical line.
+Whitespace (spaces and tabs) is insignificant except within strings. Newlines are significant as statement terminators. Each field declaration, mapping head, transform continuation, or annotation-bearing declaration occupies one logical line.
 
 **Line continuation:** A line ending with `\` continues onto the next line:
 
@@ -174,15 +174,31 @@ PHONE_NBR -> phone \
   : digits_only | prepend("+1") | to_e164
 ```
 
-Transform continuation lines starting with `:` are implicitly continued (no `\` needed):
+Transform sections may continue onto following lines without `\`. The first transform line starts with `:`. Continuation lines then use their own leading token:
+
+- `|` to continue the same pipeline
+- `when` / `else` for conditional branches
+- `fallback` for an alternate source path
 
 ```stm
 LOYALTY_POINTS -> loyalty_tier
   : when < 1000  => "bronze"
-  : when < 5000  => "silver"
-  : when < 10000 => "gold"
-  : else            "platinum"
+  when < 5000  => "silver"
+  when < 10000 => "gold"
+  else         => "platinum"
 ```
+
+### 3.8 Canonical Formatting
+
+`stm fmt` should normalize toward one canonical style:
+
+- one field or group declaration per line
+- one map head per line
+- one transform per continuation line in multiline mappings
+- long `enum` tag values formatted as braced, comma-separated lists and wrapped across lines as needed
+- map options ordered as `flatten`, `group_by`, `when`, then custom options alphabetically
+- annotations kept postfix on the same declaration line
+- notes emitted as explicit trailing blocks
 
 ---
 
@@ -307,23 +323,23 @@ The following keywords are **synonyms** — all produce structurally identical b
 ### 6.2 Syntax
 
 ```
-schema_block = block_kw ident [string_literal] "{" schema_body "}"
-schema_body  = { annotation | note | field | group | spread | comment
-                | selection_criteria }
+schema_block = block_kw ident [string_literal] { annotation } "{" schema_body "}"
+schema_body  = { note | field | group | spread | comment | selection_criteria }
 ```
 
 ### 6.3 Fields
 
-A field declaration occupies a single line:
+A field declaration is normally written on one line, though a long tag list such as a multiline `enum` may wrap:
 
 ```
-field = ident type_expr [tag_list] [field_block]
+field = ident ["[]"] type_expr [tag_list] { annotation } [field_block]
 ```
 
 The components are:
 
 ```stm
-field_name    TYPE_EXPR    [tag1, tag2: value]    // optional comment
+field_name      TYPE_EXPR    [tag1, tag2: value]    @header("Column Name")
+field_array[]   TYPE_EXPR    [tag1, tag2: value]    // optional comment
 ```
 
 #### Type Expressions
@@ -354,12 +370,14 @@ tags           JSON
 
 #### Tag Lists
 
-Tags are enclosed in square brackets, comma-separated:
+Tags are enclosed in square brackets, comma-separated. Tag lists may wrap across lines when a tag value is long, especially for `enum` blocks:
 
 ```
 tag_list  = "[" tag { "," tag } "]"
 tag       = ident [ ":" tag_value ]
-tag_value = string_literal | number | ident { ident }
+tag_value = enum_list | string_literal | number | ident
+enum_list = "{" enum_item { "," enum_item } [ "," ] "}"
+enum_item = string_literal | number | ident
 ```
 
 Reserved tag names with standard semantics:
@@ -373,14 +391,29 @@ Reserved tag names with standard semantics:
 | `pii` | Personally identifiable information |
 | `encrypt` | Must be encrypted (optionally: `encrypt: AES-256-GCM`) |
 | `default: val` | Default value |
-| `enum: a b c` | Allowed values (space-separated within tag) |
+| `enum: { a, b, c }` | Allowed values (comma-separated inside braces) |
 | `format: fmt` | Expected format (e.g., `email`, `E.164`, `uuid`) |
 | `min: n` | Minimum value |
 | `max: n` | Maximum value |
 | `pattern: "regex"` | Regex pattern |
 | `ref: table.field` | Foreign key reference |
 
+`enum` always uses braced, comma-separated values. The unbraced whitespace form is not part of the language.
+
 Custom tags are permitted. Tooling should pass through unrecognized tags without error.
+
+Example with a wrapped enum:
+
+```stm
+status STRING [
+  enum: {
+    pending,
+    completed,
+    failed,
+    cancelled
+  }
+]
+```
 
 #### Field Blocks
 
@@ -404,7 +437,7 @@ This attaches the note specifically to that field.
 Groups represent nested structures:
 
 ```
-group = ident ["[]"] "{" { annotation | note | field | group | spread | comment } "}"
+group = ident ["[]"] { annotation } "{" { note | field | group | spread | comment } "}"
 ```
 
 Without `[]`:
@@ -438,7 +471,11 @@ Groups may be nested to arbitrary depth.
 
 ### 6.5 Annotations
 
-Annotations provide format-specific extraction hints and filters. They apply to the field or group that immediately follows them, or to the enclosing block if placed at the top.
+Annotations provide format-specific extraction hints and filters. They are always postfix and attach to the declaration on the same line:
+
+- schema-block annotations appear on the block header
+- group annotations appear on the group header
+- field annotations appear after the field declaration
 
 ```
 annotation = "@" ident [ "(" params ")" ]
@@ -450,18 +487,15 @@ annotation = "@" ident [ "(" params ")" ]
 Declares the physical format of the source data. Placed at the top of a schema block.
 
 ```stm
-message edi_856 "EDI 856 Despatch Advice" {
-  @format fixed-length
+message edi_856 "EDI 856 Despatch Advice" @format(fixed-length) {
   // ...
 }
 
-source order_xml "Legacy Order XML" {
-  @format xml
+source order_xml "Legacy Order XML" @format(xml) {
   // ...
 }
 
-record daily_extract "Batch CSV" {
-  @format csv
+record daily_extract "Batch CSV" @format(csv) {
   // ...
 }
 ```
@@ -482,11 +516,8 @@ IHXCTL   CHAR(14)    @pos(1, 14)      // offset 1, length 14
 XPath expression for XML sources:
 
 ```stm
-source order_xml {
-  @format xml
-  @ns ord = "http://example.com/orders/v2"
-
-  OrderHeader {                        @xpath("//ord:Order/ord:Header")
+source order_xml @format(xml) @ns ord = "http://example.com/orders/v2" {
+  OrderHeader @xpath("//ord:Order/ord:Header") {
     OrderNumber  STRING                @xpath("ord:OrderNum")
     CustomerCode STRING(10)            @xpath("ord:CustCode")
   }
@@ -498,8 +529,8 @@ source order_xml {
 XML namespace declaration. Only valid inside `@format xml` blocks:
 
 ```stm
-@ns ord  = "http://example.com/orders"
-@ns ship = "http://example.com/shipping"
+source order_xml @format(xml) @ns ord = "http://example.com/orders" @ns ship = "http://example.com/shipping" {
+}
 ```
 
 #### @header
@@ -507,8 +538,7 @@ XML namespace declaration. Only valid inside `@format xml` blocks:
 Column header name for CSV/TSV sources:
 
 ```stm
-record csv_extract {
-  @format csv
+record csv_extract @format(csv) {
   customer_name  STRING    @header("Customer Name")
   order_total    DECIMAL   @header("Order Total (USD)")
 }
@@ -519,14 +549,12 @@ record csv_extract {
 Filters an array to a subset based on a field value. Applied to a group to create a logical view:
 
 ```stm
-POReferences[] {
-  @filter REFQUAL == "ON"
+POReferences[] @filter(REFQUAL == "ON") {
   REFQUAL   CHAR(3)
   REFNUM    CHAR(35)
 }
 
-ShipmentRefs[] {
-  @filter REFQUAL == "SRN"
+ShipmentRefs[] @filter(REFQUAL == "SRN") {
   REFQUAL   CHAR(3)
   REFNUM    CHAR(70)
 }
@@ -592,7 +620,7 @@ source legacy_sqlserver "Legacy CUSTOMER table from SQL Server 2008" {
   '''
 
   CUST_ID         INT             [pk]                         // Sequential, gaps exist
-  CUST_TYPE       CHAR(1)         [enum: R B G, default: R]    //! Some records have NULL
+  CUST_TYPE       CHAR(1)         [enum: {R, B, G}, default: R]    //! Some records have NULL
   FIRST_NM        VARCHAR(100)
   LAST_NM         VARCHAR(100)
   COMPANY_NM      VARCHAR(200)
@@ -613,12 +641,12 @@ source legacy_sqlserver "Legacy CUSTOMER table from SQL Server 2008" {
   ZIP_POSTAL      VARCHAR(20)
   COUNTRY_CD      CHAR(2)         [default: US]
   CREDIT_LIMIT    DECIMAL(12,2)                                // NULL means no credit
-  ACCOUNT_STATUS  CHAR(1)         [enum: A S C D, default: A]
+  ACCOUNT_STATUS  CHAR(1)         [enum: {A, S, C, D}, default: A]
   CREATED_DATE    VARCHAR(10)                                  //! Stored as MM/DD/YYYY string
   LAST_MOD_DATE   VARCHAR(20)                                  //! MM/DD/YYYY HH:MM:SS AM/PM
   TAX_ID          VARCHAR(20)     [pii, encrypt]               //! Plaintext in legacy system
   LOYALTY_POINTS  INT             [default: 0]
-  PREF_CONTACT    CHAR(1)         [enum: E P M N, default: E]
+  PREF_CONTACT    CHAR(1)         [enum: {E, P, M, N}, default: E]
   NOTES           VARCHAR(MAX)
 }
 ```
@@ -662,9 +690,19 @@ Map blocks define the transformation logic between source and target schemas. Th
 ### 8.1 Syntax
 
 ```
-map_block = "map" [ident "->" ident] "{" map_body "}"
-map_body  = { note | map_entry | nested_map | comment }
+map_block   = "map" [ident "->" ident] [map_options] "{" map_body "}"
+map_options = "[" map_option { "," map_option } "]"
+map_option  = ident ":" expr
+map_body    = { annotation | note | map_entry | nested_map | comment }
 ```
+
+Recognized map options:
+
+| Option | Meaning |
+|---|---|
+| `flatten: path[]` | One source record expands into one target record per element at `path[]` |
+| `group_by: path` | Many source records collapse into grouped output records keyed by `path` |
+| `when: condition` | Only source records matching the condition flow through the map |
 
 ### 8.2 Scoping Rules
 
@@ -703,6 +741,20 @@ map crm_system -> notification_service {
 
 **Disambiguation rule:** A bare name resolves to the block's declared source (left) or target (right). If ambiguous (e.g., same field name in multiple sources), a parser error is raised and explicit qualification is required.
 
+**Conditional routing:** A map block may include a `when:` header option. Only records matching the condition flow through that block.
+
+```stm
+map source_orders -> us_warehouse [when: region == "US"] {
+  order_id -> order_id
+}
+
+map source_orders -> eu_warehouse [when: region == "EU"] {
+  order_id -> order_id
+}
+```
+
+Multiple `map` blocks from the same source with distinct `when:` options model 1:N fan-out routing.
+
 ### 8.3 Mapping Types
 
 #### Direct Mapping
@@ -737,9 +789,82 @@ source_field -> target_field
   : lookup(resource_id, key_field => value_field, on_miss: "default_value")
 ```
 
+`lookup(...)` is a normal pipeline step, not a separate transform family.
+
+#### Mapping Entry Notes
+
+An individual mapping line may carry a markdown note block for reviewer guidance, implementation detail, or UI hover help:
+
+```stm
+EMAIL_ADDR -> email : trim | lowercase | validate_email {
+  note '''
+    ## Implementation note
+    - Preserve the original source value in the audit log
+    - If validation fails, downstream CRM should still receive the record
+  '''
+}
+```
+
+Use mapping-entry notes for durable field-level mapping context. Keep short operational remarks in comments.
+
+#### Conditional Routing / Fan-out
+
+Use `when:` map options for route-by-condition flows:
+
+```stm
+map orders -> domestic_fulfillment [when: shipping_country == "US"] {
+  order_id -> order_id
+  total    -> total
+}
+
+map orders -> international_fulfillment [when: shipping_country != "US"] {
+  order_id -> order_id
+  total    -> total
+}
+```
+
+#### Flatten / One-to-Many Expansion
+
+Use `flatten:` on the map block header when a nested array becomes the grain of the target:
+
+```stm
+map order_api -> flat_order_lines [flatten: items[]] {
+  orderId           -> order_id
+  customerName      -> customer_name
+  items[].sku       -> product_sku
+  items[].quantity  -> quantity
+  items[].unitPrice -> unit_price
+}
+```
+
+When `flatten:` is present, parent fields may map directly and are repeated for each emitted target record. The flatten path must resolve to an array in the source schema.
+
+#### Aggregation / Many-to-One Collapse
+
+Use `group_by:` on the map block header when multiple source records collapse into grouped output:
+
+```stm
+map transactions -> customer_summary [group_by: customer_id] {
+  customer_id      -> customer_id
+  amount           -> total_spent         : sum
+  amount           -> avg_transaction     : avg
+  => transaction_count                    : count
+  transaction_date -> last_purchase       : max
+}
+```
+
+When `group_by:` is present, aggregate transforms consume all source records in the group and emit one target record per distinct grouping key.
+
 ### 8.4 Transform Expressions
 
-Transforms modify data as it flows from source to target. They appear after `:` on a mapping line.
+Transforms modify data as it flows from source to target. `:` separates the mapping head from its transform section. Inside that section, `|` continues a pipeline and keywords such as `when`, `else`, and `fallback` continue the transform without another `:`.
+
+STM keeps the transform core intentionally small. A transform expression is one of:
+
+- a pipeline
+- a `when` chain
+- a fallback expression
+- a literal
 
 #### Pipe Chains
 
@@ -771,9 +896,9 @@ Multi-branch conditional logic:
 ```stm
 LOYALTY_POINTS -> loyalty_tier
   : when < 1000  => "bronze"
-  : when < 5000  => "silver"
-  : when < 10000 => "gold"
-  : else            "platinum"
+  when < 5000  => "silver"
+  when < 10000 => "gold"
+  else         => "platinum"
 ```
 
 #### Arithmetic
@@ -811,17 +936,38 @@ Provides an alternative source when the primary is null:
 ```stm
 LAST_MOD_DATE -> updated_at
   : parse("MM/DD/YYYY hh:mm:ss a") | to_utc
-  : fallback CREATED_DATE | parse("MM/DD/YYYY") | assume_utc
+  fallback CREATED_DATE | parse("MM/DD/YYYY") | assume_utc
 ```
 
-#### Logic Expression
+#### Failure Handling
 
-For computed fields with if/else logic:
+Failure handling may be declared at both block and field level.
+
+```stm
+map legacy_customer -> curated_customer {
+  @on_error(reject)                  // skip | reject | log | default
+  @reject_target(error_queue)
+  @error_threshold(0.05)
+
+  EMAIL -> email
+    : validate_email | on_fail(null)
+
+  TAX_ID -> tax_id
+    : validate("^\\d{9}$") | on_fail(reject)
+
+  PHONE -> phone
+    : to_e164 | on_fail(log, "Unparseable phone")
+}
+```
+
+Block-level annotations establish defaults. `on_fail(...)` overrides behavior for a specific mapping line.
+
+Use the same `when` form for computed fields:
 
 ```stm
 => display_name
-  : if CUST_TYPE in (null, "R") then trim(FIRST_NM + " " + LAST_NM)
-  : else trim(COMPANY_NM)
+  : when CUST_TYPE in (null, "R") => trim(FIRST_NM + " " + LAST_NM)
+  else => trim(COMPANY_NM)
 ```
 
 ### 8.5 Standard Transform Functions
@@ -874,6 +1020,18 @@ The following function names are reserved with standard semantics. Implementatio
 | `to_number` | Parse string to number |
 | `* N`, `/ N`, `+ N`, `- N` | Arithmetic |
 
+**Aggregate functions:**
+
+| Function | Description |
+|---|---|
+| `sum` | Sum values across the current `group_by` group |
+| `count` | Count records in the current group |
+| `avg` | Average values in the current group |
+| `min` / `max` | Minimum / maximum value in the current group |
+| `first` / `last` | First / last value in the current group |
+| `collect` | Collect values into an array |
+| `distinct` | Deduplicate values in the current group |
+
 **Date/time functions:**
 
 | Function | Description |
@@ -901,9 +1059,16 @@ The following function names are reserved with standard semantics. Implementatio
 | `decrypt(algo, key)` | Decrypt value |
 | `hash(algo)` | One-way hash (sha256, etc.) |
 
+**Control / error handling:**
+
+| Function | Description |
+|---|---|
+| `on_fail(action)` | Override failure action for the preceding step or chain |
+| `on_fail(log, message)` | Log failure with message and continue per implementation policy |
+
 ### 8.6 Nested Array Mapping
 
-When mapping arrays from source to target, use nested braces with relative paths:
+When mapping arrays from source to target, use nested braces with relative paths. Nested map heads are restricted to array paths on both sides:
 
 ```stm
 map rest_api -> esb_xml {
@@ -918,6 +1083,35 @@ map rest_api -> esb_xml {
 ```
 
 **Relative paths:** Inside a nested mapping block, `.fieldName` is relative to the current array element. This avoids repeating the full path.
+
+### 8.7 Path Syntax
+
+STM uses one path model everywhere: map heads, transforms, options, and nested mappings.
+
+Valid path forms:
+
+- schema-qualified path: `crm.customer.email`
+- local path: `customer.email`
+- relative path: `.sku`
+- array segment marker attached to the segment: `items[].sku`
+
+Also valid:
+
+- `.items[].sku`
+- `items[].sku`
+- `crm.items[].sku`
+
+Invalid:
+
+- `.` by itself
+- detached array markers such as `items.[].sku`
+
+Rules:
+
+- A leading `.` means "relative to the current nested map scope".
+- Array markers always attach directly to the segment they qualify.
+- Bare paths inside a `map` block resolve against the declared source on the left or target on the right.
+- Nested map heads must end in array segments on both source and target paths.
 
 **Nested nesting:** Array mappings may nest to arbitrary depth:
 
@@ -949,7 +1143,22 @@ POReferences[] -> ShipmentHeader.asnDetails[] {
 }
 ```
 
-### 8.7 Complete Example
+### 8.8 Complete Example: Flatten with Error Handling
+
+```stm
+map order_api -> flat_order_lines [flatten: items[]] {
+  @on_error(reject)
+  @reject_target(dead_letter_orders)
+
+  orderId           -> order_id
+  customerId        -> customer_id
+  items[].sku       -> sku        : trim | on_fail(reject)
+  items[].quantity  -> quantity   : to_number | on_fail(reject)
+  items[].unitPrice -> unit_price : round(2) | on_fail(null)
+}
+```
+
+### 8.9 Complete Example
 
 ```stm
 map {
@@ -968,8 +1177,8 @@ map {
 
   // --- Names ---
   => display_name
-    : if CUST_TYPE in (null, "R") then trim(FIRST_NM + " " + LAST_NM)
-    : else trim(COMPANY_NM)
+    : when CUST_TYPE in (null, "R") => trim(FIRST_NM + " " + LAST_NM)
+    else => trim(COMPANY_NM)
 
   FIRST_NM   -> first_name     : trim | title_case | null_if_empty
   LAST_NM    -> last_name      : trim | title_case | null_if_empty
@@ -988,7 +1197,7 @@ map {
   // --- Dates ---
   CREATED_DATE  -> created_at   : parse("MM/DD/YYYY") | assume_utc | to_iso8601
   LAST_MOD_DATE -> updated_at   : parse("MM/DD/YYYY hh:mm:ss a") | to_utc
-                                  : fallback CREATED_DATE | parse("MM/DD/YYYY") | assume_utc
+                                  fallback CREATED_DATE | parse("MM/DD/YYYY") | assume_utc
 
   // --- Security ---
   TAX_ID -> tax_identifier_encrypted : encrypt(AES-256-GCM, secrets.tax_key)
@@ -996,9 +1205,9 @@ map {
   // --- Calculated ---
   LOYALTY_POINTS -> loyalty_tier
     : when < 1000  => "bronze"
-    : when < 5000  => "silver"
-    : when < 10000 => "gold"
-    : else            "platinum"
+    when < 5000  => "silver"
+    when < 10000 => "gold"
+    else         => "platinum"
 
   PREF_CONTACT -> preferred_contact_method
     : map { E: "email", P: "phone", M: "mail", N: "none" }
@@ -1037,10 +1246,13 @@ Notes may appear inside:
 | Group `{ ... }` | Group-level documentation |
 | Field block `{ ... }` | Field-level documentation |
 | `map { ... }` | Mapping-level documentation |
+| Mapping entry block `{ note ... }` | Field-mapping-level documentation |
 
 ### 9.3 Multiple Notes
 
 Multiple `note` blocks in the same scope are concatenated in order.
+
+Comments are still preferred for terse inline signals, especially `//!` warnings and `//?` open questions. Notes are for durable markdown documentation.
 
 ---
 
@@ -1066,16 +1278,15 @@ integration      = "integration" STRING "{" { integ_field | note | COMMENT } "}"
 integ_field      = ident ( STRING | TOKEN | tag_list ) ;
 
 (* --- Schema Blocks --- *)
-block            = BLOCK_KW ident [ STRING ] "{" block_body "}" ;
+block            = BLOCK_KW ident [ STRING ] { annotation } "{" block_body "}" ;
 BLOCK_KW         = "source" | "target" | "table" | "message"
                  | "record" | "event" | "schema" | "lookup" ;
-block_body       = { annotation | note | field | group | spread
-                   | sel_criteria | COMMENT } ;
+block_body       = { note | field | group | spread | sel_criteria | COMMENT } ;
 
 fragment         = "fragment" ident [ STRING ] "{" block_body "}" ;
 
 (* --- Fields --- *)
-field            = IDENT type_expr [ tag_list ] [ field_block ] ;
+field            = IDENT [ "[]" ] type_expr [ tag_list ] { annotation } [ field_block ] ;
 field_block      = "{" note "}" ;
 type_expr        = IDENT [ "(" params ")" ] ;
 params           = param { "," param } ;
@@ -1083,10 +1294,12 @@ param            = NUMBER | STRING | IDENT ;
 
 tag_list         = "[" tag { "," tag } "]" ;
 tag              = IDENT [ ":" tag_value ] ;
-tag_value        = STRING | NUMBER | IDENT { IDENT } ;
+tag_value        = enum_list | STRING | NUMBER | IDENT ;
+enum_list        = "{" enum_item { "," enum_item } [ "," ] "}" ;
+enum_item        = STRING | NUMBER | IDENT ;
 
 (* --- Groups --- *)
-group            = IDENT [ "[]" ] "{" block_body "}" ;
+group            = IDENT [ "[]" ] { annotation } "{" block_body "}" ;
 
 (* --- Annotations --- *)
 annotation       = "@" IDENT [ "(" params ")" ]
@@ -1098,38 +1311,54 @@ sel_criteria     = "selection_criteria" MULTILINE_STRING ;
 note             = "note" MULTILINE_STRING ;
 
 (* --- Map Blocks --- *)
-map_block        = "map" [ IDENT "->" IDENT ] "{" map_body "}" ;
-map_body         = { note | map_entry | nested_map | COMMENT } ;
+map_block        = "map" [ IDENT "->" IDENT ] [ map_options ] "{" map_body "}" ;
+map_options      = "[" map_option { "," map_option } "]" ;
+map_option       = IDENT ":" expr ;
+map_body         = { annotation | note | map_entry | nested_map | COMMENT } ;
 
-map_entry        = ( direct_map | computed_map ) { transform_line } ;
+map_entry        = ( direct_map | computed_map ) { transform_line } [ map_entry_block ] ;
+map_entry_block  = "{" note "}" ;
 direct_map       = field_path "->" field_path ;
 computed_map     = "=>" field_path ;
-transform_line   = ":" transform_expr ;
+transform_line   = ":" transform_expr { continuation_line } ;
+continuation_line = NL "|" xform_step
+                  | NL "when" condition "=>" value
+                  | NL "else" "=>" value
+                  | NL "fallback" field_path { "|" xform_step } ;
 
-nested_map       = field_path "->" field_path "{" map_body "}" ;
+nested_map       = array_path "->" array_path "{" map_body "}" ;
 
 (* --- Transforms --- *)
-transform_expr   = pipe_chain | nl_expr | when_chain | literal
-                 | logic_expr | fallback_expr ;
+transform_expr   = pipe_chain | when_chain | fallback_expr | literal ;
 pipe_chain       = xform_step { "|" xform_step } ;
-xform_step       = IDENT [ "(" params ")" ]
-                 | arith_op NUMBER
-                 | "map" "{" map_pairs "}"
-                 | nl_expr ;
+xform_step       = function_call | arithmetic_step | value_map ;
+function_call    = IDENT [ "(" params ")" ] ;
+arithmetic_step  = arith_op NUMBER ;
+value_map        = "map" "{" map_pairs "}" ;
 arith_op         = "*" | "/" | "+" | "-" ;
-nl_expr          = "nl(" STRING ")" ;
-when_chain       = "when" condition "=>" value { NL ":" "when" condition "=>" value }
-                   [ NL ":" "else" value ] ;
-logic_expr       = "if" condition "then" expr { ":" "else" expr } ;
+when_chain       = "when" condition "=>" value ;
 fallback_expr    = "fallback" field_path { "|" xform_step } ;
 
 (* --- Paths --- *)
-field_path       = [ IDENT "." ] path_segment { "." path_segment } ;
+field_path       = schema_path | local_path | relative_path ;
+schema_path      = IDENT "." path_segment { "." path_segment } ;
+local_path       = path_segment { "." path_segment } ;
+relative_path    = "." path_segment { "." path_segment } ;
+array_path       = array_schema_path | array_local_path | array_relative_path ;
+array_schema_path = IDENT "." array_segment { "." path_segment } ;
+array_local_path  = array_segment { "." path_segment } ;
+array_relative_path = "." array_segment { "." path_segment } ;
 path_segment     = ( IDENT | BACKTICK_IDENT ) [ "[]" ] ;
+array_segment    = ( IDENT | BACKTICK_IDENT ) "[]" ;
 
 (* --- Map Value Pairs --- *)
 map_pairs        = map_pair { "," map_pair } ;
-map_pair         = ( STRING | IDENT | "null" | "_" ) ":" ( STRING | IDENT | NUMBER ) ;
+map_pair         = ( STRING | IDENT | "null" | "_" ) ":" value ;
+
+(* --- Shared Expressions --- *)
+expr             = literal | field_path | function_call ;
+literal          = STRING | NUMBER | "true" | "false" | "null" ;
+value            = literal | field_path | function_call ;
 
 (* --- Terminals --- *)
 IDENT            = LETTER { LETTER | DIGIT | "_" | "-" } ;
@@ -1137,7 +1366,7 @@ BACKTICK_IDENT   = "`" { ANY_CHAR | "``" } "`" ;
 STRING           = '"' { ESCAPE_CHAR | CHAR } '"' ;
 MULTILINE_STRING = "'''" { ANY_CHAR } "'''" ;
 NUMBER           = [ "-" ] DIGIT+ [ "." DIGIT+ ] ;
-TOKEN            = IDENT ":" IDENT ;          (* e.g., 1:1, N:M *)
+TOKEN            = ( DIGIT | IDENT ) ":" ( DIGIT | IDENT ) ;   (* e.g., 1:1, N:M *)
 COMMENT          = ( "//" | "//!" | "//?" ) TEXT_TO_EOL ;
 
 LETTER           = [a-zA-Z] ;
@@ -1164,6 +1393,11 @@ Parsers and linters for STM v1.0.0 must enforce or check the following:
 | **E008** | Fragment blocks cannot be used as mapping endpoints (only spread) |
 | **E009** | Backtick-quoted identifiers cannot be empty |
 | **E010** | At most one `integration` block per file |
+| **E011** | `flatten:` option must resolve to a source array path |
+| **E012** | `group_by:` option must resolve to a source field path |
+| **E013** | Aggregate functions may only appear inside `map` blocks with `group_by:` |
+| **E014** | `@reject_target(...)` requires reject-style handling to be configured at map or field level |
+| **E015** | Nested map heads must resolve to array paths on both source and target sides |
 
 ### 11.2 Warnings (should report)
 
@@ -1177,6 +1411,8 @@ Parsers and linters for STM v1.0.0 must enforce or check the following:
 | **W006** | Unresolved `//?` comments present (open questions/TODOs) |
 | **W007** | Backtick-quoted identifier doesn't need quoting |
 | **W008** | Direct mapping between incompatible types without explicit transform |
+| **W009** | Multiple `map` blocks from the same source use `when:` options but appear non-exhaustive (no fallback route detected) |
+| **W010** | `flatten:` repeats parent fields across emitted target records; reviewer should confirm target grain |
 
 ---
 
@@ -1236,19 +1472,19 @@ source|target|message|table|event|lookup|schema <id> ["description"] {
 }
 
 ## Tags:  [required, pk, unique, indexed, pii, encrypt, encrypt: AES-256-GCM,
-##         default: val, enum: a b c, format: email, min: 0, max: 100,
+##         default: val, enum: { a, b, c }, format: email, min: 0, max: 100,
 ##         pattern: "regex", ref: table.field]
 
-## Annotations (on fields or groups):
-##   @format xml|fixed-length|csv|edi|json
-##   @xpath("path")  @pos(offset, length)  @header("Column Name")
-##   @filter FIELD == "value"    @ns prefix = "uri"    @path "extraction.path"
+## Annotations are postfix on the same declaration line:
+##   message edi @format(fixed-length) { ... }
+##   LineItems[] @filter(QUAL == "12") { ... }
+##   item_code STRING @header("Item Code")
 
 ## Map blocks
-map [source_id -> target_id] {
+map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
   src_field -> tgt_field                     // direct
   src_field -> tgt_field : transform         // with transform
-  => tgt_field : logic                       // computed (no source)
+  => tgt_field : when cond => value         // computed (no source)
   => tgt_field : "literal"                   // static value
 
   // Transforms (combine with |):
@@ -1263,8 +1499,8 @@ map [source_id -> target_id] {
   //   map { src: "tgt", null: "default", _: "fallback" }
   //   lookup(resource, key => value [, on_miss: error|null|"default"])
   //   nl("natural language intent for complex transforms")
-  //   when <cond> => "value" (multi-line conditionals)
-  //   fallback field : chain (alternative when null)
+  //   when <cond> => "value"   then continue with more `when` / `else` lines
+  //   fallback field | chain   (alternative when null)
 
   // Nested array mapping:
   src_arr[] -> tgt_arr[] {
@@ -1352,7 +1588,7 @@ source rest_api "E-commerce Order API" {
     city          STRING(100)     [required]
     state         STRING(50)
     postalCode    STRING(20)      [required]
-    country       ISO-3166-a2     [required, enum: US CA MX UK DE FR]
+    country       ISO-3166-a2     [required, enum: {US, CA, MX, UK, DE, FR}]
   }
   items[] {
     sku           STRING(8)       [required, pattern: "^[A-Z0-9]{8}$"]
@@ -1360,8 +1596,8 @@ source rest_api "E-commerce Order API" {
     unitPrice     DECIMAL(10,2)
     discount      DECIMAL(5,2)    [default: 0.0]
   }
-  paymentMethod   ENUM            [enum: CREDIT_CARD PAYPAL BANK_TRANSFER INVOICE, default: CREDIT_CARD]
-  priority        ENUM            [enum: STANDARD EXPRESS OVERNIGHT, default: STANDARD]
+  paymentMethod   ENUM            [enum: {CREDIT_CARD, PAYPAL, BANK_TRANSFER, INVOICE}, default: CREDIT_CARD]
+  priority        ENUM            [enum: {STANDARD, EXPRESS, OVERNIGHT}, default: STANDARD]
 }
 
 target esb_xml "Legacy ESB Order XML Payload" {
@@ -1378,8 +1614,8 @@ target esb_xml "Legacy ESB Order XML Payload" {
       PostalCode      STRING      [required]
       CountryCode     STRING(3)   [required]   //! Source is alpha-2, must convert to alpha-3
     }
-    PaymentType       ENUM        [enum: CC PP BT INV]
-    ShippingPriority  INT         [enum: 1 2 3]
+    PaymentType       ENUM        [enum: {CC, PP, BT, INV}]
+    ShippingPriority  INT         [enum: {1, 2, 3}]
     TotalAmount       DECIMAL
   }
   OrderLines[] {
@@ -1446,8 +1682,7 @@ integration "EDI_856_to_MFCS_Shipment" {
   '''
 }
 
-message edi_desadv "EDI 856 Despatch Advice" {
-  @format fixed-length
+message edi_desadv "EDI 856 Despatch Advice" @format(fixed-length) {
 
   BeginningOfMessage {
     DOCNUM      CHAR(35)                      // Despatch advice number
@@ -1458,13 +1693,11 @@ message edi_desadv "EDI 856 Despatch Advice" {
     DATETIME    CHAR(35)
     DATEFMT     CHAR(3)                       // 102=CCYYMMDD, 203=CCYYMMDDHHMM
   }
-  ShipmentRefs[] {
-    @filter SHPRFQUAL == "SRN"
+  ShipmentRefs[] @filter(SHPRFQUAL == "SRN") {
     SHPRFQUAL   CHAR(3)
     SHIPREF     CHAR(70)
   }
-  POReferences[] {
-    @filter REFQUAL == "ON"
+  POReferences[] @filter(REFQUAL == "ON") {
     REFQUAL     CHAR(3)
     REFNUM      CHAR(35)                      // PO Number / Dissection No
   }
@@ -1473,8 +1706,7 @@ message edi_desadv "EDI 856 Despatch Advice" {
     ITEMNO      CHAR(35)
     ITEMTYPE    CHAR(3)
   }
-  Quantities[] {
-    @filter QUANTQUAL == "12"
+  Quantities[] @filter(QUANTQUAL == "12") {
     QUANTITY    NUMBER(15)                    //! 4 implied decimals
   }
 }
@@ -1548,7 +1780,7 @@ source payment_gateway "Payment transaction data" {
   customer_email  EMAIL
   amount          DECIMAL(12,2)
   currency        ISO-4217
-  status          ENUM          [enum: pending completed failed]
+  status          ENUM          [enum: {pending, completed, failed}]
 }
 
 source inventory_system "Inventory management" {
@@ -1570,7 +1802,7 @@ target notification_service "Notification messages" {
   recipient_phone  STRING(20)
   message_type     ENUM
   message_body     TEXT
-  priority         ENUM          [enum: low medium high]
+  priority         ENUM          [enum: {low, medium, high}]
 }
 
 target reporting_warehouse "Reporting data warehouse" {
@@ -1595,9 +1827,13 @@ map payment_gateway -> analytics_db {
 map crm_system -> notification_service {
   email -> recipient_email
   phone -> recipient_phone
-  => message_type                           : if loyalty_points > 1000 then "loyalty_update" else null
+  => message_type
+    : when loyalty_points > 1000 => "loyalty_update"
+    else => null
   // Cross-source reference:
-  => priority                               : if payment_gateway.status == "failed" then "high" else "low"
+  => priority
+    : when payment_gateway.status == "failed" => "high"
+    else => "low"
 }
 
 map payment_gateway -> notification_service {
@@ -1609,7 +1845,9 @@ map inventory_system -> reporting_warehouse {
   product_sku -> product_id
   stock_level -> available_stock
   warehouse_location -> location
-  => reorder_needed                         : if stock_level < 10 then true else false
+  => reorder_needed
+    : when stock_level < 10 => true
+    else => false
 }
 ```
 
@@ -1621,7 +1859,6 @@ The following features are under consideration for future versions:
 
 - **`$ref` support:** External schema references for very large schemas (v1.1)
 - **`x-codegen` hints:** Mapping transform functions to specific library calls in Python/Java/etc. (v1.1)
-- **Conditional routing:** Route to different targets based on source data value for 1:N fan-out scenarios (v1.2)
 - **Transform function definitions:** User-defined reusable transforms (v1.2)
 - **Schema inheritance:** Extend/override an existing schema block (v1.2)
 - **Bidirectional mapping:** Declare forward and reverse transforms in a single block (v2.0)

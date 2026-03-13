@@ -37,7 +37,7 @@ table legacy_sqlserver "CUSTOMER table — SQL Server 2008" {
   '''
 
   CUST_ID         INT             [pk]                         // Sequential, gaps from deletions
-  CUST_TYPE       CHAR(1)         [enum: R B G, default: R]    //! Some records have NULL
+  CUST_TYPE       CHAR(1)         [enum: {R, B, G}, default: R]    //! Some records have NULL
   FIRST_NM        VARCHAR(100)                                 // Retail customers only
   LAST_NM         VARCHAR(100)                                 // Retail customers only
   COMPANY_NM      VARCHAR(200)                                 // Business/government only
@@ -59,12 +59,12 @@ table legacy_sqlserver "CUSTOMER table — SQL Server 2008" {
   ZIP_POSTAL      VARCHAR(20)
   COUNTRY_CD      CHAR(2)         [default: US]
   CREDIT_LIMIT    DECIMAL(12,2)                                // NULL = no credit extended
-  ACCOUNT_STATUS  CHAR(1)         [enum: A S C D, default: A]  // Active/Suspended/Closed/Delinquent
+  ACCOUNT_STATUS  CHAR(1)         [enum: {A, S, C, D}, default: A]  // Active/Suspended/Closed/Delinquent
   CREATED_DATE    VARCHAR(10)                                  //! Stored as MM/DD/YYYY string
   LAST_MOD_DATE   VARCHAR(20)                                  //! MM/DD/YYYY HH:MM:SS AM/PM
   TAX_ID          VARCHAR(20)     [pii, encrypt]               //! Plaintext in legacy — SSN or EIN
   LOYALTY_POINTS  INT             [default: 0]
-  PREF_CONTACT    CHAR(1)         [enum: E P M N, default: E]  // Email/Phone/Mail/None
+  PREF_CONTACT    CHAR(1)         [enum: {E, P, M, N}, default: E]  // Email/Phone/Mail/None
   NOTES           VARCHAR(MAX)                                 // Free-text, may contain profanity
 }
 
@@ -76,7 +76,7 @@ table legacy_sqlserver "CUSTOMER table — SQL Server 2008" {
 table postgres_db "Normalized customer schema — PostgreSQL 16" {
   customer_id              UUID           [pk, required]
   legacy_customer_id       INTEGER        [unique, indexed]    // Preserved for troubleshooting
-  customer_type            VARCHAR(20)    [enum: retail business government, required]
+  customer_type            VARCHAR(20)    [enum: {retail, business, government}, required]
   display_name             VARCHAR(200)   [required]
   first_name               VARCHAR(100)
   last_name                VARCHAR(100)
@@ -85,12 +85,12 @@ table postgres_db "Normalized customer schema — PostgreSQL 16" {
   phone                    VARCHAR(20)    [format: E.164]      // +[cc][number]
   address_id               UUID           [ref: addresses.id]  // FK to normalized address table
   credit_limit_cents       BIGINT         [default: 0]         // Stored as cents, not dollars
-  status                   VARCHAR(20)    [enum: active suspended closed delinquent, required]
+  status                   VARCHAR(20)    [enum: {active, suspended, closed, delinquent}, required]
   created_at               TIMESTAMPTZ    [required]
   updated_at               TIMESTAMPTZ
   tax_identifier_encrypted TEXT           [pii, encrypt: AES-256-GCM]
-  loyalty_tier             VARCHAR(20)    [enum: bronze silver gold platinum]
-  preferred_contact_method VARCHAR(20)    [enum: email phone mail none]
+  loyalty_tier             VARCHAR(20)    [enum: {bronze, silver, gold, platinum}]
+  preferred_contact_method VARCHAR(20)    [enum: {email, phone, mail, none}]
   notes                    TEXT                                 // Sanitized
   migration_timestamp      TIMESTAMPTZ                         // Audit: when migrated
 }
@@ -118,8 +118,8 @@ map {
 
   // --- Name Handling ---
   => display_name
-    : if CUST_TYPE in (null, "R") then trim(FIRST_NM + " " + LAST_NM)
-    : else trim(COMPANY_NM)
+    : when CUST_TYPE in (null, "R") => trim(FIRST_NM + " " + LAST_NM)
+    else => trim(COMPANY_NM)
 
   FIRST_NM   -> first_name          : trim | title_case | null_if_empty
   LAST_NM    -> last_name           : trim | title_case | null_if_empty
@@ -154,7 +154,7 @@ map {
 
   LAST_MOD_DATE -> updated_at
     : parse("MM/DD/YYYY hh:mm:ss a") | to_utc | to_iso8601
-    : fallback CREATED_DATE | parse("MM/DD/YYYY") | assume_utc | to_iso8601
+    fallback CREATED_DATE | parse("MM/DD/YYYY") | assume_utc | to_iso8601
 
   // --- Security ---
   TAX_ID -> tax_identifier_encrypted : encrypt(AES-256-GCM, secrets.tax_encryption_key)
@@ -162,9 +162,9 @@ map {
   // --- Calculated ---
   LOYALTY_POINTS -> loyalty_tier
     : when < 1000  => "bronze"
-    : when < 5000  => "silver"
-    : when < 10000 => "gold"
-    : else            "platinum"
+    when < 5000  => "silver"
+    when < 10000 => "gold"
+    else         => "platinum"
 
   PREF_CONTACT -> preferred_contact_method
     : map { E: "email", P: "phone", M: "mail", N: "none" }

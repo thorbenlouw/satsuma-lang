@@ -60,7 +60,7 @@ Source to target mapping involves understanding the domain, naming and processes
 
 | From | Steal |
 |---|---|
-| **FML** | The `where` clause on mapping rules for conditional logic (our `when` proposal in GAP-01 aligns with this). Also, FML's `translate()` using ConceptMaps is exactly our GAP-05. |
+| **FML** | The `where` clause on mapping rules for conditional logic. STM now covers this with `map ... [when: ...]` blocks in v1.0. FML's `translate()` using ConceptMaps remains strong inspiration for STM's future terminology translation support. |
 | **FML** | The `group` concept — reusable mapping rule groups. We have fragments for schemas but not for mapping logic. Consider adding this. |
 | **JSONata** | The elegance of path expressions. Our `.field` relative paths in nested mappings are similar in spirit. |
 | **Jolt** | The separation of structural transforms (shift, default, remove, sort, cardinality) as distinct operations. We might want a `@cardinality` annotation. |

@@ -100,7 +100,7 @@ This separation of **structure** from **logic** from **context** is fundamental.
 ```stm
 source legacy_db "Legacy CUSTOMER table" {
   CUST_ID       INT         [pk]
-  CUST_TYPE     CHAR(1)     [enum: R B G]      //! NULL means Retail
+  CUST_TYPE     CHAR(1)     [enum: {R, B, G}]      //! NULL means Retail
   FIRST_NM      VARCHAR(100)
   LAST_NM       VARCHAR(100)
   EMAIL_ADDR    VARCHAR(255) [pii]
@@ -108,7 +108,7 @@ source legacy_db "Legacy CUSTOMER table" {
 
 target new_db "Modernized customer schema" {
   customer_id   UUID         [pk, required]
-  customer_type VARCHAR(20)  [enum: retail business government]
+  customer_type VARCHAR(20)  [enum: {retail, business, government}]
   display_name  VARCHAR(200) [required]
   email         VARCHAR(255) [format: email, pii]
 }
@@ -120,8 +120,8 @@ map {
     : map { R: "retail", B: "business", G: "government", null: "retail" }
 
   => display_name
-    : if CUST_TYPE == "R" then trim(FIRST_NM + " " + LAST_NM)
-    : else "UNKNOWN"
+    : when CUST_TYPE == "R" => trim(FIRST_NM + " " + LAST_NM)
+    else => "UNKNOWN"
 
   EMAIL_ADDR -> email : trim | lowercase | validate_email | null_if_invalid
 }

@@ -159,8 +159,15 @@ interface Comment {
 interface MapBlock {
   source?: string             // schema ID (null for implicit 1:1)
   target?: string             // schema ID (null for implicit 1:1)
+  options?: MapOption[]
+  annotations: Annotation[]
   notes: Note[]
   entries: (MapEntry | NestedMap | Comment)[]
+}
+
+interface MapOption {
+  name: string                // flatten, group_by, when
+  value: string | number
 }
 
 // A single mapping line
@@ -169,6 +176,7 @@ interface MapEntry {
   sourcePath?: FieldPath      // null for computed (=>)
   targetPath: FieldPath
   transforms: TransformExpr[]
+  note?: Note
   comments: Comment[]
 }
 
@@ -183,6 +191,7 @@ interface NestedMap {
 // Field paths
 interface FieldPath {
   schemaId?: string           // explicit qualification (null if implicit)
+  isRelative: boolean         // true for .field paths
   segments: PathSegment[]
 }
 
@@ -199,12 +208,9 @@ type TransformExpr =
   | PipeChain
   | ValueMap
   | WhenChain
-  | LogicExpr
   | NaturalLanguage
   | FallbackExpr
   | LiteralExpr
-  | ArithmeticExpr
-  | LookupExpr
 
 interface PipeChain {
   kind: 'pipe'
@@ -212,8 +218,12 @@ interface PipeChain {
 }
 
 interface TransformStep {
-  function: string
+  kind: 'function' | 'arithmetic' | 'value_map'
+  function?: string
   params?: (string | number)[]
+  operator?: '*' | '/' | '+' | '-'
+  operand?: number
+  valueMap?: { key: string | 'null' | '_'; value: string | number | boolean | null }[]
 }
 
 interface ValueMap {
@@ -223,15 +233,8 @@ interface ValueMap {
 
 interface WhenChain {
   kind: 'when'
-  branches: { condition: string; value: string | number }[]
-  elseBranch?: string | number
-}
-
-interface LogicExpr {
-  kind: 'logic'
-  condition: string
-  thenExpr: string
-  elseExpr?: string
+  branches: { condition: string; value: string | number | boolean | null }[]
+  elseBranch?: string | number | boolean | null
 }
 
 interface NaturalLanguage {
@@ -245,23 +248,9 @@ interface FallbackExpr {
   transforms: TransformStep[]
 }
 
-interface LookupExpr {
-  kind: 'lookup'
-  resource: string
-  keyField: string
-  valueField: string
-  onMiss: 'error' | 'null' | string    // string for default value
-}
-
 interface LiteralExpr {
   kind: 'literal'
-  value: string | number | boolean
-}
-
-interface ArithmeticExpr {
-  kind: 'arithmetic'
-  operator: '*' | '/' | '+' | '-'
-  operand: number
+  value: string | number | boolean | null
 }
 ```
 
@@ -298,6 +287,7 @@ These are fatal — the spec is invalid:
 | E008 | Fragment used as endpoint | Verify fragment IDs never appear as source/target in map block headers |
 | E009 | Empty backtick identifier | Length check on resolved identifier |
 | E010 | Multiple integration blocks | Count integration blocks per file |
+| E015 | Nested map arrays | Verify nested map source/target heads both end in array segments |
 
 ### 3.2 Warning rules (W-series)
 
@@ -372,6 +362,16 @@ The formatter takes an AST and emits consistently formatted STM. This is critica
 **Indentation:** 2 spaces per level (configurable in stm.config).
 
 **Blank lines:** One blank line between logical sections within a block. Two blank lines between top-level blocks.
+
+**Canonical normalization:**
+
+- one field or group declaration per line
+- one map head per line
+- one transform per continuation line for multiline mappings
+- `enum` tag values always use braces with comma-separated items; wrap long lists across lines
+- map options ordered as `flatten`, `group_by`, `when`, then custom options alphabetically
+- annotations remain postfix on the same declaration line
+- notes are always emitted as explicit trailing blocks
 
 ### 4.2 CLI interface
 

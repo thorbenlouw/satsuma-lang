@@ -10,85 +10,77 @@
 
 This analysis surveyed real-world data mapping patterns across enterprise ETL tools (Azure Data Factory, SSIS, Informatica), healthcare interoperability standards (HL7 v2, FHIR, FHIR Mapping Language), event-driven architectures (Kafka, Avro, Protobuf, Schema Registry), data warehouse patterns (Slowly Changing Dimensions, star schemas), and practitioner resources (mapping document templates, Excel-based workflows, integration guides).
 
-The goal: identify common mapping patterns that the current STM v1.0 grammar cannot express, or expresses poorly, and prioritize them for inclusion.
+The goal: identify common mapping patterns that STM should express well, track which have been incorporated into v1.0, and prioritize the remaining gaps for future versions.
 
 ---
 
 ## Current coverage assessment
 
-STM v1.0 handles the following patterns well (estimated 60-70% of real-world mapping documents):
+STM v1.0 now handles the following patterns well (estimated 75-85% of real-world mapping documents):
 
 - Direct field-to-field mapping with type conversion
+- Conditional routing / fan-out via `map ... [when: ...]` blocks
 - Value code mapping (e.g., `R` → `"retail"`)
 - Transform pipe chains (trim, lowercase, validate, etc.)
 - Lookup enrichment from reference tables
+- One-to-many flattening via `flatten:` map options
+- Many-to-one aggregation via `group_by:` and aggregate transforms
 - Nested object hierarchies (JSON, XML)
 - Array-to-array iteration with relative paths
 - Multi-source / multi-target routing (N:M cardinality)
+- Block-level and field-level error handling (`@on_error`, `@reject_target`, `@error_threshold`, `on_fail(...)`)
 - Physical format annotations (XPath, byte offsets, CSV headers, EDI filters)
 - PII tagging, encryption annotations, data quality notes
 - Natural language intent for complex transforms (`nl()`)
 - Fragment composition and imports for reuse
-- Rich multi-tier documentation (inline comments, notes, field blocks)
+- Rich multi-tier documentation (inline comments, notes, field blocks, mapping-entry notes)
 
 ---
 
-## Identified gaps
+## Incorporated into v1.0
 
 ### GAP-01: Conditional routing / fan-out
 
-**Priority: HIGH — Add in v1.0**
+**Status: Implemented in v1.0**
 
 **The pattern:** A single source record is routed to *different targets* based on a field value. This is distinct from N:M mapping where all records flow to all targets. Conditional routing means "domestic orders go to warehouse A, international orders go to warehouse B."
 
 **Where it appears:** Azure Data Factory's Conditional Split transformation, SSIS Conditional Split, Apache NiFi routing, SAP CPI Router, virtually every ETL tool supports this as a first-class concept. It is one of the most common patterns in real-world integration.
 
-**Current STM workaround:** You can use separate `map` blocks with `nl()` explaining the filter condition, but there's no parseable, lintable way to express routing logic.
+**STM v1.0 support:** `when:` map header options now provide parseable, lintable routing logic without adding a separate top-level construct.
 
-**Proposed syntax:**
+**Implemented syntax:**
 
 ```stm
-// Option A: Route block (dedicated construct)
-route source_orders {
-  when .region == "US"           -> us_warehouse
-  when .region == "EU"           -> eu_warehouse
-  when .region == "APAC"         -> apac_warehouse
-  else                           -> default_warehouse
-}
-
-// Option B: Guarded map blocks (lighter touch)
-map source_orders -> us_warehouse when .region == "US" {
+map source_orders -> us_warehouse [when: .region == "US"] {
   .order_id -> .order_id
   // ...
 }
 
-map source_orders -> eu_warehouse when .region == "EU" {
+map source_orders -> eu_warehouse [when: .region == "EU"] {
   .order_id -> .order_id
   // ...
 }
 ```
 
-**Recommendation:** Option B (guarded map blocks) is more consistent with existing syntax and doesn't introduce a new top-level construct. The `when` clause acts as a filter on the map block. Option A is cleaner when the routing is the primary concern and the mappings per route are identical or trivial.
-
-**Consider supporting both:** `route` for pure routing decisions, `when` clause on `map` for filtered mapping.
+**Rationale:** Guarded map blocks were chosen over a dedicated `route` construct because they fit the existing map model, keep the grammar smaller, and remain readable for reviewers.
 
 ---
 
 ### GAP-02: One-to-many record expansion / flattening
 
-**Priority: HIGH — Add in v1.0**
+**Status: Implemented in v1.0**
 
 **The pattern:** One source record produces *multiple* target records. The most common case is flattening a hierarchical source (JSON with nested arrays) into a flat target (database table with one row per line item, header fields repeated on each row).
 
 **Where it appears:** Azure Data Factory's Flatten transformation, virtually all ETL tools, any JSON-to-relational pipeline. Also common when denormalizing for analytics/reporting.
 
-**Current STM workaround:** Array-to-array mapping (`items[] -> OrderLines[]`) handles the case where both source and target are arrays. But flattening — where a nested array in the source *becomes the grain* of the target, with parent fields repeated — isn't expressible.
+**STM v1.0 support:** `flatten:` on the map header makes the emitted target grain explicit and allows parent fields plus array-element fields to be mapped together.
 
-**Proposed syntax:**
+**Implemented syntax:**
 
 ```stm
-// The 'flatten' keyword indicates the target gets one record per source array element
-map order_api -> flat_order_lines [flatten: items] {
+map order_api -> flat_order_lines [flatten: items[]] {
   // These fields repeat on every output row (from the parent)
   orderId -> order_id
   customerName -> customer_name
@@ -101,24 +93,21 @@ map order_api -> flat_order_lines [flatten: items] {
 }
 ```
 
-**Alternative:** A `flatten` transform annotation on the map block header, or an `expand` keyword on the array path.
-
 ---
 
 ### GAP-03: Aggregation / many-to-one record collapse
 
-**Priority: HIGH — Add in v1.0**
+**Status: Implemented in v1.0**
 
 **The pattern:** Multiple source records collapse into one target record. Common aggregation operations include SUM, COUNT, MAX, MIN, AVG, FIRST, LAST, with GROUP BY semantics.
 
 **Where it appears:** Every data warehouse load, every reporting pipeline, any integration where transaction-level data is summarized. Also appears in event-driven systems where multiple events produce a single state record.
 
-**Current STM workaround:** `nl()` handles this case-by-case, but aggregation is so common it deserves parseable syntax.
+**STM v1.0 support:** `group_by:` on the map header plus aggregate transform functions now provide parseable, lintable many-to-one collapse.
 
-**Proposed syntax:**
+**Implemented syntax:**
 
 ```stm
-// Aggregate functions as transforms, with group_by on the map block
 map transactions -> customer_summary [group_by: customer_id] {
   customer_id -> customer_id
 
@@ -130,7 +119,7 @@ map transactions -> customer_summary [group_by: customer_id] {
 }
 ```
 
-**Standard aggregate functions to add:**
+**Aggregate functions in v1.0:**
 
 | Function | Description |
 |---|---|
@@ -146,37 +135,41 @@ map transactions -> customer_summary [group_by: customer_id] {
 
 ### GAP-04: Error handling / rejection strategy
 
-**Priority: HIGH — Add in v1.0**
+**Status: Implemented in v1.0**
 
 **The pattern:** Every mapping line can fail — validation errors, null required fields, type conversion failures, lookup misses. Production mappings need to declare what happens on failure: skip the field? Reject the whole record? Log and continue? Route to an error queue?
 
 **Where it appears:** Every production ETL pipeline. Informatica has row-level error handling. Azure Data Factory has error rows. SSIS has error outputs on every component.
 
-**Current STM workaround:** `on_miss` on lookups, `null_if_invalid` on validation transforms. But no general-purpose error handling strategy at the record or mapping level.
+**STM v1.0 support:** Map-level annotations and field-level `on_fail(...)` now cover rejection, skipping, logging, thresholds, and dead-letter routing.
 
-**Proposed syntax:**
+**Implemented syntax:**
 
 ```stm
 map {
   // Block-level defaults
-  @on_error skip          // skip | reject | log | default
-  @reject_target error_queue    // where rejected records go
-  @error_threshold 0.05         // fail batch if >5% errors
+  @on_error(reject)             // skip | reject | log | default
+  @reject_target(error_queue)   // where rejected records go
+  @error_threshold(0.05)        // fail batch if >5% errors
 
   // Field-level overrides
   EMAIL -> email 
     : validate_email 
-    | on_fail: null             // field-level: set null on failure
+    | on_fail(null)             // field-level: set null on failure
 
   TAX_ID -> tax_id
     : validate("^\\d{9}$") 
-    | on_fail: reject           // field-level: reject entire record
+    | on_fail(reject)           // field-level: reject entire record
 
   PHONE -> phone
     : to_e164 
-    | on_fail: log("Unparseable phone: {PHONE}")  // log and set null
+    | on_fail(log, "Unparseable phone: {PHONE}")  // log and set null
 }
 ```
+
+---
+
+## Remaining gaps
 
 ---
 
@@ -201,7 +194,7 @@ lookup icd9_to_icd10 "ICD-9 to ICD-10 code mapping" {
 
   source_code    STRING    [pk]
   target_code    STRING
-  equivalence    STRING    [enum: equal equivalent wider narrower]
+  equivalence    STRING    [enum: {equal, equivalent, wider, narrower}]
 }
 
 // Use via a translate() function (distinct from lookup)
@@ -244,24 +237,18 @@ map {
 **Proposed addition:**
 
 ```stm
-event order_event "Order placed event" {
-  @format protobuf
-  @schema_registry "https://registry.example.com"
+event order_event "Order placed event" @format(protobuf) @schema_registry("https://registry.example.com") {
 
   order_id      STRING     @tag(1)
   customer_id   STRING     @tag(2)
   amount        DOUBLE     @tag(3)
-  items[]       {          @tag(4)
+  items[]       @tag(4) {
     sku         STRING     @tag(1)
     quantity    INT32      @tag(2)
   }
 }
 
-event customer_event "Customer updated event" {
-  @format avro
-  @schema_registry "https://registry.example.com"
-  @schema_version "3.2.1"
-  @namespace "com.example.customers"
+event customer_event "Customer updated event" @format(avro) @schema_registry("https://registry.example.com") @schema_version("3.2.1") @namespace("com.example.customers") {
 
   customer_id   STRING
   email         STRING
@@ -418,10 +405,10 @@ map flat_source -> [customers, addresses, contacts] {
 
 | Gap | ID | Priority | Target version | Complexity |
 |---|---|---|---|---|
-| Conditional routing / fan-out | GAP-01 | HIGH | v1.0 | Medium |
-| Flatten / expand (one-to-many) | GAP-02 | HIGH | v1.0 | Medium |
-| Aggregation (many-to-one) | GAP-03 | HIGH | v1.0 | Medium |
-| Error handling / rejection | GAP-04 | HIGH | v1.0 | Medium |
+| Conditional routing / fan-out | GAP-01 | Implemented | v1.0 | Medium |
+| Flatten / expand (one-to-many) | GAP-02 | Implemented | v1.0 | Medium |
+| Aggregation (many-to-one) | GAP-03 | Implemented | v1.0 | Medium |
+| Error handling / rejection | GAP-04 | Implemented | v1.0 | Medium |
 | Concept map / translate | GAP-05 | MEDIUM-HIGH | v1.0 | Low |
 | Surrogate key generation | GAP-06 | LOW | v1.0 | Low (new functions) |
 | Protobuf / Avro metadata | GAP-07 | LOW | v1.0 | Low (new annotations) |
@@ -449,9 +436,8 @@ Some patterns surfaced in research that we intentionally do not include in STM:
 
 ## Next steps
 
-1. Draft syntax proposals for GAP-01 through GAP-04 (the four HIGH priority items)
-2. Add GAP-05, GAP-06, GAP-07 to the spec (low complexity, can be included immediately)
-3. Update the EBNF grammar to accommodate new constructs
-4. Create canonical examples exercising each new pattern
-5. Update the AI Agent Reference / cheat sheet
-6. Revise STM-SPEC.md to incorporate changes
+1. Remove GAP-01 through GAP-04 from future-planning language elsewhere in the repo where they are still described as open.
+2. Decide whether GAP-05, GAP-06, and GAP-07 should also be pulled fully into the normative v1.0 spec or explicitly deferred.
+3. Tighten the formal grammar and agent reference so every newly added v1.0 feature is defined consistently in one place.
+4. Create canonical examples exercising routing, flattening, aggregation, error handling, and mapping-entry notes together.
+5. Add linter and parser implementation notes for the new validation rules and map header options.

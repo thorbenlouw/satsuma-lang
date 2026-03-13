@@ -17,39 +17,47 @@ ident_alias      = IDENT ["as" IDENT] ;
 
 integration      = "integration" STRING "{" { field | note | COMMENT } "}" ;
 
-block            = BLOCK_KW IDENT [STRING] "{" block_body "}" ;
+block            = BLOCK_KW IDENT [STRING] {annotation} "{" block_body "}" ;
 BLOCK_KW         = "source" | "target" | "table" | "message" | "record"
                  | "event" | "schema" | "lookup" ;
-block_body       = { annotation | note | field | group | spread | sel_criteria | COMMENT } ;
+block_body       = { note | field | group | spread | sel_criteria | COMMENT } ;
 
 fragment         = "fragment" IDENT [STRING] "{" block_body "}" ;
 
-field            = IDENT type_expr [tag_list] ["{" note "}"] ;
+field            = IDENT ["[]"] type_expr [tag_list] {annotation} ["{" note "}"] ;
 type_expr        = IDENT ["(" params ")"] ;
 tag_list         = "[" tag {"," tag} "]" ;
-tag              = IDENT [":" (STRING | NUMBER | IDENT {IDENT})] ;
+tag              = IDENT [":" tag_value] ;
+tag_value        = enum_list | STRING | NUMBER | IDENT ;
+enum_list        = "{" enum_item {"," enum_item} [","] "}" ;
+enum_item        = STRING | NUMBER | IDENT ;
 
-group            = IDENT ["[]"] "{" block_body "}" ;
+group            = IDENT ["[]"] {annotation} "{" block_body "}" ;
 spread           = "..." IDENT ;
 annotation       = "@" IDENT ["(" params ")"] | "@" IDENT IDENT "=" STRING ;
 note             = "note" "'''" TEXT "'''" ;
 sel_criteria     = "selection_criteria" "'''" TEXT "'''" ;
 
-map_block        = "map" [IDENT "->" IDENT] "{" map_body "}" ;
-map_body         = { note | map_entry | nested_map | COMMENT } ;
-map_entry        = (field_path "->" field_path | "=>" field_path) {":" transform} ;
-nested_map       = field_path "->" field_path "{" map_body "}" ;
+map_block        = "map" [IDENT "->" IDENT] ["[" option {"," option} "]"] "{" map_body "}" ;
+option           = IDENT ":" expr ;
+map_body         = { annotation | note | map_entry | nested_map | COMMENT } ;
+map_entry        = (field_path "->" field_path | "=>" field_path) [":" transform {cont}] ["{" note "}"] ;
+nested_map       = array_path "->" array_path "{" map_body "}" ;
 
-transform        = pipe_chain | nl_expr | when_chain | value_map | logic | fallback | literal ;
+transform        = pipe_chain | when_chain | fallback | literal ;
 pipe_chain       = step {"|" step} ;
-step             = IDENT ["(" params ")"] | ARITH NUMBER | nl_expr ;
-nl_expr          = "nl(" STRING ")" ;
-when_chain       = "when" cond "=>" val {":" "when" cond "=>" val} [":" "else" val] ;
+step             = IDENT ["(" params ")"] | ARITH NUMBER | value_map ;
+when_chain       = "when" cond "=>" val ;
 value_map        = "map" "{" (key ":" val) {"," key ":" val} "}" ;
 fallback         = "fallback" field_path {"|" step} ;
+cont             = "|" step | "when" cond "=>" val | "else" "=>" val | "fallback" field_path {"|" step} ;
 
-field_path       = [IDENT "."] segment {"." segment} ;
+field_path       = [IDENT "."] segment {"." segment} | "." segment {"." segment} ;
+array_path       = [IDENT "."] array_segment {"." segment} | "." array_segment {"." segment} ;
 segment          = (IDENT | BACKTICK_IDENT) ["[]"] ;
+array_segment    = (IDENT | BACKTICK_IDENT) "[]" ;
+expr             = literal | field_path | IDENT ["(" params ")"] ;
+literal          = STRING | NUMBER | "true" | "false" | "null" ;
 
 IDENT            = LETTER {LETTER | DIGIT | "_" | "-"} ;
 BACKTICK_IDENT   = "`" {ANY | "``"} "`" ;
@@ -79,20 +87,21 @@ source|target|message|table|event|lookup|schema <id> ["description"] {
 }
 
 Tags:  [required, pk, unique, indexed, pii, encrypt, encrypt: AES-256-GCM,
-        default: val, enum: a b c, format: email, min: 0, max: 100,
+        default: val, enum: { a, b, c }, format: email, min: 0, max: 100,
         pattern: "regex", ref: table.field]
 
-Annotations:
-  @format xml|fixed-length|csv|edi|json
-  @xpath("path")  @pos(offset, length)  @header("Column Name")
-  @filter FIELD == "value"   @ns prefix = "uri"   @path "extract.path"
+Annotations are postfix on the same declaration line:
+  message edi_desadv @format(fixed-length) { ... }
+  POReferences[] @filter(REFQUAL == "ON") { ... }
+  customer_name STRING @header("Customer Name")
 
 ## Map blocks
-map [source_id -> target_id] {
+map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
   src -> tgt                                 // direct
   src -> tgt : transform                     // with transform
-  => tgt : logic                             // computed (no source)
+  => tgt : when cond => value                // computed (no source)
   => tgt : "literal"                         // static value
+  src -> tgt { note '''markdown''' }         // mapping-entry note
 
   Transforms (combine with |):
     trim, lowercase, uppercase, title_case, null_if_empty, null_if_invalid
@@ -106,8 +115,9 @@ map [source_id -> target_id] {
     map { src: "tgt", null: "default", _: "fallback" }
     lookup(resource, key => value [, on_miss: error|null|"default"])
     nl("natural language intent")
-    when <cond> => "value"
-    fallback field : chain
+    when <cond> => "value"   then more `when` / `else` lines
+    fallback field | chain
+    on_fail(action)
 
   Array mapping:
   src_arr[] -> tgt_arr[] {
@@ -156,6 +166,7 @@ note '''markdown'''                  (on any block)
 | Forgetting to declare arrays with `[]` | Use `items[] { }` for array of objects, `tags[] STRING` for array of primitives |
 | Using `->` for computed fields | Use `=> target_field : expression` when there's no single source |
 | Repeating schema IDs in paths inside implicit map blocks | Bare names resolve to source (left) and target (right) |
+| Using `if ... then ... else ...` conditionals | Use multiline `when ... => ...` chains |
 | Inventing transform functions | Use `nl()` for anything not in the standard library |
 | Putting transforms before `:` | Transform always follows `:` on the same or next line |
 | Using `note "..."` | Always use triple quotes: `note '''...'''` |
@@ -173,7 +184,7 @@ source crm "CRM System" {
   id       INT        [pk]
   name     STRING(200)
   email    STRING(255) [pii]
-  status   CHAR(1)     [enum: A I]
+  status   CHAR(1)     [enum: {A, I}]
 }
 
 target warehouse "Data Warehouse" {
@@ -205,10 +216,10 @@ map {
 
 ```stm
 // In source block:
-CUST_TYPE    CHAR(1)    [enum: R B G]    //! Some records have NULL
+  CUST_TYPE    CHAR(1)    [enum: {R, B, G}]    //! Some records have NULL
 
 // In target block:
-customer_type VARCHAR(20) [enum: retail business government, required]
+  customer_type VARCHAR(20) [enum: {retail, business, government}, required]
 
 // In map block:
 CUST_TYPE -> customer_type

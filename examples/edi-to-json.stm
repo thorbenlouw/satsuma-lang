@@ -1,6 +1,6 @@
 integration "INT1008_PO_ASN-EDI_to_MFCS" {
   cardinality 1:1
-  author "Joao Marques"
+  author "Thorben Louw"
   version "1.0.0"
 
   note '''
@@ -15,7 +15,7 @@ integration "INT1008_PO_ASN-EDI_to_MFCS" {
     - `containers` array is **required** by MFCS schema but has
       **no source mapping** in the current EDI specification
     - `containerId` and `finalLocation` are required but unpopulated
-    - Awaiting clarification from warehouse team (Jira: MFCS-2847)
+    - Awaiting clarification from warehouse team (Jira: DWHT-2847)
   '''
 }
 
@@ -24,8 +24,7 @@ integration "INT1008_PO_ASN-EDI_to_MFCS" {
 // Source: EDI 856 Despatch Advice
 // ============================================================
 
-message edi_desadv "EDI 856 Despatch Advice — Fixed Length Format" {
-  @format fixed-length
+message edi_desadv "EDI 856 Despatch Advice — Fixed Length Format" @format(fixed-length) {
 
   BeginningOfMessage {
     DOCNUM      CHAR(35)                      // Despatch advice number
@@ -38,14 +37,12 @@ message edi_desadv "EDI 856 Despatch Advice — Fixed Length Format" {
     DATEFMT     CHAR(3)                       // Format: 102=CCYYMMDD, 203=CCYYMMDDHHMM
   }
 
-  ShipmentRefs[] {
-    @filter SHPRFQUAL == "SRN"
+  ShipmentRefs[] @filter(SHPRFQUAL == "SRN") {
     SHPRFQUAL   CHAR(3)
     SHIPREF     CHAR(70)                      // Shipment reference number
   }
 
-  POReferences[] {
-    @filter REFQUAL == "ON"
+  POReferences[] @filter(REFQUAL == "ON") {
     REFQUAL     CHAR(3)
     REFNUM      CHAR(35)                      // PO Number + "/" + Dissection No
   }
@@ -61,8 +58,7 @@ message edi_desadv "EDI 856 Despatch Advice — Fixed Length Format" {
     ITEMTYPE    CHAR(3)                       // EN=EAN, UP=UPC12
   }
 
-  Quantities[] {
-    @filter QUANTQUAL == "12"                 // Only despatch quantities
+  Quantities[] @filter(QUANTQUAL == "12") {  // Only despatch quantities
     QUANTQUAL   CHAR(3)
     QUANTITY    NUMBER(15)                    //! 4 implied decimal places
   }
@@ -94,7 +90,7 @@ schema mfcs_json "MFCS Shipment Ingestion Format" {
           ## DATA GAP
           This entire array is **required** by the MFCS schema but has
           **no source data** in the current EDI 856 mapping.
-          See Jira: MFCS-2847 for resolution status.
+          See Jira: DWHT-2847 for resolution status.
         '''
         containerId       STRING(30)   [required]    //! No source mapping
         finalLocation     NUMBER(10)   [required]    //! No source mapping
@@ -136,7 +132,7 @@ map edi_desadv -> mfcs_json {
 
   POReferences[].REFNUM -> ShipmentHeader.supplier
     : split("/") | first | to_number
-    : nl("Validate supplier exists in MFCS PO table.")
+    | nl("Validate supplier exists in MFCS PO table.")
 
   ShipmentRefs[].SHIPREF -> ShipmentHeader.comments
     : prepend("Shipment reference number: ")

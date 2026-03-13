@@ -28,7 +28,7 @@ source payment_gateway "Payment transaction data" {
   customer_email  EMAIL
   amount          DECIMAL(12,2)
   currency        ISO-4217
-  status          ENUM           [enum: pending completed failed]
+  status          ENUM           [enum: {pending, completed, failed}]
 }
 
 source inventory_system "Inventory management" {
@@ -55,7 +55,7 @@ target notification_service "Notification message format" {
   recipient_phone  STRING(20)
   message_type     ENUM
   message_body     TEXT
-  priority         ENUM           [enum: low medium high]
+  priority         ENUM           [enum: {low, medium, high}]
 }
 
 target reporting_warehouse "Reporting data warehouse" {
@@ -92,13 +92,13 @@ map crm_system -> notification_service {
   phone -> recipient_phone
 
   => message_type
-    : if loyalty_points > 1000 then "loyalty_update"
-    : else null
+    : when loyalty_points > 1000 => "loyalty_update"
+    else => null
 
   // Cross-source reference: check payment status for priority
   => priority
-    : if payment_gateway.status == "failed" then "high"
-    : else "low"
+    : when payment_gateway.status == "failed" => "high"
+    else => "low"
 }
 
 map payment_gateway -> notification_service {
@@ -111,5 +111,7 @@ map inventory_system -> reporting_warehouse {
   product_sku -> product_id
   stock_level -> available_stock
   warehouse_location -> location
-  => reorder_needed                : if stock_level < 10 then true else false
+  => reorder_needed
+    : when stock_level < 10 => true
+    else => false
 }
