@@ -1,0 +1,36 @@
+// Minimal example: single file with a namespace declaration.
+// All schemas in this file are scoped to the `inventory` namespace.
+// Cross-file references use `inventory::products`, `inventory::product_audit`, etc.
+
+namespace "inventory"
+
+integration "Inventory_Sync" {
+  cardinality 1:1
+  author "data-eng"
+  version "1.0.0"
+}
+
+table products {
+  product_id UUID          [pk]
+  sku        STRING        [required, unique]
+  name       STRING        [required]
+  price      DECIMAL(10,2) [required]
+  in_stock   BOOLEAN       [default: true]
+  updated_at TIMESTAMP
+}
+
+table product_audit {
+  audit_id   UUID      [pk]
+  product_id UUID      [required]
+  changed_at TIMESTAMP [required]
+  changed_by STRING    [required]
+}
+
+// Within a namespaced file, the :: qualifier is optional for same-namespace references
+// but may be used explicitly for clarity.
+map inventory::products -> inventory::product_audit {
+  product_id -> product_id
+  => audit_id   : uuid_v5("audit", product_id)
+  => changed_at : now_utc()
+  => changed_by : "system"
+}

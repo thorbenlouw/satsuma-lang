@@ -15,6 +15,8 @@ module.exports = grammar({
 
     _top_level_declaration: ($) =>
       choice(
+        $.namespace_decl,
+        $.workspace_block,
         $.import_declaration,
         $.integration_block,
         $.schema_block,
@@ -32,6 +34,41 @@ module.exports = grammar({
     warning_comment: () => token(prec(3, seq("//!", /[^\n]*/))),
     question_comment: () => token(prec(2, seq("//?", /[^\n]*/))),
     info_comment: () => token(prec(1, seq("//", /[^\n]*/))),
+
+    // --- Namespace declaration (soft keyword, at most one per file) ---
+
+    namespace_decl: ($) =>
+      seq("namespace", field("name", $.string_literal)),
+
+    // --- Workspace block (declaration-only; no integration or map blocks) ---
+
+    workspace_block: ($) =>
+      seq(
+        "workspace",
+        field("name", $.string_literal),
+        field("body", $.workspace_body)
+      ),
+
+    workspace_body: ($) => seq("{", repeat($._workspace_item), "}"),
+
+    _workspace_item: ($) =>
+      choice(
+        $._newline,
+        $.comment_line,
+        $.note_block,
+        $.workspace_entry
+      ),
+
+    workspace_entry: ($) =>
+      seq(
+        "schema",
+        field("namespace", $.string_literal),
+        "from",
+        field("path", $.string_literal),
+        $._newline
+      ),
+
+    // --- Import declarations ---
 
     import_declaration: ($) =>
       seq(
@@ -191,9 +228,9 @@ module.exports = grammar({
         "map",
         optional(
           seq(
-            field("source", $.path_reference),
+            field("source", $.namespaced_path),
             "->",
-            field("target", $.path_reference)
+            field("target", $.namespaced_path)
           )
         ),
         optional($.map_option_list),
@@ -267,6 +304,18 @@ module.exports = grammar({
         $.path_reference
       ),
 
+    // namespaced_path extends path_reference with an optional ns:: qualifier.
+    // Used in map block headers where full ns::schema_id paths are valid.
+    namespaced_path: ($) =>
+      seq(
+        optional($.ns_qualifier),
+        $._identifier,
+        repeat(seq(".", $._identifier))
+      ),
+
+    // ns_qualifier captures the `namespace::` prefix in qualified paths.
+    ns_qualifier: ($) => seq($.identifier, $.namespace_separator),
+
     path_reference: ($) =>
       seq(
         $._identifier,
@@ -324,6 +373,7 @@ module.exports = grammar({
         $.fat_arrow,
         $.comparison_operator,
         $.operator,
+        $.namespace_separator,
         $.symbol
       ),
 
@@ -331,6 +381,7 @@ module.exports = grammar({
     arrow: () => "->",
     fat_arrow: () => "=>",
     operator: () => choice("+", "-", "*", "/", "|", "\\"),
+    namespace_separator: () => "::",
     symbol: () => choice(":", ",", ".", "(", ")", "[", "]")
   }
 });

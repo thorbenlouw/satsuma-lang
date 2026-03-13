@@ -16,6 +16,21 @@ The immediate implementation priority is parser-first tooling. Downstream tools 
 - `features/`: feature plans and task breakdown inputs
 - `scripts/`: utility scripts used during development
 
+## Platform Lineage Entry Point
+
+When reasoning about lineage across a multi-file data platform, look for a **workspace file** (a `.stm` file containing a `workspace` block). The workspace file is the canonical entry point for platform-wide lineage traversal — it maps namespace names to source files and resolves name collisions between identically-named schemas in different projects.
+
+```stm
+// platform.stm — the entry point
+workspace "data_platform" {
+  schema "crm"       from "crm/pipeline.stm"
+  schema "billing"   from "billing/pipeline.stm"
+  schema "warehouse" from "warehouse/ingest.stm"
+}
+```
+
+Use `stm lineage <workspace-file>` (future tooling) to generate the full platform graph. When building lineage analysis, start by finding and parsing the workspace file, then follow `schema ... from ...` entries to resolve all namespaces.
+
 ## Source of Truth
 
 When making changes or answering questions about syntax, semantics, or supported constructs:

@@ -1,0 +1,35 @@
+namespace "billing"
+
+integration "Billing_Ingest" {
+  cardinality 1:N
+  author "data-eng"
+  version "1.0.0"
+  tags ["billing", "invoices", "orders"]
+  note '''
+    Billing source integration. Note: `billing::orders` and `crm::orders`
+    are distinct schemas that happen to share a name. The namespace qualifier
+    is required in cross-file references to avoid ambiguity.
+  '''
+}
+
+//! billing::orders is intentionally named the same as crm::orders.
+//  This demonstrates namespace-based collision resolution.
+table orders {
+  order_id    UUID          [pk]
+  invoice_ref STRING        [required, unique]
+  amount_due  DECIMAL(12,2) [required]
+  currency    STRING        [default: "USD"]
+  due_date    DATE          [required]
+  paid        BOOLEAN       [default: false]
+  created_at  TIMESTAMP     [required]
+}
+
+table invoices {
+  invoice_id  UUID          [pk]
+  order_id    UUID          [required]
+  amount      DECIMAL(12,2) [required]
+  tax         DECIMAL(10,2) [default: 0]
+  issued_at   TIMESTAMP     [required]
+  status      STRING        [required, enum: {draft, sent, paid, void}]
+  note        STRING
+}

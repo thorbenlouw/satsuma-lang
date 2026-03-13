@@ -488,6 +488,10 @@
           "named": true
         },
         {
+          "type": "namespace_separator",
+          "named": true
+        },
+        {
           "type": "note_block",
           "named": true
         },
@@ -771,7 +775,7 @@
         "required": false,
         "types": [
           {
-            "type": "path_reference",
+            "type": "namespaced_path",
             "named": true
           }
         ]
@@ -781,7 +785,7 @@
         "required": false,
         "types": [
           {
-            "type": "path_reference",
+            "type": "namespaced_path",
             "named": true
           }
         ]
@@ -867,6 +871,45 @@
     }
   },
   {
+    "type": "namespace_decl",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "namespaced_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "ns_qualifier",
+          "named": true
+        },
+        {
+          "type": "quoted_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "note_block",
     "named": true,
     "fields": {
@@ -887,6 +930,25 @@
       "types": [
         {
           "type": "comment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "ns_qualifier",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "namespace_separator",
           "named": true
         }
       ]
@@ -985,6 +1047,10 @@
         },
         {
           "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "namespace_separator",
           "named": true
         },
         {
@@ -1144,7 +1210,15 @@
           "named": true
         },
         {
+          "type": "namespace_decl",
+          "named": true
+        },
+        {
           "type": "schema_block",
+          "named": true
+        },
+        {
+          "type": "workspace_block",
           "named": true
         }
       ]
@@ -1301,6 +1375,81 @@
     }
   },
   {
+    "type": "workspace_block",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "workspace_body",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "workspace_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "comment_line",
+          "named": true
+        },
+        {
+          "type": "note_block",
+          "named": true
+        },
+        {
+          "type": "workspace_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "workspace_entry",
+    "named": true,
+    "fields": {
+      "namespace": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      },
+      "path": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "!=",
     "named": false
   },
@@ -1449,6 +1598,14 @@
     "named": true
   },
   {
+    "type": "namespace",
+    "named": false
+  },
+  {
+    "type": "namespace_separator",
+    "named": true
+  },
+  {
     "type": "note",
     "named": false
   },
@@ -1499,6 +1656,10 @@
   {
     "type": "warning_comment",
     "named": true
+  },
+  {
+    "type": "workspace",
+    "named": false
   },
   {
     "type": "{",

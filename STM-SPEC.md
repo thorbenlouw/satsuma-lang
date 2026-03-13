@@ -42,20 +42,24 @@ Throughout this spec:
 A valid `.stm` file contains a sequence of **top-level declarations** in any order:
 
 ```
-file = { import_stmt | integration_block | schema_block | fragment_block | map_block }
+file = { namespace_decl | workspace_block | import_stmt | integration_block
+       | schema_block | fragment_block | map_block }
 ```
 
 The recommended ordering convention is:
 
-1. Imports
-2. Integration block (project metadata)
-3. Source schema blocks
-4. Target schema blocks
-5. Lookup schema blocks
-6. Fragment blocks
-7. Map blocks
+1. Namespace declaration (if present)
+2. Imports
+3. Integration block (project metadata)
+4. Source schema blocks
+5. Target schema blocks
+6. Lookup schema blocks
+7. Fragment blocks
+8. Map blocks
 
 Files that contain only schema/fragment/lookup blocks (no integration or map) are considered **library files** and are intended for import by other files.
+
+Files that contain a `workspace` block are considered **workspace files** — they assemble multiple integration files into a platform scope and must not contain `integration` or `map` blocks.
 
 ### 2.1 File Extension
 
@@ -125,6 +129,12 @@ import from as
 integration source target table message record event schema lookup fragment
 map note
 true false null
+```
+
+The following words are **soft keywords** — they are only special in specific syntactic positions and may be used as identifiers elsewhere (e.g., as schema IDs or field names in unnamespaced files):
+
+```
+namespace workspace
 ```
 
 ### 3.5 String Literals
@@ -243,6 +253,97 @@ import { customer as new_customer }    from "modern/schemas.stm"
 - The `.stm` extension may be omitted: `import "lib/common"` resolves to `lib/common.stm`
 - Circular imports are a **parser error**
 - Duplicate schema IDs across imports (without aliasing) are a **parser error**
+
+### 4.5 Namespace Declaration
+
+A `namespace` declaration scopes all schema blocks in a file to a named qualifier prefix:
+
+```stm
+// crm/pipeline.stm
+namespace "crm"
+
+table orders {
+  order_id    UUID          [pk]
+  customer_id UUID
+  total       DECIMAL(12,2)
+}
+
+table customers {
+  customer_id UUID  [pk]
+  email       EMAIL [required]
+}
+```
+
+**Rules:**
+
+- At most one `namespace` declaration per file. Must appear before any schema, integration, or map blocks (conventionally at the top of the file).
+- The namespace string becomes the qualifier prefix for all schema blocks in the file.
+- Schemas from a namespaced file are referenced cross-file using `::` syntax: `crm::orders`, `crm::customers`.
+- Files without a `namespace` declaration are **unnamespaced** — all existing scoping rules apply unchanged.
+- Duplicate namespace strings across files in scope (imported or assembled by a workspace) are a **parser error** (E016).
+- `namespace` is a **soft keyword**: it may still be used as a schema ID or identifier in unnamespaced files.
+
+### 4.6 Namespace-Qualified Path Syntax
+
+`::` cleanly separates a namespace qualifier from the `schema_id.field` path syntax. It avoids collision with nested field traversal (`.`), which must not be used as a namespace separator.
+
+| Path form | Meaning |
+|---|---|
+| `field` | Local field — implicit schema from map header |
+| `schema_id.field` | Schema-qualified — existing syntax |
+| `schema_id.field.nested` | Nested field — existing syntax |
+| `ns::schema_id.field` | Namespace + schema + field — new |
+| `ns::schema_id.field.nested` | Namespace + schema + nested field — new |
+
+Namespace-qualified paths are valid in:
+
+- Map block headers: `map crm::orders -> warehouse::fact_orders { ... }`
+- Cross-namespace field references inside map bodies: `billing::invoices.amount -> billed_total`
+
+```stm
+map crm::orders -> warehouse::fact_orders {
+  order_id    -> source_order_id
+  total       -> order_total
+
+  // Cross-namespace reference: pulls `amount` from billing::invoices
+  billing::invoices.amount -> billed_amount
+}
+```
+
+An unresolved namespace qualifier is a **parser error** (E017).
+
+### 4.7 Workspace Blocks
+
+A workspace file assembles multiple integration files into a named platform scope. It is the canonical entry point for platform-wide lineage tooling.
+
+```stm
+// platform.stm
+workspace "data_platform" {
+  schema "crm"       from "crm/pipeline.stm"
+  schema "billing"   from "billing/pipeline.stm"
+  schema "warehouse" from "warehouse/ingest.stm"
+
+  note '''
+    # Data Platform Lineage
+    Entry point for full platform lineage traversal.
+    Run `stm lineage platform.stm` to generate the graph.
+  '''
+}
+```
+
+**`schema "<ns>" from "<path>"` entries:**
+
+- Assigns a canonical namespace to a file in the platform scope.
+- If the file already declares `namespace "crm"`, the workspace entry namespace **must match** — a mismatch is a **parser error** (E018). This prevents silent aliasing.
+- If the file has no `namespace` declaration, the workspace assignment provides the namespace for lineage purposes. The file itself is unchanged (backwards compatible).
+- Path resolution follows the same rules as import paths (see Section 4.4).
+
+**Workspace file rules:**
+
+- `integration` and `map` blocks are **not** allowed in workspace files (E019). A workspace file is a declaration file, not a transformation file.
+- At most one `workspace` block per file.
+- Workspace files may import other workspace files for hierarchical platform modelling.
+- `note` blocks are allowed inside the workspace body for documentation.
 
 ---
 
@@ -690,10 +791,12 @@ Map blocks define the transformation logic between source and target schemas. Th
 ### 8.1 Syntax
 
 ```
-map_block   = "map" [ident "->" ident] [map_options] "{" map_body "}"
-map_options = "[" map_option { "," map_option } "]"
-map_option  = ident ":" expr
-map_body    = { annotation | note | map_entry | nested_map | comment }
+map_block     = "map" [map_path "->" map_path] [map_options] "{" map_body "}"
+map_path      = [ns_qualifier] ident        (* namespace-qualified or bare schema id *)
+ns_qualifier  = ident "::"
+map_options   = "[" map_option { "," map_option } "]"
+map_option    = ident ":" expr
+map_body      = { annotation | note | map_entry | nested_map | comment }
 ```
 
 Recognized map options:
@@ -738,6 +841,19 @@ map crm_system -> notification_service {
     : map { "failed": "high", _: "low" }
 }
 ```
+
+**Namespace-qualified scoping (cross-file):** When schemas are declared in namespaced files, map headers and field references use `::` to qualify the namespace:
+
+```stm
+map crm::orders -> warehouse::fact_orders {
+  order_id    -> source_order_id
+  total       -> order_total
+
+  billing::invoices.amount -> billed_amount   // cross-namespace field reference
+}
+```
+
+The `::` qualifier is required when the schema is in a different namespace than the file containing the map block. Within a same-namespace file, bare schema IDs continue to work.
 
 **Disambiguation rule:** A bare name resolves to the block's declared source (left) or target (right). If ambiguous (e.g., same field name in multiple sources), a parser error is raised and explicit qualification is required.
 
@@ -1265,7 +1381,15 @@ The following grammar is expressed in a PEG-like notation for use by parser gene
 (* STM v1.0.0 — Formal Reference Grammar  *)
 (* ======================================= *)
 
-file             = { import_stmt | integration | block | fragment | map_block } ;
+file             = { namespace_decl | workspace_block | import_stmt
+                 | integration | block | fragment | map_block } ;
+
+(* --- Namespace (soft keyword, at most one per file) --- *)
+namespace_decl   = "namespace" STRING ;
+
+(* --- Workspace (declaration-only; no integration or map blocks) --- *)
+workspace_block  = "workspace" STRING "{" { workspace_entry | note | COMMENT } "}" ;
+workspace_entry  = "schema" STRING "from" STRING ;
 
 (* --- Imports --- *)
 import_stmt      = "import" ( wildcard_import | named_import ) ;
@@ -1311,7 +1435,9 @@ sel_criteria     = "selection_criteria" MULTILINE_STRING ;
 note             = "note" MULTILINE_STRING ;
 
 (* --- Map Blocks --- *)
-map_block        = "map" [ IDENT "->" IDENT ] [ map_options ] "{" map_body "}" ;
+map_block        = "map" [ map_path "->" map_path ] [ map_options ] "{" map_body "}" ;
+map_path         = [ ns_qualifier ] IDENT ;
+ns_qualifier     = IDENT "::" ;
 map_options      = "[" map_option { "," map_option } "]" ;
 map_option       = IDENT ":" expr ;
 map_body         = { annotation | note | map_entry | nested_map | COMMENT } ;
@@ -1340,7 +1466,8 @@ when_chain       = "when" condition "=>" value ;
 fallback_expr    = "fallback" field_path { "|" xform_step } ;
 
 (* --- Paths --- *)
-field_path       = schema_path | local_path | relative_path ;
+field_path       = ns_field_path | schema_path | local_path | relative_path ;
+ns_field_path    = IDENT "::" IDENT { "." path_segment } ;  (* ns::schema.field — new *)
 schema_path      = IDENT "." path_segment { "." path_segment } ;
 local_path       = path_segment { "." path_segment } ;
 relative_path    = "." path_segment { "." path_segment } ;
@@ -1398,6 +1525,10 @@ Parsers and linters for STM v1.0.0 must enforce or check the following:
 | **E013** | Aggregate functions may only appear inside `map` blocks with `group_by:` |
 | **E014** | `@reject_target(...)` requires reject-style handling to be configured at map or field level |
 | **E015** | Nested map heads must resolve to array paths on both source and target sides |
+| **E016** | Duplicate namespace string across files in scope (imported or workspace-assembled) |
+| **E017** | Unresolved namespace qualifier in a path (namespace not declared or imported) |
+| **E018** | Workspace `schema` entry namespace does not match the file's declared `namespace` |
+| **E019** | `integration` or `map` block found in a workspace file |
 
 ### 11.2 Warnings (should report)
 
@@ -1515,6 +1646,15 @@ map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] 
 ##   import { id [as alias] } from "file.stm"
 ##   note '''multi-line markdown'''  (on any block)
 ##   // info  //! warning  //? question/todo
+##
+## Namespacing (multi-file platform lineage):
+##   namespace "crm"                           // scopes all schemas in this file
+##   map crm::orders -> warehouse::fact_orders // namespace-qualified map header
+##   billing::invoices.amount -> billed_total  // cross-namespace field reference
+##   workspace "platform" {                    // assembles files into a platform scope
+##     schema "crm" from "crm/pipeline.stm"
+##     schema "billing" from "billing/pipeline.stm"
+##   }
 ````
 
 ### 13.2 Recommended Agent Workflow

@@ -20,6 +20,8 @@ that layer from CST nodes without reparsing raw text.
 Top-level nodes:
 
 - `source_file`
+- `namespace_decl`
+- `workspace_block`
 - `import_declaration`
 - `integration_block`
 - `schema_block`
@@ -42,6 +44,12 @@ Schema and integration body nodes:
 - `note_block`
 - `comment`
 
+Namespace and workspace nodes:
+
+- `namespace_decl` — children: `string_literal` (the namespace value)
+- `workspace_block` — children: `string_literal` (workspace name), `workspace_entry`*, `note_block`*, `comment`*
+- `workspace_entry` — children: `string_literal` (namespace), `string_literal` (file path)
+
 Map nodes:
 
 - `map_header`
@@ -56,6 +64,8 @@ Map nodes:
 - `fallback_clause`
 - `source_path`
 - `target_path`
+- `namespaced_path` — children: optional `ns_qualifier`, `identifier`, zero or more `.identifier` segments
+- `ns_qualifier` — children: `identifier`, `namespace_separator` (`::`)
 
 Expression and lexical support nodes:
 
@@ -117,8 +127,9 @@ CST:
   - whether it was quoted
   - whether it is an array segment (`[]`)
 - relative paths preserve an explicit leading-relative marker on the path node
+- namespace-qualified paths have an `ns_qualifier` child before the first segment
 
-Recommended AST representation:
+Recommended AST representation for a plain path:
 
 ```json
 {
@@ -131,6 +142,23 @@ Recommended AST representation:
   ]
 }
 ```
+
+Recommended AST representation for a namespace-qualified path (`crm::orders.order_id`):
+
+```json
+{
+  "kind": "path",
+  "role": "source",
+  "namespace": "crm",
+  "isRelative": false,
+  "segments": [
+    { "name": "orders", "quoted": false, "isArray": false },
+    { "name": "order_id", "quoted": false, "isArray": false }
+  ]
+}
+```
+
+The `namespace` field is `null` (or absent) for unqualified paths. Downstream tools should treat `crm::orders` and `orders` as distinct schemas when a namespace qualifier is present.
 
 ## Transform Representation
 
@@ -161,5 +189,10 @@ The planned node inventory is grounded in the current example corpus:
 - [`examples/multi-source-hub.stm`](/Users/thorben/dev/personal/stm/examples/multi-source-hub.stm): imports, multiple schemas, shared fragments
 - [`examples/protobuf-to-parquet.stm`](/Users/thorben/dev/personal/stm/examples/protobuf-to-parquet.stm): message/event-style structures and field options
 
-These examples cover every major node family above, which is why the initial
-grammar work can use them as the first fixture source.
+Multi-schema namespace and workspace node types are covered by:
+
+- [`features/02-multi-schema/examples/namespace-basic.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/namespace-basic.stm): `namespace_decl`, same-namespace `::` map header
+- [`features/02-multi-schema/examples/crm/pipeline.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/crm/pipeline.stm): `namespace_decl` with schemas
+- [`features/02-multi-schema/examples/billing/pipeline.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/billing/pipeline.stm): colliding schema name resolved by namespace
+- [`features/02-multi-schema/examples/warehouse/ingest.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/warehouse/ingest.stm): cross-namespace map headers (`namespaced_path`, `ns_qualifier`), cross-namespace field references
+- [`features/02-multi-schema/examples/platform.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/platform.stm): `workspace_block`, `workspace_entry` nodes

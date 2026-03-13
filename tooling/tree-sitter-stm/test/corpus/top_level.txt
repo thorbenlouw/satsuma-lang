@@ -100,9 +100,9 @@ map crm_system -> analytics_db [flatten: items, when: active] {
         (type_expression
           (identifier)))))
   (map_block
-    (path_reference
+    (namespaced_path
       (identifier))
-    (path_reference
+    (namespaced_path
       (identifier))
     (map_option_list
       (map_option
@@ -162,3 +162,113 @@ table legacy_db "Legacy" {
         (inline_note_block
           (note_block
             (multiline_string)))))))
+
+==================
+Namespace declaration
+==================
+
+namespace "crm"
+
+---
+
+(source_file
+  (namespace_decl
+    (string_literal)))
+
+==================
+Namespace declaration with following schema
+==================
+
+namespace "inventory"
+
+table products {
+  sku STRING
+}
+
+---
+
+(source_file
+  (namespace_decl
+    (string_literal))
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Workspace block
+==================
+
+workspace "data_platform" {
+  schema "crm" from "crm/pipeline.stm"
+  schema "billing" from "billing/pipeline.stm"
+}
+
+---
+
+(source_file
+  (workspace_block
+    (string_literal)
+    (workspace_body
+      (workspace_entry
+        (string_literal)
+        (string_literal))
+      (workspace_entry
+        (string_literal)
+        (string_literal)))))
+
+==================
+Workspace block with note
+==================
+
+workspace "platform" {
+  schema "crm" from "crm/pipeline.stm"
+
+  note '''
+    Platform entry point.
+  '''
+}
+
+---
+
+(source_file
+  (workspace_block
+    (string_literal)
+    (workspace_body
+      (workspace_entry
+        (string_literal)
+        (string_literal))
+      (note_block
+        (multiline_string)))))
+
+==================
+Namespace-qualified map header
+==================
+
+map crm::orders -> warehouse::fact_orders {
+  order_id -> source_order_id
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (ns_qualifier
+        (identifier)
+        (namespace_separator))
+      (identifier))
+    (namespaced_path
+      (ns_qualifier
+        (identifier)
+        (namespace_separator))
+      (identifier))
+    (map_body
+      (raw_map_line
+        (identifier)
+        (arrow)
+        (identifier)))))
