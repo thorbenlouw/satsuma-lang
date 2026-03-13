@@ -272,3 +272,125 @@ map crm::orders -> warehouse::fact_orders {
         (identifier)
         (arrow)
         (identifier)))))
+
+==================
+Plain map header still parses as namespaced_path (backwards compat)
+==================
+
+map crm_system -> analytics_db {
+  customer_id -> customer_id
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (raw_map_line
+        (identifier)
+        (arrow)
+        (identifier)))))
+
+==================
+Cross-namespace field reference in map body
+==================
+
+map crm::orders -> warehouse::fact_orders {
+  billing::invoices.amount -> billed_amount
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (ns_qualifier
+        (identifier)
+        (namespace_separator))
+      (identifier))
+    (namespaced_path
+      (ns_qualifier
+        (identifier)
+        (namespace_separator))
+      (identifier))
+    (map_body
+      (raw_map_line
+        (identifier)
+        (namespace_separator)
+        (identifier)
+        (symbol)
+        (identifier)
+        (arrow)
+        (identifier)))))
+
+==================
+Namespace declaration before import
+==================
+
+namespace "crm"
+
+import { address_fields } from "lib/common.stm"
+
+---
+
+(source_file
+  (namespace_decl
+    (string_literal))
+  (import_declaration
+    (import_spec
+      (identifier))
+    (string_literal)))
+
+==================
+namespace as soft keyword (schema ID in unnamespaced file)
+==================
+
+table namespace {
+  id UUID
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Workspace block with comments
+==================
+
+workspace "platform" {
+  // entry point
+  schema "crm" from "crm/pipeline.stm"
+  //! review before prod
+  schema "billing" from "billing/pipeline.stm"
+}
+
+---
+
+(source_file
+  (workspace_block
+    (string_literal)
+    (workspace_body
+      (comment_line
+        (comment
+          (info_comment)))
+      (workspace_entry
+        (string_literal)
+        (string_literal))
+      (comment_line
+        (comment
+          (warning_comment)))
+      (workspace_entry
+        (string_literal)
+        (string_literal)))))
