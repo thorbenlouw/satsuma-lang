@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "version": "0.0.0",
+    "license": "UNLICENSED",
+    "description": "Tree-sitter grammar for the STM language"
+  },
+  "grammars": [
+    {
+      "name": "stm",
+      "camelcase": "STM",
+      "scope": "source.stm",
+      "file-types": [
+        "stm"
+      ],
+      "injection-regex": "^stm$"
+    }
+  ]
+}

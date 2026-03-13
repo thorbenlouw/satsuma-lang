@@ -1,0 +1,164 @@
+==================
+Top-level declarations
+==================
+
+import { address_fields as common_address } from "lib/common.stm"
+import "shared.stm"
+
+integration "Example_Integration" {
+  cardinality 1:1
+  author "Data Team"
+  tags [migration, test]
+
+  note '''
+    Hello
+  '''
+}
+
+message edi_desadv "EDI payload" @format(fixed-length) {
+  Header {
+    DOCNUM CHAR(35)
+  }
+}
+
+source crm_system "CRM customer data" {
+  customer_id UUID
+}
+
+fragment customer_fields "Shared fragment" {
+  email EMAIL
+}
+
+map crm_system -> analytics_db [flatten: items, when: active] {
+  customer_id -> customer_id
+}
+
+---
+
+(source_file
+  (import_declaration
+    (import_spec
+      (identifier)
+      (identifier))
+    (string_literal))
+  (import_declaration
+    (string_literal))
+  (integration_block
+    (string_literal)
+    (integration_body
+      (integration_field
+        (identifier)
+        (number_literal)
+        (symbol)
+        (number_literal))
+      (integration_field
+        (identifier)
+        (string_literal))
+      (integration_field
+        (identifier)
+        (symbol)
+        (identifier)
+        (symbol)
+        (identifier)
+        (symbol))
+      (note_block
+        (multiline_string))))
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (string_literal)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (path_reference
+          (identifier))))
+    (schema_body
+      (group_declaration
+        (identifier)
+        (schema_body
+          (field_declaration
+            (identifier)
+            (type_expression
+              (identifier)
+              (type_argument
+                (number_literal))))))))
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (string_literal)
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)))))
+  (fragment_block
+    (identifier)
+    (string_literal)
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)))))
+  (map_block
+    (path_reference
+      (identifier))
+    (path_reference
+      (identifier))
+    (map_option_list
+      (map_option
+        (identifier)
+        (option_value
+          (path_reference
+            (identifier))))
+      (map_option
+        (identifier)
+        (option_value
+          (path_reference
+            (identifier)))))
+    (map_body
+      (raw_map_line
+        (identifier)
+        (arrow)
+        (identifier)))))
+
+==================
+Comments and nested blocks
+==================
+
+table legacy_db "Legacy" {
+  //! warning
+  //? question
+  // neutral
+  PHONE_NBR VARCHAR(50) {
+    note '''
+      details
+    '''
+  }
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (string_literal)
+    (schema_body
+      (comment_line
+        (comment
+          (warning_comment)))
+      (comment_line
+        (comment
+          (question_comment)))
+      (comment_line
+        (comment
+          (info_comment)))
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)
+          (type_argument
+            (number_literal)))
+        (inline_note_block
+          (note_block
+            (multiline_string)))))))

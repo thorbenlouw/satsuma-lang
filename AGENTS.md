@@ -47,10 +47,12 @@ This project uses beads for issue tracking. Use `bd` for planning and task manag
 
 Expected workflow:
 
-- Create and update work items with `bd create`, `bd update`, and `bd dep`.
+- Always run beads commands with `bd --sandbox` so agent work does not try to auto-sync or manage Dolt server state.
+- Create and update work items with `bd --sandbox create`, `bd --sandbox update`, and `bd --sandbox dep`.
 - Capture dependencies explicitly so ready work can be derived from the graph.
 - Include clear acceptance criteria on every implementation task.
 - Represent testing work inside the acceptance criteria or as dependent tasks when large enough to stand alone.
+- Worktree and server sync is handled manually outside the agent workflow.
 
 ## Agent Workflow
 

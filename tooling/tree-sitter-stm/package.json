@@ -1,0 +1,14 @@
+{
+  "name": "tree-sitter-stm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tree-sitter grammar for the STM language",
+  "license": "UNLICENSED",
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.25.10"
+  }
+}
