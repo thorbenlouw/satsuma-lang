@@ -1,0 +1,174 @@
+integration "INT1008_PO_ASN-EDI_to_MFCS" {
+  cardinality 1:1
+  author "Joao Marques"
+  version "1.0.0"
+
+  note '''
+    # EDI 856 → MFCS Shipment
+
+    Transforms EDI 856 (DESADV) fixed-length ASN messages into
+    MFCS JSON Shipment format for warehouse ingestion.
+
+    Based on mapping specification v1.0 (18/11/2025).
+
+    ## Open issues
+    - `containers` array is **required** by MFCS schema but has
+      **no source mapping** in the current EDI specification
+    - `containerId` and `finalLocation` are required but unpopulated
+    - Awaiting clarification from warehouse team (Jira: MFCS-2847)
+  '''
+}
+
+
+// ============================================================
+// Source: EDI 856 Despatch Advice
+// ============================================================
+
+message edi_desadv "EDI 856 Despatch Advice — Fixed Length Format" {
+  @format fixed-length
+
+  BeginningOfMessage {
+    DOCNUM      CHAR(35)                      // Despatch advice number
+    MESSGFUN    CHAR(3)                       // Message function: 9 = Original
+  }
+
+  DateTime {
+    DATEQUAL    CHAR(3)                       // Qualifier: 137 = Document date/time
+    DATETIME    CHAR(35)                      // Date/time value
+    DATEFMT     CHAR(3)                       // Format: 102=CCYYMMDD, 203=CCYYMMDDHHMM
+  }
+
+  ShipmentRefs[] {
+    @filter SHPRFQUAL == "SRN"
+    SHPRFQUAL   CHAR(3)
+    SHIPREF     CHAR(70)                      // Shipment reference number
+  }
+
+  POReferences[] {
+    @filter REFQUAL == "ON"
+    REFQUAL     CHAR(3)
+    REFNUM      CHAR(35)                      // PO Number + "/" + Dissection No
+  }
+
+  NameAddress {
+    PARTYQUAL   CHAR(3)                       // BY=Buyer, SU=Supplier
+    PARTYID     CHAR(35)                      // 13-digit ANA number
+  }
+
+  LineItems[] {
+    LINENUM     NUMBER(6)
+    ITEMNO      CHAR(35)                      // Product identifier
+    ITEMTYPE    CHAR(3)                       // EN=EAN, UP=UPC12
+  }
+
+  Quantities[] {
+    @filter QUANTQUAL == "12"                 // Only despatch quantities
+    QUANTQUAL   CHAR(3)
+    QUANTITY    NUMBER(15)                    //! 4 implied decimal places
+  }
+}
+
+
+// ============================================================
+// Target: MFCS Shipment JSON
+// ============================================================
+
+schema mfcs_json "MFCS Shipment Ingestion Format" {
+  ShipmentHeader {
+    toLocation            NUMBER(10)
+    asnNo                 STRING(30)    [required]
+    shipDate              DATE          [required]
+    estimatedArrivalDate  DATE
+    comments              STRING(2000)
+    carrierCode           STRING(4)
+    asnType               STRING(1)    [required]    // C=UCC-128, 0=ASN Shipment
+    supplier              NUMBER(10)   [required]
+    shipPayMethod         STRING(2)
+
+    asnDetails[] {
+      orderNo             NUMBER(12)   [required]
+      notAfterDate        DATE
+
+      containers[] {
+        note '''
+          ## DATA GAP
+          This entire array is **required** by the MFCS schema but has
+          **no source data** in the current EDI 856 mapping.
+          See Jira: MFCS-2847 for resolution status.
+        '''
+        containerId       STRING(30)   [required]    //! No source mapping
+        finalLocation     NUMBER(10)   [required]    //! No source mapping
+        items[] {
+          item            STRING(25)
+          unitQuantity    NUMBER(12,4)                //! No source mapping
+        }
+      }
+
+      items[] {
+        item              STRING(25)
+        unitQuantity      NUMBER(12,4)  [required]
+        vpn               STRING(30)
+        referenceItem     STRING(25)
+      }
+    }
+  }
+}
+
+
+// ============================================================
+// Mapping Logic
+// ============================================================
+
+map edi_desadv -> mfcs_json {
+  // --- Header ---
+  BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo
+    : trim | max_length(30)
+
+  DateTime.DATETIME -> ShipmentHeader.shipDate
+    : nl("Parse using sibling field DATEFMT: if 102 parse as CCYYMMDD,
+          if 203 parse as CCYYMMDDHHMM. Output format: YYYY-MM-DD.")
+
+  => ShipmentHeader.asnType : "0"                    // Default: ASN Shipment
+
+  POReferences[].REFNUM -> ShipmentHeader.toLocation
+    : nl("Extract PO number from REFNUM (digits before '/').
+          Look up the PO in MFCS to determine the delivery location.")
+
+  POReferences[].REFNUM -> ShipmentHeader.supplier
+    : split("/") | first | to_number
+    : nl("Validate supplier exists in MFCS PO table.")
+
+  ShipmentRefs[].SHIPREF -> ShipmentHeader.comments
+    : prepend("Shipment reference number: ")
+
+  // --- Detail lines grouped by PO ---
+  POReferences[] -> ShipmentHeader.asnDetails[] {
+    note '''
+      Each PO reference generates one asnDetails entry.
+      Line items and quantities are correlated by position.
+    '''
+
+    .REFNUM -> .orderNo : split("/") | first | to_number
+
+    LineItems[] -> .items[] {
+      .ITEMNO -> .item
+        : trim
+        : nl("Retrieve MFCS item number using the supplier's traded
+              code from the MFCS supplier item cross-reference.")
+
+      Quantities[].QUANTITY -> .unitQuantity
+        : nl("Divide by 10000 to account for 4 implied decimal places.
+              Then multiply by PO pack size from MFCS (Action A-504).
+              Pack size retrieved from MFCS PO line matching this item.")
+    }
+  }
+
+  //! DATA GAP: containers[] is required by the schema but has no source data
+  => ShipmentHeader.asnDetails[].containers
+    : nl("Required by MFCS schema but no source data available in EDI 856.
+          Options under discussion:
+          1. Populate with a single placeholder container per order
+          2. Request EDI 856 extension from suppliers
+          3. Derive from warehouse receiving logic
+          Blocked on: MFCS-2847")
+}
