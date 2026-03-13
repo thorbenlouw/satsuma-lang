@@ -15,6 +15,7 @@ The immediate implementation priority is parser-first tooling. Downstream tools 
 - `examples/`: canonical `.stm` examples and fixtures
 - `features/`: feature plans and task breakdown inputs
 - `scripts/`: utility scripts used during development
+- `tooling/tree-sitter-stm/`: tree-sitter grammar, generated parser artifacts, and corpus tests
 
 ## Platform Lineage Entry Point
 
@@ -49,6 +50,26 @@ When making changes or answering questions about syntax, semantics, or supported
 - Use the example corpus as golden fixtures whenever possible.
 - Document any ambiguity, unsupported syntax, or recovery behavior near the implementation.
 
+## Shell Command Expectations
+
+Always use non-interactive flags with shell commands that may prompt for confirmation. Agent work must not hang waiting for terminal input from aliased or interactive defaults.
+
+Use forms like:
+
+```bash
+cp -f source dest
+mv -f source dest
+rm -f file
+rm -rf directory
+cp -rf source dest
+scp -o BatchMode=yes ...
+ssh -o BatchMode=yes ...
+apt-get -y ...
+HOMEBREW_NO_AUTO_UPDATE=1 brew ...
+```
+
+Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
+
 ## Testing Expectations
 
 - New parser or tooling work must include targeted tests and fixture coverage.
@@ -75,6 +96,8 @@ Expected workflow:
 - Inspect existing examples and docs before making syntax or tooling assumptions.
 - Keep changes scoped and directly tied to the current task.
 - If a requested change would contradict the spec, stop and raise the conflict clearly.
+- For work in `tooling/tree-sitter-stm/`, treat corpus tests in `tooling/tree-sitter-stm/test/corpus/` and generated parser artifacts as part of the implementation surface.
+- When changing the tree-sitter grammar, update the grammar source, regenerate parser outputs as needed, and verify the corpus fixtures.
 
 <!-- BEGIN BEADS INTEGRATION -->
 ## Issue Tracking with bd (beads)
