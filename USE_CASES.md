@@ -1,8 +1,10 @@
 # STM Use Cases
 
-STM can serve as a readable, parser-backed coordination layer for enterprise mapping and transformation work. The core value is not just expressing mappings, but expressing them in a form that humans can review and tools can parse reliably for linting, formatting, lineage, editor support, AST/IR generation, and downstream automation.
+STM can serve as a readable, parser-backed coordination layer for enterprise mapping and transformation work. The core value is not just expressing mappings, but expressing them in a form that humans can review and tools can parse reliably for linting, formatting, lineage, editor support, AST/IR generation, code generation, and downstream automation.
 
 In enterprise settings, that makes STM useful anywhere teams need mapping logic to be explainable, versioned, diffable, and portable across implementation platforms. It is especially relevant for large data platforms, integration-heavy programs, and AI-assisted workflows where free-form transformation logic would otherwise be difficult to govern.
+
+Because STM supports importable library files and workspace files that assemble multiple schemas into a platform scope, it is also suited to organizations that need one mapping source of truth across many teams and repositories rather than one isolated document per interface.
 
 ## Persona Map
 
@@ -13,6 +15,7 @@ In enterprise settings, that makes STM useful anywhere teams need mapping logic 
 | Integration Engineer | Build reliable message, API, and file-based transformations between systems | Centralizes mapping logic outside proprietary ESB or ETL UI configuration | Parser-backed editing, linting, and possible code generation targets | Agents can turn source and target contracts into starting STM files and implementation stubs |
 | Analytics Engineer / Data Modeler | Understand how curated datasets are produced from operational sources | Makes transformation intent visible before it disappears into SQL or orchestration layers | Machine-readable mapping structure for lineage, test generation, and field coverage checks | Agents can answer lineage questions and identify unmapped or suspicious fields |
 | Governance, Risk, and Audit Stakeholder | Trace how sensitive or regulated fields move through systems | Provides a versioned artifact that is easier to inspect than hand-written scripts or screenshots from tools | Structured dependency capture and reviewable change history | Agents can generate audit summaries, dependency reports, and change rationales |
+| QA / Validation Engineer | Turn mapping intent into repeatable verification assets | Keeps mapping requirements in a stable text format that can be reviewed alongside implementation | AST/CST-driven test generation, coverage checks, and drift detection against downstream code | Agents can derive test cases, fixtures, and regression summaries from STM changes |
 | AI / Automation Engineer | Build safe automation around transformation specifications | Offers a constrained, formal interface that is easier for agents to manipulate than general-purpose code | Parsed nodes, stable syntax, and explicit mapping structure | Agents can generate, refactor, review, and translate STM into downstream implementations |
 | Delivery Lead / Program Manager | Keep large migration or integration programs aligned | Gives teams a shared artifact for scope, progress, and implementation discussions | Structured mapping inventory for tracking readiness and change impact | Agents can summarize status, identify missing mappings, and prepare handoff material |
 
@@ -104,12 +107,24 @@ Primary personas: Enterprise Architect, Integration Engineer, Governance, Risk, 
 
 ### 15. Cross-Tool Generation Hub
 
-A longer-term use for STM is acting as the source specification from which other artifacts are derived, such as documentation, tests, implementation stubs, lineage views, or platform-specific mappings. The parser-first approach matters here because generated outputs are only as reliable as the structure behind them. Agents can use STM as a constrained interface for multi-target generation while keeping humans in the review loop.
+A longer-term use for STM is acting as the source specification from which other artifacts are derived, such as documentation, tests, implementation stubs, lineage views, formatter output, validation diagnostics, or platform-specific mappings. The parser-first approach matters here because generated outputs are only as reliable as the structure behind them. Agents can use STM as a constrained interface for multi-target generation while keeping humans in the review loop.
 
 Primary personas: AI / Automation Engineer, Data Platform Engineer, Integration Engineer
 
+### 16. Workspace-Level Platform Lineage
+
+Large organizations rarely have one monolithic mapping file. They have many integration files, shared schema libraries, and repeated schema names that only make sense within a namespace or project boundary. STM workspace files provide a platform entry point that maps namespaces to source files so lineage can be resolved across the full estate instead of one pipeline at a time. Agents can start from the workspace, follow schema references across files, and answer platform-wide impact questions without guessing which `customer` schema a mapping refers to.
+
+Primary personas: Enterprise Architect, Data Platform Engineer, Governance, Risk, and Audit Stakeholder
+
+### 17. Excel-To-STM Modernization
+
+Many organizations will first encounter STM while trying to escape spreadsheet-based mapping specifications. STM is useful as a migration target for legacy Excel or wiki mapping documents because it preserves readability while introducing parser-backed structure, version control, and validation. Agents can ingest existing spreadsheets, produce first-pass STM files, surface ambiguities as explicit questions or warnings, and give teams a controlled path from ad hoc documents to living specifications.
+
+Primary personas: Delivery Lead / Program Manager, Business Analyst, AI / Automation Engineer, Data Platform Engineer
+
 ## Why This Matters
 
-The strongest pattern across these scenarios is that STM is not just another syntax for expressing mappings. It can become a shared coordination layer between human reviewers, enterprise delivery teams, and automation systems, especially when parser-backed structure is treated as the foundation for downstream tools.
+The strongest pattern across these scenarios is that STM is not just another syntax for expressing mappings. It can become a shared coordination layer between human reviewers, enterprise delivery teams, and automation systems, especially when parser-backed structure is treated as the foundation for downstream tools and workspace files provide a platform-level entry point.
 
-That is particularly relevant for AI-assisted integration work. Coding agents are much more reliable when they operate against a constrained, reviewable, machine-readable mapping language than when they have to infer intent from free-form ETL code, vendor configuration, or natural-language descriptions alone.
+That is particularly relevant for AI-assisted integration work. Coding agents are much more reliable when they operate against a constrained, reviewable, machine-readable mapping language than when they have to infer intent from free-form ETL code, vendor configuration, or natural-language descriptions alone. The combination of reusable schema libraries, workspace-based assembly, and parser-backed tooling makes STM credible as a long-lived source of truth rather than a one-off document format.
