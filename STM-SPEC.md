@@ -19,7 +19,7 @@ STM is designed to be the **single source of truth** for data integration requir
 | **Human-first readability** | One-line-per-field, familiar syntax borrowed from DBML/SQL/HCL, minimal ceremony |
 | **Token efficiency** | ~40-60% fewer tokens than equivalent YAML for the same mapping; implicit scoping eliminates repetition |
 | **AI-native** | Compact grammar fits in a system prompt; `nl()` allows natural-language intent alongside parseable transforms |
-| **Separation of concerns** | Structure (schema blocks) is separated from logic (map blocks) |
+| **Separation of concerns** | Structure (schema blocks) is separated from logic (mapping blocks) |
 | **Progressive complexity** | Simple mappings are one line; complex ones add transforms, notes, lookups as needed |
 | **Format-agnostic** | Describes logical structure of any data: databases, APIs, EDI, XML, CSV, events, messages |
 
@@ -55,11 +55,11 @@ The recommended ordering convention is:
 5. Target schema blocks
 6. Lookup schema blocks
 7. Fragment blocks
-8. Map blocks
+8. Mapping blocks
 
-Files that contain only schema/fragment/lookup blocks (no integration or map) are considered **library files** and are intended for import by other files.
+Files that contain only schema/fragment/lookup blocks (no integration or mapping) are considered **library files** and are intended for import by other files.
 
-Files that contain a `workspace` block are considered **workspace files** — they assemble multiple integration files into a platform scope and must not contain `integration` or `map` blocks.
+Files that contain a `workspace` block are considered **workspace files** — they assemble multiple integration files into a platform scope and must not contain `integration` or `mapping` blocks.
 
 ### 2.1 File Extension
 
@@ -127,7 +127,7 @@ The following words are reserved and must be backtick-quoted when used as identi
 ```
 import from as
 integration source target table message record event schema lookup fragment
-map note
+mapping note
 true false null
 ```
 
@@ -203,10 +203,10 @@ LOYALTY_POINTS -> loyalty_tier
 `stm fmt` should normalize toward one canonical style:
 
 - one field or group declaration per line
-- one map head per line
+- one mapping head per line
 - one transform per continuation line in multiline mappings
 - long `enum` tag values formatted as braced, comma-separated lists and wrapped across lines as needed
-- map options ordered as `flatten`, `group_by`, `when`, then custom options alphabetically
+- mapping options ordered as `flatten`, `group_by`, `when`, then custom options alphabetically
 - annotations kept postfix on the same declaration line
 - notes emitted as explicit trailing blocks
 
@@ -224,7 +224,7 @@ Imports all top-level blocks from the target file:
 import "path/to/file.stm"
 ```
 
-All schema blocks, fragments, and lookups from the imported file become available in the importing file as if declared inline. Integration and map blocks are **not** imported (they are file-local).
+All schema blocks, fragments, and lookups from the imported file become available in the importing file as if declared inline. Integration and mapping blocks are **not** imported (they are file-local).
 
 ### 4.2 Named Import
 
@@ -276,7 +276,7 @@ table customers {
 
 **Rules:**
 
-- At most one `namespace` declaration per file. Must appear before any schema, integration, or map blocks (conventionally at the top of the file).
+- At most one `namespace` declaration per file. Must appear before any schema, integration, or mapping blocks (conventionally at the top of the file).
 - The namespace string becomes the qualifier prefix for all schema blocks in the file.
 - Schemas from a namespaced file are referenced cross-file using `::` syntax: `crm::orders`, `crm::customers`.
 - Files without a `namespace` declaration are **unnamespaced** — all existing scoping rules apply unchanged.
@@ -289,7 +289,7 @@ table customers {
 
 | Path form | Meaning |
 |---|---|
-| `field` | Local field — implicit schema from map header |
+| `field` | Local field — implicit schema from mapping header |
 | `schema_id.field` | Schema-qualified — existing syntax |
 | `schema_id.field.nested` | Nested field — existing syntax |
 | `ns::schema_id.field` | Namespace + schema + field — new |
@@ -297,11 +297,11 @@ table customers {
 
 Namespace-qualified paths are valid in:
 
-- Map block headers: `map crm::orders -> warehouse::fact_orders { ... }`
-- Cross-namespace field references inside map bodies: `billing::invoices.amount -> billed_total`
+- Mapping block headers: `mapping crm::orders -> warehouse::fact_orders { ... }`
+- Cross-namespace field references inside mapping bodies: `billing::invoices.amount -> billed_total`
 
 ```stm
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   order_id    -> source_order_id
   total       -> order_total
 
@@ -340,7 +340,7 @@ workspace "data_platform" {
 
 **Workspace file rules:**
 
-- `integration` and `map` blocks are **not** allowed in workspace files (E019). A workspace file is a declaration file, not a transformation file.
+- `integration` and `mapping` blocks are **not** allowed in workspace files (E019). A workspace file is a declaration file, not a transformation file.
 - At most one `workspace` block per file.
 - Workspace files may import other workspace files for hierarchical platform modelling.
 - `note` blocks are allowed inside the workspace body for documentation.
@@ -419,7 +419,7 @@ The following keywords are **synonyms** — all produce structurally identical b
 | `schema` | Generic / when role is ambiguous |
 | `lookup` | Reference data for enrichment only |
 
-**The keyword is documentary, not behavioral.** A block's role as source, target, or lookup is determined by how it's referenced in `map` blocks. The `lookup` keyword is the exception — it signals the block is used exclusively for lookups, never as a mapping endpoint.
+**The keyword is documentary, not behavioral.** A block's role as source, target, or lookup is determined by how it's referenced in `mapping` blocks. The `lookup` keyword is the exception — it signals the block is used exclusively for lookups, never as a mapping endpoint.
 
 ### 6.2 Syntax
 
@@ -787,14 +787,14 @@ fragment audit_columns "Standard audit trail fields" {
 
 ---
 
-## 8. Map Blocks
+## 8. Mapping Blocks
 
-Map blocks define the transformation logic between source and target schemas. This is where STM's conciseness shines most — each mapping rule is typically a single line.
+Mapping blocks define the transformation logic between source and target schemas. This is where STM's conciseness shines most — each mapping rule is typically a single line.
 
 ### 8.1 Syntax
 
 ```
-map_block     = "map" [map_path "->" map_path] [map_options] "{" map_body "}"
+map_block     = "mapping" [map_path "->" map_path] [map_options] "{" map_body "}"
 map_path      = [ns_qualifier] ident        (* namespace-qualified or bare schema id *)
 ns_qualifier  = ident "::"
 map_options   = "[" map_option { "," map_option } "]"
@@ -802,20 +802,20 @@ map_option    = ident ":" expr
 map_body      = { annotation | note | map_entry | nested_map | comment }
 ```
 
-Recognized map options:
+Recognized mapping options:
 
 | Option | Meaning |
 |---|---|
 | `flatten: path[]` | One source record expands into one target record per element at `path[]` |
 | `group_by: path` | Many source records collapse into grouped output records keyed by `path` |
-| `when: condition` | Only source records matching the condition flow through the map |
+| `when: condition` | Only source records matching the condition flow through the mapping |
 
 ### 8.2 Scoping Rules
 
-**Implicit scoping (1:1):** When only one source and one target are in scope, the map block needs no qualifiers:
+**Implicit scoping (1:1):** When only one source and one target are in scope, the mapping block needs no qualifiers:
 
 ```stm
-map {
+mapping {
   CUST_ID -> customer_id
 }
 ```
@@ -825,30 +825,30 @@ Left-hand names resolve to the source. Right-hand names resolve to the target.
 **Explicit scoping (N:M):** Name the source-target pair:
 
 ```stm
-map crm_system -> analytics_db {
+mapping crm_system -> analytics_db {
   customer_id -> customer_id
   email -> email
 }
 
-map payment_gateway -> analytics_db {
+mapping payment_gateway -> analytics_db {
   amount -> total_spent
 }
 ```
 
-**Cross-schema override:** Within any map block, prefix a field with its schema ID to reference a different schema:
+**Cross-schema override:** Within any mapping block, prefix a field with its schema ID to reference a different schema:
 
 ```stm
-map crm_system -> notification_service {
+mapping crm_system -> notification_service {
   email -> recipient_email
   payment_gateway.status -> priority       // cross-reference
     : map { "failed": "high", _: "low" }
 }
 ```
 
-**Namespace-qualified scoping (cross-file):** When schemas are declared in namespaced files, map headers and field references use `::` to qualify the namespace:
+**Namespace-qualified scoping (cross-file):** When schemas are declared in namespaced files, mapping headers and field references use `::` to qualify the namespace:
 
 ```stm
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   order_id    -> source_order_id
   total       -> order_total
 
@@ -856,23 +856,23 @@ map crm::orders -> warehouse::fact_orders {
 }
 ```
 
-The `::` qualifier is required when the schema is in a different namespace than the file containing the map block. Within a same-namespace file, bare schema IDs continue to work.
+The `::` qualifier is required when the schema is in a different namespace than the file containing the mapping block. Within a same-namespace file, bare schema IDs continue to work.
 
 **Disambiguation rule:** A bare name resolves to the block's declared source (left) or target (right). If ambiguous (e.g., same field name in multiple sources), a parser error is raised and explicit qualification is required.
 
-**Conditional routing:** A map block may include a `when:` header option. Only records matching the condition flow through that block.
+**Conditional routing:** A mapping block may include a `when:` header option. Only records matching the condition flow through that block.
 
 ```stm
-map source_orders -> us_warehouse [when: region == "US"] {
+mapping source_orders -> us_warehouse [when: region == "US"] {
   order_id -> order_id
 }
 
-map source_orders -> eu_warehouse [when: region == "EU"] {
+mapping source_orders -> eu_warehouse [when: region == "EU"] {
   order_id -> order_id
 }
 ```
 
-Multiple `map` blocks from the same source with distinct `when:` options model 1:N fan-out routing.
+Multiple `mapping` blocks from the same source with distinct `when:` options model 1:N fan-out routing.
 
 ### 8.3 Mapping Types
 
@@ -928,15 +928,15 @@ Use mapping-entry notes for durable field-level mapping context. Keep short oper
 
 #### Conditional Routing / Fan-out
 
-Use `when:` map options for route-by-condition flows:
+Use `when:` mapping options for route-by-condition flows:
 
 ```stm
-map orders -> domestic_fulfillment [when: shipping_country == "US"] {
+mapping orders -> domestic_fulfillment [when: shipping_country == "US"] {
   order_id -> order_id
   total    -> total
 }
 
-map orders -> international_fulfillment [when: shipping_country != "US"] {
+mapping orders -> international_fulfillment [when: shipping_country != "US"] {
   order_id -> order_id
   total    -> total
 }
@@ -944,10 +944,10 @@ map orders -> international_fulfillment [when: shipping_country != "US"] {
 
 #### Flatten / One-to-Many Expansion
 
-Use `flatten:` on the map block header when a nested array becomes the grain of the target:
+Use `flatten:` on the mapping block header when a nested array becomes the grain of the target:
 
 ```stm
-map order_api -> flat_order_lines [flatten: items[]] {
+mapping order_api -> flat_order_lines [flatten: items[]] {
   orderId           -> order_id
   customerName      -> customer_name
   items[].sku       -> product_sku
@@ -960,10 +960,10 @@ When `flatten:` is present, parent fields may map directly and are repeated for 
 
 #### Aggregation / Many-to-One Collapse
 
-Use `group_by:` on the map block header when multiple source records collapse into grouped output:
+Use `group_by:` on the mapping block header when multiple source records collapse into grouped output:
 
 ```stm
-map transactions -> customer_summary [group_by: customer_id] {
+mapping transactions -> customer_summary [group_by: customer_id] {
   customer_id      -> customer_id
   amount           -> total_spent         : sum
   amount           -> avg_transaction     : avg
@@ -1063,7 +1063,7 @@ LAST_MOD_DATE -> updated_at
 Failure handling may be declared at both block and field level.
 
 ```stm
-map legacy_customer -> curated_customer {
+mapping legacy_customer -> curated_customer {
   @on_error(reject)                  // skip | reject | log | default
   @reject_target(error_queue)
   @error_threshold(0.05)
@@ -1187,10 +1187,10 @@ The following function names are reserved with standard semantics. Implementatio
 
 ### 8.6 Nested Array Mapping
 
-When mapping arrays from source to target, use nested braces with relative paths. Nested map heads are restricted to array paths on both sides:
+When mapping arrays from source to target, use nested braces with relative paths. Nested mapping heads are restricted to array paths on both sides:
 
 ```stm
-map rest_api -> esb_xml {
+mapping rest_api -> esb_xml {
   items[] -> OrderLines[] {
     => .LineNumber       : array_index + 1
     .sku -> .ProductCode : lookup(product_catalog, sku => internal_code, on_miss: error)
@@ -1205,7 +1205,7 @@ map rest_api -> esb_xml {
 
 ### 8.7 Path Syntax
 
-STM uses one path model everywhere: map heads, transforms, options, and nested mappings.
+STM uses one path model everywhere: mapping heads, transforms, options, and nested mappings.
 
 Valid path forms:
 
@@ -1227,10 +1227,10 @@ Invalid:
 
 Rules:
 
-- A leading `.` means "relative to the current nested map scope".
+- A leading `.` means "relative to the current nested mapping scope".
 - Array markers always attach directly to the segment they qualify.
-- Bare paths inside a `map` block resolve against the declared source on the left or target on the right.
-- Nested map heads must end in array segments on both source and target paths.
+- Bare paths inside a `mapping` block resolve against the declared source on the left or target on the right.
+- Nested mapping heads must end in array segments on both source and target paths.
 
 **Nested nesting:** Array mappings may nest to arbitrary depth:
 
@@ -1265,7 +1265,7 @@ POReferences[] -> ShipmentHeader.asnDetails[] {
 ### 8.8 Complete Example: Flatten with Error Handling
 
 ```stm
-map order_api -> flat_order_lines [flatten: items[]] {
+mapping order_api -> flat_order_lines [flatten: items[]] {
   @on_error(reject)
   @reject_target(dead_letter_orders)
 
@@ -1280,7 +1280,7 @@ map order_api -> flat_order_lines [flatten: items[]] {
 ### 8.9 Complete Example
 
 ```stm
-map {
+mapping {
   note '''
     ## Mapping assumptions
     - All timestamps assume US Eastern unless noted
@@ -1364,7 +1364,7 @@ Notes may appear inside:
 | Schema block top level | Schema-level documentation |
 | Group `{ ... }` | Group-level documentation |
 | Field block `{ ... }` | Field-level documentation |
-| `map { ... }` | Mapping-level documentation |
+| `mapping { ... }` | Mapping-level documentation |
 | Mapping entry block `{ note ... }` | Field-mapping-level documentation |
 
 ### 9.3 Multiple Notes
@@ -1390,7 +1390,7 @@ file             = { namespace_decl | workspace_block | import_stmt
 (* --- Namespace (soft keyword, at most one per file) --- *)
 namespace_decl   = "namespace" STRING ;
 
-(* --- Workspace (declaration-only; no integration or map blocks) --- *)
+(* --- Workspace (declaration-only; no integration or mapping blocks) --- *)
 workspace_block  = "workspace" STRING "{" { workspace_entry | note | COMMENT } "}" ;
 workspace_entry  = "schema" STRING "from" STRING ;
 
@@ -1439,7 +1439,7 @@ sel_criteria     = "selection_criteria" MULTILINE_STRING ;
 note             = "note" MULTILINE_STRING ;
 
 (* --- Map Blocks --- *)
-map_block        = "map" [ map_path "->" map_path ] [ map_options ] "{" map_body "}" ;
+map_block        = "mapping" [ map_path "->" map_path ] [ map_options ] "{" map_body "}" ;
 map_path         = [ ns_qualifier ] IDENT ;
 ns_qualifier     = IDENT "::" ;
 map_options      = "[" map_option { "," map_option } "]" ;
@@ -1516,8 +1516,8 @@ Parsers and linters for STM v1.0.0 must enforce or check the following:
 |---|---|
 | **E001** | Schema IDs must be unique across all blocks (source, target, lookup, fragment) in scope (including imports) |
 | **E002** | Schema IDs must match `^[a-zA-Z][a-zA-Z0-9_-]*$` |
-| **E003** | All `source_field` paths in map blocks must resolve to a declared field in a source schema |
-| **E004** | All `target_field` paths in map blocks must resolve to a declared field in a target schema |
+| **E003** | All `source_field` paths in mapping blocks must resolve to a declared field in a source schema |
+| **E004** | All `target_field` paths in mapping blocks must resolve to a declared field in a target schema |
 | **E005** | Lookup resource IDs referenced in `lookup()` transforms must exist in a `lookup` block in scope |
 | **E006** | Circular imports are forbidden |
 | **E007** | Duplicate schema IDs across imports without aliasing |
@@ -1526,13 +1526,13 @@ Parsers and linters for STM v1.0.0 must enforce or check the following:
 | **E010** | At most one `integration` block per file |
 | **E011** | `flatten:` option must resolve to a source array path |
 | **E012** | `group_by:` option must resolve to a source field path |
-| **E013** | Aggregate functions may only appear inside `map` blocks with `group_by:` |
-| **E014** | `@reject_target(...)` requires reject-style handling to be configured at map or field level |
-| **E015** | Nested map heads must resolve to array paths on both source and target sides |
+| **E013** | Aggregate functions may only appear inside `mapping` blocks with `group_by:` |
+| **E014** | `@reject_target(...)` requires reject-style handling to be configured at mapping or field level |
+| **E015** | Nested mapping heads must resolve to array paths on both source and target sides |
 | **E016** | Duplicate namespace string across files in scope (imported or workspace-assembled) |
 | **E017** | Unresolved namespace qualifier in a path (namespace not declared or imported) |
 | **E018** | Workspace `schema` entry namespace does not match the file's declared `namespace` |
-| **E019** | `integration` or `map` block found in a workspace file |
+| **E019** | `integration` or `mapping` block found in a workspace file |
 
 ### 11.2 Warnings (should report)
 
@@ -1540,13 +1540,13 @@ Parsers and linters for STM v1.0.0 must enforce or check the following:
 |---|---|
 | **W001** | Declared `cardinality` doesn't match actual source/target count |
 | **W002** | Target field marked `[required]` has no mapping entry and no `[default]` |
-| **W003** | Source field declared but never referenced in any map block |
-| **W004** | Target field declared but never referenced in any map block |
+| **W003** | Source field declared but never referenced in any mapping block |
+| **W004** | Target field declared but never referenced in any mapping block |
 | **W005** | `nl()` transform used — implementation requires manual or AI interpretation |
 | **W006** | Unresolved `//?` comments present (open questions/TODOs) |
 | **W007** | Backtick-quoted identifier doesn't need quoting |
 | **W008** | Direct mapping between incompatible types without explicit transform |
-| **W009** | Multiple `map` blocks from the same source use `when:` options but appear non-exhaustive (no fallback route detected) |
+| **W009** | Multiple `mapping` blocks from the same source use `when:` options but appear non-exhaustive (no fallback route detected) |
 | **W010** | `flatten:` repeats parent fields across emitted target records; reviewer should confirm target grain |
 
 ---
@@ -1615,8 +1615,8 @@ source|target|message|table|event|lookup|schema <id> ["description"] {
 ##   LineItems[] @filter(QUAL == "12") { ... }
 ##   item_code STRING @header("Item Code")
 
-## Map blocks
-map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
+## Mapping blocks
+mapping [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
   src_field -> tgt_field                     // direct
   src_field -> tgt_field : transform         // with transform
   => tgt_field : when cond => value         // computed (no source)
@@ -1653,7 +1653,7 @@ map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] 
 ##
 ## Namespacing (multi-file platform lineage):
 ##   namespace "crm"                           // scopes all schemas in this file
-##   map crm::orders -> warehouse::fact_orders // namespace-qualified map header
+##   mapping crm::orders -> warehouse::fact_orders // namespace-qualified mapping header
 ##   billing::invoices.amount -> billed_total  // cross-namespace field reference
 ##   workspace "platform" {                    // assembles files into a platform scope
 ##     schema "crm" from "crm/pipeline.stm"
@@ -1668,7 +1668,7 @@ map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] 
 3. Call `stm lint` to validate (if tooling is available)
 4. Fix any errors and re-validate
 5. When converting FROM Excel/free-text specs, use `nl()` liberally for any transform logic that is ambiguous or underspecified
-6. Prefer explicit scoping (`map A -> B`) over implicit when multiple schemas are in scope
+6. Prefer explicit scoping (`mapping A -> B`) over implicit when multiple schemas are in scope
 
 ### 13.3 Common LLM Mistakes
 
@@ -1691,7 +1691,7 @@ When migrating existing STM-YAML files to STM:
 | `source_schemas: { id: { type: object, properties: ... } }` | `source id { fields... }` |
 | `target_schemas: { id: { ... } }` | `target id { fields... }` |
 | `lookup_resources: { id: { ... } }` | `lookup id { fields... }` |
-| `mapping_logic: [{ source: "a:x", target: "b:y" }]` | `map a -> b { x -> y }` |
+| `mapping_logic: [{ source: "a:x", target: "b:y" }]` | `mapping a -> b { x -> y }` |
 | `transform: "description"` | `: transform_chain` or `: nl("description")` |
 | `logic: "description"` | `=> field : nl("description")` |
 | `type: "list_map"` with `children` | `src[] -> tgt[] { .child -> .child }` |
@@ -1773,7 +1773,7 @@ target esb_xml "Legacy ESB Order XML Payload" {
   }
 }
 
-map {
+mapping {
   // --- Header ---
   orderId -> OrderHeader.OrderNumber
     : nl("Format as 'ORD-' + YYYYMMDD from orderDate + '-' + last 6 hex chars uppercase")
@@ -1877,7 +1877,7 @@ schema mfcs_json "MFCS Shipment Ingestion" {
   }
 }
 
-map edi_desadv -> mfcs_json {
+mapping edi_desadv -> mfcs_json {
   BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo : trim | max_length(30)
 
   DateTime.DATETIME -> ShipmentHeader.shipDate
@@ -1956,19 +1956,19 @@ target reporting_warehouse "Reporting data warehouse" {
   reorder_needed   BOOLEAN
 }
 
-// --- Each map block names its source->target pair ---
+// --- Each mapping block names its source->target pair ---
 
-map crm_system -> analytics_db {
+mapping crm_system -> analytics_db {
   customer_id -> customer_id
   email -> email
 }
 
-map payment_gateway -> analytics_db {
+mapping payment_gateway -> analytics_db {
   amount -> total_spent                     : nl("Sum all completed transactions per customer")
   => transaction_count                      : nl("Count completed transactions per customer")
 }
 
-map crm_system -> notification_service {
+mapping crm_system -> notification_service {
   email -> recipient_email
   phone -> recipient_phone
   => message_type
@@ -1980,12 +1980,12 @@ map crm_system -> notification_service {
     else => "low"
 }
 
-map payment_gateway -> notification_service {
+mapping payment_gateway -> notification_service {
   customer_email -> recipient_email
   transaction_id -> message_body            : nl("Format as 'Transaction {id} completed'")
 }
 
-map inventory_system -> reporting_warehouse {
+mapping inventory_system -> reporting_warehouse {
   product_sku -> product_id
   stock_level -> available_stock
   warehouse_location -> location
@@ -2016,7 +2016,7 @@ The following features are under consideration for future versions:
 
 - Initial release
 - Schema blocks with nested objects and arrays
-- Map blocks with implicit and explicit scoping
+- Mapping blocks with implicit and explicit scoping
 - Transform pipe chains and standard function library
 - `nl()` natural language transforms
 - Fragment composition with spread syntax
