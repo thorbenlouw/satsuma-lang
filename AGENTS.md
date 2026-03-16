@@ -170,3 +170,6 @@ Expected workflow:
  2. Write failing tests first (TDD) where practical.
  3. Implement the smallest change that makes the tests pass. Always do the RIGHT thing, not the FAST thing, so never hack tests or add lint ignore rules because that's easier than fixing the underlying issue.
  6. Update `PROJECT_OVERVIEW.md` if the architecture changes.
+
+## Ralph Loops
+When you are implementing a whole feature in a Ralph Loop, and have finished all related tk (ticket) tasks such that there are no remaining ready tasks, emit <PROMISE>DONE</PROMISE> to signal completion of the feature.
