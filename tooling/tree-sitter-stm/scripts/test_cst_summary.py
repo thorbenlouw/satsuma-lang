@@ -11,7 +11,7 @@ SOURCE = """source customer "Customer" {
   id STRING @pk("yes")
   note '''Doc'''
 }
-map customer -> out {
+mapping customer -> out {
   id -> out_id // ok
 }
 """
@@ -33,11 +33,11 @@ TREE = """(source_file [0, 0] - [6, 1]
       (note_block [2, 2] - [2, 16]
         value: (multiline_string [2, 7] - [2, 16]))))
   (map_block [4, 0] - [6, 1]
-    source: (namespaced_path [4, 4] - [4, 12]
-      (identifier [4, 4] - [4, 12]))
-    target: (namespaced_path [4, 16] - [4, 19]
-      (identifier [4, 16] - [4, 19]))
-    body: (map_body [4, 20] - [6, 1]
+    source: (namespaced_path [4, 8] - [4, 16]
+      (identifier [4, 8] - [4, 16]))
+    target: (namespaced_path [4, 20] - [4, 23]
+      (identifier [4, 20] - [4, 23]))
+    body: (map_body [4, 24] - [6, 1]
       (map_entry [5, 2] - [5, 20]
         source: (field_path [5, 2] - [5, 4]
           (path_segment [5, 2] - [5, 4]

@@ -1,7 +1,7 @@
 ; Keywords
 [
   "integration" "source" "target" "table" "message" "record" "event" "schema"
-  "fragment" "map" "namespace" "workspace" "import" "lookup"
+  "fragment" "mapping" "map" "namespace" "workspace" "import" "lookup"
   "when" "else" "fallback" "from" "as" "note"
 ] @keyword
 

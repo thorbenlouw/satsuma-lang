@@ -32,7 +32,7 @@ implementation priorities are:
 
 1. Lock CST node inventory and ambiguity boundaries.
 2. Bootstrap lexical tokens and top-level declarations.
-3. Add schema and map body parsing with corpus tests.
+3. Add schema and mapping body parsing with corpus tests.
 4. Add queries, fixtures, and CI checks.
 
 ## Planned Layout
@@ -53,7 +53,7 @@ It currently proves extraction of:
 
 - top-level blocks and schema descriptions
 - schema fields and groups (including nested groups)
-- map entries, computed entries, block entries, and nested maps
+- mapping entries, computed entries, block entries, and nested maps
 - path references across namespaced, relative, and field paths
 - comment severities (info, warning, question)
 - note blocks and annotations
