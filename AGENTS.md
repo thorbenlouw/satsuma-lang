@@ -161,3 +161,12 @@ Expected workflow:
 - If a requested change would contradict the spec, stop and raise the conflict clearly.
 - For work in `tooling/tree-sitter-stm/`, treat corpus tests in `tooling/tree-sitter-stm/test/corpus/` and generated parser artifacts as part of the implementation surface.
 - When changing the tree-sitter grammar, update the grammar source, regenerate parser outputs as needed, and verify the corpus fixtures.
+
+
+ ## Adding a New Feature
+
+ 1. Create `features/<feature-name>/PRD.md` describing the problem, success
+    criteria, and acceptance tests before writing any code.
+ 2. Write failing tests first (TDD) where practical.
+ 3. Implement the smallest change that makes the tests pass. Always do the RIGHT thing, not the FAST thing, so never hack tests or add lint ignore rules because that's easier than fixing the underlying issue.
+ 6. Update `PROJECT_OVERVIEW.md` if the architecture changes.
