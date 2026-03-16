@@ -27,7 +27,7 @@ target new_system {
   customer_id   UUID
 }
 
-map {
+mapping {
   CUST_ID -> customer_id
 }
 ```
@@ -36,7 +36,7 @@ Three blocks, and you can already see the entire story:
 
 1. **`source`** — describes the structure of the data you're reading *from*.
 2. **`target`** — describes the structure of the data you're writing *to*.
-3. **`map`** — describes how fields in the source become fields in the target.
+3. **`mapping`** — describes how fields in the source become fields in the target.
 
 The arrow (`->`) is the heart of STM. Read it as *"maps to"* or *"becomes"*. `CUST_ID -> customer_id` means: take the value from `CUST_ID` in the source and put it into `customer_id` in the target.
 
@@ -92,7 +92,7 @@ Notice that **data types are freeform** — STM doesn't enforce a type system. Y
 A bare arrow (`->`) is fine for direct copies, but most real mappings require some transformation. In STM, you add transforms after a colon (`:`):
 
 ```stm
-map {
+mapping {
   CUST_ID -> customer_id
 
   EMAIL_ADDR -> email : trim | lowercase | validate_email
@@ -298,7 +298,7 @@ So far we've used `source` and `target`, but STM provides several schema keyword
 | `schema` | Generic — when the role is ambiguous |
 | `lookup` | Reference data used for enrichment only |
 
-These keywords are **documentary, not behavioural** — they all produce identical blocks. What determines whether something is a source or target is how it appears in the `map` block. The keywords simply help the reader understand the nature of each system at a glance.
+These keywords are **documentary, not behavioural** — they all produce identical blocks. What determines whether something is a source or target is how it appears in the `mapping` block. The keywords simply help the reader understand the nature of each system at a glance.
 
 ```stm
 message edi_856 "EDI 856 Despatch Advice" @format(fixed-length) {
@@ -344,7 +344,7 @@ source order_api {
 The `[]` suffix means "array of" — so `items[]` is a repeating group. In the mapping block, you reference nested fields using dot notation:
 
 ```stm
-map order_api -> order_headers {
+mapping order_api -> order_headers {
   orderId -> order_id
   shippingAddress.city -> ship_city
   shippingAddress.country -> ship_country : trim | uppercase
@@ -356,7 +356,7 @@ map order_api -> order_headers {
 A common ETL pattern is taking a single source record that contains an array and producing one output row per array element. STM calls this **flattening**:
 
 ```stm
-map order_api -> order_lines [flatten: items[]] {
+mapping order_api -> order_lines [flatten: items[]] {
   orderId          -> order_id
   customerName     -> customer_name
   items[].sku      -> product_sku
@@ -365,13 +365,13 @@ map order_api -> order_lines [flatten: items[]] {
 }
 ```
 
-The `flatten: items[]` option on the map block tells the reader (and any tooling): *"For each element in the `items` array, emit one target row. Parent-level fields like `orderId` are repeated."*
+The `flatten: items[]` option on the mapping block tells the reader (and any tooling): *"For each element in the `items` array, emit one target row. Parent-level fields like `orderId` are repeated."*
 
-This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In STM, it's a single option on the map header, and the array path references make the grain of the target table completely unambiguous.
+This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In STM, it's a single option on the mapping header, and the array path references make the grain of the target table completely unambiguous.
 
 ### Multiple Sources and Targets
 
-Enterprise integrations rarely involve just one source and one target. STM handles this with **explicit map blocks** that name the source-target pair:
+Enterprise integrations rarely involve just one source and one target. STM handles this with **explicit mapping blocks** that name the source-target pair:
 
 ```stm
 source crm_system {
@@ -394,12 +394,12 @@ target analytics_db {
   transaction_count INT
 }
 
-map crm_system -> analytics_db {
+mapping crm_system -> analytics_db {
   customer_id -> customer_id
   email -> email
 }
 
-map payment_gateway -> analytics_db {
+mapping payment_gateway -> analytics_db {
   amount -> total_spent
     : nl("Sum all transactions where status = 'completed',
           grouped by customer_email.")
@@ -409,7 +409,7 @@ map payment_gateway -> analytics_db {
 }
 ```
 
-Each map block clearly states which source feeds which target. This is far easier to follow than a spreadsheet with a "Source System" column that you have to filter.
+Each mapping block clearly states which source feeds which target. This is far easier to follow than a spreadsheet with a "Source System" column that you have to filter.
 
 ---
 
@@ -554,7 +554,7 @@ target snowflake_opps "FACT_OPPORTUNITIES" {
   is_closed        BOOLEAN
 }
 
-map sfdc_opportunity -> snowflake_opps {
+mapping sfdc_opportunity -> snowflake_opps {
   Id -> opp_key
   Name -> opportunity_name
 
@@ -610,7 +610,7 @@ That single row raises immediate questions. *"What about 'Value Prop' — is tha
 |---------|--------|---------|
 | Source/Target | `source name { ... }` | Describes a system's data structure |
 | Field | `name TYPE [tags]` | One data element |
-| Map block | `map source -> target { ... }` | Defines transformations between two schemas |
+| Mapping block | `mapping source -> target { ... }` | Defines transformations between two schemas |
 | Direct mapping | `A -> B` | Source field maps to target field |
 | Transform | `A -> B : trim \| lowercase` | Mapping with a transformation pipeline |
 | Computed field | `=> B : expression` | Target field with no direct source |
@@ -646,7 +646,7 @@ When you next review a mapping specification, try this approach:
 1. **Start with the integration block.** Read the note for project context, constraints, and dependencies. Check the cardinality matches your understanding of the integration pattern.
 2. **Scan the `//!` warnings.** These are known data-quality risks and issues. Make sure each one has a plan — is it handled in the transform, or is it an open item?
 3. **Count the `//?` questions.** These are unresolved items. They should all be resolved before sign-off. If any remain, they're your action items.
-4. **Walk the map block line by line.** For each mapping, ask: *"Does this transform match the business rule we agreed?"* Pay particular attention to value maps, conditionals, and `nl()` blocks — these encode your business logic.
+4. **Walk the mapping block line by line.** For each mapping, ask: *"Does this transform match the business rule we agreed?"* Pay particular attention to value maps, conditionals, and `nl()` blocks — these encode your business logic.
 5. **Check for computed fields (`=>`).**  These target fields have no direct source, so they're easy to miss. Make sure the derivation logic is correct and complete.
 6. **Look at fallback expressions.** These define what happens when preferred data is missing. Confirm the fallback behaviour matches your requirements.
 
