@@ -1,6 +1,6 @@
 // SYNTAX TEST "source.stm" "transform expression scopes"
 
-map {
+mapping {
   EMAIL -> email : trim | lower
   //               ^^^^ - keyword.control.conditional.stm
   //                    ^ keyword.operator.pipe.stm

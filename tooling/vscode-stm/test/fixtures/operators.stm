@@ -1,6 +1,6 @@
 // SYNTAX TEST "source.stm" "operator and punctuation scopes"
 
-map {
+mapping {
   src -> tgt
   //  ^^ keyword.operator.arrow.stm
 

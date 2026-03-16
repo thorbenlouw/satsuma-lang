@@ -162,8 +162,8 @@
     },
 
     "map-block": {
-      "comment": "map SourceSchema TargetSchema { ... } or map { ... }",
-      "begin": "^\\s*(map)\\b",
+      "comment": "mapping SourceSchema TargetSchema { ... } or mapping { ... }",
+      "begin": "^\\s*(mapping)\\b",
       "end": "(?<=\\})",
       "beginCaptures": {
         "1": { "name": "keyword.other.stm" }
@@ -450,7 +450,7 @@
 
     "schema-name": {
       "comment": "Block/schema name after declaration keyword",
-      "match": "(?<=^\\s*(?:source|target|table|message|record|event|schema|lookup|fragment|map)\\s)([A-Za-z_][\\w]*)",
+      "match": "(?<=^\\s*(?:source|target|table|message|record|event|schema|lookup|fragment|mapping)\\s)([A-Za-z_][\\w]*)",
       "captures": {
         "1": { "name": "entity.name.type.stm" }
       }

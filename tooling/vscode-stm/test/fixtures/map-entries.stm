@@ -1,6 +1,6 @@
 // SYNTAX TEST "source.stm" "map entry scopes"
 
-map {
+mapping {
   // Direct mapping
   customer_id -> cust_id
   //          ^^ keyword.operator.arrow.stm

@@ -1,6 +1,6 @@
 // SYNTAX TEST "source.stm" "path scopes"
 
-map {
+mapping {
   // Dotted path — coloured uniformly
   sfdc_account.BillingCountry -> billing_country
 

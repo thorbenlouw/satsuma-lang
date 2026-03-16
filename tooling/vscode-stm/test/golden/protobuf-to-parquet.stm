@@ -107,7 +107,7 @@ table commerce_session_parquet "Session-level analytics dataset" @format(parquet
 // Mapping Logic
 // ============================================================
 
-map commerce_event_pb -> commerce_session_parquet [group_by: session_id] {
+mapping commerce_event_pb -> commerce_session_parquet [group_by: session_id] {
   @on_error(log)
   @error_threshold(0.02)
 

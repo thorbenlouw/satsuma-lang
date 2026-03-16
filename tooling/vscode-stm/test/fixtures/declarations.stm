@@ -44,6 +44,6 @@ fragment my_fragment {
 // <-------- keyword.other.stm
 }
 
-map {
+mapping {
 // <--- keyword.other.stm
 }

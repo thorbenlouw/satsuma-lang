@@ -116,7 +116,7 @@ schema mfcs_json "MFCS Shipment Ingestion Format" {
 // Mapping Logic
 // ============================================================
 
-map edi_desadv -> mfcs_json {
+mapping edi_desadv -> mfcs_json {
   // --- Header ---
   BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo
     : trim | max_length(30)

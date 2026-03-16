@@ -46,13 +46,13 @@ DBML has demonstrated that a concise, visually clean syntax for describing data 
 
 We want exactly these properties for mapping documents.
 
-DBML's limitation is that it only describes structure (tables, columns, relationships) — not transformations. STM extends the paradigm with `map {}` blocks while keeping the schema description style.
+DBML's limitation is that it only describes structure (tables, columns, relationships) — not transformations. STM extends the paradigm with `mapping {}` blocks while keeping the schema description style.
 
 ---
 
-### DD-003: Implicit vs explicit scoping in map blocks
+### DD-003: Implicit vs explicit scoping in mapping blocks
 
-**Decision:** For 1:1 cardinality, bare field names in `map {}` resolve implicitly (left = source, right = target). For N:M, you name the pair: `map A -> B { ... }`. Explicit qualification (`schema_id.field`) is always available as an override.
+**Decision:** For 1:1 cardinality, bare field names in `mapping {}` resolve implicitly (left = source, right = target). For N:M, you name the pair: `mapping A -> B { ... }`. Explicit qualification (`schema_id.field`) is always available as an override.
 
 **Alternatives considered:**
 1. Always require explicit `schema_id.field` paths (like STM-YAML v3)
@@ -61,9 +61,9 @@ DBML's limitation is that it only describes structure (tables, columns, relation
 
 **Reasoning:**
 
-In real-world mapping documents, 70-80% of integrations are 1:1. Requiring `legacy_sqlserver.CUST_ID -> postgres_db.customer_id` on every line when there's only one source and one target is pure noise. The implicit approach for 1:1 is unambiguous and saves ~30% of tokens in the map block.
+In real-world mapping documents, 70-80% of integrations are 1:1. Requiring `legacy_sqlserver.CUST_ID -> postgres_db.customer_id` on every line when there's only one source and one target is pure noise. The implicit approach for 1:1 is unambiguous and saves ~30% of tokens in the mapping block.
 
-For N:M, ambiguity is real — if `email` exists in three sources, the parser can't know which you mean. Naming the pair (`map crm_system -> analytics_db`) establishes the context. The escape hatch (`payment_gateway.status` inside a `crm -> notification` block) handles the cross-reference case without abandoning the implicit default.
+For N:M, ambiguity is real — if `email` exists in three sources, the parser can't know which you mean. Naming the pair (`mapping crm_system -> analytics_db`) establishes the context. The escape hatch (`payment_gateway.status` inside a `crm -> notification` block) handles the cross-reference case without abandoning the implicit default.
 
 **Risk:** Implicit scoping could confuse newcomers who don't realize left/right resolution differs. Mitigation: the linter catches ambiguous references and suggests explicit qualification.
 
@@ -80,7 +80,7 @@ For N:M, ambiguity is real — if `email` exists in three sources, the parser ca
 
 **Reasoning:**
 
-The two-operator approach makes intent visually obvious at a glance. When scanning a map block, you can immediately distinguish "this target is fed by that source" from "this target is calculated." The `=>` reads as "results in" without implying a specific source.
+The two-operator approach makes intent visually obvious at a glance. When scanning a mapping block, you can immediately distinguish "this target is fed by that source" from "this target is calculated." The `=>` reads as "results in" without implying a specific source.
 
 We avoid keywords (option 2) because they add line length and visual noise. We chose `=>` over `~>` because `=>` is universally recognized from JavaScript, Scala, and other languages.
 

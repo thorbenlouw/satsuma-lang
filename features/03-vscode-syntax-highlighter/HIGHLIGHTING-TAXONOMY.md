@@ -30,7 +30,8 @@ These keywords introduce top-level or nested blocks. All are reserved
 | `schema` | Schema block (generic), also used in workspace entries | §6.1, §4.7 |
 | `lookup` | Schema block (reference data) | §6.1 |
 | `fragment` | Reusable partial schema | §7 |
-| `map` | Mapping block, also used for inline value-map literals | §8.1, §8.4 |
+| `mapping` | Mapping block | §8.1 |
+| `map` | Inline value-map literal keyword | §8.4 |
 | `import` | Import declaration | §4 |
 | `namespace` | Soft keyword — namespace declaration | §4.5 |
 | `workspace` | Soft keyword — workspace block | §4.7 |
@@ -149,7 +150,7 @@ Tags appear in square-bracket lists after field type expressions.
 | Array group | `name[] { fields }` |
 | Field declaration | `name TYPE [tags] @annotations` |
 | Fragment spread | `...fragment_name` |
-| Map body `{ ... }` | Contains map entries, nested maps, transforms, notes, comments |
+| Mapping body `{ ... }` | Contains map entries, nested maps, transforms, notes, comments |
 | Integration body `{ ... }` | Contains key-value fields, notes, comments |
 | Workspace body `{ ... }` | Contains `schema ... from ...` entries, notes |
 | Note block | `note '''...'''` |
@@ -168,7 +169,7 @@ GitHub, Catppuccin).
 
 | STM Construct | TextMate Scope | Notes |
 |---------------|---------------|-------|
-| Declaration keywords (`integration`, `source`, `target`, `table`, `message`, `record`, `event`, `schema`, `lookup`, `fragment`, `map`) | `keyword.other.stm` | All schema-block keywords are synonyms; use a single scope |
+| Declaration keywords (`integration`, `source`, `target`, `table`, `message`, `record`, `event`, `schema`, `lookup`, `fragment`, `mapping`) | `keyword.other.stm` | All schema-block keywords are synonyms; use a single scope |
 | `import` | `keyword.control.import.stm` | Matches standard import colouring |
 | `from` | `keyword.control.import.stm` | Part of import/workspace syntax |
 | `as` | `keyword.control.import.stm` | Import alias |
@@ -344,15 +345,15 @@ maintain a function name list in the TextMate grammar.
 **Semantic token opportunity**: Parser-backed transform analysis knows which
 identifiers are in function-call position.
 
-### 3.6 `map` Keyword in Value-Map Literals vs. Block Declarations
+### 3.6 `map` Keyword in Value-Map Literals vs. `mapping` Block Declarations
 
-**Problem**: `map` can be both a top-level block keyword and an inline value-map
-literal keyword (e.g. `map { R: "retail", ... }`). TextMate can only distinguish
-these by context (top-level vs. inside a transform pipeline).
+**Problem** (largely resolved): The top-level block keyword is now `mapping`, while
+inline value-map literals use `map` (e.g. `map { R: "retail", ... }`). The different
+keywords eliminate most ambiguity. TextMate still needs context awareness for edge
+cases where `map` appears at varying nesting levels.
 
-**TextMate approach**: Use the pattern's parent context: `map` at top level (or after
-specified keywords) is a declaration keyword; `map` preceded by `:` or `|` inside a
-map body is treated as a function/keyword in transform context. Accept minor overlap.
+**TextMate approach**: `mapping` is always a declaration keyword. `map` preceded by
+`:` or `|` inside a mapping body is treated as a value-map literal keyword.
 
 **Semantic token opportunity**: Parser distinguishes `map_block` from
 `value_map_literal` structurally.
@@ -484,7 +485,7 @@ incrementally.
 tooling/vscode-stm/
 ├── test/
 │   ├── fixtures/
-│   │   ├── declarations.stm      # schema/integration/fragment/map block headers
+│   │   ├── declarations.stm      # schema/integration/fragment/mapping block headers
 │   │   ├── fields.stm            # field declarations with types, tags, annotations
 │   │   ├── tags.stm              # tag lists, enum values, edge cases
 │   │   ├── annotations.stm       # all annotation forms

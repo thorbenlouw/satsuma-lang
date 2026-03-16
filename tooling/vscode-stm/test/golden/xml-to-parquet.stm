@@ -125,7 +125,7 @@ table order_lines_parquet "Curated order line dataset" @format(parquet) {
 // Mapping Logic
 // ============================================================
 
-map commerce_order_xml -> order_headers_parquet {
+mapping commerce_order_xml -> order_headers_parquet {
   Order.OrderId -> order_id
 
   Order.Channel -> order_channel
@@ -171,7 +171,7 @@ map commerce_order_xml -> order_headers_parquet {
     | nl("Truncate timestamp to UTC calendar date in YYYY-MM-DD format.")
 }
 
-map commerce_order_xml -> order_lines_parquet [flatten: Order.LineItems[]] {
+mapping commerce_order_xml -> order_lines_parquet [flatten: Order.LineItems[]] {
   Order.OrderId -> order_id
   Order.LineItems[].LineNumber -> line_number
   Order.LineItems[].SKU -> sku
