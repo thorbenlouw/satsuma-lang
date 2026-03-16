@@ -1,6 +1,6 @@
 ---
 id: stm-d281
-status: open
+status: closed
 deps: []
 links: [stm-jruy, stm-2szj, stm-eg9u, stm-5pi1, stm-pzwn, stm-to29]
 created: 2026-03-16T15:45:30Z
