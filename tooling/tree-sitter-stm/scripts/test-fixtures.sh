@@ -6,6 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXAMPLES_DIR="$(cd "$SCRIPT_DIR/../../../examples" && pwd)"
+TREE_SITTER_LOCAL="$SCRIPT_DIR/../../../scripts/tree-sitter-local.sh"
 
 # Return a known-gap explanation for a file, or empty string if not a known gap.
 known_gap_reason() {
@@ -24,7 +25,7 @@ while IFS= read -r -d '' file; do
   rel="${file#$EXAMPLES_DIR/}"
   reason="$(known_gap_reason "$rel")"
 
-  if tree-sitter parse --quiet "$file" > /dev/null 2>&1; then
+  if "$TREE_SITTER_LOCAL" parse -p "$SCRIPT_DIR/.." --quiet "$file" > /dev/null 2>&1; then
     pass=$((pass + 1))
   elif [ -n "$reason" ]; then
     known=$((known + 1))
@@ -44,7 +45,7 @@ if [ $fail -gt 0 ]; then
   echo "Unexpected failures:"
   for f in "${errors[@]}"; do
     echo "  $f"
-    tree-sitter parse --quiet "$EXAMPLES_DIR/$f" 2>&1 | head -5 | sed 's/^/    /'
+    "$TREE_SITTER_LOCAL" parse -p "$SCRIPT_DIR/.." --quiet "$EXAMPLES_DIR/$f" 2>&1 | head -5 | sed 's/^/    /'
   done
   exit 1
 fi

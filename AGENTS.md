@@ -77,27 +77,25 @@ Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
 - Invalid or recovery-sensitive behavior should include malformed input tests.
 - Avoid merging parser work that is only manually verified.
 
-## Running tree-sitter Commands (Sandbox Limitation)
+## Running tree-sitter Commands
 
-`tree-sitter test`, `tree-sitter build`, and `tree-sitter parse` require compiling a native `.dylib` from `src/parser.c`. This compilation fails inside the Claude Code sandbox because there is no accessible C compiler or macOS SDK.
+Use the repo-local wrapper [`scripts/tree-sitter-local.sh`](/Users/thorben/dev/personal/stm/scripts/tree-sitter-local.sh) for every Tree-sitter command. It sets `XDG_CACHE_HOME` to a repo-local cache directory and uses a repo-local config file so agent runs do not depend on `~/.cache/tree-sitter` or global parser config.
 
-**Do not waste tokens attempting to compile tree-sitter inside the sandbox.** Instead, ask the user to run the command in their terminal and tee output to a file you can read:
+Preferred forms:
 
+```bash
+./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-stm examples/common.stm --quiet
+./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-stm examples/common.stm
+cd tooling/tree-sitter-stm && ../../scripts/tree-sitter-local.sh test
+cd tooling/tree-sitter-stm && ../../scripts/tree-sitter-local.sh generate
 ```
-Please run this in your terminal and save the output so I can see it:
 
-  cd tooling/tree-sitter-stm && npm test 2>&1 | tee /tmp/ts-test.out
+Agent requirements:
 
-I'll read /tmp/ts-test.out once you're done.
-```
-
-Common commands to hand off:
-- `npm test` (runs `tree-sitter test`) — corpus test results
-- `npm run generate` — regenerate parser from grammar.js (safe inside sandbox, no compile needed)
-- `tree-sitter parse <file> --quiet` — check a specific file for parse errors
-- `tree-sitter parse <file>` — full parse tree
-
-You can write grammar changes and corpus fixture changes freely inside the sandbox. Only the compile+test step needs the user's terminal.
+- Do not call bare `tree-sitter ...` commands when the wrapper can be used.
+- Do not ask the user to run Tree-sitter commands just to work around cache/config path issues.
+- When adding scripts or docs, point them at the wrapper instead of the global CLI.
+- If a Tree-sitter command still fails after using the wrapper, report the concrete failure before falling back to a user handoff.
 
 ## Code Search with ast-grep
 
@@ -163,4 +161,3 @@ Expected workflow:
 - If a requested change would contradict the spec, stop and raise the conflict clearly.
 - For work in `tooling/tree-sitter-stm/`, treat corpus tests in `tooling/tree-sitter-stm/test/corpus/` and generated parser artifacts as part of the implementation surface.
 - When changing the tree-sitter grammar, update the grammar source, regenerate parser outputs as needed, and verify the corpus fixtures.
-

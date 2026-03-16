@@ -42,12 +42,53 @@ implementation priorities are:
 - `test/corpus/`: feature-oriented grammar corpus
 - `scripts/`: parser smoke tests and utility scripts if needed
 
+## Consumer Smoke Test
+
+`scripts/cst_summary.py` is the parser-consumer proof for this package. It runs
+the repo-local Tree-sitter wrapper for each STM example file and emits JSON
+summaries derived from CST node types, fields, and byte ranges rather than
+reparsing STM syntax from raw text.
+
+It currently proves extraction of:
+
+- top-level blocks and schema descriptions
+- schema fields and groups
+- map entries and path nodes
+- comment severities
+- note blocks and annotations
+
+Run it from this package directory:
+
+```bash
+python3 scripts/cst_summary.py --pretty
+```
+
+Or through npm:
+
+```bash
+npm run smoke:summary
+```
+
+The parser-only unit test for the summary extractor itself does not require
+native compilation:
+
+```bash
+python3 scripts/test_cst_summary.py
+```
+
 ## Local Prerequisites
 
 Generating the parser requires the local `tree-sitter-cli` package. Running
 parser tests also requires a working C toolchain. On macOS that means Command
 Line Tools or Xcode must be installed and selected so `tree-sitter test` can
 compile the generated parser.
+
+Use the repo-local wrapper at [`scripts/tree-sitter-local.sh`](/Users/thorben/dev/personal/stm/scripts/tree-sitter-local.sh) for direct CLI work. It keeps Tree-sitter cache and config inside the repository so sandboxed agent runs do not depend on `~/.cache/tree-sitter` or global config:
+
+```bash
+../../scripts/tree-sitter-local.sh parse -p . ../../examples/common.stm --quiet
+../../scripts/tree-sitter-local.sh test
+```
 
 ## Version Target
 
