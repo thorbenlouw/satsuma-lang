@@ -1,0 +1,598 @@
+==================
+Simple direct map entry
+==================
+
+map source -> target {
+  field_a -> field_b
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Map entry with inline transform
+==================
+
+map source -> target {
+  raw_value -> clean_value : trim | lowercase
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (identifier)
+        (operator)
+        (identifier)))))
+
+==================
+Computed map entry
+==================
+
+map source -> target {
+  => derived_field : constant_value
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (computed_map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (identifier)))))
+
+==================
+Map entry with dotted field path
+==================
+
+map source -> target {
+  order.line_item.sku -> product_sku
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier))
+          (path_segment
+            (identifier))
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Map entry with array segment
+==================
+
+map source -> target {
+  items[].sku -> product_codes[]
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier))
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Map entry with relative field path on target
+==================
+
+map source -> target {
+  field_a -> .nested.value
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (relative_field_path
+          (path_segment
+            (identifier))
+          (path_segment
+            (identifier)))))))
+
+==================
+Namespace-qualified source path in map entry
+==================
+
+map crm::orders -> warehouse::fact_orders {
+  crm::orders.order_id -> source_order_id
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (ns_qualifier
+        (identifier)
+        (namespace_separator))
+      (identifier))
+    (namespaced_path
+      (ns_qualifier
+        (identifier)
+        (namespace_separator))
+      (identifier))
+    (map_body
+      (map_entry
+        (namespaced_field_path
+          (identifier)
+          (namespace_separator)
+          (field_path
+            (path_segment
+              (identifier))
+            (path_segment
+              (identifier))))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Pipe continuation after map entry
+==================
+
+map source -> target {
+  raw_email -> clean_email : trim
+  | lowercase
+  | validate_email
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (identifier))
+      (pipe_continuation
+        (identifier))
+      (pipe_continuation
+        (identifier)))))
+
+==================
+When and else clauses
+==================
+
+map source -> target {
+  status -> mapped_status
+  when status == "active" => "ACTIVE"
+  else => "INACTIVE"
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (when_clause
+        (identifier)
+        (comparison_operator)
+        (string_literal)
+        (string_literal))
+      (else_clause
+        (string_literal)))))
+
+==================
+Fallback clause
+==================
+
+map source -> target {
+  primary_phone -> phone
+  fallback mobile_phone
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (fallback_clause
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Fallback clause with transform
+==================
+
+map source -> target {
+  primary_phone -> phone
+  fallback mobile_phone | trim
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (fallback_clause
+        (field_path
+          (path_segment
+            (identifier)))
+        (identifier)))))
+
+==================
+Map block with no source/target header
+==================
+
+map {
+  field_a -> field_b
+}
+
+---
+
+(source_file
+  (map_block
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Map entry with annotation in transform
+==================
+
+map source -> target {
+  value -> result : @format(iso8601)
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (annotation
+          (identifier)
+          (annotation_argument
+            (path_reference
+              (identifier))))))))
+
+==================
+Map entry with trailing comment
+==================
+
+map source -> target {
+  id -> record_id //! verify mapping
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (comment
+          (warning_comment))))))
+
+==================
+Transform head (colon continuation on next line)
+==================
+
+map source -> target {
+  field_a -> field_b
+    : trim
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (identifier)))))
+
+==================
+Transform head followed by pipe continuation
+==================
+
+map source -> target {
+  field_a -> field_b
+    : trim
+    | lowercase
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (identifier))
+      (pipe_continuation
+        (identifier)))))
+
+==================
+Value-map literal as inline transform
+==================
+
+map source -> target {
+  status -> mapped_status : map { A: "active", S: "suspended" }
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (value_map_literal
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (identifier)
+            (string_literal)))))))
+
+==================
+Value-map literal as transform head with wildcard fallback
+==================
+
+map source -> target {
+  code -> label
+    : map { R: "retail", B: "business", _: "unknown" }
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (value_map_literal
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (wildcard)
+            (string_literal)))))))
+
+==================
+When clause with comparison-only condition
+==================
+
+map source -> target {
+  score -> tier
+  when < 1000 => "low"
+  else => "high"
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (when_clause
+        (comparison_operator)
+        (number_literal)
+        (string_literal))
+      (else_clause
+        (string_literal)))))
+
+==================
+When clause with in expression
+==================
+
+map source -> target {
+  type -> label
+  when type in (null, "A") => "primary"
+  else => "secondary"
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (when_clause
+        (identifier)
+        (identifier)
+        (symbol)
+        (null_literal)
+        (symbol)
+        (string_literal)
+        (symbol)
+        (string_literal))
+      (else_clause
+        (string_literal)))))

@@ -116,10 +116,13 @@ map crm_system -> analytics_db [flatten: items, when: active] {
           (path_reference
             (identifier)))))
     (map_body
-      (raw_map_line
-        (identifier)
-        (arrow)
-        (identifier)))))
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
 
 ==================
 Comments and nested blocks
@@ -268,10 +271,13 @@ map crm::orders -> warehouse::fact_orders {
         (namespace_separator))
       (identifier))
     (map_body
-      (raw_map_line
-        (identifier)
-        (arrow)
-        (identifier)))))
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
 
 ==================
 Plain map header still parses as namespaced_path (backwards compat)
@@ -290,10 +296,13 @@ map crm_system -> analytics_db {
     (namespaced_path
       (identifier))
     (map_body
-      (raw_map_line
-        (identifier)
-        (arrow)
-        (identifier)))))
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
 
 ==================
 Cross-namespace field reference in map body
@@ -318,14 +327,18 @@ map crm::orders -> warehouse::fact_orders {
         (namespace_separator))
       (identifier))
     (map_body
-      (raw_map_line
-        (identifier)
-        (namespace_separator)
-        (identifier)
-        (symbol)
-        (identifier)
-        (arrow)
-        (identifier)))))
+      (map_entry
+        (namespaced_field_path
+          (identifier)
+          (namespace_separator)
+          (field_path
+            (path_segment
+              (identifier))
+            (path_segment
+              (identifier))))
+        (field_path
+          (path_segment
+            (identifier)))))))
 
 ==================
 Namespace declaration before import

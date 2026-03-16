@@ -9,6 +9,46 @@ module.exports = grammar({
 
   word: ($) => $.identifier,
 
+  conflicts: ($) => [
+    // map_entry and raw_map_line both start with an identifier; prefer map_entry
+    [$.map_entry, $.raw_map_line],
+    // nested_map (tokens followed by {}) vs map_entry vs raw_map_line
+    [$.map_entry, $.nested_map],
+    [$.nested_map, $.raw_map_line],
+    // computed_map_entry starts with => which is also in _map_line_token / fat_arrow
+    [$.computed_map_entry, $.raw_map_line],
+    [$.computed_map_entry, $.fat_arrow],
+    // when/else/fallback clauses start with identifiers that are also _map_line_token
+    [$.when_clause, $.raw_map_line],
+    [$.else_clause, $.raw_map_line],
+    [$.fallback_clause, $.raw_map_line],
+    [$.pipe_continuation, $.raw_map_line],
+    [$.pipe_continuation, $.operator],
+    // field_path and path_reference overlap in some contexts
+    [$.field_path, $.path_reference],
+    // relative_field_path starts with '.' which is also a symbol token
+    [$.relative_field_path, $.symbol],
+    // namespaced paths share prefix
+    [$.namespaced_field_path, $.namespaced_path],
+    // when_clause vs map_entry: source field named "when"
+    [$.map_entry, $.when_clause],
+    [$.map_entry, $.fallback_clause],
+    [$.map_entry, $.else_clause],
+    // inline rule conflicts: _identifier vs _map_line_token when starting a map item
+    [$._identifier, $._map_line_token],
+    // path_segment vs raw token sequences
+    [$.path_segment, $._map_line_token],
+    [$._map_lhs, $.raw_map_line],
+    [$.field_path, $.raw_map_line],
+    [$.namespaced_field_path, $._map_line_token],
+    // transform_head starts with ':' which is also a symbol in raw_map_line / map items
+    [$.transform_head, $.raw_map_line],
+    [$.transform_head, $.symbol],
+    // value_map_literal uses "map" keyword which is also a valid identifier
+    [$.value_map_literal, $._map_line_token],
+    [$.value_map_literal, $.identifier],
+  ],
+
   rules: {
     source_file: ($) =>
       repeat(choice($._newline, $.comment_line, $._top_level_declaration)),
@@ -223,6 +263,10 @@ module.exports = grammar({
         $._identifier
       ),
 
+    // =========================================================
+    // Map blocks
+    // =========================================================
+
     map_block: ($) =>
       seq(
         "map",
@@ -244,15 +288,190 @@ module.exports = grammar({
         $._newline,
         $.comment_line,
         $.note_block,
-        $.raw_map_line,
-        $.generic_map_block
+        // Structured entry types (preferred over raw_map_line via conflicts + ordering)
+        $.computed_map_entry,
+        $.map_entry,
+        $.nested_map,
+        // Transform continuation lines
+        $.transform_head,
+        $.pipe_continuation,
+        $.when_clause,
+        $.else_clause,
+        $.fallback_clause,
+        // Catch-all fallback for complex or unstructured lines
+        $.raw_map_line
       ),
 
+    // Direct mapping: source -> target [: transform] [comment]
+    map_entry: ($) =>
+      prec.dynamic(10, prec.right(1, seq(
+        field("source", $._map_lhs),
+        "->",
+        field("target", $._map_lhs),
+        optional(seq(":", field("transform", repeat1($._transform_token)))),
+        optional($.comment),
+        $._newline
+      ))),
+
+    // Computed mapping: => target [: transform] [comment]
+    computed_map_entry: ($) =>
+      prec.dynamic(10, seq(
+        "=>",
+        field("target", $._map_lhs),
+        optional(seq(":", field("transform", repeat1($._transform_token)))),
+        optional($.comment),
+        $._newline
+      )),
+
+    // Block mapping: tokens { body } — covers nested array maps and entries with inline notes
+    nested_map: ($) =>
+      prec.dynamic(8, seq(repeat1($._map_line_token), field("body", $.map_body))),
+
+    // Fallback: any token sequence ending in newline (catch-all)
     raw_map_line: ($) =>
       seq(repeat1($._map_line_token), optional($.comment), $._newline),
 
-    generic_map_block: ($) =>
-      seq(repeat1($._map_line_token), "{", repeat($._map_item), "}"),
+    // =========================================================
+    // Transform continuation lines
+    // =========================================================
+
+    // Pipeline continuation: | step1 | step2
+    pipe_continuation: ($) =>
+      prec.dynamic(9, seq("|", repeat($._transform_token), optional($.comment), $._newline)),
+
+    // Conditional branch: when <condition> => <value>
+    when_clause: ($) =>
+      prec.dynamic(9, seq(
+        "when",
+        field("condition", repeat($._condition_token)),
+        "=>",
+        field("value", repeat1($._transform_token)),
+        optional($.comment),
+        $._newline
+      )),
+
+    // Else branch: else => <value>
+    else_clause: ($) =>
+      prec.dynamic(9, seq(
+        "else",
+        "=>",
+        field("value", repeat1($._transform_token)),
+        optional($.comment),
+        $._newline
+      )),
+
+    // Fallback source: fallback <path> [| transforms]
+    fallback_clause: ($) =>
+      prec.dynamic(9, seq(
+        "fallback",
+        field("path", $._map_lhs),
+        optional(seq("|", field("transform", repeat1($._transform_token)))),
+        optional($.comment),
+        $._newline
+      )),
+
+    // Colon-prefixed transform head on its own continuation line: : expr | pipe ...
+    transform_head: ($) =>
+      prec.dynamic(9, seq(
+        ":",
+        repeat1($._transform_token),
+        optional($.comment),
+        $._newline
+      )),
+
+    // =========================================================
+    // Value-map literals (inline lookup tables used in transforms)
+    // =========================================================
+
+    // map { key: value, key: value }
+    value_map_literal: ($) =>
+      seq(
+        "map",
+        "{",
+        commaSep1($.value_map_entry),
+        optional(","),
+        "}"
+      ),
+
+    value_map_entry: ($) =>
+      seq(
+        field("key", choice($._identifier, $.string_literal, $.null_literal, $.wildcard)),
+        ":",
+        field("value", choice($.string_literal, $.number_literal, $.boolean_literal, $.null_literal))
+      ),
+
+    // =========================================================
+    // Paths for map entry source / target positions
+    // =========================================================
+
+    // Union of all path forms valid in map entry source/target
+    _map_lhs: ($) =>
+      choice(
+        $.namespaced_field_path,
+        $.relative_field_path,
+        $.field_path
+      ),
+
+    // Namespace-qualified: ns::schema.field or ns::schema.field[]
+    namespaced_field_path: ($) =>
+      seq(
+        field("namespace", $.identifier),
+        $.namespace_separator,
+        field("path", $.field_path)
+      ),
+
+    // Relative path starting with dot: .field or .items[].sku
+    relative_field_path: ($) =>
+      seq(".", $.path_segment, repeat(seq(".", $.path_segment))),
+
+    // Simple or dotted path: field, field[], schema.field, items[].sku
+    field_path: ($) =>
+      seq($.path_segment, repeat(seq(".", $.path_segment))),
+
+    // Single path segment with optional array marker
+    path_segment: ($) =>
+      seq($._identifier, optional("[]")),
+
+    // =========================================================
+    // Token sets for transform / condition content
+    // =========================================================
+
+    // Tokens that can appear in transform expressions (after :, |, when/else value, etc.)
+    _transform_token: ($) =>
+      choice(
+        $.annotation,
+        $.value_map_literal,
+        $.identifier,
+        $.quoted_identifier,
+        $.string_literal,
+        $.number_literal,
+        $.boolean_literal,
+        $.null_literal,
+        $.comparison_operator,
+        $.fat_arrow,
+        $.operator,
+        $.namespace_separator,
+        $.symbol,
+        $.ellipsis
+      ),
+
+    // Tokens valid in when-clause conditions (excludes fat_arrow — it terminates the condition)
+    _condition_token: ($) =>
+      choice(
+        $.identifier,
+        $.quoted_identifier,
+        $.string_literal,
+        $.number_literal,
+        $.boolean_literal,
+        $.null_literal,
+        $.comparison_operator,
+        $.operator,
+        $.symbol
+      ),
+
+    // =========================================================
+    // Map options
+    // =========================================================
 
     map_option_list: ($) => seq("[", commaSep1($.map_option), "]"),
 
@@ -267,6 +486,10 @@ module.exports = grammar({
         $.null_literal,
         $.path_reference
       ),
+
+    // =========================================================
+    // Annotations
+    // =========================================================
 
     annotation: ($) =>
       seq(
@@ -304,8 +527,11 @@ module.exports = grammar({
         $.path_reference
       ),
 
-    // namespaced_path extends path_reference with an optional ns:: qualifier.
-    // Used in map block headers where full ns::schema_id paths are valid.
+    // =========================================================
+    // Paths (used in annotations, tags, map options, binary expressions)
+    // =========================================================
+
+    // namespaced_path: used in map_block headers (ns::schema or just schema)
     namespaced_path: ($) =>
       seq(
         optional($.ns_qualifier),
@@ -313,9 +539,10 @@ module.exports = grammar({
         repeat(seq(".", $._identifier))
       ),
 
-    // ns_qualifier captures the `namespace::` prefix in qualified paths.
+    // ns_qualifier: the `namespace::` prefix in qualified paths
     ns_qualifier: ($) => seq($.identifier, $.namespace_separator),
 
+    // path_reference: dotted path used in annotations, tags, conditions, options
     path_reference: ($) =>
       seq(
         $._identifier,
@@ -327,6 +554,10 @@ module.exports = grammar({
         )
       ),
 
+    // =========================================================
+    // Lexical
+    // =========================================================
+
     _identifier: ($) => choice($.identifier, $.quoted_identifier),
 
     identifier: () => /[A-Za-z][A-Za-z0-9_-]*/,
@@ -334,9 +565,9 @@ module.exports = grammar({
     quoted_identifier: () => token(seq("`", repeat(choice(/[^`]/, "``")), "`")),
 
     string_literal: () =>
-      token(seq('"', repeat(choice(/[^"\\\n]/, /\\./)), '"')),
+      token(seq('"', repeat(choice(/[^"\\]/, /\\./)), '"')),
 
-    multiline_string: () => token(/'''([^']|'|'')*'''/),
+    multiline_string: () => token(/'''([^']|'[^']|''[^'])*'''/),
 
     number_literal: () =>
       token(seq(optional("-"), /[0-9]+/, optional(seq(".", /[0-9]+/)))),
@@ -382,6 +613,7 @@ module.exports = grammar({
     fat_arrow: () => "=>",
     operator: () => choice("+", "-", "*", "/", "|", "\\"),
     namespace_separator: () => "::",
-    symbol: () => choice(":", ",", ".", "(", ")", "[", "]")
+    symbol: () => choice(":", ",", ".", "(", ")", "[", "]"),
+    wildcard: () => "_"
   }
 });
