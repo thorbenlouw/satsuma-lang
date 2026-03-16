@@ -1,7 +1,7 @@
 # Excel-to-STM Skill — TODO
 
 ## Phase 0: Lite System Prompt
-- [ ] Author `excel-to-stm-prompt.md` — assemble grammar, cheat sheet, examples, generation rules, and self-critique checklist from `AI-AGENT-REFERENCE.md`
+- [x] Author `excel-to-stm-prompt.md` — assemble grammar, cheat sheet, examples, generation rules, and self-critique checklist from `AI-AGENT-REFERENCE.md`
 - [ ] Test lite prompt against 2–3 sample spreadsheets on ChatGPT / Gemini / Claude.ai
 - [ ] Iterate on prompt wording based on output quality
 
