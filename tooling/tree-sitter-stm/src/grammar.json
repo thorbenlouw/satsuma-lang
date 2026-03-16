@@ -1196,6 +1196,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "standard_ref"
+        },
+        {
+          "type": "SYMBOL",
           "name": "path_reference"
         }
       ]
@@ -2647,6 +2651,22 @@
     "identifier": {
       "type": "PATTERN",
       "value": "[A-Za-z][A-Za-z0-9_-]*"
+    },
+    "standard_ref": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "[A-Za-z][A-Za-z0-9_-]*"
+          },
+          {
+            "type": "PATTERN",
+            "value": "(\\.[0-9][A-Za-z0-9_-]*)(\\.[A-Za-z0-9][A-Za-z0-9_-]*)*"
+          }
+        ]
+      }
     },
     "quoted_identifier": {
       "type": "TOKEN",

@@ -1923,6 +1923,10 @@
           "named": true
         },
         {
+          "type": "standard_ref",
+          "named": true
+        },
+        {
           "type": "string_literal",
           "named": true
         }
@@ -2528,6 +2532,10 @@
   {
     "type": "source",
     "named": false
+  },
+  {
+    "type": "standard_ref",
+    "named": true
   },
   {
     "type": "string_literal",

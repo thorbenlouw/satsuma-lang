@@ -261,6 +261,7 @@ module.exports = grammar({
         $.boolean_literal,
         $.null_literal,
         $.enum_value_set,
+        $.standard_ref,
         $.path_reference
       ),
 
@@ -591,6 +592,15 @@ module.exports = grammar({
     _identifier: ($) => choice($.identifier, $.quoted_identifier),
 
     identifier: () => /[A-Za-z][A-Za-z0-9_-]*/,
+
+    // standard_ref: letter-started dotted name where at least one segment after a dot
+    // starts with a digit — covers format standards like E.164, ISO-8601, etc.
+    standard_ref: () => token(
+      seq(
+        /[A-Za-z][A-Za-z0-9_-]*/,
+        /(\.[0-9][A-Za-z0-9_-]*)(\.[A-Za-z0-9][A-Za-z0-9_-]*)*/
+      )
+    ),
 
     quoted_identifier: () => token(seq("`", repeat(choice(/[^`]/, "``")), "`")),
 

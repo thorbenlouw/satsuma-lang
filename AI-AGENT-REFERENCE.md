@@ -28,9 +28,10 @@ field            = IDENT ["[]"] type_expr [tag_list] {annotation} ["{" note "}"]
 type_expr        = IDENT ["(" params ")"] ;
 tag_list         = "[" tag {"," tag} "]" ;
 tag              = IDENT [":" tag_value] ;
-tag_value        = enum_list | STRING | NUMBER | IDENT ;
+tag_value        = enum_list | STRING | NUMBER | STANDARD_REF | IDENT ;
 enum_list        = "{" enum_item {"," enum_item} [","] "}" ;
 enum_item        = STRING | NUMBER | IDENT ;
+STANDARD_REF     = LETTER IDENT_TAIL ("." DIGIT IDENT_TAIL)+ ;  (* e.g. E.164, ISO-8601 *)
 
 group            = IDENT ["[]"] {annotation} "{" block_body "}" ;
 spread           = "..." IDENT ;

@@ -474,11 +474,12 @@ tags           JSON
 Tags are enclosed in square brackets, comma-separated. Tag lists may wrap across lines when a tag value is long, especially for `enum` blocks:
 
 ```
-tag_list  = "[" tag { "," tag } "]"
-tag       = ident [ ":" tag_value ]
-tag_value = enum_list | string_literal | number | ident
-enum_list = "{" enum_item { "," enum_item } [ "," ] "}"
-enum_item = string_literal | number | ident
+tag_list     = "[" tag { "," tag } "]"
+tag          = ident [ ":" tag_value ]
+tag_value    = enum_list | string_literal | number | standard_ref | ident
+enum_list    = "{" enum_item { "," enum_item } [ "," ] "}"
+enum_item    = string_literal | number | ident
+standard_ref = LETTER ident_tail ( "." DIGIT ident_tail )+
 ```
 
 Reserved tag names with standard semantics:
@@ -500,6 +501,8 @@ Reserved tag names with standard semantics:
 | `ref: table.field` | Foreign key reference |
 
 `enum` always uses braced, comma-separated values. The unbraced whitespace form is not part of the language.
+
+Tag values that begin with a letter but contain a dot-separated segment starting with a digit (e.g. `E.164`, `ISO-8601`) are parsed as a `standard_ref` — a dedicated token that allows digit-starting dotted segments. Quoted identifiers (`` `E.164` ``) are also accepted.
 
 Custom tags are permitted. Tooling should pass through unrecognized tags without error.
 
@@ -1418,9 +1421,10 @@ param            = NUMBER | STRING | IDENT ;
 
 tag_list         = "[" tag { "," tag } "]" ;
 tag              = IDENT [ ":" tag_value ] ;
-tag_value        = enum_list | STRING | NUMBER | IDENT ;
+tag_value        = enum_list | STRING | NUMBER | STANDARD_REF | IDENT ;
 enum_list        = "{" enum_item { "," enum_item } [ "," ] "}" ;
 enum_item        = STRING | NUMBER | IDENT ;
+STANDARD_REF     = LETTER IDENT_TAIL ( "." DIGIT IDENT_TAIL )+ ;
 
 (* --- Groups --- *)
 group            = IDENT [ "[]" ] { annotation } "{" block_body "}" ;

@@ -151,6 +151,35 @@ integration "Example_Integration" {
         (multiline_string)))))
 
 ==================
+Tag value: standard reference (digit-starting segment)
+==================
+
+source phone_schema {
+  number STRING(20) [required, format: E.164]
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)
+          (type_argument
+            (number_literal)))
+        (tag_list
+          (tag
+            (identifier))
+          (tag
+            (identifier)
+            (tag_value
+              (standard_ref))))))))
+
+==================
 Broken tag list and incomplete annotation recovery
 ==================
 

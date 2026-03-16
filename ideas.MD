@@ -2,3 +2,8 @@
    that DBML doesn't currently target
 2. STM syntax highlighter for VSCode
 3. Language server to allow really efficient AI traversal of STM things (later)
+4. STM linter (CLI)
+5. Demonstrate using STM to trace lineage
+6. Reason loosely about type changes as transforms... flesh this out
+7. Incremental tutorial for BAs that starts simple and expands example-by-example to cover syntax and purpose
+8. Change top-level map construct to mapping to disambiguate from map transform
