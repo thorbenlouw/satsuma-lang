@@ -1,6 +1,6 @@
 ---
 id: stm-14x.8
-status: open
+status: closed
 deps: [stm-14x.6, stm-14x.7]
 links: []
 created: 2026-03-13T13:46:55Z

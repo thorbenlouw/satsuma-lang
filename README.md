@@ -72,7 +72,7 @@ target warehouse "Analytics Model" {
   is_active     BOOLEAN
 }
 
-map {
+mapping {
   id     -> customer_id   : uuid_v5("namespace", id)
   email  -> email_address : trim | lowercase | validate_email | null_if_invalid
   status -> is_active     : map { A: true, I: false }
@@ -92,6 +92,7 @@ and [examples/multi-source-hub.stm](/Users/thorben/dev/personal/stm/examples/mul
 - [USE_CASES.md](/Users/thorben/dev/personal/stm/USE_CASES.md): practical scenarios and personas
 - [examples/](/Users/thorben/dev/personal/stm/examples): canonical STM examples
 - [tooling/tree-sitter-stm/](/Users/thorben/dev/personal/stm/tooling/tree-sitter-stm): tree-sitter parser package
+- [tooling/vscode-stm/](/Users/thorben/dev/personal/stm/tooling/vscode-stm): VS Code syntax highlighting extension
 
 ## Current Status
 
@@ -123,7 +124,7 @@ and impact analysis.
 In practical terms:
 
 - library files define reusable schemas, fragments, and lookups
-- integration files define source/target structures and map blocks
+- integration files define source/target structures and mapping blocks
 - workspace files assemble many integrations into one platform scope
 
 This matters when multiple teams have similarly named schemas or when lineage
@@ -145,6 +146,47 @@ If you are contributing tooling, start here:
 - inspect the example corpus in [examples/](/Users/thorben/dev/personal/stm/examples)
 - review the parser plan in [features/01-treesitter-parser/PRD.md](/Users/thorben/dev/personal/stm/features/01-treesitter-parser/PRD.md)
 - treat CST and AST naming stability as part of the public implementation surface
+
+## Development
+
+### Prerequisites
+
+- Node.js 22+
+- Python 3.12+
+- C toolchain (Xcode Command Line Tools on macOS, `build-essential` on Linux)
+
+### Tree-sitter parser
+
+```bash
+cd tooling/tree-sitter-stm
+npm install
+npm run generate          # generate parser from grammar.js
+npm test                  # corpus tests + fixture tests + consumer tests + smoke tests
+```
+
+Individual test suites:
+
+```bash
+../../scripts/tree-sitter-local.sh test   # corpus tests only
+python3 scripts/test_fixtures.py          # example and recovery fixtures
+python3 scripts/test_cst_summary.py       # CST consumer unit tests
+python3 scripts/test_smoke_summary.py     # smoke test all examples
+```
+
+### VS Code extension
+
+```bash
+cd tooling/vscode-stm
+npm install
+npm run check             # validate manifest/grammar + run all tests
+```
+
+### CI
+
+GitHub Actions runs both the parser and VS Code extension checks on every push
+and pull request to `main`. The workflow also enforces that grammar conflict count
+matches `tooling/tree-sitter-stm/CONFLICTS.expected` — update that file when
+adding or removing documented conflicts.
 
 ## Contributing
 

@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  parser:
+    name: Tree-sitter parser
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tooling/tree-sitter-stm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: npm ci
+
+      - name: Generate parser
+        run: npm run generate
+
+      - name: Check grammar conflicts are documented
+        run: |
+          count=$(sed -n '/conflicts:.*=>/,/^  \]/p' grammar.js | grep -c '^\s*\[\$\.')
+          expected=$(cat CONFLICTS.expected)
+          echo "Grammar conflicts: $count (expected: $expected)"
+          if [ "$count" != "$expected" ]; then
+            echo "::error::Grammar conflict count changed: expected $expected, got $count"
+            echo "If intentional, update CONFLICTS.expected to $count and document the change."
+            exit 1
+          fi
+
+      - name: Run corpus tests
+        run: ../../scripts/tree-sitter-local.sh test
+
+      - name: Run fixture tests
+        run: python3 scripts/test_fixtures.py
+
+      - name: Run CST consumer unit tests
+        run: python3 scripts/test_cst_summary.py
+
+      - name: Run smoke tests (parse all examples)
+        run: python3 scripts/test_smoke_summary.py
+
+  vscode-extension:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tooling/vscode-stm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm ci
+
+      - name: Validate manifest and grammar
+        run: npm run validate
+
+      - name: Run fixture and golden tests
+        run: npm test

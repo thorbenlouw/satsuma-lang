@@ -25,22 +25,14 @@ checking, or code generation.
 - Parser task list: [`features/01-treesitter-parser/TODO.md`](/Users/thorben/dev/personal/stm/features/01-treesitter-parser/TODO.md)
 - CST/AST mapping: [`docs/ast-mapping.md`](/Users/thorben/dev/personal/stm/docs/ast-mapping.md)
 
-## Package Status
+## Package Layout
 
-The workspace is intentionally scaffolded before grammar rules land. Initial
-implementation priorities are:
-
-1. Lock CST node inventory and ambiguity boundaries.
-2. Bootstrap lexical tokens and top-level declarations.
-3. Add schema and mapping body parsing with corpus tests.
-4. Add queries, fixtures, and CI checks.
-
-## Planned Layout
-
-- `grammar.js`: Tree-sitter grammar definition
+- `grammar.js`: Tree-sitter grammar definition (28 documented conflicts)
 - `queries/`: highlight and fold queries
-- `test/corpus/`: feature-oriented grammar corpus
-- `scripts/`: parser smoke tests and utility scripts if needed
+- `test/corpus/`: feature-oriented grammar corpus (8 test files)
+- `test/fixtures/`: example and recovery fixture definitions
+- `scripts/`: test runners and the CST consumer proof
+- `CONFLICTS.expected`: locked conflict count for CI enforcement
 
 ## Consumer Proof — CST Summary
 
