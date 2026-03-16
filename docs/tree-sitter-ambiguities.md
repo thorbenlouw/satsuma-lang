@@ -8,12 +8,12 @@ targeted corpus coverage once the relevant grammar rules exist.
 
 ## High-Risk Ambiguities
 
-### `map` block versus transform value-map literal
+### `mapping` block versus transform value-map literal
 
 Examples:
 
 ```stm
-map source_a -> target_b {
+mapping source_a -> target_b {
   a -> b
 }
 
@@ -22,15 +22,15 @@ src -> tgt : map { A: "a", _: "fallback" }
 
 Risk:
 
-- both forms begin with the `map` keyword followed by `{`
+- one form begins with the `mapping` keyword, the other with `map`
 - one is a top-level declaration, the other is an expression in a transform
 
 Resolution direction:
 
-- reserve block-level `map` parsing to declaration positions
+- reserve block-level `mapping` parsing to declaration positions
 - inside transform context, parse `map { ... }` as a value-map literal
 
-### Nested map block versus mapping-entry note block
+### Nested mapping block versus mapping-entry note block
 
 Examples:
 
@@ -56,12 +56,12 @@ Resolution direction:
 - disambiguate based on first meaningful token inside the braces
 - `note`-only payloads should parse as mapping-entry note blocks
 
-### `when` in map header options versus transform continuation
+### `when` in mapping header options versus transform continuation
 
 Examples:
 
 ```stm
-map source -> target [when: status == "ACTIVE"] {
+mapping source -> target [when: status == "ACTIVE"] {
   a -> b
 }
 
@@ -76,7 +76,7 @@ Risk:
 
 Resolution direction:
 
-- header options only exist inside the map header option list
+- header options only exist inside the mapping header option list
 - continuation `when` clauses only exist after a transform head begins
 
 ### Relative dotted paths versus dotted identifiers
@@ -104,7 +104,7 @@ Examples:
 
 ```stm
 source customer {
-  `map` STRING
+  `mapping` STRING
 }
 ```
 
@@ -155,7 +155,7 @@ Resolution direction:
 
 - annotation parameter lists versus function-call transform arguments
 - array groups versus primitive array fields
-- custom map options versus malformed header content
+- custom mapping options versus malformed header content
 - import named list braces versus enum/tag braces
 
 ## Required Test Focus

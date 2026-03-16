@@ -19,11 +19,11 @@ The goal: identify common mapping patterns that STM should express well, track w
 STM v1.0 now handles the following patterns well (estimated 75-85% of real-world mapping documents):
 
 - Direct field-to-field mapping with type conversion
-- Conditional routing / fan-out via `map ... [when: ...]` blocks
+- Conditional routing / fan-out via `mapping ... [when: ...]` blocks
 - Value code mapping (e.g., `R` → `"retail"`)
 - Transform pipe chains (trim, lowercase, validate, etc.)
 - Lookup enrichment from reference tables
-- One-to-many flattening via `flatten:` map options
+- One-to-many flattening via `flatten:` mapping options
 - Many-to-one aggregation via `group_by:` and aggregate transforms
 - Nested object hierarchies (JSON, XML)
 - Array-to-array iteration with relative paths
@@ -47,23 +47,23 @@ STM v1.0 now handles the following patterns well (estimated 75-85% of real-world
 
 **Where it appears:** Azure Data Factory's Conditional Split transformation, SSIS Conditional Split, Apache NiFi routing, SAP CPI Router, virtually every ETL tool supports this as a first-class concept. It is one of the most common patterns in real-world integration.
 
-**STM v1.0 support:** `when:` map header options now provide parseable, lintable routing logic without adding a separate top-level construct.
+**STM v1.0 support:** `when:` mapping header options now provide parseable, lintable routing logic without adding a separate top-level construct.
 
 **Implemented syntax:**
 
 ```stm
-map source_orders -> us_warehouse [when: .region == "US"] {
+mapping source_orders -> us_warehouse [when: .region == "US"] {
   .order_id -> .order_id
   // ...
 }
 
-map source_orders -> eu_warehouse [when: .region == "EU"] {
+mapping source_orders -> eu_warehouse [when: .region == "EU"] {
   .order_id -> .order_id
   // ...
 }
 ```
 
-**Rationale:** Guarded map blocks were chosen over a dedicated `route` construct because they fit the existing map model, keep the grammar smaller, and remain readable for reviewers.
+**Rationale:** Guarded mapping blocks were chosen over a dedicated `route` construct because they fit the existing mapping model, keep the grammar smaller, and remain readable for reviewers.
 
 ---
 
@@ -75,12 +75,12 @@ map source_orders -> eu_warehouse [when: .region == "EU"] {
 
 **Where it appears:** Azure Data Factory's Flatten transformation, virtually all ETL tools, any JSON-to-relational pipeline. Also common when denormalizing for analytics/reporting.
 
-**STM v1.0 support:** `flatten:` on the map header makes the emitted target grain explicit and allows parent fields plus array-element fields to be mapped together.
+**STM v1.0 support:** `flatten:` on the mapping header makes the emitted target grain explicit and allows parent fields plus array-element fields to be mapped together.
 
 **Implemented syntax:**
 
 ```stm
-map order_api -> flat_order_lines [flatten: items[]] {
+mapping order_api -> flat_order_lines [flatten: items[]] {
   // These fields repeat on every output row (from the parent)
   orderId -> order_id
   customerName -> customer_name
@@ -103,12 +103,12 @@ map order_api -> flat_order_lines [flatten: items[]] {
 
 **Where it appears:** Every data warehouse load, every reporting pipeline, any integration where transaction-level data is summarized. Also appears in event-driven systems where multiple events produce a single state record.
 
-**STM v1.0 support:** `group_by:` on the map header plus aggregate transform functions now provide parseable, lintable many-to-one collapse.
+**STM v1.0 support:** `group_by:` on the mapping header plus aggregate transform functions now provide parseable, lintable many-to-one collapse.
 
 **Implemented syntax:**
 
 ```stm
-map transactions -> customer_summary [group_by: customer_id] {
+mapping transactions -> customer_summary [group_by: customer_id] {
   customer_id -> customer_id
 
   amount -> total_spent          : sum
@@ -141,12 +141,12 @@ map transactions -> customer_summary [group_by: customer_id] {
 
 **Where it appears:** Every production ETL pipeline. Informatica has row-level error handling. Azure Data Factory has error rows. SSIS has error outputs on every component.
 
-**STM v1.0 support:** Map-level annotations and field-level `on_fail(...)` now cover rejection, skipping, logging, thresholds, and dead-letter routing.
+**STM v1.0 support:** Mapping-level annotations and field-level `on_fail(...)` now cover rejection, skipping, logging, thresholds, and dead-letter routing.
 
 **Implemented syntax:**
 
 ```stm
-map {
+mapping {
   // Block-level defaults
   @on_error(reject)             // skip | reject | log | default
   @reject_target(error_queue)   // where rejected records go
@@ -198,7 +198,7 @@ lookup icd9_to_icd10 "ICD-9 to ICD-10 code mapping" {
 }
 
 // Use via a translate() function (distinct from lookup)
-map {
+mapping {
   diagnosis_code -> icd10_code
     : translate(icd9_to_icd10, on_miss: error)
 }
@@ -271,7 +271,7 @@ event customer_event "Customer updated event" @format(avro) @schema_registry("ht
 **Proposed syntax:**
 
 ```stm
-map crm_customer -> dim_customer {
+mapping crm_customer -> dim_customer {
   @scd type2
   @business_key customer_id
   @effective_date valid_from
@@ -329,12 +329,12 @@ This metadata enables tooling to verify that the mapping is still valid when a s
 
 **Where it appears:** Customer data integration (CRM + billing + support), master data management, any multi-source consolidation.
 
-**Current STM workaround:** Multiple `map` blocks with `nl()` explaining precedence. But this is common enough to warrant structured syntax.
+**Current STM workaround:** Multiple `mapping` blocks with `nl()` explaining precedence. But this is common enough to warrant structured syntax.
 
 **Proposed syntax:**
 
 ```stm
-map [crm_system, billing_system, support_system] -> master_customer {
+mapping [crm_system, billing_system, support_system] -> master_customer {
   @dedup_key email                         // match records across sources by email
   @merge_strategy source_priority          // or: most_recent, most_complete, custom
 
@@ -361,12 +361,12 @@ map [crm_system, billing_system, support_system] -> master_customer {
 
 **Where it appears:** Any migration from a denormalized source to a normalized target. Our database-to-database example hints at this with `nl("Create a record in the addresses table...")`.
 
-**Current STM workaround:** `nl()` and separate map blocks. Workable but not elegant.
+**Current STM workaround:** `nl()` and separate mapping blocks. Workable but not elegant.
 
 **Proposed syntax (future):**
 
 ```stm
-map flat_source -> [customers, addresses, contacts] {
+mapping flat_source -> [customers, addresses, contacts] {
   // Customer record
   CUST_ID -> customers.customer_id : uuid_v5(NS, CUST_ID)
   NAME -> customers.display_name
@@ -440,4 +440,4 @@ Some patterns surfaced in research that we intentionally do not include in STM:
 2. Decide whether GAP-05, GAP-06, and GAP-07 should also be pulled fully into the normative v1.0 spec or explicitly deferred.
 3. Tighten the formal grammar and agent reference so every newly added v1.0 feature is defined consistently in one place.
 4. Create canonical examples exercising routing, flattening, aggregation, error handling, and mapping-entry notes together.
-5. Add linter and parser implementation notes for the new validation rules and map header options.
+5. Add linter and parser implementation notes for the new validation rules and mapping header options.

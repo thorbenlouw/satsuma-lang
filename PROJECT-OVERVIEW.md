@@ -79,7 +79,7 @@ Every STM file has three kinds of blocks:
 │     Describe the structure of each system   │
 │     (fields, types, nesting, annotations)   │
 ├─────────────────────────────────────────────┤
-│  2. MAP BLOCKS                              │
+│  2. MAPPING BLOCKS                          │
 │     Describe how data flows between schemas │
 │     (field mappings, transforms, logic)     │
 ├─────────────────────────────────────────────┤
@@ -92,7 +92,7 @@ Every STM file has three kinds of blocks:
 This separation of **structure** from **logic** from **context** is fundamental. It means:
 
 - Schema blocks can be imported and reused across integrations
-- Map blocks can be reviewed independently of schema definitions
+- Mapping blocks can be reviewed independently of schema definitions
 - Notes and context travel with the spec, not in separate documents
 
 ### A taste of the syntax
@@ -113,7 +113,7 @@ target new_db "Modernized customer schema" {
   email         VARCHAR(255) [format: email, pii]
 }
 
-map {
+mapping {
   CUST_ID -> customer_id : uuid_v5(NS, CUST_ID)
 
   CUST_TYPE -> customer_type

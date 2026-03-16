@@ -13,7 +13,7 @@ grammar requires explicit conflict declarations later.
 - Model multiline transform continuations as distinct grammar nodes instead of
   trying to flatten them into a single free-form expression rule.
 - Preserve statement boundaries with newline-aware parsing where STM requires
-  it, especially inside map entries and note blocks.
+  it, especially inside mapping entries and note blocks.
 
 ## Planned Boundaries
 
@@ -25,10 +25,10 @@ At top level, parse only declarations:
 - `integration_block`
 - `schema_block`
 - `fragment_block`
-- `map_block`
+- `mapping_block`
 
 Expression-like syntax such as `map { ... }` or `when ... => ...` should only
-exist inside map-entry transform contexts.
+exist inside mapping-entry transform contexts.
 
 ### Paths before generic identifiers in mapping heads
 
@@ -49,7 +49,7 @@ Within schema and fragment bodies:
 
 ### Transform clauses over broad expressions
 
-Within map entries:
+Within mapping entries:
 
 - the token after `:` selects transform parsing
 - `|` starts a `pipe_step`

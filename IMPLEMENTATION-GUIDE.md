@@ -284,10 +284,10 @@ These are fatal — the spec is invalid:
 | E005 | Lookup resource exists | For each `lookup()` call, verify the resource ID is in scope |
 | E006 | Circular imports | Build import graph, detect cycles with DFS |
 | E007 | Import conflicts | After resolving all imports, check for ID collisions |
-| E008 | Fragment used as endpoint | Verify fragment IDs never appear as source/target in map block headers |
+| E008 | Fragment used as endpoint | Verify fragment IDs never appear as source/target in mapping block headers |
 | E009 | Empty backtick identifier | Length check on resolved identifier |
 | E010 | Multiple integration blocks | Count integration blocks per file |
-| E015 | Nested map arrays | Verify nested map source/target heads both end in array segments |
+| E015 | Nested mapping arrays | Verify nested mapping source/target heads both end in array segments |
 
 ### 3.2 Warning rules (W-series)
 
@@ -347,7 +347,7 @@ The formatter takes an AST and emits consistently formatted STM. This is critica
 | Tag column starts at:  max(type_expr_length) + 4 spaces (minimum)
 ```
 
-**Map blocks:**
+**Mapping blocks:**
 
 ```
 | Mapping alignment:
@@ -366,10 +366,10 @@ The formatter takes an AST and emits consistently formatted STM. This is critica
 **Canonical normalization:**
 
 - one field or group declaration per line
-- one map head per line
+- one mapping head per line
 - one transform per continuation line for multiline mappings
 - `enum` tag values always use braces with comma-separated items; wrap long lists across lines
-- map options ordered as `flatten`, `group_by`, `when`, then custom options alphabetically
+- mapping options ordered as `flatten`, `group_by`, `when`, then custom options alphabetically
 - annotations remain postfix on the same declaration line
 - notes are always emitted as explicit trailing blocks
 
@@ -399,20 +399,20 @@ An LSP server enables IDE features. Priority features:
 
 - **Syntax highlighting** (via tree-sitter grammar)
 - **Diagnostics** (lint errors/warnings shown inline)
-- **Go to definition** (click a schema ID in a map block → jump to schema block)
+- **Go to definition** (click a schema ID in a mapping block → jump to schema block)
 - **Find references** (right-click a field → show all map entries that reference it)
 
 ### 5.2 Phase 2 (quality of life)
 
-- **Autocomplete** (field names in map blocks, transform function names, schema IDs)
-- **Hover information** (hover a field in map block → show type, tags, notes from schema)
-- **Document symbols** (outline view showing schemas and map blocks)
+- **Autocomplete** (field names in mapping blocks, transform function names, schema IDs)
+- **Hover information** (hover a field in a mapping block → show type, tags, notes from schema)
+- **Document symbols** (outline view showing schemas and mapping blocks)
 - **Rename symbol** (rename a schema ID or field across all references)
 - **Code actions** (quick fixes for common lint warnings)
 
 ### 5.3 Phase 3 (advanced)
 
-- **Semantic highlighting** (different colors for source vs target fields in map blocks)
+- **Semantic highlighting** (different colors for source vs target fields in mapping blocks)
 - **Inlay hints** (show resolved type for computed fields)
 - **Code lens** (show mapping coverage on schema fields: "3 mappings" / "unmapped")
 
@@ -758,14 +758,14 @@ Each lint rule gets a set of test cases: STM input + expected diagnostics:
   input: |
     source s { name STRING }
     target t { n STRING }
-    map { name -> n }
+    mapping { name -> n }
   expected: []
 
 - name: "Invalid source path"
   input: |
     source s { name STRING }
     target t { n STRING }
-    map { nonexistent -> n }
+    mapping { nonexistent -> n }
   expected:
     - code: E003
       line: 3

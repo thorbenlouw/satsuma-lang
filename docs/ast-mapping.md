@@ -26,7 +26,7 @@ Top-level nodes:
 - `integration_block`
 - `schema_block`
 - `fragment_block`
-- `map_block`
+- `mapping_block`
 
 Schema and integration body nodes:
 
@@ -50,7 +50,7 @@ Namespace and workspace nodes:
 - `workspace_block` — children: `string_literal` (workspace name), `workspace_entry`*, `note_block`*, `comment`*
 - `workspace_entry` — children: `string_literal` (namespace), `string_literal` (file path)
 
-Map nodes:
+Mapping nodes:
 
 - `map_header`
 - `map_option`
@@ -111,7 +111,7 @@ Rationale:
 
 Attachment rules for the AST layer:
 
-- trailing comments attach to the same declaration or map entry line
+- trailing comments attach to the same declaration or mapping entry line
 - standalone comments attach to the next declaration when adjacent, otherwise to
   the containing block
 - `note_block` attaches only to the declaration or block that syntactically owns
@@ -183,7 +183,7 @@ Recommended AST shape:
 
 The planned node inventory is grounded in the current example corpus:
 
-- [`examples/db-to-db.stm`](/Users/thorben/dev/personal/stm/examples/db-to-db.stm): schema fields, tags, map entries, pipelines, warnings
+- [`examples/db-to-db.stm`](/Users/thorben/dev/personal/stm/examples/db-to-db.stm): schema fields, tags, mapping entries, pipelines, warnings
 - [`examples/edi-to-json.stm`](/Users/thorben/dev/personal/stm/examples/edi-to-json.stm): annotations, nested groups, array mappings, conditional logic
 - [`examples/xml-to-parquet.stm`](/Users/thorben/dev/personal/stm/examples/xml-to-parquet.stm): path-heavy mappings, nested data, notes
 - [`examples/multi-source-hub.stm`](/Users/thorben/dev/personal/stm/examples/multi-source-hub.stm): imports, multiple schemas, shared fragments
@@ -191,8 +191,8 @@ The planned node inventory is grounded in the current example corpus:
 
 Multi-schema namespace and workspace node types are covered by:
 
-- [`features/02-multi-schema/examples/namespace-basic.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/namespace-basic.stm): `namespace_decl`, same-namespace `::` map header
+- [`features/02-multi-schema/examples/namespace-basic.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/namespace-basic.stm): `namespace_decl`, same-namespace `::` mapping header
 - [`features/02-multi-schema/examples/crm/pipeline.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/crm/pipeline.stm): `namespace_decl` with schemas
 - [`features/02-multi-schema/examples/billing/pipeline.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/billing/pipeline.stm): colliding schema name resolved by namespace
-- [`features/02-multi-schema/examples/warehouse/ingest.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/warehouse/ingest.stm): cross-namespace map headers (`namespaced_path`, `ns_qualifier`), cross-namespace field references
+- [`features/02-multi-schema/examples/warehouse/ingest.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/warehouse/ingest.stm): cross-namespace mapping headers (`namespaced_path`, `ns_qualifier`), cross-namespace field references
 - [`features/02-multi-schema/examples/platform.stm`](/Users/thorben/dev/personal/stm/features/02-multi-schema/examples/platform.stm): `workspace_block`, `workspace_entry` nodes
