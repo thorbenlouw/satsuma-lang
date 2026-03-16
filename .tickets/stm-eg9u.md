@@ -1,6 +1,6 @@
 ---
 id: stm-eg9u
-status: open
+status: closed
 deps: [stm-pzwn, stm-to29]
 links: [stm-jruy, stm-2szj, stm-5pi1, stm-pzwn, stm-to29, stm-d281]
 created: 2026-03-16T15:46:21Z

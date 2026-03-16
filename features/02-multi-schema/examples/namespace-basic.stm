@@ -28,7 +28,7 @@ table product_audit {
 
 // Within a namespaced file, the :: qualifier is optional for same-namespace references
 // but may be used explicitly for clarity.
-map inventory::products -> inventory::product_audit {
+mapping inventory::products -> inventory::product_audit {
   product_id -> product_id
   => audit_id   : uuid_v5("audit", product_id)
   => changed_at : now_utc()

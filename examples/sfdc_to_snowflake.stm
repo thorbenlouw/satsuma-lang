@@ -74,7 +74,7 @@ target snowflake_opps "FACT_OPPORTUNITIES" {
 // Mapping Logic
 // ============================================================
 
-map sfdc_opportunity -> snowflake_opps {
+mapping sfdc_opportunity -> snowflake_opps {
   
   // Direct Identifier mapping
   Id -> opp_key

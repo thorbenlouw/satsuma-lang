@@ -70,12 +70,12 @@ target reporting_warehouse "Reporting data warehouse" {
 // Mappings — one block per source→target pair
 // ============================================================
 
-map crm_system -> analytics_db {
+mapping crm_system -> analytics_db {
   customer_id -> customer_id
   email -> email
 }
 
-map payment_gateway -> analytics_db {
+mapping payment_gateway -> analytics_db {
   amount -> total_spent
     : nl("Sum all transactions where status = 'completed', grouped by customer_email.
           Join to crm_system on email to resolve customer_id.")
@@ -87,7 +87,7 @@ map payment_gateway -> analytics_db {
     : nl("Max transaction timestamp where status = 'completed', per customer.")
 }
 
-map crm_system -> notification_service {
+mapping crm_system -> notification_service {
   email -> recipient_email
   phone -> recipient_phone
 
@@ -101,13 +101,13 @@ map crm_system -> notification_service {
     else => "low"
 }
 
-map payment_gateway -> notification_service {
+mapping payment_gateway -> notification_service {
   customer_email -> recipient_email
   transaction_id -> message_body
     : nl("Format as 'Transaction {transaction_id} completed successfully.'")
 }
 
-map inventory_system -> reporting_warehouse {
+mapping inventory_system -> reporting_warehouse {
   product_sku -> product_id
   stock_level -> available_stock
   warehouse_location -> location

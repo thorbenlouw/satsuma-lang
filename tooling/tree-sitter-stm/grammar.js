@@ -49,6 +49,7 @@ module.exports = grammar({
     [$.transform_head, $.raw_map_line],
     [$.transform_head, $.symbol],
     // value_map_literal uses "map" keyword which is also a valid identifier
+    // (Note: top-level keyword is "mapping", so no ambiguity with value_map_literal's "map")
     [$.value_map_literal, $._map_line_token],
     [$.value_map_literal, $.identifier],
   ],
@@ -290,7 +291,7 @@ module.exports = grammar({
 
     map_block: ($) =>
       seq(
-        "map",
+        "mapping",
         optional(
           seq(
             field("source", $.namespaced_path),
@@ -419,8 +420,11 @@ module.exports = grammar({
       seq(
         "map",
         "{",
-        commaSep1($.value_map_entry),
+        optional($._newline),
+        $.value_map_entry,
+        repeat(seq(",", optional($._newline), $.value_map_entry)),
         optional(","),
+        optional($._newline),
         "}"
       ),
 

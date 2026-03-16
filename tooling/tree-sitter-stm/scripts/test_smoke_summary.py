@@ -102,13 +102,11 @@ EXPECTATIONS: dict[str, dict] = {
         "block_types": {"integration_block", "schema_block", "map_block"},
     },
     "examples/sfdc_to_snowflake.stm": {
-        # Known parse errors: inline map literals, wildcard default keys, and
-        # computed map entries (=> field) are not yet supported by the grammar.
-        "parse_ok": False,
+        "parse_ok": True,
         "min_blocks": 7,
         "min_schema_members": 20,
-        "min_map_items": 5,
-        "min_paths": 15,
+        "min_map_items": 9,
+        "min_paths": 20,
         "min_comments": 15,
         "min_notes": 1,
         "min_annotations": 0,

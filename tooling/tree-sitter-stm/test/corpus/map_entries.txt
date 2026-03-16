@@ -2,7 +2,7 @@
 Simple direct map entry
 ==================
 
-map source -> target {
+mapping source -> target {
   field_a -> field_b
 }
 
@@ -27,7 +27,7 @@ map source -> target {
 Map entry with inline transform
 ==================
 
-map source -> target {
+mapping source -> target {
   raw_value -> clean_value : trim | lowercase
 }
 
@@ -55,7 +55,7 @@ map source -> target {
 Computed map entry
 ==================
 
-map source -> target {
+mapping source -> target {
   => derived_field : constant_value
 }
 
@@ -78,7 +78,7 @@ map source -> target {
 Map entry with dotted field path
 ==================
 
-map source -> target {
+mapping source -> target {
   order.line_item.sku -> product_sku
 }
 
@@ -107,7 +107,7 @@ map source -> target {
 Map entry with array segment
 ==================
 
-map source -> target {
+mapping source -> target {
   items[].sku -> product_codes[]
 }
 
@@ -134,7 +134,7 @@ map source -> target {
 Map entry with relative field path on target
 ==================
 
-map source -> target {
+mapping source -> target {
   field_a -> .nested.value
 }
 
@@ -161,7 +161,7 @@ map source -> target {
 Namespace-qualified source path in map entry
 ==================
 
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   crm::orders.order_id -> source_order_id
 }
 
@@ -197,7 +197,7 @@ map crm::orders -> warehouse::fact_orders {
 Pipe continuation after map entry
 ==================
 
-map source -> target {
+mapping source -> target {
   raw_email -> clean_email : trim
   | lowercase
   | validate_email
@@ -229,7 +229,7 @@ map source -> target {
 When and else clauses
 ==================
 
-map source -> target {
+mapping source -> target {
   status -> mapped_status
   when status == "active" => "ACTIVE"
   else => "INACTIVE"
@@ -263,7 +263,7 @@ map source -> target {
 Fallback clause
 ==================
 
-map source -> target {
+mapping source -> target {
   primary_phone -> phone
   fallback mobile_phone
 }
@@ -293,7 +293,7 @@ map source -> target {
 Fallback clause with transform
 ==================
 
-map source -> target {
+mapping source -> target {
   primary_phone -> phone
   fallback mobile_phone | trim
 }
@@ -324,7 +324,7 @@ map source -> target {
 Map block with no source/target header
 ==================
 
-map {
+mapping {
   field_a -> field_b
 }
 
@@ -345,7 +345,7 @@ map {
 Map entry with annotation in transform
 ==================
 
-map source -> target {
+mapping source -> target {
   value -> result : @format(iso8601)
 }
 
@@ -375,7 +375,7 @@ map source -> target {
 Map entry with trailing comment
 ==================
 
-map source -> target {
+mapping source -> target {
   id -> record_id //! verify mapping
 }
 
@@ -402,7 +402,7 @@ map source -> target {
 Transform head (colon continuation on next line)
 ==================
 
-map source -> target {
+mapping source -> target {
   field_a -> field_b
     : trim
 }
@@ -430,7 +430,7 @@ map source -> target {
 Transform head followed by pipe continuation
 ==================
 
-map source -> target {
+mapping source -> target {
   field_a -> field_b
     : trim
     | lowercase
@@ -461,7 +461,7 @@ map source -> target {
 Value-map literal as inline transform
 ==================
 
-map source -> target {
+mapping source -> target {
   status -> mapped_status : map { A: "active", S: "suspended" }
 }
 
@@ -493,7 +493,7 @@ map source -> target {
 Value-map literal as transform head with wildcard fallback
 ==================
 
-map source -> target {
+mapping source -> target {
   code -> label
     : map { R: "retail", B: "business", _: "unknown" }
 }
@@ -530,7 +530,7 @@ map source -> target {
 When clause with comparison-only condition
 ==================
 
-map source -> target {
+mapping source -> target {
   score -> tier
   when < 1000 => "low"
   else => "high"
@@ -563,7 +563,7 @@ map source -> target {
 When clause with in expression
 ==================
 
-map source -> target {
+mapping source -> target {
   type -> label
   when type in (null, "A") => "primary"
   else => "secondary"

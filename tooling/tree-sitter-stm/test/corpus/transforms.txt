@@ -2,7 +2,7 @@
 Backtick (quoted) path segment
 ==================
 
-map source -> target {
+mapping source -> target {
   `field-with-dashes` -> result
 }
 
@@ -27,7 +27,7 @@ map source -> target {
 Multi-level array path segments
 ==================
 
-map source -> target {
+mapping source -> target {
   orders[].items[].sku -> flat_skus[]
 }
 
@@ -56,7 +56,7 @@ map source -> target {
 Relative paths on both source and target
 ==================
 
-map source -> target {
+mapping source -> target {
   .source_field -> .target_field
 }
 
@@ -81,7 +81,7 @@ map source -> target {
 Function call in inline transform
 ==================
 
-map source -> target {
+mapping source -> target {
   amount -> cents : multiply(100) | round
 }
 
@@ -112,7 +112,7 @@ map source -> target {
 Value-map literal with null key
 ==================
 
-map source -> target {
+mapping source -> target {
   status -> label : map { A: "active", null: "unknown" }
 }
 
@@ -141,10 +141,51 @@ map source -> target {
             (string_literal)))))))
 
 ==================
+Multiline value-map literal with wildcard fallback
+==================
+
+mapping source -> target {
+  status -> label
+    : map {
+        A: "active",
+        "Value Prop": "mid_funnel",
+        _: "unknown"
+      }
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (value_map_literal
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (string_literal)
+            (string_literal))
+          (value_map_entry
+            (wildcard)
+            (string_literal)))))))
+
+==================
 Multiline form: transform head then pipe continuations
 ==================
 
-map source -> target {
+mapping source -> target {
   raw_email -> clean_email
     : trim
     | lowercase
@@ -178,7 +219,7 @@ map source -> target {
 Recovery: incomplete arrow falls back to raw_map_line
 ==================
 
-map source -> target {
+mapping source -> target {
   field_a ->
 }
 
@@ -199,7 +240,7 @@ map source -> target {
 Recovery: colon with no transform falls back to raw_map_line
 ==================
 
-map source -> target {
+mapping source -> target {
   field_a -> field_b :
 }
 

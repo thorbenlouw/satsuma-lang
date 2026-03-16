@@ -185,8 +185,8 @@ def block_label(node: Node, source: SourceText) -> str:
         source_name = clean_scalar(node_text(field_child(node, "source"), source))
         target_name = clean_scalar(node_text(field_child(node, "target"), source))
         if source_name and target_name:
-            return f"map {source_name} -> {target_name}"
-        return "map"
+            return f"mapping {source_name} -> {target_name}"
+        return "mapping"
     if node.type == "import_declaration":
         path = clean_scalar(node_text(field_child(node, "path"), source))
         return f'import "{path}"' if path else "import"

@@ -100,7 +100,7 @@ table postgres_db "Normalized customer schema — PostgreSQL 16" {
 // Mapping Logic
 // ============================================================
 
-map {
+mapping {
   note '''
     ## Mapping assumptions
     - All timestamps assumed US Eastern unless otherwise noted

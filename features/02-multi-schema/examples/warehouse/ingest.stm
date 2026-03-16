@@ -34,7 +34,7 @@ table dim_customers {
 
 // Cross-namespace map: crm::orders is the source, warehouse::fact_orders is the target.
 // The :: qualifier makes the namespace boundary explicit in the map header.
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   order_id    -> source_order_id
   total       -> order_total
   currency    -> currency
@@ -48,7 +48,7 @@ map crm::orders -> warehouse::fact_orders {
   => ingested_at : now_utc()
 }
 
-map crm::customers -> warehouse::dim_customers {
+mapping crm::customers -> warehouse::dim_customers {
   customer_id -> customer_id
   email       -> email
   name        -> name

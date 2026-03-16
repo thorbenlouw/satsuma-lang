@@ -1,6 +1,6 @@
 {
   "source": "../../../../../examples/sfdc_to_snowflake.stm",
-  "allow_error": true,
+  "allow_error": false,
   "allow_missing": false,
   "expect_contains": [
     "schema_block",
