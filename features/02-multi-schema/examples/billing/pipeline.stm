@@ -31,5 +31,5 @@ table invoices {
   tax         DECIMAL(10,2) [default: 0]
   issued_at   TIMESTAMP     [required]
   status      STRING        [required, enum: {draft, sent, paid, void}]
-  note        STRING
+  `note`      STRING
 }

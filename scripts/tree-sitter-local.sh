@@ -18,7 +18,28 @@ export XDG_CACHE_HOME="$CACHE_DIR"
 subcommand="${1:-}"
 
 if [ "$subcommand" = "parse" ] || [ "$subcommand" = "highlight" ] || [ "$subcommand" = "query" ] || [ "$subcommand" = "tags" ] || [ "$subcommand" = "dump-languages" ]; then
-  exec tree-sitter "$subcommand" --config-path "$CONFIG_PATH" "${@:2}"
+  grammar_dir=""
+  args=()
+  shift
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -p|--grammar-path)
+        grammar_dir="$2"
+        shift 2
+        ;;
+      *)
+        args+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  if [ -n "$grammar_dir" ]; then
+    cd "$grammar_dir"
+  fi
+
+  exec tree-sitter "$subcommand" --config-path "$CONFIG_PATH" "${args[@]}"
 fi
 
 exec tree-sitter "$@"

@@ -180,6 +180,26 @@ source phone_schema {
               (standard_ref))))))))
 
 ==================
+Quoted identifier for reserved keyword field name
+==================
+
+table invoices {
+  `note` STRING
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (field_declaration
+        (quoted_identifier)
+        (type_expression
+          (identifier))))))
+
+==================
 Broken tag list and incomplete annotation recovery
 ==================
 
