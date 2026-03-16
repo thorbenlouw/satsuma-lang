@@ -1,0 +1,9 @@
+// Degradation: arrow with no target
+// Expected: the arrow is still highlighted; the dangling -> produces no crash.
+
+map {
+  source_field ->
+  // Editing state: user typed source_field and ->, has not typed target yet
+  // Next line should still highlight normally
+  other_field -> valid_target
+}

@@ -1,6 +1,6 @@
 ---
 id: stm-aybc
-status: open
+status: closed
 deps: [stm-dy6t]
 links: []
 created: 2026-03-16T13:46:54Z

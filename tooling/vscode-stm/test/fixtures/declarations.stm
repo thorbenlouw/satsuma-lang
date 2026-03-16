@@ -1,0 +1,49 @@
+// SYNTAX TEST "source.stm" "declaration keywords"
+
+integration "My Integration" {
+// <----------- keyword.other.stm
+  author "test"
+}
+
+source my_source {
+// <------ keyword.other.stm
+//     ^^^^^^^^^ entity.name.type.stm
+}
+
+target my_target {
+// <------ keyword.other.stm
+//     ^^^^^^^^^ entity.name.type.stm
+}
+
+table my_table {
+// <----- keyword.other.stm
+//    ^^^^^^^^ entity.name.type.stm
+}
+
+message my_message {
+// <------- keyword.other.stm
+}
+
+record my_record {
+// <------ keyword.other.stm
+}
+
+event my_event {
+// <----- keyword.other.stm
+}
+
+schema my_schema {
+// <------ keyword.other.stm
+}
+
+lookup my_lookup {
+// <------ keyword.other.stm
+}
+
+fragment my_fragment {
+// <-------- keyword.other.stm
+}
+
+map {
+// <--- keyword.other.stm
+}

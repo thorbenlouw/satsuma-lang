@@ -1,6 +1,6 @@
 ---
 id: stm-2m6y
-status: open
+status: closed
 deps: [stm-o50b]
 links: []
 created: 2026-03-16T13:46:39Z

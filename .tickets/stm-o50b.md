@@ -1,6 +1,6 @@
 ---
 id: stm-o50b
-status: open
+status: closed
 deps: [stm-14x.7]
 links: []
 created: 2026-03-16T13:46:39Z

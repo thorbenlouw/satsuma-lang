@@ -1,0 +1,23 @@
+// SYNTAX TEST "source.stm" "import and namespace scopes"
+
+import { foo } from "lib/common.stm"
+// <------ keyword.control.import.stm
+//             ^^^^ keyword.control.import.stm
+//                  ^^^^^^^^^^^^^^^^^ string.quoted.double.stm
+
+import schema Orders from "crm/pipeline.stm"
+// <------ keyword.control.import.stm
+//        ^ keyword.other.stm
+//                   ^^^^ keyword.control.import.stm
+
+namespace "crm"
+// <--------- keyword.other.stm
+//         ^^^^^ string.quoted.double.stm
+
+workspace "data_platform" {
+// <--------- keyword.other.stm
+//        ^^^^^^^^^^^^^^^ string.quoted.double.stm
+  schema "crm" from "crm/pipeline.stm"
+  // <------ keyword.control.import.stm
+  //           ^^^^ keyword.control.import.stm
+}

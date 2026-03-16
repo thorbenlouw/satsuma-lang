@@ -1,0 +1,33 @@
+// SYNTAX TEST "source.stm" "annotation scopes"
+
+// @name(args) form on schema declaration
+source ann_test @format(csv) {
+//              ^ punctuation.definition.annotation.stm
+//               ^^^^^^ entity.name.decorator.stm
+//                     ^ punctuation.section.parens.stm
+//                      ^^^ variable.other.field.stm
+//                         ^ punctuation.section.parens.stm
+
+  // @name("string") on field
+  field1 STRING @header("Column A")
+  //             ^ punctuation.definition.annotation.stm
+  //              ^^^^^^ entity.name.decorator.stm
+  //                     ^^^^^^^^^ string.quoted.double.stm
+
+  // @name(num, num) on field
+  field2 INT @pos(0, 10)
+  //          ^ punctuation.definition.annotation.stm
+  //           ^^^ entity.name.decorator.stm
+  //               ^ constant.numeric.stm
+  //                  ^^ constant.numeric.stm
+}
+
+// @name key = "value" form
+source xml_test @ns myns = "http://example.com" {
+//              ^ punctuation.definition.annotation.stm
+//               ^^ entity.name.decorator.stm
+//                  ^^^^ variable.parameter.stm
+//                       ^ keyword.operator.assignment.stm
+//                         ^^^^^^^^^^^^^^^^^^^^ string.quoted.double.stm
+  data STRING
+}

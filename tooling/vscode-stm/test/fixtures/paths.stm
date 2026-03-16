@@ -1,0 +1,15 @@
+// SYNTAX TEST "source.stm" "path scopes"
+
+map {
+  // Dotted path — coloured uniformly
+  sfdc_account.BillingCountry -> billing_country
+
+  // Backtick-quoted segment
+  `Lead_Source__c` -> lead_source
+  //^ variable.other.quoted.stm
+
+  // Namespace-qualified path
+  crm::orders -> warehouse::dims
+  //  ^^ punctuation.separator.namespace.stm
+  //                      ^^ punctuation.separator.namespace.stm
+}

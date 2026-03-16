@@ -1,0 +1,45 @@
+// SYNTAX TEST "source.stm" "operator and punctuation scopes"
+
+map {
+  src -> tgt
+  //  ^^ keyword.operator.arrow.stm
+
+  => computed
+  //^ keyword.operator.fat-arrow.stm
+
+  x -> y : trim
+  //     ^ keyword.operator.transform.stm
+
+  a -> b : trim
+    | lower
+    //^ keyword.operator.pipe.stm
+
+  ...my_fragment
+  //^ keyword.operator.spread.stm
+
+  status -> out
+    : when score == 0 => "zero"
+    //     ^^^^^ - keyword.other.stm
+    //           ^^ keyword.operator.comparison.stm
+
+  val -> result
+    : when x != y => x
+    //       ^^ keyword.operator.comparison.stm
+
+  val2 -> r2
+    : when a >= b => a
+    //       ^^ keyword.operator.comparison.stm
+
+  val3 -> r3
+    : when c <= d => c
+    //       ^^ keyword.operator.comparison.stm
+
+  amt -> cents : amt * 100
+  //                 ^ keyword.operator.arithmetic.stm
+
+  total -> adj : total + fee
+  //                   ^ keyword.operator.arithmetic.stm
+
+  TYPE -> name : map { A: "a", _: "other" }
+  //                           ^ constant.language.wildcard.stm
+}

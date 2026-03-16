@@ -1,0 +1,13 @@
+// Degradation: unclosed block
+// Expected: tokeniser should not spiral — remaining content after this should
+// still receive reasonable scopes rather than being entirely un-scoped.
+
+source unclosed {
+  id INT [pk]
+  name STRING
+  // block never closes — rest of file is inside the block context
+  email VARCHAR(255)
+
+// Expected degradation: all subsequent lines are inside the block context.
+// Keywords and literals should still be recognised where possible.
+// No more than ~3 lines should show dramatically mis-scoped tokens.

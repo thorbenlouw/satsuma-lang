@@ -1,6 +1,6 @@
 ---
 id: stm-dy6t
-status: open
+status: closed
 deps: [stm-55vc]
 links: []
 created: 2026-03-16T13:46:39Z

@@ -1,6 +1,6 @@
 ---
 id: stm-55vc
-status: open
+status: closed
 deps: [stm-o50b, stm-2m6y]
 links: []
 created: 2026-03-16T13:46:39Z

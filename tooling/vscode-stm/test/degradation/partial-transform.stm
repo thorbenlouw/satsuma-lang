@@ -1,0 +1,8 @@
+// Degradation: mapping with transform separator but no expression
+// Expected: the colon is highlighted; no unrecoverable state.
+
+map {
+  field -> target :
+  // Editing state: user typed the transform separator but not the expression yet
+  other -> other2 : trim
+}

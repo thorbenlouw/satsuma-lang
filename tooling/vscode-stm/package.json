@@ -1,0 +1,40 @@
+{
+  "name": "vscode-stm",
+  "displayName": "STM Language Support",
+  "description": "VS Code syntax highlighting for the Semantic Transform Model (STM) language",
+  "version": "0.1.0",
+  "publisher": "stm",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "stm",
+        "aliases": ["STM", "stm"],
+        "extensions": [".stm"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "stm",
+        "scopeName": "source.stm",
+        "path": "./syntaxes/stm.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "npm run test:fixtures && npm run test:golden",
+    "test:fixtures": "npx vscode-tmgrammar-test -g syntaxes/stm.tmLanguage.json 'test/fixtures/*.stm'",
+    "test:golden": "npx vscode-tmgrammar-test -g syntaxes/stm.tmLanguage.json 'test/golden/*.stm'",
+    "validate:manifest": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json OK')\"",
+    "validate:grammar": "node -e \"const g=JSON.parse(require('fs').readFileSync('syntaxes/stm.tmLanguage.json','utf8')); if(!g.scopeName)throw new Error('missing scopeName'); console.log('grammar OK, scopeName='+g.scopeName)\"",
+    "validate": "npm run validate:manifest && npm run validate:grammar",
+    "check": "npm run validate && npm test"
+  },
+  "devDependencies": {
+    "vscode-tmgrammar-test": "^0.1.3"
+  }
+}
