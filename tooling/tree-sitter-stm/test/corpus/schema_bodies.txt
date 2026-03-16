@@ -170,33 +170,31 @@ source broken_example {
     (schema_body
       (field_declaration
         (identifier)
-        (type_expression
-          (identifier))
-        (tag_list
-          (tag
+        (ERROR
+          (type_expression
             (identifier))
-          (tag
-            (identifier)
-            (tag_value
-              (enum_value_set
-                (enum_value
-                  (identifier))
-                (enum_value
-                  (identifier)))))
-          (MISSING "]")))
-      (array_group_declaration
-        (identifier)
-        (annotation
-          (identifier)
-          (annotation_argument
-            (path_reference
-              (identifier)))
           (ERROR
-            (comparison_operator)))
-        (schema_body
-          (field_declaration
-            (identifier)
-            (type_expression
+            (tag
+              (identifier))
+            (tag
               (identifier)
-              (type_argument
-                (number_literal)))))))))
+              (tag_value
+                (enum_value_set
+                  (enum_value
+                    (identifier))
+                  (enum_value
+                    (identifier)))))
+            (identifier))
+          (annotation
+            (identifier)
+            (annotation_argument
+              (path_reference
+                (identifier)))
+            (ERROR
+              (comparison_operator)))
+          (identifier))
+        (type_expression
+          (identifier)
+          (type_argument
+            (number_literal))))))
+  (ERROR))

@@ -108,13 +108,15 @@ map crm_system -> analytics_db [flatten: items, when: active] {
       (map_option
         (identifier)
         (option_value
-          (path_reference
-            (identifier))))
+          (field_path
+            (path_segment
+              (identifier)))))
       (map_option
         (identifier)
         (option_value
-          (path_reference
-            (identifier)))))
+          (field_path
+            (path_segment
+              (identifier))))))
     (map_body
       (map_entry
         (field_path

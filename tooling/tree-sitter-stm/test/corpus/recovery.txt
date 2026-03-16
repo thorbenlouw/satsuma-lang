@@ -1,0 +1,49 @@
+==================
+Missing closing brace on schema body
+==================
+
+source incomplete_schema {
+  field1 STRING
+  field2 INT
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)))
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)))
+      (MISSING "}"))))
+
+==================
+Missing closing brace on nested group
+==================
+
+source outer {
+  inner_group {
+    id INT
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (group_declaration
+        (identifier)
+        (schema_body
+          (field_declaration
+            (identifier)
+            (type_expression
+              (identifier)))))
+      (MISSING "}"))))

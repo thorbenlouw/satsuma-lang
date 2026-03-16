@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "generate": "tree-sitter generate",
-    "test": "tree-sitter test"
+    "test": "tree-sitter test && bash scripts/test-fixtures.sh"
   },
   "devDependencies": {
     "tree-sitter-cli": "^0.25.10"

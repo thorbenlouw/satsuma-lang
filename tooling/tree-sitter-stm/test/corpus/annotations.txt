@@ -1,0 +1,257 @@
+==================
+Annotation with string positional argument
+==================
+
+source my_schema @deprecated("Use new_schema instead") {
+  id UUID
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (string_literal)))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Annotation with identifier positional argument
+==================
+
+message edi_msg @format(fixed-length) {
+  ref_id CHAR(10)
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (path_reference
+          (identifier))))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)
+          (type_argument
+            (number_literal)))))))
+
+==================
+Annotation with binary expression argument
+==================
+
+source orders {
+  Items[] @filter(STATUS == "ACTIVE") {
+    id INT
+  }
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (schema_body
+      (array_group_declaration
+        (identifier)
+        (annotation
+          (identifier)
+          (annotation_argument
+            (binary_expression
+              (path_reference
+                (identifier))
+              (comparison_operator)
+              (expression_value
+                (string_literal)))))
+        (schema_body
+          (field_declaration
+            (identifier)
+            (type_expression
+              (identifier))))))))
+
+==================
+Annotation with key=value form
+==================
+
+source my_source @version key="v2" {
+  id INT
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (identifier)
+      (string_literal))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Multiple annotations on schema block
+==================
+
+message payload @format(json) @version(2) {
+  id INT
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (path_reference
+          (identifier))))
+    (annotation
+      (identifier)
+      (annotation_argument
+        (number_literal)))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Annotation with number argument
+==================
+
+source data @since(2023) {
+  id UUID
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (number_literal)))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Annotation with boolean argument
+==================
+
+source data @nullable(false) {
+  id UUID
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (boolean_literal)))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Annotation with null argument
+==================
+
+source data @default(null) {
+  id UUID
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (null_literal)))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Annotation with no arguments (empty parens)
+==================
+
+source data @readonly() {
+  id UUID
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))
+
+==================
+Annotation with dotted path reference argument
+==================
+
+source orders @map(Order.LineItems) {
+  id INT
+}
+
+---
+
+(source_file
+  (schema_block
+    (schema_keyword)
+    (identifier)
+    (annotation
+      (identifier)
+      (annotation_argument
+        (path_reference
+          (identifier)
+          (identifier))))
+    (schema_body
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))))

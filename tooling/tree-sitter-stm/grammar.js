@@ -12,6 +12,10 @@ module.exports = grammar({
   conflicts: ($) => [
     // map_entry and raw_map_line both start with an identifier; prefer map_entry
     [$.map_entry, $.raw_map_line],
+    // block_map_entry (lhs -> lhs { body }) vs map_entry / nested_map / raw_map_line
+    [$.block_map_entry, $.map_entry],
+    [$.block_map_entry, $.nested_map],
+    [$.block_map_entry, $.raw_map_line],
     // nested_map (tokens followed by {}) vs map_entry vs raw_map_line
     [$.map_entry, $.nested_map],
     [$.nested_map, $.raw_map_line],
@@ -234,7 +238,15 @@ module.exports = grammar({
     type_argument: ($) =>
       choice($.string_literal, $.number_literal, $.boolean_literal, $.null_literal, $._identifier),
 
-    tag_list: ($) => seq("[", commaSep1($.tag), "]"),
+    tag_list: ($) => seq(
+      "[",
+      optional($._newline),
+      $.tag,
+      repeat(seq(optional($._newline), ",", optional($._newline), $.tag)),
+      optional(","),
+      optional($._newline),
+      "]"
+    ),
 
     tag: ($) =>
       seq(
@@ -252,7 +264,15 @@ module.exports = grammar({
         $.path_reference
       ),
 
-    enum_value_set: ($) => seq("{", commaSep1($.enum_value), "}"),
+    enum_value_set: ($) => seq(
+      "{",
+      optional($._newline),
+      $.enum_value,
+      repeat(seq(optional($._newline), ",", optional($._newline), $.enum_value)),
+      optional(","),
+      optional($._newline),
+      "}"
+    ),
 
     enum_value: ($) =>
       choice(
@@ -290,6 +310,7 @@ module.exports = grammar({
         $.note_block,
         // Structured entry types (preferred over raw_map_line via conflicts + ordering)
         $.computed_map_entry,
+        $.block_map_entry,
         $.map_entry,
         $.nested_map,
         // Transform continuation lines
@@ -321,6 +342,15 @@ module.exports = grammar({
         optional(seq(":", field("transform", repeat1($._transform_token)))),
         optional($.comment),
         $._newline
+      )),
+
+    // Structured block mapping: source -> target { body } — named source/target with a nested body
+    block_map_entry: ($) =>
+      prec.dynamic(12, seq(
+        field("source", $._map_lhs),
+        "->",
+        field("target", $._map_lhs),
+        field("body", $.map_body)
       )),
 
     // Block mapping: tokens { body } — covers nested array maps and entries with inline notes
@@ -484,7 +514,7 @@ module.exports = grammar({
         $.number_literal,
         $.boolean_literal,
         $.null_literal,
-        $.path_reference
+        $.field_path
       ),
 
     // =========================================================

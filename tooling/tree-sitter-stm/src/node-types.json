@@ -170,6 +170,58 @@
     }
   },
   {
+    "type": "block_map_entry",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "map_body",
+            "named": true
+          }
+        ]
+      },
+      "source": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_path",
+            "named": true
+          },
+          {
+            "type": "namespaced_field_path",
+            "named": true
+          },
+          {
+            "type": "relative_field_path",
+            "named": true
+          }
+        ]
+      },
+      "target": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_path",
+            "named": true
+          },
+          {
+            "type": "namespaced_field_path",
+            "named": true
+          },
+          {
+            "type": "relative_field_path",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "boolean_literal",
     "named": true,
     "fields": {}
@@ -1018,6 +1070,10 @@
       "required": false,
       "types": [
         {
+          "type": "block_map_entry",
+          "named": true
+        },
+        {
           "type": "comment_line",
           "named": true
         },
@@ -1435,15 +1491,15 @@
           "named": true
         },
         {
+          "type": "field_path",
+          "named": true
+        },
+        {
           "type": "null_literal",
           "named": true
         },
         {
           "type": "number_literal",
-          "named": true
-        },
-        {
-          "type": "path_reference",
           "named": true
         },
         {
