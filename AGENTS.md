@@ -77,6 +77,72 @@ Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
 - Invalid or recovery-sensitive behavior should include malformed input tests.
 - Avoid merging parser work that is only manually verified.
 
+## Running tree-sitter Commands (Sandbox Limitation)
+
+`tree-sitter test`, `tree-sitter build`, and `tree-sitter parse` require compiling a native `.dylib` from `src/parser.c`. This compilation fails inside the Claude Code sandbox because there is no accessible C compiler or macOS SDK.
+
+**Do not waste tokens attempting to compile tree-sitter inside the sandbox.** Instead, ask the user to run the command in their terminal and tee output to a file you can read:
+
+```
+Please run this in your terminal and save the output so I can see it:
+
+  cd tooling/tree-sitter-stm && npm test 2>&1 | tee /tmp/ts-test.out
+
+I'll read /tmp/ts-test.out once you're done.
+```
+
+Common commands to hand off:
+- `npm test` (runs `tree-sitter test`) — corpus test results
+- `npm run generate` — regenerate parser from grammar.js (safe inside sandbox, no compile needed)
+- `tree-sitter parse <file> --quiet` — check a specific file for parse errors
+- `tree-sitter parse <file>` — full parse tree
+
+You can write grammar changes and corpus fixture changes freely inside the sandbox. Only the compile+test step needs the user's terminal.
+
+## Code Search with ast-grep
+
+`ast-grep` (available as `ast-grep` in the environment) performs structural AST-based search and rewrite, backed by tree-sitter.
+
+### When to use it
+
+Prefer `ast-grep` over `grep` when you care about syntax structure, not text:
+
+- **Searching `grammar.js`**: find rule definitions, specific combinators, or usages of a rule name without false positives from comments or strings.
+- **Searching Python scripts** under `scripts/`: structural function-call or import searches.
+- **Future STM linting**: once the grammar is registered as a custom language (see below), `ast-grep scan` can enforce structural rules over `.stm` files.
+
+Use plain `Grep` when scanning corpus fixtures or other plain-text files — those aren't parsed as code.
+
+### Quick patterns for grammar.js
+
+```bash
+# Find all seq() calls (and see their content)
+ast-grep run -l js -p 'seq($$$)' tooling/tree-sitter-stm/grammar.js
+
+# Find all choice() calls
+ast-grep run -l js -p 'choice($$$)' tooling/tree-sitter-stm/grammar.js
+
+# Find a specific property in the rules object
+ast-grep run -l js -p 'transform_body: $_' tooling/tree-sitter-stm/grammar.js
+```
+
+Metavariables: `$NAME` matches a single node; `$$$` matches zero or more.
+
+### Registering STM as a custom language (future)
+
+When the grammar is stable enough for structural search and lint, create `sgconfig.yml` at the repo root:
+
+```yaml
+# sgconfig.yml
+customLanguages:
+  stm:
+    libraryPath: tooling/tree-sitter-stm/build/stm.dylib  # or .so on Linux
+    extensions: [stm]
+    expandoChar: _
+```
+
+After building the dylib (`npm run build` in `tooling/tree-sitter-stm/`), `ast-grep run -l stm -p '...'` enables structural search over `.stm` files. This is also the foundation for a future STM linter implemented as `ast-grep scan` rules.
+
 ## Issue Tracking
 
 This project uses beads for issue tracking. Use `bd` for planning and task management rather than TODO lists, ad hoc notes, or external trackers.
