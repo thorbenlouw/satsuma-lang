@@ -33,10 +33,10 @@
 - [ ] Map STM token categories to standard TextMate scopes
 - [ ] Document where parser node kinds should eventually map to semantic token types
 - [ ] Identify ambiguous constructs that should remain baseline-highlighted only:
-  - [ ] source vs target path roles inside `map`
+  - [ ] source vs target path roles inside `mapping`
   - [ ] schema id vs field id in dotted paths
   - [ ] soft keyword usage as identifiers
-  - [ ] map-body constructs that require structural awareness
+  - [ ] mapping-body constructs that require structural awareness
 - [ ] Write a short parser/editor token mapping note, or create a placeholder for it if it belongs outside the feature directory
 
 ## Phase 2: Test-first fixture plan
@@ -54,9 +54,9 @@
   - [ ] tag lists and enum values
   - [ ] annotations
   - [ ] multiline `note '''...'''` blocks
-  - [ ] map headers
-  - [ ] direct map entries
-  - [ ] computed map entries
+  - [ ] mapping headers
+  - [ ] direct mapping entries
+  - [ ] computed mapping entries
   - [ ] nested maps
   - [ ] transform pipelines
   - [ ] `when` / `else` / `fallback` continuations
@@ -100,7 +100,7 @@
   - [ ] `event`
   - [ ] `lookup`
   - [ ] `fragment`
-  - [ ] `map`
+  - [ ] `mapping`
 - [ ] Implement literal patterns for:
   - [ ] strings
   - [ ] numbers
@@ -130,10 +130,10 @@
 - [ ] Add declaration-body patterns for schema fields and nested groups
 - [ ] Add highlighting for tag arrays and enum sets
 - [ ] Add highlighting for annotation names and parameters
-- [ ] Add highlighting for map headers with optional source and target blocks
-- [ ] Add highlighting for direct mappings `src -> tgt`
-- [ ] Add highlighting for computed mappings `=> tgt`
-- [ ] Add highlighting for nested map blocks `src[] -> tgt[] { ... }`
+- [ ] Add highlighting for mapping headers with optional source and target blocks
+- [ ] Add highlighting for direct mapping entries `src -> tgt`
+- [ ] Add highlighting for computed mapping entries `=> tgt`
+- [ ] Add highlighting for nested mapping blocks `src[] -> tgt[] { ... }`
 - [ ] Add highlighting for transform heads after `:`
 - [ ] Add highlighting for pipeline continuation lines beginning with `|`
 - [ ] Add highlighting for `when`, `else`, and `fallback` continuation lines
@@ -155,7 +155,7 @@
 - [ ] Add fixtures covering:
   - [ ] workspace file structure
   - [ ] namespace declarations
-  - [ ] cross-namespace map headers
+  - [ ] cross-namespace mapping headers
   - [ ] namespaced field references
 - [ ] If `02-multi-schema` has not landed, record a blocked follow-up item rather than implementing speculative syntax
 
@@ -166,7 +166,7 @@
 - [ ] Verify malformed fixtures degrade acceptably and do not catastrophically over-scope the rest of the file
 - [ ] Open representative STM files in a local VS Code instance or extension test environment if available
 - [ ] Check behaviour in at least one light theme and one dark theme
-- [ ] Verify comments, note blocks, map operators, annotations, and tags all receive stable scopes
+- [ ] Verify comments, note blocks, mapping operators, annotations, and tags all receive stable scopes
 - [ ] Compare highlighted constructs against parser-covered syntax to catch drift early
 
 ## Phase 8: Parser-backed follow-on design
@@ -174,7 +174,7 @@
 - [ ] Document which highlighting gaps require semantic tokens rather than more TextMate regex:
   - [ ] source-side vs target-side distinction
   - [ ] namespace/schema/field role disambiguation
-  - [ ] context-aware path colouring in map bodies
+  - [ ] context-aware path colouring in mapping bodies
 - [ ] Decide whether semantic tokens should come from:
   - [ ] a lightweight VS Code extension host parser integration
   - [ ] a future STM language server

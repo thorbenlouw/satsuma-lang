@@ -16,7 +16,7 @@ The parser must cover the current STM v1.0.0 syntax in [STM-SPEC.md](/Users/thor
 
 STM already has a detailed language spec, but there is no machine-checked parser in the repo. That blocks all serious tooling:
 
-- linters cannot reason over maps, notes, tags, and annotations reliably
+- linters cannot reason over mappings, notes, tags, and annotations reliably
 - formatters cannot preserve structure while normalising layout
 - visualisers cannot traverse nested schemas and data flow paths
 - editor integrations cannot provide syntax-aware features
@@ -39,7 +39,7 @@ The feature is complete when:
    - schema/source/target/table/message/event/lookup blocks
    - fragment blocks and spreads
    - fields, groups, arrays, tag lists, annotations, field note blocks
-   - map blocks, options, nested maps, computed maps, transform pipelines
+   - mapping blocks, options, nested maps, computed maps, transform pipelines
    - `when` / `else` / `fallback` continuation lines
    - comments and `note` blocks
 3. Parse trees expose enough structure to derive a semantic AST without reparsing raw text.
@@ -100,7 +100,7 @@ The parse tree must make these nodes easy to derive:
 - tag, tag value, enum value
 - annotation
 - note
-- map block, map option, map entry, nested map
+- mapping block, map option, map entry, nested map
 - source path, target path
 - transform pipeline, transform step, `when` branch, `else` branch, fallback clause
 - comments with severity classification based on prefix
@@ -146,7 +146,7 @@ A short design note describing how downstream tools should convert CST nodes int
 - canonical node names
 - which CST nodes are syntax-preserving only
 - how comments and notes attach to surrounding declarations
-- how multiline map transforms are grouped
+- how multiline mapping transforms are grouped
 - how relative paths like `.field` are represented
 
 ### Deliverable 3: Fixture suite
@@ -209,13 +209,13 @@ Implement:
 - annotations
 - note attachments
 
-Focus on preserving enough structure that schema visualisers and symbol indexes can work before map parsing is complete.
+Focus on preserving enough structure that schema visualisers and symbol indexes can work before mapping parsing is complete.
 
-### Phase 4: Map grammar
+### Phase 4: Mapping grammar
 
 Implement:
 
-- map headers with optional source/target and options
+- mapping headers with optional source/target and options
 - direct maps
 - computed maps
 - nested maps
@@ -224,9 +224,9 @@ Implement:
 
 This is the hardest phase. The plan should explicitly test ambiguous cases such as:
 
-- `map { ... }` as a transform function vs `map ... { ... }` as a block
+- `map { ... }` as a value-map literal vs `mapping ... { ... }` as a block
 - nested map blocks vs field note blocks
-- `when` in map headers vs transform continuations
+- `when` in mapping headers vs transform continuations
 - dotted paths with array segments and relative `.` prefixes
 
 ### Phase 5: Queries and fixtures
@@ -273,12 +273,12 @@ Recommended semantic AST shape for downstream tools:
 
 ## Risks
 
-### Grammar ambiguity in map syntax
+### Grammar ambiguity in mapping syntax
 
 STM intentionally compresses mapping syntax. The main parser risk is distinguishing:
 
-- block-level `map`
-- transform function `map { ... }`
+- block-level `mapping`
+- value-map literal `map { ... }`
 - nested map entries
 - note blocks attached to declarations
 
@@ -339,8 +339,8 @@ For current momentum, keeping it inside this repo first is the better choice. It
 ## Milestones
 
 1. Grammar skeleton parses imports and schema-family blocks.
-2. Grammar parses all examples except map transforms.
-3. Grammar parses full map syntax including continuations.
+2. Grammar parses all examples except mapping transforms.
+3. Grammar parses full mapping syntax including continuations.
 4. Corpus and error recovery suite are green.
 5. Query files and AST mapping note are added.
 6. Thin consumer script proves parser usability.
@@ -359,7 +359,7 @@ Start with a grammar spike that only parses:
 - imports
 - block headers
 - fields/groups/spreads
-- map headers
+- mapping headers
 - simple `src -> tgt`
 
 Then add transform continuation syntax once the structural tree shape is stable. That sequencing reduces churn in the hardest part of the grammar.

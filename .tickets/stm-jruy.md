@@ -1,6 +1,6 @@
 ---
 id: stm-jruy
-status: open
+status: closed
 deps: []
 links: [stm-2szj, stm-eg9u, stm-5pi1, stm-pzwn, stm-to29, stm-d281]
 created: 2026-03-16T15:46:11Z

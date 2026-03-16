@@ -28,7 +28,7 @@ The current mitigation (aliased imports) is a file-local workaround, not a platf
 
 1. Provide a grammar-enforced namespace prefix per file so schemas are globally unambiguous.
 2. Provide a `workspace` block that assembles multiple integration files into a named platform scope — the entry point for lineage tooling.
-3. Extend path syntax with `::` so namespace-qualified references are first-class in map headers and map bodies.
+3. Extend path syntax with `::` so namespace-qualified references are first-class in mapping headers and mapping bodies.
 4. Remain fully backwards compatible — existing STM files without `namespace` declarations are unchanged.
 
 ---
@@ -72,7 +72,7 @@ table orders {
 
 | Path form | Meaning |
 |---|---|
-| `field` | Local field (implicit schema from map header) |
+| `field` | Local field (implicit schema from mapping header) |
 | `schema_id.field` | Schema-qualified (existing) |
 | `schema_id.field.nested` | Nested field (existing) |
 | `ns::schema_id.field` | Namespace + schema + field (new) |
@@ -81,7 +81,7 @@ table orders {
 Map headers accept namespace-qualified schemas on both sides of `->`:
 
 ```stm
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   order_id -> source_order_id
   billing::invoices.amount -> billed_amount   // cross-namespace field reference
 }
@@ -109,7 +109,7 @@ Rules:
 - `schema "<ns>" from "<path>"` assigns a canonical namespace to a file.
 - If the file already declares `namespace "crm"`, the workspace entry must match — mismatch is **parser error** (E018).
 - If the file has no `namespace`, the workspace assignment provides one for lineage purposes (file itself is unchanged).
-- `integration` and `map` blocks are **not** allowed in workspace files (E019).
+- `integration` and `mapping` blocks are **not** allowed in workspace files (E019).
 - At most one `workspace` block per file.
 - Workspace files may import other workspace files for hierarchical modelling.
 - Path resolution follows the same rules as import paths.
@@ -129,7 +129,7 @@ Block-level namespaces were considered (e.g., `namespace "crm" { table orders { 
 2. Block-level would require every schema to be wrapped in a namespace block, adding noise to simple files.
 3. Files already act as modules (via imports), so file = namespace is a natural mapping.
 
-### Why is `workspace` declaration-only (no `map` or `integration` blocks)?
+### Why is `workspace` declaration-only (no `mapping` or `integration` blocks)?
 
 The workspace file's role is to declare the canonical assembly of namespaces — it is an index, not a transformation file. Mixing transformation logic into workspace files would blur the separation of concerns that STM's design prioritizes.
 
@@ -174,7 +174,7 @@ path             = [ ns_qualifier ] schema_id { "." ident } ;
 | **E016** | Duplicate namespace string across files in scope |
 | **E017** | Unresolved namespace qualifier in path |
 | **E018** | Workspace `schema` entry namespace does not match file's declared `namespace` |
-| **E019** | `integration` or `map` block in a workspace file |
+| **E019** | `integration` or `mapping` block in a workspace file |
 
 ---
 
@@ -182,7 +182,7 @@ path             = [ ns_qualifier ] schema_id { "." ident } ;
 
 - [ ] `STM-SPEC.md` updated: namespace declaration, `::` path syntax, workspace block, scoping rules, grammar EBNF, new error codes
 - [ ] `tooling/tree-sitter-stm/grammar.js` updated to parse all new constructs without ambiguity
-- [ ] Example files cover: single-file namespace, workspace assembly, cross-namespace map blocks, same-named schemas in different namespaces
+- [ ] Example files cover: single-file namespace, workspace assembly, cross-namespace mapping blocks, same-named schemas in different namespaces
 - [ ] `docs/ast-mapping.md` updated with `namespace_decl`, `ns_qualifier`, `workspace_block`, `workspace_entry` node types
 - [ ] Backwards compatible: files without `namespace` unchanged, aliased imports still work
-- [ ] Parser errors on: duplicate namespace clash, workspace/file namespace mismatch, map/integration in workspace file
+- [ ] Parser errors on: duplicate namespace clash, workspace/file namespace mismatch, mapping/integration in workspace file

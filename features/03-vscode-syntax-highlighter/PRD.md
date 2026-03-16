@@ -26,7 +26,7 @@ We need a feature plan that delivers a practical STM syntax highlighter for VS C
 ## 3. Non-Goals
 
 - Full LSP features such as completion, hover, go-to-definition, or rename.
-- Semantic validation of references, namespaces, or map correctness.
+- Semantic validation of references, namespaces, or mapping correctness.
 - Replacing the Tree-sitter parser as the source of truth for syntax structure.
 - Shipping a custom VS Code editor runtime or relying on undocumented Tree-sitter integration in VS Code core.
 
@@ -59,7 +59,7 @@ The project should treat the Tree-sitter grammar as the structural source of tru
 
 After the parser is stable, a later phase may add semantic tokens through a VS Code extension host contribution or LSP server. That phase can colour STM constructs that TextMate cannot distinguish reliably from regex-style tokenisation alone, for example:
 
-- source-side vs target-side paths inside `map` bodies
+- source-side vs target-side paths inside `mapping` bodies
 - schema identifiers vs field identifiers in ambiguous path segments
 - namespace qualifiers introduced by future multi-schema support
 
@@ -109,7 +109,7 @@ The extension must:
 
 The syntax highlighter must scope, at minimum:
 
-- keywords such as `integration`, `schema`, `source`, `target`, `table`, `message`, `event`, `lookup`, `fragment`, `map`, `note`, `when`, `else`, and `fallback`
+- keywords such as `integration`, `schema`, `source`, `target`, `table`, `message`, `event`, `lookup`, `fragment`, `mapping`, `note`, `when`, `else`, and `fallback`
 - strings
 - numbers
 - booleans and null-like literals if STM defines them
@@ -196,7 +196,7 @@ The goal is early installability and a stable package boundary.
 
 ### Phase 3: TextMate grammar implementation
 
-Add patterns for STM declarations, comments, paths, map syntax, tags, annotations, notes, and transform continuations.
+Add patterns for STM declarations, comments, paths, mapping syntax, tags, annotations, notes, and transform continuations.
 
 Special care is required for:
 
@@ -223,7 +223,7 @@ The implementation guide currently says syntax highlighting is "via tree-sitter 
 
 ### 9.2 Regex-only highlighting has limits
 
-STM map syntax is compact and context-sensitive. A TextMate grammar can provide strong baseline highlighting, but some distinctions will be approximate until parser-backed semantic tokens exist.
+STM mapping syntax is compact and context-sensitive. A TextMate grammar can provide strong baseline highlighting, but some distinctions will be approximate until parser-backed semantic tokens exist.
 
 ### 9.3 Duplicate syntax definitions can drift
 

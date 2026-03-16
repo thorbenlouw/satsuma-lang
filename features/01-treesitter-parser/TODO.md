@@ -17,7 +17,7 @@
   - [ ] `integration`
   - [ ] schema-family blocks: `source`, `target`, `schema`, `table`, `message`, `event`, `lookup`
   - [ ] `fragment`
-  - [ ] `map`
+  - [ ] `mapping`
 - [ ] Add punctuation, keyword, and identifier tokens
 - [ ] Add string and number literals
 - [ ] Add backtick identifier support
@@ -38,8 +38,8 @@
 
 ## Phase 3: Map syntax
 
-- [ ] Parse map headers with optional `source -> target`
-- [ ] Parse map options:
+- [ ] Parse mapping headers with optional `source -> target`
+- [ ] Parse mapping options:
   - [ ] `flatten: path[]`
   - [ ] `group_by: path`
   - [ ] `when: condition`
