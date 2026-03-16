@@ -4,3 +4,4 @@
 log.html
 scripts/__pycache__
 tooling/tree-sitter-stm/scripts/__pycache__
+**/node_modules
