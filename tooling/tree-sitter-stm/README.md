@@ -42,7 +42,7 @@ implementation priorities are:
 - `test/corpus/`: feature-oriented grammar corpus
 - `scripts/`: parser smoke tests and utility scripts if needed
 
-## Consumer Smoke Test
+## Consumer Proof — CST Summary
 
 `scripts/cst_summary.py` is the parser-consumer proof for this package. It runs
 the repo-local Tree-sitter wrapper for each STM example file and emits JSON
@@ -52,10 +52,72 @@ reparsing STM syntax from raw text.
 It currently proves extraction of:
 
 - top-level blocks and schema descriptions
-- schema fields and groups
-- map entries and path nodes
-- comment severities
+- schema fields and groups (including nested groups)
+- map entries, computed entries, block entries, and nested maps
+- path references across namespaced, relative, and field paths
+- comment severities (info, warning, question)
 - note blocks and annotations
+
+The consumer supports error-recovery: when tree-sitter produces a parse tree
+containing `ERROR`/`MISSING` nodes, the consumer still walks the recovered tree
+and extracts what it can, marking the file `"parse_ok": false`.
+
+### CST Node Types Depended On
+
+The summary consumer relies on the following CST node types and field names from
+the tree-sitter-stm grammar. Changes to any of these require updating the
+consumer script.
+
+**Top-level blocks** (identified by node type):
+
+| CST Node Type         | Consumer Section | Key Fields             |
+|-----------------------|------------------|------------------------|
+| `namespace_decl`      | `blocks`         | `name`                 |
+| `workspace_block`     | `blocks`         | `name`                 |
+| `import_declaration`  | `blocks`         | `path`                 |
+| `integration_block`   | `blocks`         | `name`                 |
+| `schema_block`        | `blocks`         | `keyword`, `name`, `description` |
+| `fragment_block`      | `blocks`         | `name`, `description`  |
+| `map_block`           | `blocks`         | `source`, `target`     |
+
+**Schema members** (identified by node type):
+
+| CST Node Type              | Consumer Section   | Key Fields                     |
+|----------------------------|--------------------|--------------------------------|
+| `field_declaration`        | `schema_members`   | `name`, `type`, `annotation`, `note` |
+| `group_declaration`        | `schema_members`   | `name`                         |
+| `array_group_declaration`  | `schema_members`   | `name`                         |
+
+**Map items** (identified by node type):
+
+| CST Node Type        | Consumer Section | Key Fields           |
+|----------------------|------------------|----------------------|
+| `map_entry`          | `map_items`      | `source`, `target`   |
+| `computed_map_entry` | `map_items`      | `source`, `target`   |
+| `block_map_entry`    | `map_items`      | `source`, `target`   |
+| `nested_map`         | `map_items`      | —                    |
+
+**Path nodes** (identified by node type):
+
+| CST Node Type          | Consumer Section |
+|------------------------|------------------|
+| `namespaced_path`      | `paths`          |
+| `namespaced_field_path`| `paths`          |
+| `relative_field_path`  | `paths`          |
+| `field_path`           | `paths`          |
+| `path_reference`       | `paths`          |
+
+**Other extracted nodes**:
+
+| CST Node Type      | Consumer Section | Notes                          |
+|--------------------|------------------|--------------------------------|
+| `warning_comment`  | `comments`       | severity = `"warning"`         |
+| `question_comment` | `comments`       | severity = `"question"`        |
+| `info_comment`     | `comments`       | severity = `"info"`            |
+| `note_block`       | `notes`          | field: `value`                 |
+| `annotation`       | `annotations`    | field: `name`                  |
+
+### Running the Consumer
 
 Run it from this package directory:
 
@@ -69,11 +131,27 @@ Or through npm:
 npm run smoke:summary
 ```
 
-The parser-only unit test for the summary extractor itself does not require
-native compilation:
+Pass specific files to summarize only those:
+
+```bash
+python3 scripts/cst_summary.py ../../examples/db-to-db.stm --pretty
+```
+
+### Consumer Tests
+
+The unit test for the summary extractor itself does not require native
+compilation — it uses inline tree-dump data:
 
 ```bash
 python3 scripts/test_cst_summary.py
+```
+
+The smoke test runs the full consumer pipeline against every canonical example
+and multi-schema file, asserting structural counts and shapes:
+
+```bash
+python3 scripts/test_smoke_summary.py
+# or: npm run test:smoke
 ```
 
 ## Example Fixture Tests

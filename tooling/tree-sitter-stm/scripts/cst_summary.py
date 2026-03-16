@@ -349,8 +349,13 @@ def parse_with_cli(path: Path) -> Node:
         capture_output=True,
         text=True,
     )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "tree-sitter parse failed")
+    # tree-sitter returns non-zero when ERROR/MISSING nodes are present, but
+    # still emits a valid (recovered) tree on stdout.  Only raise when there
+    # is no usable tree output at all.
+    if not result.stdout.strip():
+        raise RuntimeError(
+            result.stderr.strip() or "tree-sitter parse produced no output"
+        )
     return parse_tree_dump(result.stdout)
 
 
