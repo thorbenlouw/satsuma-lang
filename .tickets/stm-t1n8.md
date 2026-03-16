@@ -19,3 +19,9 @@ Baseline VS Code support is planned around a TextMate grammar and language confi
 Dependencies on the tree-sitter parser work are captured in the ticket graph where needed.
 The resulting task breakdown covers extension scaffolding, grammar implementation, fixture coverage, verification, and follow-on semantic-token planning.
 
+
+## Notes
+
+**2026-03-16T14:59:55Z**
+
+All child tasks enriched with detailed design notes and acceptance criteria derived from HIGHLIGHTING-TAXONOMY.md (stm-o50b output). Scope mappings, ambiguity strategies, fixture layouts, degradation criteria, theme verification targets, and semantic token plans are now embedded in each task. Dependency stm-55vc → stm-2m6y was confirmed. Ready work: stm-2m6y (scaffold), stm-5lbl (semantic design). Critical path: stm-2m6y → stm-55vc → stm-dy6t → stm-aybc/stm-0oad.
