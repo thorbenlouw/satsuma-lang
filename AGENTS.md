@@ -50,6 +50,23 @@ When making changes or answering questions about syntax, semantics, or supported
 - Use the example corpus as golden fixtures whenever possible.
 - Document any ambiguity, unsupported syntax, or recovery behavior near the implementation.
 
+## Security
+
+CI runs `npm audit` and `gitleaks` secret scanning on every PR. Before pushing,
+agents must also verify locally:
+
+- **No secrets in commits.** Never commit API keys, tokens, passwords, or
+  credentials. Check staged diffs for anything that looks like a secret before
+  committing. If a secret is accidentally committed, alert the user immediately —
+  do not just remove it in a follow-up commit (the value is already in git history).
+- **No dependencies with critical vulnerabilities.** Run `npm audit` in any
+  package directory where you added or updated dependencies. Do not merge work
+  that introduces critical or high severity vulnerabilities without explicit
+  user approval.
+- **No `.env` or credential files.** Never stage `.env`, `credentials.json`,
+  `*.pem`, or similar files. If these are needed for local development, ensure
+  they are in `.gitignore`.
+
 ## Shell Command Expectations
 
 Always use non-interactive flags with shell commands that may prompt for confirmation. Agent work must not hang waiting for terminal input from aliased or interactive defaults.
