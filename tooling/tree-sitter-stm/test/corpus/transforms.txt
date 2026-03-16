@@ -216,6 +216,80 @@ mapping source -> target {
         (identifier)))))
 
 ==================
+Regression: multiline value-map followed by computed entry pipeline
+==================
+
+mapping source -> target {
+  StageName -> pipeline_stage
+    : map {
+        Prospecting: "top_funnel",
+        Qualification: "mid_funnel",
+        "Value Prop": "mid_funnel",
+        Closed_Won: "closed_won",
+        Closed_Lost: "closed_lost",
+        _: "unknown"
+      }
+
+  => is_closed
+    : StageName
+    | map { "Closed_Won": true, "Closed_Lost": true, _: false }
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (value_map_literal
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (string_literal)
+            (string_literal))
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (wildcard)
+            (string_literal))))
+      (computed_map_entry
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (identifier))
+      (pipe_continuation
+        (value_map_literal
+          (value_map_entry
+            (string_literal)
+            (boolean_literal))
+          (value_map_entry
+            (string_literal)
+            (boolean_literal))
+          (value_map_entry
+            (wildcard)
+            (boolean_literal)))))))
+
+==================
 Recovery: incomplete arrow falls back to raw_map_line
 ==================
 
