@@ -52,6 +52,9 @@ jobs:
       - name: Run smoke tests (parse all examples)
         run: python3 scripts/test_smoke_summary.py
 
+      - name: Audit npm dependencies
+        run: npm audit --omit=dev
+
   vscode-extension:
     name: VS Code extension
     runs-on: ubuntu-latest
@@ -72,3 +75,18 @@ jobs:
 
       - name: Run fixture and golden tests
         run: npm test
+
+      - name: Audit npm dependencies
+        run: npm audit --omit=dev
+
+  secrets:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
