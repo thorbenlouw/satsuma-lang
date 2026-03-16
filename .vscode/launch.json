@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch STM Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/tooling/vscode-stm",
+        "${workspaceFolder}/examples"   // opens examples/ so you immediately have .stm files
+      ]
+    }
+  ]
+}
