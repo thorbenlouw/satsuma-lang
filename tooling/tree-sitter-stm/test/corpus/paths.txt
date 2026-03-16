@@ -2,7 +2,7 @@
 Simple single-segment field path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   field_name -> result
 }
 
@@ -27,7 +27,7 @@ map src -> tgt {
 Dotted two-segment field path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   order.amount -> invoice.total
 }
 
@@ -56,7 +56,7 @@ map src -> tgt {
 Array segment (single level)
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   items[] -> results[]
 }
 
@@ -81,7 +81,7 @@ map src -> tgt {
 Deep nested array path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   orders[].lines[].sku -> skus[]
 }
 
@@ -110,7 +110,7 @@ map src -> tgt {
 Backtick quoted segment in path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   `field-with-dashes` -> result
 }
 
@@ -135,7 +135,7 @@ map src -> tgt {
 Relative single-segment path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   .source_field -> .target_field
 }
 
@@ -160,7 +160,7 @@ map src -> tgt {
 Relative dotted path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   .parent.child -> .dest.field
 }
 
@@ -189,7 +189,7 @@ map src -> tgt {
 Namespace-qualified path in map entry
 ==================
 
-map crm::orders -> billing::invoices {
+mapping crm::orders -> billing::invoices {
   crm::customer_id -> billing::client_ref
 }
 
@@ -226,7 +226,7 @@ map crm::orders -> billing::invoices {
 Namespace-qualified dotted field path
 ==================
 
-map src -> tgt {
+mapping src -> tgt {
   crm::order.line_item.sku -> tgt.sku
 }
 

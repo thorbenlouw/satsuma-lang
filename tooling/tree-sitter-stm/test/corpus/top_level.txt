@@ -29,7 +29,7 @@ fragment customer_fields "Shared fragment" {
   email EMAIL
 }
 
-map crm_system -> analytics_db [flatten: items, when: active] {
+mapping crm_system -> analytics_db [flatten: items, when: active] {
   customer_id -> customer_id
 }
 
@@ -251,10 +251,10 @@ workspace "platform" {
         (multiline_string)))))
 
 ==================
-Namespace-qualified map header
+Namespace-qualified mapping header
 ==================
 
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   order_id -> source_order_id
 }
 
@@ -282,10 +282,10 @@ map crm::orders -> warehouse::fact_orders {
             (identifier)))))))
 
 ==================
-Plain map header still parses as namespaced_path (backwards compat)
+Plain mapping header still parses as namespaced_path (backwards compat)
 ==================
 
-map crm_system -> analytics_db {
+mapping crm_system -> analytics_db {
   customer_id -> customer_id
 }
 
@@ -307,10 +307,10 @@ map crm_system -> analytics_db {
             (identifier)))))))
 
 ==================
-Cross-namespace field reference in map body
+Cross-namespace field reference in mapping body
 ==================
 
-map crm::orders -> warehouse::fact_orders {
+mapping crm::orders -> warehouse::fact_orders {
   billing::invoices.amount -> billed_amount
 }
 

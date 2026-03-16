@@ -2486,6 +2486,10 @@
     "named": false
   },
   {
+    "type": "mapping",
+    "named": false
+  },
+  {
     "type": "message",
     "named": false
   },

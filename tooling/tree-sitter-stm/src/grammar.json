@@ -1327,7 +1327,7 @@
       "members": [
         {
           "type": "STRING",
-          "value": "map"
+          "value": "mapping"
         },
         {
           "type": "CHOICE",
