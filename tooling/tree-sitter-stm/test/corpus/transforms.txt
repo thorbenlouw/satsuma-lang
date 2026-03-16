@@ -1,0 +1,219 @@
+==================
+Backtick (quoted) path segment
+==================
+
+map source -> target {
+  `field-with-dashes` -> result
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (quoted_identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Multi-level array path segments
+==================
+
+map source -> target {
+  orders[].items[].sku -> flat_skus[]
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier))
+          (path_segment
+            (identifier))
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Relative paths on both source and target
+==================
+
+map source -> target {
+  .source_field -> .target_field
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (relative_field_path
+          (path_segment
+            (identifier)))
+        (relative_field_path
+          (path_segment
+            (identifier)))))))
+
+==================
+Function call in inline transform
+==================
+
+map source -> target {
+  amount -> cents : multiply(100) | round
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (identifier)
+        (symbol)
+        (number_literal)
+        (symbol)
+        (operator)
+        (identifier)))))
+
+==================
+Value-map literal with null key
+==================
+
+map source -> target {
+  status -> label : map { A: "active", null: "unknown" }
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier)))
+        (value_map_literal
+          (value_map_entry
+            (identifier)
+            (string_literal))
+          (value_map_entry
+            (null_literal)
+            (string_literal)))))))
+
+==================
+Multiline form: transform head then pipe continuations
+==================
+
+map source -> target {
+  raw_email -> clean_email
+    : trim
+    | lowercase
+    | validate_email
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (map_entry
+        (field_path
+          (path_segment
+            (identifier)))
+        (field_path
+          (path_segment
+            (identifier))))
+      (transform_head
+        (identifier))
+      (pipe_continuation
+        (identifier))
+      (pipe_continuation
+        (identifier)))))
+
+==================
+Recovery: incomplete arrow falls back to raw_map_line
+==================
+
+map source -> target {
+  field_a ->
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (raw_map_line
+        (identifier)
+        (arrow)))))
+
+==================
+Recovery: colon with no transform falls back to raw_map_line
+==================
+
+map source -> target {
+  field_a -> field_b :
+}
+
+---
+
+(source_file
+  (map_block
+    (namespaced_path
+      (identifier))
+    (namespaced_path
+      (identifier))
+    (map_body
+      (raw_map_line
+        (identifier)
+        (arrow)
+        (identifier)
+        (symbol)))))
