@@ -15,6 +15,12 @@ fi
 
 export XDG_CACHE_HOME="$CACHE_DIR"
 
+# Add locally-installed tree-sitter-cli to PATH
+LOCAL_BIN="$ROOT_DIR/tooling/tree-sitter-stm/node_modules/.bin"
+if [ -d "$LOCAL_BIN" ]; then
+  export PATH="$LOCAL_BIN:$PATH"
+fi
+
 subcommand="${1:-}"
 
 if [ "$subcommand" = "parse" ] || [ "$subcommand" = "highlight" ] || [ "$subcommand" = "query" ] || [ "$subcommand" = "tags" ] || [ "$subcommand" = "dump-languages" ]; then
