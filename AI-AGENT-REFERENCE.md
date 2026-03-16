@@ -39,7 +39,7 @@ annotation       = "@" IDENT ["(" params ")"] | "@" IDENT IDENT "=" STRING ;
 note             = "note" "'''" TEXT "'''" ;
 sel_criteria     = "selection_criteria" "'''" TEXT "'''" ;
 
-map_block        = "map" [IDENT "->" IDENT] ["[" option {"," option} "]"] "{" map_body "}" ;
+map_block        = "mapping" [IDENT "->" IDENT] ["[" option {"," option} "]"] "{" map_body "}" ;
 option           = IDENT ":" expr ;
 map_body         = { annotation | note | map_entry | nested_map | COMMENT } ;
 map_entry        = (field_path "->" field_path | "=>" field_path) [":" transform {cont}] ["{" note "}"] ;
@@ -96,8 +96,8 @@ Annotations are postfix on the same declaration line:
   POReferences[] @filter(REFQUAL == "ON") { ... }
   customer_name STRING @header("Customer Name")
 
-## Map blocks
-map [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
+## Mapping blocks
+mapping [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
   src -> tgt                                 // direct
   src -> tgt : transform                     // with transform
   => tgt : when cond => value                // computed (no source)
@@ -144,7 +144,7 @@ note '''markdown'''                  (on any block)
 1. Start with `integration` block (name, cardinality, author)
 2. Define `source` and `target` blocks with all fields, types, and tags
 3. Add `lookup` blocks if any enrichment/reference data is needed
-4. Write the `map {}` block with all field mappings
+4. Write the `mapping {}` block with all field mappings
 5. Use `nl()` for any transform you can't express as a standard function
 6. Add `//!` warnings for known data quality issues
 7. Add `//?` for any open questions or ambiguities
@@ -153,7 +153,7 @@ note '''markdown'''                  (on any block)
 ### When reading/interpreting STM:
 
 1. Parse schema blocks to understand source and target structures
-2. Read map block entries in order — each is one field-level mapping
+2. Read mapping block entries in order — each is one field-level mapping
 3. `->` means source-to-target; `=>` means computed/no direct source
 4. Transform chains read left-to-right: `trim | lowercase | validate_email`
 5. `nl("...")` is natural language intent — interpret and implement the described logic
@@ -166,7 +166,7 @@ note '''markdown'''                  (on any block)
 |---|---|
 | Forgetting to declare arrays with `[]` | Use `items[] { }` for array of objects, `tags[] STRING` for array of primitives |
 | Using `->` for computed fields | Use `=> target_field : expression` when there's no single source |
-| Repeating schema IDs in paths inside implicit map blocks | Bare names resolve to source (left) and target (right) |
+| Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
 | Using `if ... then ... else ...` conditionals | Use multiline `when ... => ...` chains |
 | Inventing transform functions | Use `nl()` for anything not in the standard library |
 | Putting transforms before `:` | Transform always follows `:` on the same or next line |
@@ -195,7 +195,7 @@ target warehouse "Data Warehouse" {
   is_active     BOOLEAN
 }
 
-map {
+mapping {
   id     -> customer_id   : uuid_v5("namespace", id)
   name   -> display_name  : trim | title_case
   email  -> email_address : trim | lowercase | validate_email | null_if_invalid
@@ -222,7 +222,7 @@ map {
 // In target block:
   customer_type VARCHAR(20) [enum: {retail, business, government}, required]
 
-// In map block:
+// In mapping block:
 CUST_TYPE -> customer_type
   : map { R: "retail", B: "business", G: "government", null: "retail" }
 ```
