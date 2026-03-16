@@ -4,9 +4,11 @@
 
 If you've ever worked on a data migration, system integration, or ETL project, you already know the pain of **source-to-target mapping documents**. They're almost always Excel spreadsheets — columns for Source Field, Target Field, Transformation, Data Type, Comments — and they're almost always a mess.
 
-Every team invents its own layout. Transformation logic lives in free-text cells like *"Convert to uppercase and validate"* (but what does "validate" mean, exactly?). Files get emailed, copied to SharePoint, and edited by three people at once. Which version is current? Nobody's entirely sure.
+Every team invents its own layout. Transformation logic lives in free-text cells like *"Convert to uppercase and validate"* (but what does "validate" mean, exactly?). Files get emailed, copied to SharePoint, and edited by three people at once. Which version is current? Nobody's entirely sure. And when an issue crops up in production six months later, nobody can trace the ambiguous spreadsheet cell back to a conscious decision.
 
 **STM** — Source-To-Target Mapping — is a simple, readable language designed to replace those spreadsheets. It's a plain-text format that you can version in Git, review in pull requests, and — crucially — read without needing a decoder ring.
+
+Think of STM as sitting between the business requirements and the implementation code. It captures **what** the data transformation should do — precisely enough that an engineer (or an AI agent) can implement it, yet readably enough that a BA can review and sign it off.
 
 Here's the headline: **if you can read a column list in a database tool, you can read STM**. This tutorial will walk you through the syntax step by step, starting from the simplest possible mapping and building up to real-world complexity.
 
@@ -103,7 +105,7 @@ The pipe character (`|`) chains transforms left to right, exactly like a Unix pi
 
 The credit limit mapping: *"Take `CREDIT_LIMIT`, replace null with zero, multiply by 100 (converting pounds to pence), then round."*
 
-This is one of STM's big wins over spreadsheets. Instead of a free-text cell saying *"Clean up and convert to cents"*, you get a precise, ordered sequence of operations that an engineer can implement directly.
+This is one of STM's big wins over spreadsheets. Instead of a free-text cell saying *"Clean up and convert to cents"*, you get a precise, ordered sequence of operations that an engineer can implement directly. And because the pipeline reads left to right, you can trace the data flow step by step — there's no ambiguity about what happens first.
 
 ### Value Maps
 
@@ -265,7 +267,9 @@ PHONE_NBR -> phone
         If unparseable, set null and log warning with original value.")
 ```
 
-The `nl()` block says to both the engineer and any AI tooling: *"This needs custom implementation — here's the intent."* It can also be mixed with parseable transforms in the same pipeline:
+The `nl()` block says to both the engineer and any AI tooling: *"This needs custom implementation — here's the intent."* It's an honest acknowledgement that not every business rule can be reduced to a neat function call — but it still belongs *in the spec*, not in someone's head or lost in a meeting note.
+
+`nl()` can also be mixed with parseable transforms in the same pipeline:
 
 ```stm
 NOTES -> notes
@@ -362,6 +366,8 @@ map order_api -> order_lines [flatten: items[]] {
 ```
 
 The `flatten: items[]` option on the map block tells the reader (and any tooling): *"For each element in the `items` array, emit one target row. Parent-level fields like `orderId` are repeated."*
+
+This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In STM, it's a single option on the map header, and the array path references make the grain of the target table completely unambiguous.
 
 ### Multiple Sources and Targets
 
@@ -586,6 +592,16 @@ Even if you've never seen STM before today, you can follow this specification an
 
 Compare that to hunting through a spreadsheet's comments column, a Confluence page, and a Slack thread to piece together the same answers.
 
+### STM vs the Spreadsheet: A Side-by-Side
+
+To make the contrast concrete, consider how the stage-mapping rule above would look in a typical Excel mapping document:
+
+| Source Field | Target Field | Transformation | Notes |
+|---|---|---|---|
+| StageName | pipeline_stage | Map values (see lookup tab) | Prospecting=top_funnel, Qualification=mid_funnel, etc. |
+
+That single row raises immediate questions. *"What about 'Value Prop' — is that top or mid funnel?"* *"What if the value doesn't match any of these?"* *"Where's the lookup tab — is it in this workbook or another one?"* The STM `map` transform answers all of these inline, with a `_` wildcard for unrecognised values. There's no lookup tab to lose, no ambiguity to resolve in a follow-up meeting.
+
 ---
 
 ## Quick Reference: The STM Building Blocks
@@ -621,7 +637,19 @@ You don't need to memorise every detail in this tutorial. The key takeaways are:
 2. **Everything lives in one place** — schema definitions, mapping logic, transformation rules, data-quality warnings, and documentation all sit together in a single versionable file.
 3. **Precision replaces ambiguity** — instead of free-text descriptions, transforms are explicit pipelines. Where precision isn't practical, `nl()` blocks capture intent in natural language rather than leaving it to tribal knowledge.
 4. **It scales** — from a two-field proof of concept to a multi-source enterprise data hub, STM uses the same consistent syntax.
+5. **It versions naturally** — because STM files are plain text, they slot straight into Git. You get full change history, pull-request reviews, and the ability to diff two versions of a mapping side by side. No more "v7_FINAL_FINAL_reviewed_JK.xlsx".
 
-When you next review a mapping specification, look at the `//!` warnings and `//?` open questions first — they're the items most likely to need your input. Then walk the `map` block line by line and ask: *"Does this transform match the business rule we agreed?"* If it does, you can sign it off with confidence. If it doesn't, you can point to the exact line that needs changing.
+### A practical review checklist
+
+When you next review a mapping specification, try this approach:
+
+1. **Start with the integration block.** Read the note for project context, constraints, and dependencies. Check the cardinality matches your understanding of the integration pattern.
+2. **Scan the `//!` warnings.** These are known data-quality risks and issues. Make sure each one has a plan — is it handled in the transform, or is it an open item?
+3. **Count the `//?` questions.** These are unresolved items. They should all be resolved before sign-off. If any remain, they're your action items.
+4. **Walk the map block line by line.** For each mapping, ask: *"Does this transform match the business rule we agreed?"* Pay particular attention to value maps, conditionals, and `nl()` blocks — these encode your business logic.
+5. **Check for computed fields (`=>`).**  These target fields have no direct source, so they're easy to miss. Make sure the derivation logic is correct and complete.
+6. **Look at fallback expressions.** These define what happens when preferred data is missing. Confirm the fallback behaviour matches your requirements.
+
+If everything checks out, you can sign it off with confidence. If something doesn't match, you can point to the exact line and say precisely what needs changing — no more ambiguous feedback on a 200-row spreadsheet.
 
 That's a far cry from arguing over which version of the Excel file has the latest transformation logic.
