@@ -76,6 +76,22 @@ native compilation:
 python3 scripts/test_cst_summary.py
 ```
 
+## Example Fixture Tests
+
+`test/fixtures/examples/*.json` defines the full-file parser fixtures for the
+canonical STM examples in [`examples/`](/Users/thorben/dev/personal/stm/examples).
+`test/fixtures/recovery/*.json` defines malformed recovery fixtures for the
+required editing states. `scripts/test_fixtures.py` validates that every
+root-level example file has a fixture entry, checks that the required recovery
+fixtures exist, parses each file through the repo-local Tree-sitter wrapper, and
+can assert expected `ERROR`/`MISSING` recovery or specific recovered node shapes.
+
+Run it from this package directory:
+
+```bash
+python3 scripts/test_fixtures.py
+```
+
 ## Local Prerequisites
 
 Generating the parser requires the local `tree-sitter-cli` package. Running

@@ -1,0 +1,4 @@
+source broken_note {
+  field STRING {
+    note '''unterminated
+}

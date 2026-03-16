@@ -1,0 +1,2 @@
+source broken_schema {
+  id STRING

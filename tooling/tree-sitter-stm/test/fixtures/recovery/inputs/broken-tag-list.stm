@@ -1,0 +1,3 @@
+source bad_tags {
+  id STRING [broken:
+}

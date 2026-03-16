@@ -1,0 +1,4 @@
+{
+  "source": "inputs/partial-transform-line.stm",
+  "expect_contains": ["(map_entry", "(raw_map_line", "(symbol"]
+}

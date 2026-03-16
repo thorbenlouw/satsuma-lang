@@ -1,0 +1,6 @@
+{
+  "source": "inputs/unterminated-note.stm",
+  "allow_error": true,
+  "require_error": true,
+  "expect_contains": ["(source_file", "(ERROR "]
+}
