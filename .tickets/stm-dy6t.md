@@ -29,9 +29,9 @@ In `sfdc_account.BillingCountry`, `sfdc_account` is a schema reference and `Bill
 
 In `crm::orders.order_id`, `crm` is a namespace. TextMate can match `::` as `punctuation.separator.namespace.stm` but cannot verify the preceding token is a namespace. **Decision**: colour the `::` delimiter; let the preceding identifier take default scope. Optionally scope `identifier::` prefix differently but accept false positives.
 
-### Value-map literal vs map block (taxonomy §3.6)
+### Value-map literal vs mapping block (taxonomy §3.6)
 
-`map` can be a top-level block keyword or an inline value-map literal keyword (e.g. `map { R: "retail", ... }`). **Decision**: use parent context — `map` at top level is a declaration keyword; `map` preceded by `:` or `|` inside a map body is treated as a transform/keyword. Accept minor overlap.
+The top-level block keyword is now `mapping`, while inline value-map literals use `map` (e.g. `map { R: "retail", ... }`). **Decision**: `mapping` is always a declaration keyword; `map` preceded by `:` or `|` inside a mapping body is treated as a value-map literal keyword.
 
 ### Inline note blocks on map entries (taxonomy §3.7)
 
