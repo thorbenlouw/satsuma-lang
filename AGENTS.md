@@ -79,7 +79,7 @@ Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
 
 ## Running tree-sitter Commands
 
-Use the repo-local wrapper [`scripts/tree-sitter-local.sh`](/Users/thorben/dev/personal/stm/scripts/tree-sitter-local.sh) for every Tree-sitter command. It sets `XDG_CACHE_HOME` to a repo-local cache directory and uses a repo-local config file so agent runs do not depend on `~/.cache/tree-sitter` or global parser config.
+Use the repo-local wrapper [`scripts/tree-sitter-local.sh`](scripts/tree-sitter-local.sh) for every Tree-sitter command. It sets `XDG_CACHE_HOME` to a repo-local cache directory and uses a repo-local config file so agent runs do not depend on `~/.cache/tree-sitter` or global parser config.
 
 Preferred forms:
 
@@ -155,6 +155,12 @@ Expected workflow:
 
 ## Agent Workflow
 
+- **All code changes must go through a PR.** Direct pushes to `main` are blocked.
+  See [AGENT-CONTRIBUTIONS.md](AGENT-CONTRIBUTIONS.md) for the
+  full contribution workflow including worktree setup, branch naming, and parallel
+  work conventions.
+- Use git worktrees in `.worktrees/` for feature isolation. Create one per feature
+  branch so multiple agents can work in parallel without conflicts.
 - Read the relevant feature doc in `features/` before implementing planned work.
 - Inspect existing examples and docs before making syntax or tooling assumptions.
 - Keep changes scoped and directly tied to the current task.
