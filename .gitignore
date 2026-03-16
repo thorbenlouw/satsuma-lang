@@ -1,1 +1,6 @@
-
+.cache
+.tree-sitter
+.DS_Store
+log.html
+scripts/__pycache__
+tooling/tree-sitter-stm/scripts/__pycache__
