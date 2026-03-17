@@ -17,8 +17,8 @@ RetailCo International operates 850+ stores across 12 countries, selling through
 | `link-sale.stm` | 3-way sale link + transaction satellite | `@link`, `@link(hub_customer, hub_product, hub_store)`, multi-source link loading |
 | `link-inventory.stm` | Product-warehouse link + effectivity + stock satellite | `@link`, `@satellite`, `@effectivity`, `@driving_key` |
 | **Information Mart Layer** | | |
-| `mart-customer-360.stm` | Denormalized customer view from hub + 2 satellites | Vault entities as sources, Kimball `@dimension` on target, cross-satellite joins |
-| `mart-sales.stm` | Transaction fact from link + satellite + hub joins | Vault entities as sources, Kimball `@fact`/`@ref`/`@measure` on target, hash key resolution |
+| `mart-customer-360.stm` | Denormalized customer view from hub + 2 satellites | Cross-layer `import`, Kimball `@dimension` on target, vault targets as mapping sources |
+| `mart-sales.stm` | Transaction fact from link + satellite + hub joins | Cross-layer `import` from 3 vault files, Kimball `@fact`/`@ref`/`@measure`, hash key resolution |
 
 ## Source Systems
 
@@ -102,15 +102,41 @@ Tracks the temporal validity of the product-warehouse relationship. When a produ
 
 ### Vault-to-mart boundary (mart-customer-360.stm, mart-sales.stm)
 
-This is where the Data Vault and Kimball tag systems meet. The mart files demonstrate the full architecture:
+This is where the Data Vault and Kimball tag systems meet — and where STM's cross-layer import pattern shines.
 
-1. **Sources are vault entities** — hubs, links, and satellites are defined as `source` blocks with their full physical schema, including the hash keys, load dates, and hash diffs that were *inferred* during vault loading. From the mart's perspective, these columns are real and present.
+#### Block keywords are semantic sugar
 
-2. **Targets use Kimball tags** — the mart output uses `@dimension`, `@fact`, `@grain`, `@ref`, and `@measure` tags, exactly like the Kimball examples. The mart IS a star schema — it just happens to be sourced from a vault rather than operational systems.
+STM block keywords (`source`, `target`, `table`, `message`, etc.) communicate **intent to the reader**, but they are all structurally identical schema blocks. A `target` in one file can appear on the source side of a `mapping` in another file. The mapping syntax determines the data flow direction, not the block keyword.
 
-3. **Mapping handles the join logic** — the mapping blocks express the vault join pattern (link → satellite → hub) including current-version filtering (`load_end_date IS NULL`), LEFT JOINs for optional relationships, and hash-key-to-business-key resolution.
+#### Cross-layer imports
 
-4. **Vault lineage preserved** — mart targets include the vault hash key as a non-functional column for traceability. An analyst can trace any mart row back to its vault source.
+The mart files import vault targets directly — no redeclaration needed:
+
+```stm
+// mart-customer-360.stm
+import { hub_customer, sat_customer_demographics, sat_customer_online } from "hub-customer.stm"
+
+// These are target blocks in hub-customer.stm, but here they
+// appear on the source side of mappings — and that's fine
+mapping sat_customer_demographics -> mart_customer_360 {
+  hub_customer.customer_id -> customer_id
+  // ...
+}
+```
+
+Tooling resolves inferred fields (hash keys, load dates, hash diffs) from the `@hub` and `@satellite` tags on the imported blocks. Those fields are available in mappings without being explicitly written in either the vault or mart STM files.
+
+#### What the mart files demonstrate
+
+1. **Cross-layer imports** — vault `target` blocks imported and used as mapping sources. Zero redundant schema declarations.
+
+2. **Inferred fields flow across layers** — `hub_customer_hk` and `load_date` are never explicitly written in any STM file, but the mart mappings reference them because tooling resolves them from the `@hub` tag.
+
+3. **Kimball tags on mart targets** — the mart output uses `@dimension`, `@fact`, `@grain`, `@ref`, and `@measure` tags, exactly like the Kimball examples. The mart IS a star schema — it just happens to be sourced from a vault rather than operational systems.
+
+4. **Mapping handles the join logic** — the mapping blocks express the vault join pattern (link → satellite → hub) including current-version filtering (`load_end_date IS NULL`), LEFT JOINs for optional relationships, and hash-key-to-business-key resolution.
+
+5. **Vault lineage preserved** — mart targets include the vault hash key as a non-functional column for traceability. An analyst can trace any mart row back to its vault source.
 
 This demonstrates that STM doesn't force a modelling choice — it describes whatever architecture you're building. The same `@tag` vocabulary works on both sides of the vault-to-mart boundary.
 
@@ -118,10 +144,10 @@ This demonstrates that STM doesn't force a modelling choice — it describes wha
 
 | Tag | Used on | Meaning |
 |-----|---------|---------|
-| `@hub` | Target block | Business key registry |
-| `@link` | Target block | Relationship between hubs |
-| `@satellite` | Target block | Descriptive attributes (versioned) |
-| `@effectivity` | Target block (with `@satellite`) | Temporal validity of a link relationship |
+| `@hub` | Schema block | Business key registry |
+| `@link` | Schema block | Relationship between hubs |
+| `@satellite` | Schema block | Descriptive attributes (versioned) |
+| `@effectivity` | Schema block (with `@satellite`) | Temporal validity of a link relationship |
 | `@business_key(field)` | Inside hub | The durable business key |
 | `@parent(entity)` | Inside satellite | Which hub or link this satellite belongs to |
 | `@link(hub1, hub2, ...)` | Inside link | Which hubs participate in this relationship |

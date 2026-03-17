@@ -43,10 +43,51 @@ Future work (out of scope for this feature) includes tooling that reads these ta
 
 ## Non-Goals
 
-- **Grammar changes**: All conventions use the existing `@tag()` annotation syntax.
+- **Grammar changes**: All conventions use the existing `@tag()` annotation syntax and `import` mechanism.
 - **Tooling implementation**: No DDL generator, dbt generator, or linter is built as part of this feature.
 - **Exhaustive pattern coverage**: We cover the core 80% of Kimball and DV patterns. Exotic patterns (multi-active satellites, same-as links, effectivity on links with driving keys) are acknowledged but not fully specified.
 - **Runtime semantics**: The tags describe structure and intent. Execution semantics (how a load actually runs) are out of scope.
+
+---
+
+## Schema Blocks and Roles
+
+### Block keywords are semantic sugar
+
+STM provides several block keywords: `source`, `target`, `table`, `message`, `record`, `event`, `schema`, `lookup`. These keywords communicate **intent to the reader** — they say "this is where data comes from" or "this is where data goes" — but they are all structurally identical: a named block containing typed fields with annotations and tags.
+
+This means a `target` block defined in one file can be imported and used on the source side of a mapping in another file. **The `mapping X -> Y` syntax determines which block is a source and which is a target in that context**, not the block keyword.
+
+### Cross-layer imports
+
+In a layered architecture (e.g., raw vault → information mart), downstream layers consume the outputs of upstream layers. STM handles this naturally via `import`:
+
+```stm
+// mart-customer-360.stm
+import { hub_customer, sat_customer_demographics, sat_customer_online } from "hub-customer.stm"
+
+target mart_customer_360 @dimension @scd(type: 1) {
+  // ... mart fields ...
+}
+
+// hub_customer is a target in hub-customer.stm, but here it's on the
+// source side of the mapping — and that's fine
+mapping sat_customer_demographics -> mart_customer_360 {
+  hub_customer.customer_id -> customer_id
+  // ...
+}
+```
+
+No redeclaration is needed. The imported blocks carry their tags, and tooling resolves inferred fields (hash keys, load dates, etc.) from those tags. An imported `@hub` block has its `{hub}_hk`, `load_date`, and `record_source` available for use in mappings, even though those fields are not explicitly written in the source file.
+
+### Why this matters
+
+Without cross-layer imports, a mart file would need to redeclare every vault entity as a `source` block — including all the mechanical columns that the vault layer deliberately omitted via tag inference. This defeats the purpose of inference:
+
+- **Without imports**: 60+ lines of redundant source blocks, manually listing inferred columns
+- **With imports**: 1–3 import lines, zero redundancy, and inferred columns are available automatically
+
+The mart examples in `example_datavault/` demonstrate this pattern.
 
 ---
 
@@ -67,9 +108,9 @@ Future work (out of scope for this feature) includes tooling that reads these ta
 
 | Tag | Applies to | Arguments | Description |
 |-----|-----------|-----------|-------------|
-| `@dimension` | Schema block | None | Marks a target as a dimension table. Tooling infers a surrogate key if `@scd(type: 2)` or `@scd(type: 6)` is present. |
+| `@dimension` | Schema block | None | Marks a schema block as a dimension table. Tooling infers a surrogate key if `@scd(type: 2)` or `@scd(type: 6)` is present. |
 | `@conformed` | Schema block | None | Marks a dimension as conformed — shared across multiple star schemas. Informational; no structural inference. |
-| `@fact` | Schema block | None | Marks a target as a fact table. |
+| `@fact` | Schema block | None | Marks a schema block as a fact table. |
 | `@snapshot(periodic)` | Schema block | `periodic` or `accumulating` | Fact table snapshot type. Periodic = full state at regular intervals. Accumulating = tracks lifecycle milestones. |
 | `@grain(field, ...)` | Schema block | One or more field names | The grain of a fact table — the combination of fields that uniquely identifies a row. |
 | `@ref dim on field` | Schema block (inside body) | Dimension name + join field | Declares a dimension reference (foreign key). Tooling infers the surrogate key FK column. |
@@ -80,9 +121,9 @@ Future work (out of scope for this feature) includes tooling that reads these ta
 
 | Tag | Applies to | Arguments | Description |
 |-----|-----------|-----------|-------------|
-| `@hub` | Schema block | None | Marks a target as a hub (business key registry). Tooling infers: hash key, load date, record source. |
-| `@link` | Schema block | None | Marks a target as a link (relationship). Tooling infers: hash key, parent hub hash keys, load date, record source. |
-| `@satellite` | Schema block | None | Marks a target as a satellite (descriptive attributes). Tooling infers: parent hash key, load date, load end date, hash diff, record source. |
+| `@hub` | Schema block | None | Marks a schema block as a hub (business key registry). Tooling infers: hash key, load date, record source. |
+| `@link` | Schema block | None | Marks a schema block as a link (relationship). Tooling infers: hash key, parent hub hash keys, load date, record source. |
+| `@satellite` | Schema block | None | Marks a schema block as a satellite (descriptive attributes). Tooling infers: parent hash key, load date, load end date, hash diff, record source. |
 | `@parent(hub_or_link)` | Schema block | Hub or link identifier | Declares which hub or link a satellite belongs to. |
 | `@link(hub1, hub2, ...)` | Schema block | Two or more hub identifiers | Declares which hubs participate in a link. |
 | `@effectivity` | Schema block | None | Combined with `@satellite`, marks an effectivity satellite that tracks the temporal validity of a link relationship. Tooling infers: start/end dates, is_current flag. |
@@ -211,7 +252,9 @@ features/06-data-modelling-with-stm/
     ├── hub-product.stm           # Hub + 2 satellites (attributes + pricing)
     ├── hub-store.stm             # Hub + 1 satellite
     ├── link-sale.stm             # 3-way link + transaction satellite
-    └── link-inventory.stm        # Product-warehouse link + stock satellite
+    ├── link-inventory.stm        # Product-warehouse link + stock satellite
+    ├── mart-customer-360.stm     # Information mart: customer dimension from vault
+    └── mart-sales.stm            # Information mart: sales fact from vault
 ```
 
 ---

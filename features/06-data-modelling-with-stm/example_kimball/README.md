@@ -67,16 +67,16 @@ Each `@ref` declaration infers a surrogate key FK column:
 
 | Tag | Used on | Meaning |
 |-----|---------|---------|
-| `@dimension` | Target block | This is a dimension table |
-| `@conformed` | Target block | Shared across star schemas |
-| `@fact` | Target block | This is a fact table |
-| `@snapshot(periodic)` | Target block | Periodic snapshot fact (semi-additive measures) |
-| `@scd(type: N)` | Target block | Slowly Changing Dimension strategy (1, 2, or 6) |
-| `@natural_key(field)` | Inside target | Business key for the dimension |
-| `@track(fields...)` | Inside target | Fields that trigger SCD versioning |
-| `@ignore(fields...)` | Inside target | Fields that do NOT trigger versioning |
-| `@grain(fields...)` | Inside target | Fact table grain |
-| `@ref dim on field` | Inside target | Foreign key to a dimension |
+| `@dimension` | Schema block | This is a dimension table |
+| `@conformed` | Schema block | Shared across star schemas |
+| `@fact` | Schema block | This is a fact table |
+| `@snapshot(periodic)` | Schema block | Periodic snapshot fact (semi-additive measures) |
+| `@scd(type: N)` | Schema block | Slowly Changing Dimension strategy (1, 2, or 6) |
+| `@natural_key(field)` | Inside schema block | Business key for the dimension |
+| `@track(fields...)` | Inside schema block | Fields that trigger SCD versioning |
+| `@ignore(fields...)` | Inside schema block | Fields that do NOT trigger versioning |
+| `@grain(fields...)` | Inside schema block | Fact table grain |
+| `@ref dim on field` | Inside schema block | Foreign key to a dimension |
 | `@measure(type)` | On a field | Measure classification: additive, semi_additive, non_additive |
 | `@degenerate` | On a field | Degenerate dimension attribute stored on the fact |
 
