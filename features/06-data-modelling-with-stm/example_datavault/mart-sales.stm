@@ -1,0 +1,168 @@
+integration "RetailCo_Mart_Sales" {
+  cardinality N:1
+  author "RetailCo Data Platform"
+  version "1.0.0"
+  tags [datavault, mart, sales, kimball]
+
+  note '''
+    # Sales Fact Mart
+
+    A denormalized transaction-grain fact table built from the raw
+    Data Vault. Joins the sale link, its transaction satellite, and
+    hub business keys into a single analytics-ready fact.
+
+    ## Vault-to-Mart boundary
+    This file demonstrates the key architectural boundary:
+    - **Sources** are raw vault entities (hubs, links, satellites)
+      described with their full physical schema including hash keys
+    - **Target** is a Kimball-style fact with `@ref` to dimensions
+      and `@measure` on metrics
+    - The mapping layer handles the join logic, hash key resolution,
+      and current-version filtering
+
+    ## Why not just query the vault directly?
+    The vault is optimized for loading and auditability, not for
+    analytical queries. A 3-way link join across 4 satellites with
+    current-version filters is expensive and complex. The mart
+    pre-computes this join and presents a simple star schema that
+    any BI tool can consume.
+  '''
+}
+
+
+// ============================================================
+// Sources: Raw Vault Entities
+// ============================================================
+
+source link_sale "Sale link — transaction relationships" {
+  link_sale_hk         CHAR(64)        [pk]
+  hub_customer_hk      CHAR(64)        [ref: hub_customer]
+  hub_product_hk       CHAR(64)        [ref: hub_product]
+  hub_store_hk         CHAR(64)        [ref: hub_store]    // NULL for online orders
+  transaction_id       VARCHAR(30)     [required]
+  line_number          INTEGER         [required]
+  load_date            TIMESTAMPTZ
+  record_source        VARCHAR(100)
+}
+
+source sat_sale_detail "Transaction satellite — amounts and attributes" {
+  link_sale_hk         CHAR(64)        [pk, ref: link_sale]
+  load_date            TIMESTAMPTZ     [pk]
+  load_end_date        TIMESTAMPTZ
+  hash_diff            CHAR(64)
+  record_source        VARCHAR(100)
+
+  transaction_date     DATE
+  transaction_time     TIME
+  channel              VARCHAR(20)
+  payment_type         VARCHAR(20)
+  quantity             INTEGER
+  unit_price           DECIMAL(10,2)
+  gross_amount         DECIMAL(12,2)
+  discount_amount      DECIMAL(10,2)
+  tax_amount           DECIMAL(10,2)
+  net_amount           DECIMAL(12,2)
+}
+
+source hub_customer "Customer hub — for business key resolution" {
+  hub_customer_hk      CHAR(64)        [pk]
+  customer_id          VARCHAR(50)     [required]
+}
+
+source hub_product "Product hub — for SKU resolution" {
+  hub_product_hk       CHAR(64)        [pk]
+  sku                  VARCHAR(18)     [required]
+}
+
+source hub_store "Store hub — for store ID resolution" {
+  hub_store_hk         CHAR(64)        [pk]
+  store_id             VARCHAR(20)     [required]
+}
+
+
+// ============================================================
+// Target: Sales Fact (Kimball-style mart)
+// ============================================================
+
+target mart_fact_sales "Denormalized transaction fact for analytics" @fact {
+  @grain(transaction_id, line_number)
+  @ref mart_customer_360 on customer_id
+  @ref dim_product on sku
+  @ref dim_store on store_id
+  @ref dim_date on transaction_date
+
+  // Keys
+  transaction_id       VARCHAR(30)     [required]
+  line_number          INTEGER         [required]
+  transaction_date     DATE            [required]
+  transaction_time     TIME
+
+  // Dimension references (resolved from hub business keys)
+  customer_id          VARCHAR(50)                         //! NULL for anonymous POS purchases
+  sku                  VARCHAR(18)     [required]
+  store_id             VARCHAR(20)                         // NULL for online
+
+  // Degenerate dimensions
+  channel              VARCHAR(20)     [required]          @degenerate
+  payment_type         VARCHAR(20)                         @degenerate
+  source_system        VARCHAR(100)                        @degenerate
+
+  // Measures
+  quantity             INTEGER         [required]          @measure(additive)
+  unit_price           DECIMAL(10,2)   [required]          @measure(non_additive)
+  gross_amount         DECIMAL(12,2)   [required]          @measure(additive)
+  discount_amount      DECIMAL(10,2)   [default: 0]       @measure(additive)
+  tax_amount           DECIMAL(10,2)   [default: 0]       @measure(additive)
+  net_amount           DECIMAL(12,2)   [required]          @measure(additive)
+
+  // Vault lineage
+  link_sale_hk         CHAR(64)                            // Traceability back to vault
+}
+
+
+// ============================================================
+// Mapping
+// ============================================================
+
+mapping link_sale -> mart_fact_sales {
+  note '''
+    Core join pattern:
+    ```
+    link_sale
+      JOIN sat_sale_detail ON link_sale_hk
+        WHERE load_end_date IS NULL
+      LEFT JOIN hub_customer ON hub_customer_hk
+      JOIN hub_product ON hub_product_hk
+      LEFT JOIN hub_store ON hub_store_hk
+    ```
+    Customer and store are LEFT JOINs because anonymous POS purchases
+    have no customer, and online orders have no store.
+  '''
+
+  // Transaction identity (from the link)
+  transaction_id -> transaction_id
+  line_number -> line_number
+
+  // Business keys resolved from hubs via hash key joins
+  hub_customer.customer_id -> customer_id
+  hub_product.sku -> sku
+  hub_store.store_id -> store_id
+
+  // Attributes from the transaction satellite (current version only)
+  sat_sale_detail.transaction_date -> transaction_date
+  sat_sale_detail.transaction_time -> transaction_time
+  sat_sale_detail.channel -> channel
+  sat_sale_detail.payment_type -> payment_type
+
+  // Measures from the transaction satellite
+  sat_sale_detail.quantity -> quantity
+  sat_sale_detail.unit_price -> unit_price
+  sat_sale_detail.gross_amount -> gross_amount
+  sat_sale_detail.discount_amount -> discount_amount
+  sat_sale_detail.tax_amount -> tax_amount
+  sat_sale_detail.net_amount -> net_amount
+
+  // Lineage
+  link_sale.record_source -> source_system
+  link_sale_hk -> link_sale_hk
+}
