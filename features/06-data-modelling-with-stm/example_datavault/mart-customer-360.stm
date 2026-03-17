@@ -1,3 +1,5 @@
+import { hub_customer, sat_customer_demographics, sat_customer_online } from "hub-customer.stm"
+
 integration "RetailCo_Mart_Customer_360" {
   cardinality N:1
   author "RetailCo Data Platform"
@@ -12,15 +14,22 @@ integration "RetailCo_Mart_Customer_360" {
     vault's normalized structure is reshaped into a star-schema-friendly
     dimension for analytics consumers.
 
-    ## Why this matters for STM
-    The sources here are Data Vault entities (hubs + satellites).
-    The targets use Kimball `@dimension` tags. STM handles both sides
-    of this boundary cleanly — the same language describes the raw
-    vault load AND the mart that consumes it.
+    ## Cross-layer imports
+    The imported blocks (`hub_customer`, `sat_customer_demographics`,
+    `sat_customer_online`) are defined as `target` blocks in
+    `hub-customer.stm`. Here they appear on the source side of
+    mappings — and that works naturally. Block keywords (`source`,
+    `target`, etc.) communicate intent to the reader; the `mapping`
+    syntax determines the actual data flow direction.
+
+    Tooling resolves inferred fields (hash keys, load dates, etc.)
+    from the `@hub` and `@satellite` tags on the imported blocks.
+    Those fields are available in mappings without being explicitly
+    declared.
 
     ## Source resolution
-    - `hub_customer` provides the durable business key
-    - `sat_customer_demographics` provides the current personal details
+    - `hub_customer` provides the durable business key + `hub_customer_hk`
+    - `sat_customer_demographics` provides current personal details
     - `sat_customer_online` provides e-commerce behaviour
     - The mart joins on hash keys and filters to current satellite records
       (`load_end_date IS NULL`)
@@ -29,64 +38,6 @@ integration "RetailCo_Mart_Customer_360" {
     This mart exposes the **current** version of each customer (latest
     satellite record). Historical analysis uses the vault directly.
   '''
-}
-
-
-// ============================================================
-// Sources: Raw Vault Entities (materialized)
-// ============================================================
-//
-// These source blocks describe the vault tables as they physically
-// exist — including the mechanical columns that were INFERRED during
-// vault loading. From the mart's perspective, those columns are real.
-
-source hub_customer "Customer hub — business key registry" {
-  hub_customer_hk      CHAR(64)        [pk]               // Inferred during vault load
-  customer_id          VARCHAR(50)     [required]
-  load_date            TIMESTAMPTZ     [required]
-  record_source        VARCHAR(100)    [required]
-}
-
-source sat_customer_demographics "Demographics satellite — from SFDC" {
-  hub_customer_hk      CHAR(64)        [pk, ref: hub_customer]
-  load_date            TIMESTAMPTZ     [pk]
-  load_end_date        TIMESTAMPTZ                         // NULL = current version
-  hash_diff            CHAR(64)
-  record_source        VARCHAR(100)
-
-  first_name           VARCHAR(100)
-  last_name            VARCHAR(100)
-  email                VARCHAR(255)    [pii]
-  phone                VARCHAR(20)     [pii]
-  date_of_birth        DATE            [pii]
-  gender               VARCHAR(20)
-  address_line_1       VARCHAR(200)
-  city                 VARCHAR(100)
-  state_province       VARCHAR(50)
-  postal_code          VARCHAR(20)
-  country_code         CHAR(2)
-  loyalty_tier         VARCHAR(20)
-  loyalty_points       INTEGER
-  preferred_store_id   VARCHAR(20)
-  opt_in_email         BOOLEAN
-  opt_in_sms           BOOLEAN
-}
-
-source sat_customer_online "Online behaviour satellite — from Shopify" {
-  hub_customer_hk      CHAR(64)        [pk, ref: hub_customer]
-  load_date            TIMESTAMPTZ     [pk]
-  load_end_date        TIMESTAMPTZ
-  hash_diff            CHAR(64)
-  record_source        VARCHAR(100)
-
-  shopify_customer_id  BIGINT
-  email                VARCHAR(255)    [pii]
-  first_name           VARCHAR(100)
-  last_name            VARCHAR(100)
-  lifetime_order_count INTEGER
-  lifetime_spend       DECIMAL(12,2)
-  last_order_at        TIMESTAMPTZ
-  account_created_at   TIMESTAMPTZ
 }
 
 

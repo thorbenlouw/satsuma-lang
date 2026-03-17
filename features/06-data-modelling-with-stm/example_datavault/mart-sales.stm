@@ -1,3 +1,8 @@
+import { link_sale, sat_sale_detail } from "link-sale.stm"
+import { hub_customer } from "hub-customer.stm"
+import { hub_product } from "hub-product.stm"
+import { hub_store } from "hub-store.stm"
+
 integration "RetailCo_Mart_Sales" {
   cardinality N:1
   author "RetailCo Data Platform"
@@ -11,14 +16,15 @@ integration "RetailCo_Mart_Sales" {
     Data Vault. Joins the sale link, its transaction satellite, and
     hub business keys into a single analytics-ready fact.
 
-    ## Vault-to-Mart boundary
-    This file demonstrates the key architectural boundary:
-    - **Sources** are raw vault entities (hubs, links, satellites)
-      described with their full physical schema including hash keys
-    - **Target** is a Kimball-style fact with `@ref` to dimensions
-      and `@measure` on metrics
-    - The mapping layer handles the join logic, hash key resolution,
-      and current-version filtering
+    ## Cross-layer imports
+    All source entities are imported directly from the vault layer
+    STM files. The `target` blocks defined there (`link_sale`,
+    `sat_sale_detail`, `hub_customer`, etc.) appear here on the
+    source side of mappings.
+
+    Inferred fields (hash keys, load dates, record source) are
+    resolved automatically from the `@link`, `@satellite`, and
+    `@hub` tags on the imported blocks — no redeclaration needed.
 
     ## Why not just query the vault directly?
     The vault is optimized for loading and auditability, not for
@@ -27,56 +33,6 @@ integration "RetailCo_Mart_Sales" {
     pre-computes this join and presents a simple star schema that
     any BI tool can consume.
   '''
-}
-
-
-// ============================================================
-// Sources: Raw Vault Entities
-// ============================================================
-
-source link_sale "Sale link — transaction relationships" {
-  link_sale_hk         CHAR(64)        [pk]
-  hub_customer_hk      CHAR(64)        [ref: hub_customer]
-  hub_product_hk       CHAR(64)        [ref: hub_product]
-  hub_store_hk         CHAR(64)        [ref: hub_store]    // NULL for online orders
-  transaction_id       VARCHAR(30)     [required]
-  line_number          INTEGER         [required]
-  load_date            TIMESTAMPTZ
-  record_source        VARCHAR(100)
-}
-
-source sat_sale_detail "Transaction satellite — amounts and attributes" {
-  link_sale_hk         CHAR(64)        [pk, ref: link_sale]
-  load_date            TIMESTAMPTZ     [pk]
-  load_end_date        TIMESTAMPTZ
-  hash_diff            CHAR(64)
-  record_source        VARCHAR(100)
-
-  transaction_date     DATE
-  transaction_time     TIME
-  channel              VARCHAR(20)
-  payment_type         VARCHAR(20)
-  quantity             INTEGER
-  unit_price           DECIMAL(10,2)
-  gross_amount         DECIMAL(12,2)
-  discount_amount      DECIMAL(10,2)
-  tax_amount           DECIMAL(10,2)
-  net_amount           DECIMAL(12,2)
-}
-
-source hub_customer "Customer hub — for business key resolution" {
-  hub_customer_hk      CHAR(64)        [pk]
-  customer_id          VARCHAR(50)     [required]
-}
-
-source hub_product "Product hub — for SKU resolution" {
-  hub_product_hk       CHAR(64)        [pk]
-  sku                  VARCHAR(18)     [required]
-}
-
-source hub_store "Store hub — for store ID resolution" {
-  hub_store_hk         CHAR(64)        [pk]
-  store_id             VARCHAR(20)     [required]
 }
 
 
