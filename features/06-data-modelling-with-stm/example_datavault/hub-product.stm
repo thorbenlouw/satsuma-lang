@@ -1,0 +1,150 @@
+import { product_hierarchy } from "common.stm"
+
+integration "RetailCo_Hub_Product" {
+  cardinality 1:1
+  author "RetailCo Data Platform"
+  version "1.0.0"
+  tags [datavault, hub, satellite, product]
+
+  note '''
+    # Product Hub + Satellites
+
+    Single-source hub from SAP Merchandise Management. Two satellites
+    split attributes by rate of change:
+    - **sat_product_attributes**: master data (description, category, brand) —
+      changes infrequently
+    - **sat_product_pricing**: cost and retail prices — changes with
+      every pricing event (promotions, markdowns, seasonal adjustments)
+
+    Splitting by rate of change is a core Data Vault practice: it
+    avoids creating unnecessary history rows when only prices change.
+  '''
+}
+
+
+// ============================================================
+// Source
+// ============================================================
+
+source merch_sap "SAP MM — Product master" {
+  MATNR               VARCHAR(18)     [pk]
+  MAKTX               VARCHAR(40)     [required]
+  MATKL               VARCHAR(9)
+  BRAND               VARCHAR(50)
+  SUPPLIER_ID         VARCHAR(10)
+  SUPPLIER_NAME       VARCHAR(100)
+  UNIT_COST           DECIMAL(12,2)                        //! Local currency — see WAERS
+  MSRP                DECIMAL(12,2)
+  WAERS               CHAR(3)                              // Currency key
+  WEIGHT_KG           DECIMAL(8,3)
+  COUNTRY_OF_ORIGIN   CHAR(2)
+  SEASON_CODE         VARCHAR(10)     [enum: {SP, SU, FA, WI, CORE}]
+  LIFECYCLE_STATUS    VARCHAR(10)     [enum: {ACTIVE, DISC, PEND, RECALL}]
+  CREATED_ON          DATE
+  CHANGED_ON          DATE
+}
+
+
+// ============================================================
+// Hub: Product
+// ============================================================
+
+target hub_product "Product business key registry" @hub {
+  @business_key(sku)
+
+  sku                  VARCHAR(18)     [required]
+}
+
+
+// ============================================================
+// Satellite: Product Attributes (slow-changing)
+// ============================================================
+
+target sat_product_attributes "Master data — changes infrequently" @satellite {
+  @parent(hub_product)
+  @scd(type: 2)
+
+  product_name         VARCHAR(100)
+  department           VARCHAR(100)
+  category             VARCHAR(100)
+  subcategory          VARCHAR(100)
+  brand                VARCHAR(50)
+  supplier_id          VARCHAR(10)
+  supplier_name        VARCHAR(100)
+  weight_kg            DECIMAL(8,3)
+  country_of_origin    CHAR(2)
+  season               VARCHAR(20)
+  lifecycle_status     VARCHAR(20)
+}
+
+
+// ============================================================
+// Satellite: Product Pricing (fast-changing)
+// ============================================================
+
+target sat_product_pricing "Cost and retail prices — changes frequently" @satellite {
+  @parent(hub_product)
+  @scd(type: 2)
+
+  unit_cost_local      DECIMAL(12,2)
+  currency_code        CHAR(3)
+  unit_cost_usd        DECIMAL(12,2)
+  retail_price_usd     DECIMAL(12,2)
+  margin_pct           DECIMAL(5,2)
+}
+
+
+// ============================================================
+// Mappings
+// ============================================================
+
+// Hub
+mapping merch_sap -> hub_product {
+  MATNR -> sku                          : trim
+  => record_source                       : "SAP_MM"
+}
+
+// Attributes satellite
+mapping merch_sap -> sat_product_attributes {
+  MAKTX -> product_name                 : trim | title_case
+
+  MATKL -> department
+    : lookup(product_hierarchy, MATKL => department)
+  MATKL -> category
+    : lookup(product_hierarchy, MATKL => category)
+  MATKL -> subcategory
+    : lookup(product_hierarchy, MATKL => subcategory)
+
+  BRAND -> brand                        : trim | title_case
+  SUPPLIER_ID -> supplier_id
+  SUPPLIER_NAME -> supplier_name        : trim
+  WEIGHT_KG -> weight_kg
+  COUNTRY_OF_ORIGIN -> country_of_origin
+
+  SEASON_CODE -> season
+    : map { SP: "spring", SU: "summer", FA: "fall", WI: "winter", CORE: "core" }
+
+  LIFECYCLE_STATUS -> lifecycle_status
+    : map { ACTIVE: "active", DISC: "discontinued", PEND: "pending", RECALL: "recall" }
+
+  => record_source                       : "SAP_MM"
+}
+
+// Pricing satellite
+mapping merch_sap -> sat_product_pricing {
+  UNIT_COST -> unit_cost_local
+  WAERS -> currency_code
+
+  UNIT_COST -> unit_cost_usd
+    : nl("Convert from source currency (WAERS) to USD using daily spot rate.
+          If WAERS is null, assume USD.")
+
+  MSRP -> retail_price_usd
+    : nl("Convert from source currency (WAERS) to USD using daily spot rate.")
+
+  => margin_pct
+    : nl("Calculate as (retail_price_usd - unit_cost_usd) / retail_price_usd * 100.
+          Null if either price is null or zero.")
+
+  => record_source                       : "SAP_MM"
+}

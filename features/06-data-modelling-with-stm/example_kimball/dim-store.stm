@@ -1,0 +1,110 @@
+import { address_fields } from "common.stm"
+import { store_region_map } from "common.stm"
+
+integration "RetailCo_Dim_Store" {
+  cardinality 1:1
+  author "RetailCo Data Platform"
+  version "1.0.0"
+  tags [kimball, dimension, store]
+
+  note '''
+    # Store Dimension
+
+    Physical store locations. Fed primarily from reference data managed
+    by the retail operations team (loaded as a lookup). POS system
+    provides the store identifiers.
+
+    ## SCD Strategy
+    - **Type 2** on: store_manager, format, square_footage, status
+    - Stores occasionally renovate, change format (e.g., full-line to outlet),
+      or change management — these should be historically tracked
+    - Address changes are extremely rare but also versioned
+  '''
+}
+
+
+// ============================================================
+// Source
+// ============================================================
+
+source pos_oracle "Oracle Retail POS — store reference" {
+  STORE_ID            VARCHAR(20)     [pk]
+  STORE_NAME          VARCHAR(100)    [required]
+  STORE_FORMAT        VARCHAR(20)     [enum: {FULL, OUTLET, EXPRESS, FLAGSHIP}]
+  ADDR_LINE_1         VARCHAR(200)
+  ADDR_LINE_2         VARCHAR(200)
+  CITY                VARCHAR(100)
+  STATE_PROV          VARCHAR(50)
+  POSTAL_CD           VARCHAR(20)
+  COUNTRY_CD          CHAR(2)
+  PHONE_NBR           VARCHAR(20)
+  STORE_MGR           VARCHAR(100)
+  SQFT                INTEGER
+  OPEN_DATE           DATE
+  STATUS              CHAR(1)         [enum: {A, T, C}]   // Active/Temporary-closed/Closed
+}
+
+
+// ============================================================
+// Target: Store Dimension
+// ============================================================
+
+target dim_store "Physical store dimension" @dimension @scd(type: 2) {
+  @natural_key(store_id)
+  @track(store_manager, format, square_footage, status)
+
+  store_id             VARCHAR(20)     [required]
+  store_name           VARCHAR(100)
+  format               VARCHAR(20)     [enum: {full_line, outlet, express, flagship}]
+  ...address_fields
+  phone                VARCHAR(20)
+  store_manager        VARCHAR(100)
+  square_footage       INTEGER
+  opened_date          DATE
+  region               VARCHAR(50)
+  country              CHAR(2)
+  timezone             VARCHAR(40)
+  status               VARCHAR(20)     [enum: {active, temporarily_closed, closed}]
+  is_active            BOOLEAN
+}
+
+
+// ============================================================
+// Mapping
+// ============================================================
+
+mapping pos_oracle -> dim_store {
+  STORE_ID -> store_id
+  STORE_NAME -> store_name              : trim | title_case
+
+  STORE_FORMAT -> format
+    : map { FULL: "full_line", OUTLET: "outlet", EXPRESS: "express", FLAGSHIP: "flagship" }
+
+  // Address
+  ADDR_LINE_1 -> address_line_1         : trim
+  ADDR_LINE_2 -> address_line_2         : trim
+  CITY -> city                          : trim | title_case
+  STATE_PROV -> state_province          : trim
+  POSTAL_CD -> postal_code              : trim
+  COUNTRY_CD -> country_code
+
+  PHONE_NBR -> phone                    : trim
+  STORE_MGR -> store_manager            : trim | title_case
+  SQFT -> square_footage
+  OPEN_DATE -> opened_date
+
+  // Region enrichment from lookup
+  STORE_ID -> region
+    : lookup(store_region_map, STORE_ID => region)
+  STORE_ID -> country
+    : lookup(store_region_map, STORE_ID => country)
+  STORE_ID -> timezone
+    : lookup(store_region_map, STORE_ID => timezone)
+
+  STATUS -> status
+    : map { A: "active", T: "temporarily_closed", C: "closed" }
+
+  => is_active
+    : when STATUS == "A" => true
+    else => false
+}
