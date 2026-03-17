@@ -132,13 +132,15 @@ Follow these steps in order:
 
 - Start with an `integration` block (name, cardinality).
 - Define `source` and `target` blocks with all fields, types, and tags before writing mappings.
-- Use `lookup` blocks for reference/code tables found in the spreadsheet.
+- Use `lookup` blocks for reference/code tables found in the spreadsheet. Lookup blocks use the same field syntax as other schema blocks (`field TYPE [tags]`) — don't invent key-value shorthand.
 - Use `fragment` for any field pattern that appears 2+ times across schemas.
 - Use `nl("...")` for any transformation described in prose that you can't express as a standard STM transform. **Never invent functions.**
 - Use `//!` for data quality warnings mentioned in the spreadsheet.
 - Use `//?` for anything ambiguous or unresolvable from the available information.
 - Use `note '''...'''` for rich context that doesn't fit in inline comments.
 - Use `when`/`else` for conditional logic, not nested `map`.
+- Only use annotations shown in the cheat sheet (`@format`, `@filter`, `@header`). Don't invent new annotation names.
+- Don't use value map entries to express control flow (like skipping or omitting a field). Use `//?` or `nl()` instead.
 - Prefer concise, idiomatic STM — don't over-specify.
 
 ---
