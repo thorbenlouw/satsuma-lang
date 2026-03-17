@@ -1,0 +1,203 @@
+integration "RetailCo_Hub_Customer" {
+  cardinality N:1
+  author "RetailCo Data Platform"
+  version "1.0.0"
+  tags [datavault, hub, satellite, customer]
+
+  note '''
+    # Customer Hub + Satellites
+
+    The customer hub registers unique customer identities from three
+    source systems. Each source feeds the hub independently — the
+    hub stores only the **business key** and first-seen metadata.
+
+    Descriptive attributes live in satellites, one per source concern:
+    - **sat_customer_demographics**: personal details from the loyalty CRM
+    - **sat_customer_online**: e-commerce behaviour from Shopify
+
+    ## Multi-source loading
+    All three systems can create a hub record. The hub deduplicates
+    on the business key (SFDC ContactId, normalised). POS and Shopify
+    customers are matched to the hub via loyalty card number and email
+    respectively.
+  '''
+}
+
+
+// ============================================================
+// Sources
+// ============================================================
+
+source loyalty_sfdc "Salesforce Service Cloud — Loyalty CRM" {
+  ContactId           ID              [pk]
+  FirstName           STRING(100)     [required]
+  LastName            STRING(100)     [required]
+  Email               STRING(255)     [pii]
+  Phone               STRING(20)      [pii]
+  MailingStreet       STRING(200)
+  MailingCity         STRING(100)
+  MailingState        STRING(50)
+  MailingPostalCode   STRING(20)
+  MailingCountry      STRING(80)
+  LoyaltyTier         PICKLIST        [enum: {Bronze, Silver, Gold, Platinum, Diamond}]
+  LoyaltyPoints       INTEGER
+  AccountCreatedDate  DATE            [required]
+  PreferredStoreId    STRING(20)
+  OptInEmail          BOOLEAN
+  OptInSMS            BOOLEAN
+  DateOfBirth         DATE            [pii]
+  Gender              PICKLIST        [enum: {Male, Female, Non-binary, Undisclosed}]
+}
+
+source pos_oracle "Oracle Retail POS — customer linkage" {
+  CUST_ID             INTEGER         [pk]
+  LOYALTY_CARD_NBR    VARCHAR(20)     [unique]
+  FIRST_PURCHASE_DT   DATE
+  STORE_ID            VARCHAR(20)
+}
+
+source ecom_shopify "Shopify Plus — online customer" {
+  customer_id         BIGINT          [pk]
+  email               STRING(255)     [pii]
+  first_name          STRING(100)
+  last_name           STRING(100)
+  created_at          TIMESTAMPTZ
+  last_order_at       TIMESTAMPTZ
+  orders_count        INTEGER
+  total_spent         DECIMAL(12,2)
+}
+
+
+// ============================================================
+// Hub: Customer
+// ============================================================
+
+target hub_customer "Customer business key registry" @hub {
+  @business_key(customer_id)
+
+  customer_id          VARCHAR(50)     [required]
+
+  note '''
+    Business key is the SFDC ContactId. POS and Shopify customers
+    are resolved to an SFDC ContactId via loyalty card and email
+    matching respectively.
+  '''
+}
+
+
+// ============================================================
+// Satellite: Customer Demographics (from SFDC)
+// ============================================================
+
+target sat_customer_demographics "Personal details and loyalty" @satellite {
+  @parent(hub_customer)
+  @scd(type: 2)
+
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  email                VARCHAR(255)    [pii]
+  phone                VARCHAR(20)     [pii]
+  date_of_birth        DATE            [pii]
+  gender               VARCHAR(20)
+  address_line_1       VARCHAR(200)
+  city                 VARCHAR(100)
+  state_province       VARCHAR(50)
+  postal_code          VARCHAR(20)
+  country_code         CHAR(2)
+  loyalty_tier         VARCHAR(20)
+  loyalty_points       INTEGER
+  preferred_store_id   VARCHAR(20)
+  opt_in_email         BOOLEAN
+  opt_in_sms           BOOLEAN
+}
+
+
+// ============================================================
+// Satellite: Customer Online Behaviour (from Shopify)
+// ============================================================
+
+target sat_customer_online "E-commerce behaviour metrics" @satellite {
+  @parent(hub_customer)
+  @scd(type: 2)
+
+  shopify_customer_id  BIGINT                              // Preserve source system ID
+  email                VARCHAR(255)    [pii]               //! May differ from CRM email
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  lifetime_order_count INTEGER
+  lifetime_spend       DECIMAL(12,2)
+  last_order_at        TIMESTAMPTZ
+  account_created_at   TIMESTAMPTZ
+}
+
+
+// ============================================================
+// Mappings
+// ============================================================
+
+// Hub loading from SFDC (golden source)
+mapping loyalty_sfdc -> hub_customer {
+  ContactId -> customer_id
+  => record_source                       : "SFDC"
+}
+
+// Hub loading from POS (via loyalty card match)
+mapping pos_oracle -> hub_customer {
+  note '''
+    POS customers are resolved to SFDC ContactId via loyalty card
+    number lookup. Only customers with a loyalty card create or
+    match a hub record.
+  '''
+
+  LOYALTY_CARD_NBR -> customer_id
+    : nl("Look up SFDC ContactId from loyalty card number.
+          Skip record if card number is null or not found.")
+  => record_source                       : "POS"
+}
+
+// Hub loading from Shopify (via email match)
+mapping ecom_shopify -> hub_customer {
+  //?  What if a Shopify customer's email matches multiple SFDC contacts?
+  //   Current assumption: take the most recently modified SFDC record.
+
+  email -> customer_id
+    : nl("Match email to SFDC ContactId. If no match, create a new
+          ContactId using a deterministic UUID from the email address.")
+  => record_source                       : "SHOPIFY"
+}
+
+// Demographics satellite from SFDC
+mapping loyalty_sfdc -> sat_customer_demographics {
+  FirstName -> first_name                : trim | title_case
+  LastName -> last_name                  : trim | title_case
+  Email -> email                         : trim | lowercase | validate_email | null_if_invalid
+  Phone -> phone                         : trim | to_e164
+  DateOfBirth -> date_of_birth
+  Gender -> gender                       : lowercase
+  MailingStreet -> address_line_1        : trim
+  MailingCity -> city                     : trim | title_case
+  MailingState -> state_province
+    : nl("Normalize to ISO 3166-2 subdivision code.")
+  MailingPostalCode -> postal_code       : trim
+  MailingCountry -> country_code
+    : nl("Normalize to ISO 3166 alpha-2 code.")
+  LoyaltyTier -> loyalty_tier            : lowercase
+  LoyaltyPoints -> loyalty_points
+  PreferredStoreId -> preferred_store_id
+  OptInEmail -> opt_in_email             : coalesce(false)
+  OptInSMS -> opt_in_sms                 : coalesce(false)
+  => record_source                       : "SFDC"
+}
+
+// Online behaviour satellite from Shopify
+mapping ecom_shopify -> sat_customer_online {
+  customer_id -> shopify_customer_id
+  email -> email                         : trim | lowercase
+  first_name -> first_name               : trim | title_case
+  last_name -> last_name                 : trim | title_case
+  orders_count -> lifetime_order_count
+  total_spent -> lifetime_spend
+  last_order_at -> last_order_at
+  created_at -> account_created_at
+  => record_source                       : "SHOPIFY"
+}

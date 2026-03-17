@@ -1,0 +1,38 @@
+// ============================================================
+// RetailCo International — Kimball Star Schema
+// Common: shared fragments, lookups, and transforms
+// ============================================================
+
+fragment address_fields "Standard postal address" {
+  address_line_1   VARCHAR(200)
+  address_line_2   VARCHAR(200)
+  city             VARCHAR(100)
+  state_province   VARCHAR(50)
+  postal_code      VARCHAR(20)
+  country_code     CHAR(2)
+}
+
+fragment audit_columns "ETL audit trail" {
+  etl_batch_id     BIGINT
+  loaded_at        TIMESTAMPTZ
+}
+
+lookup store_region_map "Store ID to operating region" {
+  store_id      VARCHAR(20)   [pk]
+  region        VARCHAR(50)
+  country       CHAR(2)
+  timezone      VARCHAR(40)
+}
+
+lookup product_hierarchy "Merchandise hierarchy levels" {
+  category_code   VARCHAR(20)   [pk]
+  department      VARCHAR(100)
+  category        VARCHAR(100)
+  subcategory     VARCHAR(100)
+}
+
+lookup channel_codes "Sales channel normalisation" {
+  source_system   VARCHAR(20)   [pk]
+  channel_code    VARCHAR(20)
+  channel_name    VARCHAR(50)
+}
