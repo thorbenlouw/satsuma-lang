@@ -1,0 +1,124 @@
+integration "HL7_ADT_to_FHIR_Patient" {
+  cardinality 1:1
+}
+
+fragment Address {
+  line[]       STRING
+  city         STRING
+  state        STRING
+  postalCode   STRING
+  country      STRING
+  use          CODE     [enum: {home, work, temp}]
+}
+
+fragment HumanName {
+  family       STRING
+  given[]      STRING
+  prefix[]     STRING
+  use          CODE     [enum: {official, maiden, anonymous, nickname, pseudonym}]
+}
+
+source hl7_adt "HL7 ADT Message" {
+  PID_3_1      STRING      // ID Number
+  PID_3_4      STRING      // Assigning Authority
+  PID_3_5      STRING      // Identifier Type Code
+  PID_5_1      STRING      // Family Name
+  PID_5_2      STRING      // Given Name
+  PID_5_3      STRING      // Middle Name
+  PID_5_5      STRING      // Prefix
+  PID_5_7      STRING      // Name Type Code
+  PID_7        STRING      // Birth Date (YYYYMMDD)
+  PID_8        STRING      // Administrative Sex
+  PID_11_1     STRING      // Street
+  PID_11_2     STRING      // Other
+  PID_11_3     STRING      // City
+  PID_11_4     STRING      // State
+  PID_11_5     STRING      // Zip
+  PID_11_6     STRING      // Country
+  PID_11_7     STRING      // Address Type
+  PID_13_1     STRING      // Telephone
+  PID_13_2     STRING      // Use Code
+  PID_13_3     STRING      // Equipment Type
+  PID_19       STRING      // SSN
+  PD1_12       CHAR(1)     // Patient Consent Flag
+}
+
+target fhir_patient "FHIR Patient Resource" {
+  identifier[] {
+    value      STRING      [required]
+    system     URI         [required]
+  }
+  name[]       ...HumanName
+  birthDate    DATE
+  gender       CODE        [enum: {male, female, other, unknown}]
+  address[]    ...Address
+  telecom[] {
+    value      STRING
+    use        CODE
+    system     CODE
+  }
+  meta {
+    lastUpdated INSTANT    [required]
+  }
+}
+
+mapping {
+  // --- Identifiers ---
+  PID_3_1 -> identifier[0].value
+  
+  PID_3_4 -> identifier[0].system
+    : when PID_3_5 == "MR" => "urn:oid:2.16.840.1.113883.1.13"
+      when PID_3_5 == "SS" => "http://hl7.org/fhir/sid/us-ssn"
+      else => nl("Map authority code to URI")
+    //? What if authority code is not MRN or SSN?
+
+  PID_19 -> identifier[1].value
+    @filter(PD1_12 == "Y")
+    : encrypt("AES-256", "system_key") // Requirement: PII must be encrypted at rest
+  
+  => identifier[1].system : "http://hl7.org/fhir/sid/us-ssn"
+
+  // --- Name ---
+  PID_5_1 -> name[0].family : trim | title_case
+  PID_5_2 -> name[0].given[0] : nl("Trim, title case, and split space-separated values into array")
+  PID_5_3 -> name[0].given[1] : trim | title_case
+  PID_5_5 -> name[0].prefix[0]
+  PID_5_7 -> name[0].use
+    : map { L: "official", M: "maiden", A: "anonymous", N: "nickname", S: "pseudonym" }
+    //? Do we need to handle type D (adopted)?
+
+  // --- Demographics ---
+  PID_7 -> birthDate : nl("Parse HL7 (YYYYMMDD) to FHIR (YYYY-MM-DD) preserving partial precision")
+  
+  PID_8 -> gender
+    : map { M: "male", F: "female", O: "other", U: "unknown", A: "other", N: "unknown", null: "omit" }
+    //! Confirm: A->other and N->unknown correct per local policy?
+
+  // --- Address ---
+  PID_11_1 -> address[0].line[0]
+  PID_11_2 -> address[0].line[1] : null_if_empty
+  PID_11_3 -> address[0].city : trim | title_case
+  PID_11_4 -> address[0].state : nl("Validate against US state codes or pass through with warning")
+  PID_11_5 -> address[0].postalCode 
+    : trim | nl("If 9 digits, format as XXXXX-XXXX")
+  PID_11_6 -> address[0].country 
+    : map { USA: "US", CAN: "CA", MEX: "MX" } //? Need full mapping table for all country codes
+  PID_11_7 -> address[0].use
+    : map { H: "home", B: "work", M: "temp", C: "temp" }
+    // Note: omit use if type not recognized
+
+  // --- Telecom ---
+  PID_13_1 -> telecom[0].value
+    : nl("Strip non-numeric except leading +, format to E.164")
+    //! If not parseable, store as-is with warning
+  
+  PID_13_2 -> telecom[0].use
+    : map { PRN: "home", WPN: "work", ORN: "home", BPN: "mobile" }
+  
+  PID_13_3 -> telecom[0].system
+    : map { PH: "phone", FX: "fax", CP: "phone", Internet: "email", BP: "pager" }
+    //? Confirm pager handling — do we even need it?
+
+  // --- Metadata ---
+  => meta.lastUpdated : now_utc()
+}
