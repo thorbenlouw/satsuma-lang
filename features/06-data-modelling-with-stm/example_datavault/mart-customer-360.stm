@@ -1,0 +1,221 @@
+integration "RetailCo_Mart_Customer_360" {
+  cardinality N:1
+  author "RetailCo Data Platform"
+  version "1.0.0"
+  tags [datavault, mart, customer, kimball]
+
+  note '''
+    # Customer 360 Mart
+
+    A denormalized, query-optimized customer view built from the raw
+    Data Vault. This is the **information mart** layer — where the
+    vault's normalized structure is reshaped into a star-schema-friendly
+    dimension for analytics consumers.
+
+    ## Why this matters for STM
+    The sources here are Data Vault entities (hubs + satellites).
+    The targets use Kimball `@dimension` tags. STM handles both sides
+    of this boundary cleanly — the same language describes the raw
+    vault load AND the mart that consumes it.
+
+    ## Source resolution
+    - `hub_customer` provides the durable business key
+    - `sat_customer_demographics` provides the current personal details
+    - `sat_customer_online` provides e-commerce behaviour
+    - The mart joins on hash keys and filters to current satellite records
+      (`load_end_date IS NULL`)
+
+    ## Design choice: current state only
+    This mart exposes the **current** version of each customer (latest
+    satellite record). Historical analysis uses the vault directly.
+  '''
+}
+
+
+// ============================================================
+// Sources: Raw Vault Entities (materialized)
+// ============================================================
+//
+// These source blocks describe the vault tables as they physically
+// exist — including the mechanical columns that were INFERRED during
+// vault loading. From the mart's perspective, those columns are real.
+
+source hub_customer "Customer hub — business key registry" {
+  hub_customer_hk      CHAR(64)        [pk]               // Inferred during vault load
+  customer_id          VARCHAR(50)     [required]
+  load_date            TIMESTAMPTZ     [required]
+  record_source        VARCHAR(100)    [required]
+}
+
+source sat_customer_demographics "Demographics satellite — from SFDC" {
+  hub_customer_hk      CHAR(64)        [pk, ref: hub_customer]
+  load_date            TIMESTAMPTZ     [pk]
+  load_end_date        TIMESTAMPTZ                         // NULL = current version
+  hash_diff            CHAR(64)
+  record_source        VARCHAR(100)
+
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  email                VARCHAR(255)    [pii]
+  phone                VARCHAR(20)     [pii]
+  date_of_birth        DATE            [pii]
+  gender               VARCHAR(20)
+  address_line_1       VARCHAR(200)
+  city                 VARCHAR(100)
+  state_province       VARCHAR(50)
+  postal_code          VARCHAR(20)
+  country_code         CHAR(2)
+  loyalty_tier         VARCHAR(20)
+  loyalty_points       INTEGER
+  preferred_store_id   VARCHAR(20)
+  opt_in_email         BOOLEAN
+  opt_in_sms           BOOLEAN
+}
+
+source sat_customer_online "Online behaviour satellite — from Shopify" {
+  hub_customer_hk      CHAR(64)        [pk, ref: hub_customer]
+  load_date            TIMESTAMPTZ     [pk]
+  load_end_date        TIMESTAMPTZ
+  hash_diff            CHAR(64)
+  record_source        VARCHAR(100)
+
+  shopify_customer_id  BIGINT
+  email                VARCHAR(255)    [pii]
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  lifetime_order_count INTEGER
+  lifetime_spend       DECIMAL(12,2)
+  last_order_at        TIMESTAMPTZ
+  account_created_at   TIMESTAMPTZ
+}
+
+
+// ============================================================
+// Target: Customer 360 Dimension (Kimball-style mart)
+// ============================================================
+
+target mart_customer_360 "Denormalized customer view for analytics" @dimension @scd(type: 1) {
+  @natural_key(customer_id)
+
+  // Identity
+  customer_id          VARCHAR(50)     [required]
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  full_name            VARCHAR(200)
+  email                VARCHAR(255)    [pii]
+  phone                VARCHAR(20)     [pii]
+  date_of_birth        DATE            [pii]
+  gender               VARCHAR(20)
+
+  // Address
+  city                 VARCHAR(100)
+  state_province       VARCHAR(50)
+  postal_code          VARCHAR(20)
+  country_code         CHAR(2)
+
+  // Loyalty programme
+  loyalty_tier         VARCHAR(20)
+  loyalty_points       INTEGER
+  preferred_store_id   VARCHAR(20)
+  member_since         DATE
+  opt_in_email         BOOLEAN
+  opt_in_sms           BOOLEAN
+
+  // Online behaviour (from Shopify satellite)
+  has_online_account   BOOLEAN
+  online_order_count   INTEGER         [default: 0]
+  online_lifetime_spend DECIMAL(12,2)  [default: 0]
+  last_online_order_at TIMESTAMPTZ
+  online_account_age_days INTEGER
+
+  // Derived segments
+  customer_segment     VARCHAR(30)
+  is_omnichannel       BOOLEAN                             // Has both in-store and online activity
+
+  // Vault lineage (for debugging / audit)
+  hub_customer_hk      CHAR(64)                            // Preserve for traceability
+  vault_loaded_at      TIMESTAMPTZ                         // When the hub record was first seen
+}
+
+
+// ============================================================
+// Mappings
+// ============================================================
+
+// Primary: demographics from SFDC satellite
+mapping sat_customer_demographics -> mart_customer_360 {
+  note '''
+    Join: `sat_customer_demographics.hub_customer_hk = hub_customer.hub_customer_hk`
+    Filter: `sat_customer_demographics.load_end_date IS NULL` (current version only)
+  '''
+
+  // Identity — via hub join
+  hub_customer.customer_id -> customer_id
+
+  first_name -> first_name
+  last_name -> last_name
+  => full_name
+    : trim(first_name + " " + last_name) | title_case
+
+  email -> email
+  phone -> phone
+  date_of_birth -> date_of_birth
+  gender -> gender
+
+  // Address
+  city -> city
+  state_province -> state_province
+  postal_code -> postal_code
+  country_code -> country_code
+
+  // Loyalty
+  loyalty_tier -> loyalty_tier
+  loyalty_points -> loyalty_points
+  preferred_store_id -> preferred_store_id
+  hub_customer.load_date -> member_since  : truncate_to_date
+  opt_in_email -> opt_in_email
+  opt_in_sms -> opt_in_sms
+
+  // Vault lineage
+  hub_customer_hk -> hub_customer_hk
+  hub_customer.load_date -> vault_loaded_at
+}
+
+// Supplementary: online behaviour from Shopify satellite
+mapping sat_customer_online -> mart_customer_360 {
+  note '''
+    Left join: not all customers have online accounts.
+    Filter: `sat_customer_online.load_end_date IS NULL` (current version only)
+  '''
+
+  => has_online_account
+    : when sat_customer_online.hub_customer_hk is not null => true
+    else => false
+
+  lifetime_order_count -> online_order_count   : coalesce(0)
+  lifetime_spend -> online_lifetime_spend      : coalesce(0)
+  last_order_at -> last_online_order_at
+
+  => online_account_age_days
+    : nl("DATEDIFF(days, account_created_at, CURRENT_DATE). Null if no online account.")
+}
+
+// Derived fields computed across both satellites
+mapping hub_customer -> mart_customer_360 {
+  note '''
+    Computed after both satellite mappings have populated the mart row.
+    These fields depend on data from multiple satellites.
+  '''
+
+  => customer_segment
+    : when sat_customer_demographics.loyalty_tier == "diamond"
+        and sat_customer_online.lifetime_spend > 10000 => "vip"
+    when sat_customer_demographics.loyalty_tier in ("gold", "platinum", "diamond") => "high_value"
+    when sat_customer_demographics.loyalty_tier == "silver" => "growth"
+    else => "standard"
+
+  => is_omnichannel
+    : when sat_customer_demographics.preferred_store_id is not null
+        and sat_customer_online.lifetime_order_count > 0 => true
+    else => false
+}

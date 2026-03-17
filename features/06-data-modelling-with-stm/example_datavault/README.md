@@ -1,10 +1,10 @@
 # RetailCo International — Data Vault 2.0
 
-A complete Data Vault 2.0 model for a multinational department store, expressed in STM using `@tag` conventions for hubs, links, satellites, and effectivity patterns.
+A complete Data Vault 2.0 model for a multinational department store, expressed in STM using `@tag` conventions for hubs, links, satellites, effectivity patterns, and **information marts** that bridge the vault-to-Kimball boundary.
 
 ## The Story
 
-RetailCo International operates 850+ stores across 12 countries, selling through both physical stores and an e-commerce platform. This model supports their raw data vault — a historically complete, auditable, source-system-aligned data store that feeds downstream information marts and analytics layers.
+RetailCo International operates 850+ stores across 12 countries, selling through both physical stores and an e-commerce platform. This model supports their raw data vault — a historically complete, auditable, source-system-aligned data store — and the **information mart** layer that reshapes vault data into star-schema-friendly structures for analytics consumers.
 
 ## Files
 
@@ -16,6 +16,9 @@ RetailCo International operates 850+ stores across 12 countries, selling through
 | `hub-store.stm` | Store hub + 1 satellite | `@hub`, `@satellite`, single-source, lookup enrichment |
 | `link-sale.stm` | 3-way sale link + transaction satellite | `@link`, `@link(hub_customer, hub_product, hub_store)`, multi-source link loading |
 | `link-inventory.stm` | Product-warehouse link + effectivity + stock satellite | `@link`, `@satellite`, `@effectivity`, `@driving_key` |
+| **Information Mart Layer** | | |
+| `mart-customer-360.stm` | Denormalized customer view from hub + 2 satellites | Vault entities as sources, Kimball `@dimension` on target, cross-satellite joins |
+| `mart-sales.stm` | Transaction fact from link + satellite + hub joins | Vault entities as sources, Kimball `@fact`/`@ref`/`@measure` on target, hash key resolution |
 
 ## Source Systems
 
@@ -97,6 +100,20 @@ A sale connects three business concepts: customer, product, and store. The `@lin
 
 Tracks the temporal validity of the product-warehouse relationship. When a product is discontinued at a warehouse, the effectivity record is end-dated. This supports as-of queries without scanning the full satellite history.
 
+### Vault-to-mart boundary (mart-customer-360.stm, mart-sales.stm)
+
+This is where the Data Vault and Kimball tag systems meet. The mart files demonstrate the full architecture:
+
+1. **Sources are vault entities** — hubs, links, and satellites are defined as `source` blocks with their full physical schema, including the hash keys, load dates, and hash diffs that were *inferred* during vault loading. From the mart's perspective, these columns are real and present.
+
+2. **Targets use Kimball tags** — the mart output uses `@dimension`, `@fact`, `@grain`, `@ref`, and `@measure` tags, exactly like the Kimball examples. The mart IS a star schema — it just happens to be sourced from a vault rather than operational systems.
+
+3. **Mapping handles the join logic** — the mapping blocks express the vault join pattern (link → satellite → hub) including current-version filtering (`load_end_date IS NULL`), LEFT JOINs for optional relationships, and hash-key-to-business-key resolution.
+
+4. **Vault lineage preserved** — mart targets include the vault hash key as a non-functional column for traceability. An analyst can trace any mart row back to its vault source.
+
+This demonstrates that STM doesn't force a modelling choice — it describes whatever architecture you're building. The same `@tag` vocabulary works on both sides of the vault-to-mart boundary.
+
 ## Tag Quick Reference
 
 | Tag | Used on | Meaning |
@@ -117,5 +134,6 @@ The same RetailCo domain is modelled as a Kimball star schema in `../example_kim
 
 - **Data Vault**: Insert-only, full history, source-aligned. Hubs and links capture structure; satellites capture change. Resilient to source system changes (new source = new satellite, no restructuring). Requires a business vault or mart layer for analytics.
 - **Kimball**: Denormalized, query-optimized. History managed via SCD types on each dimension. Simpler for analytics queries but harder to extend when sources change.
+- **The mart layer bridges both**: The `mart-*.stm` files in this example show that the two approaches aren't mutually exclusive. A vault feeds a mart, and the mart uses Kimball conventions. STM describes both layers with the same vocabulary.
 
 Both approaches express cleanly in STM. The same source schemas, the same transform logic — only the target structure and tags differ.
