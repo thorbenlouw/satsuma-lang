@@ -2,24 +2,19 @@
 // @ts-check
 
 /**
- * STM v2 Grammar — Phase 4: Schema and fragment blocks
+ * STM v2 Grammar — Phases 5 and 7: Transform and metric blocks
  *
- * Replaces opaque brace stubs in schema_block and fragment_block with a full
- * schema_body production covering field_decl, record_block, list_block,
- * fragment_spread, and note_block.
+ * Phase 5 — transform blocks:
+ *   transform_block body is a pipe_chain (shared with arrow transform bodies in
+ *   Phase 6). pipe_chain is a "|"-separated sequence of pipe_steps, where each
+ *   step is an nl_string, multiline_string, token_call, map_literal, or
+ *   fragment_spread.
  *
- * Key design decisions:
- *   - type_expr is an atomic token (regex) that greedily consumes the base type
- *     name plus an immediately-adjacent parameter list, e.g. VARCHAR(255) or
- *     DECIMAL(12,2). This prevents ( ) from being ambiguously parsed as either
- *     type_params or metadata_block.
- *   - field_name uses choice(identifier, backtick_name) to support both bare and
- *     backtick-quoted field identifiers.
- *   - record and list are reserved keywords (appear as string literals in grammar)
- *     so they cannot be used as field names or block labels.
- *   - fragment_spread is "..." followed by block_label (identifier or quoted_name).
- *   - metadata conflict between key_value_pair and tag_token is declared in
- *     `conflicts` (inherited from Phase 3).
+ * Phase 7 — metric blocks:
+ *   metric_block body (metric_body) is a sequence of field_decl and note_block.
+ *   Reuses the field_decl production from Phase 4. metric_block is distinct from
+ *   schema_block by keyword, required metadata_block, optional display name, and
+ *   metric_body node type.
  */
 
 module.exports = grammar({
@@ -35,9 +30,11 @@ module.exports = grammar({
   word: ($) => $.identifier,
 
   conflicts: ($) => [
-    // After seeing an identifier in _metadata_entry, need one more token
-    // to decide between key_value_pair and tag_token.
+    // key_value_pair vs tag_token in metadata (Phase 3)
     [$.key_value_pair, $.tag_token],
+    // token_call vs fragment_spread both valid as first pipe_step; parser needs
+    // one more token to distinguish identifier (token_call) from ... (spread).
+    // Actually these start differently so no conflict — kept for clarity.
   ],
 
   rules: {
@@ -72,7 +69,7 @@ module.exports = grammar({
 
     import_path: ($) => $.nl_string,
 
-    // ── Schema block ─────────────────────────────────────────────────────
+    // ── Schema block ──────────────────────────────────────────────────────
 
     schema_block: ($) =>
       seq(
@@ -95,13 +92,16 @@ module.exports = grammar({
         "}",
       ),
 
-    // ── Transform block (body still opaque — Phase 5) ─────────────────────
+    // ── Transform block (Phase 5) ─────────────────────────────────────────
+    // Body is a pipe_chain (shared with arrow transform bodies in Phase 6).
 
     transform_block: ($) =>
       seq(
         "transform",
         $.block_label,
-        $._opaque_braces,
+        "{",
+        optional($.pipe_chain),
+        "}",
       ),
 
     // ── Mapping block (body still opaque — Phase 6) ───────────────────────
@@ -114,18 +114,22 @@ module.exports = grammar({
         $._opaque_braces,
       ),
 
-    // ── Metric block (body still opaque — Phase 7) ───────────────────────
+    // ── Metric block (Phase 7) ────────────────────────────────────────────
+    // Distinct from schema_block: starts with "metric" keyword, requires
+    // metadata_block (not optional), optional display name, and uses metric_body.
 
     metric_block: ($) =>
       seq(
         "metric",
         $.block_label,
-        optional($.nl_string),
-        $.metadata_block,
-        $._opaque_braces,
+        optional($.nl_string), // optional display label e.g. "MRR"
+        $.metadata_block, // required: (source X, grain monthly, ...)
+        "{",
+        $.metric_body,
+        "}",
       ),
 
-    // ── Note block (structural — top level and inside mapping/metric) ─────
+    // ── Note block ────────────────────────────────────────────────────────
 
     note_block: ($) =>
       seq(
@@ -135,8 +139,7 @@ module.exports = grammar({
         "}",
       ),
 
-    // ── Schema body ───────────────────────────────────────────────────────
-    // Shared by schema_block, fragment_block, record_block, list_block.
+    // ── Schema body (schema_block, fragment_block, record_block, list_block)
 
     schema_body: ($) => repeat($._schema_body_item),
 
@@ -149,8 +152,13 @@ module.exports = grammar({
         $.note_block,
       ),
 
+    // ── Metric body (metric_block) ────────────────────────────────────────
+
+    metric_body: ($) => repeat($._metric_body_item),
+
+    _metric_body_item: ($) => choice($.field_decl, $.note_block),
+
     // ── Field declaration ─────────────────────────────────────────────────
-    // field_name  type_expr  (metadata_block)?
 
     field_decl: ($) =>
       seq(
@@ -159,13 +167,8 @@ module.exports = grammar({
         optional($.metadata_block),
       ),
 
-    // field_name: bare identifier or backtick-quoted (for special-char names).
     field_name: ($) => choice($.identifier, $.backtick_name),
 
-    // type_expr: base type token with optional immediately-adjacent param list.
-    // Written as a single lexical token to prevent ( ) ambiguity with metadata.
-    // Examples: STRING, VARCHAR(255), DECIMAL(12,2), TIMESTAMPTZ, ARRAY(JSON)
-    // Note: no space allowed between base type and opening paren.
     type_expr: (_) =>
       token(
         seq(
@@ -175,7 +178,6 @@ module.exports = grammar({
       ),
 
     // ── Nested record and list blocks ─────────────────────────────────────
-    // `record` and `list` are reserved keywords (string literals in grammar).
 
     record_block: ($) =>
       seq(
@@ -198,9 +200,63 @@ module.exports = grammar({
       ),
 
     // ── Fragment spread ───────────────────────────────────────────────────
-    // ...identifier  or  ...'quoted name'
 
     fragment_spread: ($) => seq("...", $.block_label),
+
+    // ── Pipe chain (shared: transform body + arrow transform bodies) ──────
+    // pipe_chain ::= pipe_step ("|" pipe_step)*
+
+    pipe_chain: ($) => seq($.pipe_step, repeat(seq("|", $.pipe_step))),
+
+    pipe_step: ($) =>
+      choice(
+        $.multiline_string,
+        $.nl_string,
+        $.token_call,
+        $.map_literal,
+        $.fragment_spread,
+      ),
+
+    // token_call: identifier with optional argument list.
+    // Examples: trim, lowercase, validate_email, coalesce("", null)
+    token_call: ($) =>
+      seq(
+        $.identifier,
+        optional(seq("(", optional(commaSep1($._tc_arg)), ")")),
+      ),
+
+    _tc_arg: ($) => choice($.nl_string, $.identifier, /[0-9]+/),
+
+    // ── Map literal ───────────────────────────────────────────────────────
+    // map { K: V, K: V, _: "fallback" }
+    // "map" is a reserved keyword so map_literal is unambiguous.
+
+    map_literal: ($) =>
+      seq("map", "{", repeat($.map_entry), "}"),
+
+    map_entry: ($) =>
+      seq($.map_key, ":", $.map_value),
+
+    // Map keys: token, string, number, wildcard, null, default, or comparison.
+    map_key: ($) =>
+      choice(
+        $.identifier,
+        $.nl_string,
+        /[0-9]+/,
+        "_", // wildcard catch-all
+        "null",
+        "default",
+        seq($._comparison_op, $._map_scalar),
+      ),
+
+    _comparison_op: (_) =>
+      token(choice(">=", "<=", ">", "<", "!=", "==")),
+
+    _map_scalar: ($) => choice($.identifier, /[0-9]+/, $.nl_string),
+
+    // Map values: string, identifier, number, or null.
+    map_value: ($) =>
+      choice($.nl_string, $.multiline_string, $.identifier, /[0-9]+/, "null"),
 
     // ── Block label ───────────────────────────────────────────────────────
 
@@ -263,8 +319,7 @@ module.exports = grammar({
 
     tag_token: ($) => $.identifier,
 
-    // ── Opaque balanced delimiters ────────────────────────────────────────
-    // Used for block bodies not yet structured (transform, mapping, metric).
+    // ── Opaque balanced delimiters (mapping body — Phase 6) ───────────────
 
     _opaque_parens: ($) => seq("(", repeat($._paren_item), ")"),
 
