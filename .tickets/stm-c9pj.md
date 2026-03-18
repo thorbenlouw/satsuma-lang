@@ -1,6 +1,6 @@
 ---
 id: stm-c9pj
-status: open
+status: closed
 deps: [stm-ffar]
 links: []
 created: 2026-03-18T10:46:17Z

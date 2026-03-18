@@ -1,6 +1,6 @@
 ---
 id: stm-cax8
-status: open
+status: closed
 deps: [stm-c9pj, stm-4bjz]
 links: []
 created: 2026-03-18T10:46:39Z

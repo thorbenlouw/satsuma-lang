@@ -1,6 +1,6 @@
 ---
 id: stm-xdhb
-status: open
+status: closed
 deps: [stm-ffar]
 links: []
 created: 2026-03-18T10:46:21Z

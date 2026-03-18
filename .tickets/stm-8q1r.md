@@ -1,6 +1,6 @@
 ---
 id: stm-8q1r
-status: open
+status: closed
 deps: [stm-xdhb]
 links: []
 created: 2026-03-18T10:46:23Z

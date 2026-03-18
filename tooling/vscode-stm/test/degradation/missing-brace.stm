@@ -1,13 +1,14 @@
-// Degradation: unclosed block
-// Expected: tokeniser should not spiral — remaining content after this should
-// still receive reasonable scopes rather than being entirely un-scoped.
+// Degradation: missing closing brace
+// Expected: the block extends to EOF. Subsequent declarations may be
+// absorbed but the highlighter should not crash or produce infinite loops.
 
-source unclosed {
-  id INT [pk]
+schema unclosed {
+  id INT (pk)
   name STRING
-  // block never closes — rest of file is inside the block context
-  email VARCHAR(255)
+  // Missing closing }
 
-// Expected degradation: all subsequent lines are inside the block context.
-// Keywords and literals should still be recognised where possible.
-// No more than ~3 lines should show dramatically mis-scoped tokens.
+schema next_schema {
+  // This may or may not be highlighted correctly, but the file should not
+  // cause catastrophic behaviour.
+  x INT
+}

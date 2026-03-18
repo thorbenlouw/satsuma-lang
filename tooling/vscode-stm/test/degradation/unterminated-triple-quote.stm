@@ -1,0 +1,13 @@
+// Degradation: unterminated triple-double-quoted string
+// Expected: the string scope extends until EOF or next """.
+// File should not cause the highlighter to crash.
+
+note {
+  """
+  This triple-quoted string is never closed.
+  It should not paint the entire rest of every file as a string.
+
+schema after_unterminated {
+  id INT (pk)
+  // This should ideally recover, but may remain in string scope.
+}

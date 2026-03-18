@@ -1,16 +1,16 @@
-// SYNTAX TEST "source.stm" "STM comment forms"
+// SYNTAX TEST "source.stm" "all three comment forms"
 
-// info comment
+// regular comment
 // <------------- comment.line.double-slash.stm
 
-//! warning comment
-// <------------------ comment.line.double-slash.warning.stm
+//! warning comment — known issue
+// <---------------------- comment.line.double-slash.warning.stm
 
-//? question comment
-// <------------------ comment.line.double-slash.question.stm
+//? question / TODO — needs clarification
+// <------------------------------ comment.line.double-slash.question.stm
 
-source comments_test {
-  a INT // inline info
+schema comments_test {
+  a INT // inline regular comment
   //    // <- comment.line.double-slash.stm
 
   b INT //! inline warning

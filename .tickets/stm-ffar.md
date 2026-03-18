@@ -1,6 +1,6 @@
 ---
 id: stm-ffar
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T10:46:12Z

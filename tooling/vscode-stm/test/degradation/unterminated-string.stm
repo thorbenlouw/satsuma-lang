@@ -2,8 +2,8 @@
 // Expected: tokeniser swallows the rest of the line into the string scope,
 // then recovers on the next line.
 
-source test {
-  name STRING [default: "unterminated
+schema test {
+  name STRING (default "unterminated
   // ^ The above line has an unclosed string. This comment should still be a comment.
-  id INT [pk]
+  id INT (pk)
 }

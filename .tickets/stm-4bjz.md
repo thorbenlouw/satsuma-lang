@@ -1,6 +1,6 @@
 ---
 id: stm-4bjz
-status: open
+status: closed
 deps: [stm-8q1r, stm-xvpb, stm-89tv]
 links: []
 created: 2026-03-18T10:46:37Z

@@ -1,9 +1,18 @@
-// Degradation: arrow with no target
-// Expected: the arrow is still highlighted; the dangling -> produces no crash.
+// Degradation: incomplete arrow declaration
+// Expected: partial arrows should not break subsequent lines.
 
 mapping {
-  source_field ->
-  // Editing state: user typed source_field and ->, has not typed target yet
-  // Next line should still highlight normally
-  other_field -> valid_target
+  source { `src` }
+  target { `tgt` }
+
+  // Arrow with no target
+  FIELD_A ->
+  // ^ Should not break the next line
+
+  // Arrow with no body closing brace
+  FIELD_B -> target_b {
+    trim | lowercase
+
+  // Missing } for arrow body — next line should still work
+  FIELD_C -> target_c
 }
