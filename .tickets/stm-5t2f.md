@@ -1,6 +1,6 @@
 ---
 id: stm-5t2f
-status: open
+status: closed
 deps: [stm-m3nx]
 links: []
 created: 2026-03-18T12:18:41Z
