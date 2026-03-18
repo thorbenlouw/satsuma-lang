@@ -2,7 +2,7 @@
   "name": "vscode-stm",
   "displayName": "STM Language Support",
   "description": "VS Code syntax highlighting for the Semantic Transform Model (STM) language",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "stm",
   "engines": {
     "vscode": "^1.85.0"
