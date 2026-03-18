@@ -26,7 +26,7 @@ program
 const commands = [
   // Phase 1+: loaded as they are implemented
   "commands/summary.js",
-  // "commands/schema.js",
+  "commands/schema.js",
   // "commands/metric.js",
   // "commands/mapping.js",
   // "commands/find.js",

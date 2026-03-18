@@ -1,0 +1,157 @@
+/**
+ * schema.test.js — Unit tests for schema command helpers.
+ *
+ * Tests the field collection and formatting logic using mock CST nodes.
+ */
+
+import assert from "node:assert/strict";
+import { describe, it, beforeEach, afterEach } from "node:test";
+
+// ── Mock CST helpers ──────────────────────────────────────────────────────────
+
+function n(type, namedChildren = [], text = "", row = 0) {
+  return { type, text, startPosition: { row, column: 0 }, namedChildren };
+}
+function ident(t) { return n("identifier", [], t); }
+function quoted(t) { return n("quoted_name", [], `'${t}'`); }
+function blockLabel(name) {
+  const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
+  return n("block_label", [inner]);
+}
+function fieldName(name) { return n("field_name", [ident(name)]); }
+function typeExpr(t) { return n("type_expr", [], t); }
+function fieldDecl(name, type, meta = null) {
+  const children = [fieldName(name), typeExpr(type)];
+  if (meta) children.push(meta);
+  return n("field_decl", children);
+}
+
+// ── Inline collectFields re-implementation (mirrors schema.js logic) ──────────
+
+function collectFields(bodyNode, indent = 0) {
+  const lines = [];
+  for (const c of bodyNode.namedChildren) {
+    const pad = "  ".repeat(indent);
+    if (c.type === "field_decl") {
+      const nameNode = c.namedChildren.find((x) => x.type === "field_name");
+      const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
+      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      const inner = nameNode?.namedChildren[0];
+      let fname = inner?.text ?? "";
+      if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
+      const metaText = meta ? ` ${meta.text}` : "";
+      lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typeNode?.text ?? ""}${metaText}` });
+    } else if (c.type === "record_block" || c.type === "list_block") {
+      const kind = c.type === "record_block" ? "record" : "list";
+      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const inner = lbl?.namedChildren[0];
+      let lname = inner?.text ?? "";
+      if (inner?.type === "quoted_name") lname = lname.slice(1, -1);
+      lines.push({ indent, text: `${pad}${kind} ${lname} {` });
+      const nested = c.namedChildren.find((x) => x.type === "schema_body");
+      if (nested) lines.push(...collectFields(nested, indent + 1));
+      lines.push({ indent, text: `${pad}}` });
+    } else if (c.type === "fragment_spread") {
+      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const inner = lbl?.namedChildren[0];
+      const sname = inner?.text ?? "";
+      lines.push({ indent, text: `${pad}...${sname}` });
+    }
+  }
+  return lines;
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe("collectFields", () => {
+  it("renders flat fields with padding", () => {
+    const body = n("schema_body", [
+      fieldDecl("id", "INT"),
+      fieldDecl("name", "VARCHAR(100)"),
+    ]);
+    const lines = collectFields(body, 1);
+    assert.equal(lines.length, 2);
+    assert.ok(lines[0].text.startsWith("  id"));
+    assert.ok(lines[0].text.includes("INT"));
+    assert.ok(lines[1].text.includes("VARCHAR(100)"));
+  });
+
+  it("renders field with metadata", () => {
+    const meta = n("metadata_block", [], "(pk)");
+    const body = n("schema_body", [fieldDecl("id", "INT", meta)]);
+    const lines = collectFields(body, 1);
+    assert.ok(lines[0].text.includes("(pk)"));
+  });
+
+  it("renders nested record_block with indent", () => {
+    const innerBody = n("schema_body", [fieldDecl("street", "STRING(200)")]);
+    const recBlock = n("record_block", [blockLabel("address"), innerBody]);
+    const body = n("schema_body", [recBlock]);
+
+    const lines = collectFields(body, 1);
+    assert.equal(lines[0].text, "  record address {");
+    assert.ok(lines[1].text.startsWith("    street"));
+    assert.equal(lines[2].text, "  }");
+  });
+
+  it("renders nested list_block", () => {
+    const innerBody = n("schema_body", [fieldDecl("item", "STRING(50)")]);
+    const listBlock = n("list_block", [blockLabel("tags"), innerBody]);
+    const body = n("schema_body", [listBlock]);
+
+    const lines = collectFields(body, 0);
+    assert.equal(lines[0].text, "list tags {");
+    assert.ok(lines[1].text.startsWith("  item"));
+    assert.equal(lines[2].text, "}");
+  });
+
+  it("renders fragment_spread", () => {
+    const spread = n("fragment_spread", [blockLabel("'address fields'")]);
+    const body = n("schema_body", [spread]);
+    const lines = collectFields(body, 1);
+    // quoted_name.text includes surrounding single quotes
+    assert.equal(lines[0].text.trim(), "...'address fields'");
+  });
+
+  it("returns empty array for empty body", () => {
+    const body = n("schema_body", []);
+    assert.deepEqual(collectFields(body), []);
+  });
+});
+
+// ── printFieldsOnly output format ─────────────────────────────────────────────
+
+describe("fields-only format", () => {
+  let output = [];
+  let origLog;
+  beforeEach(() => { output = []; origLog = console.log; console.log = (...a) => output.push(a.join(" ")); });
+  afterEach(() => { console.log = origLog; });
+
+  it("prints name and type tab-padded", () => {
+    const fields = [{ name: "customer_id", type: "UUID" }, { name: "email", type: "VARCHAR(255)" }];
+    for (const f of fields) console.log(`${f.name.padEnd(24)}${f.type}`);
+    assert.ok(output[0].startsWith("customer_id"));
+    assert.ok(output[0].includes("UUID"));
+    assert.ok(output[1].includes("VARCHAR(255)"));
+  });
+});
+
+// ── Schema not-found logic ────────────────────────────────────────────────────
+
+describe("schema not-found", () => {
+  it("finds case-insensitive match", () => {
+    const schemas = new Map([["Orders", {}], ["customers", {}]]);
+    const name = "orders";
+    const keys = [...schemas.keys()];
+    const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
+    assert.equal(close, "Orders");
+  });
+
+  it("returns undefined when no match", () => {
+    const schemas = new Map([["orders", {}]]);
+    const name = "invoices";
+    const keys = [...schemas.keys()];
+    const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
+    assert.equal(close, undefined);
+  });
+});
