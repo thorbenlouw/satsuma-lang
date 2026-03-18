@@ -31,8 +31,8 @@ const commands = [
   "commands/mapping.js",
   "commands/find.js",
   "commands/lineage.js",
-  // "commands/where-used.js",
-  // "commands/warnings.js",
+  "commands/where-used.js",
+  "commands/warnings.js",
   // "commands/context.js",
 ];
 

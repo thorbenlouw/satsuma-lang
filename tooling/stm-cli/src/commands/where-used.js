@@ -1,0 +1,179 @@
+/**
+ * where-used.js — `stm where-used <name>` command
+ *
+ * Finds all references to a schema, fragment, or transform by name.
+ *
+ * Schema references:   via referenceGraph.usedByMappings + metricsReferences
+ * Fragment references: via CST fragment_spread nodes across all files
+ * Transform refs:      not currently cross-referenced in CST (reported as such)
+ *
+ * Output is grouped by usage type (mapping, metric, schema).
+ *
+ * Flags:
+ *   --json  structured JSON
+ */
+
+import { resolveInput } from "../workspace.js";
+import { parseFile } from "../parser.js";
+import { buildIndex } from "../index-builder.js";
+
+/** @param {import('commander').Command} program */
+export function register(program) {
+  program
+    .command("where-used <name> [path]")
+    .description("Find all references to a schema, fragment, or transform")
+    .option("--json", "output JSON")
+    .action(async (name, pathArg, opts) => {
+      const root = pathArg ?? ".";
+      let files;
+      try {
+        files = await resolveInput(root);
+      } catch (err) {
+        console.error(`Error resolving path: ${err.message}`);
+        process.exit(1);
+      }
+
+      const parsedFiles = files.map((f) => parseFile(f));
+      const index = buildIndex(parsedFiles);
+
+      // Determine entity type
+      const isSchema = index.schemas.has(name);
+      const isFragment = index.fragments.has(name);
+      const isTransform = index.transforms.has(name);
+
+      if (!isSchema && !isFragment && !isTransform) {
+        console.error(`'${name}' not found as a schema, fragment, or transform.`);
+        const allNames = [
+          ...index.schemas.keys(),
+          ...index.fragments.keys(),
+          ...index.transforms.keys(),
+        ];
+        const close = allNames.find((k) => k.toLowerCase() === name.toLowerCase());
+        if (close) console.error(`Did you mean '${close}'?`);
+        process.exit(1);
+      }
+
+      const refs = gatherRefs(name, index, parsedFiles, isSchema, isFragment);
+
+      if (opts.json) {
+        console.log(JSON.stringify({ name, refs }, null, 2));
+        return;
+      }
+
+      if (refs.length === 0) {
+        console.log(`No references to '${name}' found.`);
+        return;
+      }
+
+      printDefault(name, refs);
+    });
+}
+
+// ── Reference gathering ───────────────────────────────────────────────────────
+
+/**
+ * @typedef {Object} Ref
+ * @property {string} kind   mapping|metric|schema|fragment
+ * @property {string} name   the referencing entity name
+ * @property {string} file
+ * @property {number} [row]
+ */
+
+function gatherRefs(name, index, parsedFiles, isSchema, isFragment) {
+  const refs = [];
+
+  if (isSchema) {
+    // Mappings that use this schema as source or target
+    const mappingNames = index.referenceGraph.usedByMappings.get(name) ?? [];
+    for (const mname of mappingNames) {
+      const m = index.mappings.get(mname);
+      refs.push({ kind: "mapping", name: mname, file: m?.file ?? "?", row: m?.row });
+    }
+
+    // Metrics that reference this schema
+    for (const [metricName, sources] of index.referenceGraph.metricsReferences) {
+      if (sources.includes(name)) {
+        const m = index.metrics.get(metricName);
+        refs.push({ kind: "metric", name: metricName, file: m?.file ?? "?", row: m?.row });
+      }
+    }
+  }
+
+  if (isFragment) {
+    // Find fragment_spread nodes across all files
+    for (const { filePath, tree } of parsedFiles) {
+      const spreads = findFragmentSpreads(tree.rootNode, name);
+      for (const { block, row } of spreads) {
+        refs.push({ kind: "fragment_spread", name: block, file: filePath, row });
+      }
+    }
+  }
+
+  return refs;
+}
+
+/**
+ * Find all fragment_spread usages of `fragmentName` in the CST.
+ * Returns [{block, row}] where block is the containing schema/fragment name.
+ */
+function findFragmentSpreads(rootNode, fragmentName) {
+  const results = [];
+  for (const topLevel of rootNode.namedChildren) {
+    if (topLevel.type !== "schema_block" && topLevel.type !== "fragment_block") continue;
+    const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
+    const inner = lbl?.namedChildren[0];
+    let blockName = inner?.text ?? "";
+    if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
+
+    const body = topLevel.namedChildren.find((c) => c.type === "schema_body");
+    if (body) {
+      walkForSpreads(body, fragmentName, blockName, results);
+    }
+  }
+  return results;
+}
+
+function walkForSpreads(bodyNode, fragmentName, blockName, results) {
+  for (const c of bodyNode.namedChildren) {
+    if (c.type === "fragment_spread") {
+      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const inner = lbl?.namedChildren[0];
+      let sname = inner?.text ?? "";
+      if (inner?.type === "quoted_name") sname = sname.slice(1, -1);
+      if (sname === fragmentName) {
+        results.push({ block: blockName, row: c.startPosition.row });
+      }
+    } else if (c.type === "record_block" || c.type === "list_block") {
+      const nested = c.namedChildren.find((x) => x.type === "schema_body");
+      if (nested) walkForSpreads(nested, fragmentName, blockName, results);
+    }
+  }
+}
+
+// ── Formatter ─────────────────────────────────────────────────────────────────
+
+function printDefault(name, refs) {
+  console.log(`References to '${name}' (${refs.length}):`);
+  console.log();
+
+  const byKind = new Map();
+  for (const ref of refs) {
+    if (!byKind.has(ref.kind)) byKind.set(ref.kind, []);
+    byKind.get(ref.kind).push(ref);
+  }
+
+  const kindLabels = {
+    mapping: "Used as source/target in mappings",
+    metric: "Referenced by metrics",
+    fragment_spread: "Spread into schemas/fragments",
+  };
+
+  for (const [kind, kindRefs] of byKind) {
+    console.log(`${kindLabels[kind] ?? kind} (${kindRefs.length}):`);
+    for (const ref of kindRefs) {
+      const row = ref.row !== undefined ? `:${ref.row + 1}` : "";
+      console.log(`  ${ref.name}  ${ref.file}${row}`);
+    }
+    console.log();
+  }
+}
