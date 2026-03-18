@@ -1,6 +1,6 @@
 ---
 id: stm-fjji
-status: open
+status: closed
 deps: [stm-imp3, stm-a07c]
 links: []
 created: 2026-03-18T12:18:41Z
