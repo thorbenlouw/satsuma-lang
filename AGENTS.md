@@ -185,6 +185,7 @@ Expected workflow:
 - Read the relevant feature doc in `features/` before implementing planned work.
 - Inspect existing examples and docs before making syntax or tooling assumptions.
 - Keep changes scoped and directly tied to the current task.
+- Include relevant `.tickets/` changes in the same commit as the task implementation, since `tk` stores task state there.
 - Do not pick up the next task until the current task's relevant automated tests have been run locally and are passing.
 - If a requested change would contradict the spec, stop and raise the conflict clearly.
 - For work in `tooling/tree-sitter-stm/`, treat corpus tests in `tooling/tree-sitter-stm/test/corpus/` and generated parser artifacts as part of the implementation surface.
