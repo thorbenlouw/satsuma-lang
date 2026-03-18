@@ -1,17 +1,20 @@
 {
   "name": "tree-sitter-stm",
-  "version": "0.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Tree-sitter grammar for the STM language",
+  "description": "Tree-sitter grammar for STM v2",
   "license": "UNLICENSED",
+  "main": "bindings/node",
   "scripts": {
-    "generate": "../../scripts/tree-sitter-local.sh generate",
-    "smoke:summary": "python3 scripts/cst_summary.py --pretty",
-    "test:summary": "python3 scripts/test_cst_summary.py",
-    "test:smoke": "python3 scripts/test_smoke_summary.py",
-    "test": "../../scripts/tree-sitter-local.sh test && python3 scripts/test_fixtures.py && python3 scripts/test_cst_summary.py && python3 scripts/test_smoke_summary.py"
+    "generate": "tree-sitter generate",
+    "build": "tree-sitter generate && node-gyp build",
+    "test": "tree-sitter test",
+    "smoke": "node scripts/smoke-test.js"
   },
   "devDependencies": {
     "tree-sitter-cli": "^0.25.10"
+  },
+  "peerDependencies": {
+    "tree-sitter": "^0.21.0"
   }
 }
