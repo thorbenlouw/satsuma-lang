@@ -1,0 +1,55 @@
+================================================================================
+Adjacent NL strings in note block
+================================================================================
+
+metric checkout_abandonment_rate (
+  source {fact_sessions, dim_customer},
+  grain daily
+) {
+  note {
+    "Sessions that reached checkout but did not result in a placed order, "
+    "divided by all sessions that reached checkout."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_braced_list
+          (identifier)
+          (identifier)))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier)))
+    (metric_body
+      (note_block
+        (nl_string)
+        (nl_string)))))
+
+================================================================================
+Single NL string in note block
+================================================================================
+
+schema customers {
+  note {
+    "Primary customer store."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (note_block
+        (nl_string)))))

@@ -279,7 +279,7 @@ schema customers {
           (tag_token
             (identifier))))
       (fragment_spread
-        (block_label
+        (spread_label
           (identifier))))))
 
 ================================================================================
@@ -307,10 +307,10 @@ schema customers {
           (tag_token
             (identifier))))
       (fragment_spread
-        (block_label
+        (spread_label
           (quoted_name)))
       (fragment_spread
-        (block_label
+        (spread_label
           (quoted_name))))))
 
 ================================================================================

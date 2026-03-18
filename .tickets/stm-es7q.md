@@ -1,6 +1,6 @@
 ---
 id: stm-es7q
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T18:57:00Z

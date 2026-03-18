@@ -1,0 +1,120 @@
+================================================================================
+Quoted enum member
+================================================================================
+
+schema sfdc_opportunity {
+  StageName PICKLIST (enum {Prospecting, Qualification, "Value Prop", Closed_Won})
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (enum_body
+            (identifier)
+            (identifier)
+            (nl_string)
+            (identifier)))))))
+
+================================================================================
+Multi-word fragment spread
+================================================================================
+
+fragment 'audit fields' {
+  created_at TIMESTAMPTZ
+}
+
+schema users {
+  user_id UUID (pk)
+  ...audit fields
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label
+      (quoted_name))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))))
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token
+            (identifier))))
+      (fragment_spread
+        (spread_label
+          (identifier)
+          (identifier))))))
+
+================================================================================
+Multi-word transform spread in arrow
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  EMAIL_ADDR -> email { ...'clean email' }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (fragment_spread
+              (spread_label
+                (quoted_name)))))))))
+
+================================================================================
+Multi-word spread with three words
+================================================================================
+
+schema events {
+  ...to utc date
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (fragment_spread
+        (spread_label
+          (identifier)
+          (identifier)
+          (identifier))))))

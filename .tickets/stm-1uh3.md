@@ -1,6 +1,6 @@
 ---
 id: stm-1uh3
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T18:56:48Z

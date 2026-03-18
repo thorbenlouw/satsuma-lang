@@ -17,9 +17,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (nested_arrow
         (src_path
           (field_path
@@ -61,9 +63,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (nested_arrow
         (src_path
           (field_path
@@ -95,7 +99,8 @@ mapping {
           (pipe_chain
             (pipe_step
               (token_call
-                (identifier)))))))))
+                (identifier)
+                (number_literal)))))))))
 
 ================================================================================
 Nested arrow with computed arrow inside
@@ -116,9 +121,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (nested_arrow
         (src_path
           (field_path
@@ -160,9 +167,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (nested_arrow
         (src_path
           (field_path
@@ -197,9 +206,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (nested_arrow
         (src_path
           (field_path

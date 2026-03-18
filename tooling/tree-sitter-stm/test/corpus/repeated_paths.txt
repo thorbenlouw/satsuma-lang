@@ -1,31 +1,11 @@
 ================================================================================
-Missing closing brace on schema
-================================================================================
-
-schema customers {
-  customer_id UUID
-
---------------------------------------------------------------------------------
-
-(source_file
-  (schema_block
-    (block_label
-      (identifier))
-    (schema_body
-      (field_decl
-        (field_name
-          (identifier))
-        (type_expr)))
-    (MISSING "}")))
-
-================================================================================
-Arrow with missing target path
+Path with intermediate repeated segment
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  customer_id ->
+  Order.LineItems[].SKU -> sku
 }
 
 --------------------------------------------------------------------------------
@@ -42,48 +22,21 @@ mapping {
       (map_arrow
         (src_path
           (field_path
+            (identifier)
+            (identifier)
             (identifier)))
         (tgt_path
           (field_path
-            (MISSING identifier)))))))
+            (identifier)))))))
 
 ================================================================================
-Unclosed metadata block
-================================================================================
-
-schema customers (pii, required {
-  customer_id UUID
-}
-
---------------------------------------------------------------------------------
-
-(source_file
-  (ERROR
-    (block_label
-      (identifier))
-    (tag_token
-      (identifier))
-    (key_value_pair
-      (kv_key
-        (identifier))
-      (kv_braced_list
-        (identifier)
-        (ERROR
-          (identifier))))))
-
-================================================================================
-Malformed map entry missing value
+Path with repeated segment at start
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  status -> code {
-    map {
-      A:
-      B: "active"
-    }
-  }
+  CartLines[].unit_price -> gross_merchandise_value
 }
 
 --------------------------------------------------------------------------------
@@ -100,53 +53,103 @@ mapping {
       (map_arrow
         (src_path
           (field_path
+            (identifier)
             (identifier)))
         (tgt_path
           (field_path
+            (identifier)))))))
+
+================================================================================
+Computed arrow with repeated path in target
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> ShipmentHeader.asnDetails[].containers { "No source data available." }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)
+            (identifier)
             (identifier)))
         (pipe_chain
           (pipe_step
-            (map_literal
-              (map_entry
-                (map_key
-                  (identifier))
-                (map_value
-                  (identifier)))
-              (map_entry
-                (map_key
-                  (MISSING identifier))
-                (map_value
-                  (nl_string))))))))))
+            (nl_string)))))))
 
 ================================================================================
-Metric block missing required metadata
+Mapping-level flatten metadata
 ================================================================================
 
-metric mrr {}
-
---------------------------------------------------------------------------------
-
-(source_file
-  (ERROR
-    (block_label
-      (identifier))))
-
-================================================================================
-Schema with keyword as block label
-================================================================================
-
-schema schema {
-  id UUID
+mapping 'order lines' (flatten `Order.LineItems[]`) {
+  source { commerce_order }
+  target { order_lines }
 }
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (schema_block
+  (mapping_block
     (block_label
-      (identifier))
-    (schema_body
-      (field_decl
-        (field_name
+      (quoted_name))
+    (metadata_block
+      (key_value_pair
+        (kv_key
           (identifier))
-        (type_expr)))))
+        (backtick_name)))
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier))))))
+
+================================================================================
+Mapping-level group_by and on_error metadata
+================================================================================
+
+mapping 'session aggregation' (group_by session_id, on_error log, error_threshold 0.02) {
+  source { events }
+  target { sessions }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (number_literal)))
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier))))))
