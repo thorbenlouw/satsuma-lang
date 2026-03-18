@@ -51,6 +51,13 @@ jobs:
       - name: Generate parser
         run: npm run generate
 
+      - name: Check generated sources are up to date
+        run: |
+          if ! git diff --exit-code src/; then
+            echo "::error::Generated parser sources are out of date. Run 'npm run generate' in tooling/tree-sitter-stm/ and commit the result."
+            exit 1
+          fi
+
       - name: Check grammar conflicts are documented
         run: |
           count=$(sed -n '/conflicts:.*=>/,/^  \]/p' grammar.js | grep -c '^\s*\[\$\.')
