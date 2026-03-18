@@ -50,7 +50,7 @@ jobs:
       - name: Check grammar conflicts are documented
         run: |
           count=$(sed -n '/conflicts:.*=>/,/^  \]/p' grammar.js | grep -c '^\s*\[\$\.')
-          expected=$(cat CONFLICTS.expected)
+          expected=$(grep -v '^\s*;' CONFLICTS.expected | grep -v '^\s*$' | head -1)
           echo "Grammar conflicts: $count (expected: $expected)"
           if [ "$count" != "$expected" ]; then
             echo "::error::Grammar conflict count changed: expected $expected, got $count"
