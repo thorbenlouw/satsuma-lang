@@ -1,6 +1,6 @@
 ---
 id: stm-daev
-status: open
+status: closed
 deps: [stm-iohm]
 links: []
 created: 2026-03-18T16:52:43Z

@@ -429,3 +429,159 @@ describe("stm arrows", () => {
     assert.match(stderr, /not found/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// stm fields
+// ---------------------------------------------------------------------------
+describe("stm fields", () => {
+  const DB = resolve(EXAMPLES, "db-to-db.stm");
+
+  it("lists all fields with types", async () => {
+    const { stdout, code } = await run("fields", "legacy_sqlserver", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /CUST_ID/);
+    assert.match(stdout, /INT/);
+    assert.match(stdout, /EMAIL_ADDR/);
+    assert.match(stdout, /VARCHAR\(255\)/);
+  });
+
+  it("--json returns structured field array", async () => {
+    const { stdout, code } = await run("fields", "legacy_sqlserver", "--json", DB);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.ok(data.length > 0);
+    assert.ok(data[0].name);
+    assert.ok(data[0].type);
+  });
+
+  it("--unmapped-by returns correct set difference", async () => {
+    const { stdout, code } = await run(
+      "fields", "postgres_db", "--unmapped-by", "customer migration", DB,
+    );
+    assert.equal(code, 0);
+    // All postgres_db fields are mapped in db-to-db.stm
+    assert.match(stdout, /all fields.*mapped/i);
+  });
+
+  it("--with-meta includes tags", async () => {
+    const { stdout, code } = await run(
+      "fields", "legacy_sqlserver", "--with-meta", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /pii/);
+  });
+
+  it("exits 1 for unknown schema", async () => {
+    const { stderr, code } = await run("fields", "nonexistent", DB);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm nl
+// ---------------------------------------------------------------------------
+describe("stm nl", () => {
+  const DB = resolve(EXAMPLES, "db-to-db.stm");
+
+  it("extracts NL content from a mapping scope", async () => {
+    const { stdout, code } = await run("nl", "customer migration", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /\[transform\]/);
+  });
+
+  it("--kind transform filters to transform content", async () => {
+    const { stdout, code } = await run(
+      "nl", "customer migration", "--kind", "transform", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /\[transform\]/);
+    assert.ok(!stdout.includes("[note]"));
+    assert.ok(!stdout.includes("//!"));
+  });
+
+  it("--json returns structured items", async () => {
+    const { stdout, code } = await run(
+      "nl", "customer migration", "--json", DB,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.ok(data.length > 0);
+    assert.ok(data[0].text);
+    assert.ok(data[0].kind);
+    assert.ok(data[0].parent);
+  });
+
+  it("extracts warnings from schema scope", async () => {
+    const { stdout, code } = await run("nl", "legacy_sqlserver", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /\/\/!/);
+  });
+
+  it("field scope extracts NL from arrows", async () => {
+    const { stdout, code } = await run(
+      "nl", "legacy_sqlserver.PHONE_NBR", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /\[transform\]/);
+    assert.match(stdout, /digits/i);
+  });
+
+  it("exits 1 for unknown scope", async () => {
+    const { stderr, code } = await run("nl", "nonexistent", DB);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm meta
+// ---------------------------------------------------------------------------
+describe("stm meta", () => {
+  const DB = resolve(EXAMPLES, "db-to-db.stm");
+
+  it("extracts schema metadata with note", async () => {
+    const { stdout, code } = await run("meta", "legacy_sqlserver", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /note:/);
+    assert.match(stdout, /CUSTOMER table/);
+  });
+
+  it("extracts field metadata with type, tags, enum, kv", async () => {
+    const { stdout, code } = await run("meta", "legacy_sqlserver.CUST_TYPE", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /type: CHAR\(1\)/);
+    assert.match(stdout, /enum/);
+    assert.match(stdout, /default/);
+  });
+
+  it("--tags-only returns just tag tokens", async () => {
+    const { stdout, code } = await run(
+      "meta", "legacy_sqlserver.EMAIL_ADDR", "--tags-only", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /pii/);
+    // Should not contain kv or enum formatting
+    assert.ok(!stdout.includes("enum"));
+  });
+
+  it("--json returns structured metadata", async () => {
+    const { stdout, code } = await run(
+      "meta", "legacy_sqlserver.CUST_TYPE", "--json", DB,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.scope, "legacy_sqlserver.CUST_TYPE");
+    assert.equal(data.type, "CHAR(1)");
+    assert.ok(Array.isArray(data.entries));
+    assert.ok(data.entries.some((e) => e.kind === "enum"));
+  });
+
+  it("exits 1 for unknown scope", async () => {
+    const { stderr, code } = await run("meta", "nonexistent", DB);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
