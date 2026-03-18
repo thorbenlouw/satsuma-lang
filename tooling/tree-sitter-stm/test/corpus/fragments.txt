@@ -1,0 +1,158 @@
+================================================================================
+Empty fragment body
+================================================================================
+
+fragment 'audit fields' {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label
+      (quoted_name))
+    (schema_body)))
+
+================================================================================
+Fragment with fields
+================================================================================
+
+fragment 'address fields' {
+  street_line_1  VARCHAR(200)
+  street_line_2  VARCHAR(200)
+  city           VARCHAR(100)
+  state_province VARCHAR(50)
+  postal_code    VARCHAR(20)
+  country_code   CHAR(2)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label
+      (quoted_name))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Fragment with bare identifier name
+================================================================================
+
+fragment audit_fields {
+  created_at TIMESTAMPTZ (required)
+  updated_at TIMESTAMPTZ
+  created_by VARCHAR(100)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Fragment spread into schema
+================================================================================
+
+fragment 'audit fields' {
+  created_at TIMESTAMPTZ
+}
+
+schema customers {
+  customer_id UUID (pk)
+  ...'audit fields'
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label
+      (quoted_name))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))))
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (fragment_spread
+        (block_label
+          (quoted_name))))))
+
+================================================================================
+Multiple fragment spreads in schema
+================================================================================
+
+schema customers {
+  customer_id UUID (pk)
+  ...address_fields
+  ...audit_fields
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (fragment_spread
+        (block_label
+          (identifier)))
+      (fragment_spread
+        (block_label
+          (identifier))))))

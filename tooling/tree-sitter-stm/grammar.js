@@ -2,33 +2,29 @@
 // @ts-check
 
 /**
- * STM v2 Grammar — Phase 3: Metadata blocks
+ * STM v2 Grammar — Phase 4: Schema and fragment blocks
  *
- * Adds structured metadata_block parsing, replacing the opaque _opaque_parens
- * stub in schema_block, mapping_block, and metric_block.
- *
- * Metadata grammar:
- *   metadata_block ::= "(" _metadata_entry* ")"
- *   _metadata_entry ::= enum_body | slice_body | note_tag | key_value_pair | tag_token
+ * Replaces opaque brace stubs in schema_block and fragment_block with a full
+ * schema_body production covering field_decl, record_block, list_block,
+ * fragment_spread, and note_block.
  *
  * Key design decisions:
- *   - kv_key uses its own regex (identical to identifier's) so reserved keywords
- *     like `source` and `target` can appear as metadata keys (e.g. in metric
- *     metadata: `source fact_subscriptions`). Tree-sitter keyword exclusion only
- *     applies to rules based on `$.identifier`.
- *   - key_value_pair vs tag_token is an LR(1) conflict (needs 1 extra token of
- *     lookahead); declared in `conflicts` and handled by the GLR algorithm.
- *   - `enum` and `slice` are implicitly elevated to keywords by appearing as
- *     string literals in enum_body / slice_body. They are never valid as bare
- *     tag_tokens (vocabulary tokens that happen to share those names remain
- *     expressible via kv_key).
+ *   - type_expr is an atomic token (regex) that greedily consumes the base type
+ *     name plus an immediately-adjacent parameter list, e.g. VARCHAR(255) or
+ *     DECIMAL(12,2). This prevents ( ) from being ambiguously parsed as either
+ *     type_params or metadata_block.
+ *   - field_name uses choice(identifier, backtick_name) to support both bare and
+ *     backtick-quoted field identifiers.
+ *   - record and list are reserved keywords (appear as string literals in grammar)
+ *     so they cannot be used as field names or block labels.
+ *   - fragment_spread is "..." followed by block_label (identifier or quoted_name).
+ *   - metadata conflict between key_value_pair and tag_token is declared in
+ *     `conflicts` (inherited from Phase 3).
  */
 
 module.exports = grammar({
   name: "stm",
 
-  // Whitespace and comments are extras — threaded into the CST without
-  // affecting syntactic structure.
   extras: ($) => [
     /[ \t\f\r\n]+/,
     $.warning_comment,
@@ -36,13 +32,11 @@ module.exports = grammar({
     $.comment,
   ],
 
-  // Enables automatic keyword / identifier disambiguation.
   word: ($) => $.identifier,
 
-  // Declared LR(1) conflicts resolved by the GLR algorithm.
   conflicts: ($) => [
-    // After seeing an identifier in _metadata_entry, we need one more token
-    // to decide between key_value_pair (kv_key + value) and tag_token (standalone).
+    // After seeing an identifier in _metadata_entry, need one more token
+    // to decide between key_value_pair and tag_token.
     [$.key_value_pair, $.tag_token],
   ],
 
@@ -78,24 +72,30 @@ module.exports = grammar({
 
     import_path: ($) => $.nl_string,
 
-    // ── Block types ───────────────────────────────────────────────────────
-    // Bodies remain as opaque stubs (filled in phases 4–9).
-    // Metadata ( ) is now structured via metadata_block.
+    // ── Schema block ─────────────────────────────────────────────────────
 
     schema_block: ($) =>
       seq(
         "schema",
         $.block_label,
         optional($.metadata_block),
-        $._opaque_braces,
+        "{",
+        $.schema_body,
+        "}",
       ),
+
+    // ── Fragment block ────────────────────────────────────────────────────
 
     fragment_block: ($) =>
       seq(
         "fragment",
         $.block_label,
-        $._opaque_braces,
+        "{",
+        $.schema_body,
+        "}",
       ),
+
+    // ── Transform block (body still opaque — Phase 5) ─────────────────────
 
     transform_block: ($) =>
       seq(
@@ -103,6 +103,8 @@ module.exports = grammar({
         $.block_label,
         $._opaque_braces,
       ),
+
+    // ── Mapping block (body still opaque — Phase 6) ───────────────────────
 
     mapping_block: ($) =>
       seq(
@@ -112,14 +114,18 @@ module.exports = grammar({
         $._opaque_braces,
       ),
 
+    // ── Metric block (body still opaque — Phase 7) ───────────────────────
+
     metric_block: ($) =>
       seq(
         "metric",
         $.block_label,
-        optional($.nl_string), // optional display label e.g. "MRR"
-        $.metadata_block, // required: (source X, grain monthly, ...)
-        $._opaque_braces, // body: field decls + note blocks
+        optional($.nl_string),
+        $.metadata_block,
+        $._opaque_braces,
       ),
+
+    // ── Note block (structural — top level and inside mapping/metric) ─────
 
     note_block: ($) =>
       seq(
@@ -129,13 +135,79 @@ module.exports = grammar({
         "}",
       ),
 
+    // ── Schema body ───────────────────────────────────────────────────────
+    // Shared by schema_block, fragment_block, record_block, list_block.
+
+    schema_body: ($) => repeat($._schema_body_item),
+
+    _schema_body_item: ($) =>
+      choice(
+        $.field_decl,
+        $.record_block,
+        $.list_block,
+        $.fragment_spread,
+        $.note_block,
+      ),
+
+    // ── Field declaration ─────────────────────────────────────────────────
+    // field_name  type_expr  (metadata_block)?
+
+    field_decl: ($) =>
+      seq(
+        $.field_name,
+        $.type_expr,
+        optional($.metadata_block),
+      ),
+
+    // field_name: bare identifier or backtick-quoted (for special-char names).
+    field_name: ($) => choice($.identifier, $.backtick_name),
+
+    // type_expr: base type token with optional immediately-adjacent param list.
+    // Written as a single lexical token to prevent ( ) ambiguity with metadata.
+    // Examples: STRING, VARCHAR(255), DECIMAL(12,2), TIMESTAMPTZ, ARRAY(JSON)
+    // Note: no space allowed between base type and opening paren.
+    type_expr: (_) =>
+      token(
+        seq(
+          /[a-zA-Z_][a-zA-Z0-9_-]*/,
+          optional(seq("(", /[^)]*/, ")")),
+        ),
+      ),
+
+    // ── Nested record and list blocks ─────────────────────────────────────
+    // `record` and `list` are reserved keywords (string literals in grammar).
+
+    record_block: ($) =>
+      seq(
+        "record",
+        $.block_label,
+        optional($.metadata_block),
+        "{",
+        $.schema_body,
+        "}",
+      ),
+
+    list_block: ($) =>
+      seq(
+        "list",
+        $.block_label,
+        optional($.metadata_block),
+        "{",
+        $.schema_body,
+        "}",
+      ),
+
+    // ── Fragment spread ───────────────────────────────────────────────────
+    // ...identifier  or  ...'quoted name'
+
+    fragment_spread: ($) => seq("...", $.block_label),
+
     // ── Block label ───────────────────────────────────────────────────────
 
     block_label: ($) => choice($.identifier, $.quoted_name),
 
     // ── Metadata block ────────────────────────────────────────────────────
 
-    // Comma-separated entries inside ( ). Trailing comma is permitted.
     metadata_block: ($) =>
       seq(
         "(",
@@ -153,8 +225,6 @@ module.exports = grammar({
         $.tag_token,
       ),
 
-    // enum { val1, val2, val3 } — field enumeration brace list.
-    // "enum" becomes an implicit keyword via string literal + word property.
     enum_body: ($) =>
       seq(
         "enum",
@@ -164,8 +234,6 @@ module.exports = grammar({
         "}",
       ),
 
-    // slice { dim1, dim2 } — metric slice-dimension brace list.
-    // "slice" becomes an implicit keyword.
     slice_body: ($) =>
       seq(
         "slice",
@@ -175,18 +243,12 @@ module.exports = grammar({
         "}",
       ),
 
-    // note "..." or note """...""" — inline documentation inside metadata.
-    // "note" is a reserved keyword so no conflict with tag_token.
     note_tag: ($) =>
       seq(
         "note",
         choice($.multiline_string, $.nl_string),
       ),
 
-    // identifier value — e.g. `format email`, `grain monthly`, `source orders`
-    // kv_key has its OWN regex (not based on $.identifier) so reserved keywords
-    // like `source` and `target` can be matched as kv_key tokens even though
-    // they are excluded from $.identifier by keyword extraction.
     key_value_pair: ($) => seq($.kv_key, $._kv_value),
 
     kv_key: (_) => /[a-zA-Z_][a-zA-Z0-9_-]*/,
@@ -199,14 +261,10 @@ module.exports = grammar({
         $.identifier,
       ),
 
-    // Bare identifier tag — e.g. `pii`, `required`, `pk`, `unique`.
-    // Cannot match reserved keywords (schema, note, source, etc.)
-    // or grammar-level keywords (enum, slice) — those have dedicated rules.
     tag_token: ($) => $.identifier,
 
     // ── Opaque balanced delimiters ────────────────────────────────────────
-    // Accept any well-nested content. Used for block bodies (phases 4–9)
-    // and as a fallback for balanced ( ) inside opaque brace bodies.
+    // Used for block bodies not yet structured (transform, mapping, metric).
 
     _opaque_parens: ($) => seq("(", repeat($._paren_item), ")"),
 
@@ -242,7 +300,6 @@ module.exports = grammar({
 
     backtick_name: (_) => /`(?:[^`\\]|\\.)*`/,
 
-    // Triple-quoted multiline string (simplified: no " inside content in Phase 1).
     multiline_string: (_) => token(prec(1, /"""[^"]*"""/)),
 
     nl_string: (_) => /"(?:[^"\\]|\\.)*"/,

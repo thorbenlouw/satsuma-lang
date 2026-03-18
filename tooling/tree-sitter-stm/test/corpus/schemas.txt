@@ -1,0 +1,541 @@
+================================================================================
+Empty schema body
+================================================================================
+
+schema customers {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body)))
+
+================================================================================
+Schema with metadata and empty body
+================================================================================
+
+schema customers (pii) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token))
+    (schema_body)))
+
+================================================================================
+Single field declaration
+================================================================================
+
+schema customers {
+  customer_id UUID
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Field with metadata
+================================================================================
+
+schema customers {
+  customer_id UUID (pk)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token))))))
+
+================================================================================
+Field with parameterized type
+================================================================================
+
+schema customers {
+  name VARCHAR(200)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Field with decimal type
+================================================================================
+
+schema financials {
+  amount DECIMAL(14,2)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Multiple fields
+================================================================================
+
+schema customers {
+  customer_id UUID       (pk)
+  name        VARCHAR(200) (required)
+  email       VARCHAR(255) (pii)
+  created_at  TIMESTAMPTZ  (required)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token))))))
+
+================================================================================
+Backtick field name
+================================================================================
+
+schema salesforce {
+  `Lead_Source_Detail__c` STRING
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (backtick_name))
+        (type_expr)))))
+
+================================================================================
+Backtick field with metadata
+================================================================================
+
+schema salesforce {
+  `Lead_Source__c` STRING (pii, required)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (backtick_name))
+        (type_expr)
+        (metadata_block
+          (tag_token)
+          (tag_token))))))
+
+================================================================================
+Field with enum metadata
+================================================================================
+
+schema customers {
+  status VARCHAR(20) (enum {active, suspended, closed})
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (enum_body
+            (identifier)
+            (identifier)
+            (identifier)))))))
+
+================================================================================
+Field with multiline note
+================================================================================
+
+schema customers {
+  phone VARCHAR(50) (
+    note """
+    No consistent format across the dataset.
+    Target is E.164.
+    """
+  )
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (note_tag
+            (multiline_string)))))))
+
+================================================================================
+Fragment spread bare identifier
+================================================================================
+
+schema customers {
+  customer_id UUID (pk)
+  ...audit_fields
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (fragment_spread
+        (block_label
+          (identifier))))))
+
+================================================================================
+Fragment spread quoted name
+================================================================================
+
+schema customers {
+  customer_id UUID (pk)
+  ...'address fields'
+  ...'audit fields'
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (fragment_spread
+        (block_label
+          (quoted_name)))
+      (fragment_spread
+        (block_label
+          (quoted_name))))))
+
+================================================================================
+Note block inside schema body
+================================================================================
+
+schema customers {
+  customer_id UUID (pk)
+  note {
+    "This schema is the primary customer store."
+  }
+  email VARCHAR(255) (pii)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (note_block
+        (nl_string))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token))))))
+
+================================================================================
+Nested record block
+================================================================================
+
+schema order {
+  order_id STRING (pk)
+  record customer {
+    id    STRING
+    email STRING (pii)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (record_block
+        (block_label
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token))))))))
+
+================================================================================
+Nested list block
+================================================================================
+
+schema order {
+  order_id STRING (pk)
+  list line_items {
+    sku          STRING   (required)
+    quantity     INT
+    unit_price   DECIMAL(12,2)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (list_block
+        (block_label
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token)))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)))))))
+
+================================================================================
+Three-level nesting
+================================================================================
+
+schema shipment {
+  id STRING (pk)
+  record package {
+    weight DECIMAL(8,3)
+    list contents {
+      sku      STRING
+      quantity INT
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (record_block
+        (block_label
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr))
+          (list_block
+            (block_label
+              (identifier))
+            (schema_body
+              (field_decl
+                (field_name
+                  (identifier))
+                (type_expr))
+              (field_decl
+                (field_name
+                  (identifier))
+                (type_expr)))))))))
+
+================================================================================
+Schema with metadata and fields
+================================================================================
+
+schema events (pii, domain crm, format parquet) {
+  event_id  UUID        (pk)
+  type      VARCHAR(50) (enum {created, updated, deleted})
+  payload   JSON
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token)
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (enum_body
+            (identifier)
+            (identifier)
+            (identifier))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Quoted-name schema
+================================================================================
+
+schema 'order-headers-parquet' {
+  order_id STRING (pk)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (quoted_name))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token))))))
