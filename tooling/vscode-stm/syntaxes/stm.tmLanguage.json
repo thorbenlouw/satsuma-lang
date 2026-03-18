@@ -10,6 +10,7 @@
     { "include": "#schema-block" },
     { "include": "#fragment-block" },
     { "include": "#mapping-block" },
+    { "include": "#metric-block" },
     { "include": "#note-block" },
     { "include": "#expression" }
   ],
@@ -110,6 +111,48 @@
       ]
     },
 
+    "metric-block": {
+      "comment": "metric name \"label\"? (metadata) { measure fields }",
+      "name": "meta.block.metric.stm",
+      "begin": "^\\s*(metric)\\b",
+      "end": "(?<=\\})",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#block-label" },
+        { "include": "#string-double" },
+        { "include": "#metadata-parens" },
+        { "include": "#metric-body" }
+      ]
+    },
+
+    "metric-body": {
+      "comment": "Body of metric — contains measure fields and note blocks",
+      "begin": "(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.block.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.block.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#note-block" },
+        { "include": "#field-declaration" },
+        { "include": "#metadata-parens" },
+        { "include": "#backtick-identifier" },
+        { "include": "#type-name" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#punctuation-comma" },
+        { "include": "#identifier-plain" }
+      ]
+    },
+
     "transform-block": {
       "comment": "transform name { pipeline }",
       "name": "meta.block.transform.stm",
@@ -161,7 +204,7 @@
         },
         {
           "comment": "bare block name after keyword",
-          "match": "(?<=(?:schema|fragment|mapping|transform|record|list)\\s)([A-Za-z_][\\w]*)",
+          "match": "(?<=(?:schema|fragment|mapping|transform|record|list|metric)\\s)([A-Za-z_][\\w]*)",
           "captures": {
             "1": { "name": "entity.name.type.stm" }
           }
@@ -192,6 +235,13 @@
         {
           "comment": "constraint vocabulary tokens",
           "match": "\\b(pk|required|unique|indexed|pii|encrypt)\\b",
+          "captures": {
+            "1": { "name": "support.other.stm" }
+          }
+        },
+        {
+          "comment": "metric vocabulary tokens",
+          "match": "\\b(source|grain|slice|measure|additive|non_additive|semi_additive)\\b",
           "captures": {
             "1": { "name": "support.other.stm" }
           }
