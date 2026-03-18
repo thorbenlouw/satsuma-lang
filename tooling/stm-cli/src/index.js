@@ -19,7 +19,10 @@ const pkg = JSON.parse(
 
 program
   .name("stm")
-  .description("STM CLI — LLM context slicer for STM workspaces")
+  .description(
+    "STM CLI — deterministic structural extraction for STM workspaces.\n" +
+    "Extracts structural facts and delivers NL content verbatim. Does not interpret natural language.",
+  )
   .version(pkg.version)
   .showHelpAfterError(true);
 

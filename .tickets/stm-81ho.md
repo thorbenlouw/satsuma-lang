@@ -1,6 +1,6 @@
 ---
 id: stm-81ho
-status: open
+status: closed
 deps: [stm-j7fc, stm-fwo4, stm-j4ch, stm-daev, stm-xnbx, stm-8l0v, stm-7i0q]
 links: []
 created: 2026-03-18T16:52:43Z
