@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "commander": "^12.0.0",
-    "tree-sitter": "^0.21.0",
+    "tree-sitter": "^0.25.0",
     "tree-sitter-stm": "file:../tree-sitter-stm"
   }
 }

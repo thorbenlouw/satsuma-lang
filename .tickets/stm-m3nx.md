@@ -1,6 +1,6 @@
 ---
 id: stm-m3nx
-status: open
+status: closed
 deps: [stm-mzwe]
 links: []
 created: 2026-03-18T12:18:41Z
