@@ -160,28 +160,111 @@ note { """multiline **Markdown** content""" }
 
 ---
 
+## STM CLI — Agent Tooling
+
+The `stm` CLI is a deterministic structural extraction tool. It extracts facts from parse trees and delivers NL content verbatim. **It does not interpret natural language — that is your job.** The CLI is the toolkit. You are the runtime.
+
+Every command produces 100% correct results from structural analysis. There are no `impact`, `coverage`, `audit`, or `inventory` commands — those are workflows you compose from primitives, applying your own reasoning to the NL content the CLI surfaces.
+
+### Command reference
+
+```bash
+# Workspace extractors — retrieve whole blocks
+stm summary path/to/workspace/          # overview — schemas, mappings, metrics, counts
+stm schema hub_customer                  # full schema definition
+stm mapping 'sfdc to hub_customer'       # full mapping with all arrows
+stm metric monthly_revenue               # full metric definition
+stm lineage --from loyalty_sfdc          # schema-level graph traversal
+stm where-used hub_product               # all references to a name
+stm find --tag pii                       # fields carrying a metadata tag
+stm warnings                             # all //! and //? comments
+stm context "customer mapping"           # keyword-ranked block extraction (heuristic)
+
+# Structural primitives — slice below block level
+stm arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
+stm nl mapping 'demographics to mart'    # NL content in this mapping (notes, transforms)
+stm nl field mart_customer_360.email     # NL content on this specific field
+stm meta field loyalty_sfdc.Email        # metadata entries (tags, type, constraints)
+stm fields sat_customer_demographics     # field list with types
+stm fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
+stm match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
+
+# Structural analysis
+stm validate                             # parse errors + semantic reference checks
+stm diff v1/ v2/                         # structural comparison of two snapshots
+```
+
+### Transform classification
+
+Every arrow the CLI returns carries a classification from CST node types:
+
+| Marker | Meaning | Your responsibility |
+|---|---|---|
+| `[structural]` | Deterministic pipeline | None — fully specified |
+| `[nl]` | NL string — extracted verbatim | Read it, interpret intent, judge correctness |
+| `[mixed]` | Both pipeline steps and NL | Review the NL portion |
+| `[none]` | Bare `src -> tgt`, no transform | None |
+
+### How you compose workflows
+
+**Impact analysis:** Call `stm arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `stm nl` to read the NL content and reason about it yourself.
+
+**Coverage check:** Call `stm fields <target> --unmapped-by <mapping> --json` for each mapping. Intersect results to find fields unmapped by all mappings. For mapped fields, check classification via `stm arrows`.
+
+**PII audit:** Call `stm find --tag pii --json`, then `stm arrows` for each tagged field, recurse downstream. At `[nl]` hops, read the NL to judge whether PII survives the transform.
+
+**Drafting a mapping:** Call `stm match-fields` for deterministic name matches. Call `stm nl` on both schemas to read field notes. Apply your own judgment for non-obvious matches and transforms.
+
+**Reviewing a change:** Call `stm diff` for the structural delta. Call `stm arrows` for affected fields. Call `stm nl` to read NL content on changed arrows.
+
+### When to use the CLI vs. reading files
+
+| Situation | Approach |
+|---|---|
+| Need to understand a workspace | `stm summary`, then drill with `stm schema` / `stm mapping` |
+| Need arrows for a specific field | `stm arrows <schema.field>` — not reading the whole mapping |
+| Need NL content for interpretation | `stm nl <scope>` — not pulling the entire block |
+| Need metadata on a field | `stm meta field <schema.field>` — not parsing raw text |
+| Need to check which fields lack arrows | `stm fields <schema> --unmapped-by <mapping>` |
+| Need to validate after editing | `stm validate` |
+| Need to compare versions | `stm diff` — not text diff |
+| Need full file content for editing | Read the file directly — CLI is for querying, not raw content |
+
+### CLI output in prompts
+
+Use `--json` when you need to process output programmatically (which is most of the time in composed workflows). Use `--compact` to minimize tokens when you only need structure. Text output is for human readability.
+
+When reporting results to humans, be transparent about which parts of your analysis came from structural CLI output vs. your own interpretation of NL content.
+
+---
+
 ## Agent Workflow
 
 ### When generating STM from a description or spreadsheet:
 
-1. Start with a `note { }` block describing the integration context
-2. Define `schema` blocks with all fields, types, and metadata
-3. Add `fragment` blocks if you have reusable field sets
-4. Write the `mapping { }` block with source/target refs and all arrows
-5. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline
-6. Add `//!` warnings for known data quality issues
-7. Add `//?` for any open questions or ambiguities
-8. Add `(note "...")` metadata for persistent field-level documentation
+1. If source and target schemas already exist, run `stm match-fields --source <s> --target <t>` to find deterministic name matches, then `stm nl schema <s>` and `stm nl schema <t>` to read field notes for context
+2. Start with a `note { }` block describing the integration context
+3. Define `schema` blocks with all fields, types, and metadata
+4. Add `fragment` blocks if you have reusable field sets
+5. Write the `mapping { }` block with source/target refs and all arrows
+6. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline
+7. Add `//!` warnings for known data quality issues
+8. Add `//?` for any open questions or ambiguities
+9. Add `(note "...")` metadata for persistent field-level documentation
+10. Run `stm validate` to check for parse errors and semantic issues
+11. Run `stm fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
 
 ### When reading/interpreting STM:
 
-1. Parse schema blocks to understand source and target structures
-2. Read mapping block arrows in order — each is one field-level mapping
-3. `src -> tgt` means source-to-target; `-> tgt` (no left side) means computed/derived
-4. Transform content is in `{ }` after the arrow — pipelines read left-to-right
-5. `"..."` strings in transforms are natural language intent — interpret and implement
-6. `//!` comments are warnings about data quality or known issues
-7. `note { }` blocks contain rich documentation
+1. Run `stm summary` to understand the workspace scope before reading individual files
+2. Use `stm schema <name>` and `stm mapping <name>` to inspect specific blocks
+3. Use `stm arrows <schema.field>` to trace specific fields through mappings — don't search manually
+4. Use `stm nl <scope>` to read NL content you need to interpret
+5. `src -> tgt` means source-to-target; `-> tgt` (no left side) means computed/derived
+6. Transform content is in `{ }` after the arrow — pipelines read left-to-right
+7. `"..."` strings in transforms are natural language intent — interpret and implement
+8. `//!` comments are warnings about data quality or known issues — also visible via `stm warnings`
+9. `note { }` blocks contain rich documentation
 
 ### Common mistakes to avoid:
 
