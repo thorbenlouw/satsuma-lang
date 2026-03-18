@@ -42,6 +42,9 @@ const commands = [
   "commands/warnings.js",
   "commands/context.js",
   "commands/arrows.js",
+  "commands/fields.js",
+  "commands/nl.js",
+  "commands/meta.js",
 ];
 
 for (const cmd of commands) {
