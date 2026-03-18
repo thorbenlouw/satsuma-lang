@@ -1,6 +1,6 @@
 ---
 id: stm-u32p
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T16:51:28Z
