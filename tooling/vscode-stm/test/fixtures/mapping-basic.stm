@@ -1,0 +1,20 @@
+// SYNTAX TEST "source.stm" "basic mapping with source/target blocks and direct arrows"
+
+mapping 'customer migration' {
+// <--- keyword.other.stm
+
+  source { `legacy_sqlserver` }
+  // <-- keyword.other.stm
+  //       ^^^^^^^^^^^^^^^^^ variable.other.quoted.stm
+
+  target { `postgres_db` }
+  // <-- keyword.other.stm
+
+  CUST_ID -> customer_id
+  //      ^^ keyword.operator.arrow.stm
+
+  CUST_ID -> legacy_customer_id
+
+  FIRST_NM -> first_name
+  LAST_NM -> last_name
+}

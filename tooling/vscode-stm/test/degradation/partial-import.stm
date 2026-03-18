@@ -1,0 +1,17 @@
+// Degradation: partial import statement
+// Expected: incomplete import should not break highlighting of subsequent lines.
+
+import { 'address fields'
+// Missing closing }, from, and path
+
+schema after_partial_import {
+  id UUID (pk)
+  name VARCHAR(200)
+}
+
+// Another partial: missing path
+import { 'audit fields' } from
+
+schema another {
+  x INT
+}

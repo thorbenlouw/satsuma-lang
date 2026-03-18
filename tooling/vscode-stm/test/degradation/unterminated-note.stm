@@ -1,9 +1,0 @@
-// Degradation: unterminated triple-quote note block
-// Expected: everything until EOF is inside the note block scope.
-// This is acceptable — it mirrors what editors do with unterminated multiline strings.
-
-source test {
-  note '''
-    This note block is never closed.
-    The tokeniser will consume everything to EOF as note content.
-    source target map // these keywords won't be highlighted as keywords

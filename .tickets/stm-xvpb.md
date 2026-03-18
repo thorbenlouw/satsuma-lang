@@ -1,6 +1,6 @@
 ---
 id: stm-xvpb
-status: open
+status: closed
 deps: [stm-xdhb]
 links: []
 created: 2026-03-18T10:46:26Z

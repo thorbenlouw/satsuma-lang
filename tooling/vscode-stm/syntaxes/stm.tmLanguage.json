@@ -6,12 +6,10 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#import-declaration" },
-    { "include": "#namespace-declaration" },
-    { "include": "#workspace-block" },
-    { "include": "#integration-block" },
+    { "include": "#transform-block" },
     { "include": "#schema-block" },
     { "include": "#fragment-block" },
-    { "include": "#map-block" },
+    { "include": "#mapping-block" },
     { "include": "#note-block" },
     { "include": "#expression" }
   ],
@@ -35,115 +33,54 @@
     },
 
     "import-declaration": {
-      "comment": "import { name } from \"path\" or import schema Name from \"path\" as Alias",
+      "comment": "import { 'name', 'name' } from \"path\"",
+      "name": "meta.import.stm",
       "begin": "\\b(import)\\b",
-      "end": "(?=//|$|(?<=;))",
+      "end": "(?=//)|$",
       "beginCaptures": {
         "1": { "name": "keyword.control.import.stm" }
       },
       "patterns": [
         {
-          "match": "\\b(from|as)\\b",
+          "match": "\\b(from)\\b",
           "captures": {
             "1": { "name": "keyword.control.import.stm" }
           }
         },
-        {
-          "match": "\\b(schema|source|target|table|message|record|event|lookup|fragment)\\b",
-          "captures": {
-            "1": { "name": "keyword.other.stm" }
-          }
-        },
         { "include": "#string-double" },
-        { "include": "#identifier" },
-        { "include": "#punctuation-brace" },
+        { "include": "#string-single" },
+        { "include": "#backtick-identifier" },
+        {
+          "name": "punctuation.section.block.begin.stm",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.block.end.stm",
+          "match": "\\}"
+        },
         { "include": "#punctuation-comma" }
       ]
     },
 
-    "namespace-declaration": {
-      "comment": "namespace \"name\" — soft keyword, only in declaration-head position",
-      "match": "^\\s*(namespace)\\s+(\"[^\"]*\")",
-      "captures": {
-        "1": { "name": "keyword.other.stm" },
-        "2": { "name": "string.quoted.double.stm" }
-      }
-    },
-
-    "workspace-block": {
-      "comment": "workspace \"name\" { schema \"x\" from \"path\" }",
-      "begin": "^\\s*(workspace)\\b",
-      "end": "(?<=\\})",
-      "beginCaptures": {
-        "1": { "name": "keyword.other.stm" }
-      },
-      "patterns": [
-        { "include": "#comment" },
-        { "include": "#note-block" },
-        {
-          "match": "\\b(schema|from|as)\\b",
-          "captures": {
-            "1": { "name": "keyword.control.import.stm" }
-          }
-        },
-        { "include": "#string-double" },
-        { "include": "#block-body" }
-      ]
-    },
-
-    "integration-block": {
-      "comment": "integration \"name\" { key value ... }",
-      "begin": "^\\s*(integration)\\b",
-      "end": "(?<=\\})",
-      "beginCaptures": {
-        "1": { "name": "keyword.other.stm" }
-      },
-      "patterns": [
-        { "include": "#comment" },
-        { "include": "#note-block" },
-        { "include": "#annotation" },
-        { "include": "#string-double" },
-        { "include": "#number" },
-        { "include": "#boolean" },
-        { "include": "#null" },
-        { "include": "#block-body" },
-        {
-          "comment": "integration name (entity name)",
-          "match": "(?<=integration\\s)(\"[^\"]*\")",
-          "captures": {
-            "1": { "name": "entity.name.section.stm" }
-          }
-        },
-        { "include": "#identifier" }
-      ]
-    },
-
     "schema-block": {
-      "comment": "source/target/table/message/record/event/schema/lookup block_name \"description\" { ... }",
-      "begin": "^\\s*(source|target|table|message|record|event|schema|lookup)\\b",
+      "comment": "schema name (metadata) { fields }",
+      "name": "meta.block.schema.stm",
+      "begin": "^\\s*(schema)\\b",
       "end": "(?<=\\})",
       "beginCaptures": {
         "1": { "name": "keyword.other.stm" }
       },
       "patterns": [
         { "include": "#comment" },
-        { "include": "#note-block" },
-        { "include": "#annotation" },
-        {
-          "comment": "description string in header position gets doc context",
-          "name": "comment.block.documentation.stm string.quoted.double.stm",
-          "match": "(?<=^\\s*(?:source|target|table|message|record|event|schema|lookup)\\s+\\S+\\s)(\"[^\"]*\")"
-        },
-        { "include": "#field-declaration" },
-        { "include": "#spread" },
-        { "include": "#block-body" },
-        { "include": "#string-double" },
-        { "include": "#schema-name" }
+        { "include": "#block-label" },
+        { "include": "#metadata-parens" },
+        { "include": "#schema-body" }
       ]
     },
 
     "fragment-block": {
-      "comment": "fragment name \"description\" { ... }",
+      "comment": "fragment name { fields }",
+      "name": "meta.block.fragment.stm",
       "begin": "^\\s*(fragment)\\b",
       "end": "(?<=\\})",
       "beginCaptures": {
@@ -151,18 +88,15 @@
       },
       "patterns": [
         { "include": "#comment" },
-        { "include": "#note-block" },
-        { "include": "#annotation" },
-        { "include": "#field-declaration" },
-        { "include": "#spread" },
-        { "include": "#block-body" },
-        { "include": "#string-double" },
-        { "include": "#schema-name" }
+        { "include": "#block-label" },
+        { "include": "#metadata-parens" },
+        { "include": "#schema-body" }
       ]
     },
 
-    "map-block": {
-      "comment": "mapping SourceSchema TargetSchema { ... } or mapping { ... }",
+    "mapping-block": {
+      "comment": "mapping name (metadata) { arrows }",
+      "name": "meta.block.mapping.stm",
       "begin": "^\\s*(mapping)\\b",
       "end": "(?<=\\})",
       "beginCaptures": {
@@ -170,20 +104,271 @@
       },
       "patterns": [
         { "include": "#comment" },
+        { "include": "#block-label" },
+        { "include": "#metadata-parens" },
+        { "include": "#mapping-body" }
+      ]
+    },
+
+    "transform-block": {
+      "comment": "transform name { pipeline }",
+      "name": "meta.block.transform.stm",
+      "begin": "^\\s*(transform)\\b",
+      "end": "(?<=\\})",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#block-label" },
+        { "include": "#arrow-body" }
+      ]
+    },
+
+    "note-block": {
+      "comment": "note { \"...\" } or note { \"\"\"...\"\"\" }",
+      "name": "meta.block.note.stm",
+      "begin": "\\b(note)\\s*(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.stm" },
+        "2": { "name": "punctuation.section.block.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.block.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#string-triple-double" },
+        { "include": "#string-double" }
+      ]
+    },
+
+    "block-label": {
+      "comment": "Block name after keyword: bare identifier or 'single-quoted'",
+      "patterns": [
+        {
+          "comment": "single-quoted block label",
+          "begin": "'",
+          "end": "'",
+          "name": "string.quoted.single.stm",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.stm" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.stm" }
+          }
+        },
+        {
+          "comment": "bare block name after keyword",
+          "match": "(?<=(?:schema|fragment|mapping|transform|record|list)\\s)([A-Za-z_][\\w]*)",
+          "captures": {
+            "1": { "name": "entity.name.type.stm" }
+          }
+        }
+      ]
+    },
+
+    "metadata-parens": {
+      "comment": "(metadata) block with vocabulary tokens",
+      "name": "meta.metadata.stm",
+      "begin": "(\\()",
+      "end": "(\\))",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.parens.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.parens.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "comment": "note keyword in metadata",
+          "match": "\\b(note)\\b",
+          "captures": {
+            "1": { "name": "support.other.stm" }
+          }
+        },
+        {
+          "comment": "constraint vocabulary tokens",
+          "match": "\\b(pk|required|unique|indexed|pii|encrypt)\\b",
+          "captures": {
+            "1": { "name": "support.other.stm" }
+          }
+        },
+        {
+          "comment": "format/metadata vocabulary tokens",
+          "match": "\\b(enum|default|format|ref|xpath|namespace|filter|flatten|scd|datavault|hub|satellite|link|hashkey|watermark|late_arrival|dedup|classification|retention|lineage)\\b",
+          "captures": {
+            "1": { "name": "support.other.stm" }
+          }
+        },
+        {
+          "comment": "enum value set { ... }",
+          "begin": "(\\{)",
+          "end": "(\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.section.block.begin.stm" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.section.block.end.stm" }
+          },
+          "patterns": [
+            { "include": "#string-double" },
+            { "include": "#number" },
+            { "include": "#boolean" },
+            { "include": "#null" },
+            { "include": "#punctuation-comma" },
+            { "include": "#identifier-plain" }
+          ]
+        },
+        { "include": "#string-triple-double" },
+        { "include": "#string-double" },
+        { "include": "#backtick-identifier" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#constant-other-reference" },
+        { "include": "#punctuation-comma" },
+        { "include": "#identifier-plain" }
+      ]
+    },
+
+    "schema-body": {
+      "comment": "Body of schema/fragment/record/list — contains fields, nested structures, spread",
+      "begin": "(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.block.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.block.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
         { "include": "#note-block" },
-        { "include": "#annotation" },
+        {
+          "comment": "record nested structure keyword",
+          "begin": "\\b(record)\\b",
+          "end": "(?<=\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#block-label" },
+            { "include": "#metadata-parens" },
+            { "include": "#schema-body" }
+          ]
+        },
+        {
+          "comment": "list nested structure keyword",
+          "begin": "\\b(list)\\b",
+          "end": "(?<=\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#block-label" },
+            { "include": "#metadata-parens" },
+            { "include": "#schema-body" }
+          ]
+        },
+        { "include": "#spread" },
+        { "include": "#field-declaration" },
+        { "include": "#metadata-parens" },
+        { "include": "#backtick-identifier" },
+        { "include": "#type-name" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#punctuation-comma" },
+        { "include": "#identifier-plain" }
+      ]
+    },
+
+    "mapping-body": {
+      "comment": "Body of mapping — contains source/target blocks, arrows, note blocks",
+      "begin": "(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.block.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.block.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#note-block" },
+        {
+          "comment": "source sub-block",
+          "begin": "\\b(source)\\s*(\\{)",
+          "end": "(\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.stm" },
+            "2": { "name": "punctuation.section.block.begin.stm" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.section.block.end.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#backtick-identifier" },
+            { "include": "#string-double" },
+            { "include": "#punctuation-comma" },
+            { "include": "#identifier-plain" }
+          ]
+        },
+        {
+          "comment": "target sub-block",
+          "begin": "\\b(target)\\s*(\\{)",
+          "end": "(\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.stm" },
+            "2": { "name": "punctuation.section.block.begin.stm" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.section.block.end.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#backtick-identifier" },
+            { "include": "#string-double" },
+            { "include": "#punctuation-comma" },
+            { "include": "#identifier-plain" }
+          ]
+        },
+        { "include": "#arrow-with-body" },
         { "include": "#map-entry" },
-        { "include": "#transform-expression" },
-        { "include": "#block-body" },
-        { "include": "#schema-name" }
+        { "include": "#map-value-block" },
+        { "include": "#spread" },
+        { "include": "#metadata-parens" },
+        { "include": "#arrow-body" },
+        { "include": "#string-triple-double" },
+        { "include": "#string-double" },
+        { "include": "#backtick-identifier" },
+        { "include": "#array-indicator" },
+        { "include": "#operator-arrow" },
+        { "include": "#operator-pipe" },
+        { "include": "#pipeline-tokens" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#wildcard" },
+        { "include": "#constant-other-reference" },
+        { "include": "#punctuation-comma" },
+        { "include": "#dotted-path" },
+        { "include": "#identifier-plain" }
       ]
     },
 
     "map-entry": {
+      "comment": "source -> target or -> target (computed)",
       "patterns": [
         {
-          "comment": "direct mapping: source -> target",
-          "match": "([A-Za-z_][\\w.`\\[\\]]*(?:::[A-Za-z_][\\w.`\\[\\]]*)*(?:\\.[A-Za-z_][\\w`]*)*)\\s*(->)\\s*([A-Za-z_][\\w.`\\[\\]]*(?:::[A-Za-z_][\\w.`\\[\\]]*)*(?:\\.[A-Za-z_][\\w`]*)*)",
+          "comment": "direct mapping: source -> target with dotted/array paths",
+          "match": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
           "captures": {
             "1": { "name": "variable.other.field.stm" },
             "2": { "name": "keyword.operator.arrow.stm" },
@@ -191,87 +376,141 @@
           }
         },
         {
-          "comment": "computed mapping: => target",
-          "match": "(=>)\\s*([A-Za-z_][\\w.`\\[\\]]*(?:::[A-Za-z_][\\w.`\\[\\]]*)*(?:\\.[A-Za-z_][\\w`]*)*)",
+          "comment": "computed mapping: -> target (no left side)",
+          "match": "(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
           "captures": {
-            "1": { "name": "keyword.operator.fat-arrow.stm" },
+            "1": { "name": "keyword.operator.arrow.stm" },
             "2": { "name": "variable.other.field.stm" }
           }
         }
       ]
     },
 
-    "transform-expression": {
+    "arrow-with-body": {
+      "comment": "Arrow declaration followed by { transform body }",
       "patterns": [
         {
-          "comment": "transform separator :",
-          "match": "(?<=[\\w'\"\\)\\]]\\s*)(:)(?!:)",
-          "captures": {
-            "1": { "name": "keyword.operator.transform.stm" }
-          }
-        },
-        {
-          "comment": "pipe continuation |",
-          "match": "^\\s*(\\|)\\s*",
-          "captures": {
-            "1": { "name": "keyword.operator.pipe.stm" }
-          }
-        },
-        {
-          "comment": "when/else/fallback continuation keywords",
-          "match": "^\\s*(when|else|fallback)\\b",
-          "captures": {
-            "1": { "name": "keyword.control.conditional.stm" }
-          }
-        },
-        {
-          "comment": "inline when/else/fallback (not start of line)",
-          "match": "\\b(when|else|fallback)\\b",
-          "captures": {
-            "1": { "name": "keyword.control.conditional.stm" }
-          }
-        },
-        {
-          "comment": "in operator for conditions",
-          "match": "\\b(in)\\b",
-          "captures": {
-            "1": { "name": "keyword.operator.stm" }
-          }
-        },
-        {
-          "comment": "value-map literal: map { key: value, ... }",
-          "begin": "(?<=[:|])\\s*(map)\\s*(\\{)",
-          "end": "(\\})",
+          "comment": "source -> target { ... }",
+          "begin": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\(|\\{)",
+          "end": "(?<=\\})",
           "beginCaptures": {
-            "1": { "name": "keyword.other.stm" },
-            "2": { "name": "punctuation.section.block.stm" }
-          },
-          "endCaptures": {
-            "1": { "name": "punctuation.section.block.stm" }
+            "1": { "name": "variable.other.field.stm" },
+            "2": { "name": "keyword.operator.arrow.stm" },
+            "3": { "name": "variable.other.field.stm" }
           },
           "patterns": [
             { "include": "#comment" },
-            { "include": "#string-double" },
-            { "include": "#number" },
-            { "include": "#boolean" },
-            { "include": "#null" },
-            { "include": "#wildcard" },
-            { "include": "#punctuation-comma" },
-            {
-              "comment": "value-map key: value separator",
-              "match": "(:)(?!:)",
-              "captures": {
-                "1": { "name": "punctuation.separator.tag.stm" }
-              }
-            },
-            { "include": "#identifier" }
+            { "include": "#metadata-parens" },
+            { "include": "#arrow-body" }
+          ]
+        },
+        {
+          "comment": "-> target { ... } (computed)",
+          "begin": "(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\{)",
+          "end": "(?<=\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.operator.arrow.stm" },
+            "2": { "name": "variable.other.field.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#arrow-body" }
           ]
         }
       ]
     },
 
+    "arrow-body": {
+      "comment": "Transform body { pipeline tokens, strings, map blocks, nested arrows }",
+      "name": "meta.arrow-body.stm",
+      "begin": "(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.block.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.block.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#map-value-block" },
+        { "include": "#arrow-with-body" },
+        { "include": "#map-entry" },
+        { "include": "#spread" },
+        { "include": "#metadata-parens" },
+        { "include": "#arrow-body" },
+        { "include": "#string-triple-double" },
+        { "include": "#string-double" },
+        { "include": "#backtick-identifier" },
+        { "include": "#operator-pipe" },
+        { "include": "#pipeline-tokens" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#wildcard" },
+        { "include": "#constant-other-reference" },
+        { "include": "#punctuation-comma" },
+        { "include": "#dotted-path" },
+        { "include": "#function-call" },
+        { "include": "#identifier-plain" }
+      ]
+    },
+
+    "map-value-block": {
+      "comment": "map { key: value, ... } — discrete value mapping",
+      "name": "meta.block.map.stm",
+      "begin": "\\b(map)\\s*(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.stm" },
+        "2": { "name": "punctuation.section.block.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.section.block.end.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "comment": "default catch-all",
+          "match": "\\b(default)\\b",
+          "captures": {
+            "1": { "name": "keyword.control.default.stm" }
+          }
+        },
+        {
+          "comment": "comparison operators in conditional map entries",
+          "match": "(<=|>=|<|>)",
+          "captures": {
+            "1": { "name": "keyword.operator.comparison.stm" }
+          }
+        },
+        {
+          "comment": "key-value separator",
+          "match": "(:)",
+          "captures": {
+            "1": { "name": "punctuation.separator.key-value.stm" }
+          }
+        },
+        { "include": "#string-double" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#wildcard" },
+        { "include": "#punctuation-comma" },
+        { "include": "#identifier-plain" }
+      ]
+    },
+
+    "pipeline-tokens": {
+      "comment": "Known pipeline operation tokens in arrow bodies",
+      "match": "\\b(trim|lowercase|uppercase|coalesce|round|split|first|last|to_utc|to_iso8601|parse|null_if_empty|null_if_invalid|validate_email|now_utc|title_case|escape_html|truncate|to_number|prepend|max_length|assume_utc|join|flatten|dedup)\\b",
+      "captures": {
+        "1": { "name": "support.function.stm" }
+      }
+    },
+
     "field-declaration": {
-      "comment": "field_name TYPE [tags] @annotations // comment",
+      "comment": "field_name TYPE (metadata) — matches backtick-quoted field names",
       "patterns": [
         {
           "comment": "backtick-quoted field name",
@@ -279,187 +518,42 @@
           "captures": {
             "1": { "name": "variable.other.quoted.stm" }
           }
-        },
-        {
-          "comment": "inline note block on field: { note '''...''' }",
-          "begin": "(?<=\\S)\\s*(\\{)\\s*(note)\\s*('{'{')",
-          "end": "('{'{'\\s*\\})",
-          "name": "comment.block.documentation.stm",
-          "beginCaptures": {
-            "1": { "name": "punctuation.section.block.stm" },
-            "2": { "name": "keyword.other.stm" },
-            "3": { "name": "punctuation.definition.string.begin.stm" }
-          },
-          "endCaptures": {
-            "1": { "name": "punctuation.definition.string.end.stm" }
-          },
-          "patterns": [
-            {
-              "name": "string.quoted.other.multiline.stm",
-              "match": "."
-            }
-          ]
-        }
-      ]
-    },
-
-    "note-block": {
-      "comment": "note '''...''' — documentation block",
-      "name": "comment.block.documentation.stm",
-      "begin": "\\b(note)\\s*(''')",
-      "end": "(''')",
-      "beginCaptures": {
-        "1": { "name": "keyword.other.stm" },
-        "2": { "name": "punctuation.definition.string.begin.stm" }
-      },
-      "endCaptures": {
-        "1": { "name": "punctuation.definition.string.end.stm" }
-      },
-      "patterns": [
-        {
-          "name": "string.quoted.other.multiline.stm",
-          "match": "."
-        }
-      ]
-    },
-
-    "selection-criteria": {
-      "comment": "selection_criteria '''...''' — treated as multiline string",
-      "begin": "\\b(selection_criteria)\\s*(''')",
-      "end": "(''')",
-      "beginCaptures": {
-        "1": { "name": "variable.other.field.stm" },
-        "2": { "name": "punctuation.definition.string.begin.stm" }
-      },
-      "endCaptures": {
-        "1": { "name": "punctuation.definition.string.end.stm" }
-      },
-      "patterns": [
-        {
-          "name": "string.quoted.other.multiline.stm",
-          "match": "."
-        }
-      ]
-    },
-
-    "annotation": {
-      "comment": "@name(args) or @name key = value",
-      "patterns": [
-        {
-          "comment": "annotation with parens: @name(...)",
-          "begin": "(@)([A-Za-z_][\\w]*)(\\()",
-          "end": "(\\))",
-          "beginCaptures": {
-            "1": { "name": "punctuation.definition.annotation.stm" },
-            "2": { "name": "entity.name.decorator.stm" },
-            "3": { "name": "punctuation.section.parens.stm" }
-          },
-          "endCaptures": {
-            "1": { "name": "punctuation.section.parens.stm" }
-          },
-          "patterns": [
-            { "include": "#string-double" },
-            { "include": "#number" },
-            { "include": "#boolean" },
-            { "include": "#null" },
-            { "include": "#punctuation-comma" },
-            { "include": "#identifier" }
-          ]
-        },
-        {
-          "comment": "annotation key=value: @ns key = \"value\"",
-          "match": "(@)([A-Za-z_][\\w]*)\\s+([A-Za-z_][\\w]*)\\s*(=)\\s*(\"[^\"]*\")",
-          "captures": {
-            "1": { "name": "punctuation.definition.annotation.stm" },
-            "2": { "name": "entity.name.decorator.stm" },
-            "3": { "name": "variable.parameter.stm" },
-            "4": { "name": "keyword.operator.assignment.stm" },
-            "5": { "name": "string.quoted.double.stm" }
-          }
-        },
-        {
-          "comment": "bare annotation: @name",
-          "match": "(@)([A-Za-z_][\\w]*)",
-          "captures": {
-            "1": { "name": "punctuation.definition.annotation.stm" },
-            "2": { "name": "entity.name.decorator.stm" }
-          }
-        }
-      ]
-    },
-
-    "tag-list": {
-      "comment": "[pk, required, enum: {...}, ...]",
-      "begin": "(\\[)(?!\\])",
-      "end": "(\\])",
-      "beginCaptures": {
-        "1": { "name": "punctuation.definition.tag.stm" }
-      },
-      "endCaptures": {
-        "1": { "name": "punctuation.definition.tag.stm" }
-      },
-      "patterns": [
-        { "include": "#comment" },
-        {
-          "comment": "tag name",
-          "match": "([A-Za-z_][\\w]*)",
-          "captures": {
-            "1": { "name": "entity.name.tag.stm" }
-          }
-        },
-        {
-          "comment": "tag value separator",
-          "match": "(:)(?!:)",
-          "captures": {
-            "1": { "name": "punctuation.separator.tag.stm" }
-          }
-        },
-        { "include": "#string-double" },
-        { "include": "#number" },
-        { "include": "#boolean" },
-        { "include": "#null" },
-        { "include": "#constant-other-reference" },
-        { "include": "#punctuation-comma" },
-        {
-          "comment": "enum value set { ... }",
-          "begin": "(\\{)",
-          "end": "(\\})",
-          "beginCaptures": {
-            "1": { "name": "punctuation.section.block.stm" }
-          },
-          "endCaptures": {
-            "1": { "name": "punctuation.section.block.stm" }
-          },
-          "patterns": [
-            { "include": "#string-double" },
-            { "include": "#identifier" },
-            { "include": "#punctuation-comma" }
-          ]
         }
       ]
     },
 
     "spread": {
-      "comment": "...fragment_name",
-      "match": "(\\.\\.\\.)(\\s*[A-Za-z_][\\w]*)",
+      "comment": "...name — spread fragment or transform",
+      "match": "(\\.\\.\\.)([A-Za-z_][\\w]*(?:\\s+[A-Za-z_][\\w]*)*)",
       "captures": {
         "1": { "name": "keyword.operator.spread.stm" },
         "2": { "name": "entity.name.type.stm" }
       }
     },
 
-    "schema-name": {
-      "comment": "Block/schema name after declaration keyword",
-      "match": "(?<=^\\s*(?:source|target|table|message|record|event|schema|lookup|fragment|mapping)\\s)([A-Za-z_][\\w]*)",
-      "captures": {
-        "1": { "name": "entity.name.type.stm" }
+    "string-triple-double": {
+      "comment": "\"\"\"multiline triple-double-quoted string\"\"\"",
+      "name": "string.quoted.triple.stm",
+      "begin": "(\"\"\")",
+      "end": "(\"\"\")",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.string.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.string.end.stm" }
       }
     },
 
     "string-double": {
       "name": "string.quoted.double.stm",
-      "begin": "\"",
-      "end": "\"",
+      "begin": "(\")",
+      "end": "(\")",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.string.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.string.end.stm" }
+      },
       "patterns": [
         {
           "name": "constant.character.escape.stm",
@@ -468,15 +562,89 @@
       ]
     },
 
-    "string-multiline": {
-      "name": "string.quoted.other.multiline.stm",
-      "begin": "'''",
-      "end": "'''"
+    "string-single": {
+      "comment": "Single-quoted block label: 'name with spaces'",
+      "name": "string.quoted.single.stm",
+      "begin": "(')",
+      "end": "(')",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.string.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.string.end.stm" }
+      }
+    },
+
+    "backtick-identifier": {
+      "comment": "Backtick-quoted identifier: `name`",
+      "begin": "(`)",
+      "end": "(`)",
+      "name": "entity.name.tag.stm",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.identifier.begin.stm" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.identifier.end.stm" }
+      }
+    },
+
+    "type-name": {
+      "comment": "Common data type names in field declarations",
+      "match": "\\b(STRING|VARCHAR|INT|INTEGER|BIGINT|DECIMAL|CHAR|BOOLEAN|DATE|TIMESTAMPTZ|TIMESTAMP_NTZ|UUID|JSON|TEXT|NUMBER|INT32|FLOAT|DOUBLE|CURRENCY|PICKLIST|ID|PERCENT|DATETIME)\\b",
+      "captures": {
+        "1": { "name": "support.type.stm" }
+      }
+    },
+
+    "function-call": {
+      "comment": "identifier( — function call pattern",
+      "match": "([A-Za-z_][\\w]*)(\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.stm" },
+        "2": { "name": "punctuation.section.parens.begin.stm" }
+      }
+    },
+
+    "operator-arrow": {
+      "name": "keyword.operator.arrow.stm",
+      "match": "->"
+    },
+
+    "operator-pipe": {
+      "name": "keyword.operator.pipe.stm",
+      "match": "\\|"
+    },
+
+    "array-indicator": {
+      "name": "punctuation.definition.array.stm",
+      "match": "\\[\\]"
+    },
+
+    "dotted-path": {
+      "comment": "Dotted path: a.b.c — scoped uniformly",
+      "match": "\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)+",
+      "name": "variable.other.field.stm"
+    },
+
+    "identifier-plain": {
+      "comment": "Plain identifier",
+      "name": "variable.other.field.stm",
+      "match": "\\b[A-Za-z_][\\w]*\\b"
     },
 
     "number": {
-      "name": "constant.numeric.stm",
-      "match": "-?\\b\\d+(\\.\\d+)?\\b"
+      "patterns": [
+        {
+          "comment": "decimal number",
+          "name": "constant.numeric.float.stm",
+          "match": "-?\\b\\d+\\.\\d+\\b"
+        },
+        {
+          "comment": "integer number",
+          "name": "constant.numeric.integer.stm",
+          "match": "-?\\b\\d+\\b"
+        }
+      ]
     },
 
     "boolean": {
@@ -490,7 +658,7 @@
     },
 
     "wildcard": {
-      "name": "constant.language.wildcard.stm",
+      "name": "keyword.control.default.stm",
       "match": "\\b_\\b"
     },
 
@@ -500,109 +668,9 @@
       "match": "\\b[A-Z][A-Z0-9]*[-\\.][A-Z0-9][-A-Z0-9.]*\\b"
     },
 
-    "identifier": {
-      "patterns": [
-        {
-          "comment": "backtick-quoted identifier",
-          "name": "variable.other.quoted.stm",
-          "match": "`[^`]+`"
-        },
-        {
-          "comment": "function call: identifier(",
-          "match": "([A-Za-z_][\\w]*)(\\()",
-          "captures": {
-            "1": { "name": "entity.name.function.stm" },
-            "2": { "name": "punctuation.section.parens.stm" }
-          }
-        },
-        {
-          "comment": "type expression (ALL_CAPS or CamelCase with optional params)",
-          "match": "\\b([A-Z][A-Z0-9_]*)(?=\\s*(?:\\(|\\[|\\s*$|[,\\]\\}//]))",
-          "captures": {
-            "1": { "name": "support.type.stm" }
-          }
-        },
-        {
-          "comment": "namespace-qualified path: ns::schema.field",
-          "match": "([A-Za-z_][\\w]*)(::)",
-          "captures": {
-            "1": { "name": "variable.other.field.stm" },
-            "2": { "name": "punctuation.separator.namespace.stm" }
-          }
-        },
-        {
-          "comment": "dotted path: a.b.c — colour uniformly",
-          "match": "[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)+",
-          "name": "variable.other.field.stm"
-        },
-        {
-          "comment": "plain identifier",
-          "name": "variable.other.field.stm",
-          "match": "\\b[A-Za-z_][\\w]*\\b"
-        }
-      ]
-    },
-
-    "operator": {
-      "patterns": [
-        { "name": "keyword.operator.fat-arrow.stm", "match": "=>" },
-        { "name": "keyword.operator.arrow.stm", "match": "->" },
-        { "name": "punctuation.separator.namespace.stm", "match": "::" },
-        { "name": "keyword.operator.comparison.stm", "match": "==|!=|<=|>=|<|>" },
-        { "name": "keyword.operator.arithmetic.stm", "match": "[+\\-*/]" },
-        { "name": "keyword.operator.pipe.stm", "match": "\\|" },
-        { "name": "keyword.operator.spread.stm", "match": "\\.\\.\\." },
-        { "name": "keyword.operator.assignment.stm", "match": "(?<![=!<>])=(?!=)" },
-        { "name": "keyword.operator.transform.stm", "match": "(?<![:\\s]):(?!:)" },
-        { "name": "punctuation.separator.accessor.stm", "match": "\\." },
-        { "name": "punctuation.separator.comma.stm", "match": "," }
-      ]
-    },
-
-    "punctuation-brace": {
-      "patterns": [
-        { "name": "punctuation.section.block.stm", "match": "[{}]" },
-        { "name": "punctuation.section.parens.stm", "match": "[()]" },
-        { "name": "punctuation.definition.array.stm", "match": "\\[\\]" }
-      ]
-    },
-
     "punctuation-comma": {
       "name": "punctuation.separator.comma.stm",
       "match": ","
-    },
-
-    "block-body": {
-      "comment": "Generic block { ... } with nested patterns",
-      "begin": "(\\{)",
-      "end": "(\\})",
-      "beginCaptures": {
-        "1": { "name": "punctuation.section.block.stm" }
-      },
-      "endCaptures": {
-        "1": { "name": "punctuation.section.block.stm" }
-      },
-      "patterns": [
-        { "include": "#comment" },
-        { "include": "#note-block" },
-        { "include": "#selection-criteria" },
-        { "include": "#annotation" },
-        { "include": "#tag-list" },
-        { "include": "#map-entry" },
-        { "include": "#transform-expression" },
-        { "include": "#spread" },
-        { "include": "#field-declaration" },
-        { "include": "#string-double" },
-        { "include": "#number" },
-        { "include": "#boolean" },
-        { "include": "#null" },
-        { "include": "#wildcard" },
-        { "include": "#constant-other-reference" },
-        { "include": "#operator" },
-        { "include": "#punctuation-brace" },
-        { "include": "#punctuation-comma" },
-        { "include": "#identifier" }
-      ]
     },
 
     "expression": {
@@ -610,20 +678,22 @@
       "patterns": [
         { "include": "#comment" },
         { "include": "#note-block" },
-        { "include": "#annotation" },
-        { "include": "#tag-list" },
         { "include": "#spread" },
+        { "include": "#string-triple-double" },
         { "include": "#string-double" },
-        { "include": "#string-multiline" },
+        { "include": "#string-single" },
+        { "include": "#backtick-identifier" },
         { "include": "#number" },
         { "include": "#boolean" },
         { "include": "#null" },
         { "include": "#wildcard" },
         { "include": "#constant-other-reference" },
-        { "include": "#operator" },
-        { "include": "#punctuation-brace" },
+        { "include": "#operator-arrow" },
+        { "include": "#operator-pipe" },
+        { "include": "#array-indicator" },
         { "include": "#punctuation-comma" },
-        { "include": "#identifier" }
+        { "include": "#dotted-path" },
+        { "include": "#identifier-plain" }
       ]
     }
   }

@@ -1,6 +1,6 @@
 ---
 id: stm-89tv
-status: open
+status: closed
 deps: [stm-xdhb]
 links: []
 created: 2026-03-18T10:46:34Z
