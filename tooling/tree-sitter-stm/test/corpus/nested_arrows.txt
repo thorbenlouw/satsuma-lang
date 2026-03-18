@@ -171,7 +171,8 @@ mapping {
           (field_path
             (identifier)))
         (metadata_block
-          (tag_token))
+          (tag_token
+            (identifier)))
         (map_arrow
           (src_path
             (field_path

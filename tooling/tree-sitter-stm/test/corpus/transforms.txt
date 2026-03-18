@@ -66,7 +66,8 @@ transform 'coerce' {
       (pipe_step
         (token_call
           (identifier)
-          (nl_string))))))
+          (nl_string)
+          (identifier))))))
 
 ================================================================================
 Multi-step pipe chain with token calls

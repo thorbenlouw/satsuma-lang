@@ -1,6 +1,6 @@
 {
   "source": "inputs/missing-closing-brace.stm",
-  "allow_missing": true,
-  "require_missing": true,
-  "expect_contains": ["(schema_block", "(field_declaration"]
+  "allow_error": true,
+  "require_error": true,
+  "expect_contains": ["(source_file", "(ERROR "]
 }

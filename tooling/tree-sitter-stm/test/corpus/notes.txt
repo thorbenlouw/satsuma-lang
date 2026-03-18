@@ -47,8 +47,7 @@ schema customers {}
     (nl_string))
   (schema_block
     (block_label
-      (identifier))
-    (schema_body)))
+      (identifier))))
 
 ================================================================================
 Note after schema
@@ -65,8 +64,7 @@ note {
 (source_file
   (schema_block
     (block_label
-      (identifier))
-    (schema_body))
+      (identifier)))
   (note_block
     (nl_string)))
 
@@ -114,7 +112,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (note_block
         (nl_string))
       (field_decl
@@ -122,7 +121,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token))))))
+          (tag_token
+            (identifier)))))))
 
 ================================================================================
 Note NL string with escaped quote

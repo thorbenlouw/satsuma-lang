@@ -89,11 +89,8 @@
 ; ── Metadata tokens ───────────────────────────────────────────────────────────
 (tag_token) @attribute
 
-(kv_key) @attribute
-
 (key_value_pair
-  (kv_key) @attribute
-  (_kv_value))
+  (kv_key) @attribute)
 
 ; Enum/slice body identifiers (the enum values themselves)
 (enum_body (identifier) @constant)

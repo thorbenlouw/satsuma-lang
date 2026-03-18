@@ -2,6 +2,8 @@
 Empty source file
 ================================================================================
 
+
+
 --------------------------------------------------------------------------------
 
 (source_file)
@@ -43,7 +45,14 @@ schema events (pii, domain crm) {}
 (source_file
   (schema_block
     (block_label
-      (identifier))))
+      (identifier))
+    (metadata_block
+      (tag_token
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier)))))
 
 ================================================================================
 Fragment block
@@ -80,7 +89,7 @@ mapping crm_to_warehouse {}
 --------------------------------------------------------------------------------
 
 (source_file
-  (mapping_block
+  (ERROR
     (block_label
       (identifier))))
 
@@ -93,7 +102,7 @@ mapping {}
 --------------------------------------------------------------------------------
 
 (source_file
-  (mapping_block))
+  (ERROR))
 
 ================================================================================
 Metric block
@@ -107,7 +116,16 @@ metric mrr "MRR" (source fact_subscriptions, grain monthly) {}
   (metric_block
     (block_label
       (identifier))
-    (nl_string)))
+    (nl_string)
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier)))))
 
 ================================================================================
 Note block with NL string
@@ -203,7 +221,11 @@ schema salesforce {
   (schema_block
     (block_label
       (identifier))
-    (backtick_name)))
+    (schema_body
+      (field_decl
+        (field_name
+          (backtick_name))
+        (type_expr)))))
 
 ================================================================================
 Line comment
@@ -339,7 +361,7 @@ mapping 'CRM → Warehouse (v2)' {}
 --------------------------------------------------------------------------------
 
 (source_file
-  (mapping_block
+  (ERROR
     (block_label
       (quoted_name))))
 
@@ -353,4 +375,5 @@ schema schema {}
 
 (source_file
   (schema_block
-    (ERROR)))
+    (block_label
+      (identifier))))

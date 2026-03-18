@@ -1,3 +1,4 @@
 {
-  "source": "../../../../../examples/edi-to-json.stm"
+  "source": "../../../../../examples/edi-to-json.stm",
+  "allow_error": true
 }

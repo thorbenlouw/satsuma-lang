@@ -9,8 +9,7 @@ fragment 'audit fields' {}
 (source_file
   (fragment_block
     (block_label
-      (quoted_name))
-    (schema_body)))
+      (quoted_name))))
 
 ================================================================================
 Fragment with fields
@@ -79,7 +78,8 @@ fragment audit_fields {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (field_decl
         (field_name
           (identifier))
@@ -122,7 +122,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (fragment_spread
         (block_label
           (quoted_name))))))
@@ -149,7 +150,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (fragment_spread
         (block_label
           (identifier)))
