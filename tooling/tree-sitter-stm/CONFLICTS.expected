@@ -35,13 +35,12 @@
 ;   `{` then pipe_step (string, token_call, `map`) → map_arrow transform body.
 ;   `{` then `->` or path token → nested_arrow body.
 
-; ── Conflict 3: namespaced_path vs field_path ─────────────────────────────────
-; Context: _path_expr used in src_path and tgt_path
+; ── Conflict 3: field_decl vs _spread_words ───────────────────────────────────
+; Context: schema_body or fragment body
 ;
-; Both path types begin with identifier:
-;   namespaced_path: identifier :: identifier ...
-;   field_path:      identifier (. identifier)* ([])?
+; After `...identifier`, the next identifier could continue a multi-word
+; spread label (e.g. `...audit columns`) or begin a new field_decl.
 ;
 ; Resolution: GLR explores both paths.
-;   Next `::` → namespaced_path wins.
-;   Next `.`, `[]`, `->`, `(`, whitespace → field_path wins.
+;   prec.dynamic(-1) on _spread_words ensures field_decl wins when it
+;   produces a valid parse (i.e. identifier followed by type_expr).

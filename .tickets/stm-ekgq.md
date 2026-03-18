@@ -1,6 +1,6 @@
 ---
 id: stm-ekgq
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T20:08:02Z
@@ -21,3 +21,9 @@ Feature 06 Kimball examples use 'ref dim_X on field' inside schema metadata to d
 - If yes: grammar extended to support 'ref <ident> on <ident>' form
 - If no: feature 06 examples normalized to use existing metadata forms
 
+
+## Notes
+
+**2026-03-18T21:19:24Z**
+
+Decision: No parser change needed now. The ref...on construct only appears in features/06 design documents, not in canonical examples/. The spec defines ref as 'ref addresses.id' (dotted path FK reference), which the parser already supports. The 'ref dim on field' form is a Kimball-specific sugar proposed for a future feature — defer grammar extension until that feature is spec'd and prioritized. Feature 06 examples are design artifacts and don't need to parse with the current grammar.
