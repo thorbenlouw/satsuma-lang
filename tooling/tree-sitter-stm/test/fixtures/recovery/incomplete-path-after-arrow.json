@@ -1,4 +1,6 @@
 {
   "source": "inputs/incomplete-path-after-arrow.stm",
-  "expect_contains": ["(raw_map_line", "(arrow"]
+  "allow_error": true,
+  "require_error": true,
+  "expect_contains": ["(source_file", "(ERROR "]
 }

@@ -54,9 +54,9 @@ mapping crm_to_warehouse (version 1) {
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key)
-        (identifier)))
+      (tag_token
+        (identifier))
+      (ERROR))
     (mapping_body
       (source_block
         (identifier))

@@ -93,7 +93,7 @@ module.exports = grammar({
         $.block_label,
         optional($.metadata_block),
         "{",
-        $.schema_body,
+        optional($.schema_body),
         "}",
       ),
 
@@ -104,7 +104,7 @@ module.exports = grammar({
         "fragment",
         $.block_label,
         "{",
-        $.schema_body,
+        optional($.schema_body),
         "}",
       ),
 
@@ -170,7 +170,7 @@ module.exports = grammar({
         optional($.nl_string),
         $.metadata_block,
         "{",
-        $.metric_body,
+        optional($.metric_body),
         "}",
       ),
 
@@ -186,7 +186,7 @@ module.exports = grammar({
 
     // ── Schema body ───────────────────────────────────────────────────────
 
-    schema_body: ($) => repeat($._schema_body_item),
+    schema_body: ($) => repeat1($._schema_body_item),
 
     _schema_body_item: ($) =>
       choice(
@@ -199,7 +199,7 @@ module.exports = grammar({
 
     // ── Metric body ───────────────────────────────────────────────────────
 
-    metric_body: ($) => repeat($._metric_body_item),
+    metric_body: ($) => repeat1($._metric_body_item),
 
     _metric_body_item: ($) => choice($.field_decl, $.note_block),
 
@@ -230,7 +230,7 @@ module.exports = grammar({
         $.block_label,
         optional($.metadata_block),
         "{",
-        $.schema_body,
+        optional($.schema_body),
         "}",
       ),
 
@@ -240,7 +240,7 @@ module.exports = grammar({
         $.block_label,
         optional($.metadata_block),
         "{",
-        $.schema_body,
+        optional($.schema_body),
         "}",
       ),
 
@@ -310,37 +310,37 @@ module.exports = grammar({
 
     // ns::identifier or ns::identifier.field... (optional [])
     namespaced_path: ($) =>
-      seq(
+      prec.left(seq(
         $.identifier,
         "::",
         $.identifier,
         repeat(seq(".", $._path_seg)),
         optional("[]"),
-      ),
+      )),
 
     // `BacktickRef` or `BacktickRef`.field... (optional [])
     backtick_path: ($) =>
-      seq(
+      prec.left(seq(
         $.backtick_name,
         repeat(seq(".", $._path_seg)),
         optional("[]"),
-      ),
+      )),
 
     // .field or .field.nested... (no [] suffix for relative paths)
     relative_field_path: ($) =>
-      seq(
+      prec.left(seq(
         ".",
         $._path_seg,
         repeat(seq(".", $._path_seg)),
-      ),
+      )),
 
     // field or field.nested... (optional [])
     field_path: ($) =>
-      seq(
+      prec.left(seq(
         $.identifier,
         repeat(seq(".", $._path_seg)),
         optional("[]"),
-      ),
+      )),
 
     _path_seg: ($) => choice($.identifier, $.backtick_name),
 
@@ -367,7 +367,8 @@ module.exports = grammar({
 
     // ── Map literal ───────────────────────────────────────────────────────
 
-    map_literal: ($) => seq("map", "{", repeat($.map_entry), "}"),
+    map_literal: ($) =>
+      seq("map", "{", repeat(seq($.map_entry, optional(","))), "}"),
 
     map_entry: ($) => seq($.map_key, ":", $.map_value),
 
@@ -439,7 +440,7 @@ module.exports = grammar({
 
     key_value_pair: ($) => seq($.kv_key, $._kv_value),
 
-    kv_key: (_) => /[a-zA-Z_][a-zA-Z0-9_-]*/,
+    kv_key: ($) => $.identifier,
 
     _kv_value: ($) =>
       choice(

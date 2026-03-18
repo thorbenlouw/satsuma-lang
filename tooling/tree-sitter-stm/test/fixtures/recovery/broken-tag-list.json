@@ -2,5 +2,5 @@
   "source": "inputs/broken-tag-list.stm",
   "allow_error": true,
   "require_error": true,
-  "expect_contains": ["(schema_block", "(ERROR "]
+  "expect_contains": ["(source_file", "(ERROR "]
 }

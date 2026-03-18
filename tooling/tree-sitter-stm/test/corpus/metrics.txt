@@ -12,9 +12,9 @@ metric mrr (source fact_subscriptions) {}
       (identifier))
     (metadata_block
       (key_value_pair
-        (kv_key)
-        (identifier)))
-    (metric_body)))
+        (kv_key
+          (identifier))
+        (identifier)))))
 
 ================================================================================
 Metric with display name
@@ -31,9 +31,9 @@ metric mrr "MRR" (source fact_subscriptions) {}
     (nl_string)
     (metadata_block
       (key_value_pair
-        (kv_key)
-        (identifier)))
-    (metric_body)))
+        (kv_key
+          (identifier))
+        (identifier)))))
 
 ================================================================================
 Metric with source, grain, and filter metadata
@@ -54,15 +54,17 @@ metric monthly_recurring_revenue "MRR" (
     (nl_string)
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (key_value_pair
-        (kv_key)
-        (nl_string)))
-    (metric_body)))
+        (kv_key
+          (identifier))
+        (nl_string)))))
 
 ================================================================================
 Metric with slice body
@@ -83,16 +85,17 @@ metric mrr "MRR" (
     (nl_string)
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (slice_body
         (identifier)
         (identifier)
-        (identifier)))
-    (metric_body)))
+        (identifier)))))
 
 ================================================================================
 Metric with field declarations in body
@@ -110,10 +113,12 @@ metric mrr (source fact_subscriptions, grain monthly) {
       (identifier))
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier)))
     (metric_body
       (field_decl
@@ -137,7 +142,8 @@ metric mrr (source fact_subscriptions) {
       (identifier))
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier)))
     (metric_body
       (field_decl
@@ -146,7 +152,8 @@ metric mrr (source fact_subscriptions) {
         (type_expr)
         (metadata_block
           (key_value_pair
-            (kv_key)
+            (kv_key
+              (identifier))
             (identifier)))))))
 
 ================================================================================
@@ -172,17 +179,20 @@ metric monthly_recurring_revenue "MRR" (
     (nl_string)
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (slice_body
         (identifier)
         (identifier)
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (nl_string)))
     (metric_body
       (field_decl
@@ -191,7 +201,8 @@ metric monthly_recurring_revenue "MRR" (
         (type_expr)
         (metadata_block
           (key_value_pair
-            (kv_key)
+            (kv_key
+              (identifier))
             (identifier))))
       (field_decl
         (field_name
@@ -199,7 +210,8 @@ metric monthly_recurring_revenue "MRR" (
         (type_expr)
         (metadata_block
           (key_value_pair
-            (kv_key)
+            (kv_key
+              (identifier))
             (identifier)))))))
 
 ================================================================================
@@ -221,10 +233,12 @@ metric mrr (source fact_subscriptions, grain monthly) {
       (identifier))
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier)))
     (metric_body
       (field_decl
@@ -259,7 +273,8 @@ metric mrr (source subscriptions) {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (field_decl
         (field_name
           (identifier))
@@ -269,7 +284,8 @@ metric mrr (source subscriptions) {
       (identifier))
     (metadata_block
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
         (identifier)))
     (metric_body
       (field_decl
@@ -278,5 +294,6 @@ metric mrr (source subscriptions) {
         (type_expr)
         (metadata_block
           (key_value_pair
-            (kv_key)
+            (kv_key
+              (identifier))
             (identifier)))))))

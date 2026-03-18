@@ -16,6 +16,22 @@ FIXTURE_ROOT = PACKAGE_ROOT / "test" / "fixtures"
 EXAMPLES_ROOT = REPO_ROOT / "examples"
 
 
+def _has_c_compiler() -> bool:
+    try:
+        result = subprocess.run(
+            ["cc", "-x", "c", "-o", "/dev/null", "-"],
+            input=b"int main(){return 0;}",
+            capture_output=True,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+USE_WASM = not _has_c_compiler()
+
+
 @dataclass(frozen=True)
 class Fixture:
     name: str
@@ -86,22 +102,28 @@ def parse_fixture(fixture: Fixture) -> tuple[bool, str]:
     if not fixture.source.exists():
         return False, f"source file does not exist: {fixture.source}"
 
+    cmd = [
+        str(TREE_SITTER_LOCAL),
+        "parse",
+        "-p",
+        str(PACKAGE_ROOT),
+        str(fixture.source),
+    ]
+    if USE_WASM:
+        cmd.append("--wasm")
     result = subprocess.run(
-        [
-            str(TREE_SITTER_LOCAL),
-            "parse",
-            "-p",
-            str(PACKAGE_ROOT),
-            str(fixture.source),
-        ],
+        cmd,
         cwd=PACKAGE_ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
 
-    tree = result.stdout.strip()
-    diagnostics = result.stderr.strip()
+    # Filter out wrapper script info lines (Using ROOT_DIR, Using XDG_CACHE_HOME)
+    tree_lines = [l for l in result.stdout.splitlines() if not l.startswith("Using ")]
+    tree = "\n".join(tree_lines).strip()
+    diag_lines = [l for l in result.stderr.splitlines() if not l.startswith("Using ")]
+    diagnostics = "\n".join(diag_lines).strip()
     combined = "\n".join(part for part in (tree, diagnostics) if part)
 
     if result.returncode != 0 and not (fixture.allow_error or fixture.allow_missing):

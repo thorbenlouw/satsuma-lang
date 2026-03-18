@@ -9,8 +9,7 @@ schema customers {}
 (source_file
   (schema_block
     (block_label
-      (identifier))
-    (schema_body)))
+      (identifier))))
 
 ================================================================================
 Schema with metadata and empty body
@@ -25,8 +24,8 @@ schema customers (pii) {}
     (block_label
       (identifier))
     (metadata_block
-      (tag_token))
-    (schema_body)))
+      (tag_token
+        (identifier)))))
 
 ================================================================================
 Single field declaration
@@ -68,7 +67,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token))))))
+          (tag_token
+            (identifier)))))))
 
 ================================================================================
 Field with parameterized type
@@ -133,25 +133,29 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (field_decl
         (field_name
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (field_decl
         (field_name
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (field_decl
         (field_name
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token))))))
+          (tag_token
+            (identifier)))))))
 
 ================================================================================
 Backtick field name
@@ -193,8 +197,10 @@ schema salesforce {
           (backtick_name))
         (type_expr)
         (metadata_block
-          (tag_token)
-          (tag_token))))))
+          (tag_token
+            (identifier))
+          (tag_token
+            (identifier)))))))
 
 ================================================================================
 Field with enum metadata
@@ -270,7 +276,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (fragment_spread
         (block_label
           (identifier))))))
@@ -297,7 +304,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (fragment_spread
         (block_label
           (quoted_name)))
@@ -329,7 +337,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (note_block
         (nl_string))
       (field_decl
@@ -337,7 +346,8 @@ schema customers {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token))))))
+          (tag_token
+            (identifier)))))))
 
 ================================================================================
 Nested record block
@@ -363,7 +373,8 @@ schema order {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (record_block
         (block_label
           (identifier))
@@ -377,7 +388,8 @@ schema order {
               (identifier))
             (type_expr)
             (metadata_block
-              (tag_token))))))))
+              (tag_token
+                (identifier)))))))))
 
 ================================================================================
 Nested list block
@@ -404,7 +416,8 @@ schema order {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (list_block
         (block_label
           (identifier))
@@ -414,7 +427,8 @@ schema order {
               (identifier))
             (type_expr)
             (metadata_block
-              (tag_token)))
+              (tag_token
+                (identifier))))
           (field_decl
             (field_name
               (identifier))
@@ -451,7 +465,8 @@ schema shipment {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (record_block
         (block_label
           (identifier))
@@ -490,12 +505,15 @@ schema events (pii, domain crm, format parquet) {
     (block_label
       (identifier))
     (metadata_block
-      (tag_token)
-      (key_value_pair
-        (kv_key)
+      (tag_token
         (identifier))
       (key_value_pair
-        (kv_key)
+        (kv_key
+          (identifier))
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
         (identifier)))
     (schema_body
       (field_decl
@@ -503,7 +521,8 @@ schema events (pii, domain crm, format parquet) {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (field_decl
         (field_name
           (identifier))
@@ -538,4 +557,5 @@ schema 'order-headers-parquet' {
           (identifier))
         (type_expr)
         (metadata_block
-          (tag_token))))))
+          (tag_token
+            (identifier)))))))

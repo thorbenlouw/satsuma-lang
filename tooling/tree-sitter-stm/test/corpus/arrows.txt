@@ -76,7 +76,8 @@ mapping {
           (field_path
             (identifier)))
         (metadata_block
-          (tag_token))))))
+          (tag_token
+            (identifier)))))))
 
 ================================================================================
 Arrow with note metadata
@@ -266,7 +267,7 @@ mapping {
         (identifier))
       (target_block
         (identifier))
-      (nested_arrow
+      (map_arrow
         (src_path
           (field_path
             (identifier)))
@@ -331,7 +332,8 @@ mapping {
           (field_path
             (identifier)))
         (metadata_block
-          (tag_token)))
+          (tag_token
+            (identifier))))
       (computed_arrow
         (tgt_path
           (field_path

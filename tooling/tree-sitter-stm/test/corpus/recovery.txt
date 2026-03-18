@@ -15,7 +15,8 @@ schema customers {
       (field_decl
         (field_name
           (identifier))
-        (type_expr)))))
+        (type_expr)))
+    (MISSING "}")))
 
 ================================================================================
 Arrow with missing target path
@@ -36,7 +37,13 @@ mapping {
         (identifier))
       (target_block
         (identifier))
-      (ERROR))))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (MISSING identifier)))))))
 
 ================================================================================
 Unclosed metadata block
@@ -52,7 +59,17 @@ schema customers (pii, required {
   (schema_block
     (block_label
       (identifier))
-    (ERROR)))
+    (metadata_block
+      (tag_token
+        (identifier))
+      (tag_token
+        (identifier))
+      (MISSING ")"))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
 
 ================================================================================
 Malformed map entry missing value
@@ -88,10 +105,14 @@ mapping {
         (pipe_chain
           (pipe_step
             (map_literal
-              (ERROR)
               (map_entry
                 (map_key
                   (identifier))
+                (map_value
+                  (identifier)))
+              (map_entry
+                (map_key
+                  (MISSING identifier))
                 (map_value
                   (nl_string))))))))))
 
@@ -104,7 +125,9 @@ metric mrr {}
 --------------------------------------------------------------------------------
 
 (source_file
-  (ERROR))
+  (ERROR
+    (block_label
+      (identifier))))
 
 ================================================================================
 Schema with keyword as block label
@@ -118,4 +141,10 @@ schema schema {
 
 (source_file
   (schema_block
-    (ERROR)))
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))

@@ -20,34 +20,31 @@ DEFAULT_GLOBS = (
     "features/02-multi-schema/examples/**/*.stm",
 )
 OWNER_TYPES = {
-    "workspace_block",
-    "integration_block",
     "schema_block",
     "fragment_block",
-    "field_declaration",
-    "group_declaration",
-    "array_group_declaration",
-    "map_block",
+    "field_decl",
+    "record_block",
+    "list_block",
+    "mapping_block",
     "map_entry",
-    "computed_map_entry",
-    "block_map_entry",
-    "nested_map",
+    "computed_arrow",
+    "nested_arrow",
+    "map_arrow",
+    "metric_block",
 }
 BLOCK_TYPES = (
-    "namespace_decl",
-    "workspace_block",
-    "import_declaration",
-    "integration_block",
+    "import_decl",
     "schema_block",
     "fragment_block",
-    "map_block",
+    "mapping_block",
+    "metric_block",
+    "transform_block",
 )
 PATH_TYPES = (
     "namespaced_path",
-    "namespaced_field_path",
     "relative_field_path",
     "field_path",
-    "path_reference",
+    "backtick_path",
 )
 NODE_RE = re.compile(
     r"""
@@ -167,28 +164,27 @@ def clean_scalar(text: str | None) -> str | None:
     return stripped
 
 
+def _find_child_by_type(node: Node, child_type: str) -> Node | None:
+    for child in node.children:
+        if child.type == child_type:
+            return child
+    return None
+
+
 def block_label(node: Node, source: SourceText) -> str:
-    if node.type == "namespace_decl":
-        return f'namespace "{clean_scalar(node_text(field_child(node, "name"), source))}"'
-    if node.type == "workspace_block":
-        return f'workspace "{clean_scalar(node_text(field_child(node, "name"), source))}"'
-    if node.type == "integration_block":
-        return f'integration "{clean_scalar(node_text(field_child(node, "name"), source))}"'
-    if node.type == "schema_block":
-        keyword = node_text(field_child(node, "keyword"), source) or "schema"
-        name = clean_scalar(node_text(field_child(node, "name"), source)) or "<anonymous>"
+    if node.type in ("schema_block", "fragment_block", "metric_block", "transform_block"):
+        keyword = node.type.replace("_block", "")
+        label_node = _find_child_by_type(node, "block_label")
+        name = clean_scalar(node_text(label_node, source)) if label_node else "<anonymous>"
         return f"{keyword} {name}"
-    if node.type == "fragment_block":
-        name = clean_scalar(node_text(field_child(node, "name"), source)) or "<anonymous>"
-        return f"fragment {name}"
-    if node.type == "map_block":
-        source_name = clean_scalar(node_text(field_child(node, "source"), source))
-        target_name = clean_scalar(node_text(field_child(node, "target"), source))
-        if source_name and target_name:
-            return f"mapping {source_name} -> {target_name}"
+    if node.type == "mapping_block":
+        label_node = _find_child_by_type(node, "block_label")
+        if label_node:
+            return f"mapping {clean_scalar(node_text(label_node, source))}"
         return "mapping"
-    if node.type == "import_declaration":
-        path = clean_scalar(node_text(field_child(node, "path"), source))
+    if node.type == "import_decl":
+        path_node = _find_child_by_type(node, "import_path")
+        path = clean_scalar(node_text(path_node, source)) if path_node else None
         return f'import "{path}"' if path else "import"
     return node.type
 
@@ -210,45 +206,38 @@ def summarize_block(node: Node, source: SourceText) -> dict[str, t.Any]:
         "type": node.type,
         "label": block_label(node, source),
     }
-
-    if node.type == "schema_block":
-        summary["description"] = clean_scalar(node_text(field_child(node, "description"), source))
-    elif node.type == "fragment_block":
-        summary["description"] = clean_scalar(node_text(field_child(node, "description"), source))
-    elif node.type == "workspace_block":
-        summary["entries"] = sum(1 for child in node.children if child.type == "workspace_body" for grand in child.children if grand.type == "workspace_entry")
-    elif node.type == "map_block":
-        summary["options"] = sum(1 for child in iter_nodes(node) if child.type == "map_option")
-
     return summary
 
 
 def summarize_schema_member(node: Node, source: SourceText) -> dict[str, t.Any]:
-    item = {
+    item: dict[str, t.Any] = {
         "kind": node.type,
-        "name": clean_scalar(node_text(field_child(node, "name"), source)),
         "owner": owner_summary(node, source),
     }
-    if node.type == "field_declaration":
-        item["type"] = clean_scalar(node_text(field_child(node, "type"), source))
-        item["annotations"] = [
-            clean_scalar(node_text(field_child(annotation, "name"), source))
-            for annotation in field_children(node, "annotation")
-        ]
-        item["has_note"] = field_child(node, "note") is not None
+    if node.type == "field_decl":
+        name_node = _find_child_by_type(node, "field_name")
+        item["name"] = clean_scalar(node_text(name_node, source)) if name_node else None
+        type_node = _find_child_by_type(node, "type_expr")
+        item["type"] = clean_scalar(node_text(type_node, source)) if type_node else None
+        meta_node = _find_child_by_type(node, "metadata_block")
+        item["has_metadata"] = meta_node is not None
+    elif node.type in ("record_block", "list_block"):
+        label_node = _find_child_by_type(node, "block_label")
+        item["name"] = clean_scalar(node_text(label_node, source)) if label_node else None
     return item
 
 
 def summarize_map_item(node: Node, source: SourceText) -> dict[str, t.Any]:
-    item = {
+    item: dict[str, t.Any] = {
         "kind": node.type,
         "owner": owner_summary(node, source),
-        "text": clean_scalar(node_text(node, source)),
     }
-    if node.type != "nested_map":
-        item["source"] = clean_scalar(node_text(field_child(node, "source"), source))
-        item["target"] = clean_scalar(node_text(field_child(node, "target"), source))
-    item["has_transform"] = ":" in (node_text(node, source) or "")
+    src_node = _find_child_by_type(node, "src_path")
+    tgt_node = _find_child_by_type(node, "tgt_path")
+    item["source"] = clean_scalar(node_text(src_node, source)) if src_node else None
+    item["target"] = clean_scalar(node_text(tgt_node, source)) if tgt_node else None
+    pipe_node = _find_child_by_type(node, "pipe_chain")
+    item["has_transform"] = pipe_node is not None
     return item
 
 
@@ -256,8 +245,8 @@ def comment_severity(node_type: str) -> str:
     return {
         "warning_comment": "warning",
         "question_comment": "question",
-        "info_comment": "info",
-    }[node_type]
+        "comment": "info",
+    }.get(node_type, "info")
 
 
 def summarize_tree(source: SourceText, root: Node) -> dict[str, t.Any]:
@@ -271,12 +260,12 @@ def summarize_tree(source: SourceText, root: Node) -> dict[str, t.Any]:
         "schema_members": [
             summarize_schema_member(node, source)
             for node in nodes
-            if node.type in {"field_declaration", "group_declaration", "array_group_declaration"}
+            if node.type in {"field_decl", "record_block", "list_block"}
         ],
         "map_items": [
             summarize_map_item(node, source)
             for node in nodes
-            if node.type in {"map_entry", "computed_map_entry", "block_map_entry", "nested_map"}
+            if node.type in {"map_arrow", "computed_arrow", "nested_arrow"}
         ],
         "paths": [
             {
@@ -293,11 +282,11 @@ def summarize_tree(source: SourceText, root: Node) -> dict[str, t.Any]:
                 "owner": owner_summary(node, source),
             }
             for node in nodes
-            if node.type in {"warning_comment", "question_comment", "info_comment"}
+            if node.type in {"warning_comment", "question_comment", "comment"}
         ],
         "notes": [
             {
-                "text": clean_scalar(node_text(field_child(node, "value"), source)),
+                "text": clean_scalar(node_text(node, source)),
                 "owner": owner_summary(node, source),
             }
             for node in nodes
@@ -305,11 +294,11 @@ def summarize_tree(source: SourceText, root: Node) -> dict[str, t.Any]:
         ],
         "annotations": [
             {
-                "name": clean_scalar(node_text(field_child(node, "name"), source)),
+                "name": clean_scalar(node_text(node, source)),
                 "owner": owner_summary(node, source),
             }
             for node in nodes
-            if node.type == "annotation"
+            if node.type == "metadata_block"
         ],
     }
 
@@ -336,15 +325,34 @@ def resolve_input_path(path: Path) -> Path:
     return cwd_candidate
 
 
+def _has_c_compiler() -> bool:
+    try:
+        result = subprocess.run(
+            ["cc", "-x", "c", "-o", "/dev/null", "-"],
+            input=b"int main(){return 0;}",
+            capture_output=True,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+_USE_WASM = not _has_c_compiler()
+
+
 def parse_with_cli(path: Path) -> Node:
+    cmd = [
+        str(TREE_SITTER_LOCAL),
+        "parse",
+        "-p",
+        str(ROOT / "tooling" / "tree-sitter-stm"),
+        str(path),
+    ]
+    if _USE_WASM:
+        cmd.append("--wasm")
     result = subprocess.run(
-        [
-            str(TREE_SITTER_LOCAL),
-            "parse",
-            "-p",
-            str(ROOT / "tooling" / "tree-sitter-stm"),
-            str(path),
-        ],
+        cmd,
         check=False,
         capture_output=True,
         text=True,
@@ -352,11 +360,15 @@ def parse_with_cli(path: Path) -> Node:
     # tree-sitter returns non-zero when ERROR/MISSING nodes are present, but
     # still emits a valid (recovered) tree on stdout.  Only raise when there
     # is no usable tree output at all.
-    if not result.stdout.strip():
+    # Filter out wrapper script info lines
+    stdout = "\n".join(
+        l for l in result.stdout.splitlines() if not l.startswith("Using ")
+    )
+    if not stdout.strip():
         raise RuntimeError(
             result.stderr.strip() or "tree-sitter parse produced no output"
         )
-    return parse_tree_dump(result.stdout)
+    return parse_tree_dump(stdout)
 
 
 def build_summary(path: Path) -> dict[str, t.Any]:

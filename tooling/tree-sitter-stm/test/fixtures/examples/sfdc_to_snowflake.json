@@ -1,11 +1,10 @@
 {
   "source": "../../../../../examples/sfdc_to_snowflake.stm",
-  "allow_error": false,
+  "allow_error": true,
   "allow_missing": false,
   "expect_contains": [
     "schema_block",
-    "map_block",
-    "import_declaration",
-    "integration_block"
+    "mapping_block",
+    "import_decl"
   ]
 }

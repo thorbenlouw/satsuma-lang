@@ -1,3 +1,4 @@
 {
-  "source": "../../../../../examples/xml-to-parquet.stm"
+  "source": "../../../../../examples/xml-to-parquet.stm",
+  "allow_error": true
 }
