@@ -20,7 +20,14 @@ const pkg = JSON.parse(
 program
   .name("stm")
   .description("STM CLI — LLM context slicer for STM workspaces")
-  .version(pkg.version);
+  .version(pkg.version)
+  .showHelpAfterError(true);
+
+// Unhandled rejections go to stderr with exit 2
+process.on("unhandledRejection", (err) => {
+  console.error(`Unhandled error: ${err?.message ?? err}`);
+  process.exit(2);
+});
 
 // Register commands — each module calls program.command(...)
 const commands = [

@@ -1,6 +1,6 @@
 ---
 id: stm-mzwe
-status: open
+status: closed
 deps: [stm-8bc6, stm-yoy2, stm-egiw, stm-qjye, stm-migi, stm-26ez, stm-jq1y, stm-ykb5, stm-7vwu]
 links: []
 created: 2026-03-18T12:18:41Z
