@@ -33,7 +33,7 @@ const commands = [
   "commands/lineage.js",
   "commands/where-used.js",
   "commands/warnings.js",
-  // "commands/context.js",
+  "commands/context.js",
 ];
 
 for (const cmd of commands) {
