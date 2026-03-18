@@ -1,0 +1,1130 @@
+[
+  {
+    "type": "backtick_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "block_label",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "quoted_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "computed_arrow",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "pipe_chain",
+          "named": true
+        },
+        {
+          "type": "tgt_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "enum_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "field_decl",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "field_name",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "type_expr",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "field_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "field_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fragment_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "schema_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fragment_spread",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "import_decl",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "import_name",
+          "named": true
+        },
+        {
+          "type": "import_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "import_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "quoted_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "import_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "key_value_pair",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "kv_key",
+          "named": true
+        },
+        {
+          "type": "multiline_string",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "kv_key",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "list_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "schema_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "map_arrow",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "pipe_chain",
+          "named": true
+        },
+        {
+          "type": "src_path",
+          "named": true
+        },
+        {
+          "type": "tgt_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "map_entry",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "map_key",
+          "named": true
+        },
+        {
+          "type": "map_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "map_key",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "map_literal",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "map_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "map_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "multiline_string",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "mapping_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "mapping_body",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "mapping_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "computed_arrow",
+          "named": true
+        },
+        {
+          "type": "map_arrow",
+          "named": true
+        },
+        {
+          "type": "nested_arrow",
+          "named": true
+        },
+        {
+          "type": "note_block",
+          "named": true
+        },
+        {
+          "type": "source_block",
+          "named": true
+        },
+        {
+          "type": "target_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metadata_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "enum_body",
+          "named": true
+        },
+        {
+          "type": "key_value_pair",
+          "named": true
+        },
+        {
+          "type": "note_tag",
+          "named": true
+        },
+        {
+          "type": "slice_body",
+          "named": true
+        },
+        {
+          "type": "tag_token",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metric_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "metric_body",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metric_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "field_decl",
+          "named": true
+        },
+        {
+          "type": "note_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "namespaced_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nested_arrow",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "computed_arrow",
+          "named": true
+        },
+        {
+          "type": "map_arrow",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "nested_arrow",
+          "named": true
+        },
+        {
+          "type": "src_path",
+          "named": true
+        },
+        {
+          "type": "tgt_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "note_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "multiline_string",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "note_tag",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "multiline_string",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pipe_chain",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "pipe_step",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pipe_step",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "fragment_spread",
+          "named": true
+        },
+        {
+          "type": "map_literal",
+          "named": true
+        },
+        {
+          "type": "multiline_string",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        },
+        {
+          "type": "token_call",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "schema_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "relative_field_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "schema_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "schema_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "schema_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "field_decl",
+          "named": true
+        },
+        {
+          "type": "fragment_spread",
+          "named": true
+        },
+        {
+          "type": "list_block",
+          "named": true
+        },
+        {
+          "type": "note_block",
+          "named": true
+        },
+        {
+          "type": "record_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "slice_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "source_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "source_file",
+    "named": true,
+    "root": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "fragment_block",
+          "named": true
+        },
+        {
+          "type": "import_decl",
+          "named": true
+        },
+        {
+          "type": "mapping_block",
+          "named": true
+        },
+        {
+          "type": "metric_block",
+          "named": true
+        },
+        {
+          "type": "note_block",
+          "named": true
+        },
+        {
+          "type": "schema_block",
+          "named": true
+        },
+        {
+          "type": "transform_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "src_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_path",
+          "named": true
+        },
+        {
+          "type": "field_path",
+          "named": true
+        },
+        {
+          "type": "namespaced_path",
+          "named": true
+        },
+        {
+          "type": "relative_field_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tag_token",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "target_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tgt_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_path",
+          "named": true
+        },
+        {
+          "type": "field_path",
+          "named": true
+        },
+        {
+          "type": "namespaced_path",
+          "named": true
+        },
+        {
+          "type": "relative_field_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "token_call",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "nl_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "transform_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_label",
+          "named": true
+        },
+        {
+          "type": "pipe_chain",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "(",
+    "named": false
+  },
+  {
+    "type": ")",
+    "named": false
+  },
+  {
+    "type": ",",
+    "named": false
+  },
+  {
+    "type": "->",
+    "named": false
+  },
+  {
+    "type": ".",
+    "named": false
+  },
+  {
+    "type": "...",
+    "named": false
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": "::",
+    "named": false
+  },
+  {
+    "type": "[]",
+    "named": false
+  },
+  {
+    "type": "_",
+    "named": false
+  },
+  {
+    "type": "backtick_name",
+    "named": true
+  },
+  {
+    "type": "comment",
+    "named": true,
+    "extra": true
+  },
+  {
+    "type": "default",
+    "named": false
+  },
+  {
+    "type": "enum",
+    "named": false
+  },
+  {
+    "type": "fragment",
+    "named": false
+  },
+  {
+    "type": "from",
+    "named": false
+  },
+  {
+    "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "import",
+    "named": false
+  },
+  {
+    "type": "list",
+    "named": false
+  },
+  {
+    "type": "map",
+    "named": false
+  },
+  {
+    "type": "mapping",
+    "named": false
+  },
+  {
+    "type": "metric",
+    "named": false
+  },
+  {
+    "type": "multiline_string",
+    "named": true
+  },
+  {
+    "type": "nl_string",
+    "named": true
+  },
+  {
+    "type": "note",
+    "named": false
+  },
+  {
+    "type": "null",
+    "named": false
+  },
+  {
+    "type": "question_comment",
+    "named": true,
+    "extra": true
+  },
+  {
+    "type": "quoted_name",
+    "named": true
+  },
+  {
+    "type": "record",
+    "named": false
+  },
+  {
+    "type": "schema",
+    "named": false
+  },
+  {
+    "type": "slice",
+    "named": false
+  },
+  {
+    "type": "source",
+    "named": false
+  },
+  {
+    "type": "target",
+    "named": false
+  },
+  {
+    "type": "transform",
+    "named": false
+  },
+  {
+    "type": "type_expr",
+    "named": true
+  },
+  {
+    "type": "warning_comment",
+    "named": true,
+    "extra": true
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "|",
+    "named": false
+  },
+  {
+    "type": "}",
+    "named": false
+  }
+]
