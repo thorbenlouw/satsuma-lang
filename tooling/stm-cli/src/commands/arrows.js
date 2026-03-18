@@ -109,12 +109,19 @@ export function register(program) {
 }
 
 /**
- * Find all arrow records involving a given field name (as source or target).
+ * Find all unique arrow records involving a given field name (as source or target).
+ * Deduplicates since an arrow with source === target gets indexed under both.
  */
 function findFieldArrows(fieldName, index) {
+  if (!index.fieldArrows.has(fieldName)) return [];
+  const seen = new Set();
   const results = [];
-  if (index.fieldArrows.has(fieldName)) {
-    results.push(...index.fieldArrows.get(fieldName));
+  for (const arrow of index.fieldArrows.get(fieldName)) {
+    const key = `${arrow.mapping}:${arrow.source}:${arrow.target}:${arrow.line}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      results.push(arrow);
+    }
   }
   return results;
 }

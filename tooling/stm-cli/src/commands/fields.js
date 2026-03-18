@@ -63,8 +63,8 @@ export function register(program) {
           process.exit(1);
         }
 
-        const mappedTargets = getMappedTargets(opts.unmappedBy, index);
-        fields = fields.filter((f) => !mappedTargets.has(f.name));
+        const mappedFields = getMappedFieldNames(opts.unmappedBy, schemaName, index);
+        fields = fields.filter((f) => !mappedFields.has(f.name));
       }
 
       if (opts.json) {
@@ -88,18 +88,25 @@ export function register(program) {
 }
 
 /**
- * Get the set of target field names covered by arrows in a mapping.
+ * Get the set of field names from the given schema that participate in arrows
+ * for the specified mapping — checking both source and target sides.
  */
-function getMappedTargets(mappingName, index) {
-  const targets = new Set();
+function getMappedFieldNames(mappingName, schemaName, index) {
+  const mapped = new Set();
+  const mapping = index.mappings.get(mappingName);
+  if (!mapping) return mapped;
+
+  const isSource = mapping.sources.includes(schemaName);
+  const isTarget = mapping.targets.includes(schemaName);
+
   for (const [_key, arrows] of index.fieldArrows) {
     for (const arrow of arrows) {
-      if (arrow.mapping === mappingName && arrow.target) {
-        targets.add(arrow.target);
-      }
+      if (arrow.mapping !== mappingName) continue;
+      if (isSource && arrow.source) mapped.add(arrow.source);
+      if (isTarget && arrow.target) mapped.add(arrow.target);
     }
   }
-  return targets;
+  return mapped;
 }
 
 /**
