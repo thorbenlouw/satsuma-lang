@@ -1,0 +1,293 @@
+================================================================================
+Map literal with identifier keys
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  channel -> channel_name {
+    map {
+      R: "retail"
+      W: "wholesale"
+      D: "direct"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Map literal with string keys
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  raw_status -> status {
+    map {
+      "active":    "A"
+      "inactive":  "I"
+      "deleted":   "D"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key
+                  (nl_string))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (nl_string))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (nl_string))
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Map literal with wildcard key
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  status -> status_norm {
+    map {
+      A: "active"
+      _: "unknown"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Map literal with null key
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  code -> label {
+    map {
+      null:    "missing"
+      default: "standard"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Map literal with comparison keys
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  score -> tier {
+    map {
+      >= 900: "platinum"
+      >= 700: "gold"
+      >= 500: "silver"
+      _:      "bronze"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Map in pipe chain
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  raw -> normalized {
+    trim | map { A: "active", I: "inactive", _: "other" } | uppercase
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string)))))
+          (pipe_step
+            (token_call
+              (identifier))))))))

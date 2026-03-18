@@ -1,0 +1,206 @@
+================================================================================
+Arrow with NL string transform
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  PHONE_NBR -> phone {
+    "Normalize to E.164 format, strip non-digit characters"
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Arrow with multi-step pipe chain
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  EMAIL_ADDR -> email { trim | lowercase | validate_email }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (token_call
+              (identifier))))))))
+
+================================================================================
+Arrow with fragment spread in transform
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  amount -> amount_normalized { ...'currency-normalize' }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (fragment_spread
+              (block_label
+                (quoted_name)))))))))
+
+================================================================================
+Arrow with map literal inline
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  status -> status_code { map { A: "active", I: "inactive", _: "unknown" } }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Computed arrow with NL string
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> full_name { "Concatenate first_name and last_name with a space" }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Arrow with multiline transform
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  description -> description_clean {
+    """
+    Strip HTML tags, normalize whitespace,
+    truncate to 500 chars.
+    """
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (multiline_string)))))))

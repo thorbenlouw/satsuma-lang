@@ -1,0 +1,208 @@
+================================================================================
+Simple nested arrow
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  line_items[] -> order_lines[] {
+    sku      -> product_code
+    quantity -> qty
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))))))
+
+================================================================================
+Nested arrow with transforms inside
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  line_items[] -> lines[] {
+    sku       -> product_code { trim | uppercase }
+    unit_cost -> amount       { round(2) }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))
+            (pipe_step
+              (token_call
+                (identifier)))))
+        (map_arrow
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))))))))
+
+================================================================================
+Nested arrow with computed arrow inside
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  items[] -> lines[] {
+    sku   -> sku
+    -> line_key { uuid_v4 }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))
+        (computed_arrow
+          (tgt_path
+            (field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))))))))
+
+================================================================================
+Nested arrow with metadata
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  line_items[] -> order_lines[] (required) {
+    sku -> product_code
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (tag_token))
+        (map_arrow
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))))))
+
+================================================================================
+Empty nested arrow body
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  items[] -> lines[] {}
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))

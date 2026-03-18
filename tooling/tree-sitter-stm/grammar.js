@@ -2,19 +2,31 @@
 // @ts-check
 
 /**
- * STM v2 Grammar — Phases 5 and 7: Transform and metric blocks
+ * STM v2 Grammar — Phase 6: Mapping blocks
  *
- * Phase 5 — transform blocks:
- *   transform_block body is a pipe_chain (shared with arrow transform bodies in
- *   Phase 6). pipe_chain is a "|"-separated sequence of pipe_steps, where each
- *   step is an nl_string, multiline_string, token_call, map_literal, or
- *   fragment_spread.
+ * Adds structured parsing for mapping blocks:
+ *   mapping <name>? (<metadata>)? {
+ *     source { <source_entries> }
+ *     target { <target_entry> }
+ *     <note_block | arrow_decl>*
+ *   }
  *
- * Phase 7 — metric blocks:
- *   metric_block body (metric_body) is a sequence of field_decl and note_block.
- *   Reuses the field_decl production from Phase 4. metric_block is distinct from
- *   schema_block by keyword, required metadata_block, optional display name, and
- *   metric_body node type.
+ * Arrow types:
+ *   map_arrow      src_path -> tgt_path (metadata)? transform_body?
+ *   computed_arrow -> tgt_path (metadata)? transform_body?
+ *   nested_arrow   src_path -> tgt_path (metadata)? { arrow_decl* }
+ *
+ * Path types: field_path (a.b.c), relative_field_path (.field),
+ *   backtick_path (`Foo`.bar), namespaced_path (ns::schema.field),
+ *   all with optional [] suffix.
+ *
+ * Pipe_chain from Phase 5 is reused for transform bodies.
+ *
+ * GLR conflicts declared:
+ *   - map_arrow vs nested_arrow (both start with src_path -> tgt_path;
+ *     distinguished by body: pipe_chain vs arrow_decl list)
+ *   - namespaced_path vs field_path (both start with identifier; ::  vs
+ *     . or -> determines which)
  */
 
 module.exports = grammar({
@@ -30,11 +42,15 @@ module.exports = grammar({
   word: ($) => $.identifier,
 
   conflicts: ($) => [
-    // key_value_pair vs tag_token in metadata (Phase 3)
+    // Metadata: key_value_pair vs tag_token (Phase 3)
     [$.key_value_pair, $.tag_token],
-    // token_call vs fragment_spread both valid as first pipe_step; parser needs
-    // one more token to distinguish identifier (token_call) from ... (spread).
-    // Actually these start differently so no conflict — kept for clarity.
+    // Arrow body: map_arrow body may be { pipe_chain } or absent;
+    // nested_arrow body is always { arrow_decl* }. Both start with the same
+    // src_path -> tgt_path prefix. GLR resolves on body content.
+    [$.map_arrow, $.nested_arrow],
+    // Path: namespaced_path and field_path both start with identifier.
+    // Resolved on next token: :: vs . or ->
+    [$.namespaced_path, $.field_path],
   ],
 
   rules: {
@@ -92,8 +108,7 @@ module.exports = grammar({
         "}",
       ),
 
-    // ── Transform block (Phase 5) ─────────────────────────────────────────
-    // Body is a pipe_chain (shared with arrow transform bodies in Phase 6).
+    // ── Transform block ───────────────────────────────────────────────────
 
     transform_block: ($) =>
       seq(
@@ -104,26 +119,56 @@ module.exports = grammar({
         "}",
       ),
 
-    // ── Mapping block (body still opaque — Phase 6) ───────────────────────
+    // ── Mapping block (Phase 6) ───────────────────────────────────────────
 
     mapping_block: ($) =>
       seq(
         "mapping",
         optional($.block_label),
         optional($.metadata_block),
-        $._opaque_braces,
+        "{",
+        $.mapping_body,
+        "}",
       ),
 
-    // ── Metric block (Phase 7) ────────────────────────────────────────────
-    // Distinct from schema_block: starts with "metric" keyword, requires
-    // metadata_block (not optional), optional display name, and uses metric_body.
+    mapping_body: ($) =>
+      seq(
+        $.source_block,
+        $.target_block,
+        repeat($._mapping_body_item),
+      ),
+
+    _mapping_body_item: ($) => choice($.note_block, $._arrow_decl),
+
+    // source { ref1, ref2 } or source { ref1 ref2 } or source { "join ..." }
+    source_block: ($) =>
+      seq(
+        "source",
+        "{",
+        commaSep1($._source_entry),
+        optional(","),
+        "}",
+      ),
+
+    _source_entry: ($) => choice($.backtick_name, $.identifier, $.nl_string),
+
+    // target { ref }
+    target_block: ($) =>
+      seq(
+        "target",
+        "{",
+        $._source_entry,
+        "}",
+      ),
+
+    // ── Metric block ──────────────────────────────────────────────────────
 
     metric_block: ($) =>
       seq(
         "metric",
         $.block_label,
-        optional($.nl_string), // optional display label e.g. "MRR"
-        $.metadata_block, // required: (source X, grain monthly, ...)
+        optional($.nl_string),
+        $.metadata_block,
         "{",
         $.metric_body,
         "}",
@@ -139,7 +184,7 @@ module.exports = grammar({
         "}",
       ),
 
-    // ── Schema body (schema_block, fragment_block, record_block, list_block)
+    // ── Schema body ───────────────────────────────────────────────────────
 
     schema_body: ($) => repeat($._schema_body_item),
 
@@ -152,7 +197,7 @@ module.exports = grammar({
         $.note_block,
       ),
 
-    // ── Metric body (metric_block) ────────────────────────────────────────
+    // ── Metric body ───────────────────────────────────────────────────────
 
     metric_body: ($) => repeat($._metric_body_item),
 
@@ -203,8 +248,103 @@ module.exports = grammar({
 
     fragment_spread: ($) => seq("...", $.block_label),
 
-    // ── Pipe chain (shared: transform body + arrow transform bodies) ──────
-    // pipe_chain ::= pipe_step ("|" pipe_step)*
+    // ── Arrow declarations ────────────────────────────────────────────────
+    // Three arrow types share src_path -> tgt_path prefix.
+    // computed_arrow omits src_path (starts directly with ->).
+    // nested_arrow body contains arrow_decls; map_arrow body contains pipe_chain.
+
+    _arrow_decl: ($) =>
+      choice(
+        $.computed_arrow,
+        $.nested_arrow,
+        $.map_arrow,
+      ),
+
+    // -> tgt_path (metadata)? { pipe_chain }?
+    computed_arrow: ($) =>
+      seq(
+        "->",
+        $.tgt_path,
+        optional($.metadata_block),
+        optional($._arrow_transform_body),
+      ),
+
+    // src_path -> tgt_path (metadata)? { arrow_decl* }
+    nested_arrow: ($) =>
+      seq(
+        $.src_path,
+        "->",
+        $.tgt_path,
+        optional($.metadata_block),
+        "{",
+        repeat($._arrow_decl),
+        "}",
+      ),
+
+    // src_path -> tgt_path (metadata)? { pipe_chain }?
+    map_arrow: ($) =>
+      seq(
+        $.src_path,
+        "->",
+        $.tgt_path,
+        optional($.metadata_block),
+        optional($._arrow_transform_body),
+      ),
+
+    // { pipe_chain } transform body on an arrow
+    _arrow_transform_body: ($) => seq("{", $.pipe_chain, "}"),
+
+    // ── Arrow paths ───────────────────────────────────────────────────────
+    // src_path and tgt_path are named wrapper nodes.
+
+    src_path: ($) => $._path_expr,
+    tgt_path: ($) => $._path_expr,
+
+    _path_expr: ($) =>
+      choice(
+        $.namespaced_path,
+        $.backtick_path,
+        $.relative_field_path,
+        $.field_path,
+      ),
+
+    // ns::identifier or ns::identifier.field... (optional [])
+    namespaced_path: ($) =>
+      seq(
+        $.identifier,
+        "::",
+        $.identifier,
+        repeat(seq(".", $._path_seg)),
+        optional("[]"),
+      ),
+
+    // `BacktickRef` or `BacktickRef`.field... (optional [])
+    backtick_path: ($) =>
+      seq(
+        $.backtick_name,
+        repeat(seq(".", $._path_seg)),
+        optional("[]"),
+      ),
+
+    // .field or .field.nested... (no [] suffix for relative paths)
+    relative_field_path: ($) =>
+      seq(
+        ".",
+        $._path_seg,
+        repeat(seq(".", $._path_seg)),
+      ),
+
+    // field or field.nested... (optional [])
+    field_path: ($) =>
+      seq(
+        $.identifier,
+        repeat(seq(".", $._path_seg)),
+        optional("[]"),
+      ),
+
+    _path_seg: ($) => choice($.identifier, $.backtick_name),
+
+    // ── Pipe chain (transform, arrow bodies) ─────────────────────────────
 
     pipe_chain: ($) => seq($.pipe_step, repeat(seq("|", $.pipe_step))),
 
@@ -217,8 +357,6 @@ module.exports = grammar({
         $.fragment_spread,
       ),
 
-    // token_call: identifier with optional argument list.
-    // Examples: trim, lowercase, validate_email, coalesce("", null)
     token_call: ($) =>
       seq(
         $.identifier,
@@ -228,22 +366,17 @@ module.exports = grammar({
     _tc_arg: ($) => choice($.nl_string, $.identifier, /[0-9]+/),
 
     // ── Map literal ───────────────────────────────────────────────────────
-    // map { K: V, K: V, _: "fallback" }
-    // "map" is a reserved keyword so map_literal is unambiguous.
 
-    map_literal: ($) =>
-      seq("map", "{", repeat($.map_entry), "}"),
+    map_literal: ($) => seq("map", "{", repeat($.map_entry), "}"),
 
-    map_entry: ($) =>
-      seq($.map_key, ":", $.map_value),
+    map_entry: ($) => seq($.map_key, ":", $.map_value),
 
-    // Map keys: token, string, number, wildcard, null, default, or comparison.
     map_key: ($) =>
       choice(
         $.identifier,
         $.nl_string,
         /[0-9]+/,
-        "_", // wildcard catch-all
+        "_",
         "null",
         "default",
         seq($._comparison_op, $._map_scalar),
@@ -254,7 +387,6 @@ module.exports = grammar({
 
     _map_scalar: ($) => choice($.identifier, /[0-9]+/, $.nl_string),
 
-    // Map values: string, identifier, number, or null.
     map_value: ($) =>
       choice($.nl_string, $.multiline_string, $.identifier, /[0-9]+/, "null"),
 
@@ -318,34 +450,6 @@ module.exports = grammar({
       ),
 
     tag_token: ($) => $.identifier,
-
-    // ── Opaque balanced delimiters (mapping body — Phase 6) ───────────────
-
-    _opaque_parens: ($) => seq("(", repeat($._paren_item), ")"),
-
-    _paren_item: ($) =>
-      choice(
-        $._opaque_parens,
-        $._opaque_braces,
-        $.multiline_string,
-        $.nl_string,
-        $.quoted_name,
-        $.backtick_name,
-        /[^(){}"'`]+/,
-      ),
-
-    _opaque_braces: ($) => seq("{", repeat($._brace_item), "}"),
-
-    _brace_item: ($) =>
-      choice(
-        $._opaque_braces,
-        $._opaque_parens,
-        $.multiline_string,
-        $.nl_string,
-        $.quoted_name,
-        $.backtick_name,
-        /[^(){}"'`]+/,
-      ),
 
     // ── Lexical tokens ────────────────────────────────────────────────────
 
