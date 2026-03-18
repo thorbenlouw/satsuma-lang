@@ -585,3 +585,169 @@ describe("stm meta", () => {
     assert.match(stderr, /not found/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// stm match-fields
+// ---------------------------------------------------------------------------
+describe("stm match-fields", () => {
+  const DB = resolve(EXAMPLES, "db-to-db.stm");
+
+  it("matches fields by normalized name (FirstName = first_name)", async () => {
+    const { stdout, code } = await run(
+      "match-fields", "--source", "legacy_sqlserver", "--target", "postgres_db", DB,
+    );
+    assert.equal(code, 0);
+    // NOTES matches notes (both normalize to "notes")
+    assert.match(stdout, /NOTES.*notes/i);
+  });
+
+  it("shows source-only and target-only lists", async () => {
+    const { stdout, code } = await run(
+      "match-fields", "--source", "legacy_sqlserver", "--target", "postgres_db", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /Source-only/);
+    assert.match(stdout, /Target-only/);
+  });
+
+  it("--matched-only shows only matches", async () => {
+    const { stdout, code } = await run(
+      "match-fields", "--source", "legacy_sqlserver", "--target", "postgres_db",
+      "--matched-only", DB,
+    );
+    assert.equal(code, 0);
+    assert.ok(!stdout.includes("Source-only"));
+  });
+
+  it("--unmatched-only shows only unmatched", async () => {
+    const { stdout, code } = await run(
+      "match-fields", "--source", "legacy_sqlserver", "--target", "postgres_db",
+      "--unmatched-only", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /Source-only/);
+    assert.match(stdout, /Target-only/);
+    assert.ok(!stdout.includes("<->"));
+  });
+
+  it("--json returns structured output", async () => {
+    const { stdout, code } = await run(
+      "match-fields", "--source", "legacy_sqlserver", "--target", "postgres_db",
+      "--json", DB,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.matched));
+    assert.ok(Array.isArray(data.sourceOnly));
+    assert.ok(Array.isArray(data.targetOnly));
+  });
+
+  it("exits 1 for unknown schema", async () => {
+    const { stderr, code } = await run(
+      "match-fields", "--source", "nonexistent", "--target", "postgres_db", DB,
+    );
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm validate
+// ---------------------------------------------------------------------------
+describe("stm validate", () => {
+  it("valid workspace produces 0 errors", async () => {
+    const { stdout, code } = await run(
+      "validate", resolve(EXAMPLES, "common.stm"),
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /no issues/i);
+  });
+
+  it("parse errors report correct structure", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("validate", DB);
+    assert.equal(code, 2);
+    assert.match(stdout, /error/);
+    assert.match(stdout, /\d+ error/);
+  });
+
+  it("--quiet returns exit code only", async () => {
+    const { stdout, code } = await run(
+      "validate", "--quiet", resolve(EXAMPLES, "common.stm"),
+    );
+    assert.equal(code, 0);
+    assert.equal(stdout.trim(), "");
+  });
+
+  it("--json produces valid JSON", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("validate", "--json", DB);
+    assert.equal(code, 2);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.ok(data.length > 0);
+    assert.ok(data[0].file);
+    assert.ok(data[0].line);
+    assert.ok(data[0].severity);
+    assert.ok(data[0].rule);
+    assert.ok(data[0].message);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm diff
+// ---------------------------------------------------------------------------
+describe("stm diff", () => {
+  it("identical files produce empty diff", async () => {
+    const f = resolve(EXAMPLES, "common.stm");
+    const { stdout, code } = await run("diff", f, f);
+    assert.equal(code, 0);
+    assert.match(stdout, /no structural differences/i);
+  });
+
+  it("different files show changes", async () => {
+    const { stdout, code } = await run(
+      "diff",
+      resolve(EXAMPLES, "db-to-db.stm"),
+      resolve(EXAMPLES, "common.stm"),
+    );
+    assert.equal(code, 0);
+    // Should show added/removed schemas
+    assert.ok(stdout.includes("+") || stdout.includes("-"));
+  });
+
+  it("--json produces valid delta object", async () => {
+    const { stdout, code } = await run(
+      "diff", "--json",
+      resolve(EXAMPLES, "db-to-db.stm"),
+      resolve(EXAMPLES, "common.stm"),
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.schemas);
+    assert.ok(data.mappings);
+    assert.ok(Array.isArray(data.schemas.added));
+    assert.ok(Array.isArray(data.schemas.removed));
+  });
+
+  it("--stat shows summary counts", async () => {
+    const { stdout, code } = await run(
+      "diff", "--stat",
+      resolve(EXAMPLES, "db-to-db.stm"),
+      resolve(EXAMPLES, "common.stm"),
+    );
+    assert.equal(code, 0);
+    // Should show counts like "2 schemas added"
+    assert.match(stdout, /\d+/);
+  });
+
+  it("--names-only lists changed block names", async () => {
+    const { stdout, code } = await run(
+      "diff", "--names-only",
+      resolve(EXAMPLES, "db-to-db.stm"),
+      resolve(EXAMPLES, "common.stm"),
+    );
+    assert.equal(code, 0);
+    assert.ok(stdout.trim().length > 0);
+  });
+});

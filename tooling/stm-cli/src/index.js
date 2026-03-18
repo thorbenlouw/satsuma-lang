@@ -45,6 +45,9 @@ const commands = [
   "commands/fields.js",
   "commands/nl.js",
   "commands/meta.js",
+  "commands/match-fields.js",
+  "commands/validate.js",
+  "commands/diff.js",
 ];
 
 for (const cmd of commands) {
