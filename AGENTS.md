@@ -90,6 +90,9 @@ Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
 
 ## Testing Expectations
 
+- Every task must end with the relevant automated tests run locally and passing before picking up the next task.
+- Each task implementation must expand or update test coverage to match the behavior it adds or changes.
+- Keep the repo commit hooks installed and passing; they should block commits when required validation or tests fail.
 - New parser or tooling work must include targeted tests and fixture coverage.
 - Valid syntax changes should add or update canonical examples or corpus fixtures.
 - Invalid or recovery-sensitive behavior should include malformed input tests.
@@ -182,6 +185,7 @@ Expected workflow:
 - Read the relevant feature doc in `features/` before implementing planned work.
 - Inspect existing examples and docs before making syntax or tooling assumptions.
 - Keep changes scoped and directly tied to the current task.
+- Do not pick up the next task until the current task's relevant automated tests have been run locally and are passing.
 - If a requested change would contradict the spec, stop and raise the conflict clearly.
 - For work in `tooling/tree-sitter-stm/`, treat corpus tests in `tooling/tree-sitter-stm/test/corpus/` and generated parser artifacts as part of the implementation surface.
 - When changing the tree-sitter grammar, update the grammar source, regenerate parser outputs as needed, and verify the corpus fixtures.
