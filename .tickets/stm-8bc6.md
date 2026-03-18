@@ -1,6 +1,6 @@
 ---
 id: stm-8bc6
-status: open
+status: closed
 deps: [stm-fjji]
 links: []
 created: 2026-03-18T12:18:41Z
