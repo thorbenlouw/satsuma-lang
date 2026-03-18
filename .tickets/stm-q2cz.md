@@ -1,6 +1,6 @@
 ---
 id: stm-q2cz
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T18:56:24Z
