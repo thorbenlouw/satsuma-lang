@@ -1,87 +1,87 @@
+// RetailCo International — Data Vault 2.0
+// Sales Fact Information Mart
+
 import { link_sale, sat_sale_detail } from "link-sale.stm"
 import { hub_customer } from "hub-customer.stm"
 import { hub_product } from "hub-product.stm"
 import { hub_store } from "hub-store.stm"
 
-integration "RetailCo_Mart_Sales" {
-  cardinality N:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [datavault, mart, sales, kimball]
+note {
+  """
+  # Sales Fact Mart
 
-  note '''
-    # Sales Fact Mart
+  A denormalized transaction-grain fact table built from the raw
+  Data Vault. Joins the sale link, its transaction satellite, and
+  hub business keys into a single analytics-ready fact.
 
-    A denormalized transaction-grain fact table built from the raw
-    Data Vault. Joins the sale link, its transaction satellite, and
-    hub business keys into a single analytics-ready fact.
+  ## Cross-layer imports
+  All source entities are imported directly from the vault layer
+  STM files. The schema blocks defined there (`link_sale`,
+  `sat_sale_detail`, `hub_customer`, etc.) appear here on the
+  source side of mappings.
 
-    ## Cross-layer imports
-    All source entities are imported directly from the vault layer
-    STM files. The `target` blocks defined there (`link_sale`,
-    `sat_sale_detail`, `hub_customer`, etc.) appear here on the
-    source side of mappings.
+  Inferred fields (hash keys, load dates, record source) are
+  resolved automatically from the `link`, `satellite`, and
+  `hub` metadata on the imported blocks — no redeclaration needed.
 
-    Inferred fields (hash keys, load dates, record source) are
-    resolved automatically from the `@link`, `@satellite`, and
-    `@hub` tags on the imported blocks — no redeclaration needed.
-
-    ## Why not just query the vault directly?
-    The vault is optimized for loading and auditability, not for
-    analytical queries. A 3-way link join across 4 satellites with
-    current-version filters is expensive and complex. The mart
-    pre-computes this join and presents a simple star schema that
-    any BI tool can consume.
-  '''
+  ## Why not just query the vault directly?
+  The vault is optimized for loading and auditability, not for
+  analytical queries. A 3-way link join across 4 satellites with
+  current-version filters is expensive and complex. The mart
+  pre-computes this join and presents a simple star schema that
+  any BI tool can consume.
+  """
 }
 
 
-// ============================================================
-// Target: Sales Fact (Kimball-style mart)
-// ============================================================
+// --- Target: Sales Fact (Kimball-style mart) ---
 
-target mart_fact_sales "Denormalized transaction fact for analytics" @fact {
-  @grain(transaction_id, line_number)
-  @ref mart_customer_360 on customer_id
-  @ref dim_product on sku
-  @ref dim_store on store_id
-  @ref dim_date on transaction_date
-
+schema mart_fact_sales (
+  fact,
+  grain {transaction_id, line_number},
+  ref mart_customer_360 on customer_id,
+  ref dim_product on sku,
+  ref dim_store on store_id,
+  ref dim_date on transaction_date,
+  note "Denormalized transaction fact for analytics"
+) {
   // Keys
-  transaction_id       VARCHAR(30)     [required]
-  line_number          INTEGER         [required]
-  transaction_date     DATE            [required]
+  transaction_id       VARCHAR(30)     (required)
+  line_number          INTEGER         (required)
+  transaction_date     DATE            (required)
   transaction_time     TIME
 
   // Dimension references (resolved from hub business keys)
   customer_id          VARCHAR(50)                         //! NULL for anonymous POS purchases
-  sku                  VARCHAR(18)     [required]
+  sku                  VARCHAR(18)     (required)
   store_id             VARCHAR(20)                         // NULL for online
 
   // Degenerate dimensions
-  channel              VARCHAR(20)     [required]          @degenerate
-  payment_type         VARCHAR(20)                         @degenerate
-  source_system        VARCHAR(100)                        @degenerate
+  channel              VARCHAR(20)     (required, degenerate)
+  payment_type         VARCHAR(20)     (degenerate)
+  source_system        VARCHAR(100)    (degenerate)
 
   // Measures
-  quantity             INTEGER         [required]          @measure(additive)
-  unit_price           DECIMAL(10,2)   [required]          @measure(non_additive)
-  gross_amount         DECIMAL(12,2)   [required]          @measure(additive)
-  discount_amount      DECIMAL(10,2)   [default: 0]       @measure(additive)
-  tax_amount           DECIMAL(10,2)   [default: 0]       @measure(additive)
-  net_amount           DECIMAL(12,2)   [required]          @measure(additive)
+  quantity             INTEGER         (required, measure additive)
+  unit_price           DECIMAL(10,2)   (required, measure non_additive)
+  gross_amount         DECIMAL(12,2)   (required, measure additive)
+  discount_amount      DECIMAL(10,2)   (default 0, measure additive)
+  tax_amount           DECIMAL(10,2)   (default 0, measure additive)
+  net_amount           DECIMAL(12,2)   (required, measure additive)
 
   // Vault lineage
   link_sale_hk         CHAR(64)                            // Traceability back to vault
 }
 
 
-// ============================================================
-// Mapping
-// ============================================================
+// --- Mapping ---
 
-mapping link_sale -> mart_fact_sales {
-  note '''
+mapping 'vault to mart_fact_sales' {
+  source { `link_sale`, `sat_sale_detail`, `hub_customer`, `hub_product`, `hub_store` }
+  target { `mart_fact_sales` }
+
+  note {
+    """
     Core join pattern:
     ```
     link_sale
@@ -93,7 +93,8 @@ mapping link_sale -> mart_fact_sales {
     ```
     Customer and store are LEFT JOINs because anonymous POS purchases
     have no customer, and online orders have no store.
-  '''
+    """
+  }
 
   // Transaction identity (from the link)
   transaction_id -> transaction_id

@@ -1,25 +1,23 @@
-// ============================================================
 // RetailCo International — Data Vault 2.0
 // Common: shared transforms, fragments, and lookups
-// ============================================================
 
 // Reusable transform for Data Vault hash key generation.
 // Used by every hub, link, and satellite for consistent hashing.
-transform dv_hash(*fields) {
-  : nl("Upper-case all values, replace NULLs with the string 'N/A',
-        concatenate with pipe delimiter, compute MD5 hex digest.
-        Example: MD5(UPPER(field1) || '|' || UPPER(field2))")
+transform dv_hash {
+  "Upper-case all values, replace NULLs with the string 'N/A',
+   concatenate with pipe delimiter, compute MD5 hex digest.
+   Example: MD5(UPPER(field1) || '|' || UPPER(field2))"
 }
 
-lookup store_region_map "Store ID to operating region" {
-  store_id      VARCHAR(20)   [pk]
+schema store_region_map (note "Store ID to operating region") {
+  store_id      VARCHAR(20)   (pk)
   region        VARCHAR(50)
   country       CHAR(2)
   timezone      VARCHAR(40)
 }
 
-lookup product_hierarchy "Merchandise hierarchy levels" {
-  category_code   VARCHAR(20)   [pk]
+schema product_hierarchy (note "Merchandise hierarchy levels") {
+  category_code   VARCHAR(20)   (pk)
   department      VARCHAR(100)
   category        VARCHAR(100)
   subcategory     VARCHAR(100)

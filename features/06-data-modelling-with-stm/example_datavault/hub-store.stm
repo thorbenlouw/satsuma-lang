@@ -1,31 +1,27 @@
+// RetailCo International — Data Vault 2.0
+// Store Hub + Satellite
+
 import { store_region_map } from "common.stm"
 
-integration "RetailCo_Hub_Store" {
-  cardinality 1:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [datavault, hub, satellite, store]
+note {
+  """
+  # Store Hub + Satellite
 
-  note '''
-    # Store Hub + Satellite
+  Physical store locations. Single source from the POS reference
+  data, enriched with region mapping from a lookup.
 
-    Physical store locations. Single source from the POS reference
-    data, enriched with region mapping from a lookup.
-
-    One satellite tracks all store attributes. SCD Type 2 captures
-    renovations, format changes, and management changes over time.
-  '''
+  One satellite tracks all store attributes. SCD Type 2 captures
+  renovations, format changes, and management changes over time.
+  """
 }
 
 
-// ============================================================
-// Source
-// ============================================================
+// --- Source ---
 
-source pos_oracle "Oracle Retail POS — store reference" {
-  STORE_ID            VARCHAR(20)     [pk]
-  STORE_NAME          VARCHAR(100)    [required]
-  STORE_FORMAT        VARCHAR(20)     [enum: {FULL, OUTLET, EXPRESS, FLAGSHIP}]
+schema pos_oracle (note "Oracle Retail POS — store reference") {
+  STORE_ID            VARCHAR(20)     (pk)
+  STORE_NAME          VARCHAR(100)    (required)
+  STORE_FORMAT        VARCHAR(20)     (enum {FULL, OUTLET, EXPRESS, FLAGSHIP})
   ADDR_LINE_1         VARCHAR(200)
   ADDR_LINE_2         VARCHAR(200)
   CITY                VARCHAR(100)
@@ -36,29 +32,29 @@ source pos_oracle "Oracle Retail POS — store reference" {
   STORE_MGR           VARCHAR(100)
   SQFT                INTEGER
   OPEN_DATE           DATE
-  STATUS              CHAR(1)         [enum: {A, T, C}]
+  STATUS              CHAR(1)         (enum {A, T, C})
 }
 
 
-// ============================================================
-// Hub: Store
-// ============================================================
+// --- Hub: Store ---
 
-target hub_store "Store business key registry" @hub {
-  @business_key(store_id)
-
-  store_id             VARCHAR(20)     [required]
+schema hub_store (
+  hub,
+  business_key store_id,
+  note "Store business key registry"
+) {
+  store_id             VARCHAR(20)     (required)
 }
 
 
-// ============================================================
-// Satellite: Store Details
-// ============================================================
+// --- Satellite: Store Details ---
 
-target sat_store_details "Store attributes and location" @satellite {
-  @parent(hub_store)
-  @scd(type: 2)
-
+schema sat_store_details (
+  satellite,
+  parent hub_store,
+  scd 2,
+  note "Store attributes and location"
+) {
   store_name           VARCHAR(100)
   format               VARCHAR(20)
   address_line_1       VARCHAR(200)
@@ -77,42 +73,46 @@ target sat_store_details "Store attributes and location" @satellite {
 }
 
 
-// ============================================================
-// Mappings
-// ============================================================
+// --- Mappings ---
 
 // Hub
-mapping pos_oracle -> hub_store {
+mapping 'pos to hub_store' {
+  source { `pos_oracle` }
+  target { `hub_store` }
+
   STORE_ID -> store_id
-  => record_source                       : "POS"
+  -> record_source { "POS" }
 }
 
 // Store details satellite
-mapping pos_oracle -> sat_store_details {
-  STORE_NAME -> store_name               : trim | title_case
+mapping 'pos to sat_store_details' {
+  source { `pos_oracle` }
+  target { `sat_store_details` }
 
-  STORE_FORMAT -> format
-    : map { FULL: "full_line", OUTLET: "outlet", EXPRESS: "express", FLAGSHIP: "flagship" }
+  STORE_NAME -> store_name             { trim | title_case }
 
-  ADDR_LINE_1 -> address_line_1          : trim
-  ADDR_LINE_2 -> address_line_2          : trim
-  CITY -> city                           : trim | title_case
-  STATE_PROV -> state_province           : trim
-  POSTAL_CD -> postal_code               : trim
+  STORE_FORMAT -> format {
+    map { FULL: "full_line", OUTLET: "outlet", EXPRESS: "express", FLAGSHIP: "flagship" }
+  }
+
+  ADDR_LINE_1 -> address_line_1        { trim }
+  ADDR_LINE_2 -> address_line_2        { trim }
+  CITY -> city                         { trim | title_case }
+  STATE_PROV -> state_province         { trim }
+  POSTAL_CD -> postal_code             { trim }
   COUNTRY_CD -> country_code
-  PHONE_NBR -> phone                     : trim
-  STORE_MGR -> store_manager             : trim | title_case
+  PHONE_NBR -> phone                   { trim }
+  STORE_MGR -> store_manager           { trim | title_case }
   SQFT -> square_footage
   OPEN_DATE -> opened_date
 
-  // Region enrichment
-  STORE_ID -> region
-    : lookup(store_region_map, STORE_ID => region)
-  STORE_ID -> timezone
-    : lookup(store_region_map, STORE_ID => timezone)
+  // Region enrichment from lookup
+  STORE_ID -> region     { "Look up region from `store_region_map` using STORE_ID" }
+  STORE_ID -> timezone   { "Look up timezone from `store_region_map` using STORE_ID" }
 
-  STATUS -> status
-    : map { A: "active", T: "temporarily_closed", C: "closed" }
+  STATUS -> status {
+    map { A: "active", T: "temporarily_closed", C: "closed" }
+  }
 
-  => record_source                       : "POS"
+  -> record_source { "POS" }
 }

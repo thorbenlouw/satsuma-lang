@@ -1,61 +1,59 @@
+// RetailCo International — Data Vault 2.0
+// Customer 360 Information Mart
+
 import { hub_customer, sat_customer_demographics, sat_customer_online } from "hub-customer.stm"
 
-integration "RetailCo_Mart_Customer_360" {
-  cardinality N:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [datavault, mart, customer, kimball]
+note {
+  """
+  # Customer 360 Mart
 
-  note '''
-    # Customer 360 Mart
+  A denormalized, query-optimized customer view built from the raw
+  Data Vault. This is the **information mart** layer — where the
+  vault's normalized structure is reshaped into a star-schema-friendly
+  dimension for analytics consumers.
 
-    A denormalized, query-optimized customer view built from the raw
-    Data Vault. This is the **information mart** layer — where the
-    vault's normalized structure is reshaped into a star-schema-friendly
-    dimension for analytics consumers.
+  ## Cross-layer imports
+  The imported blocks (`hub_customer`, `sat_customer_demographics`,
+  `sat_customer_online`) are defined as schema blocks in
+  `hub-customer.stm`. Here they appear on the source side of
+  mappings — and that works naturally. The `mapping` syntax
+  determines the actual data flow direction.
 
-    ## Cross-layer imports
-    The imported blocks (`hub_customer`, `sat_customer_demographics`,
-    `sat_customer_online`) are defined as `target` blocks in
-    `hub-customer.stm`. Here they appear on the source side of
-    mappings — and that works naturally. Block keywords (`source`,
-    `target`, etc.) communicate intent to the reader; the `mapping`
-    syntax determines the actual data flow direction.
+  Tooling resolves inferred fields (hash keys, load dates, etc.)
+  from the `hub` and `satellite` metadata on the imported blocks.
+  Those fields are available in mappings without being explicitly
+  declared.
 
-    Tooling resolves inferred fields (hash keys, load dates, etc.)
-    from the `@hub` and `@satellite` tags on the imported blocks.
-    Those fields are available in mappings without being explicitly
-    declared.
+  ## Source resolution
+  - `hub_customer` provides the durable business key + `hub_customer_hk`
+  - `sat_customer_demographics` provides current personal details
+  - `sat_customer_online` provides e-commerce behaviour
+  - The mart joins on hash keys and filters to current satellite records
+    (`load_end_date IS NULL`)
 
-    ## Source resolution
-    - `hub_customer` provides the durable business key + `hub_customer_hk`
-    - `sat_customer_demographics` provides current personal details
-    - `sat_customer_online` provides e-commerce behaviour
-    - The mart joins on hash keys and filters to current satellite records
-      (`load_end_date IS NULL`)
-
-    ## Design choice: current state only
-    This mart exposes the **current** version of each customer (latest
-    satellite record). Historical analysis uses the vault directly.
-  '''
+  ## Design choice: current state only
+  This mart exposes the **current** version of each customer (latest
+  satellite record). Historical analysis uses the vault directly.
+  """
 }
 
 
-// ============================================================
-// Target: Customer 360 Dimension (Kimball-style mart)
-// ============================================================
+// --- Target: Customer 360 Dimension (Kimball-style mart) ---
 
-target mart_customer_360 "Denormalized customer view for analytics" @dimension @scd(type: 1) {
-  @natural_key(customer_id)
-
+schema mart_customer_360 (
+  dimension,
+  scd 1,
+  natural_key customer_id,
+  note "Denormalized customer view for analytics"
+) {
   // Identity
-  customer_id          VARCHAR(50)     [required]
+  customer_id          VARCHAR(50)     (required)
   first_name           VARCHAR(100)
   last_name            VARCHAR(100)
   full_name            VARCHAR(200)
-  email                VARCHAR(255)    [pii]
-  phone                VARCHAR(20)     [pii]
-  date_of_birth        DATE            [pii]
+  email                VARCHAR(255)    (pii)
+  phone                VARCHAR(20)     (pii)
+  date_of_birth        DATE            (pii)
   gender               VARCHAR(20)
 
   // Address
@@ -74,8 +72,8 @@ target mart_customer_360 "Denormalized customer view for analytics" @dimension @
 
   // Online behaviour (from Shopify satellite)
   has_online_account   BOOLEAN
-  online_order_count   INTEGER         [default: 0]
-  online_lifetime_spend DECIMAL(12,2)  [default: 0]
+  online_order_count   INTEGER         (default 0)
+  online_lifetime_spend DECIMAL(12,2)  (default 0)
   last_online_order_at TIMESTAMPTZ
   online_account_age_days INTEGER
 
@@ -89,24 +87,26 @@ target mart_customer_360 "Denormalized customer view for analytics" @dimension @
 }
 
 
-// ============================================================
-// Mappings
-// ============================================================
+// --- Mappings ---
 
 // Primary: demographics from SFDC satellite
-mapping sat_customer_demographics -> mart_customer_360 {
-  note '''
+mapping 'demographics to mart' {
+  source { `sat_customer_demographics` }
+  target { `mart_customer_360` }
+
+  note {
+    """
     Join: `sat_customer_demographics.hub_customer_hk = hub_customer.hub_customer_hk`
     Filter: `sat_customer_demographics.load_end_date IS NULL` (current version only)
-  '''
+    """
+  }
 
   // Identity — via hub join
   hub_customer.customer_id -> customer_id
 
   first_name -> first_name
   last_name -> last_name
-  => full_name
-    : trim(first_name + " " + last_name) | title_case
+  -> full_name { "Trim and concat first_name + ' ' + last_name, title case" }
 
   email -> email
   phone -> phone
@@ -123,7 +123,7 @@ mapping sat_customer_demographics -> mart_customer_360 {
   loyalty_tier -> loyalty_tier
   loyalty_points -> loyalty_points
   preferred_store_id -> preferred_store_id
-  hub_customer.load_date -> member_since  : truncate_to_date
+  hub_customer.load_date -> member_since { truncate_to_date }
   opt_in_email -> opt_in_email
   opt_in_sms -> opt_in_sms
 
@@ -133,40 +133,49 @@ mapping sat_customer_demographics -> mart_customer_360 {
 }
 
 // Supplementary: online behaviour from Shopify satellite
-mapping sat_customer_online -> mart_customer_360 {
-  note '''
+mapping 'online to mart' {
+  source { `sat_customer_online` }
+  target { `mart_customer_360` }
+
+  note {
+    """
     Left join: not all customers have online accounts.
     Filter: `sat_customer_online.load_end_date IS NULL` (current version only)
-  '''
+    """
+  }
 
-  => has_online_account
-    : when sat_customer_online.hub_customer_hk is not null => true
-    else => false
+  -> has_online_account {
+    "True if sat_customer_online.hub_customer_hk is not null, false otherwise."
+  }
 
-  lifetime_order_count -> online_order_count   : coalesce(0)
-  lifetime_spend -> online_lifetime_spend      : coalesce(0)
+  lifetime_order_count -> online_order_count   { coalesce(0) }
+  lifetime_spend -> online_lifetime_spend      { coalesce(0) }
   last_order_at -> last_online_order_at
 
-  => online_account_age_days
-    : nl("DATEDIFF(days, account_created_at, CURRENT_DATE). Null if no online account.")
+  -> online_account_age_days {
+    "DATEDIFF(days, account_created_at, CURRENT_DATE). Null if no online account."
+  }
 }
 
 // Derived fields computed across both satellites
-mapping hub_customer -> mart_customer_360 {
-  note '''
-    Computed after both satellite mappings have populated the mart row.
-    These fields depend on data from multiple satellites.
-  '''
+mapping 'derived segments' {
+  source { `hub_customer` }
+  target { `mart_customer_360` }
 
-  => customer_segment
-    : when sat_customer_demographics.loyalty_tier == "diamond"
-        and sat_customer_online.lifetime_spend > 10000 => "vip"
-    when sat_customer_demographics.loyalty_tier in ("gold", "platinum", "diamond") => "high_value"
-    when sat_customer_demographics.loyalty_tier == "silver" => "growth"
-    else => "standard"
+  note {
+    "Computed after both satellite mappings have populated the mart row.
+     These fields depend on data from multiple satellites."
+  }
 
-  => is_omnichannel
-    : when sat_customer_demographics.preferred_store_id is not null
-        and sat_customer_online.lifetime_order_count > 0 => true
-    else => false
+  -> customer_segment {
+    "Assign 'vip' if loyalty_tier is 'diamond' and online lifetime spend > 10000.
+     Assign 'high_value' if loyalty_tier is gold, platinum, or diamond.
+     Assign 'growth' if loyalty_tier is silver.
+     Otherwise assign 'standard'."
+  }
+
+  -> is_omnichannel {
+    "True if preferred_store_id is not null and online order count > 0,
+     false otherwise."
+  }
 }

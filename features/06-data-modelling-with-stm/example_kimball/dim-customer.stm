@@ -1,62 +1,58 @@
+// RetailCo International — Kimball Star Schema
+// Customer Dimension (Conformed)
+
 import { address_fields } from "common.stm"
 
-integration "RetailCo_Dim_Customer" {
-  cardinality N:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [kimball, dimension, customer, conformed]
+note {
+  """
+  # Customer Dimension (Conformed)
 
-  note '''
-    # Customer Dimension (Conformed)
+  Conformed customer dimension fed by three source systems. The loyalty
+  CRM is the golden source for demographics; POS and e-commerce provide
+  supplementary identifiers for customer matching.
 
-    Conformed customer dimension fed by three source systems. The loyalty
-    CRM is the golden source for demographics; POS and e-commerce provide
-    supplementary identifiers for customer matching.
-
-    ## SCD Strategy
-    - **Type 2** on: email, phone, loyalty_tier, preferred_store
-    - Name and address changes also version the record
-    - `last_login_channel` is tracked but does NOT trigger a new version
-      (too volatile — would create excessive history)
-  '''
+  ## SCD Strategy
+  - **Type 2** on: email, phone, loyalty_tier, preferred_store
+  - Name and address changes also version the record
+  - `last_login_channel` is tracked but does NOT trigger a new version
+    (too volatile — would create excessive history)
+  """
 }
 
 
-// ============================================================
-// Sources
-// ============================================================
+// --- Sources ---
 
-source loyalty_sfdc "Salesforce Service Cloud — Loyalty CRM" {
-  ContactId           ID              [pk]
-  FirstName           STRING(100)     [required]
-  LastName            STRING(100)     [required]
-  Email               STRING(255)     [pii]
-  Phone               STRING(20)     [pii]
+schema loyalty_sfdc (note "Salesforce Service Cloud — Loyalty CRM") {
+  ContactId           ID              (pk)
+  FirstName           STRING(100)     (required)
+  LastName            STRING(100)     (required)
+  Email               STRING(255)     (pii)
+  Phone               STRING(20)      (pii)
   MailingStreet       STRING(200)
   MailingCity         STRING(100)
   MailingState        STRING(50)
   MailingPostalCode   STRING(20)
   MailingCountry      STRING(80)
-  LoyaltyTier         PICKLIST        [enum: {Bronze, Silver, Gold, Platinum, Diamond}]
+  LoyaltyTier         PICKLIST        (enum {Bronze, Silver, Gold, Platinum, Diamond})
   LoyaltyPoints       INTEGER
-  AccountCreatedDate  DATE            [required]
+  AccountCreatedDate  DATE            (required)
   PreferredStoreId    STRING(20)
   OptInEmail          BOOLEAN
   OptInSMS            BOOLEAN
-  DateOfBirth         DATE            [pii]
-  Gender              PICKLIST        [enum: {Male, Female, Non-binary, Undisclosed}]
+  DateOfBirth         DATE            (pii)
+  Gender              PICKLIST        (enum {Male, Female, Non-binary, Undisclosed})
 }
 
-source pos_oracle "Oracle Retail POS — customer linkage" {
-  CUST_ID             INTEGER         [pk]
-  LOYALTY_CARD_NBR    VARCHAR(20)     [unique]            //! NULL for ~35% of transactions
+schema pos_oracle (note "Oracle Retail POS — customer linkage") {
+  CUST_ID             INTEGER         (pk)
+  LOYALTY_CARD_NBR    VARCHAR(20)     (unique)            //! NULL for ~35% of transactions
   FIRST_PURCHASE_DT   DATE
   STORE_ID            VARCHAR(20)
 }
 
-source ecom_shopify "Shopify Plus — online customer" {
-  customer_id         BIGINT          [pk]
-  email               STRING(255)     [pii]
+schema ecom_shopify (note "Shopify Plus — online customer") {
+  customer_id         BIGINT          (pk)
+  email               STRING(255)     (pii)
   first_name          STRING(100)
   last_name           STRING(100)
   created_at          TIMESTAMPTZ
@@ -66,99 +62,104 @@ source ecom_shopify "Shopify Plus — online customer" {
 }
 
 
-// ============================================================
-// Target: Conformed Customer Dimension
-// ============================================================
+// --- Target: Conformed Customer Dimension ---
 
-target dim_customer "Conformed customer dimension" @dimension @conformed @scd(type: 2) {
-  @natural_key(customer_id)
-  @track(email, phone, loyalty_tier, preferred_store_id, first_name, last_name)
-  @ignore(last_login_channel, lifetime_order_count, lifetime_spend)
-
-  customer_id          VARCHAR(50)     [required]         // Durable business key: SFDC ContactId
+schema dim_customer (
+  dimension, conformed, scd 2,
+  natural_key customer_id,
+  track {email, phone, loyalty_tier, preferred_store_id, first_name, last_name},
+  ignore {last_login_channel, lifetime_order_count, lifetime_spend},
+  note """
+  Conformed customer dimension. `customer_segment` is derived from
+  loyalty tier and lifetime spend — not sourced directly, calculated
+  during the ETL load.
+  """
+) {
+  customer_id          VARCHAR(50)     (required)         // Durable business key: SFDC ContactId
   first_name           VARCHAR(100)
   last_name            VARCHAR(100)
   full_name            VARCHAR(200)
-  email                VARCHAR(255)    [pii]
-  phone                VARCHAR(20)     [pii]
-  date_of_birth        DATE            [pii]
+  email                VARCHAR(255)    (pii)
+  phone                VARCHAR(20)     (pii)
+  date_of_birth        DATE            (pii)
   gender               VARCHAR(20)
   ...address_fields
-  loyalty_tier         VARCHAR(20)     [enum: {bronze, silver, gold, platinum, diamond}]
+  loyalty_tier         VARCHAR(20)     (enum {bronze, silver, gold, platinum, diamond})
   loyalty_points       INTEGER
   preferred_store_id   VARCHAR(20)
   member_since         DATE
-  opt_in_email         BOOLEAN         [default: false]
-  opt_in_sms           BOOLEAN         [default: false]
-  last_login_channel   VARCHAR(20)     [enum: {store, online}]
-  lifetime_order_count INTEGER         [default: 0]
-  lifetime_spend       DECIMAL(14,2)   [default: 0]
+  opt_in_email         BOOLEAN         (default false)
+  opt_in_sms           BOOLEAN         (default false)
+  last_login_channel   VARCHAR(20)     (enum {store, online})
+  lifetime_order_count INTEGER         (default 0)
+  lifetime_spend       DECIMAL(14,2)   (default 0)
   customer_segment     VARCHAR(30)
-
-  note '''
-    `customer_segment` is derived from loyalty tier and lifetime spend.
-    Not sourced directly — calculated during the ETL load.
-  '''
 }
 
 
-// ============================================================
-// Mappings
-// ============================================================
+// --- Mappings ---
 
 // Primary: SFDC is the golden source for customer attributes
-mapping loyalty_sfdc -> dim_customer {
-  note '''
-    Golden source mapping. All demographic and loyalty fields come from
-    Salesforce. The POS and e-commerce mappings below supplement with
-    behavioural data and cross-references only.
-  '''
+mapping 'sfdc to dim_customer' {
+  source { `loyalty_sfdc` }
+  target { `dim_customer` }
+
+  note {
+    "Golden source mapping. All demographic and loyalty fields come from
+     Salesforce. The POS and e-commerce mappings below supplement with
+     behavioural data and cross-references only."
+  }
 
   ContactId -> customer_id
 
-  FirstName -> first_name                : trim | title_case
-  LastName -> last_name                  : trim | title_case
-  => full_name
-    : trim(FirstName + " " + LastName) | title_case
+  FirstName -> first_name              { trim | title_case }
+  LastName -> last_name                { trim | title_case }
+  -> full_name { "Trim and concat FirstName + ' ' + LastName, title case" }
 
-  Email -> email                         : trim | lowercase | validate_email | null_if_invalid
-  Phone -> phone                         : trim | to_e164
+  Email -> email                       { trim | lowercase | validate_email | null_if_invalid }
+  Phone -> phone                       { trim | to_e164 }
   DateOfBirth -> date_of_birth
-  Gender -> gender                       : lowercase
+  Gender -> gender                     { lowercase }
 
   // Address
-  MailingStreet -> address_line_1        : trim
-  MailingCity -> city                     : trim | title_case
-  MailingState -> state_province
-    : nl("Normalize to ISO 3166-2 subdivision code. Handle full names,
-          abbreviations, and common misspellings.")
-  MailingPostalCode -> postal_code       : trim
-  MailingCountry -> country_code
-    : nl("Normalize to ISO 3166 alpha-2. Handle full names ('United States' -> 'US'),
-          alpha-3 codes, and common variations.")
+  MailingStreet -> address_line_1      { trim }
+  MailingCity -> city                   { trim | title_case }
+  MailingState -> state_province {
+    "Normalize to ISO 3166-2 subdivision code. Handle full names,
+     abbreviations, and common misspellings."
+  }
+  MailingPostalCode -> postal_code     { trim }
+  MailingCountry -> country_code {
+    "Normalize to ISO 3166 alpha-2. Handle full names ('United States' -> 'US'),
+     alpha-3 codes, and common variations."
+  }
 
   // Loyalty
-  LoyaltyTier -> loyalty_tier            : lowercase
+  LoyaltyTier -> loyalty_tier          { lowercase }
   LoyaltyPoints -> loyalty_points
   PreferredStoreId -> preferred_store_id
   AccountCreatedDate -> member_since
-  OptInEmail -> opt_in_email             : coalesce(false)
-  OptInSMS -> opt_in_sms                 : coalesce(false)
+  OptInEmail -> opt_in_email           { coalesce(false) }
+  OptInSMS -> opt_in_sms              { coalesce(false) }
 
   // Derived
-  => customer_segment
-    : when LoyaltyTier == "Diamond" and ecom_shopify.total_spent > 10000 => "vip"
-    when LoyaltyTier in ("Gold", "Platinum", "Diamond") => "high_value"
-    when LoyaltyTier == "Silver" => "growth"
-    else => "standard"
+  -> customer_segment {
+    "Assign 'vip' if LoyaltyTier is Diamond and ecom_shopify.total_spent > 10000.
+     Assign 'high_value' if LoyaltyTier is Gold, Platinum, or Diamond.
+     Assign 'growth' if LoyaltyTier is Silver.
+     Otherwise assign 'standard'."
+  }
 }
 
 // Supplementary: e-commerce behavioural data
-mapping ecom_shopify -> dim_customer {
-  note '''
-    Supplements the SFDC golden source with online behaviour metrics.
-    Customer matching is done on email address.
-  '''
+mapping 'shopify to dim_customer' {
+  source { `ecom_shopify` }
+  target { `dim_customer` }
+
+  note {
+    "Supplements the SFDC golden source with online behaviour metrics.
+     Customer matching is done on email address."
+  }
 
   //?  Customer matching: email-based join to SFDC ContactId.
   //   What is the fallback if email doesn't match any SFDC record?
@@ -166,5 +167,5 @@ mapping ecom_shopify -> dim_customer {
 
   orders_count -> lifetime_order_count
   total_spent -> lifetime_spend
-  => last_login_channel                  : "online"
+  -> last_login_channel { "online" }
 }

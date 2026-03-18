@@ -1,95 +1,90 @@
+// RetailCo International — Data Vault 2.0
+// Sale Link + Transaction Satellite
+
 import { dv_hash } from "common.stm"
 
-integration "RetailCo_Link_Sale" {
-  cardinality N:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [datavault, link, satellite, sales, multi-source]
+note {
+  """
+  # Sale Link + Transaction Satellite
 
-  note '''
-    # Sale Link + Transaction Satellite
+  Three-way link connecting **customer**, **product**, and **store**
+  for each sale transaction. The link captures the relationship;
+  the satellite captures the transactional detail (amounts, quantities).
 
-    Three-way link connecting **customer**, **product**, and **store**
-    for each sale transaction. The link captures the relationship;
-    the satellite captures the transactional detail (amounts, quantities).
+  ## Multi-source
+  Both POS (in-store) and Shopify (online) feed this link.
+  Online orders have no store — the store hub key is null.
 
-    ## Multi-source
-    Both POS (in-store) and Shopify (online) feed this link.
-    Online orders have no store — the store hub key is null.
-
-    ## Grain
-    One link record per transaction line item (transaction_id + line_number).
-    The satellite hangs off the link with the same grain.
-  '''
+  ## Grain
+  One link record per transaction line item (transaction_id + line_number).
+  The satellite hangs off the link with the same grain.
+  """
 }
 
 
-// ============================================================
-// Sources
-// ============================================================
+// --- Sources ---
 
-source pos_oracle "Oracle Retail POS — in-store transactions" {
-  TRANS_ID            BIGINT          [pk]
-  STORE_ID            VARCHAR(20)     [required]
+schema pos_oracle (note "Oracle Retail POS — in-store transactions") {
+  TRANS_ID            BIGINT          (pk)
+  STORE_ID            VARCHAR(20)     (required)
   REGISTER_ID         VARCHAR(10)
-  TRANS_DATE          DATE            [required]
+  TRANS_DATE          DATE            (required)
   TRANS_TIME          TIME
   CUST_ID             INTEGER
   LOYALTY_CARD_NBR    VARCHAR(20)                           //! NULL for ~35%
-  LINE_NBR            INTEGER         [required]
-  SKU                 VARCHAR(18)     [required]
-  QTY                 INTEGER         [required]
-  UNIT_PRICE          DECIMAL(10,2)   [required]
-  DISCOUNT_AMT        DECIMAL(10,2)   [default: 0]
-  TAX_AMT             DECIMAL(10,2)   [default: 0]
-  PAYMENT_TYPE        CHAR(2)         [enum: {CA, CC, DC, GC, AP, GP}]
-  VOID_FLAG           CHAR(1)         [enum: {Y, N}, default: N]
+  LINE_NBR            INTEGER         (required)
+  SKU                 VARCHAR(18)     (required)
+  QTY                 INTEGER         (required)
+  UNIT_PRICE          DECIMAL(10,2)   (required)
+  DISCOUNT_AMT        DECIMAL(10,2)   (default 0)
+  TAX_AMT             DECIMAL(10,2)   (default 0)
+  PAYMENT_TYPE        CHAR(2)         (enum {CA, CC, DC, GC, AP, GP})
+  VOID_FLAG           CHAR(1)         (enum {Y, N}, default N)
 }
 
-source ecom_shopify "Shopify Plus — online orders" {
-  order_id            BIGINT          [pk]
+schema ecom_shopify (note "Shopify Plus — online orders") {
+  order_id            BIGINT          (pk)
   customer_id         BIGINT
-  email               STRING(255)     [pii]
-  order_date          DATE            [required]
-  line_number         INTEGER         [required]
-  sku                 STRING(18)      [required]
-  quantity            INTEGER         [required]
-  unit_price          DECIMAL(10,2)   [required]
-  discount_amount     DECIMAL(10,2)   [default: 0]
-  tax_amount          DECIMAL(10,2)   [default: 0]
-  currency            CHAR(3)         [default: USD]
+  email               STRING(255)     (pii)
+  order_date          DATE            (required)
+  line_number         INTEGER         (required)
+  sku                 STRING(18)      (required)
+  quantity            INTEGER         (required)
+  unit_price          DECIMAL(10,2)   (required)
+  discount_amount     DECIMAL(10,2)   (default 0)
+  tax_amount          DECIMAL(10,2)   (default 0)
+  currency            CHAR(3)         (default USD)
   fulfillment_status  STRING(20)
   discount_code       STRING(50)
 }
 
 
-// ============================================================
-// Link: Sale (Customer + Product + Store)
-// ============================================================
+// --- Link: Sale (Customer + Product + Store) ---
 
-target link_sale "Transaction line-item relationship" @link {
-  @link(hub_customer, hub_product, hub_store)
-
-  transaction_id       VARCHAR(30)     [required]          // POS-{id} or WEB-{id}
-  line_number          INTEGER         [required]
-
-  note '''
-    The link's hash key is derived from the three hub hash keys plus
-    the transaction degenerate key (transaction_id + line_number).
-    Store hub key is NULL for online orders — this is a valid pattern
-    in DV2.0 (zero-key represents "not applicable").
-  '''
+schema link_sale (
+  link,
+  link_hubs {hub_customer, hub_product, hub_store},
+  note """
+  Transaction line-item relationship. The link's hash key is derived
+  from the three hub hash keys plus the transaction degenerate key
+  (transaction_id + line_number). Store hub key is NULL for online
+  orders — this is a valid pattern in DV2.0 (zero-key represents
+  "not applicable").
+  """
+) {
+  transaction_id       VARCHAR(30)     (required)          // POS-{id} or WEB-{id}
+  line_number          INTEGER         (required)
 }
 
 
-// ============================================================
-// Satellite: Transaction Detail
-// ============================================================
+// --- Satellite: Transaction Detail ---
 
-target sat_sale_detail "Transaction amounts and attributes" @satellite {
-  @parent(link_sale)
-  @scd(type: 2)
-
+schema sat_sale_detail (
+  satellite,
+  parent link_sale,
+  scd 2,
+  note "Transaction amounts and attributes"
+) {
   transaction_date     DATE
   transaction_time     TIME
   channel              VARCHAR(20)
@@ -103,76 +98,87 @@ target sat_sale_detail "Transaction amounts and attributes" @satellite {
 }
 
 
-// ============================================================
-// Mappings
-// ============================================================
+// --- Mappings ---
 
 // Link from POS
-mapping pos_oracle -> link_sale {
-  TRANS_ID -> transaction_id             : prepend("POS-") | to_string
+mapping 'pos to link_sale' {
+  source { `pos_oracle` }
+  target { `link_sale` }
+
+  TRANS_ID -> transaction_id           { prepend("POS-") | to_string }
   LINE_NBR -> line_number
 
   //  Hub key resolution — tooling generates the hash key columns
-  LOYALTY_CARD_NBR -> customer_id
-    : nl("Resolve loyalty card to SFDC ContactId for hub_customer key.
-          Null if no loyalty card — results in zero-key for customer hub.")
-  SKU -> sku                             : trim
+  LOYALTY_CARD_NBR -> customer_id {
+    "Resolve loyalty card to SFDC ContactId for hub_customer key.
+     Null if no loyalty card — results in zero-key for customer hub."
+  }
+  SKU -> sku                           { trim }
   STORE_ID -> store_id
 
-  => record_source                       : "POS"
+  -> record_source { "POS" }
 }
 
 // Link from Shopify
-mapping ecom_shopify -> link_sale {
-  order_id -> transaction_id             : prepend("WEB-") | to_string
+mapping 'shopify to link_sale' {
+  source { `ecom_shopify` }
+  target { `link_sale` }
+
+  order_id -> transaction_id           { prepend("WEB-") | to_string }
   line_number -> line_number
 
-  email -> customer_id
-    : nl("Match email to SFDC ContactId for hub_customer key.
-          If no match, generate deterministic UUID from email.")
-  sku -> sku                             : trim
-  => store_id                            : null              // Online — no store
+  email -> customer_id {
+    "Match email to SFDC ContactId for hub_customer key.
+     If no match, generate deterministic UUID from email."
+  }
+  sku -> sku                           { trim }
+  -> store_id { null }                 // Online — no store
 
-  => record_source                       : "SHOPIFY"
+  -> record_source { "SHOPIFY" }
 }
 
 // Transaction detail satellite from POS
-mapping pos_oracle -> sat_sale_detail {
+mapping 'pos to sat_sale_detail' {
+  source { `pos_oracle` }
+  target { `sat_sale_detail` }
+
   TRANS_DATE -> transaction_date
   TRANS_TIME -> transaction_time
-  => channel                             : "in_store"
+  -> channel { "in_store" }
 
-  PAYMENT_TYPE -> payment_type
-    : map { CA: "cash", CC: "credit_card", DC: "debit_card",
-            GC: "gift_card", AP: "apple_pay", GP: "google_pay" }
+  PAYMENT_TYPE -> payment_type {
+    map { CA: "cash", CC: "credit_card", DC: "debit_card",
+          GC: "gift_card", AP: "apple_pay", GP: "google_pay" }
+  }
 
   QTY -> quantity
   UNIT_PRICE -> unit_price
-  => gross_amount                        : QTY * UNIT_PRICE
-  DISCOUNT_AMT -> discount_amount        : coalesce(0)
-  TAX_AMT -> tax_amount                  : coalesce(0)
-  => net_amount
-    : nl("gross_amount - discount_amount + tax_amount")
+  -> gross_amount { "QTY * UNIT_PRICE" }
+  DISCOUNT_AMT -> discount_amount      { coalesce(0) }
+  TAX_AMT -> tax_amount                { coalesce(0) }
+  -> net_amount { "gross_amount - discount_amount + tax_amount" }
 
-  => record_source                       : "POS"
+  -> record_source { "POS" }
 }
 
 // Transaction detail satellite from Shopify
-mapping ecom_shopify -> sat_sale_detail {
+mapping 'shopify to sat_sale_detail' {
+  source { `ecom_shopify` }
+  target { `sat_sale_detail` }
+
   order_date -> transaction_date
-  => transaction_time                    : null
-  => channel                             : "online"
-  => payment_type                        : null              //? Shopify payment type not yet mapped
+  -> transaction_time { null }
+  -> channel { "online" }
+  -> payment_type { null }             //? Shopify payment type not yet mapped
 
   quantity -> quantity
-  unit_price -> unit_price
-    : nl("Convert from order currency to USD using daily spot rate")
-  => gross_amount
-    : nl("quantity * unit_price (after currency conversion)")
-  discount_amount -> discount_amount     : coalesce(0)
-  tax_amount -> tax_amount               : coalesce(0)
-  => net_amount
-    : nl("gross_amount - discount_amount + tax_amount")
+  unit_price -> unit_price {
+    "Convert from order currency to USD using daily spot rate"
+  }
+  -> gross_amount { "quantity * unit_price (after currency conversion)" }
+  discount_amount -> discount_amount   { coalesce(0) }
+  tax_amount -> tax_amount             { coalesce(0) }
+  -> net_amount { "gross_amount - discount_amount + tax_amount" }
 
-  => record_source                       : "SHOPIFY"
+  -> record_source { "SHOPIFY" }
 }
