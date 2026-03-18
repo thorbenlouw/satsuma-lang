@@ -10,7 +10,7 @@
 ### Grammar (compact EBNF, ~500 tokens)
 
 ```ebnf
-file             = { import_stmt | note_block | schema | fragment | transform | mapping } ;
+file             = { import_stmt | note_block | schema | fragment | transform | mapping | metric } ;
 
 import_stmt      = "import" "{" name_list "}" "from" STRING ;
 name_list        = name {"," name} ;
@@ -34,6 +34,12 @@ spread           = "..." name ;
 
 transform        = "transform" label "{" transform_body "}" ;
 transform_body   = { STRING | pipe_step {"|" pipe_step} } ;
+
+metric           = "metric" label [STRING] ["(" metric_meta ")"] "{" metric_body "}" ;
+metric_meta      = metric_entry {"," metric_entry} ;
+metric_entry     = "source" (IDENT | "{" name_list "}") | "grain" IDENT
+                 | "slice" "{" name_list "}" | "filter" STRING ;
+metric_body      = { field | note_block | COMMENT } ;
 
 mapping          = "mapping" [label] ["(" metadata ")"] "{" mapping_body "}" ;
 mapping_body     = { note_block | source_decl | target_decl | arrow | nested_arrow | COMMENT } ;
@@ -122,6 +128,29 @@ fragment <name> { fields... }              (spread with ...name)
 transform <name> { pipeline or NL... }     (spread with ...name)
 import { name1, name2 } from "file.stm"
 
+## Metric blocks
+metric <name> ["display label"] (<metric_meta>) {
+  measure_field  TYPE  (measure additive)
+  measure_field  TYPE  (measure non_additive)
+  measure_field  TYPE  (measure semi_additive)
+  note { "..." }
+}
+
+Metric metadata tokens (in parens):
+  source schema_name | source {schema_a, schema_b}
+  grain monthly | grain daily | grain weekly
+  slice {dim_a, dim_b, dim_c}
+  filter "sql_condition"
+
+Measure addivity:  additive (sum across all dims)
+                   non_additive (ratios, averages — never sum)
+                   semi_additive (sum across some dims only, e.g. balances)
+
+Rules:
+  - Metrics are terminal nodes: nothing flows *out* of a metric
+  - Do NOT use a metric as source/target in a mapping block
+  - Complex computation logic goes in note { } as natural language
+
 ## Notes & Comments
 note { "standalone documentation block" }
 note { """multiline **Markdown** content""" }
@@ -169,6 +198,9 @@ note { """multiline **Markdown** content""" }
 | Using `when/else` conditionals | Use `map { }` with conditions or NL strings |
 | Forgetting to declare arrays with `list` | Use `list Name { }` for repeated structures |
 | Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
+| Using `schema` for a business metric | Use `metric` — it signals a terminal node to lineage tooling |
+| Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
+| Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
 
 ---
 
