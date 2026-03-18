@@ -1,58 +1,54 @@
+// RetailCo International — Kimball Star Schema
+// Product Dimension
+
 import { product_hierarchy } from "common.stm"
 
-integration "RetailCo_Dim_Product" {
-  cardinality 1:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [kimball, dimension, product]
+note {
+  """
+  # Product Dimension
 
-  note '''
-    # Product Dimension
+  Single-source dimension from SAP Merchandise Management.
+  **SCD Type 1** — product attributes are overwritten on change.
+  Price history is not tracked here (it belongs in a fact or a
+  separate price-history dimension if needed).
 
-    Single-source dimension from SAP Merchandise Management.
-    **SCD Type 1** — product attributes are overwritten on change.
-    Price history is not tracked here (it belongs in a fact or a
-    separate price-history dimension if needed).
-
-    ## Hierarchy
-    Department > Category > Subcategory > Brand — resolved via
-    the `product_hierarchy` lookup and the SAP category code.
-  '''
+  ## Hierarchy
+  Department > Category > Subcategory > Brand — resolved via
+  the `product_hierarchy` lookup and the SAP category code.
+  """
 }
 
 
-// ============================================================
-// Source
-// ============================================================
+// --- Source ---
 
-source merch_sap "SAP MM — Product master" {
-  MATNR               VARCHAR(18)     [pk]               // SAP material number
-  MAKTX               VARCHAR(40)     [required]         // Material description
+schema merch_sap (note "SAP MM — Product master") {
+  MATNR               VARCHAR(18)     (pk)               // SAP material number
+  MAKTX               VARCHAR(40)     (required)         // Material description
   MATKL               VARCHAR(9)                          // Material group (category code)
   BRAND               VARCHAR(50)
-  SUPPLIER_ID         VARCHAR(10)     [ref: supplier.LIFNR]
+  SUPPLIER_ID         VARCHAR(10)     (ref supplier.LIFNR)
   SUPPLIER_NAME       VARCHAR(100)
   UNIT_COST           DECIMAL(12,2)                       //! Stored in local currency — see WAERS
   MSRP                DECIMAL(12,2)
   WAERS               CHAR(3)                             // Currency key (ISO 4217)
   WEIGHT_KG           DECIMAL(8,3)
   COUNTRY_OF_ORIGIN   CHAR(2)
-  SEASON_CODE         VARCHAR(10)     [enum: {SP, SU, FA, WI, CORE}]
-  LIFECYCLE_STATUS    VARCHAR(10)     [enum: {ACTIVE, DISC, PEND, RECALL}]
+  SEASON_CODE         VARCHAR(10)     (enum {SP, SU, FA, WI, CORE})
+  LIFECYCLE_STATUS    VARCHAR(10)     (enum {ACTIVE, DISC, PEND, RECALL})
   CREATED_ON          DATE
   CHANGED_ON          DATE
 }
 
 
-// ============================================================
-// Target: Product Dimension
-// ============================================================
+// --- Target: Product Dimension ---
 
-target dim_product "Product dimension with merchandise hierarchy" @dimension @scd(type: 1) {
-  @natural_key(sku)
-
-  sku                  VARCHAR(18)     [required]
-  product_name         VARCHAR(100)    [required]
+schema dim_product (
+  dimension, scd 1,
+  natural_key sku,
+  note "Product dimension with merchandise hierarchy"
+) {
+  sku                  VARCHAR(18)     (required)
+  product_name         VARCHAR(100)    (required)
   department           VARCHAR(100)
   category             VARCHAR(100)
   subcategory          VARCHAR(100)
@@ -63,53 +59,53 @@ target dim_product "Product dimension with merchandise hierarchy" @dimension @sc
   margin_pct           DECIMAL(5,2)
   weight_kg            DECIMAL(8,3)
   country_of_origin    CHAR(2)
-  season               VARCHAR(20)     [enum: {spring, summer, fall, winter, core}]
-  lifecycle_status     VARCHAR(20)     [enum: {active, discontinued, pending, recall}]
+  season               VARCHAR(20)     (enum {spring, summer, fall, winter, core})
+  lifecycle_status     VARCHAR(20)     (enum {active, discontinued, pending, recall})
   is_active            BOOLEAN
 }
 
 
-// ============================================================
-// Mapping
-// ============================================================
+// --- Mapping ---
 
-mapping merch_sap -> dim_product {
-  MATNR -> sku                          : trim
+mapping 'sap to dim_product' {
+  source { `merch_sap` }
+  target { `dim_product` }
 
-  MAKTX -> product_name                 : trim | title_case
+  MATNR -> sku                         { trim }
+  MAKTX -> product_name                { trim | title_case }
 
   // Hierarchy resolved via lookup
-  MATKL -> department
-    : lookup(product_hierarchy, MATKL => department)
-  MATKL -> category
-    : lookup(product_hierarchy, MATKL => category)
-  MATKL -> subcategory
-    : lookup(product_hierarchy, MATKL => subcategory)
+  MATKL -> department    { "Look up department from `product_hierarchy` using MATKL" }
+  MATKL -> category      { "Look up category from `product_hierarchy` using MATKL" }
+  MATKL -> subcategory   { "Look up subcategory from `product_hierarchy` using MATKL" }
 
-  BRAND -> brand                        : trim | title_case
-  SUPPLIER_NAME -> supplier_name        : trim
+  BRAND -> brand                       { trim | title_case }
+  SUPPLIER_NAME -> supplier_name       { trim }
 
   // Price normalization to USD
-  UNIT_COST -> unit_cost_usd
-    : nl("Convert from source currency (WAERS) to USD using daily spot rate.
-          If WAERS is null, assume USD.")
-  MSRP -> retail_price_usd
-    : nl("Convert from source currency (WAERS) to USD using daily spot rate.")
+  UNIT_COST -> unit_cost_usd {
+    "Convert from source currency (WAERS) to USD using daily spot rate.
+     If WAERS is null, assume USD."
+  }
+  MSRP -> retail_price_usd {
+    "Convert from source currency (WAERS) to USD using daily spot rate."
+  }
 
-  => margin_pct
-    : nl("Calculate as (retail_price_usd - unit_cost_usd) / retail_price_usd * 100.
-          Null if either price is null or zero.")
+  -> margin_pct {
+    "Calculate as (retail_price_usd - unit_cost_usd) / retail_price_usd * 100.
+     Null if either price is null or zero."
+  }
 
   WEIGHT_KG -> weight_kg
   COUNTRY_OF_ORIGIN -> country_of_origin
 
-  SEASON_CODE -> season
-    : map { SP: "spring", SU: "summer", FA: "fall", WI: "winter", CORE: "core" }
+  SEASON_CODE -> season {
+    map { SP: "spring", SU: "summer", FA: "fall", WI: "winter", CORE: "core" }
+  }
 
-  LIFECYCLE_STATUS -> lifecycle_status
-    : map { ACTIVE: "active", DISC: "discontinued", PEND: "pending", RECALL: "recall" }
+  LIFECYCLE_STATUS -> lifecycle_status {
+    map { ACTIVE: "active", DISC: "discontinued", PEND: "pending", RECALL: "recall" }
+  }
 
-  => is_active
-    : when LIFECYCLE_STATUS == "ACTIVE" => true
-    else => false
+  -> is_active { "True if LIFECYCLE_STATUS is 'ACTIVE', false otherwise" }
 }

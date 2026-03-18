@@ -1,81 +1,87 @@
 # RetailCo International — Data Vault 2.0
 
-A complete Data Vault 2.0 model for a multinational department store, expressed in STM using `@tag` conventions for hubs, links, satellites, effectivity patterns, and **information marts** that bridge the vault-to-Kimball boundary.
+A complete Data Vault 2.0 model for a multinational department store, expressed in STM v2 using free-form metadata conventions for hubs, links, satellites, effectivity patterns, and **information marts** that bridge the vault-to-Kimball boundary.
 
-## The Story
+## How it works
 
-RetailCo International operates 850+ stores across 12 countries, selling through both physical stores and an e-commerce platform. This model supports their raw data vault — a historically complete, auditable, source-system-aligned data store — and the **information mart** layer that reshapes vault data into star-schema-friendly structures for analytics consumers.
+STM v2 uses `( )` metadata blocks for **all** annotations — there are no special `@tag` annotations or reserved modelling keywords. Tokens like `hub`, `satellite`, `link`, `scd` are free-form vocabulary interpreted by an LLM, not by a deterministic parser. This means:
+
+- The **grammar doesn't change** when you add new modelling patterns
+- The **meaning of tokens is conventional**, not enforced — see [LLM-Guidelines.md](LLM-Guidelines.md) for how an LLM should interpret them
+- **Tooling infers mechanical columns** (hash keys, load dates, etc.) based on these conventions — they are never written in the STM file
 
 ## Files
 
-| File | Description | Key patterns demonstrated |
-|------|-------------|--------------------------|
-| `common.stm` | Shared hash transform (`dv_hash`), lookups | `transform` block with `nl()`, reusable across all vault loads |
-| `hub-customer.stm` | Customer hub + 2 satellites from 3 sources | `@hub`, `@business_key`, `@satellite`, `@parent`, multi-source hub loading |
-| `hub-product.stm` | Product hub + 2 satellites (attributes + pricing) | `@hub`, `@satellite`, split-by-rate-of-change pattern |
-| `hub-store.stm` | Store hub + 1 satellite | `@hub`, `@satellite`, single-source, lookup enrichment |
-| `link-sale.stm` | 3-way sale link + transaction satellite | `@link`, `@link(hub_customer, hub_product, hub_store)`, multi-source link loading |
-| `link-inventory.stm` | Product-warehouse link + effectivity + stock satellite | `@link`, `@satellite`, `@effectivity`, `@driving_key` |
+| File | Description | Key conventions demonstrated |
+|------|-------------|------------------------------|
+| `common.stm` | Shared hash transform (`dv_hash`), lookups | `transform` block with NL, reusable across all vault loads |
+| `hub-customer.stm` | Customer hub + 2 satellites from 3 sources | `hub`, `business_key`, `satellite`, `parent`, multi-source loading |
+| `hub-product.stm` | Product hub + 2 satellites (attributes + pricing) | `hub`, `satellite`, split-by-rate-of-change pattern |
+| `hub-store.stm` | Store hub + 1 satellite | `hub`, `satellite`, single-source, lookup enrichment |
+| `link-sale.stm` | 3-way sale link + transaction satellite | `link`, `link_hubs {h1, h2, h3}`, multi-source link loading |
+| `link-inventory.stm` | Product-warehouse link + effectivity + stock satellite | `link`, `satellite`, `effectivity`, `driving_key` |
 | **Information Mart Layer** | | |
-| `mart-customer-360.stm` | Denormalized customer view from hub + 2 satellites | Cross-layer `import`, Kimball `@dimension` on target, vault targets as mapping sources |
-| `mart-sales.stm` | Transaction fact from link + satellite + hub joins | Cross-layer `import` from 3 vault files, Kimball `@fact`/`@ref`/`@measure`, hash key resolution |
+| `mart-customer-360.stm` | Denormalized customer view from hub + 2 satellites | Cross-layer `import`, Kimball `dimension` on target, vault schemas as mapping sources |
+| `mart-sales.stm` | Transaction fact from link + satellite + hub joins | Cross-layer `import` from 3 vault files, Kimball `fact`/`ref`/`measure`, hash key resolution |
 
-## Source Systems
+## Metadata Convention Quick Reference
 
-The same five source systems as the Kimball example — defined within each integration file:
+These are **vocabulary tokens** in `( )` metadata — not reserved keywords. An LLM interprets their meaning. See [LLM-Guidelines.md](LLM-Guidelines.md) for the full interpretation rules.
 
-- **Oracle Retail POS** (`pos_oracle`) — in-store transactions, store reference data
-- **Shopify Plus** (`ecom_shopify`) — online orders, customer accounts
-- **Salesforce Service Cloud** (`loyalty_sfdc`) — customer CRM, loyalty programme
-- **SAP MM** (`merch_sap`) — product master, suppliers, pricing
-- **Manhattan Associates WMS** (`wms_manhattan`) — warehouse inventory positions
+### Schema-level tokens
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `hub` | Business key registry | `schema hub_customer (hub, business_key customer_id) { ... }` |
+| `link` | Relationship between hubs | `schema link_sale (link, link_hubs {hub_customer, hub_product}) { ... }` |
+| `satellite` | Descriptive attributes (versioned) | `schema sat_demographics (satellite, parent hub_customer, scd 2) { ... }` |
+| `effectivity` | Temporal validity of a link | `schema sat_eff (satellite, effectivity, parent link_inventory) { ... }` |
+| `business_key <field>` | The durable business key | `(business_key customer_id)` |
+| `parent <entity>` | Which hub or link a satellite belongs to | `(parent hub_customer)` |
+| `link_hubs {h1, h2}` | Which hubs participate in a link | `(link_hubs {hub_customer, hub_product})` |
+| `scd 2` | Slowly Changing Dimension type | `(scd 2)` |
+| `driving_key <hub>` | For effectivity: which hub drives end-dating | `(driving_key hub_product)` |
 
 ## What Tooling Would Infer
 
-The STM files contain **only business fields and descriptive attributes**. The following mechanical columns are inferred by tooling based on the `@tags` and are NOT written in the `.stm` files:
+The STM files contain **only business fields and descriptive attributes**. The following mechanical columns are inferred by convention:
 
-### For `@hub` (hub_customer, hub_product, hub_store)
-
-| Inferred column | Type | Purpose |
-|----------------|------|---------|
-| `{hub}_hk` | `CHAR(64) [pk]` | MD5 hash of business key(s) — the hub's primary key |
-| `load_date` | `TIMESTAMPTZ [required]` | When this business key was first seen |
-| `record_source` | `VARCHAR(100) [required]` | Which source system first provided this key |
-
-Example: `hub_customer` gets `hub_customer_hk`, `load_date`, `record_source` — all inferred.
-
-### For `@link` (link_sale, link_inventory)
+### For `hub` (hub_customer, hub_product, hub_store)
 
 | Inferred column | Type | Purpose |
 |----------------|------|---------|
-| `{link}_hk` | `CHAR(64) [pk]` | MD5 hash of all participating hub keys |
-| `{hub}_hk` (one per hub) | `CHAR(64) [ref: {hub}]` | Foreign key hash to each participating hub |
-| `load_date` | `TIMESTAMPTZ [required]` | When this relationship was first seen |
-| `record_source` | `VARCHAR(100) [required]` | Source system that established the relationship |
+| `{hub}_hk` | `CHAR(64) (pk)` | MD5 hash of business key(s) — the hub's primary key |
+| `load_date` | `TIMESTAMPTZ (required)` | When this business key was first seen |
+| `record_source` | `VARCHAR(100) (required)` | Which source system first provided this key |
 
-Example: `link_sale` (with `@link(hub_customer, hub_product, hub_store)`) gets `link_sale_hk`, `hub_customer_hk`, `hub_product_hk`, `hub_store_hk`, `load_date`, `record_source`.
-
-### For `@satellite` (all satellites)
+### For `link` (link_sale, link_inventory)
 
 | Inferred column | Type | Purpose |
 |----------------|------|---------|
-| `{parent}_hk` | `CHAR(64) [pk, ref: {parent}]` | Hash key FK to parent hub or link (part of composite PK) |
-| `load_date` | `TIMESTAMPTZ [pk]` | Version timestamp (part of composite PK with parent hash key) |
-| `load_end_date` | `TIMESTAMPTZ` | End-of-validity timestamp (null = current version) |
-| `hash_diff` | `CHAR(64)` | Hash of all descriptive fields — used for change detection |
-| `record_source` | `VARCHAR(100) [required]` | Source system for this version |
+| `{link}_hk` | `CHAR(64) (pk)` | MD5 hash of all participating hub keys |
+| `{hub}_hk` (one per hub) | `CHAR(64) (ref {hub})` | Foreign key hash to each participating hub |
+| `load_date` | `TIMESTAMPTZ (required)` | When this relationship was first seen |
+| `record_source` | `VARCHAR(100) (required)` | Source system that established the relationship |
 
-### For `@satellite @effectivity` (sat_inventory_effectivity)
+### For `satellite` (all satellites)
+
+| Inferred column | Type | Purpose |
+|----------------|------|---------|
+| `{parent}_hk` | `CHAR(64) (pk, ref {parent})` | Hash key FK to parent hub or link |
+| `load_date` | `TIMESTAMPTZ (pk)` | Version timestamp (part of composite PK) |
+| `load_end_date` | `TIMESTAMPTZ` | End-of-validity (null = current version) |
+| `hash_diff` | `CHAR(64)` | Hash of all descriptive fields for change detection |
+| `record_source` | `VARCHAR(100) (required)` | Source system for this version |
+
+### For `satellite` + `effectivity`
 
 Same as satellite, plus:
 
 | Inferred column | Type | Purpose |
 |----------------|------|---------|
-| `start_date` | `TIMESTAMPTZ [required]` | When the relationship became effective |
+| `start_date` | `TIMESTAMPTZ (required)` | When the relationship became effective |
 | `end_date` | `TIMESTAMPTZ` | When the relationship ended (null = still active) |
-| `is_current` | `BOOLEAN [required, default: true]` | Convenience flag for active relationships |
-
-The `@driving_key(hub_product)` tag on the effectivity satellite tells the load process which hub's key change should trigger end-dating. When a product is removed from a warehouse's assortment, only that specific product-warehouse relationship is end-dated.
+| `is_current` | `BOOLEAN (required, default true)` | Convenience flag for active relationships |
 
 ## Data Vault Design Patterns Demonstrated
 
@@ -86,80 +92,28 @@ Three sources feed the same hub with different resolution strategies:
 - POS resolves via loyalty card number lookup
 - Shopify resolves via email address matching
 
-Each source produces an independent `mapping -> hub_customer` block. The hub deduplicates on business key.
+Each source produces an independent mapping block. The hub deduplicates on business key.
 
 ### Split by rate of change (hub-product.stm)
 
-Product attributes (name, category, brand) change infrequently. Pricing changes with every promotion. Two satellites with `@parent(hub_product)` keep the histories separate — a price change doesn't create a new version of the attributes satellite.
+Product attributes (name, category, brand) change infrequently. Pricing changes with every promotion. Two satellites with `parent hub_product` keep the histories separate.
 
 ### Multi-hub link (link-sale.stm)
 
-A sale connects three business concepts: customer, product, and store. The `@link(hub_customer, hub_product, hub_store)` tag declares all participants. Online orders have a null store hub key — valid in DV2.0 (the "zero-key" pattern).
+A sale connects three business concepts: customer, product, and store. The `link_hubs {hub_customer, hub_product, hub_store}` token declares all participants.
 
 ### Effectivity satellite (link-inventory.stm)
 
-Tracks the temporal validity of the product-warehouse relationship. When a product is discontinued at a warehouse, the effectivity record is end-dated. This supports as-of queries without scanning the full satellite history.
+Tracks the temporal validity of the product-warehouse relationship. The `driving_key hub_product` token tells the load process which hub's key change drives end-dating.
 
 ### Vault-to-mart boundary (mart-customer-360.stm, mart-sales.stm)
 
-This is where the Data Vault and Kimball tag systems meet — and where STM's cross-layer import pattern shines.
-
-#### Block keywords are semantic sugar
-
-STM block keywords (`source`, `target`, `table`, `message`, etc.) communicate **intent to the reader**, but they are all structurally identical schema blocks. A `target` in one file can appear on the source side of a `mapping` in another file. The mapping syntax determines the data flow direction, not the block keyword.
-
-#### Cross-layer imports
-
-The mart files import vault targets directly — no redeclaration needed:
-
-```stm
-// mart-customer-360.stm
-import { hub_customer, sat_customer_demographics, sat_customer_online } from "hub-customer.stm"
-
-// These are target blocks in hub-customer.stm, but here they
-// appear on the source side of mappings — and that's fine
-mapping sat_customer_demographics -> mart_customer_360 {
-  hub_customer.customer_id -> customer_id
-  // ...
-}
-```
-
-Tooling resolves inferred fields (hash keys, load dates, hash diffs) from the `@hub` and `@satellite` tags on the imported blocks. Those fields are available in mappings without being explicitly written in either the vault or mart STM files.
-
-#### What the mart files demonstrate
-
-1. **Cross-layer imports** — vault `target` blocks imported and used as mapping sources. Zero redundant schema declarations.
-
-2. **Inferred fields flow across layers** — `hub_customer_hk` and `load_date` are never explicitly written in any STM file, but the mart mappings reference them because tooling resolves them from the `@hub` tag.
-
-3. **Kimball tags on mart targets** — the mart output uses `@dimension`, `@fact`, `@grain`, `@ref`, and `@measure` tags, exactly like the Kimball examples. The mart IS a star schema — it just happens to be sourced from a vault rather than operational systems.
-
-4. **Mapping handles the join logic** — the mapping blocks express the vault join pattern (link → satellite → hub) including current-version filtering (`load_end_date IS NULL`), LEFT JOINs for optional relationships, and hash-key-to-business-key resolution.
-
-5. **Vault lineage preserved** — mart targets include the vault hash key as a non-functional column for traceability. An analyst can trace any mart row back to its vault source.
-
-This demonstrates that STM doesn't force a modelling choice — it describes whatever architecture you're building. The same `@tag` vocabulary works on both sides of the vault-to-mart boundary.
-
-## Tag Quick Reference
-
-| Tag | Used on | Meaning |
-|-----|---------|---------|
-| `@hub` | Schema block | Business key registry |
-| `@link` | Schema block | Relationship between hubs |
-| `@satellite` | Schema block | Descriptive attributes (versioned) |
-| `@effectivity` | Schema block (with `@satellite`) | Temporal validity of a link relationship |
-| `@business_key(field)` | Inside hub | The durable business key |
-| `@parent(entity)` | Inside satellite | Which hub or link this satellite belongs to |
-| `@link(hub1, hub2, ...)` | Inside link | Which hubs participate in this relationship |
-| `@scd(type: 2)` | Inside satellite | All satellites are implicitly SCD2, but explicit for clarity |
-| `@driving_key(hub)` | Inside effectivity satellite | Which hub's key change drives end-dating |
+Cross-layer imports bring vault schemas into mart files as mapping sources. The mart targets use Kimball conventions (`dimension`, `fact`, `grain`, `ref`, `measure`). STM describes both layers with the same vocabulary.
 
 ## Comparison with Kimball
 
 The same RetailCo domain is modelled as a Kimball star schema in `../example_kimball/`. Key differences:
 
-- **Data Vault**: Insert-only, full history, source-aligned. Hubs and links capture structure; satellites capture change. Resilient to source system changes (new source = new satellite, no restructuring). Requires a business vault or mart layer for analytics.
-- **Kimball**: Denormalized, query-optimized. History managed via SCD types on each dimension. Simpler for analytics queries but harder to extend when sources change.
-- **The mart layer bridges both**: The `mart-*.stm` files in this example show that the two approaches aren't mutually exclusive. A vault feeds a mart, and the mart uses Kimball conventions. STM describes both layers with the same vocabulary.
-
-Both approaches express cleanly in STM. The same source schemas, the same transform logic — only the target structure and tags differ.
+- **Data Vault**: Insert-only, full history, source-aligned. Hubs and links capture structure; satellites capture change. Resilient to source system changes.
+- **Kimball**: Denormalized, query-optimized. History managed via SCD types on each dimension. Simpler for analytics queries but harder to extend.
+- **The mart layer bridges both**: The `mart-*.stm` files show the two approaches aren't mutually exclusive. A vault feeds a mart, and the mart uses Kimball conventions.

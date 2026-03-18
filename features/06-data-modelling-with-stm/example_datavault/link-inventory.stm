@@ -1,92 +1,91 @@
-integration "RetailCo_Link_Inventory" {
-  cardinality 1:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [datavault, link, satellite, effectivity, inventory]
+// RetailCo International — Data Vault 2.0
+// Inventory Link + Satellites
 
-  note '''
-    # Inventory Link + Satellites
+note {
+  """
+  # Inventory Link + Satellites
 
-    Links **product** to **warehouse location** with a stock-level
-    satellite and an effectivity satellite.
+  Links **product** to **warehouse location** with a stock-level
+  satellite and an effectivity satellite.
 
-    ## Effectivity Satellite
-    Tracks which products are stocked in which warehouses over time.
-    When a product is discontinued at a warehouse, the effectivity
-    record is end-dated. This supports "as-of" queries: "Which
-    warehouses stocked SKU X on 2025-06-15?"
+  ## Effectivity Satellite
+  Tracks which products are stocked in which warehouses over time.
+  When a product is discontinued at a warehouse, the effectivity
+  record is end-dated. This supports "as-of" queries: "Which
+  warehouses stocked SKU X on 2025-06-15?"
 
-    ## Stock Level Satellite
-    Daily snapshot of inventory positions. SCD Type 2 means a new
-    record is created whenever stock levels change (which is daily
-    for most active products).
-  '''
+  ## Stock Level Satellite
+  Daily snapshot of inventory positions. SCD Type 2 means a new
+  record is created whenever stock levels change (which is daily
+  for most active products).
+  """
 }
 
 
-// ============================================================
-// Source
-// ============================================================
+// --- Source ---
 
-source wms_manhattan "Manhattan Associates WMS — stock positions" {
-  SKU                 VARCHAR(18)     [pk]
-  WAREHOUSE_ID        VARCHAR(10)     [pk]
+schema wms_manhattan (note "Manhattan Associates WMS — stock positions") {
+  SKU                 VARCHAR(18)     (pk)
+  WAREHOUSE_ID        VARCHAR(10)     (pk)
   LOCATION_CODE       VARCHAR(20)
-  QTY_ON_HAND         INTEGER         [required]
-  QTY_RESERVED        INTEGER         [default: 0]
-  QTY_IN_TRANSIT      INTEGER         [default: 0]
+  QTY_ON_HAND         INTEGER         (required)
+  QTY_RESERVED        INTEGER         (default 0)
+  QTY_IN_TRANSIT      INTEGER         (default 0)
   LAST_COUNT_DATE     DATE
   REORDER_POINT       INTEGER
   REORDER_QTY         INTEGER
   UNIT_COST           DECIMAL(10,2)
-  SNAPSHOT_TS         TIMESTAMPTZ     [required]
+  SNAPSHOT_TS         TIMESTAMPTZ     (required)
 }
 
 
-// ============================================================
-// Link: Product-Warehouse Inventory
-// ============================================================
+// --- Link: Product-Warehouse Inventory ---
 
-target link_inventory "Product-to-warehouse stocking relationship" @link {
-  @link(hub_product, hub_store)
+schema link_inventory (
+  link,
+  link_hubs {hub_product, hub_store},
+  note """
+  Product-to-warehouse stocking relationship. No additional business
+  keys beyond the hub references. The link hash key is derived from
+  the two hub hash keys.
 
+  hub_store is reused for warehouse locations. Warehouses are loaded
+  into hub_store with a "warehouse" format designation in the
+  store details satellite.
+  """
+) {
   //  No additional business keys beyond the hub references.
-  //  The link hash key is derived from the two hub hash keys.
-
-  note '''
-    hub_store is reused for warehouse locations. Warehouses are loaded
-    into hub_store with a "warehouse" format designation in the
-    store details satellite.
-  '''
 }
 
 
-// ============================================================
-// Satellite: Effectivity (product stocking at warehouse)
-// ============================================================
+// --- Satellite: Effectivity (product stocking at warehouse) ---
 
-target sat_inventory_effectivity "Product-warehouse assignment timeline" @satellite @effectivity {
-  @parent(link_inventory)
-  @driving_key(hub_product)
-
-  note '''
-    Tracks the period during which a product is actively stocked at
-    a warehouse. End-dated when a product is removed from a warehouse's
-    assortment. The driving key is hub_product — when a product is
-    discontinued at a specific warehouse, only that relationship is
-    end-dated (not all warehouses for that product).
-  '''
+schema sat_inventory_effectivity (
+  satellite,
+  effectivity,
+  parent link_inventory,
+  driving_key hub_product,
+  note """
+  Tracks the period during which a product is actively stocked at
+  a warehouse. End-dated when a product is removed from a warehouse's
+  assortment. The driving key is hub_product — when a product is
+  discontinued at a specific warehouse, only that relationship is
+  end-dated (not all warehouses for that product).
+  """
+) {
+  //  Effectivity satellites carry no business fields.
+  //  All fields (start_date, end_date, is_current) are inferred.
 }
 
 
-// ============================================================
-// Satellite: Stock Levels
-// ============================================================
+// --- Satellite: Stock Levels ---
 
-target sat_inventory_levels "Daily stock position snapshot" @satellite {
-  @parent(link_inventory)
-  @scd(type: 2)
-
+schema sat_inventory_levels (
+  satellite,
+  parent link_inventory,
+  scd 2,
+  note "Daily stock position snapshot"
+) {
   warehouse_location   VARCHAR(20)
   quantity_on_hand     INTEGER
   quantity_reserved    INTEGER
@@ -99,46 +98,56 @@ target sat_inventory_levels "Daily stock position snapshot" @satellite {
 }
 
 
-// ============================================================
-// Mappings
-// ============================================================
+// --- Mappings ---
 
 // Link
-mapping wms_manhattan -> link_inventory {
-  SKU -> sku                             : trim
-  WAREHOUSE_ID -> store_id               : trim
-  => record_source                       : "WMS"
+mapping 'wms to link_inventory' {
+  source { `wms_manhattan` }
+  target { `link_inventory` }
+
+  SKU -> sku                           { trim }
+  WAREHOUSE_ID -> store_id             { trim }
+  -> record_source { "WMS" }
 }
 
 // Effectivity satellite — presence of a record means the relationship is active
-mapping wms_manhattan -> sat_inventory_effectivity {
+mapping 'wms to sat_inventory_effectivity' {
+  source { `wms_manhattan` }
+  target { `sat_inventory_effectivity` }
+
   //  Effectivity is managed by the load pattern:
   //  - New SKU+warehouse combo → new effectivity record with start_date = load_date
   //  - SKU+warehouse disappears from source → end-date the existing record
   //  No explicit field mappings needed beyond the hub key resolution.
-  => record_source                       : "WMS"
+  -> record_source { "WMS" }
 }
 
 // Stock levels satellite
-mapping wms_manhattan -> sat_inventory_levels {
-  LOCATION_CODE -> warehouse_location    : trim
+mapping 'wms to sat_inventory_levels' {
+  source { `wms_manhattan` }
+  target { `sat_inventory_levels` }
+
+  LOCATION_CODE -> warehouse_location  { trim }
   QTY_ON_HAND -> quantity_on_hand
-  QTY_RESERVED -> quantity_reserved      : coalesce(0)
-  QTY_IN_TRANSIT -> quantity_in_transit   : coalesce(0)
+  QTY_RESERVED -> quantity_reserved    { coalesce(0) }
+  QTY_IN_TRANSIT -> quantity_in_transit { coalesce(0) }
 
-  => quantity_available
-    : nl("QTY_ON_HAND - QTY_RESERVED. Floor at zero.")
+  -> quantity_available {
+    "QTY_ON_HAND - QTY_RESERVED. Floor at zero."
+  }
 
-  => inventory_value
-    : nl("QTY_ON_HAND * UNIT_COST. Null if UNIT_COST is null.")
+  -> inventory_value {
+    "QTY_ON_HAND * UNIT_COST. Null if UNIT_COST is null."
+  }
 
-  => days_since_count
-    : nl("DATEDIFF(days, LAST_COUNT_DATE, SNAPSHOT_TS). Null if never counted.")
+  -> days_since_count {
+    "DATEDIFF(days, LAST_COUNT_DATE, SNAPSHOT_TS). Null if never counted."
+  }
 
-  => is_below_reorder
-    : when QTY_ON_HAND < REORDER_POINT => true
-    else => false
+  -> is_below_reorder {
+    "True if QTY_ON_HAND < REORDER_POINT, false otherwise."
+  }
 
   REORDER_QTY -> reorder_quantity
-  => record_source                       : "WMS"
+  -> record_source { "WMS" }
 }

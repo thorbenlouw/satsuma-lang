@@ -1,90 +1,95 @@
 # RetailCo International — Kimball Star Schema
 
-A complete Kimball dimensional model for a multinational department store, expressed in STM using `@tag` conventions for dimensions, facts, and SCD patterns.
+A complete Kimball dimensional model for a multinational department store, expressed in STM v2 using free-form metadata conventions for dimensions, facts, and SCD patterns.
 
-## The Story
+## How it works
 
-RetailCo International operates 850+ stores across 12 countries, selling through both physical stores and an e-commerce platform. This model supports their analytics warehouse — enabling revenue reporting, inventory management, customer segmentation, and loyalty programme analysis.
+STM v2 uses `( )` metadata blocks for **all** annotations — there are no special `@tag` annotations or reserved modelling keywords. Tokens like `dimension`, `fact`, `scd`, `grain` are free-form vocabulary interpreted by an LLM, not by a deterministic parser. This means:
+
+- The **grammar doesn't change** when you add new modelling patterns
+- The **meaning of tokens is conventional**, not enforced — see [LLM-Guidelines.md](LLM-Guidelines.md) for how an LLM should interpret them
+- **Tooling infers mechanical columns** (surrogate keys, validity dates, etc.) based on these conventions — they are never written in the STM file
 
 ## Files
 
-| File | Description | Key patterns demonstrated |
-|------|-------------|--------------------------|
-| `common.stm` | Shared fragments (address, audit), lookups (regions, hierarchy, channels) | `fragment`, `lookup`, `import` |
-| `dim-customer.stm` | Conformed customer dimension, SCD Type 2, fed by 3 sources | `@dimension`, `@conformed`, `@scd(type: 2)`, `@track`, `@ignore`, multi-source mapping |
-| `dim-product.stm` | Product dimension with merchandise hierarchy, SCD Type 1 | `@dimension`, `@scd(type: 1)`, `@natural_key`, `lookup()` for hierarchy resolution |
-| `dim-store.stm` | Store dimension, SCD Type 2 | `@dimension`, `@scd(type: 2)`, fragment spread, lookup enrichment |
-| `fact-sales.stm` | Transaction-grain fact, multi-source (POS + e-commerce) | `@fact`, `@grain`, `@ref`, `@measure(additive\|non_additive)`, `@degenerate` |
-| `fact-inventory.stm` | Daily periodic snapshot fact | `@fact`, `@snapshot(periodic)`, `@measure(semi_additive)` |
+| File | Description | Key conventions demonstrated |
+|------|-------------|------------------------------|
+| `common.stm` | Shared fragments (address, audit), lookups (regions, hierarchy, channels) | `fragment`, `schema` for lookups, `import` |
+| `dim-customer.stm` | Conformed customer dimension, SCD Type 2, fed by 3 sources | `dimension`, `conformed`, `scd 2`, `track`, `ignore`, multi-source mapping |
+| `dim-product.stm` | Product dimension with merchandise hierarchy, SCD Type 1 | `dimension`, `scd 1`, `natural_key`, lookup-via-NL |
+| `dim-store.stm` | Store dimension, SCD Type 2 | `dimension`, `scd 2`, fragment spread, lookup enrichment |
+| `fact-sales.stm` | Transaction-grain fact, multi-source (POS + e-commerce) | `fact`, `grain`, `ref`, `measure additive`/`non_additive`, `degenerate` |
+| `fact-inventory.stm` | Daily periodic snapshot fact | `fact`, `snapshot periodic`, `measure semi_additive` |
 | **Information Mart Layer** | | |
 | `mart-customer-360.stm` | Customer 360 enriched with transaction aggregates | Cross-layer `import` of dim + fact, RFM scoring, channel preference |
 
-## Source Systems
+## Metadata Convention Quick Reference
 
-All five source systems are defined within the integration files that consume them:
+These are **vocabulary tokens** in `( )` metadata — not reserved keywords. An LLM interprets their meaning. See [LLM-Guidelines.md](LLM-Guidelines.md) for the full interpretation rules.
 
-- **Oracle Retail POS** (`pos_oracle`) — in-store transactions, store reference data
-- **Shopify Plus** (`ecom_shopify`) — online orders, customer accounts
-- **Salesforce Service Cloud** (`loyalty_sfdc`) — customer CRM, loyalty programme
-- **SAP MM** (`merch_sap`) — product master, suppliers, pricing
-- **Manhattan Associates WMS** (`wms_manhattan`) — warehouse inventory positions
+### Schema-level tokens
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `dimension` | This is a dimension table | `schema dim_customer (dimension, scd 2) { ... }` |
+| `conformed` | Shared across star schemas | `(dimension, conformed)` |
+| `fact` | This is a fact table | `schema fact_sales (fact, grain {id, line}) { ... }` |
+| `snapshot periodic` | Periodic snapshot fact | `(fact, snapshot periodic)` |
+| `scd N` | SCD strategy (1, 2, or 6) | `(scd 2)` |
+| `natural_key <field>` | Business key for the dimension | `(natural_key customer_id)` |
+| `track {fields}` | Fields that trigger SCD versioning | `(track {email, phone})` |
+| `ignore {fields}` | Fields that do NOT trigger versioning | `(ignore {last_login_channel})` |
+| `grain {fields}` | Fact table grain | `(grain {transaction_id, line_number})` |
+| `ref <dim> on <field>` | Foreign key to a dimension | `(ref dim_customer on customer_id)` |
+
+### Field-level tokens
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `measure additive` | Summable across all dimensions | `quantity INTEGER (measure additive)` |
+| `measure semi_additive` | Summable across some dimensions (not time) | `qty_on_hand INTEGER (measure semi_additive)` |
+| `measure non_additive` | Cannot be summed | `unit_price DECIMAL (measure non_additive)` |
+| `degenerate` | Dimension attribute stored on the fact | `channel VARCHAR(20) (degenerate)` |
 
 ## What Tooling Would Infer
 
-The STM files contain **only business fields**. The following mechanical columns are inferred by tooling based on the `@tags` and are NOT written in the `.stm` files:
+The STM files contain **only business fields**. The following mechanical columns are inferred by convention:
 
-### For `@dimension @scd(type: 2)` (dim_customer, dim_store)
+### For `dimension` + `scd 2` (dim_customer, dim_store)
 
 | Inferred column | Type | Purpose |
 |----------------|------|---------|
-| `surrogate_key` | `BIGINT [pk, auto]` | Auto-incrementing surrogate primary key |
-| `valid_from` | `TIMESTAMPTZ [required]` | Row effective date — when this version became current |
-| `valid_to` | `TIMESTAMPTZ` | Row expiry date — null means this is the current version |
-| `is_current` | `BOOLEAN [required, default: true]` | Convenience flag for the current version |
-| `row_hash` | `CHAR(64)` | Hash of `@track` fields for efficient change detection |
+| `surrogate_key` | `BIGINT (pk, auto)` | Auto-incrementing surrogate primary key |
+| `valid_from` | `TIMESTAMPTZ (required)` | Row effective date |
+| `valid_to` | `TIMESTAMPTZ` | Row expiry date (null = current version) |
+| `is_current` | `BOOLEAN (required, default true)` | Current version flag |
+| `row_hash` | `CHAR(64)` | Hash of `track` fields for change detection |
 
-### For `@dimension @scd(type: 1)` (dim_product)
+### For `dimension` + `scd 1` (dim_product)
 
-No inferred columns — SCD Type 1 simply overwrites in place. The `@natural_key` serves as the primary key.
+No inferred columns — SCD Type 1 overwrites in place. The `natural_key` serves as the primary key.
 
-### For `@fact` (fact_sales, fact_inventory_snapshot)
+### For `fact` (fact_sales, fact_inventory_snapshot)
 
 | Inferred column | Type | Purpose |
 |----------------|------|---------|
 | `etl_batch_id` | `BIGINT` | Load batch identifier for auditability |
 | `loaded_at` | `TIMESTAMPTZ` | When this row was loaded |
 
-### For `@ref dim on field`
+### For `ref <dim> on <field>`
 
-Each `@ref` declaration infers a surrogate key FK column:
+Each `ref` declaration infers a surrogate key FK column:
 
 | Declaration | Inferred column | Type |
 |------------|----------------|------|
-| `@ref dim_customer on customer_id` | `dim_customer_key` | `BIGINT [ref: dim_customer.surrogate_key]` |
-| `@ref dim_product on sku` | `dim_product_key` | `BIGINT [ref: dim_product.surrogate_key]` |
-| `@ref dim_store on store_id` | `dim_store_key` | `BIGINT [ref: dim_store.surrogate_key]` |
-| `@ref dim_date on transaction_date` | `dim_date_key` | `BIGINT [ref: dim_date.surrogate_key]` |
-
-## Tag Quick Reference
-
-| Tag | Used on | Meaning |
-|-----|---------|---------|
-| `@dimension` | Schema block | This is a dimension table |
-| `@conformed` | Schema block | Shared across star schemas |
-| `@fact` | Schema block | This is a fact table |
-| `@snapshot(periodic)` | Schema block | Periodic snapshot fact (semi-additive measures) |
-| `@scd(type: N)` | Schema block | Slowly Changing Dimension strategy (1, 2, or 6) |
-| `@natural_key(field)` | Inside schema block | Business key for the dimension |
-| `@track(fields...)` | Inside schema block | Fields that trigger SCD versioning |
-| `@ignore(fields...)` | Inside schema block | Fields that do NOT trigger versioning |
-| `@grain(fields...)` | Inside schema block | Fact table grain |
-| `@ref dim on field` | Inside schema block | Foreign key to a dimension |
-| `@measure(type)` | On a field | Measure classification: additive, semi_additive, non_additive |
-| `@degenerate` | On a field | Degenerate dimension attribute stored on the fact |
+| `ref dim_customer on customer_id` | `dim_customer_key` | `BIGINT (ref dim_customer.surrogate_key)` |
+| `ref dim_product on sku` | `dim_product_key` | `BIGINT (ref dim_product.surrogate_key)` |
+| `ref dim_store on store_id` | `dim_store_key` | `BIGINT (ref dim_store.surrogate_key)` |
+| `ref dim_date on transaction_date` | `dim_date_key` | `BIGINT (ref dim_date.surrogate_key)` |
 
 ## Cross-Layer Imports
 
-The `mart-customer-360.stm` file demonstrates cross-layer imports: `dim_customer` and `fact_sales` are `target` blocks in their respective files, but appear on the source side of mappings in the mart. Block keywords (`source`, `target`, etc.) are semantic sugar — the `mapping` syntax determines data flow direction.
+The `mart-customer-360.stm` file demonstrates cross-layer imports: `dim_customer` and `fact_sales` are schema blocks in their respective files, but appear on the source side of mappings in the mart. The `mapping` block's `source { }` / `target { }` determines data flow direction — not the file where the schema was originally defined.
 
 Compare the Kimball mart with the Data Vault equivalent in `../example_datavault/mart-customer-360.stm`:
 
@@ -95,13 +100,11 @@ Compare the Kimball mart with the Data Vault equivalent in `../example_datavault
 | Enrichment | Aggregate from fact_sales | Merge attributes from separate satellites |
 | Complexity | Low — heavy lifting done at dim load | Higher — vault is normalized by design |
 
-Both produce a similar 360 view. The architectural trade-off: Kimball front-loads the denormalization (at dimension load time), Data Vault defers it (at mart build time).
-
 ## Comparison with Data Vault
 
 The same RetailCo domain is modelled as a Data Vault in `../example_datavault/`. Key differences:
 
 - **Kimball**: Dimensions are denormalized, query-optimized. Fact tables reference dimensions via surrogate keys. History is managed per-dimension via SCD types.
-- **Data Vault**: Hubs hold business keys, satellites hold attributes, links hold relationships. Everything is insert-only with full history. More normalized, more resilient to source changes, but requires a business vault or information mart layer for analytics queries.
+- **Data Vault**: Hubs hold business keys, satellites hold attributes, links hold relationships. Everything is insert-only with full history. More normalized, more resilient to source changes, but requires a mart layer for analytics queries.
 
-Both approaches express cleanly in STM. The same source schemas, the same transform logic — only the target structure and tags differ.
+Both approaches express cleanly in STM. The same source schemas, the same transform logic — only the target structure and metadata tokens differ.

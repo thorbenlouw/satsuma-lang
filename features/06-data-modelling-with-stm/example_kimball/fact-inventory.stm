@@ -1,70 +1,66 @@
-integration "RetailCo_Fact_Inventory" {
-  cardinality 1:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [kimball, fact, inventory, snapshot]
+// RetailCo International — Kimball Star Schema
+// Inventory Snapshot Fact
 
-  note '''
-    # Inventory Snapshot Fact
+note {
+  """
+  # Inventory Snapshot Fact
 
-    **Periodic snapshot** taken daily at 23:59 UTC from the warehouse
-    management system. Each row is one SKU in one warehouse on one day.
+  **Periodic snapshot** taken daily at 23:59 UTC from the warehouse
+  management system. Each row is one SKU in one warehouse on one day.
 
-    ## Why periodic snapshot?
-    Inventory levels change continuously throughout the day. A daily
-    snapshot captures the end-of-day position for trend analysis,
-    stockout detection, and reorder planning.
+  ## Why periodic snapshot?
+  Inventory levels change continuously throughout the day. A daily
+  snapshot captures the end-of-day position for trend analysis,
+  stockout detection, and reorder planning.
 
-    ## Semi-additive measures
-    `quantity_on_hand`, `quantity_reserved`, `quantity_in_transit` are
-    **semi-additive** — they can be summed across products and warehouses
-    but NOT across time (you can't add Monday's stock to Tuesday's stock).
-  '''
+  ## Semi-additive measures
+  `quantity_on_hand`, `quantity_reserved`, `quantity_in_transit` are
+  **semi-additive** — they can be summed across products and warehouses
+  but NOT across time (you can't add Monday's stock to Tuesday's stock).
+  """
 }
 
 
-// ============================================================
-// Source
-// ============================================================
+// --- Source ---
 
-source wms_manhattan "Manhattan Associates WMS — stock positions" {
-  SKU                 VARCHAR(18)     [pk]
-  WAREHOUSE_ID        VARCHAR(10)     [pk]
+schema wms_manhattan (note "Manhattan Associates WMS — stock positions") {
+  SKU                 VARCHAR(18)     (pk)
+  WAREHOUSE_ID        VARCHAR(10)     (pk)
   LOCATION_CODE       VARCHAR(20)                          // Bin/shelf location
-  QTY_ON_HAND         INTEGER         [required]
-  QTY_RESERVED        INTEGER         [default: 0]        // Allocated to orders, not yet picked
-  QTY_IN_TRANSIT      INTEGER         [default: 0]        // In transit from supplier or DC
+  QTY_ON_HAND         INTEGER         (required)
+  QTY_RESERVED        INTEGER         (default 0)        // Allocated to orders, not yet picked
+  QTY_IN_TRANSIT      INTEGER         (default 0)        // In transit from supplier or DC
   QTY_AVAILABLE       INTEGER                              //! Calculated: on_hand - reserved
   LAST_COUNT_DATE     DATE                                 // Last physical inventory count
   REORDER_POINT       INTEGER
   REORDER_QTY         INTEGER
   UNIT_COST           DECIMAL(10,2)                        // Weighted average cost
-  SNAPSHOT_TS         TIMESTAMPTZ     [required]           // When this snapshot was taken
+  SNAPSHOT_TS         TIMESTAMPTZ     (required)           // When this snapshot was taken
 }
 
 
-// ============================================================
-// Target: Inventory Snapshot Fact
-// ============================================================
+// --- Target: Inventory Snapshot Fact ---
 
-target fact_inventory_snapshot "Daily inventory position" @fact @snapshot(periodic) {
-  @grain(snapshot_date, sku, warehouse_id)
-  @ref dim_product on sku
-  @ref dim_date on snapshot_date
-
-  snapshot_date        DATE            [required]
-  sku                  VARCHAR(18)     [required]
-  warehouse_id         VARCHAR(10)     [required]          @degenerate
-  warehouse_location   VARCHAR(20)                         @degenerate
+schema fact_inventory_snapshot (
+  fact, snapshot periodic,
+  grain {snapshot_date, sku, warehouse_id},
+  ref dim_product on sku,
+  ref dim_date on snapshot_date,
+  note "Daily inventory position"
+) {
+  snapshot_date        DATE            (required)
+  sku                  VARCHAR(18)     (required)
+  warehouse_id         VARCHAR(10)     (required, degenerate)
+  warehouse_location   VARCHAR(20)     (degenerate)
 
   // Semi-additive measures — summable across product and warehouse, NOT across time
-  quantity_on_hand     INTEGER         [required]          @measure(semi_additive)
-  quantity_reserved    INTEGER         [default: 0]        @measure(semi_additive)
-  quantity_in_transit  INTEGER         [default: 0]        @measure(semi_additive)
-  quantity_available   INTEGER         [required]          @measure(semi_additive)
+  quantity_on_hand     INTEGER         (required, measure semi_additive)
+  quantity_reserved    INTEGER         (default 0, measure semi_additive)
+  quantity_in_transit  INTEGER         (default 0, measure semi_additive)
+  quantity_available   INTEGER         (required, measure semi_additive)
 
   // Additive value measures
-  inventory_value      DECIMAL(14,2)                       @measure(additive)
+  inventory_value      DECIMAL(14,2)   (measure additive)
 
   // Operational flags
   days_since_count     INTEGER                             // Days since last physical count
@@ -73,39 +69,43 @@ target fact_inventory_snapshot "Daily inventory position" @fact @snapshot(period
 }
 
 
-// ============================================================
-// Mapping
-// ============================================================
+// --- Mapping ---
 
-mapping wms_manhattan -> fact_inventory_snapshot {
-  note '''
-    Daily snapshot taken at 23:59 UTC. The WMS provides a single
-    point-in-time extract per SKU per warehouse.
-  '''
+mapping 'wms to fact_inventory_snapshot' {
+  source { `wms_manhattan` }
+  target { `fact_inventory_snapshot` }
 
-  SNAPSHOT_TS -> snapshot_date           : to_utc | truncate_to_date
-  SKU -> sku                             : trim
-  WAREHOUSE_ID -> warehouse_id           : trim
-  LOCATION_CODE -> warehouse_location    : trim
+  note {
+    "Daily snapshot taken at 23:59 UTC. The WMS provides a single
+     point-in-time extract per SKU per warehouse."
+  }
+
+  SNAPSHOT_TS -> snapshot_date         { to_utc | truncate_to_date }
+  SKU -> sku                           { trim }
+  WAREHOUSE_ID -> warehouse_id         { trim }
+  LOCATION_CODE -> warehouse_location  { trim }
 
   QTY_ON_HAND -> quantity_on_hand
-  QTY_RESERVED -> quantity_reserved      : coalesce(0)
-  QTY_IN_TRANSIT -> quantity_in_transit   : coalesce(0)
+  QTY_RESERVED -> quantity_reserved    { coalesce(0) }
+  QTY_IN_TRANSIT -> quantity_in_transit { coalesce(0) }
 
   //! QTY_AVAILABLE in source is sometimes stale (calculated async).
   //  We recalculate it here for consistency.
-  => quantity_available
-    : nl("QTY_ON_HAND - QTY_RESERVED. Floor at zero.")
+  -> quantity_available {
+    "QTY_ON_HAND - QTY_RESERVED. Floor at zero."
+  }
 
-  => inventory_value
-    : nl("QTY_ON_HAND * UNIT_COST. Null if UNIT_COST is null.")
+  -> inventory_value {
+    "QTY_ON_HAND * UNIT_COST. Null if UNIT_COST is null."
+  }
 
-  => days_since_count
-    : nl("DATEDIFF(days, LAST_COUNT_DATE, SNAPSHOT_TS). Null if never counted.")
+  -> days_since_count {
+    "DATEDIFF(days, LAST_COUNT_DATE, SNAPSHOT_TS). Null if never counted."
+  }
 
-  => is_below_reorder
-    : when QTY_ON_HAND < REORDER_POINT => true
-    else => false
+  -> is_below_reorder {
+    "True if QTY_ON_HAND < REORDER_POINT, false otherwise."
+  }
 
   REORDER_QTY -> reorder_quantity
 }

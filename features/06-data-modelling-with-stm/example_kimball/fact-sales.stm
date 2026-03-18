@@ -1,174 +1,175 @@
+// RetailCo International — Kimball Star Schema
+// Sales Transaction Fact
+
 import { channel_codes } from "common.stm"
 
-integration "RetailCo_Fact_Sales" {
-  cardinality N:1
-  author "RetailCo Data Platform"
-  version "1.0.0"
-  tags [kimball, fact, sales, multi-source]
+note {
+  """
+  # Sales Transaction Fact
 
-  note '''
-    # Sales Transaction Fact
+  Transaction-grain fact table combining in-store (POS) and online
+  (Shopify) sales into a unified view. Each row represents one
+  line item in a transaction.
 
-    Transaction-grain fact table combining in-store (POS) and online
-    (Shopify) sales into a unified view. Each row represents one
-    line item in a transaction.
+  ## Grain
+  `transaction_id` + `line_number` — one row per item sold.
 
-    ## Grain
-    `transaction_id` + `line_number` — one row per item sold.
+  ## Multi-source
+  POS and e-commerce transactions are normalised into the same grain.
+  The `channel` degenerate dimension distinguishes origin.
 
-    ## Multi-source
-    POS and e-commerce transactions are normalised into the same grain.
-    The `channel` degenerate dimension distinguishes origin.
-
-    ## Measures
-    - `quantity`, `gross_amount`, `net_amount` — fully additive
-    - `unit_price` — non-additive (cannot be summed)
-    - `discount_amount`, `tax_amount` — fully additive
-  '''
+  ## Measures
+  - `quantity`, `gross_amount`, `net_amount` — fully additive
+  - `unit_price` — non-additive (cannot be summed)
+  - `discount_amount`, `tax_amount` — fully additive
+  """
 }
 
 
-// ============================================================
-// Sources
-// ============================================================
+// --- Sources ---
 
-source pos_oracle "Oracle Retail POS — in-store transactions" {
-  TRANS_ID            BIGINT          [pk]
-  STORE_ID            VARCHAR(20)     [required]
+schema pos_oracle (note "Oracle Retail POS — in-store transactions") {
+  TRANS_ID            BIGINT          (pk)
+  STORE_ID            VARCHAR(20)     (required)
   REGISTER_ID         VARCHAR(10)
-  TRANS_DATE          DATE            [required]
+  TRANS_DATE          DATE            (required)
   TRANS_TIME          TIME
   CUST_ID             INTEGER                              //! NULL for ~35% (non-loyalty purchases)
   LOYALTY_CARD_NBR    VARCHAR(20)
-  LINE_NBR            INTEGER         [required]
-  SKU                 VARCHAR(18)     [required]
-  QTY                 INTEGER         [required]
-  UNIT_PRICE          DECIMAL(10,2)   [required]
-  DISCOUNT_AMT        DECIMAL(10,2)   [default: 0]
-  TAX_AMT             DECIMAL(10,2)   [default: 0]
-  PAYMENT_TYPE        CHAR(2)         [enum: {CA, CC, DC, GC, AP, GP}]
+  LINE_NBR            INTEGER         (required)
+  SKU                 VARCHAR(18)     (required)
+  QTY                 INTEGER         (required)
+  UNIT_PRICE          DECIMAL(10,2)   (required)
+  DISCOUNT_AMT        DECIMAL(10,2)   (default 0)
+  TAX_AMT             DECIMAL(10,2)   (default 0)
+  PAYMENT_TYPE        CHAR(2)         (enum {CA, CC, DC, GC, AP, GP})
   CASHIER_ID          VARCHAR(20)
-  VOID_FLAG           CHAR(1)         [enum: {Y, N}, default: N]
+  VOID_FLAG           CHAR(1)         (enum {Y, N}, default N)
 }
 
-source ecom_shopify "Shopify Plus — online orders" {
-  order_id            BIGINT          [pk]
+schema ecom_shopify (note "Shopify Plus — online orders") {
+  order_id            BIGINT          (pk)
   customer_id         BIGINT
-  email               STRING(255)     [pii]
-  order_date          DATE            [required]
-  line_number         INTEGER         [required]
+  email               STRING(255)     (pii)
+  order_date          DATE            (required)
+  line_number         INTEGER         (required)
   variant_id          BIGINT
-  sku                 STRING(18)      [required]
-  quantity            INTEGER         [required]
-  unit_price          DECIMAL(10,2)   [required]
-  discount_amount     DECIMAL(10,2)   [default: 0]
-  tax_amount          DECIMAL(10,2)   [default: 0]
-  currency            CHAR(3)         [default: USD]
-  fulfillment_status  STRING(20)      [enum: {pending, shipped, delivered, returned}]
+  sku                 STRING(18)      (required)
+  quantity            INTEGER         (required)
+  unit_price          DECIMAL(10,2)   (required)
+  discount_amount     DECIMAL(10,2)   (default 0)
+  tax_amount          DECIMAL(10,2)   (default 0)
+  currency            CHAR(3)         (default USD)
+  fulfillment_status  STRING(20)      (enum {pending, shipped, delivered, returned})
   discount_code       STRING(50)
 }
 
 
-// ============================================================
-// Target: Sales Transaction Fact
-// ============================================================
+// --- Target: Sales Transaction Fact ---
 
-target fact_sales "Transaction line-item fact" @fact {
-  @grain(transaction_id, line_number)
-  @ref dim_customer on customer_id
-  @ref dim_product on sku
-  @ref dim_store on store_id
-  @ref dim_date on transaction_date
-
-  transaction_id       VARCHAR(30)     [required]          // Prefixed: POS-{id} or WEB-{id}
-  line_number          INTEGER         [required]
-  transaction_date     DATE            [required]
+schema fact_sales (
+  fact,
+  grain {transaction_id, line_number},
+  ref dim_customer on customer_id,
+  ref dim_product on sku,
+  ref dim_store on store_id,
+  ref dim_date on transaction_date,
+  note "Transaction line-item fact"
+) {
+  transaction_id       VARCHAR(30)     (required)          // Prefixed: POS-{id} or WEB-{id}
+  line_number          INTEGER         (required)
+  transaction_date     DATE            (required)
   transaction_time     TIME
   customer_id          VARCHAR(50)                         //! NULL for anonymous POS transactions
-  sku                  VARCHAR(18)     [required]
+  sku                  VARCHAR(18)     (required)
   store_id             VARCHAR(20)                         // NULL for online orders
-  channel              VARCHAR(20)     [required]          @degenerate
-  payment_type         VARCHAR(20)                         @degenerate
+  channel              VARCHAR(20)     (required, degenerate)
+  payment_type         VARCHAR(20)     (degenerate)
 
   // Measures
-  quantity             INTEGER         [required]          @measure(additive)
-  unit_price           DECIMAL(10,2)   [required]          @measure(non_additive)
-  gross_amount         DECIMAL(12,2)   [required]          @measure(additive)
-  discount_amount      DECIMAL(10,2)   [default: 0]       @measure(additive)
-  tax_amount           DECIMAL(10,2)   [default: 0]       @measure(additive)
-  net_amount           DECIMAL(12,2)   [required]          @measure(additive)
+  quantity             INTEGER         (required, measure additive)
+  unit_price           DECIMAL(10,2)   (required, measure non_additive)
+  gross_amount         DECIMAL(12,2)   (required, measure additive)
+  discount_amount      DECIMAL(10,2)   (default 0, measure additive)
+  tax_amount           DECIMAL(10,2)   (default 0, measure additive)
+  net_amount           DECIMAL(12,2)   (required, measure additive)
 }
 
 
-// ============================================================
-// Mappings
-// ============================================================
+// --- Mappings ---
 
 // In-store sales from POS
-mapping pos_oracle -> fact_sales {
-  note '''
-    Voided transactions (VOID_FLAG = 'Y') are excluded at source.
-    Customer linkage uses LOYALTY_CARD_NBR matched to SFDC ContactId
-    via the loyalty programme lookup.
-  '''
+mapping 'pos to fact_sales' {
+  source { `pos_oracle` }
+  target { `fact_sales` }
 
-  TRANS_ID -> transaction_id             : prepend("POS-") | to_string
+  note {
+    "Voided transactions (VOID_FLAG = 'Y') are excluded at source.
+     Customer linkage uses LOYALTY_CARD_NBR matched to SFDC ContactId
+     via the loyalty programme lookup."
+  }
+
+  TRANS_ID -> transaction_id           { prepend("POS-") | to_string }
   LINE_NBR -> line_number
   TRANS_DATE -> transaction_date
   TRANS_TIME -> transaction_time
 
-  LOYALTY_CARD_NBR -> customer_id
-    : nl("Look up the SFDC ContactId from the loyalty card number.
-          Null if card number is null or not found in CRM.")
+  LOYALTY_CARD_NBR -> customer_id {
+    "Look up the SFDC ContactId from the loyalty card number.
+     Null if card number is null or not found in CRM."
+  }
 
-  SKU -> sku                             : trim
+  SKU -> sku                           { trim }
   STORE_ID -> store_id
-  => channel                             : "in_store"
+  -> channel { "in_store" }
 
-  PAYMENT_TYPE -> payment_type
-    : map { CA: "cash", CC: "credit_card", DC: "debit_card",
-            GC: "gift_card", AP: "apple_pay", GP: "google_pay" }
+  PAYMENT_TYPE -> payment_type {
+    map { CA: "cash", CC: "credit_card", DC: "debit_card",
+          GC: "gift_card", AP: "apple_pay", GP: "google_pay" }
+  }
 
   QTY -> quantity
   UNIT_PRICE -> unit_price
-  => gross_amount                        : QTY * UNIT_PRICE
-  DISCOUNT_AMT -> discount_amount        : coalesce(0)
-  TAX_AMT -> tax_amount                  : coalesce(0)
-  => net_amount
-    : nl("gross_amount - discount_amount + tax_amount")
+  -> gross_amount { "QTY * UNIT_PRICE" }
+  DISCOUNT_AMT -> discount_amount      { coalesce(0) }
+  TAX_AMT -> tax_amount                { coalesce(0) }
+  -> net_amount { "gross_amount - discount_amount + tax_amount" }
 }
 
 // Online sales from Shopify
-mapping ecom_shopify -> fact_sales {
-  note '''
-    Only fulfilled orders are included (fulfillment_status != 'returned').
-    All amounts normalised to USD using the order's currency field.
-  '''
+mapping 'shopify to fact_sales' {
+  source { `ecom_shopify` }
+  target { `fact_sales` }
+
+  note {
+    "Only fulfilled orders are included (fulfillment_status != 'returned').
+     All amounts normalised to USD using the order's currency field."
+  }
 
   //! Currency conversion: Shopify amounts may be in local currency.
   //  Must convert to USD before loading.
 
-  order_id -> transaction_id             : prepend("WEB-") | to_string
+  order_id -> transaction_id           { prepend("WEB-") | to_string }
   line_number -> line_number
   order_date -> transaction_date
-  => transaction_time                    : null                // Not available from Shopify
+  -> transaction_time { null }         // Not available from Shopify
 
-  customer_id -> customer_id
-    : nl("Match Shopify customer_id to SFDC ContactId via email address.
-          Null if no match found.")
+  customer_id -> customer_id {
+    "Match Shopify customer_id to SFDC ContactId via email address.
+     Null if no match found."
+  }
 
-  sku -> sku                             : trim
-  => store_id                            : null                // Online — no physical store
-  => channel                             : "online"
-  => payment_type                        : null                //? Shopify payment type not yet mapped
+  sku -> sku                           { trim }
+  -> store_id { null }                 // Online — no physical store
+  -> channel { "online" }
+  -> payment_type { null }             //? Shopify payment type not yet mapped
 
   quantity -> quantity
-  unit_price -> unit_price
-    : nl("Convert from order currency to USD using daily spot rate")
-  => gross_amount
-    : nl("quantity * unit_price (after currency conversion)")
-  discount_amount -> discount_amount     : coalesce(0)
-  tax_amount -> tax_amount               : coalesce(0)
-  => net_amount
-    : nl("gross_amount - discount_amount + tax_amount")
+  unit_price -> unit_price {
+    "Convert from order currency to USD using daily spot rate"
+  }
+  -> gross_amount { "quantity * unit_price (after currency conversion)" }
+  discount_amount -> discount_amount   { coalesce(0) }
+  tax_amount -> tax_amount             { coalesce(0) }
+  -> net_amount { "gross_amount - discount_amount + tax_amount" }
 }
