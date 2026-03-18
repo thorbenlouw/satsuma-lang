@@ -1,6 +1,6 @@
 # VS Code STM Extension
 
-Syntax highlighting for the Semantic Transform Model (STM) language.
+Syntax highlighting for the Structured Transform Markup (STM) language.
 
 ## Installation (local development)
 
@@ -48,51 +48,60 @@ Development Host to preview changes.
 ## Known Approximation Limits
 
 The TextMate grammar handles several constructs approximately due to
-regex-only matching. See `features/03-vscode-syntax-highlighter/HIGHLIGHTING-TAXONOMY.md §3`
+regex-only matching. See `features/07-vscode-syntax-highlighter-v2/HIGHLIGHTING-TAXONOMY.md §14`
 for the full list. Key limitations:
 
-- **Source vs target paths** (§3.1): Both sides of `->` get `variable.other.field.stm`.
-  Semantic tokens will add `source`/`target` modifiers.
-- **Dotted paths** (§3.2): `schema.field` coloured uniformly — parser needed to
-  distinguish schema ref from field ref.
-- **Namespace qualifier** (§3.3): `::` is matched but preceding identifier not verified
-  as a namespace.
-- **Soft keywords** (§3.4): `namespace` and `workspace` are scoped as keywords only in
-  declaration-head position; uses are approximate.
-- **Function calls in transforms** (§3.5): Only `name(` patterns scoped as function
-  calls; bare pipe-chain identifiers stay as `variable.other.field.stm`.
-- **`map` keyword** (§3.6): Top-level `map` vs inline value-map literal distinguished
-  by context — minor overlap possible.
+- **`source` / `target` as keywords vs. field names** (§14): Both are scoped as
+  keywords everywhere. A parser can distinguish them by block context.
+- **`map` as keyword vs. field name** (§14): `map` is highlighted as a keyword
+  everywhere. In practice field names of `map` are uncommon.
+- **`list` / `record` as keywords vs. field names** (§14): Highlighted as keywords
+  inside schema bodies — minor overlap possible for fields named `list` or `record`.
+- **Pipeline tokens as field names** (§14): `trim`, `filter`, `format` etc. could
+  be field names but are only highlighted as pipeline tokens inside `{}` arrow bodies.
+- **Vocabulary tokens as field names** (§14): Constraint/format tokens (`filter`,
+  `format`) are only matched inside `()` metadata blocks, reducing false positives.
+- **Type names vs. field names** (§14): An all-caps field like `STATUS CHAR(1)` —
+  `STATUS` is matched as a type by position (second token in declaration). Parser
+  needed for precise disambiguation.
 
 ## Semantic Tokens (Future Work)
 
 Parser-backed semantic tokens are planned as a follow-on to resolve the approximation
-limits above. See `features/03-vscode-syntax-highlighter/SEMANTIC-TOKENS-DESIGN.md`
-for the full design.
+limits above. Candidates from the taxonomy (§14):
 
-Dependencies: tree-sitter-stm grammar stable (stm-14x), CST-to-AST mapping defined.
+- `source` / `target` — distinguish keyword (inside `mapping {}`) from field name (inside `schema {}`)
+- `map` — distinguish value-mapping block keyword from field identifier
+- `list` / `record` — distinguish structural keywords from field names
+- Type-position identifiers — confirm second token in declaration is a type, not a field
+
+Dependencies: tree-sitter-stm grammar stable, CST-to-AST mapping defined.
 
 ## Shared Token Mapping
 
-The TextMate scopes in this extension align with the Tree-sitter `highlights.scm`
-captures defined in `tooling/tree-sitter-stm/queries/highlights.scm`. The full
-correspondence table is in `HIGHLIGHTING-TAXONOMY.md §4.1`.
+The TextMate scopes in this extension align with the token taxonomy defined in
+`features/07-vscode-syntax-highlighter-v2/HIGHLIGHTING-TAXONOMY.md`. The full
+scope summary is in §15 of that document.
 
 New syntax patterns should produce:
-1. An updated `examples/*.stm` file
-2. A new/updated Tree-sitter corpus test
-3. A corresponding TextMate scope fixture
+
+1. An updated example `.stm` file in `test/fixtures/`
+2. A corresponding TextMate scope fixture test
 
 ## Theme Verification
 
 Before releases, verify highlighting in:
+
 - **Dark+** (VS Code default dark)
 - **Light+** (VS Code default light)
 - **One Dark Pro** (popular community theme)
 
 Checklist:
-- [ ] Keywords coloured distinctly from identifiers
-- [ ] Strings coloured
+
+- [ ] Keywords (`schema`, `mapping`, `fragment`, `record`, `list`, `transform`, `note`) coloured distinctly from identifiers
+- [ ] `import` / `from` coloured as control-flow keywords
+- [ ] Strings (double-quoted NL, triple-quoted Markdown, single-quoted labels, backtick identifiers) each coloured
 - [ ] Comments visually de-emphasised
-- [ ] Annotation and tag names distinguishable from field names
+- [ ] Vocabulary tokens in `()` metadata (`pk`, `required`, `pii`, `enum`, `format`) distinguishable from field names
+- [ ] Pipeline function tokens (`trim`, `lowercase`, `coalesce`) highlighted inside `{}` bodies
 - [ ] `//!` and `//?` fall back gracefully in themes that don't distinguish them
