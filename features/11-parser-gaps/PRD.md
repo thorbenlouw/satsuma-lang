@@ -331,6 +331,86 @@ note {
 
 Spec status: example-backed only; requires clarification before parser work.
 
+### 12. `import` declarations
+
+The parser does not support `import { ... } from "..."` statements. These are clearly spec-backed and used extensively in the feature 06 examples (Kimball and Data Vault).
+
+Observed examples:
+
+- `import { address_fields } from "common.stm"` in `features/06-data-modelling-with-stm/example_kimball/dim-customer.stm`
+- `import { channel_codes } from "common.stm"` in `features/06-data-modelling-with-stm/example_kimball/fact-sales.stm`
+- `import { hub_customer, sat_customer_demographics } from "hub-customer.stm"` in `features/06-data-modelling-with-stm/example_datavault/mart-customer-360.stm`
+
+Representative corpus test:
+
+```stm
+import { address_fields } from "common.stm"
+import { channel_codes } from "common.stm"
+```
+
+Spec status: strongly spec-backed — `STM-V2-SPEC.md` defines import syntax explicitly.
+
+### 13. `ref` with `on` join clause in schema metadata
+
+The feature 06 Kimball examples use `ref dim_X on field` inside schema metadata to declare foreign-key joins. The parser does not support the `on <field>` clause after a `ref` metadata value.
+
+Observed examples:
+
+- `ref dim_customer on customer_id` in `features/06-data-modelling-with-stm/example_kimball/fact-sales.stm`
+- `ref dim_product on sku` in `features/06-data-modelling-with-stm/example_kimball/fact-sales.stm`
+- `ref dim_store on store_id` in `features/06-data-modelling-with-stm/example_kimball/fact-sales.stm`
+- `ref dim_date on transaction_date` in `features/06-data-modelling-with-stm/example_kimball/fact-sales.stm`
+
+Representative corpus test:
+
+```stm
+schema fact_sales (
+  fact,
+  grain {transaction_id, line_number},
+  ref dim_customer on customer_id,
+  ref dim_product on sku
+) {
+  transaction_id VARCHAR(30)
+}
+```
+
+Spec status: example-backed only (feature 06 examples); not yet in spec prose. Needs spec clarification.
+
+---
+
+## CLI Bugs Found During Exploratory Testing
+
+These are not parser gaps but CLI extraction and composition bugs that affect downstream commands.
+
+### CLI-1. Source/target refs include backtick delimiters
+
+`extractMappings` stores source and target schema names with their backtick delimiters intact (e.g., `` `legacy_sqlserver` `` instead of `legacy_sqlserver`). Since schemas are indexed without backticks, this breaks:
+
+- **`lineage`** — graph edges use backtick-quoted names, graph nodes use unquoted names; no edges are ever traversed.
+- **`where-used`** — `usedByMappings` keys include backticks, so `where-used analytics_db` finds no references even though `analytics_db` is a mapping target.
+- **`validate`** semantic checks — all mapping source/target refs produce false `undefined-ref` warnings.
+
+Reproduction:
+
+```bash
+stm lineage --from crm_system examples/     # shows no downstream edges
+stm where-used analytics_db examples/       # "No references found"
+stm validate examples/                       # false undefined-ref warnings for all mappings
+```
+
+### CLI-2. Multi-source annotated entries pollute source refs
+
+For mappings with annotated source entries (e.g., `customer 360` in `multi-source-join.stm`), `mapping.sources` includes raw text with filter metadata and NL join descriptions instead of just schema names.
+
+Reproduction:
+
+```bash
+# mapping.sources for 'customer 360' contains:
+#   '`crm_customers`       (filter "email NOT LIKE \'%@test.internal\'")'
+#   '"Join crm_customers to order_transactions on ..."'
+# instead of just ['crm_customers', 'order_transactions', 'support_tickets']
+```
+
 ---
 
 ## Proposed Work Order
