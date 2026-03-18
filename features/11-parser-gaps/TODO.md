@@ -79,6 +79,25 @@
 - [ ] Decide whether annotated `source` entries need spec text in `STM-V2-SPEC.md`
 - [ ] Update spec/examples if the final answer is “normalize the example” instead of “extend the parser”
 
+## Phase 9: Import declarations
+
+- [ ] Add corpus test for `import { name } from "path.stm"`
+- [ ] Add corpus test for multi-import `import { a, b } from "path.stm"`
+- [ ] Add corpus test for quoted names in imports `import { 'address fields' } from "lib/common.stm"`
+- [ ] Implement import_declaration grammar rule
+
+## Phase 10: Ref-on join metadata
+
+- [ ] Decide whether `ref dim_X on field` is spec-worthy or should be normalized out of examples
+- [ ] If spec-worthy: add corpus test for `ref dim_customer on customer_id` in schema metadata
+- [ ] If spec-worthy: extend metadata grammar to support `ref <ident> on <ident>` form
+
+## CLI Bug Fixes
+
+- [ ] Strip backtick delimiters from `mapping.sources` and `mapping.targets` in `extractMappings`
+- [ ] Clean annotated source entries to extract only schema name refs
+- [ ] Verify `lineage`, `where-used`, and `validate` semantic checks work after the fix
+
 ## Acceptance Checklist
 
 - [ ] All example files under `examples/` parse with zero errors
