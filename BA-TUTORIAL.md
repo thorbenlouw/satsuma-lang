@@ -566,6 +566,328 @@ That single row raises immediate questions. *"What about 'Value Prop' — is tha
 
 ---
 
+## Metrics: Defining What You Measure
+
+Data pipelines don't just move data — they feed business metrics. STM has a dedicated `metric` keyword for declaring KPIs and measures, so that the definition of *"what does MRR mean?"* lives alongside the schemas and mappings it depends on, not in a Confluence page that nobody updates.
+
+A metric block says: **what** the metric measures, **where** the data comes from, and **how** it can be sliced. It doesn't describe the implementation step-by-step — that's what mappings are for. Instead, the `note { }` block captures the business definition in natural language.
+
+```stm
+metric monthly_recurring_revenue "MRR" (
+  source fact_subscriptions,
+  grain monthly,
+  slice {customer_segment, product_line, region},
+  filter "status = 'active' AND is_trial = false"
+) {
+  value  DECIMAL(14,2)  (measure additive)
+
+  note {
+    "Sum of active subscription amounts, normalized to monthly.
+     Annual subscriptions divided by 12. Quarterly by 3.
+     Excludes trials and churned subscriptions."
+  }
+}
+```
+
+Reading this aloud: *"MRR is a monthly metric sourced from `fact_subscriptions`, filtered to active non-trial rows, sliceable by segment, product line, and region. Its value is additive — you can sum it across any dimension."*
+
+The metadata tokens in `( )` work exactly like the ones you've already seen on schemas and fields:
+
+| Token | What It Means |
+| ----- | ------------- |
+| `source` | Which schema(s) feed this metric |
+| `grain` | The time grain (daily, monthly, etc.) |
+| `slice` | Dimensions you can cut the metric by |
+| `filter` | Row-level condition applied before aggregation |
+| `measure additive` | Can be summed across all dimensions |
+| `measure non_additive` | Cannot be summed (ratios, averages) |
+| `measure semi_additive` | Can be summed across some dimensions but not time (e.g. account balances) |
+
+A metric with multiple measures and multi-source lineage:
+
+```stm
+metric customer_lifetime_value "CLV" (
+  source {fact_orders, dim_customer},
+  slice {acquisition_channel, segment, cohort_year}
+) {
+  value              DECIMAL(14,2)  (measure non_additive)
+  order_count        INTEGER        (measure additive)
+  avg_order_value    DECIMAL(12,2)  (measure non_additive)
+
+  note {
+    """
+    Average revenue per customer over their entire tenure.
+    Calculated as: total_revenue / months_active * expected_lifetime_months.
+    Expected lifetime derived from cohort survival curves.
+    """
+  }
+}
+```
+
+Metrics are *not* schemas — you can't use them as a source or target in a mapping. They sit at the end of the lineage graph: data flows *into* a metric, nothing flows *out*. Think of them as the answer to the question *"why are we building this pipeline?"*
+
+---
+
+## Reports and ML Models: Describing Downstream Consumers
+
+Metrics aren't the only things that consume your data pipeline. Dashboards, scheduled reports, and ML models also depend on specific schemas — and when someone changes a field upstream, you need to know what breaks downstream.
+
+STM handles these using the same building blocks you already know: a `schema` with metadata tokens that declare intent. The `report` or `model` token tells tooling (and humans) that this isn't a database table to be loaded — it's a downstream consumer.
+
+### Reports
+
+```stm
+schema weekly_sales_dashboard (
+  report,
+  source {fact_orders, dim_customer, dim_product, dim_date},
+  owner "bi-team",
+  refresh "Monday 06:00 UTC",
+  tool looker dashboard_id "sales-weekly-exec"
+) {
+  note {
+    """
+    # Weekly Sales Dashboard
+
+    Executive-facing dashboard showing:
+    - Revenue by region (bar chart, MTD vs prior month)
+    - Top 10 products by units sold
+    - New customer acquisition funnel
+    - Pipeline coverage ratio (3x target)
+
+    **Filters:** Region, Product Line, Sales Rep
+    **Audience:** VP Sales and above
+    """
+  }
+}
+```
+
+A BA reads this and immediately knows: *"This Looker dashboard depends on four schemas, refreshes Monday mornings, and is owned by the BI team."* An engineer reads the `source` list and knows which tables must be stable before the refresh runs. If you're ever asked *"what will break if we rename a column in `dim_product`?"*, the `source` references give you the answer.
+
+### ML Models
+
+```stm
+schema churn_predictor (
+  model,
+  source {dim_customer, fact_orders, fact_support_tickets},
+  owner "ml-engineering",
+  refresh "daily",
+  registry mlflow experiment "churn-v3"
+) {
+  record features {
+    note {
+      """
+      - days_since_last_order (from fact_orders)
+      - support_ticket_count_30d (from fact_support_tickets)
+      - lifetime_order_value (from fact_orders)
+      - customer_tenure_months (from dim_customer)
+      - product_category_diversity (from fact_orders + dim_product)
+      """
+    }
+  }
+
+  record output {
+    churn_probability  DECIMAL(5,4)
+    churn_risk_tier    VARCHAR(10)  (enum {low, medium, high})
+  }
+
+  note {
+    "XGBoost classifier. Retrained daily on 24-month rolling window.
+     Threshold: >= 0.7 = high risk, triggers retention campaign."
+  }
+}
+```
+
+The key insight is that no new syntax is needed. The `report` and `model` tokens are vocabulary tokens in `( )` metadata — the same mechanism used for `pk`, `pii`, and everything else. Tooling interprets them to build lineage graphs and dependency maps, while the `note { }` blocks carry the human-readable context.
+
+---
+
+## Data Modelling: Kimball Stars and Data Vault
+
+If you work on a data warehouse or lakehouse project, you're likely using either **Kimball** (star schemas with dimensions and facts) or **Data Vault** (hubs, links, and satellites). STM handles both using vocabulary tokens in `( )` metadata — no special syntax needed, just conventions that declare the *intent* behind a schema.
+
+This matters for BAs because dimensional and vault patterns have a lot of mechanical boilerplate (surrogate keys, SCD history columns, hash keys, load timestamps). In STM, you declare the intent — *"this is a Type 2 slowly changing dimension"* — and the interpreter or tooling infers the boilerplate. You see the business fields; the engineer sees the pattern.
+
+### Kimball: Dimensions and Facts
+
+A **dimension** is a schema that describes a business entity you want to analyse by — customers, products, stores, dates. A **fact** is a schema that records measurable events — sales transactions, inventory snapshots, clicks.
+
+Here's a customer dimension with SCD Type 2 history tracking:
+
+```stm
+schema dim_customer (
+  dimension, conformed, scd 2,
+  natural_key customer_id,
+  track {email, phone, loyalty_tier, preferred_store_id, first_name, last_name},
+  ignore {last_login_channel, lifetime_order_count, lifetime_spend}
+) {
+  customer_id          VARCHAR(50)     (required)
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  full_name            VARCHAR(200)
+  email                VARCHAR(255)    (pii)
+  phone                VARCHAR(20)     (pii)
+  loyalty_tier         VARCHAR(20)     (enum {bronze, silver, gold, platinum, diamond})
+  loyalty_points       INTEGER
+  preferred_store_id   VARCHAR(20)
+  member_since         DATE
+  lifetime_order_count INTEGER         (default 0)
+  lifetime_spend       DECIMAL(14,2)   (default 0)
+  customer_segment     VARCHAR(30)
+}
+```
+
+Reading the metadata tokens:
+
+- **`dimension`** — this schema represents a dimension table
+- **`conformed`** — it's shared across multiple star schemas (not specific to one fact table)
+- **`scd 2`** — Slowly Changing Dimension Type 2: when tracked fields change, the old row is closed and a new version is created, preserving history
+- **`natural_key customer_id`** — the business key that identifies a customer across versions
+- **`track {email, phone, ...}`** — changes to *these* fields trigger a new version
+- **`ignore {last_login_channel, ...}`** — changes to *these* fields do NOT trigger a new version (too volatile)
+
+The SCD Type 2 mechanical columns — `surrogate_key`, `valid_from`, `valid_to`, `is_current`, `row_hash` — are **inferred** by the interpreter. You don't need to list them. A BA sees the business fields; the engineer knows the physical pattern from the `scd 2` token.
+
+Here's a fact table referencing dimensions:
+
+```stm
+schema fact_sales (
+  fact,
+  grain {transaction_id, line_number},
+  ref dim_customer on customer_id,
+  ref dim_product on sku,
+  ref dim_store on store_id,
+  ref dim_date on transaction_date
+) {
+  transaction_id       VARCHAR(30)     (required)
+  line_number          INTEGER         (required)
+  transaction_date     DATE            (required)
+  customer_id          VARCHAR(50)
+  sku                  VARCHAR(18)     (required)
+  store_id             VARCHAR(20)
+  channel              VARCHAR(20)     (required, degenerate)
+
+  // Measures
+  quantity             INTEGER         (required, measure additive)
+  unit_price           DECIMAL(10,2)   (required, measure non_additive)
+  gross_amount         DECIMAL(12,2)   (required, measure additive)
+  discount_amount      DECIMAL(10,2)   (default 0, measure additive)
+  tax_amount           DECIMAL(10,2)   (default 0, measure additive)
+  net_amount           DECIMAL(12,2)   (required, measure additive)
+}
+```
+
+The tokens tell the whole story:
+
+- **`fact`** — this is a fact table
+- **`grain {transaction_id, line_number}`** — one row per line item per transaction
+- **`ref dim_customer on customer_id`** — foreign key relationship to the customer dimension
+- **`degenerate`** — `channel` is a dimension attribute stored directly in the fact (no separate dimension table)
+- **`measure additive`** / **`measure non_additive`** — tells BI tools and engineers which fields can be summed and which can't
+
+### Data Vault: Hubs, Satellites, and Links
+
+Data Vault is an alternative warehouse architecture designed for agility and auditability. Where Kimball models are business-oriented (dimensions and facts), Data Vault separates concerns into three building blocks:
+
+- **Hub** — a registry of unique business keys (e.g. all customer IDs across all source systems)
+- **Satellite** — descriptive attributes attached to a hub, versioned over time (SCD Type 2)
+- **Link** — a relationship between two or more hubs (e.g. "customer X bought product Y at store Z")
+
+```stm
+schema hub_customer (
+  hub,
+  business_key customer_id
+) {
+  customer_id          VARCHAR(50)     (required)
+}
+```
+
+That's the entire hub. The mechanical columns — `hub_customer_hk` (hash key), `load_date`, `record_source` — are inferred from the `hub` token. You declare only the business key.
+
+Satellites carry the descriptive data:
+
+```stm
+schema sat_customer_demographics (
+  satellite,
+  parent hub_customer,
+  scd 2
+) {
+  first_name           VARCHAR(100)
+  last_name            VARCHAR(100)
+  email                VARCHAR(255)    (pii)
+  phone                VARCHAR(20)     (pii)
+  loyalty_tier         VARCHAR(20)
+  loyalty_points       INTEGER
+  preferred_store_id   VARCHAR(20)
+  opt_in_email         BOOLEAN
+  opt_in_sms           BOOLEAN
+}
+```
+
+The `satellite` and `parent hub_customer` tokens tell you: *"These fields describe a customer and are versioned against the customer hub."* The hash key, load timestamps, and hash diff column are inferred.
+
+Links capture relationships. A sale involves a customer, a product, and a store — that's a three-way link:
+
+```stm
+schema link_sale (
+  link {hub_customer, hub_product, hub_store}
+) {
+  // The link itself is just the relationship.
+  // Hash keys for each hub and the link's own hash key are inferred.
+}
+```
+
+Mappings into vault targets look like regular STM mappings — the `hub`, `satellite`, and `link` tokens only affect the target schema's physical structure, not the mapping syntax:
+
+```stm
+mapping 'sfdc to hub_customer' {
+  source { `loyalty_sfdc` }
+  target { `hub_customer` }
+
+  ContactId -> customer_id
+  -> record_source { "SFDC" }
+}
+
+mapping 'sfdc to sat_customer_demographics' {
+  source { `loyalty_sfdc` }
+  target { `sat_customer_demographics` }
+
+  FirstName -> first_name              { trim | title_case }
+  LastName -> last_name                { trim | title_case }
+  Email -> email                       { trim | lowercase | validate_email | null_if_invalid }
+  Phone -> phone                       { trim | to_e164 }
+  LoyaltyTier -> loyalty_tier          { lowercase }
+  LoyaltyPoints -> loyalty_points
+  -> record_source { "SFDC" }
+}
+```
+
+### Which Approach Should You Use?
+
+You don't need to choose between these approaches to use STM — both use the same syntax. The tokens are just vocabulary conventions:
+
+| Token | Meaning |
+| ----- | ------- |
+| `dimension` | Kimball dimension table |
+| `fact` | Kimball fact table |
+| `conformed` | Dimension shared across star schemas |
+| `grain {fields}` | What one row represents |
+| `scd 2` | Slowly Changing Dimension Type 2 (preserve history) |
+| `natural_key` | Business key for SCD tracking |
+| `track {fields}` | Fields that trigger new SCD versions |
+| `ignore {fields}` | Fields that don't trigger new versions |
+| `hub` | Data Vault hub (business key registry) |
+| `satellite` | Data Vault satellite (descriptive attributes) |
+| `link {hubs}` | Data Vault link (relationship) |
+| `business_key` | Hub's business key |
+| `parent` | Which hub a satellite belongs to |
+| `measure additive` | Summable across all dimensions |
+| `measure non_additive` | Not summable |
+| `degenerate` | Dimension attribute stored in the fact |
+
+The key takeaway: STM's `( )` metadata system is extensible. Whether you're building a Kimball star, a Data Vault, or something else entirely, you declare intent with tokens and let tooling handle the mechanical details.
+
+---
+
 ## Quick Reference: The STM Building Blocks
 
 | Concept | Syntax | Purpose |
@@ -590,6 +912,13 @@ That single row raises immediate questions. *"What about 'Value Prop' — is tha
 | Spread | `...fragment name` | Inline a fragment's fields or transform |
 | Import | `import { 'x' } from "file.stm"` | Bring definitions from another file |
 | Flatten | `mapping name (flatten \`Array[]\`) { ... }` | Explode array into one row per element |
+| Metric | `metric name "Label" (source ...) { ... }` | Business KPI definition |
+| Report / ML model | `schema name (report, source ...) { ... }` | Downstream consumer declaration |
+| Dimension | `schema name (dimension, scd 2, ...) { ... }` | Kimball dimension table |
+| Fact | `schema name (fact, grain ...) { ... }` | Kimball fact table |
+| Hub | `schema name (hub, business_key ...) { ... }` | Data Vault hub |
+| Satellite | `schema name (satellite, parent ...) { ... }` | Data Vault satellite |
+| Link | `schema name (link {hub_a, hub_b}) { ... }` | Data Vault link |
 
 ---
 
@@ -602,6 +931,7 @@ You don't need to memorise every detail in this tutorial. The key takeaways are:
 3. **Precision replaces ambiguity** — instead of free-text descriptions, transforms are explicit pipelines. Where precision isn't practical, quoted natural-language blocks capture intent rather than leaving it to tribal knowledge.
 4. **It scales** — from a two-field proof of concept to a multi-source enterprise data hub, STM uses the same consistent syntax.
 5. **It versions naturally** — because STM files are plain text, they slot straight into Git. You get full change history, pull-request reviews, and the ability to diff two versions of a mapping side by side. No more "v7_FINAL_FINAL_reviewed_JK.xlsx".
+6. **It describes the full picture** — metrics, reports, ML models, and data warehouse patterns (Kimball stars, Data Vault) all use the same token-based metadata system. One format covers everything from source schemas to the KPIs they feed.
 
 ### A practical review checklist
 
