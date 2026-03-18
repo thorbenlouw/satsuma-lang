@@ -1,0 +1,121 @@
+================================================================================
+Missing closing brace on schema
+================================================================================
+
+schema customers {
+  customer_id UUID
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Arrow with missing target path
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  customer_id ->
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (ERROR))))
+
+================================================================================
+Unclosed metadata block
+================================================================================
+
+schema customers (pii, required {
+  customer_id UUID
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (ERROR)))
+
+================================================================================
+Malformed map entry missing value
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  status -> code {
+    map {
+      A:
+      B: "active"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (ERROR)
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Metric block missing required metadata
+================================================================================
+
+metric mrr {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR))
+
+================================================================================
+Schema with keyword as block label
+================================================================================
+
+schema schema {
+  id UUID
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (ERROR)))
