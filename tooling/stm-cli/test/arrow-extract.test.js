@@ -1,0 +1,248 @@
+/**
+ * arrow-extract.test.js — Unit tests for extractArrowRecords in src/extract.js
+ *
+ * Tests use lightweight mock CST nodes. For integration tests against real
+ * example files, see integration.test.js.
+ */
+
+import assert from "node:assert/strict";
+import { before, describe, it } from "node:test";
+import { extractArrowRecords } from "../src/extract.js";
+
+// ── Mock helpers ─────────────────────────────────────────────────────────────
+
+function n(type, namedChildren = [], text = "", row = 0) {
+  return { type, text, startPosition: { row, column: 0 }, namedChildren };
+}
+
+function ident(text) {
+  return n("identifier", [], text);
+}
+
+function blockLabel(name) {
+  const inner = name.startsWith("'")
+    ? n("quoted_name", [], name)
+    : n("identifier", [], name);
+  return n("block_label", [inner]);
+}
+
+function fieldPath(name) {
+  return n("field_path", [ident(name)], name);
+}
+
+function srcPath(name) {
+  return n("src_path", [fieldPath(name)], name);
+}
+
+function tgtPath(name) {
+  return n("tgt_path", [fieldPath(name)], name);
+}
+
+function pipeStep(innerType, text = "") {
+  return n("pipe_step", [n(innerType, [], text)], text);
+}
+
+function pipeChain(steps) {
+  return n("pipe_chain", steps, steps.map((s) => s.text).join(" | "));
+}
+
+function mapArrow(src, tgt, steps = [], row = 0) {
+  const children = [srcPath(src), tgtPath(tgt)];
+  if (steps.length > 0) children.push(pipeChain(steps));
+  return n("map_arrow", children, "", row);
+}
+
+function computedArrow(tgt, steps = [], row = 0) {
+  const children = [tgtPath(tgt)];
+  if (steps.length > 0) children.push(pipeChain(steps));
+  return n("computed_arrow", children, "", row);
+}
+
+function mappingBlock(name, arrows, row = 0) {
+  const srcBlock = n("source_block", [ident("src_schema")]);
+  const tgtBlock = n("target_block", [ident("tgt_schema")]);
+  const body = n("mapping_body", [srcBlock, tgtBlock, ...arrows]);
+  return n("mapping_block", [blockLabel(name), body], "", row);
+}
+
+// ── extractArrowRecords ──────────────────────────────────────────────────────
+
+describe("extractArrowRecords", () => {
+  it("extracts a bare arrow (no transform)", () => {
+    const arrow = mapArrow("CUST_ID", "legacy_id", [], 10);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].mapping, "m1");
+    assert.equal(records[0].source, "CUST_ID");
+    assert.equal(records[0].target, "legacy_id");
+    assert.equal(records[0].classification, "none");
+    assert.equal(records[0].derived, false);
+    assert.equal(records[0].transform_raw, "");
+    assert.deepEqual(records[0].steps, []);
+    assert.equal(records[0].line, 10);
+  });
+
+  it("extracts a structural arrow with token_call pipeline", () => {
+    const steps = [
+      pipeStep("token_call", "trim"),
+      pipeStep("token_call", "lowercase"),
+    ];
+    const arrow = mapArrow("EMAIL", "email", steps, 20);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].classification, "structural");
+    assert.equal(records[0].transform_raw, "trim | lowercase");
+    assert.deepEqual(records[0].steps, [
+      { type: "token_call", text: "trim" },
+      { type: "token_call", text: "lowercase" },
+    ]);
+  });
+
+  it("extracts an NL arrow", () => {
+    const steps = [pipeStep("nl_string", '"Do something complex"')];
+    const arrow = mapArrow("PHONE", "phone", steps, 30);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records[0].classification, "nl");
+    assert.equal(records[0].transform_raw, '"Do something complex"');
+  });
+
+  it("extracts a mixed arrow", () => {
+    const steps = [
+      pipeStep("nl_string", '"Filter profanity"'),
+      pipeStep("token_call", "escape_html"),
+    ];
+    const arrow = mapArrow("NOTES", "notes", steps, 40);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records[0].classification, "mixed");
+    assert.deepEqual(records[0].steps, [
+      { type: "nl_string", text: '"Filter profanity"' },
+      { type: "token_call", text: "escape_html" },
+    ]);
+  });
+
+  it("extracts a computed (derived) arrow", () => {
+    const steps = [pipeStep("token_call", "now_utc()")];
+    const arrow = computedArrow("migration_ts", steps, 50);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].source, null);
+    assert.equal(records[0].target, "migration_ts");
+    assert.equal(records[0].derived, true);
+    assert.equal(records[0].classification, "structural");
+  });
+
+  it("extracts arrows from multiple mappings", () => {
+    const a1 = mapArrow("A", "a", [], 10);
+    const a2 = mapArrow("B", "b", [], 20);
+    const m1 = mappingBlock("m1", [a1]);
+    const m2 = mappingBlock("m2", [a2]);
+    const root = n("source_file", [m1, m2]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 2);
+    assert.equal(records[0].mapping, "m1");
+    assert.equal(records[1].mapping, "m2");
+  });
+
+  it("extracts a map_literal arrow as structural", () => {
+    const steps = [pipeStep("map_literal", 'map { R: "retail" }')];
+    const arrow = mapArrow("TYPE", "type", steps, 60);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records[0].classification, "structural");
+  });
+
+  it("returns empty array when no mappings", () => {
+    const root = n("source_file", []);
+    assert.deepEqual(extractArrowRecords(root), []);
+  });
+
+  it("handles mapping with no body", () => {
+    const mapping = n("mapping_block", [blockLabel("empty")]);
+    const root = n("source_file", [mapping]);
+    assert.deepEqual(extractArrowRecords(root), []);
+  });
+});
+
+// ── Integration with real example files ──────────────────────────────────────
+
+describe("extractArrowRecords against real examples", () => {
+  let parseFile;
+
+  before(async () => {
+    const parser = await import("../src/parser.js");
+    parseFile = parser.parseFile;
+  });
+
+  it("extracts all arrows from db-to-db.stm", () => {
+    const { tree } = parseFile("../../examples/db-to-db.stm");
+    const records = extractArrowRecords(tree.rootNode);
+
+    // db-to-db.stm has 16 map_arrows + 3 computed_arrows = 19
+    assert.equal(records.length, 19);
+
+    // All belong to 'customer migration' mapping
+    for (const r of records) {
+      assert.equal(r.mapping, "customer migration");
+    }
+
+    // Check a structural arrow
+    const trimArrow = records.find(
+      (r) => r.source === "FIRST_NM" && r.target === "first_name",
+    );
+    assert.ok(trimArrow, "should find FIRST_NM -> first_name");
+    assert.equal(trimArrow.classification, "structural");
+    assert.equal(trimArrow.derived, false);
+    assert.equal(trimArrow.steps.length, 3);
+
+    // Check an NL arrow
+    const phoneArrow = records.find((r) => r.source === "PHONE_NBR");
+    assert.ok(phoneArrow);
+    assert.equal(phoneArrow.classification, "nl");
+
+    // Check a mixed arrow
+    const notesArrow = records.find(
+      (r) => r.source === "NOTES" && r.target === "notes",
+    );
+    assert.ok(notesArrow);
+    assert.equal(notesArrow.classification, "mixed");
+
+    // Check a bare arrow (no transform)
+    const bareArrow = records.find((r) => r.target === "legacy_customer_id");
+    assert.ok(bareArrow);
+    assert.equal(bareArrow.classification, "none");
+
+    // Check a derived arrow
+    const derivedArrow = records.find((r) => r.target === "display_name");
+    assert.ok(derivedArrow);
+    assert.equal(derivedArrow.derived, true);
+  });
+
+  it("extracts arrows from multi-source-hub.stm", () => {
+    const { tree } = parseFile("../../examples/multi-source-hub.stm");
+    const records = extractArrowRecords(tree.rootNode);
+    assert.ok(records.length > 0, "should have arrows");
+
+    // All records should have mapping names
+    for (const r of records) {
+      assert.ok(r.mapping !== undefined);
+    }
+  });
+});
