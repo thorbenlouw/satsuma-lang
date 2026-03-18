@@ -1,6 +1,6 @@
 ---
 id: stm-xnbx
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T16:52:43Z
