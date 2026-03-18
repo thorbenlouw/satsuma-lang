@@ -1,0 +1,169 @@
+integration "INT3051_Commerce_Events_Protobuf_to_Parquet" {
+  cardinality N:1
+  author "Streaming Platform Team"
+  version "1.0.0"
+  tags [protobuf, parquet, analytics, streaming]
+
+  note '''
+    # Protobuf Commerce Events to Session Parquet
+
+    Consumes protobuf commerce events from Kafka and produces a session-level
+    Parquet dataset for product analytics. The pipeline groups events by
+    `session_id` and computes session metrics such as purchase totals,
+    product interaction breadth, and checkout completion.
+
+    This example demonstrates protobuf annotations, nested repeated fields,
+    group-by aggregation, and per-field error-handling defaults.
+  '''
+}
+
+
+// ============================================================
+// Source: Protobuf event envelope
+// ============================================================
+
+event commerce_event_pb "Commerce event protobuf envelope" @format(protobuf) @schema_registry("https://registry.example.com") @schema_version("12.4.0") @namespace("com.example.commerce.events") {
+  event_id         STRING      @tag(1)
+  event_type       STRING      @tag(2)
+  event_ts         STRING      @tag(3)
+  source_system    STRING      @tag(4)
+  session_id       STRING      @tag(5)
+  user_id          STRING      @tag(6)
+  country_code     STRING      @tag(7)
+  currency_code    STRING      @tag(8)
+
+  Context @tag(9) {
+    device_type    STRING      @tag(1)
+    app_version    STRING      @tag(2)
+    entry_channel  STRING      @tag(3)
+  }
+
+  CartLines[] @tag(10) {
+    sku            STRING      @tag(1)
+    quantity       INT32       @tag(2)
+    unit_price     DECIMAL(12,2) @tag(3)
+    discount_amt   DECIMAL(12,2) @tag(4)
+    category       STRING      @tag(5)
+  }
+
+  Attributes[] @tag(11) {
+    key            STRING      @tag(1)
+    value          STRING      @tag(2)
+  }
+}
+
+
+// ============================================================
+// Target: Session analytics parquet
+// ============================================================
+
+table commerce_session_parquet "Session-level analytics dataset" @format(parquet) {
+  session_id                 STRING         [pk]
+  user_id                    STRING
+  session_start_utc          TIMESTAMPTZ    [required]
+  session_end_utc            TIMESTAMPTZ    [required]
+  source_system              STRING
+  country_code               STRING
+  currency_code              STRING
+  entry_channel              STRING         [
+    enum: {
+      web,
+      mobile_app,
+      kiosk,
+      marketplace
+    }
+  ]
+  device_type                STRING         [
+    enum: {
+      desktop,
+      mobile,
+      tablet,
+      pos
+    }
+  ]
+  event_count                INT32          [required]
+  distinct_event_types       JSON
+  viewed_product_count       INT32
+  cart_add_count             INT32
+  purchase_event_count       INT32
+  checkout_completed         BOOLEAN        [required]
+  gross_merchandise_value    DECIMAL(14,2)
+  total_discount_amount      DECIMAL(14,2)
+  distinct_product_count     INT32
+  top_category               STRING
+  session_quality            STRING         [
+    enum: {
+      bounce,
+      browse,
+      engaged,
+      purchaser
+    }
+  ]
+}
+
+
+// ============================================================
+// Mapping Logic
+// ============================================================
+
+mapping commerce_event_pb -> commerce_session_parquet [group_by: session_id] {
+  @on_error(log)
+  @error_threshold(0.02)
+
+  session_id -> session_id
+  user_id -> user_id : first
+
+  event_ts -> session_start_utc
+    : min
+    | nl("Parse the minimum timestamp in the group as UTC.")
+
+  event_ts -> session_end_utc
+    : max
+    | nl("Parse the maximum timestamp in the group as UTC.")
+
+  source_system -> source_system : first
+  country_code -> country_code : first | uppercase
+  currency_code -> currency_code : first | uppercase
+  Context.entry_channel -> entry_channel : first | lowercase
+  Context.device_type -> device_type : first | lowercase
+
+  => event_count : count
+
+  event_type -> distinct_event_types
+    : distinct
+    | nl("Emit the distinct event_type values as a JSON array string.")
+
+  => viewed_product_count
+    : nl("Count records in the group where event_type == 'product_view'.")
+
+  => cart_add_count
+    : nl("Count records in the group where event_type == 'add_to_cart'.")
+
+  => purchase_event_count
+    : nl("Count records in the group where event_type == 'purchase'.")
+
+  event_type -> checkout_completed
+    : map { purchase: true, _: false }
+    | max
+
+  CartLines[].unit_price -> gross_merchandise_value
+    : nl("For each event, multiply CartLines[].unit_price by CartLines[].quantity,
+          sum within the event, then sum across the session group.")
+
+  CartLines[].discount_amt -> total_discount_amount
+    : nl("Sum discount_amt across all CartLines[] elements in all events in the group.")
+
+  => distinct_product_count
+    : nl("Count distinct CartLines[].sku values across all events in the session.")
+
+  => top_category
+    : nl("Find the most frequent CartLines[].category across the session.
+          Break ties by highest gross merchandise value.")
+
+  => session_quality
+    : nl("Classify the grouped session as:
+          purchaser if any purchase event exists;
+          engaged if there is any add_to_cart event;
+          browse if there are multiple product_view events;
+          otherwise bounce.")
+}

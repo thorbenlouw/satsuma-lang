@@ -60,12 +60,12 @@ Source to target mapping involves understanding the domain, naming and processes
 
 | From | Steal |
 |---|---|
-| **FML** | The `where` clause on mapping rules for conditional logic. STM now covers this with `map ... [when: ...]` blocks in v1.0. FML's `translate()` using ConceptMaps remains strong inspiration for STM's future terminology translation support. |
-| **FML** | The `group` concept — reusable mapping rule groups. We have fragments for schemas but not for mapping logic. Consider adding this. |
+| **FML** | The `where` clause on mapping rules for conditional logic. STM covers this with `map { }` blocks and conditional entries. FML's `translate()` using ConceptMaps remains strong inspiration for STM's future terminology translation support. |
+| **FML** | The `group` concept — reusable mapping rule groups. We have fragments for schemas and named transforms for pipelines. |
 | **JSONata** | The elegance of path expressions. Our `.field` relative paths in nested mappings are similar in spirit. |
-| **Jolt** | The separation of structural transforms (shift, default, remove, sort, cardinality) as distinct operations. We might want a `@cardinality` annotation. |
-| **dbt** | The idea of tests alongside transformations. Our future "test fixtures" feature (Section 15 of spec) should be prioritized. |
-| **XSLT** | Nothing about the syntax, but the lesson that a mature transformation language needs a standard function library. Our stdlib is a good start. |
+| **Jolt** | The separation of structural transforms (shift, default, remove, sort, cardinality) as distinct operations. |
+| **dbt** | The idea of tests alongside transformations. Future "test fixtures" support should be prioritized. |
+| **XSLT** | Nothing about the syntax, but the lesson that a mature transformation language needs a standard function library. Our vocabulary token conventions are a good start. |
 
 ### Recommendation
 

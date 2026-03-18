@@ -98,32 +98,37 @@ This separation of **structure** from **logic** from **context** is fundamental.
 ### A taste of the syntax
 
 ```stm
-source legacy_db "Legacy CUSTOMER table" {
-  CUST_ID       INT         [pk]
-  CUST_TYPE     CHAR(1)     [enum: {R, B, G}]      //! NULL means Retail
+schema legacy_db (note "Legacy CUSTOMER table") {
+  CUST_ID       INT          (pk)
+  CUST_TYPE     CHAR(1)      (enum {R, B, G})       //! NULL means Retail
   FIRST_NM      VARCHAR(100)
   LAST_NM       VARCHAR(100)
-  EMAIL_ADDR    VARCHAR(255) [pii]
+  EMAIL_ADDR    VARCHAR(255)  (pii)
 }
 
-target new_db "Modernized customer schema" {
-  customer_id   UUID         [pk, required]
-  customer_type VARCHAR(20)  [enum: {retail, business, government}]
-  display_name  VARCHAR(200) [required]
-  email         VARCHAR(255) [format: email, pii]
+schema new_db (note "Modernized customer schema") {
+  customer_id   UUID          (pk, required)
+  customer_type VARCHAR(20)   (enum {retail, business, government})
+  display_name  VARCHAR(200)  (required)
+  email         VARCHAR(255)  (format email, pii)
 }
 
 mapping {
-  CUST_ID -> customer_id : uuid_v5(NS, CUST_ID)
+  source { `legacy_db` }
+  target { `new_db` }
 
-  CUST_TYPE -> customer_type
-    : map { R: "retail", B: "business", G: "government", null: "retail" }
+  CUST_ID -> customer_id { uuid_v5(NS, CUST_ID) }
 
-  => display_name
-    : when CUST_TYPE == "R" => trim(FIRST_NM + " " + LAST_NM)
-    else => "UNKNOWN"
+  CUST_TYPE -> customer_type {
+    map { R: "retail", B: "business", G: "government", null: "retail" }
+  }
 
-  EMAIL_ADDR -> email : trim | lowercase | validate_email | null_if_invalid
+  -> display_name {
+    "If CUST_TYPE is 'R' or null, trim and concat FIRST_NM + ' ' + LAST_NM.
+     Otherwise 'UNKNOWN'."
+  }
+
+  EMAIL_ADDR -> email { trim | lowercase | validate_email | null_if_invalid }
 }
 ```
 
@@ -178,7 +183,7 @@ How we'll know STM is working:
 ## Project Roadmap
 
 ### Phase 1: Specification & Reference (NOW)
-- Formal language specification (STM-SPEC.md)
+- Formal language specification (STM-V2-SPEC.md)
 - Canonical example library covering all integration patterns
 - AI-optimized cheat sheet and grammar for system prompts
 

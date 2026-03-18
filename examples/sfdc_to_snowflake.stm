@@ -1,116 +1,105 @@
-import { sfdc_standard_types } from "lib/sfdc_fragments.stm"
-import { currency_rates } from "lookups/finance.stm"
+// STM v2 — Salesforce to Snowflake Pipeline
 
-integration "SFDC_Opportunity_Ingestion" {
-  cardinality 1:1
-  author "Revenue Operations Team"
-  version "3.4.1"
-  tags [salesforce, snowflake, revenue-engine]
+import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
+import { 'currency rates' } from "lookups/finance.stm"
 
-  note '''
-    # Salesforce to Snowflake Pipeline
+note {
+  """
+  # Salesforce to Snowflake Pipeline
 
-    Maps Sales Cloud `Opportunity` and `Account` objects into the 
-    `ANALYTICS.RAW_SFDC` schema. 
+  Maps Sales Cloud `Opportunity` and `Account` objects into the
+  `ANALYTICS.RAW_SFDC` schema.
 
-    ## Sync Strategy
-    - **Incremental:** Uses `SystemModStamp` to pull changes every 15 minutes.
-    - **Hard Deletes:** Captured via the `isDeleted` flag in SFDC.
-  '''
+  ## Sync Strategy
+  - **Incremental:** Uses `SystemModStamp` to pull changes every 15 minutes.
+  - **Hard Deletes:** Captured via the `isDeleted` flag in SFDC.
+  """
 }
 
-// ============================================================
-// Source: Salesforce Objects
-// ============================================================
 
-source sfdc_opportunity "SFDC Opportunity Object" {
-  Id              ID              [pk]
-  Name            STRING(120)     [required]
-  AccountId       ID              [ref: sfdc_account.Id]
-  Amount          CURRENCY(18,2)
-  CurrencyIsoCode STRING(3)       [default: USD]
-  StageName       PICKLIST        [enum: {Prospecting, Qualification, "Value Prop", Closed_Won, Closed_Lost}]
-  CloseDate       DATE            [required]
-  Probability     PERCENT(3,0)
-  
-  // Custom Metadata
-  `Lead_Source_Detail__c` STRING(255)
-  `ARR_Override__c`       CURRENCY(18,2)  //! Manual override used by Finance
-  
-  SystemModStamp  DATETIME        [required]
+// --- Sources ---
+
+schema sfdc_opportunity (note "SFDC Opportunity Object") {
+  Id                          ID             (pk)
+  Name                        STRING(120)    (required)
+  AccountId                   ID             (ref sfdc_account.Id)
+  Amount                      CURRENCY(18,2)
+  CurrencyIsoCode             STRING(3)      (default USD)
+  StageName                   PICKLIST       (enum {Prospecting, Qualification, "Value Prop", Closed_Won, Closed_Lost})
+  CloseDate                   DATE           (required)
+  Probability                 PERCENT(3,0)
+  `Lead_Source_Detail__c`     STRING(255)
+  `ARR_Override__c`           CURRENCY(18,2)  //! manual override used by Finance
+  SystemModStamp              DATETIME       (required)
 }
 
-source sfdc_account "SFDC Account Object" {
-  Id              ID              [pk]
-  Name            STRING(255)     [required]
-  Type            PICKLIST        [enum: {Customer, Prospect, Partner, Competitor}]
+schema sfdc_account (note "SFDC Account Object") {
+  Id              ID             (pk)
+  Name            STRING(255)    (required)
+  Type            PICKLIST       (enum {Customer, Prospect, Partner, Competitor})
   BillingCountry  STRING(80)
 }
 
-// ============================================================
-// Target: Snowflake Analytics Schema
-// ============================================================
 
-target snowflake_opps "FACT_OPPORTUNITIES" {
-  opp_key         VARCHAR(18)     [pk]
-  account_key     VARCHAR(18)     [indexed]
+// --- Target ---
+
+schema snowflake_opps (note "FACT_OPPORTUNITIES — Snowflake Analytics") {
+  opp_key          VARCHAR(18)    (pk)
+  account_key      VARCHAR(18)    (indexed)
   opportunity_name VARCHAR(120)
-  
-  // Normalized Finance Data
-  amount_raw      NUMBER(18,2)
-  amount_usd      NUMBER(18,2)    [note: "Converted at daily spot rate"]
-  arr_value       NUMBER(18,2)    [required]
-
-  // Pipeline Metrics
-  pipeline_stage  VARCHAR(50)     [enum: {top_funnel, mid_funnel, closed_won, closed_lost}]
-  is_closed       BOOLEAN
-  close_date      DATE
-  
-  source_system   VARCHAR(10)     [default: SFDC]
-  ingested_at     TIMESTAMP_NTZ  
+  amount_raw       NUMBER(18,2)
+  amount_usd       NUMBER(18,2)   (note "Converted at daily spot rate")
+  arr_value        NUMBER(18,2)   (required)
+  pipeline_stage   VARCHAR(50)    (enum {top_funnel, mid_funnel, closed_won, closed_lost})
+  is_closed        BOOLEAN
+  close_date       DATE
+  source_system    VARCHAR(10)    (default SFDC)
+  ingested_at      TIMESTAMP_NTZ
 }
 
-// ============================================================
-// Mapping Logic
-// ============================================================
 
-mapping sfdc_opportunity -> snowflake_opps {
-  
-  // Direct Identifier mapping
+// --- Mapping ---
+
+mapping 'opportunity ingestion' {
+  source { `sfdc_opportunity` }
+  target { `snowflake_opps` }
+
+  // --- Direct identifiers ---
   Id -> opp_key
   AccountId -> account_key
   Name -> opportunity_name
 
-  // Financial Transformation
-  Amount -> amount_raw : coalesce(0)
-  
-  Amount -> amount_usd 
-    : nl("Multiply Amount by the rate found in currency_rates lookup using CurrencyIsoCode")
+  // --- Financial ---
+  Amount -> amount_raw { coalesce(0) }
+
+  Amount -> amount_usd {
+    "Multiply by rate from `currency rates` lookup using CurrencyIsoCode"
     | round(2)
+  }
 
-  // Logic: Finance ARR Calculation
-  // Priority: Override field -> Calculated Amount
-  `ARR_Override__c` -> arr_value
-    : fallback Amount
+  `ARR_Override__c` -> arr_value {
+    "Use ARR_Override__c if not null, otherwise fall back to Amount"
     | coalesce(0)
+  }
 
-  // Stage Normalization
-  StageName -> pipeline_stage
-    : map { 
-        Prospecting: "top_funnel", 
-        Qualification: "mid_funnel", 
-        "Value Prop": "mid_funnel",
-        Closed_Won: "closed_won",
-        Closed_Lost: "closed_lost",
-        _: "unknown"
-      }
+  // --- Stage normalization ---
+  StageName -> pipeline_stage {
+    map {
+      Prospecting:  "top_funnel"
+      Qualification: "mid_funnel"
+      "Value Prop":  "mid_funnel"
+      Closed_Won:    "closed_won"
+      Closed_Lost:   "closed_lost"
+      _:             "unknown"
+    }
+  }
 
-  => is_closed
-    : StageName 
-    | map { "Closed_Won": true, "Closed_Lost": true, _: false }
+  -> is_closed {
+    "True if StageName is 'Closed_Won' or 'Closed_Lost', false otherwise."
+  }
 
   CloseDate -> close_date
 
-  // Metadata
-  SystemModStamp -> ingested_at : to_utc
+  // --- Metadata ---
+  SystemModStamp -> ingested_at { to_utc }
 }

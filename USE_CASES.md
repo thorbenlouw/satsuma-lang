@@ -89,7 +89,7 @@ Primary personas: Data Platform Engineer, Analytics Engineer / Data Modeler, Ent
 
 ### 12. Natural-Language-Assisted Transforms With Guardrails
 
-Some transformations are hard to formalize immediately, especially when business logic is fuzzy or evolving. The `nl()` direction described in this repo points toward a model where natural-language transforms still declare explicit dependencies so lineage does not depend on prompt text alone. That creates a more governable way for agents to participate in mapping workflows without hiding the relevant source-field inputs.
+Some transformations are hard to formalize immediately, especially when business logic is fuzzy or evolving. STM's first-class natural language strings (bare `"..."` inside transform `{ }` blocks) allow complex intent to be expressed inline while still declaring explicit source dependencies so lineage does not depend on prose alone. That creates a more governable way for agents to participate in mapping workflows without hiding the relevant source-field inputs.
 
 Primary personas: AI / Automation Engineer, Governance, Risk, and Audit Stakeholder, Integration Engineer
 

@@ -56,43 +56,44 @@ The long-term tooling model is parser-first:
 ## Example
 
 ```stm
-integration "Customer_Sync" {
-  cardinality 1:1
+note { "Customer sync — 1:1 mapping from CRM to data warehouse" }
+
+schema crm (note "CRM System") {
+  id       INT           (pk)
+  email    STRING(255)   (pii)
+  status   CHAR(1)       (enum {A, I})
 }
 
-source crm "CRM System" {
-  id       INT
-  email    STRING(255) [pii]
-  status   CHAR(1)     [enum: {A, I}]
-}
-
-target warehouse "Analytics Model" {
-  customer_id   UUID         [pk, required]
-  email_address STRING(255)  [format: email]
+schema warehouse (note "Analytics Model") {
+  customer_id   UUID         (pk, required)
+  email_address STRING(255)  (format email)
   is_active     BOOLEAN
 }
 
 mapping {
-  id     -> customer_id   : uuid_v5("namespace", id)
-  email  -> email_address : trim | lowercase | validate_email | null_if_invalid
-  status -> is_active     : map { A: true, I: false }
+  source { `crm` }
+  target { `warehouse` }
+
+  id     -> customer_id   { uuid_v5("namespace", id) }
+  email  -> email_address { trim | lowercase | validate_email | null_if_invalid }
+  status -> is_active     { map { A: true, I: false } }
 }
 ```
 
-For richer examples, see [examples/db-to-db.stm](/Users/thorben/dev/personal/stm/examples/db-to-db.stm),
-[examples/edi-to-json.stm](/Users/thorben/dev/personal/stm/examples/edi-to-json.stm),
-and [examples/multi-source-hub.stm](/Users/thorben/dev/personal/stm/examples/multi-source-hub.stm).
+For richer examples, see [examples/db-to-db.stm](examples/db-to-db.stm),
+[examples/edi-to-json.stm](examples/edi-to-json.stm),
+and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
 
 ## Repository Guide
 
-- [STM-SPEC.md](/Users/thorben/dev/personal/stm/STM-SPEC.md): authoritative language specification
-- [PROJECT-OVERVIEW.md](/Users/thorben/dev/personal/stm/PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
-- [IMPLEMENTATION-GUIDE.md](/Users/thorben/dev/personal/stm/IMPLEMENTATION-GUIDE.md): tooling architecture and parser-first implementation strategy
-- [AI-AGENT-REFERENCE.md](/Users/thorben/dev/personal/stm/AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents
-- [USE_CASES.md](/Users/thorben/dev/personal/stm/USE_CASES.md): practical scenarios and personas
-- [examples/](/Users/thorben/dev/personal/stm/examples): canonical STM examples
-- [tooling/tree-sitter-stm/](/Users/thorben/dev/personal/stm/tooling/tree-sitter-stm): tree-sitter parser package
-- [tooling/vscode-stm/](/Users/thorben/dev/personal/stm/tooling/vscode-stm): VS Code syntax highlighting extension
+- [STM-V2-SPEC.md](STM-V2-SPEC.md): authoritative language specification
+- [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
+- [IMPLEMENTATION-GUIDE.md](IMPLEMENTATION-GUIDE.md): tooling architecture and parser-first implementation strategy
+- [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents
+- [USE_CASES.md](USE_CASES.md): practical scenarios and personas
+- [examples/](examples): canonical STM examples
+- [tooling/tree-sitter-stm/](tooling/tree-sitter-stm): tree-sitter parser package
+- [tooling/vscode-stm/](tooling/vscode-stm): VS Code syntax highlighting extension
 
 ## Current Status
 
@@ -100,7 +101,7 @@ The repository is centered on specification and parser-first tooling.
 
 What exists today:
 
-- the STM v1.0.0 language spec
+- the STM v2 language spec
 - a canonical example corpus
 - implementation guidance for downstream tools
 - an in-repo `tree-sitter-stm` grammar package for syntax parsing work
@@ -135,16 +136,16 @@ needs to cross project boundaries cleanly.
 Downstream tools should be built on the parser, not on text heuristics.
 
 The parser work lives in
-[tooling/tree-sitter-stm/](/Users/thorben/dev/personal/stm/tooling/tree-sitter-stm)
+[tooling/tree-sitter-stm/](tooling/tree-sitter-stm)
 and is responsible for syntax parsing only. Semantic validation, formatting,
 import resolution, and code generation should consume the parser output rather
 than reinterpreting raw STM text.
 
 If you are contributing tooling, start here:
 
-- read [STM-SPEC.md](/Users/thorben/dev/personal/stm/STM-SPEC.md)
-- inspect the example corpus in [examples/](/Users/thorben/dev/personal/stm/examples)
-- review the parser plan in [features/01-treesitter-parser/PRD.md](/Users/thorben/dev/personal/stm/features/01-treesitter-parser/PRD.md)
+- read [STM-V2-SPEC.md](STM-V2-SPEC.md)
+- inspect the example corpus in [examples/](examples)
+- review the parser plan in [features/01-treesitter-parser/PRD.md](features/01-treesitter-parser/PRD.md)
 - treat CST and AST naming stability as part of the public implementation surface
 
 ## Development

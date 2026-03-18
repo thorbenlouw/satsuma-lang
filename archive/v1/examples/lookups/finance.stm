@@ -1,0 +1,9 @@
+lookup currency_rates "Daily FX Rates" {
+  note '''
+    Sourced from OpenExchangeRates API. Updated daily at 00:01 UTC.
+  '''
+
+  iso_code    STRING(3)   [pk]
+  rate        DECIMAL(10,6)
+  updated_at  DATETIME
+}
