@@ -93,6 +93,43 @@ function extractDirectFields(bodyNode) {
   });
 }
 
+/**
+ * Extract the full field tree from a schema_body node, including nested
+ * record_block and list_block children.
+ *
+ * Returns [{name, type, isList?, children?}] where children is recursive.
+ */
+function extractFieldTree(bodyNode) {
+  const fields = [];
+  let hasSpreads = false;
+
+  for (const c of bodyNode.namedChildren) {
+    if (c.type === "field_decl") {
+      const nameNode = child(c, "field_name");
+      const typeNode = child(c, "type_expr");
+      const inner = nameNode?.namedChildren[0];
+      let name = inner?.text ?? "";
+      if (inner?.type === "backtick_name") name = name.slice(1, -1);
+      fields.push({ name, type: typeNode?.text ?? "" });
+    } else if (c.type === "record_block" || c.type === "list_block") {
+      const name = labelText(c);
+      const innerBody = child(c, "schema_body");
+      const nested = innerBody ? extractFieldTree(innerBody) : { fields: [], hasSpreads: false };
+      fields.push({
+        name,
+        type: c.type === "list_block" ? "list" : "record",
+        isList: c.type === "list_block",
+        children: nested.fields,
+      });
+      if (nested.hasSpreads) hasSpreads = true;
+    } else if (c.type === "fragment_spread") {
+      hasSpreads = true;
+    }
+  }
+
+  return { fields, hasSpreads };
+}
+
 // ── Public extract functions ──────────────────────────────────────────────────
 
 /**
@@ -110,8 +147,14 @@ export function extractSchemas(rootNode) {
       ? stringText(noteTag.namedChildren.find((c) => c.type === "nl_string" || c.type === "multiline_string"))
       : null;
     const body = child(node, "schema_body");
-    const fields = body ? extractDirectFields(body) : [];
-    return { name, note: noteStr, fields, row: node.startPosition.row };
+    const fieldTree = body ? extractFieldTree(body) : { fields: [], hasSpreads: false };
+    return {
+      name,
+      note: noteStr,
+      fields: fieldTree.fields,
+      hasSpreads: fieldTree.hasSpreads,
+      row: node.startPosition.row,
+    };
   });
 }
 
@@ -135,21 +178,27 @@ export function extractMetrics(rootNode) {
     const sources = [];
     let grain = null;
     if (meta) {
-      // source key_value_pair or source { ... }
       for (const entry of meta.namedChildren) {
         if (entry.type === "key_value_pair") {
           const key = child(entry, "kv_key");
+          // tree-sitter creates new wrapper objects per access, so reference
+          // equality (c !== key) is unreliable — use type to find the value.
+          const val = entry.namedChildren.find((c) => c.type !== "kv_key");
           if (key?.text === "source") {
-            const val = entry.namedChildren.find((c) => c !== key);
-            if (val) sources.push(entryText(val));
+            if (!val) continue;
+            if (val.type === "kv_braced_list") {
+              // Block form: source {fact_subscriptions, dim_customer}
+              for (const id of children(val, "identifier")) {
+                sources.push(id.text);
+              }
+            } else {
+              // Single value: source fact_subscriptions
+              sources.push(entryText(val));
+            }
           } else if (key?.text === "grain") {
-            const val = entry.namedChildren.find((c) => c !== key);
             if (val) grain = entryText(val);
           }
         }
-        // source { id1, id2 } appears as a slice_body-like construct — handled via identifiers
-        // Actually looking at the grammar, source in metric metadata is a key_value_pair
-        // but source { ... } uses a separate block. For now capture tag_tokens too.
       }
     }
 

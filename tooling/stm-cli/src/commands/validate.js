@@ -11,7 +11,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, extractFileData } from "../index-builder.js";
 import { collectParseErrors, collectSemanticWarnings } from "../validate.js";
 
 /** @param {import('commander').Command} program */
@@ -32,16 +32,21 @@ export function register(program) {
         process.exit(1);
       }
 
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      // Parse each file and extract data immediately (tree-sitter reuses a
+      // single parser buffer, so prior trees become invalid after a new parse).
+      const extracted = [];
+      const parseErrors = [];
+      for (const f of files) {
+        const parsed = parseFile(f);
+        // Collect parse errors and extract data while tree is still valid
+        parseErrors.push(...collectParseErrors(parsed.tree.rootNode, parsed.filePath));
+        extracted.push(extractFileData(parsed));
+      }
+
+      const index = buildIndex(extracted);
 
       // Collect diagnostics
-      let diagnostics = [];
-
-      // Parse errors
-      for (const { filePath, tree } of parsedFiles) {
-        diagnostics.push(...collectParseErrors(tree.rootNode, filePath));
-      }
+      let diagnostics = [...parseErrors];
 
       // Semantic warnings
       if (!opts.errorsOnly) {
@@ -71,7 +76,7 @@ export function register(program) {
 
       if (diagnostics.length === 0) {
         console.log(
-          `Validated ${parsedFiles.length} file${parsedFiles.length !== 1 ? "s" : ""}: no issues found.`,
+          `Validated ${extracted.length} file${extracted.length !== 1 ? "s" : ""}: no issues found.`,
         );
         return;
       }
@@ -92,7 +97,7 @@ export function register(program) {
 
       console.log();
       console.log(
-        `${errorCount} error${errorCount !== 1 ? "s" : ""}, ${warnCount} warning${warnCount !== 1 ? "s" : ""} in ${parsedFiles.length} file${parsedFiles.length !== 1 ? "s" : ""}`,
+        `${errorCount} error${errorCount !== 1 ? "s" : ""}, ${warnCount} warning${warnCount !== 1 ? "s" : ""} in ${extracted.length} file${extracted.length !== 1 ? "s" : ""}`,
       );
 
       process.exit(errorCount > 0 ? 2 : 0);
