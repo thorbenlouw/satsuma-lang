@@ -33,14 +33,14 @@ Today there is no way to get from `.stm` files back to a high-quality Excel repr
 5. Running the same command twice on the same input produces byte-identical output (excluding timestamp metadata).
 6. The user can scope output to specific targets: `stm-to-excel input.stm -o output.xlsx --targets warehouse,analytics_db`.
 7. The tool resolves imports and expands fragments — the workbook is self-contained.
-8. The output handles every STM construct documented in `STM-SPEC.md` v1.0.0 gracefully, even if some constructs require prose representation.
+8. The output handles every STM construct documented in `STM-V2-SPEC.md` gracefully, even if some constructs require prose representation.
 9. The workbook is usable in Excel, Google Sheets, and LibreOffice Calc.
 
 ## Non-Goals
 
 - **Round-tripping**: This is a one-way export. The Excel is not designed to be parsed back into STM.
 - **Editability**: The workbook is optimised for reading, not editing. No data validation dropdowns, no input cells.
-- **Complete expressiveness**: Some STM constructs (deeply nested array mappings, complex `when/else` chains) are represented in natural language rather than structured cells. This is intentional — the `.stm` file is the machine-readable version.
+- **Complete expressiveness**: Some STM constructs (deeply nested array mappings, complex `map { }` conditionals, natural-language transforms) are represented in simplified prose rather than structured cells. This is intentional — the `.stm` file is the machine-readable version.
 - **Real-time sync**: This is a point-in-time snapshot, not a live view. Re-run the tool to get an updated export.
 - **Parsing STM**: The Full CLI tool consumes a parsed AST (from tree-sitter) or, as a fallback, applies heuristic text parsing. It does not implement a full STM parser itself.
 - **Supporting `.xls` output**: Only `.xlsx` (Office Open XML) is supported.
@@ -80,13 +80,13 @@ A dashboard-style summary — not a dense data table. Layout:
 | 3 | Metadata line: `Version: 2.0.0  ·  Author: Data Migration Team  ·  Cardinality: 1:1` | 10pt, gray text |
 | 4 | Tags line: `migration, customer, phoenix-project` | 10pt, gray italic |
 | 5 | Blank separator | |
-| 6–N | Integration note content (the `note '''...'''` block), rendered as plain text with line breaks preserved. Markdown formatting stripped but structure retained via indentation. | 10pt, wrapped text, light gray background |
+| 6–N | Integration note content (from `note { """...""" }` block), rendered as plain text with line breaks preserved. Markdown formatting stripped but structure retained via indentation. | 10pt, wrapped text, light gray background |
 | N+1 | Blank separator | |
 | N+2 | Systems involved — a small table: | |
 
 **Systems table:**
 
-| System | Type | Description |
+| Schema | Role | Description |
 |--------|------|-------------|
 | legacy_sqlserver | Source | CUSTOMER table — SQL Server 2008 |
 | postgres_db | Target | Normalized customer schema — PostgreSQL 16 |
@@ -99,7 +99,7 @@ Styled as a light Excel Table with header row.
 | N+5 | **Contents** header | 12pt bold |
 | N+6+ | Table of contents — one row per tab in the workbook, with tab name (as a hyperlink) and a one-line description | 10pt, hyperlinked tab names |
 | Last-1 | Blank separator | |
-| Last | `This is a read-only snapshot. The definitive source of truth is the .stm file(s). Generated from: db-to-db.stm, common.stm on 2026-03-17T14:30:00Z` | 9pt italic, amber background (#FFF3CD), full-width merged cell |
+| Last | `This is a read-only snapshot. The definitive source of truth is the .stm file(s). Generated from: customer-migration.stm, common.stm on 2026-03-17T14:30:00Z` | 9pt italic, amber background (#FFF3CD), full-width merged cell |
 
 **Column width**: Column A set to ~100 characters. Remaining columns auto-fit to content.
 
@@ -141,9 +141,9 @@ If the mapping block uses the short form `mapping { ... }` (no explicit source/t
 | D | | 3 | Arrow separator — contains "→" in every data row. Narrow, centered, gray text |
 | E | Target | 25 | Target field name |
 | F | Target Type | 15 | Data type with parameters |
-| G | Req | 5 | "Yes" if target field has `[required]` tag. Blank otherwise |
+| G | Req | 5 | "Yes" if target field has `(required)` metadata. Blank otherwise |
 | H | Transform | 50 | Human-readable transformation description (see below) |
-| I | Tags | 15 | Comma-separated annotations: `pk`, `pii`, `encrypt`, `unique`, `indexed`, etc. Merged from both source and target annotations |
+| I | Tags | 15 | Comma-separated metadata tokens: `pk`, `pii`, `encrypt`, `unique`, `indexed`, etc. Merged from both source and target metadata |
 | J | Notes | 40 | Comments from the STM file, colour-coded by type (see below) |
 
 **Transform column — human-readable notation:**
@@ -152,17 +152,17 @@ STM syntax is translated to a friendlier form for non-technical readers:
 
 | STM syntax | Excel representation |
 |------------|---------------------|
-| `trim \| lowercase \| validate_email` | `trim → lowercase → validate email` |
+| `{ trim \| lowercase \| validate_email }` | `trim → lowercase → validate email` |
 | `map { A: "active", S: "suspended" }` | `A = "active", S = "suspended"` |
+| `map { < 1000: "bronze", default: "platinum" }` | Summary in parent row; conditions in grouped child rows |
 | `coalesce(0)` | `default to 0 if null` |
 | `round(2)` | `round to 2 decimal places` |
 | `uuid_v5("namespace", field)` | `generate UUID v5 from field` |
 | `now_utc()` | `current UTC timestamp` |
 | `* 100` | `multiply by 100` |
 | `encrypt(AES-256-GCM, key)` | `encrypt (AES-256-GCM)` |
-| `nl("description...")` | The description text verbatim (no `nl()` wrapper) |
-| `when X => Y else => Z` | Summary in parent row; detail in grouped child rows |
-| `fallback X` | `if null, fall back to X` |
+| `"description..."` (NL string in transform) | The description text verbatim |
+| `{ "NL description" \| round(2) }` | `NL description → round to 2 decimal places` |
 | Direct mapping (no transform) | *(blank)* |
 
 Transforms that chain multiple operations use " → " as the separator (replacing `|`).
@@ -175,36 +175,36 @@ Transforms that chain multiple operations use " → " as the separator (replacin
 | `//!` (warning) | Amber (#FFF3CD) | Dark amber (#856404) |
 | `//?` (question) | Blue (#CCE5FF) | Dark blue (#004085) |
 
-**Computed fields** (those with `=>` and no source field): Source column shows "—" in italic gray text. Entire row gets a very light gray background (#F0F0F0) to visually distinguish computed fields from mapped fields.
+**Computed fields** (those with `-> target` and no source field on the left side of the arrow): Source column shows "—" in italic gray text. Entire row gets a very light gray background (#F0F0F0) to visually distinguish computed fields from mapped fields.
 
 **Row grouping for complex constructs:**
 
-When a mapping entry contains `when/else` chains or nested array mappings, the entry is split across multiple rows:
+When a mapping entry contains conditional `map { }` blocks or nested array mappings, the entry is split across multiple rows:
 
 - **Parent row**: Contains the source, target, a summary transform (e.g., "Conditional" or "Nested mapping"), and full tags/notes.
 - **Child rows**: Indented detail rows showing each branch or nested field. These rows are grouped in Excel's row grouping feature (outline level 2) so they are **collapsible**. When collapsed, only the parent summary row is visible.
 
-Example for a `when/else` chain:
+Example for a conditional `map { }`:
 
 | # | Source | Source Type | → | Target | Target Type | Req | Transform | Tags | Notes |
 |---|--------|-----------|---|--------|-----------|-----|-----------|------|-------|
 | 5 | LOYALTY_POINTS | INT | → | loyalty_tier | VARCHAR(20) | | Conditional — see detail | | |
-| 5a | | | | | | | When < 1,000 → "bronze" | | |
-| 5b | | | | | | | When < 5,000 → "silver" | | |
-| 5c | | | | | | | When < 10,000 → "gold" | | |
-| 5d | | | | | | | Otherwise → "platinum" | | |
+| 5a | | | | | | | < 1,000 = "bronze" | | |
+| 5b | | | | | | | < 5,000 = "silver" | | |
+| 5c | | | | | | | < 10,000 = "gold" | | |
+| 5d | | | | | | | default = "platinum" | | |
 
-Example for a nested array mapping (`line_items[] -> items[] { ... }`):
+Example for a nested array mapping (`LineItems[] -> .items[] { ... }`):
 
 | # | Source | Source Type | → | Target | Target Type | Req | Transform | Tags | Notes |
 |---|--------|-----------|---|--------|-----------|-----|-----------|------|-------|
-| 8 | line_items[] | | → | items[] | | | Nested mapping — see detail | | |
-| 8a | .product_code | STRING | → | .sku | STRING | | uppercase | | |
-| 8b | .qty | INT | → | .quantity | INT | | | | |
+| 8 | LineItems[] | | → | .items[] | | | Nested mapping — see detail | | |
+| 8a | .SKU | STRING | → | .sku | STRING | | uppercase | | |
+| 8b | .Quantity | INT | → | .quantity | INT | | | | |
 
 Child rows use 5a, 5b, 5c numbering (not new sequential numbers) to show they belong to the parent.
 
-**Mapping-level notes**: If the mapping block has a `note '''...'''`, it is rendered as a merged row above the data rows, spanning all columns, with a light gray background and wrapped text. This provides context before the field-level detail.
+**Mapping-level notes**: If the mapping block has a `note { """...""" }` block, it is rendered as a merged row above the data rows, spanning all columns, with a light gray background and wrapped text. This provides context before the field-level detail.
 
 **Tab-level formatting:**
 - Header row: Dark charcoal (#2F3542), white bold text, bottom border
@@ -216,7 +216,7 @@ Child rows use 5a, 5b, 5c numbering (not new sequential numbers) to show they be
 
 ### Tab N+1: `Src - {Name}` / `Tgt - {Name}`
 
-One tab per source or target schema involved in the exported mappings. These are reference tabs — the full field listing including fields that may not appear in any mapping.
+One tab per schema involved in the exported mappings, classified as source or target by its role in the mapping blocks. These are reference tabs — the full field listing including fields that may not appear in any mapping.
 
 **Columns:**
 
@@ -225,12 +225,12 @@ One tab per source or target schema involved in the exported mappings. These are
 | A | # | 5 | Sequential row number |
 | B | Field | 25 | Field name |
 | C | Type | 20 | Data type with parameters |
-| D | PK | 5 | "Yes" if `[pk]` tag |
-| E | Required | 8 | "Yes" if `[required]` tag |
-| F | Unique | 8 | "Yes" if `[unique]` tag |
-| G | Default | 15 | Value from `[default: ...]` tag |
-| H | Tags | 20 | All other tags: `pii`, `encrypt`, `indexed`, `format: email`, `ref: table.field`, `enum: {...}`, etc. |
-| I | Notes | 40 | Inline comments, field-level `note '''...'''` content |
+| D | PK | 5 | "Yes" if `(pk)` metadata |
+| E | Required | 8 | "Yes" if `(required)` metadata |
+| F | Unique | 8 | "Yes" if `(unique)` metadata |
+| G | Default | 15 | Value from `(default ...)` metadata |
+| H | Tags | 20 | All other metadata tokens: `pii`, `encrypt`, `indexed`, `format email`, `ref table.field`, `enum {…}`, etc. |
+| I | Notes | 40 | Inline comments, field-level `(note "...")` content |
 
 **Styling:**
 - PK rows: Subtle blue-gray background (#E8EDF2)
@@ -238,7 +238,7 @@ One tab per source or target schema involved in the exported mappings. These are
 - Notes column: Same colour coding as mapping tabs (amber for warnings, blue for questions)
 - Header, alternating rows, freeze panes, auto-filter: Same as mapping tabs
 
-**Schema-level notes**: If the schema block has a `note '''...'''`, it is rendered as a merged row above the data rows (same as mapping-level notes).
+**Schema-level notes**: If the schema block has a `(note "...")` or `(note """...""")` in its metadata, it is rendered as a merged row above the data rows (same as mapping-level notes).
 
 **Fragment expansion**: When a schema uses `...fragment_name`, the fragment's fields are expanded inline. Each expanded field has a note in the Notes column: "From fragment: {fragment_name}". The fragment fields are visually grouped (outline level 2) and collapsible, with a parent row showing the fragment name and description.
 
@@ -332,10 +332,10 @@ All colours are chosen for accessibility (WCAG AA contrast) and professional app
 The user specifies which targets to export. The tool then determines the full dependency set:
 
 1. **Selected targets**: The target schemas the user wants in the workbook.
-2. **Required mappings**: All `mapping` blocks whose target matches a selected target.
-3. **Required sources**: All source schemas referenced by those mappings.
-4. **Required lookups**: All `lookup` blocks referenced by transforms in those mappings (via `lookup()` function or `map` references).
-5. **Required fragments**: All `fragment` blocks spread into any of the above schemas. Expanded inline (not shown as separate tabs).
+2. **Required mappings**: All `mapping` blocks whose `target { }` references a selected target.
+3. **Required sources**: All schemas referenced in those mappings' `source { }` blocks.
+4. **Required lookups**: All lookup schemas referenced by `map { }` transforms in those mappings.
+5. **Required fragments**: All `fragment` blocks spread (via `...`) into any of the above schemas. Expanded inline (not shown as separate tabs).
 6. **Required imports**: All `import` statements needed to resolve the above. Resolved and flattened — the workbook does not expose the multi-file structure.
 
 If no `--targets` flag is provided, **all targets** in the input file(s) are included.
@@ -373,7 +373,7 @@ The user's workflow:
 
 #### 1. Role & Goal (~100 tokens)
 
-You are an STM-to-Excel export specialist. The user will provide STM file content. Your job is to generate a Python script (using openpyxl) that produces a beautifully formatted Excel workbook representing the STM content, optimised for non-technical stakeholders.
+You are an STM-to-Excel export specialist. The user will provide STMv2 file content. Your job is to generate a Python script (using openpyxl) that produces a beautifully formatted Excel workbook representing the STM content, optimised for non-technical stakeholders.
 
 #### 2. Workbook Layout Specification (~800 tokens)
 
@@ -397,11 +397,11 @@ The colour palette, typography, and Excel features from the Styling Specificatio
 
 #### 5. Transform Translation Rules (~300 tokens)
 
-The human-readable notation table: how to convert STM pipe chains, `map` blocks, `when/else`, `nl()`, and other constructs into friendly text.
+The human-readable notation table: how to convert STM pipe chains (`|`), `map { }` blocks, natural-language strings (`"..."`), and other constructs into friendly text.
 
 #### 6. Row Grouping Rules (~200 tokens)
 
-When and how to create parent/child row groups for `when/else` chains, nested array mappings, and fragment expansions.
+When and how to create parent/child row groups for conditional `map { }` blocks, nested array mappings, and fragment expansions.
 
 #### 7. Example (~400 tokens)
 
@@ -470,7 +470,7 @@ Reads `.stm` files and produces a structured Python data model (dataclasses). Tw
 
 1. **Tree-sitter (preferred)**: Use the project's tree-sitter grammar to parse STM into a CST, then walk the tree to extract blocks, fields, mappings, transforms, and comments. This is authoritative and handles all valid STM.
 
-2. **Heuristic fallback**: If tree-sitter is not available (parser not compiled), fall back to regex/text-based extraction. This handles the common cases (integration blocks, schema blocks with fields, mapping blocks with `->` and `=>` entries, comments) but may miss edge cases. A warning is included in the workbook's Overview tab when the fallback parser is used.
+2. **Heuristic fallback**: If tree-sitter is not available (parser not compiled), fall back to regex/text-based extraction. This handles the common cases (integration blocks, schema blocks with fields and `( )` metadata, mapping blocks with `->` arrows and `{ }` transforms, comments) but may miss edge cases. A warning is included in the workbook's Overview tab when the fallback parser is used.
 
 The parser resolves `import` statements by reading referenced files relative to the input file's directory.
 
@@ -482,22 +482,21 @@ A set of Python dataclasses representing the intermediate form:
 @dataclass
 class Integration:
     name: str
-    cardinality: str
-    author: str
-    version: str
+    metadata: dict[str, str]     # cardinality, author, version, etc.
     tags: list[str]
-    note: str
+    note: str                    # from note { """...""" } block
 
 @dataclass
 class Field:
     name: str
     type: str
-    tags: list[str]          # pk, required, pii, etc.
-    default: str | None
-    enum_values: list[str]
-    note: str
-    comments: list[Comment]  # inline comments
-    fragment_origin: str | None  # if expanded from a fragment
+    metadata: list[str]          # pk, required, pii, encrypt, indexed, etc.
+    default: str | None          # from (default ...)
+    enum_values: list[str]       # from (enum {a, b, c})
+    note: str                    # from (note "...")
+    comments: list[Comment]      # inline // comments
+    fragment_origin: str | None  # if expanded from a fragment via ...spread
+    children: list[Field]        # for record/list nested structures
 
 @dataclass
 class Comment:
@@ -506,31 +505,33 @@ class Comment:
 
 @dataclass
 class Schema:
-    identifier: str
-    kind: str                # source, target, table, message, etc.
-    description: str
+    name: str
+    metadata: list[str]      # free-form metadata tokens from ( )
     note: str
     fields: list[Field]
 
 @dataclass
 class MappingEntry:
-    source_field: str | None     # None for computed (=>)
+    source_field: str | None     # None for computed (-> target with no source)
     target_field: str
     transform: Transform | None
+    metadata: list[str]          # from arrow ( ) metadata
     comments: list[Comment]
     children: list[MappingEntry]  # for nested array mappings
 
 @dataclass
 class Transform:
-    raw: str                     # original STM text
+    raw: str                     # original STM text from { }
     human_readable: str          # translated for Excel
     kind: str                    # "direct", "chain", "conditional", "map", "nl", "nested"
 
 @dataclass
 class Mapping:
-    source_ref: str | None
-    target_ref: str | None
-    note: str
+    name: str | None             # mapping label
+    source_refs: list[str]       # schemas in source { }
+    target_ref: str | None       # schema in target { }
+    source_join: str | None      # NL join description from source { }
+    note: str                    # from note { """...""" } block
     entries: list[MappingEntry]
 
 @dataclass
@@ -545,6 +546,7 @@ class StmDocument:
     schemas: list[Schema]
     mappings: list[Mapping]
     lookups: list[Lookup]
+    fragments: list[Schema]      # fragment blocks
     source_files: list[str]      # paths of all files that contributed
 ```
 
@@ -553,9 +555,9 @@ class StmDocument:
 Given the user's `--targets` selection (or all targets by default), walk the data model to determine the dependency set:
 
 1. Select target schemas matching `--targets`
-2. Select mappings whose target reference matches a selected target
-3. Select source schemas referenced by those mappings
-4. Select lookups referenced by transforms in those mappings
+2. Select mappings whose `target { }` block references a selected target
+3. Select source schemas referenced in those mappings' `source { }` blocks
+4. Select lookup schemas referenced by `map { }` transforms in those mappings
 5. Collect all comments of type "warning" and "question" across the selected elements
 
 #### Layer 4: Workbook Generator
@@ -571,7 +573,11 @@ TRANSFORM_TRANSLATIONS = [
     # Pipe chains → arrow chains
     (r'\s*\|\s*', ' → '),
 
-    # Common functions → plain English
+    # Natural-language strings — pass through verbatim (strip quotes)
+    # "..." strings in transform { } are human-readable descriptions
+    # (handled programmatically: strip quotes, preserve text as-is)
+
+    # Common pipeline tokens → plain English
     ('trim', 'trim whitespace'),
     ('lowercase', 'convert to lowercase'),
     ('uppercase', 'convert to uppercase'),
@@ -587,6 +593,8 @@ TRANSFORM_TRANSLATIONS = [
     ('to_iso8601', 'format as ISO 8601'),
     ('to_e164', 'format as E.164 phone'),
     ('now_utc()', 'current UTC timestamp'),
+    ('first', 'take first element'),
+    ('last', 'take last element'),
 
     # Parameterised functions
     (r'coalesce\((.+?)\)', r'default to \1 if null'),
@@ -613,11 +621,8 @@ TRANSFORM_TRANSLATIONS = [
     # Map blocks → key=value list
     # (handled programmatically, not via regex)
 
-    # nl() → unwrap to plain text
-    (r'nl\("(.+?)"\)', r'\1'),
-
-    # fallback → plain English
-    (r'fallback\s+(\w+)', r'if null, fall back to \1'),
+    # Named transform spreads (...name) → resolved inline
+    # (handled programmatically: expand referenced transform)
 ]
 ```
 
@@ -625,9 +630,12 @@ TRANSFORM_TRANSLATIONS = [
 - `map { A: "active", S: "suspended" }` → `A = "active", S = "suspended"`
 - `map { A: true, I: false }` → `A = Yes, I = No`
 - `null` keys → `(empty) = value`
-- Wildcard `_` keys → `(other) = value`
+- Wildcard `_` or `default` keys → `(other) = value`
+- Conditional maps (`< 1000: "bronze"`) → split into parent + child rows (see Row Grouping)
 
-`when/else` chains are split into parent + child rows (see Row Grouping).
+Natural-language strings in transforms are passed through verbatim:
+- `"Extract digits and format as E.164"` → `Extract digits and format as E.164`
+- Mixed pipelines: `"Multiply by rate from lookup" | round(2)` → `Multiply by rate from lookup → round to 2 decimal places`
 
 ### CLI Interface
 
@@ -657,16 +665,16 @@ stm-to-excel <input.stm> [additional.stm ...] -o <output.xlsx> [options]
 
 ```bash
 # Export everything
-stm-to-excel db-to-db.stm -o customer-migration.xlsx
+stm-to-excel customer-migration.stm -o customer-migration.xlsx
 
 # Export only the warehouse target
-stm-to-excel db-to-db.stm -o warehouse-only.xlsx --targets postgres_db
+stm-to-excel customer-migration.stm -o warehouse-only.xlsx --targets postgres_db
 
 # Multiple input files (with imports between them)
 stm-to-excel main.stm common.stm -o full-export.xlsx
 
 # Reproducible build (fixed timestamp)
-stm-to-excel db-to-db.stm -o export.xlsx --timestamp "2026-03-17T00:00:00Z"
+stm-to-excel customer-migration.stm -o export.xlsx --timestamp "2026-03-17T00:00:00Z"
 ```
 
 ### Claude Code Skill
@@ -674,7 +682,7 @@ stm-to-excel db-to-db.stm -o export.xlsx --timestamp "2026-03-17T00:00:00Z"
 In addition to the CLI, a Claude Code skill (`/stm-to-excel`) provides a conversational wrapper:
 
 ```
-/stm-to-excel db-to-db.stm -o customer-migration.xlsx
+/stm-to-excel customer-migration.stm -o customer-migration.xlsx
 ```
 
 The skill prompt (`.claude/commands/stm-to-excel.md`) instructs the agent to:
@@ -721,7 +729,7 @@ pip install -e features/05-stm-to-excel-export/
 
 Or run directly:
 ```bash
-python -m stm_to_excel db-to-db.stm -o output.xlsx
+python -m stm_to_excel customer-migration.stm -o output.xlsx
 ```
 
 ---
@@ -730,15 +738,15 @@ python -m stm_to_excel db-to-db.stm -o output.xlsx
 
 ### STM constructs that don't tabulate well
 
-Deeply nested array mappings (3+ levels), cross-source references, and complex `fallback` chains don't map cleanly to rows and columns.
+Deeply nested `record`/`list` structures (3+ levels), multi-source joins, and complex natural-language transforms don't map cleanly to rows and columns.
 
-**Mitigation**: The row grouping pattern handles 1–2 levels of nesting well. For deeper nesting, flatten to dot-path notation (e.g., `order.line_items[].product.sku`) with an explanatory note. For cross-source references, include the full path in the source column. Accept that some constructs are better read in the `.stm` file and add a note: "See .stm file for full detail."
+**Mitigation**: The row grouping pattern handles 1–2 levels of nesting well. For deeper nesting, flatten to dot-path notation (e.g., `Order.LineItems[].SKU`) with an explanatory note. For multi-source joins, include the source schema prefix in the source column. Accept that some constructs are better read in the `.stm` file and add a note: "See .stm file for full detail."
 
 ### Transform translation fidelity
 
-The deterministic translation rules may produce awkward phrasing for uncommon transform chains, or may not cover every possible STM transform.
+The deterministic translation rules may produce awkward phrasing for uncommon transform chains, or may not cover every possible STM pipeline token. Natural-language strings (`"..."`) in transforms are passed through verbatim, which works well for most cases but mixed NL + mechanical pipelines may read awkwardly.
 
-**Mitigation**: The translation rules handle the documented STM transforms from `STM-SPEC.md`. Unknown transforms fall through as raw STM syntax with a light italic style, making them visually distinct but still informative. The Lite variant is more creative (LLM-powered translation) while the Full variant is predictable.
+**Mitigation**: The translation rules handle the documented STM pipeline tokens from `STM-V2-SPEC.md`. Unknown tokens fall through as raw STM syntax with a light italic style, making them visually distinct but still informative. Natural-language strings are the user's own words, so they pass through cleanly. The Lite variant is more creative (LLM-powered translation) while the Full variant is predictable.
 
 ### Large STM files
 
