@@ -41,6 +41,7 @@ const commands = [
   "commands/where-used.js",
   "commands/warnings.js",
   "commands/context.js",
+  "commands/arrows.js",
 ];
 
 for (const cmd of commands) {

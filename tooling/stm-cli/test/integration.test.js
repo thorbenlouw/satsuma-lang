@@ -337,3 +337,95 @@ describe("stm context", () => {
     assert.match(stdout, /no relevant/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// stm arrows
+// ---------------------------------------------------------------------------
+describe("stm arrows", () => {
+  const DB = resolve(EXAMPLES, "db-to-db.stm");
+
+  it("shows arrows for a source field", async () => {
+    const { stdout, code } = await run("arrows", "legacy_sqlserver.CUST_ID", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /CUST_ID -> customer_id/);
+    assert.match(stdout, /CUST_ID -> legacy_customer_id/);
+    assert.match(stdout, /\[structural\]/);
+    assert.match(stdout, /\[none\]/);
+  });
+
+  it("shows structural classification on token_call pipeline", async () => {
+    const { stdout, code } = await run("arrows", "legacy_sqlserver.FIRST_NM", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /\[structural\]/);
+    assert.match(stdout, /trim/);
+  });
+
+  it("shows nl classification on NL-only transform", async () => {
+    const { stdout, code } = await run("arrows", "legacy_sqlserver.PHONE_NBR", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /\[nl\]/);
+  });
+
+  it("shows mixed classification on mixed transform", async () => {
+    const { stdout, code } = await run("arrows", "legacy_sqlserver.NOTES", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /\[mixed\]/);
+  });
+
+  it("--as-source filters to source arrows only", async () => {
+    const { stdout, code } = await run(
+      "arrows", "legacy_sqlserver.CUST_ID", "--as-source", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /CUST_ID -> customer_id/);
+    assert.match(stdout, /as source/);
+  });
+
+  it("--as-target filters to target arrows only", async () => {
+    const { stdout, code } = await run(
+      "arrows", "postgres_db.customer_id", "--as-target", DB,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /as target/);
+    assert.match(stdout, /CUST_ID -> customer_id/);
+  });
+
+  it("--json includes decomposed steps array", async () => {
+    const { stdout, code } = await run(
+      "arrows", "legacy_sqlserver.CUST_ID", "--json", DB,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.equal(data.length, 2);
+    const structural = data.find((a) => a.classification === "structural");
+    assert.ok(structural);
+    assert.ok(Array.isArray(structural.steps));
+    assert.ok(structural.steps.length > 0);
+    assert.ok(structural.steps[0].type);
+    assert.ok(structural.steps[0].text);
+  });
+
+  it("--json includes file and line", async () => {
+    const { stdout, code } = await run(
+      "arrows", "legacy_sqlserver.CUST_ID", "--json", DB,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data[0].file);
+    assert.ok(typeof data[0].line === "number");
+    assert.ok(data[0].line > 0);
+  });
+
+  it("exits 1 for unknown schema", async () => {
+    const { stderr, code } = await run("arrows", "nonexistent.field", DB);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+
+  it("exits 1 for unknown field", async () => {
+    const { stderr, code } = await run("arrows", "legacy_sqlserver.NONEXISTENT", DB);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
