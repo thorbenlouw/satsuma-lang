@@ -1,0 +1,52 @@
+// ============================================================
+// SFDC Standard Fragments Library
+// Reusable field sets for common Salesforce objects
+// ============================================================
+
+fragment sfdc_standard_types "Common Salesforce field types" {
+    Id              ID              [pk, unique]
+    Name            STRING(255)     [required]
+    CreatedDate     DATETIME        [required]
+    CreatedById     ID              [ref: User.Id]
+    LastModifiedDate DATETIME       [required]
+    LastModifiedById ID             [ref: User.Id]
+    SystemModStamp  DATETIME        [required]
+    IsDeleted       BOOLEAN         [default: false]
+}
+
+fragment sfdc_address "SFDC Standard Address Fields" {
+    Street          STRING(255)
+    City            STRING(40)
+    State           STRING(80)
+    PostalCode      STRING(20)
+    Country         STRING(80)
+    Latitude        DECIMAL(18,15)
+    Longitude       DECIMAL(18,15)
+}
+
+fragment sfdc_opportunity_standard "Opportunity standard fields" {
+    AccountId       ID              [ref: Account.Id]
+    Amount          CURRENCY(18,2)
+    CloseDate       DATE            [required]
+    StageName       PICKLIST        [required]
+    Probability     PERCENT(3,0)
+    ExpectedRevenue CURRENCY(18,2)
+    TotalOpportunityQuantity DECIMAL(18,2)
+    LeadSource      PICKLIST
+    Type            PICKLIST
+}
+
+fragment sfdc_account_standard "Account standard fields" {
+    Type            PICKLIST
+    ParentId        ID              [ref: Account.Id]
+    BillingAddress {
+        ...sfdc_address
+    }
+    ShippingAddress {
+        ...sfdc_address
+    }
+    Phone           PHONE
+    Website         URL
+    Industry        PICKLIST
+    NumberOfEmployees INT
+}

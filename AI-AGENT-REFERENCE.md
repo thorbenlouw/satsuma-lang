@@ -10,58 +10,51 @@
 ### Grammar (compact EBNF, ~500 tokens)
 
 ```ebnf
-file             = { import_stmt | integration | block | fragment | map_block } ;
+file             = { import_stmt | note_block | schema | fragment | transform | mapping } ;
 
-import_stmt      = "import" ( STRING | "{" ident_alias {"," ident_alias} "}" "from" STRING ) ;
-ident_alias      = IDENT ["as" IDENT] ;
+import_stmt      = "import" "{" name_list "}" "from" STRING ;
+name_list        = name {"," name} ;
+name             = IDENT | "'" ANY "'" ;
 
-integration      = "integration" STRING "{" { field | note | COMMENT } "}" ;
+note_block       = "note" "{" (STRING | TRIPLESTRING) "}" ;
 
-block            = BLOCK_KW IDENT [STRING] {annotation} "{" block_body "}" ;
-BLOCK_KW         = "source" | "target" | "table" | "message" | "record"
-                 | "event" | "schema" | "lookup" ;
-block_body       = { note | field | group | spread | sel_criteria | COMMENT } ;
+schema           = "schema" label ["(" metadata ")"] "{" schema_body "}" ;
+fragment         = "fragment" label "{" schema_body "}" ;
+label            = IDENT | "'" ANY "'" ;
 
-fragment         = "fragment" IDENT [STRING] "{" block_body "}" ;
+metadata         = meta_entry {"," meta_entry} ;
+meta_entry       = IDENT [value] | IDENT "{" enum_items "}" | "note" (STRING | TRIPLESTRING) ;
+enum_items       = value {"," value} ;
 
-field            = IDENT ["[]"] type_expr [tag_list] {annotation} ["{" note "}"] ;
-type_expr        = IDENT ["(" params ")"] ;
-tag_list         = "[" tag {"," tag} "]" ;
-tag              = IDENT [":" tag_value] ;
-tag_value        = enum_list | STRING | NUMBER | STANDARD_REF | IDENT ;
-enum_list        = "{" enum_item {"," enum_item} [","] "}" ;
-enum_item        = STRING | NUMBER | IDENT ;
-STANDARD_REF     = LETTER IDENT_TAIL ("." DIGIT IDENT_TAIL)+ ;  (* e.g. E.164, ISO-8601 *)
+schema_body      = { field | record_block | list_block | spread | COMMENT } ;
+field            = (IDENT | BACKTICK_IDENT) TYPE ["(" metadata ")"] ;
+record_block     = "record" label ["(" metadata ")"] "{" schema_body "}" ;
+list_block       = "list" label ["(" metadata ")"] "{" schema_body "}" ;
+spread           = "..." name ;
 
-group            = IDENT ["[]"] {annotation} "{" block_body "}" ;
-spread           = "..." IDENT ;
-annotation       = "@" IDENT ["(" params ")"] | "@" IDENT IDENT "=" STRING ;
-note             = "note" "'''" TEXT "'''" ;
-sel_criteria     = "selection_criteria" "'''" TEXT "'''" ;
+transform        = "transform" label "{" transform_body "}" ;
+transform_body   = { STRING | pipe_step {"|" pipe_step} } ;
 
-map_block        = "mapping" [IDENT "->" IDENT] ["[" option {"," option} "]"] "{" map_body "}" ;
-option           = IDENT ":" expr ;
-map_body         = { annotation | note | map_entry | nested_map | COMMENT } ;
-map_entry        = (field_path "->" field_path | "=>" field_path) [":" transform {cont}] ["{" note "}"] ;
-nested_map       = array_path "->" array_path "{" map_body "}" ;
+mapping          = "mapping" [label] ["(" metadata ")"] "{" mapping_body "}" ;
+mapping_body     = { note_block | source_decl | target_decl | arrow | nested_arrow | COMMENT } ;
+source_decl      = "source" "{" ref_list "}" ;
+target_decl      = "target" "{" ref_list "}" ;
+ref_list         = { BACKTICK_IDENT | STRING } ;
 
-transform        = pipe_chain | when_chain | fallback | literal ;
-pipe_chain       = step {"|" step} ;
-step             = IDENT ["(" params ")"] | ARITH NUMBER | value_map ;
-when_chain       = "when" cond "=>" val ;
-value_map        = "map" "{" (key ":" val) {"," key ":" val} "}" ;
-fallback         = "fallback" field_path {"|" step} ;
-cont             = "|" step | "when" cond "=>" val | "else" "=>" val | "fallback" field_path {"|" step} ;
+arrow            = [field_path] "->" field_path ["(" metadata ")"] ["{" transform_body "}"] ;
+nested_arrow     = field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
 
-field_path       = [IDENT "."] segment {"." segment} | "." segment {"." segment} ;
-array_path       = [IDENT "."] array_segment {"." segment} | "." array_segment {"." segment} ;
+pipe_step        = IDENT ["(" params ")"] | ARITH NUMBER | "map" "{" map_entries "}" | STRING ;
+map_entries      = { map_key ":" value } ;
+map_key          = value | "<" NUMBER | "default" | "_" | "null" ;
+
+field_path       = segment {"." segment} ;
 segment          = (IDENT | BACKTICK_IDENT) ["[]"] ;
-array_segment    = (IDENT | BACKTICK_IDENT) "[]" ;
-expr             = literal | field_path | IDENT ["(" params ")"] ;
-literal          = STRING | NUMBER | "true" | "false" | "null" ;
 
 IDENT            = LETTER {LETTER | DIGIT | "_" | "-"} ;
-BACKTICK_IDENT   = "`" {ANY | "``"} "`" ;
+BACKTICK_IDENT   = "`" {ANY} "`" ;
+STRING           = '"' {ANY} '"' ;
+TRIPLESTRING     = '"""' {ANY} '"""' ;
 COMMENT          = ("//" | "//!" | "//?") TEXT_TO_EOL ;
 ```
 
@@ -72,66 +65,67 @@ COMMENT          = ("//" | "//!" | "//?") TEXT_TO_EOL ;
 ```markdown
 # STM Quick Reference
 
+## Three delimiters, three jobs
+( ) = metadata      { } = structural content      " " = natural language
+
 ## Schema blocks
-source|target|message|table|event|lookup|schema <id> ["description"] {
-  field_name    TYPE           [tags]       // info
-  field_name    TYPE           [tags]       //! warning
-  field_name    TYPE           [tags]       //? todo
-  nested_obj {
+schema <name> (<metadata>) {
+  field_name    TYPE           (tags)       // info
+  field_name    TYPE           (tags)       //! warning
+  field_name    TYPE           (tags)       //? todo
+  record nested_obj {
     child       TYPE
   }
-  array[] {
+  list repeated_items {
     item        TYPE
   }
-  primitives[]  TYPE
   ...fragment_name
 }
 
-Tags:  [required, pk, unique, indexed, pii, encrypt, encrypt: AES-256-GCM,
-        default: val, enum: { a, b, c }, format: email, min: 0, max: 100,
-        pattern: "regex", ref: table.field]
-
-Annotations are postfix on the same declaration line:
-  message edi_desadv @format(fixed-length) { ... }
-  POReferences[] @filter(REFQUAL == "ON") { ... }
-  customer_name STRING @header("Customer Name")
+Metadata tokens (in parens):  pk, required, unique, indexed, pii, encrypt,
+  encrypt AES-256-GCM, default val, enum {a, b, c}, format email,
+  ref table.field, note "...", xpath "...", namespace prefix "uri", filter COND
 
 ## Mapping blocks
-mapping [source_id -> target_id] [flatten: path[], group_by: path, when: condition] {
-  src -> tgt                                 // direct
-  src -> tgt : transform                     // with transform
-  => tgt : when cond => value                // computed (no source)
-  => tgt : "literal"                         // static value
-  src -> tgt { note '''markdown''' }         // mapping-entry note
+mapping <name> (<metadata>) {
+  source { `schema_ref` }
+  target { `schema_ref` }
 
-  Transforms (combine with |):
+  src -> tgt                                 // direct
+  src -> tgt { transform }                   // with transform
+  src -> tgt { trim | lowercase }            // pipeline
+  src -> tgt { "NL transform description" }  // natural language
+  -> tgt { "computed, no source" }           // derived field
+  -> tgt { now_utc() }                       // function
+
+  Transforms (combine with | inside { }):
     trim, lowercase, uppercase, title_case, null_if_empty, null_if_invalid
     coalesce(val), round(n), truncate(n), max_length(n)
     prepend("x"), append("x"), split("x") | first | last
     validate_email, to_e164, to_iso8601, to_utc, now_utc()
     pad_left(n, c), pad_right(n, c), replace(old, new), escape_html
     to_string, to_number, to_boolean, uuid_v5(ns, name)
-    encrypt(algo, key), hash(algo)
+    encrypt(algo, key), hash(algo), parse(fmt)
     * N, / N, + N, - N
     map { src: "tgt", null: "default", _: "fallback" }
-    lookup(resource, key => value [, on_miss: error|null|"default"])
-    nl("natural language intent")
-    when <cond> => "value"   then more `when` / `else` lines
-    fallback field | chain
-    on_fail(action)
+    map { < 1000: "low", < 5000: "mid", default: "high" }
+    "natural language transform description"
 
   Array mapping:
   src_arr[] -> tgt_arr[] {
-    .child -> .child : transform
+    .child -> .child { transform }
   }
 }
 
-## Other
-integration "name" { cardinality 1:1  author "x"  note '''...''' }
-fragment <id> { fields... }          (spread with ...id)
-import "file.stm"
-import { id [as alias] } from "file.stm"
-note '''markdown'''                  (on any block)
+## Reusability
+fragment <name> { fields... }              (spread with ...name)
+transform <name> { pipeline or NL... }     (spread with ...name)
+import { name1, name2 } from "file.stm"
+
+## Notes & Comments
+note { "standalone documentation block" }
+note { """multiline **Markdown** content""" }
+(note "inline on a field or schema")       // in metadata parens
 // info   //! warning   //? question/todo
 ```
 
@@ -141,65 +135,70 @@ note '''markdown'''                  (on any block)
 
 ### When generating STM from a description or spreadsheet:
 
-1. Start with `integration` block (name, cardinality, author)
-2. Define `source` and `target` blocks with all fields, types, and tags
-3. Add `lookup` blocks if any enrichment/reference data is needed
-4. Write the `mapping {}` block with all field mappings
-5. Use `nl()` for any transform you can't express as a standard function
+1. Start with a `note { }` block describing the integration context
+2. Define `schema` blocks with all fields, types, and metadata
+3. Add `fragment` blocks if you have reusable field sets
+4. Write the `mapping { }` block with source/target refs and all arrows
+5. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline
 6. Add `//!` warnings for known data quality issues
 7. Add `//?` for any open questions or ambiguities
-8. Add `note '''...'''` blocks for rich context that doesn't fit in inline comments
+8. Add `(note "...")` metadata for persistent field-level documentation
 
 ### When reading/interpreting STM:
 
 1. Parse schema blocks to understand source and target structures
-2. Read mapping block entries in order — each is one field-level mapping
-3. `->` means source-to-target; `=>` means computed/no direct source
-4. Transform chains read left-to-right: `trim | lowercase | validate_email`
-5. `nl("...")` is natural language intent — interpret and implement the described logic
+2. Read mapping block arrows in order — each is one field-level mapping
+3. `src -> tgt` means source-to-target; `-> tgt` (no left side) means computed/derived
+4. Transform content is in `{ }` after the arrow — pipelines read left-to-right
+5. `"..."` strings in transforms are natural language intent — interpret and implement
 6. `//!` comments are warnings about data quality or known issues
-7. `note '''...'''` blocks contain rich markdown documentation
+7. `note { }` blocks contain rich documentation
 
 ### Common mistakes to avoid:
 
 | Mistake | Correct approach |
 |---|---|
-| Forgetting to declare arrays with `[]` | Use `items[] { }` for array of objects, `tags[] STRING` for array of primitives |
-| Using `->` for computed fields | Use `=> target_field : expression` when there's no single source |
+| Using `[tags]` bracket syntax | Use `(tags)` parentheses for metadata |
+| Using `source`/`target`/`table` as schema keywords | Use `schema` for all — role is contextual |
+| Using `@annotation(...)` syntax | Use `(key value)` in metadata parens |
+| Using `: transform` after arrow | Use `{ transform }` in braces after arrow |
+| Using `nl("...")` function | Use bare `"..."` strings in `{ }` — NL is first-class |
+| Using `note '''...'''` triple single-quotes | Use `(note "...")` or `note { """...""" }` |
+| Using `=> target` for computed fields | Use `-> target` with no left side |
+| Using `STRUCT { }` / `ARRAY { }` for nesting | Use `record Name { }` / `list Name { }` |
+| Using `when/else` conditionals | Use `map { }` with conditions or NL strings |
+| Forgetting to declare arrays with `list` | Use `list Name { }` for repeated structures |
 | Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
-| Using `if ... then ... else ...` conditionals | Use multiline `when ... => ...` chains |
-| Inventing transform functions | Use `nl()` for anything not in the standard library |
-| Putting transforms before `:` | Transform always follows `:` on the same or next line |
-| Using `note "..."` | Always use triple quotes: `note '''...'''` |
 
 ---
 
 ## Example: Minimal 1:1 mapping
 
 ```stm
-integration "Customer_Sync" {
-  cardinality 1:1
-}
+note { "Customer sync — 1:1 mapping from CRM to data warehouse" }
 
-source crm "CRM System" {
-  id       INT        [pk]
+schema crm (note "CRM System") {
+  id       INT           (pk)
   name     STRING(200)
-  email    STRING(255) [pii]
-  status   CHAR(1)     [enum: {A, I}]
+  email    STRING(255)   (pii)
+  status   CHAR(1)       (enum {A, I})
 }
 
-target warehouse "Data Warehouse" {
-  customer_id   UUID       [pk, required]
-  display_name  STRING(200) [required]
-  email_address STRING(255) [format: email]
+schema warehouse (note "Data Warehouse") {
+  customer_id   UUID        (pk, required)
+  display_name  STRING(200) (required)
+  email_address STRING(255) (format email)
   is_active     BOOLEAN
 }
 
 mapping {
-  id     -> customer_id   : uuid_v5("namespace", id)
-  name   -> display_name  : trim | title_case
-  email  -> email_address : trim | lowercase | validate_email | null_if_invalid
-  status -> is_active     : map { A: true, I: false }
+  source { `crm` }
+  target { `warehouse` }
+
+  id     -> customer_id   { uuid_v5("namespace", id) }
+  name   -> display_name  { trim | title_case }
+  email  -> email_address { trim | lowercase | validate_email | null_if_invalid }
+  status -> is_active     { map { A: true, I: false } }
 }
 ```
 
@@ -216,13 +215,19 @@ mapping {
 **STM equivalent:**
 
 ```stm
-// In source block:
-  CUST_TYPE    CHAR(1)    [enum: {R, B, G}]    //! Some records have NULL
+// In source schema:
+  CUST_TYPE    CHAR(1)    (enum {R, B, G})    //! Some records have NULL
 
-// In target block:
-  customer_type VARCHAR(20) [enum: {retail, business, government}, required]
+// In target schema:
+  customer_type VARCHAR(20) (enum {retail, business, government}, required)
 
 // In mapping block:
-CUST_TYPE -> customer_type
-  : map { R: "retail", B: "business", G: "government", null: "retail" }
+CUST_TYPE -> customer_type {
+  map {
+    R: "retail"
+    B: "business"
+    G: "government"
+    null: "retail"
+  }
+}
 ```

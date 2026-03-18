@@ -8,11 +8,12 @@ The immediate implementation priority is parser-first tooling. Downstream tools 
 
 ## Repository Layout
 
-- `STM-SPEC.md`: authoritative language specification
+- `STM-V2-SPEC.md`: authoritative language specification (v2)
 - `PROJECT-OVERVIEW.md`: product vision, motivation, and roadmap
 - `IMPLEMENTATION-GUIDE.md`: technical architecture and tooling strategy
-- `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented STM guidance
-- `examples/`: canonical `.stm` examples and fixtures
+- `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented STM guidance (v2)
+- `examples/`: canonical `.stm` examples and fixtures (v2 syntax)
+- `archive/v1/`: archived v1 specification and examples — for historical reference only, not for new work
 - `features/`: feature plans and task breakdown inputs
 - `scripts/`: utility scripts used during development
 - `tooling/tree-sitter-stm/`: tree-sitter grammar, generated parser artifacts, and corpus tests
@@ -36,8 +37,8 @@ Use `stm lineage <workspace-file>` (future tooling) to generate the full platfor
 
 When making changes or answering questions about syntax, semantics, or supported constructs:
 
-1. Treat `STM-SPEC.md` as the primary authority.
-2. Use `examples/` as the executable corpus of valid language patterns.
+1. Treat `STM-V2-SPEC.md` as the primary authority. The v1 spec is archived at `archive/v1/STM-SPEC.md` — do not use it for new work.
+2. Use `examples/` as the executable corpus of valid language patterns (v2 syntax).
 3. Use `IMPLEMENTATION-GUIDE.md` and feature docs to guide tooling order and architecture.
 4. If docs conflict, prefer the spec and call out the mismatch explicitly.
 
