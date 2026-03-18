@@ -1,0 +1,167 @@
+================================================================================
+Top-level note with NL string
+================================================================================
+
+note {
+  "This is a short documentation note."
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (note_block
+    (nl_string)))
+
+================================================================================
+Top-level note with multiline string
+================================================================================
+
+note {
+  """
+  # Heading
+  Some Markdown content here.
+  No double-quotes inside in Phase 1.
+  """
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (note_block
+    (multiline_string)))
+
+================================================================================
+Note before schema
+================================================================================
+
+note {
+  "Customer master data."
+}
+
+schema customers {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (note_block
+    (nl_string))
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body)))
+
+================================================================================
+Note after schema
+================================================================================
+
+schema customers {}
+
+note {
+  "Legacy customer store."
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body))
+  (note_block
+    (nl_string)))
+
+================================================================================
+Multiple top-level notes
+================================================================================
+
+note {
+  "First note."
+}
+
+note {
+  "Second note."
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (note_block
+    (nl_string))
+  (note_block
+    (nl_string)))
+
+================================================================================
+Note inside schema body
+================================================================================
+
+schema customers {
+  customer_id UUID (pk)
+  note {
+    "The customer_id is always a UUID v4 from our identity service."
+  }
+  email VARCHAR(255) (pii)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (note_block
+        (nl_string))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token))))))
+
+================================================================================
+Note NL string with escaped quote
+================================================================================
+
+note {
+  "She said \"hello\" — a direct quote."
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (note_block
+    (nl_string)))
+
+================================================================================
+Note with multiline inside schema body
+================================================================================
+
+schema legacy_customers {
+  phone VARCHAR(50)
+  note {
+    """
+    No consistent format:
+    Target is E.164 normalization.
+    """
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (note_block
+        (multiline_string)))))
