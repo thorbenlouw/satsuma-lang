@@ -677,8 +677,8 @@ describe("stm validate", () => {
   });
 
   it("parse errors report correct structure", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
-    const { stdout, code } = await run("validate", DB);
+    const BAD = resolve(import.meta.dirname, "fixtures", "parse-error.stm");
+    const { stdout, code } = await run("validate", BAD);
     assert.equal(code, 2);
     assert.match(stdout, /error/);
     assert.match(stdout, /\d+ error/);
@@ -693,8 +693,8 @@ describe("stm validate", () => {
   });
 
   it("--json produces valid JSON", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
-    const { stdout, code } = await run("validate", "--json", DB);
+    const BAD = resolve(import.meta.dirname, "fixtures", "parse-error.stm");
+    const { stdout, code } = await run("validate", "--json", BAD);
     assert.equal(code, 2);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data));

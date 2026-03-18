@@ -62,6 +62,23 @@ function entryText(node) {
 }
 
 /**
+ * Extract a clean schema name from a source_ref node.
+ * Returns the unquoted name from the first backtick_name or identifier child,
+ * or null if the source_ref only contains an nl_string (join description).
+ */
+function sourceRefName(node) {
+  if (!node) return null;
+  // If this isn't a source_ref wrapper, fall back to entryText
+  if (node.type !== "source_ref") return entryText(node);
+  for (const c of node.namedChildren) {
+    if (c.type === "backtick_name") return c.text.slice(1, -1);
+    if (c.type === "identifier") return c.text;
+  }
+  // nl_string-only source_ref entries are join descriptions, not schema refs
+  return null;
+}
+
+/**
  * Extract direct field_decl children of a body node.
  * Returns [{name, type}]
  */
@@ -162,12 +179,12 @@ export function extractMappings(rootNode) {
 
       if (srcBlock) {
         for (const c of srcBlock.namedChildren) {
-          const t = entryText(c);
+          const t = sourceRefName(c);
           if (t) sources.push(t);
         }
       }
       if (tgtBlock) {
-        const t = entryText(tgtBlock.namedChildren[0]);
+        const t = sourceRefName(tgtBlock.namedChildren[0]);
         if (t) targets.push(t);
       }
 
