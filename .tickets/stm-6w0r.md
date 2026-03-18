@@ -1,6 +1,6 @@
 ---
 id: stm-6w0r
-status: open
+status: closed
 deps: [stm-kgoy, stm-9hbj]
 links: []
 created: 2026-03-18T12:17:55Z

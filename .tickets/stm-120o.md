@@ -1,6 +1,6 @@
 ---
 id: stm-120o
-status: open
+status: closed
 deps: [stm-6lq1, stm-jbba, stm-y9a1, stm-i0br]
 links: []
 created: 2026-03-18T12:17:55Z

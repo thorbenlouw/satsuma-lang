@@ -1,6 +1,6 @@
 ---
 id: stm-k75c
-status: open
+status: closed
 deps: [stm-j51n]
 links: []
 created: 2026-03-18T12:17:55Z

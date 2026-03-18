@@ -1,6 +1,6 @@
 ---
 id: stm-kgoy
-status: open
+status: closed
 deps: [stm-120o]
 links: []
 created: 2026-03-18T12:17:55Z

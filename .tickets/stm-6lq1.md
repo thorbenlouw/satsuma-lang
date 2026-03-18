@@ -1,6 +1,6 @@
 ---
 id: stm-6lq1
-status: open
+status: closed
 deps: [stm-6siu, stm-9h3g, stm-ohgr]
 links: []
 created: 2026-03-18T12:17:55Z
