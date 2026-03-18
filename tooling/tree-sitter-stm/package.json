@@ -6,9 +6,10 @@
   "license": "UNLICENSED",
   "main": "bindings/node",
   "scripts": {
-    "generate": "tree-sitter generate",
-    "build": "tree-sitter generate && node-gyp build",
-    "test": "tree-sitter test",
+    "generate": "../../scripts/tree-sitter-local.sh generate",
+    "build": "../../scripts/tree-sitter-local.sh generate && node-gyp build",
+    "test": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test",
+    "test:wasm": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test --wasm",
     "smoke": "node scripts/smoke-test.js"
   },
   "devDependencies": {
