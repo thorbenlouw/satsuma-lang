@@ -1,6 +1,6 @@
 ---
 id: stm-jbba
-status: open
+status: closed
 deps: [stm-ohgr, stm-j51n]
 links: []
 created: 2026-03-18T12:17:55Z
