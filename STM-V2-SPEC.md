@@ -86,7 +86,7 @@ Comments run to end of line. There are no block comments.
 
 These keywords introduce structural blocks and cannot be used as bare identifiers:
 
-`schema` `fragment` `mapping` `transform` `source` `target` `map` `record` `list` `note` `import`
+`schema` `fragment` `mapping` `transform` `metric` `source` `target` `map` `record` `list` `note` `import`
 
 ### 2.7 Vocabulary Tokens
 
@@ -503,11 +503,114 @@ Import syntax follows the pattern `import { <names> } from "<path>"`. Exact reso
 
 ---
 
-## 6. Vocabulary Conventions
+## 6. Metric Blocks
+
+A `metric` block declares a business metric: what it measures, where the data comes from, and how it can be sliced. Metrics are consumers of schemas — they appear at the end of a lineage graph, not in the middle.
+
+`metric` is a reserved keyword, not a `schema` with a metadata token. The distinction matters for tooling: lineage tracers and the CLI treat metrics as terminal nodes (data flows *into* them; nothing flows *out*).
+
+### 6.1 Basic Structure
+
+```
+metric <name> <display_label>? (<metadata>) {
+  <field declarations>
+  <note blocks>
+}
+```
+
+- **name** — bare identifier or single-quoted string.
+- **display_label** — optional quoted string giving the short business name (e.g. `"MRR"`). This is the label shown in dashboards and documentation.
+- **metadata** — required `( )` block describing how the metric is defined.
+- **body** — measure field declarations and notes. No mappings or arrows.
+
+### 6.2 Metric Metadata Tokens
+
+These vocabulary tokens go in the `( )` metadata block:
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `source` | Schema(s) the metric is derived from | `source fact_orders` or `source {fact_orders, dim_customer}` |
+| `grain` | The time or dimensional grain | `grain monthly`, `grain daily` |
+| `slice` | Dimensions the metric can be cut by | `slice {region, product_line, segment}` |
+| `filter` | Row-level filter applied before aggregation | `filter "status = 'active'"` |
+
+### 6.3 Measure Fields
+
+Fields inside a metric body declare the numeric values the metric produces. The `measure` vocabulary token describes aggregation behaviour:
+
+| Token | Meaning |
+|-------|---------|
+| `measure additive` | Can be summed across all dimensions |
+| `measure non_additive` | Cannot be summed (e.g. ratios, averages) |
+| `measure semi_additive` | Can be summed across some dimensions but not others (e.g. balance at a point in time) |
+
+### 6.4 Examples
+
+**Simple revenue metric:**
+
+```stm
+metric monthly_recurring_revenue "MRR" (
+  source fact_subscriptions,
+  grain monthly,
+  slice {customer_segment, product_line, region},
+  filter "status = 'active' AND is_trial = false"
+) {
+  value  DECIMAL(14,2)  (measure additive)
+
+  note {
+    "Sum of active subscription amounts, normalized to monthly.
+     Annual subscriptions divided by 12. Quarterly by 3.
+     Excludes trials and churned subscriptions."
+  }
+}
+```
+
+**Multi-source metric with multiple measures:**
+
+```stm
+metric customer_lifetime_value "CLV" (
+  source {fact_orders, dim_customer},
+  slice {acquisition_channel, segment, cohort_year}
+) {
+  value              DECIMAL(14,2)  (measure non_additive)
+  order_count        INTEGER        (measure additive)
+  avg_order_value    DECIMAL(12,2)  (measure non_additive)
+
+  note {
+    """
+    Average revenue per customer over their entire tenure.
+    Calculated as: total_revenue / months_active * expected_lifetime_months.
+    Expected lifetime derived from cohort survival curves.
+    """
+  }
+}
+```
+
+**Metric with no display label:**
+
+```stm
+metric churn_rate (
+  source {fact_subscriptions, dim_customer},
+  grain monthly,
+  slice {segment, region}
+) {
+  value  DECIMAL(5,4)  (measure non_additive)
+}
+```
+
+### 6.5 What Metrics Are Not
+
+- Metrics are **not schemas.** You cannot use a metric as a `source` or `target` in a `mapping` block.
+- Metrics are **not mappings.** They describe what a metric is, not how to compute it step by step. Complex computation logic goes in the `note { }` block in natural language.
+- Metrics are **not validated by the parser.** The `source`, `grain`, `slice`, and `filter` tokens are vocabulary tokens interpreted by the LLM or downstream tooling — the parser captures them structurally but does not resolve them.
+
+---
+
+## 7. Vocabulary Conventions
 
 Vocabulary tokens are **not keywords** — they are interpreted by the LLM based on context. This section documents common conventions.
 
-### 6.1 Field Metadata Tokens (used in `( )`)
+### 7.1 Field Metadata Tokens (used in `( )`)
 
 | Token | Meaning | Example |
 |-------|---------|---------|
@@ -526,7 +629,7 @@ Vocabulary tokens are **not keywords** — they are interpreted by the LLM based
 | `filter` | Row-level filter condition | `(filter QUAL == "ON")` |
 | `note` | Persistent documentation | `(note "Converted at daily spot rate")` |
 
-### 6.2 Pipeline Tokens (used in `{ }`)
+### 7.2 Pipeline Tokens (used in `{ }`)
 
 | Token | Meaning |
 |-------|---------|
@@ -550,7 +653,7 @@ Vocabulary tokens are **not keywords** — they are interpreted by the LLM based
 | `prepend(str)` | Prefix a string |
 | `max_length(n)` | Enforce maximum length |
 
-### 6.3 Domain Tokens
+### 7.3 Domain Tokens
 
 These are freely extensible. Common domain-specific tokens:
 
@@ -560,9 +663,9 @@ These are freely extensible. Common domain-specific tokens:
 
 ---
 
-## 7. Complete Examples
+## 8. Complete Examples
 
-### 7.1 Database to Database — Legacy Customer Migration
+### 8.1 Database to Database — Legacy Customer Migration
 
 ```
 // STM v2 — Legacy Customer Migration
@@ -753,7 +856,7 @@ mapping 'customer migration' {
 }
 ```
 
-### 7.2 EDI to JSON — ASN Shipment
+### 8.2 EDI to JSON — ASN Shipment
 
 ```
 // STM v2 — EDI 856 → MFCS Shipment
@@ -927,7 +1030,7 @@ mapping 'edi to mfcs' {
 }
 ```
 
-### 7.3 XML to Parquet — Commerce Orders
+### 8.3 XML to Parquet — Commerce Orders
 
 ```
 // STM v2 — Order XML to Lakehouse Parquet
@@ -1111,7 +1214,7 @@ mapping 'order lines' (flatten `Order.LineItems[]`) {
 }
 ```
 
-### 7.4 Salesforce to Snowflake — Opportunity Ingestion
+### 8.4 Salesforce to Snowflake — Opportunity Ingestion
 
 ```
 // STM v2 — Salesforce to Snowflake Pipeline
