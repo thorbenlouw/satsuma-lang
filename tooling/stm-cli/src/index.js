@@ -25,7 +25,7 @@ program
 // Register commands — each module calls program.command(...)
 const commands = [
   // Phase 1+: loaded as they are implemented
-  // "commands/summary.js",
+  "commands/summary.js",
   // "commands/schema.js",
   // "commands/metric.js",
   // "commands/mapping.js",
