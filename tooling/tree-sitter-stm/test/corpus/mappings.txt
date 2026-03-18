@@ -13,9 +13,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier)))))
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Mapping with label
@@ -34,9 +36,11 @@ mapping crm_to_warehouse {
       (identifier))
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier)))))
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Mapping with metadata
@@ -54,14 +58,17 @@ mapping crm_to_warehouse (version 1) {
     (block_label
       (identifier))
     (metadata_block
-      (tag_token
-        (identifier))
-      (ERROR))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (number_literal)))
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier)))))
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Quoted mapping label
@@ -80,9 +87,11 @@ mapping 'CRM to Warehouse' {
       (quoted_name))
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier)))))
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Source with multiple entries
@@ -99,10 +108,13 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier)
-        (identifier))
+        (source_ref
+          (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier)))))
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Source with backtick references
@@ -119,10 +131,13 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (backtick_name)
-        (backtick_name))
+        (source_ref
+          (backtick_name))
+        (source_ref
+          (backtick_name)))
       (target_block
-        (backtick_name)))))
+        (source_ref
+          (backtick_name))))))
 
 ================================================================================
 Source with NL string join description
@@ -139,10 +154,13 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier)
-        (nl_string))
+        (source_ref
+          (identifier))
+        (source_ref
+          (nl_string)))
       (target_block
-        (identifier)))))
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Mapping with note block
@@ -164,9 +182,11 @@ mapping crm_to_warehouse {
       (identifier))
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (note_block
         (nl_string)))))
 
@@ -186,9 +206,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -215,9 +237,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path

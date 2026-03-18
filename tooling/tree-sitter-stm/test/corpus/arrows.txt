@@ -14,9 +14,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -41,9 +43,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (computed_arrow
         (tgt_path
           (field_path
@@ -65,9 +69,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -95,9 +101,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -125,9 +133,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -153,9 +163,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (relative_field_path
@@ -180,9 +192,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (backtick_path
@@ -207,9 +221,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (backtick_path
@@ -235,9 +251,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (namespaced_path
@@ -264,9 +282,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -291,9 +311,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (computed_arrow
         (tgt_path
           (field_path
@@ -321,9 +343,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path

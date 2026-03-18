@@ -1,6 +1,6 @@
 ---
 id: stm-j6xo
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T18:57:04Z

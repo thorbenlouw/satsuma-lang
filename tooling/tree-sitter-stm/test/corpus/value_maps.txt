@@ -20,9 +20,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -71,9 +73,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -121,9 +125,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -165,9 +171,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -210,9 +218,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path
@@ -258,9 +268,11 @@ mapping {
   (mapping_block
     (mapping_body
       (source_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (target_block
-        (identifier))
+        (source_ref
+          (identifier)))
       (map_arrow
         (src_path
           (field_path

@@ -1,6 +1,6 @@
 ---
 id: stm-7xw7
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T18:56:55Z

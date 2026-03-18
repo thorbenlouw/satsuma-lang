@@ -42,15 +42,16 @@ module.exports = grammar({
   word: ($) => $.identifier,
 
   conflicts: ($) => [
-    // Metadata: key_value_pair vs tag_token (Phase 3)
+    // Metadata: key_value_pair vs tag_token (initial identifier is ambiguous).
     [$.key_value_pair, $.tag_token],
-    // Arrow body: map_arrow body may be { pipe_chain } or absent;
-    // nested_arrow body is always { arrow_decl* }. Both start with the same
-    // src_path -> tgt_path prefix. GLR resolves on body content.
+    // Arrow body: map_arrow vs nested_arrow share the same prefix.
     [$.map_arrow, $.nested_arrow],
-    // Path: namespaced_path and field_path both start with identifier.
-    // Resolved on next token: :: vs . or ->
-    [$.namespaced_path, $.field_path],
+    // Multi-word spread: after "...identifier", the next identifier could
+    // continue the spread label or start a new field_decl.  GLR explores
+    // both; prec.dynamic(-1) on _spread_words ensures field_decl wins
+    // when it produces a valid parse.
+    [$._spread_words],
+    [$.field_decl, $._spread_words],
   ],
 
   rules: {
@@ -133,6 +134,7 @@ module.exports = grammar({
 
     mapping_body: ($) =>
       seq(
+        repeat($.note_block),
         $.source_block,
         $.target_block,
         repeat($._mapping_body_item),
@@ -145,12 +147,17 @@ module.exports = grammar({
       seq(
         "source",
         "{",
-        commaSep1($._source_entry),
-        optional(","),
+        repeat1(seq($._source_entry, optional(","))),
         "}",
       ),
 
-    _source_entry: ($) => choice($.backtick_name, $.identifier, $.nl_string),
+    _source_entry: ($) => $.source_ref,
+
+    source_ref: ($) =>
+      seq(
+        choice($.backtick_name, $.identifier, $.nl_string),
+        optional($.metadata_block),
+      ),
 
     // target { ref }
     target_block: ($) =>
@@ -180,7 +187,7 @@ module.exports = grammar({
       seq(
         "note",
         "{",
-        choice($.multiline_string, $.nl_string),
+        choice($.multiline_string, repeat1($.nl_string)),
         "}",
       ),
 
@@ -246,7 +253,17 @@ module.exports = grammar({
 
     // ── Fragment spread ───────────────────────────────────────────────────
 
-    fragment_spread: ($) => seq("...", $.block_label),
+    fragment_spread: ($) => seq("...", $.spread_label),
+
+    // Multi-word spreads: ...audit fields, ...to utc date
+    // The spread consumes identifiers until it hits a token that cannot be
+    // part of a label (newline-sensitive in practice; the grammar uses a
+    // type_expr lookahead via prec to disambiguate from field_decl).
+    spread_label: ($) =>
+      choice($.quoted_name, $._spread_words),
+
+    _spread_words: ($) =>
+      prec.dynamic(-1, seq($.identifier, repeat($.identifier))),
 
     // ── Arrow declarations ────────────────────────────────────────────────
     // Three arrow types share src_path -> tgt_path prefix.
@@ -308,41 +325,40 @@ module.exports = grammar({
         $.field_path,
       ),
 
-    // ns::identifier or ns::identifier.field... (optional [])
+    // ns::identifier or ns::identifier.field... ([] on any segment)
     namespaced_path: ($) =>
-      prec.left(seq(
+      prec.right(seq(
         $.identifier,
         "::",
-        $.identifier,
+        $._path_seg,
         repeat(seq(".", $._path_seg)),
-        optional("[]"),
       )),
 
-    // `BacktickRef` or `BacktickRef`.field... (optional [])
+    // `BacktickRef` or `BacktickRef`.field... ([] on any segment)
     backtick_path: ($) =>
-      prec.left(seq(
+      prec.right(seq(
         $.backtick_name,
-        repeat(seq(".", $._path_seg)),
         optional("[]"),
+        repeat(seq(".", $._path_seg)),
       )),
 
-    // .field or .field.nested... (no [] suffix for relative paths)
+    // .field or .field.nested... ([] on any segment)
     relative_field_path: ($) =>
-      prec.left(seq(
+      prec.right(seq(
         ".",
         $._path_seg,
         repeat(seq(".", $._path_seg)),
       )),
 
-    // field or field.nested... (optional [])
+    // field or field.nested... ([] on any segment)
     field_path: ($) =>
-      prec.left(seq(
+      prec.right(seq(
         $.identifier,
-        repeat(seq(".", $._path_seg)),
         optional("[]"),
+        repeat(seq(".", $._path_seg)),
       )),
 
-    _path_seg: ($) => choice($.identifier, $.backtick_name),
+    _path_seg: ($) => seq(choice($.identifier, $.backtick_name), optional("[]")),
 
     // ── Pipe chain (transform, arrow bodies) ─────────────────────────────
 
@@ -352,10 +368,17 @@ module.exports = grammar({
       choice(
         $.multiline_string,
         $.nl_string,
+        $.arithmetic_step,
         $.token_call,
         $.map_literal,
         $.fragment_spread,
       ),
+
+    // Arithmetic: * N, / N, + N, - N
+    arithmetic_step: ($) =>
+      seq($._arithmetic_op, $.number_literal),
+
+    _arithmetic_op: (_) => token(choice("*", "/", "+", "-")),
 
     token_call: ($) =>
       seq(
@@ -363,7 +386,7 @@ module.exports = grammar({
         optional(seq("(", optional(commaSep1($._tc_arg)), ")")),
       ),
 
-    _tc_arg: ($) => choice($.nl_string, $.identifier, /[0-9]+/),
+    _tc_arg: ($) => choice($.nl_string, $.dotted_name, $.identifier, $.number_literal),
 
     // ── Map literal ───────────────────────────────────────────────────────
 
@@ -418,7 +441,7 @@ module.exports = grammar({
       seq(
         "enum",
         "{",
-        commaSep1($.identifier),
+        commaSep1(choice($.identifier, $.nl_string)),
         optional(","),
         "}",
       ),
@@ -431,6 +454,7 @@ module.exports = grammar({
         optional(","),
         "}",
       ),
+
 
     note_tag: ($) =>
       seq(
@@ -447,8 +471,32 @@ module.exports = grammar({
         $.nl_string,
         $.multiline_string,
         $.backtick_name,
+        $.kv_braced_list,
+        $.kv_comparison,
+        $.kv_compound,
+        $.dotted_name,
+        $.number_literal,
+        $.boolean_literal,
         $.identifier,
       ),
+
+    // Value forms: source {a, b}, slice {x, y} (inline braced list)
+    kv_braced_list: ($) =>
+      seq("{", commaSep1($.identifier), optional(","), "}"),
+
+    // Value form: FIELD == "literal" (comparison expression)
+    kv_comparison: ($) =>
+      seq($.identifier, $._comparison_op, choice($.nl_string, $.identifier, $.number_literal)),
+
+    // Value form: identifier "string" (compound value, e.g. namespace ord "uri")
+    kv_compound: ($) => seq($.identifier, $.nl_string),
+
+    dotted_name: ($) =>
+      prec.left(seq($.identifier, repeat1(seq(".", choice($.identifier, $.number_literal))))),
+
+    number_literal: (_) => /[0-9]+(\.[0-9]+)?/,
+
+    boolean_literal: (_) => choice("true", "false"),
 
     tag_token: ($) => $.identifier,
 

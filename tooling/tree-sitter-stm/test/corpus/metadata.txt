@@ -283,22 +283,33 @@ metric monthly_recurring_revenue "MRR" (
 Mapping with metadata
 ================================================================================
 
-mapping crm_to_warehouse (version 2, author jsmith) {}
+mapping crm_to_warehouse (version 2, author jsmith) {
+  source { crm_customers }
+  target { dim_customers }
+}
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (ERROR
+  (mapping_block
     (block_label
       (identifier))
     (metadata_block
-      (tag_token
-        (identifier))
-      (ERROR)
       (key_value_pair
         (kv_key
           (identifier))
-        (identifier)))))
+        (number_literal))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier)))
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier))))))
 
 ================================================================================
 Schema without metadata

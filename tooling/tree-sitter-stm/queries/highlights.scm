@@ -139,6 +139,6 @@
 
 ; ── Fragment spread ───────────────────────────────────────────────────────────
 (fragment_spread
-  (block_label (identifier) @type))
+  (spread_label (identifier) @type))
 (fragment_spread
-  (block_label (quoted_name) @type))
+  (spread_label (quoted_name) @type))

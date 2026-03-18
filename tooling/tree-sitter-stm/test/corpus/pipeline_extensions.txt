@@ -1,0 +1,109 @@
+================================================================================
+Arithmetic pipe step multiply
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  CREDIT_LIMIT -> credit_limit_cents { coalesce(0) | * 100 | round }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)
+              (number_literal)))
+          (pipe_step
+            (arithmetic_step
+              (number_literal)))
+          (pipe_step
+            (token_call
+              (identifier))))))))
+
+================================================================================
+Token call with dotted path argument
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  TAX_ID -> tax_encrypted { encrypt(AES-256-GCM, secrets.tax_encryption_key) }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)
+              (identifier)
+              (dotted_name
+                (identifier)
+                (identifier)))))))))
+
+================================================================================
+Arithmetic pipe step divide
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  amount -> amount_normalized { / 100 }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (arithmetic_step
+              (number_literal))))))))

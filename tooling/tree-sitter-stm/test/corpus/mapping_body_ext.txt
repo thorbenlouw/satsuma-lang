@@ -1,0 +1,69 @@
+================================================================================
+Leading note block before source/target
+================================================================================
+
+mapping 'customer migration' {
+  note {
+    "Assumptions for the mapping."
+  }
+
+  source { `legacy_sqlserver` }
+  target { `postgres_db` }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (mapping_body
+      (note_block
+        (nl_string))
+      (source_block
+        (source_ref
+          (backtick_name)))
+      (target_block
+        (source_ref
+          (backtick_name))))))
+
+================================================================================
+Annotated source entries with metadata
+================================================================================
+
+mapping 'customer 360' {
+  source {
+    `crm_customers` (filter "email NOT LIKE '%@test.internal'")
+    `order_transactions` (filter "status IN ('completed', 'refunded')")
+    "Join crm_customers to order_transactions on crm_customers.customer_id = order_transactions.customer_id"
+  }
+  target { `customer_360` }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (mapping_body
+      (source_block
+        (source_ref
+          (backtick_name)
+          (metadata_block
+            (key_value_pair
+              (kv_key
+                (identifier))
+              (nl_string))))
+        (source_ref
+          (backtick_name)
+          (metadata_block
+            (key_value_pair
+              (kv_key
+                (identifier))
+              (nl_string))))
+        (source_ref
+          (nl_string)))
+      (target_block
+        (source_ref
+          (backtick_name))))))

@@ -322,7 +322,7 @@ transform 'apply standard' {
           (identifier)))
       (pipe_step
         (fragment_spread
-          (block_label
+          (spread_label
             (quoted_name))))
       (pipe_step
         (token_call

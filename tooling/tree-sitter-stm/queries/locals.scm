@@ -22,13 +22,13 @@
 
 ; ── References ────────────────────────────────────────────────────────────────
 ; Fragment spreads reference fragment (or named transform) labels.
-(fragment_spread (block_label) @local.reference)
+(fragment_spread (spread_label) @local.reference)
 
 ; Source/target entries reference schema names.
 ; Backtick refs are the canonical way to reference a schema by name in
 ; source/target blocks and path expressions.
-(source_block (backtick_name) @local.reference)
-(target_block (backtick_name) @local.reference)
+(source_block (source_ref (backtick_name) @local.reference))
+(target_block (source_ref (backtick_name) @local.reference))
 
 ; Backtick names in path expressions reference field/column names.
 (backtick_path (backtick_name) @local.reference)

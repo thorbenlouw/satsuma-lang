@@ -1,0 +1,307 @@
+================================================================================
+Numeric default value
+================================================================================
+
+schema customer {
+  loyalty_points INT (default 0)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (number_literal)))))))
+
+================================================================================
+Boolean default value
+================================================================================
+
+schema customer {
+  is_deleted BOOLEAN (default false)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (boolean_literal)))))))
+
+================================================================================
+Quoted default value
+================================================================================
+
+schema customer {
+  currency CHAR(3) (default "USD")
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (nl_string)))))))
+
+================================================================================
+Dotted ref value
+================================================================================
+
+schema customer {
+  address_id UUID (ref addresses.id)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (dotted_name
+              (identifier)
+              (identifier))))))))
+
+================================================================================
+Dotted format value
+================================================================================
+
+schema customer {
+  phone VARCHAR(20) (format E.164)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (dotted_name
+              (identifier)
+              (number_literal))))))))
+
+================================================================================
+Tag number value
+================================================================================
+
+schema proto {
+  event_id STRING (tag 1)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (number_literal)))))))
+
+================================================================================
+Decimal metadata value
+================================================================================
+
+mapping 'session aggregation' (error_threshold 0.02) {
+  source { events }
+  target { sessions }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (number_literal)))
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier))))))
+
+================================================================================
+Namespace compound value
+================================================================================
+
+schema xml_order (
+  format xml,
+  namespace ord "http://example.com/order",
+  namespace com "http://example.com/common"
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_compound
+          (identifier)
+          (nl_string)))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_compound
+          (identifier)
+          (nl_string))))))
+
+================================================================================
+Filter comparison value
+================================================================================
+
+schema edi_shipment {
+  list ShipmentRefs (filter SHPRFQUAL == "SRN") {
+    SHIPREF CHAR(70)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (list_block
+        (block_label
+          (identifier))
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (kv_comparison
+              (identifier)
+              (nl_string))))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)))))))
+
+================================================================================
+Source braced list value
+================================================================================
+
+metric churn_rate (
+  source {fact_subscriptions, dim_customer},
+  grain monthly,
+  slice {segment, region}
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_braced_list
+          (identifier)
+          (identifier)))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier))
+      (slice_body
+        (identifier)
+        (identifier)))))
+
+================================================================================
+Backtick metadata value for flatten
+================================================================================
+
+mapping 'order lines' (flatten `Order.LineItems[]`) {
+  source { commerce_order }
+  target { order_lines }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (backtick_name)))
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier))))))

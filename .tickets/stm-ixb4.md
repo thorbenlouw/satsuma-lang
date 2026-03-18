@@ -1,6 +1,6 @@
 ---
 id: stm-ixb4
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T18:56:33Z
