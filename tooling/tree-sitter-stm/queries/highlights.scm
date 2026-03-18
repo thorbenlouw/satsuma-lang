@@ -123,6 +123,7 @@
 
 ; ── Import paths ──────────────────────────────────────────────────────────────
 (import_name (quoted_name) @string.special)
+(import_name (identifier) @variable)
 (import_path (nl_string) @string.path)
 
 ; ── Strings ───────────────────────────────────────────────────────────────────

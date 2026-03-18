@@ -1,6 +1,6 @@
 ---
 id: stm-6gh9
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T20:07:56Z

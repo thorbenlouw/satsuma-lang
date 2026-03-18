@@ -94,8 +94,17 @@
       ]
     },
     "import_name": {
-      "type": "SYMBOL",
-      "name": "quoted_name"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "quoted_name"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        }
+      ]
     },
     "import_path": {
       "type": "SYMBOL",

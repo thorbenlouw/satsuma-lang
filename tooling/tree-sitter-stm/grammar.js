@@ -82,7 +82,7 @@ module.exports = grammar({
         $.import_path,
       ),
 
-    import_name: ($) => $.quoted_name,
+    import_name: ($) => choice($.quoted_name, $.identifier),
 
     import_path: ($) => $.nl_string,
 
