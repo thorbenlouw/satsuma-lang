@@ -1,0 +1,193 @@
+================================================================================
+Regular comment standalone
+================================================================================
+
+// This is a regular comment
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment))
+
+================================================================================
+Warning comment standalone
+================================================================================
+
+//! Known issue: deprecated field — remove after 2026-Q2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (warning_comment))
+
+================================================================================
+Question comment standalone
+================================================================================
+
+//? Should this be split into billing and shipping schemas?
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (question_comment))
+
+================================================================================
+All three comment types in order
+================================================================================
+
+// Regular comment — stripped by tooling
+//! Warning — surfaced by linter
+//? Question/TODO — surfaced by linter
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (warning_comment)
+  (question_comment))
+
+================================================================================
+Comment before block
+================================================================================
+
+// Customer master schema
+schema customers {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Warning comment before block
+================================================================================
+
+//! Legacy schema — being replaced by customers_v2
+schema customers {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (warning_comment)
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Question comment before block
+================================================================================
+
+//? Do we still need this schema?
+schema legacy_orders {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (question_comment)
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Comment after block on same line
+================================================================================
+
+schema customers {} // inline regular comment
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier)))
+  (comment))
+
+================================================================================
+Warning comment after block on same line
+================================================================================
+
+schema customers {} //! deprecated — use customers_v2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier)))
+  (warning_comment))
+
+================================================================================
+Question comment after block on same line
+================================================================================
+
+schema customers {} //? should we split PII fields out?
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier)))
+  (question_comment))
+
+================================================================================
+Comment between blocks
+================================================================================
+
+schema customers {}
+
+// Separator comment
+
+schema orders {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier)))
+  (comment)
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Mixed comments surrounding blocks
+================================================================================
+
+// File-level note
+//! This file is in draft state
+schema customers {}
+//? Should orders be here too?
+schema orders {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (warning_comment)
+  (schema_block
+    (block_label
+      (identifier)))
+  (question_comment)
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Comment-only file
+================================================================================
+
+// This file is intentionally empty.
+// It will be populated in the next sprint.
+//! Placeholder — do not deploy
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (comment)
+  (warning_comment))

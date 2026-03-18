@@ -1,0 +1,106 @@
+================================================================================
+Single import name
+================================================================================
+
+import { 'address fields' } from "lib/common.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string))))
+
+================================================================================
+Multiple import names
+================================================================================
+
+import { 'address fields', 'audit fields' } from "lib/common.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string))))
+
+================================================================================
+Three import names
+================================================================================
+
+import { 'address fields', 'audit fields', 'id fields' } from "lib/shared/common.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_name
+      (quoted_name))
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string))))
+
+================================================================================
+Import with relative path
+================================================================================
+
+import { 'audit fields' } from "../shared/audit.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string))))
+
+================================================================================
+Import followed by schema
+================================================================================
+
+import { 'address fields' } from "lib/common.stm"
+
+schema customers {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string)))
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Multiple import declarations
+================================================================================
+
+import { 'address fields' } from "lib/address.stm"
+import { 'audit fields' } from "lib/audit.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string)))
+  (import_decl
+    (import_name
+      (quoted_name))
+    (import_path
+      (nl_string))))

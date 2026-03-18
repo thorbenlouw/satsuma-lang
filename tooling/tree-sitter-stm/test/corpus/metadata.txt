@@ -1,0 +1,312 @@
+================================================================================
+Empty metadata block
+================================================================================
+
+schema customers () {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block)))
+
+================================================================================
+Single tag token
+================================================================================
+
+schema customers (pii) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token))))
+
+================================================================================
+Multiple tag tokens
+================================================================================
+
+schema customers (pii, required, indexed) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token)
+      (tag_token)
+      (tag_token))))
+
+================================================================================
+Single key-value pair
+================================================================================
+
+schema customers (format parquet) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier)))))
+
+================================================================================
+Key-value pair with string value
+================================================================================
+
+schema customers (note "Primary customer store") {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (note_tag
+        (nl_string)))))
+
+================================================================================
+Mixed tag tokens and key-value pairs
+================================================================================
+
+schema events (pii, domain crm, format parquet) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token)
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier)))))
+
+================================================================================
+Enum body
+================================================================================
+
+schema events (enum {active, suspended, closed}) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (enum_body
+        (identifier)
+        (identifier)
+        (identifier)))))
+
+================================================================================
+Enum body with trailing comma
+================================================================================
+
+schema events (enum {active, suspended, closed,}) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (enum_body
+        (identifier)
+        (identifier)
+        (identifier)))))
+
+================================================================================
+Slice body
+================================================================================
+
+metric mrr (source fact_subscriptions, grain monthly, slice {customer_segment, product_line}) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (slice_body
+        (identifier)
+        (identifier)))))
+
+================================================================================
+Note tag with NL string
+================================================================================
+
+schema customers (note "Primary customer store from 2005-2024.") {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (note_tag
+        (nl_string)))))
+
+================================================================================
+Note tag with multiline string
+================================================================================
+
+schema customers (note """
+# Customer Schema
+Primary store.
+""") {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (note_tag
+        (multiline_string)))))
+
+================================================================================
+Multiline metadata block
+================================================================================
+
+schema customers (
+  pii,
+  format parquet,
+  domain crm
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token)
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier)))))
+
+================================================================================
+Trailing comma in metadata block
+================================================================================
+
+schema customers (pii, required,) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token)
+      (tag_token))))
+
+================================================================================
+Metric metadata with source and grain
+================================================================================
+
+metric monthly_recurring_revenue "MRR" (
+  source fact_subscriptions,
+  grain monthly,
+  filter "status = 'active'"
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (nl_string)
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (nl_string)))))
+
+================================================================================
+Mapping with metadata
+================================================================================
+
+mapping crm_to_warehouse (version 2, author jsmith) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier)))))
+
+================================================================================
+Schema without metadata
+================================================================================
+
+schema orders {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))))
+
+================================================================================
+Key-value with backtick reference value
+================================================================================
+
+schema salesforce (ref `Account`.id) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (backtick_name)))))
