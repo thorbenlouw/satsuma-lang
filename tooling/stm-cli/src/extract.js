@@ -6,6 +6,8 @@
  * they can be tested against mock CST objects.
  */
 
+import { classifyTransform, classifyArrow } from "./classify.js";
+
 // ── CST helpers ──────────────────────────────────────────────────────────────
 
 /** First named child of the given type, or null. */
@@ -231,4 +233,93 @@ export function extractQuestions(rootNode) {
     text: node.text.replace(/^\/\/\?\s*/, ""),
     row: node.startPosition.row,
   }));
+}
+
+// ── Arrow-level extraction ──────────────────────────────────────────────────
+
+/**
+ * Extract the text of a src_path or tgt_path node.
+ * Handles field_path, backtick_path, namespaced_path, and relative_field_path.
+ */
+function pathText(pathNode) {
+  if (!pathNode) return null;
+  const inner = pathNode.namedChildren[0];
+  if (!inner) return pathNode.text;
+  if (inner.type === "backtick_path") return inner.text.slice(1, -1);
+  return inner.text; // field_path, namespaced_path, relative_field_path
+}
+
+/**
+ * Decompose pipe_step nodes into structured step records.
+ *
+ * @param {object[]} steps  Array of pipe_step CST nodes
+ * @returns {Array<{type:string, text:string}>}
+ */
+function decomposePipeSteps(steps) {
+  return steps.map((step) => {
+    const inner = step.namedChildren[0];
+    return {
+      type: inner?.type ?? "unknown",
+      text: inner?.text ?? step.text,
+    };
+  });
+}
+
+/**
+ * Extract detailed arrow records from all mapping blocks in the CST.
+ *
+ * @param {object} rootNode  tree-sitter root node
+ * @returns {Array<ArrowRecord>}
+ *
+ * @typedef {Object} ArrowRecord
+ * @property {string|null} mapping   mapping name
+ * @property {string|null} source    source field path (null for computed arrows)
+ * @property {string|null} target    target field path
+ * @property {string}      transform_raw  raw transform text
+ * @property {Array<{type:string, text:string}>} steps  decomposed pipe steps
+ * @property {'structural'|'nl'|'mixed'|'none'} classification
+ * @property {boolean}     derived   true for computed arrows (no source)
+ * @property {number}      line      0-based line number
+ */
+export function extractArrowRecords(rootNode) {
+  const records = [];
+
+  for (const mappingNode of children(rootNode, "mapping_block")) {
+    const mappingName = labelText(mappingNode);
+    const body = child(mappingNode, "mapping_body");
+    if (!body) continue;
+
+    const mapArrows = allDescendants(body, "map_arrow");
+    const computedArrows = allDescendants(body, "computed_arrow");
+
+    for (const arrow of [...mapArrows, ...computedArrows]) {
+      const srcNode = child(arrow, "src_path");
+      const tgtNode = child(arrow, "tgt_path");
+      const pipeChain = child(arrow, "pipe_chain");
+      const pipeSteps = pipeChain ? children(pipeChain, "pipe_step") : [];
+
+      const source = pathText(srcNode);
+      const target = pathText(tgtNode);
+      const classification = classifyTransform(pipeSteps);
+      const derived = classifyArrow(arrow);
+      const steps = decomposePipeSteps(pipeSteps);
+
+      const transformRaw = pipeSteps.length > 0
+        ? pipeSteps.map((s) => s.namedChildren[0]?.text ?? s.text).join(" | ")
+        : "";
+
+      records.push({
+        mapping: mappingName,
+        source,
+        target,
+        transform_raw: transformRaw,
+        steps,
+        classification,
+        derived,
+        line: arrow.startPosition.row,
+      });
+    }
+  }
+
+  return records;
 }

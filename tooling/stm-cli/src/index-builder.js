@@ -13,6 +13,7 @@ import {
   extractTransforms,
   extractWarnings,
   extractQuestions,
+  extractArrowRecords,
 } from "./extract.js";
 
 /**
@@ -29,6 +30,7 @@ import {
  * @property {Map<string, object>} transforms  name → {name, file, row}
  * @property {Array<object>}       warnings    [{text, file, row}]
  * @property {Array<object>}       questions   [{text, file, row}]
+ * @property {Map<string, object[]>} fieldArrows   "schema.field" → ArrowRecord[]
  * @property {object}              referenceGraph
  * @property {number}              totalErrors
  */
@@ -40,6 +42,7 @@ export function buildIndex(parsedFiles) {
   const transforms = new Map();
   const warnings = [];
   const questions = [];
+  const allArrowRecords = [];
   let totalErrors = 0;
 
   for (const { filePath, tree, errorCount } of parsedFiles) {
@@ -68,9 +71,13 @@ export function buildIndex(parsedFiles) {
     for (const q of extractQuestions(root)) {
       questions.push({ ...q, file: filePath });
     }
+    for (const ar of extractArrowRecords(root)) {
+      allArrowRecords.push({ ...ar, file: filePath });
+    }
   }
 
   const referenceGraph = buildReferenceGraph({ metrics, mappings });
+  const fieldArrows = buildFieldArrows(allArrowRecords);
 
   return {
     schemas,
@@ -80,9 +87,37 @@ export function buildIndex(parsedFiles) {
     transforms,
     warnings,
     questions,
+    fieldArrows,
     referenceGraph,
     totalErrors,
   };
+}
+
+/**
+ * Build a field-level arrow index from arrow records.
+ *
+ * Maps "schema.field" keys to the arrow records that involve that field
+ * (as either source or target). The schema name is resolved from the
+ * mapping's source/target declarations.
+ *
+ * @param {Array<object>} arrowRecords
+ * @returns {Map<string, object[]>}
+ */
+function buildFieldArrows(arrowRecords) {
+  const index = new Map();
+
+  function addToIndex(key, record) {
+    if (!key) return;
+    if (!index.has(key)) index.set(key, []);
+    index.get(key).push(record);
+  }
+
+  for (const record of arrowRecords) {
+    if (record.source) addToIndex(record.source, record);
+    if (record.target) addToIndex(record.target, record);
+  }
+
+  return index;
 }
 
 /**
