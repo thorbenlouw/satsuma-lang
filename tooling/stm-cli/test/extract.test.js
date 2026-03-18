@@ -155,10 +155,15 @@ describe("extractTransforms", () => {
 
 // ── extractMappings ───────────────────────────────────────────────────────────
 
+/** Convenience: build a source_ref node wrapping a name node. */
+function sourceRef(nameNode, extraChildren = []) {
+  return n("source_ref", [nameNode, ...extraChildren]);
+}
+
 describe("extractMappings", () => {
   it("extracts a named mapping with source and target", () => {
-    const srcEntry = n("backtick_name", [], "`legacy_sqlserver`");
-    const tgtEntry = n("backtick_name", [], "`postgres_db`");
+    const srcEntry = sourceRef(n("backtick_name", [], "`legacy_sqlserver`"));
+    const tgtEntry = sourceRef(n("backtick_name", [], "`postgres_db`"));
     const srcBlock = n("source_block", [srcEntry]);
     const tgtBlock = n("target_block", [tgtEntry]);
     const body = n("mapping_body", [srcBlock, tgtBlock]);
@@ -174,10 +179,9 @@ describe("extractMappings", () => {
   });
 
   it("handles anonymous mapping (no name)", () => {
-    const srcBlock = n("source_block", [n("identifier", [], "src")]);
-    const tgtBlock = n("target_block", [n("identifier", [], "tgt")]);
+    const srcBlock = n("source_block", [sourceRef(n("identifier", [], "src"))]);
+    const tgtBlock = n("target_block", [sourceRef(n("identifier", [], "tgt"))]);
     const body = n("mapping_body", [srcBlock, tgtBlock]);
-    // no block_label child
     const block = n("mapping_block", [body]);
     const root = n("source_file", [block]);
 
@@ -188,13 +192,54 @@ describe("extractMappings", () => {
   it("counts arrows", () => {
     const arrow1 = n("map_arrow", []);
     const arrow2 = n("computed_arrow", []);
-    const srcBlock = n("source_block", [n("identifier", [], "s")]);
-    const tgtBlock = n("target_block", [n("identifier", [], "t")]);
+    const srcBlock = n("source_block", [sourceRef(n("identifier", [], "s"))]);
+    const tgtBlock = n("target_block", [sourceRef(n("identifier", [], "t"))]);
     const body = n("mapping_body", [srcBlock, tgtBlock, arrow1, arrow2]);
     const block = n("mapping_block", [blockLabel("m"), body]);
     const root = n("source_file", [block]);
 
     assert.equal(extractMappings(root)[0].arrowCount, 2);
+  });
+
+  it("strips backticks from source and target names", () => {
+    const srcEntry = sourceRef(n("backtick_name", [], "`my_source`"));
+    const tgtEntry = sourceRef(n("backtick_name", [], "`my_target`"));
+    const srcBlock = n("source_block", [srcEntry]);
+    const tgtBlock = n("target_block", [tgtEntry]);
+    const body = n("mapping_body", [srcBlock, tgtBlock]);
+    const block = n("mapping_block", [blockLabel("m"), body]);
+    const root = n("source_file", [block]);
+
+    const result = extractMappings(root);
+    assert.deepEqual(result[0].sources, ["my_source"]);
+    assert.deepEqual(result[0].targets, ["my_target"]);
+  });
+
+  it("excludes NL join descriptions from sources", () => {
+    const src1 = sourceRef(n("backtick_name", [], "`crm_customers`"));
+    const src2 = sourceRef(n("backtick_name", [], "`order_transactions`"));
+    const joinDesc = sourceRef(n("nl_string", [], '"Join crm_customers to order_transactions on customer_id"'));
+    const srcBlock = n("source_block", [src1, src2, joinDesc]);
+    const tgtBlock = n("target_block", [sourceRef(n("backtick_name", [], "`target_schema`"))]);
+    const body = n("mapping_body", [srcBlock, tgtBlock]);
+    const block = n("mapping_block", [blockLabel("m"), body]);
+    const root = n("source_file", [block]);
+
+    const result = extractMappings(root);
+    assert.deepEqual(result[0].sources, ["crm_customers", "order_transactions"]);
+  });
+
+  it("ignores filter metadata on annotated source entries", () => {
+    const meta = n("metadata_block", [], '(filter "status = active")');
+    const srcEntry = sourceRef(n("backtick_name", [], "`my_table`"), [meta]);
+    const srcBlock = n("source_block", [srcEntry]);
+    const tgtBlock = n("target_block", [sourceRef(n("identifier", [], "tgt"))]);
+    const body = n("mapping_body", [srcBlock, tgtBlock]);
+    const block = n("mapping_block", [blockLabel("m"), body]);
+    const root = n("source_file", [block]);
+
+    const result = extractMappings(root);
+    assert.deepEqual(result[0].sources, ["my_table"]);
   });
 });
 

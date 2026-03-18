@@ -1,6 +1,6 @@
 ---
 id: stm-6w2j
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-18T20:07:49Z
