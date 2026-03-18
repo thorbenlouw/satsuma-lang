@@ -1,0 +1,356 @@
+================================================================================
+Direct map arrow
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  customer_id -> id
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Computed arrow (no src)
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> generated_key
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Arrow with metadata
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  old_id -> new_id (pk)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (tag_token))))))
+
+================================================================================
+Arrow with note metadata
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  phone -> phone_normalized (note "E.164 format")
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (note_tag
+            (nl_string)))))))
+
+================================================================================
+Dotted source path
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  customer.name -> full_name
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Relative field path
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  .status -> status_code
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (relative_field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Backtick source path
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  `Lead_Source__c` -> lead_source
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (backtick_path
+            (backtick_name)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Backtick path with dotted segments
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  `Lead_Source__c`.value -> lead_source
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (backtick_path
+            (backtick_name)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Namespaced path
+================================================================================
+
+mapping {
+  source { crm }
+  target { warehouse }
+  crm::customers.id -> customer_id
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (namespaced_path
+            (identifier)
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Array path (nested arrow src/tgt)
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  line_items[] -> order_lines[]
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Computed arrow with transform
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> surrogate_key { uuid_v4 }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier))))))))
+
+================================================================================
+Mixed arrow types
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  order_id -> order_key (pk)
+  -> etl_timestamp { now }
+  email -> email_clean { trim | lowercase }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (tag_token)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)))))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (token_call
+              (identifier))))))))

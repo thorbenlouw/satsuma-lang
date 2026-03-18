@@ -1,0 +1,241 @@
+================================================================================
+Empty mapping block
+================================================================================
+
+mapping {
+  source { customers }
+  target { customers_v2 }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier)))))
+
+================================================================================
+Mapping with label
+================================================================================
+
+mapping crm_to_warehouse {
+  source { crm_customers }
+  target { dim_customers }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (identifier))
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier)))))
+
+================================================================================
+Mapping with metadata
+================================================================================
+
+mapping crm_to_warehouse (version 1) {
+  source { crm_customers }
+  target { dim_customers }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier)))))
+
+================================================================================
+Quoted mapping label
+================================================================================
+
+mapping 'CRM to Warehouse' {
+  source { crm_customers }
+  target { dim_customers }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier)))))
+
+================================================================================
+Source with multiple entries
+================================================================================
+
+mapping {
+  source { crm_customers, billing_customers }
+  target { dim_customers }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier)
+        (identifier))
+      (target_block
+        (identifier)))))
+
+================================================================================
+Source with backtick references
+================================================================================
+
+mapping {
+  source { `CRM_Customers`, `Billing_Customers` }
+  target { `Dim_Customers` }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (backtick_name)
+        (backtick_name))
+      (target_block
+        (backtick_name)))))
+
+================================================================================
+Source with NL string join description
+================================================================================
+
+mapping {
+  source { crm_customers, "LEFT JOIN billing_accounts ON ..." }
+  target { dim_customers }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier)
+        (nl_string))
+      (target_block
+        (identifier)))))
+
+================================================================================
+Mapping with note block
+================================================================================
+
+mapping crm_to_warehouse {
+  source { crm_customers }
+  target { dim_customers }
+  note {
+    "Maps CRM customers to the warehouse dimension table."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (identifier))
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (note_block
+        (nl_string)))))
+
+================================================================================
+Mapping with simple direct arrow
+================================================================================
+
+mapping {
+  source { customers }
+  target { customers_v2 }
+  customer_id -> customer_id
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Mapping with multiple arrows
+================================================================================
+
+mapping {
+  source { customers }
+  target { customers_v2 }
+  id          -> customer_id
+  name        -> full_name
+  email_addr  -> email
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (identifier))
+      (target_block
+        (identifier))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier))))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier))))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
