@@ -28,7 +28,7 @@ const commands = [
   "commands/summary.js",
   "commands/schema.js",
   "commands/metric.js",
-  // "commands/mapping.js",
+  "commands/mapping.js",
   // "commands/find.js",
   // "commands/lineage.js",
   // "commands/where-used.js",
