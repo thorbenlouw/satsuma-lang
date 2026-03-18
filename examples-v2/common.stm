@@ -1,0 +1,38 @@
+// STM v2 — Common Lookups and Fragments
+// Library file: import specific items into your integration files.
+
+schema country_codes (note "ISO 3166 country code mapping") {
+  alpha2    STRING(2)    (pk)
+  alpha3    STRING(3)
+  name      STRING(100)
+}
+
+schema currency_rates (note "Daily FX rates") {
+  from_ccy  ISO-4217     (pk)
+  to_ccy    ISO-4217     (pk)
+  rate      DECIMAL(18,8)
+  as_of     DATE
+}
+
+schema product_catalog (note "Product reference data") {
+  sku            STRING(20)    (pk)
+  internal_code  STRING(20)
+  description    STRING(255)
+  category       STRING(100)
+}
+
+fragment 'address fields' {
+  line1        STRING(200)    (required)
+  line2        STRING(200)
+  city         STRING(100)    (required)
+  state        STRING(50)
+  postal_code  STRING(20)     (required)
+  country      ISO-3166-a2    (required)
+}
+
+fragment 'audit columns' {
+  created_at   TIMESTAMPTZ    (required)
+  created_by   VARCHAR(100)   (required)
+  updated_at   TIMESTAMPTZ
+  updated_by   VARCHAR(100)
+}

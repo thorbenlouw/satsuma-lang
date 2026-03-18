@@ -1,0 +1,50 @@
+// STM v2 — SFDC Standard Fragments Library
+// Reusable field sets for common Salesforce objects
+
+fragment 'sfdc standard types' {
+  Id                ID             (pk, unique)
+  Name              STRING(255)    (required)
+  CreatedDate       DATETIME       (required)
+  CreatedById       ID             (ref User.Id)
+  LastModifiedDate  DATETIME       (required)
+  LastModifiedById  ID             (ref User.Id)
+  SystemModStamp    DATETIME       (required)
+  IsDeleted         BOOLEAN        (default false)
+}
+
+fragment 'sfdc address' {
+  Street      STRING(255)
+  City        STRING(40)
+  State       STRING(80)
+  PostalCode  STRING(20)
+  Country     STRING(80)
+  Latitude    DECIMAL(18,15)
+  Longitude   DECIMAL(18,15)
+}
+
+fragment 'sfdc opportunity standard' {
+  AccountId                ID             (ref Account.Id)
+  Amount                   CURRENCY(18,2)
+  CloseDate                DATE           (required)
+  StageName                PICKLIST       (required)
+  Probability              PERCENT(3,0)
+  ExpectedRevenue          CURRENCY(18,2)
+  TotalOpportunityQuantity DECIMAL(18,2)
+  LeadSource               PICKLIST
+  Type                     PICKLIST
+}
+
+fragment 'sfdc account standard' {
+  Type            PICKLIST
+  ParentId        ID             (ref Account.Id)
+  record BillingAddress {
+    ...sfdc address
+  }
+  record ShippingAddress {
+    ...sfdc address
+  }
+  Phone           PHONE
+  Website         URL
+  Industry        PICKLIST
+  NumberOfEmployees INT
+}
