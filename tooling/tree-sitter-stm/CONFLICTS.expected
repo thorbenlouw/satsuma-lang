@@ -1,1 +1,47 @@
-28
+; ── STM v2 Grammar — Expected Conflicts ─────────────────────────────────────
+; CONFLICTS.expected
+;
+; This file documents the LR(1) conflicts declared in grammar.js.
+; Each conflict is resolved by tree-sitter's GLR algorithm — the grammar is
+; unambiguous in practice but requires more than 1 token of lookahead to
+; decide the correct parse path. The number on the first non-comment line is
+; the count of conflict groups as reported by `tree-sitter generate`.
+;
+; Update this file whenever grammar.js `conflicts` array is changed.
+
+3
+
+; ── Conflict 1: key_value_pair vs tag_token ───────────────────────────────────
+; Context: _metadata_entry inside metadata_block ( )
+;
+; After an identifier in metadata position, 1 token of lookahead is insufficient
+; to decide between:
+;   tag_token:      identifier alone     e.g.  (pii)
+;   key_value_pair: identifier + value   e.g.  (format email)
+;
+; Resolution: GLR explores both paths.
+;   Next `,` or `)` → tag_token wins.
+;   Next identifier / string / backtick → key_value_pair wins.
+
+; ── Conflict 2: map_arrow vs nested_arrow ────────────────────────────────────
+; Context: _arrow_decl inside mapping_body
+;
+; After src_path -> tgt_path (metadata)?, both rules can continue:
+;   map_arrow:    optional { pipe_chain }
+;   nested_arrow: required { arrow_decl* }
+;
+; Resolution: GLR explores both paths.
+;   No `{`  → map_arrow (no transform body).
+;   `{` then pipe_step (string, token_call, `map`) → map_arrow transform body.
+;   `{` then `->` or path token → nested_arrow body.
+
+; ── Conflict 3: namespaced_path vs field_path ─────────────────────────────────
+; Context: _path_expr used in src_path and tgt_path
+;
+; Both path types begin with identifier:
+;   namespaced_path: identifier :: identifier ...
+;   field_path:      identifier (. identifier)* ([])?
+;
+; Resolution: GLR explores both paths.
+;   Next `::` → namespaced_path wins.
+;   Next `.`, `[]`, `->`, `(`, whitespace → field_path wins.
