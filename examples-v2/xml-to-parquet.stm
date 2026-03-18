@@ -1,0 +1,179 @@
+// STM v2 — Order XML to Lakehouse Parquet
+
+note {
+  """
+  # Order XML to Lakehouse Parquet
+
+  Ingests canonical commerce order XML messages from the integration bus
+  and lands two curated Parquet datasets:
+  - `order_headers_parquet` at one row per order
+  - `order_lines_parquet` at one row per line item
+
+  The source XML is namespace-qualified and contains repeated discount
+  fragments, optional loyalty identifiers, and mixed timestamp formats
+  depending on upstream channel.
+  """
+}
+
+
+// --- Source ---
+
+schema commerce_order (
+  format xml,
+  namespace ord "http://example.com/commerce/order/v2",
+  namespace com "http://example.com/common/v1",
+  note "Canonical commerce order message"
+) {
+  record Order (xpath "/ord:OrderMessage/ord:Order") {
+    OrderId           STRING       (xpath "ord:OrderId")
+    Channel           STRING       (xpath "ord:Channel")
+    OrderTimestamp    STRING       (xpath "ord:OrderTimestamp")
+    CurrencyCode      STRING       (xpath "ord:Currency/com:Code")
+
+    record Customer {
+      CustomerId      STRING       (xpath "ord:CustomerId")
+      Email           STRING       (xpath "ord:Email")
+      LoyaltyTier     STRING       (xpath "ord:LoyaltyTier")
+    }
+
+    record ShippingAddress {
+      CountryCode     STRING       (xpath "ord:CountryCode")
+      RegionCode      STRING       (xpath "ord:RegionCode")
+      PostalCode      STRING       (xpath "ord:PostalCode")
+    }
+
+    record Totals {
+      SubtotalAmount  DECIMAL(12,2)  (xpath "ord:SubtotalAmount")
+      TaxAmount       DECIMAL(12,2)  (xpath "ord:TaxAmount")
+      TotalAmount     DECIMAL(12,2)  (xpath "ord:TotalAmount")
+    }
+
+    list Discounts (xpath "ord:Discounts/ord:Discount") {
+      DiscountCode    STRING       (xpath "ord:Code")
+      DiscountAmount  DECIMAL(12,2) (xpath "ord:Amount")
+      DiscountType    STRING       (xpath "ord:Type")
+    }
+
+    list LineItems (xpath "ord:LineItems/ord:LineItem") {
+      LineNumber      INT32        (xpath "ord:LineNumber")
+      SKU             STRING       (xpath "ord:SKU")
+      FulfillmentType STRING       (xpath "ord:FulfillmentType")
+      Quantity        INT32        (xpath "ord:Quantity")
+      UnitPrice       DECIMAL(12,2) (xpath "ord:UnitPrice")
+      ExtendedAmount  DECIMAL(12,2) (xpath "ord:ExtendedAmount")
+      TaxAmount       DECIMAL(12,2) (xpath "ord:TaxAmount")
+      IsGift          BOOLEAN      (xpath "ord:IsGift")
+    }
+  }
+}
+
+
+// --- Targets ---
+
+schema order_headers_parquet (format parquet, note "Curated order header dataset") {
+  order_id             STRING         (pk)
+  order_channel        STRING         (enum {web, mobile, store, marketplace}, required)
+  order_timestamp_utc  TIMESTAMPTZ    (required)
+  customer_id          STRING
+  customer_email       STRING         (format email, pii)
+  loyalty_tier         STRING         (enum {bronze, silver, gold, platinum})
+  ship_country         STRING         (required)
+  ship_region          STRING
+  ship_postal_code     STRING
+  currency_code        STRING         (required)
+  subtotal_amount      DECIMAL(12,2)
+  tax_amount           DECIMAL(12,2)
+  total_amount         DECIMAL(12,2)  (required)
+  discount_codes       JSON
+  discount_total       DECIMAL(12,2)
+  line_count           INT32
+  ingest_date          DATE           (required)
+}
+
+schema order_lines_parquet (format parquet, note "Curated order line dataset") {
+  order_id             STRING         (required)
+  line_number          INT32          (required)
+  sku                  STRING         (required)
+  fulfillment_type     STRING         (enum {ship, pickup, digital, service})
+  quantity             INT32          (required)
+  unit_price           DECIMAL(12,2)
+  extended_amount      DECIMAL(12,2)  (required)
+  line_tax_amount      DECIMAL(12,2)
+  is_gift              BOOLEAN
+  currency_code        STRING         (required)
+  order_channel        STRING         (required)
+  customer_id          STRING
+  ship_country         STRING
+  ingest_date          DATE           (required)
+}
+
+
+// --- Mapping: Order Headers ---
+
+mapping 'order headers' {
+  source { `commerce_order` }
+  target { `order_headers_parquet` }
+
+  Order.OrderId -> order_id
+  Order.Channel -> order_channel { trim | lowercase }
+
+  Order.OrderTimestamp -> order_timestamp_utc {
+    "Parse either ISO-8601 with timezone or local store time in
+     America/New_York depending on channel. Output UTC timestamp."
+  }
+
+  Order.Customer.CustomerId -> customer_id
+  Order.Customer.Email -> customer_email { trim | lowercase | validate_email | null_if_invalid }
+  Order.Customer.LoyaltyTier -> loyalty_tier { trim | lowercase | null_if_empty }
+
+  Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
+  Order.ShippingAddress.RegionCode -> ship_region { trim | uppercase | null_if_empty }
+  Order.ShippingAddress.PostalCode -> ship_postal_code { trim | null_if_empty }
+
+  Order.CurrencyCode -> currency_code { trim | uppercase }
+
+  Order.Totals.SubtotalAmount -> subtotal_amount
+  Order.Totals.TaxAmount -> tax_amount
+  Order.Totals.TotalAmount -> total_amount
+
+  -> discount_codes {
+    "Collect DiscountCode values from Order.Discounts[] preserving source order.
+     Emit as a JSON array string. If no discounts, emit []."
+  }
+
+  -> discount_total {
+    "Sum DiscountAmount across Order.Discounts[] for the current order.
+     If no discounts, emit 0.00."
+  }
+
+  -> line_count {
+    "Count Order.LineItems[] elements for the current order."
+  }
+
+  -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
+}
+
+
+// --- Mapping: Order Lines (flattened) ---
+
+mapping 'order lines' (flatten `Order.LineItems[]`) {
+  source { `commerce_order` }
+  target { `order_lines_parquet` }
+
+  Order.OrderId -> order_id
+  Order.LineItems[].LineNumber -> line_number
+  Order.LineItems[].SKU -> sku { trim | uppercase }
+  Order.LineItems[].FulfillmentType -> fulfillment_type { trim | lowercase }
+  Order.LineItems[].Quantity -> quantity
+  Order.LineItems[].UnitPrice -> unit_price
+  Order.LineItems[].ExtendedAmount -> extended_amount
+  Order.LineItems[].TaxAmount -> line_tax_amount
+  Order.LineItems[].IsGift -> is_gift
+
+  Order.CurrencyCode -> currency_code { trim | uppercase }
+  Order.Channel -> order_channel { trim | lowercase }
+  Order.Customer.CustomerId -> customer_id
+  Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
+
+  -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
+}
