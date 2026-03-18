@@ -160,13 +160,15 @@ function renderBlock(index, candidate, compact) {
     const s = index.schemas.get(name);
     const note = s?.note && !compact ? `  (note "${s.note}")` : "";
     lines.push(`schema ${name}${note} {`);
-    for (const f of s?.fields ?? []) lines.push(`  ${f.name.padEnd(24)}${f.type}`);
+    const maxLen = Math.max(24, ...((s?.fields ?? []).map((f) => f.name.length + 1)));
+    for (const f of s?.fields ?? []) lines.push(`  ${f.name.padEnd(maxLen)}${f.type}`);
     lines.push("}");
   } else if (type === "metric") {
     const m = index.metrics.get(name);
     const display = m?.displayName ? ` "${m.displayName}"` : "";
     lines.push(`metric ${name}${display} {`);
-    for (const f of m?.fields ?? []) lines.push(`  ${f.name.padEnd(20)}${f.type}`);
+    const maxLen = Math.max(20, ...((m?.fields ?? []).map((f) => f.name.length + 1)));
+    for (const f of m?.fields ?? []) lines.push(`  ${f.name.padEnd(maxLen)}${f.type}`);
     lines.push("}");
   } else if (type === "mapping") {
     const m = index.mappings.get(name);
@@ -178,7 +180,8 @@ function renderBlock(index, candidate, compact) {
   } else if (type === "fragment") {
     const f = index.fragments.get(name);
     lines.push(`fragment '${name}' {`);
-    for (const fld of f?.fields ?? []) lines.push(`  ${fld.name.padEnd(24)}${fld.type}`);
+    const maxLen = Math.max(24, ...((f?.fields ?? []).map((fld) => fld.name.length + 1)));
+    for (const fld of f?.fields ?? []) lines.push(`  ${fld.name.padEnd(maxLen)}${fld.type}`);
     lines.push("}");
   } else if (type === "transform") {
     lines.push(`transform ${name} { ... }`);

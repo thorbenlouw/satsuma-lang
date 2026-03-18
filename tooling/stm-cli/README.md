@@ -37,7 +37,7 @@ stm <command> [options] [path]
 | `stm schema <name> [path]` | Full field list for a schema |
 | `stm metric <name> [path]` | Metric definition and source schemas |
 | `stm mapping <name> [path]` | Arrows, source, and target for a mapping |
-| `stm find <token> [path]` | Fields carrying a metadata token (e.g. `pii`) |
+| `stm find --tag <token> [path]` | Fields carrying a metadata token (e.g. `pii`) |
 | `stm lineage [path]` | Schema-level graph traversal (`--from` / `--to`) |
 | `stm where-used <name> [path]` | All references to a schema or fragment |
 | `stm warnings [path]` | All `//!` warning and `//?` question comments |

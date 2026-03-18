@@ -455,13 +455,26 @@ describe("stm fields", () => {
     assert.ok(data[0].type);
   });
 
-  it("--unmapped-by returns correct set difference", async () => {
+  it("--unmapped-by on target schema returns correct set difference", async () => {
     const { stdout, code } = await run(
       "fields", "postgres_db", "--unmapped-by", "customer migration", DB,
     );
     assert.equal(code, 0);
     // All postgres_db fields are mapped in db-to-db.stm
     assert.match(stdout, /all fields.*mapped/i);
+  });
+
+  it("--unmapped-by on source schema filters mapped fields", async () => {
+    const { stdout, code } = await run(
+      "fields", "legacy_sqlserver", "--unmapped-by", "customer migration", DB,
+    );
+    assert.equal(code, 0);
+    // CUST_ID, FIRST_NM etc. are mapped — should NOT appear
+    assert.doesNotMatch(stdout, /CUST_ID/);
+    assert.doesNotMatch(stdout, /FIRST_NM/);
+    // Address fields aren't directly mapped — should appear
+    assert.match(stdout, /ADDR_LINE_1/);
+    assert.match(stdout, /CITY/);
   });
 
   it("--with-meta includes tags", async () => {
