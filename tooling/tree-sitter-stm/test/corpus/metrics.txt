@@ -1,0 +1,282 @@
+================================================================================
+Minimal metric block
+================================================================================
+
+metric mrr (source fact_subscriptions) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (metric_body)))
+
+================================================================================
+Metric with display name
+================================================================================
+
+metric mrr "MRR" (source fact_subscriptions) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (nl_string)
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (metric_body)))
+
+================================================================================
+Metric with source, grain, and filter metadata
+================================================================================
+
+metric monthly_recurring_revenue "MRR" (
+  source fact_subscriptions,
+  grain monthly,
+  filter "status = 'active'"
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (nl_string)
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (nl_string)))
+    (metric_body)))
+
+================================================================================
+Metric with slice body
+================================================================================
+
+metric mrr "MRR" (
+  source fact_subscriptions,
+  grain monthly,
+  slice {customer_segment, product_line, region}
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (nl_string)
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (slice_body
+        (identifier)
+        (identifier)
+        (identifier)))
+    (metric_body)))
+
+================================================================================
+Metric with field declarations in body
+================================================================================
+
+metric mrr (source fact_subscriptions, grain monthly) {
+  value DECIMAL(14,2)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (metric_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Metric with measure field
+================================================================================
+
+metric mrr (source fact_subscriptions) {
+  value DECIMAL(14,2) (measure additive)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (metric_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key)
+            (identifier)))))))
+
+================================================================================
+Metric with multiple fields
+================================================================================
+
+metric monthly_recurring_revenue "MRR" (
+  source fact_subscriptions,
+  grain monthly,
+  slice {customer_segment, product_line, region},
+  filter "status = 'active' AND is_trial = false"
+) {
+  value           DECIMAL(14,2)  (measure additive)
+  subscriber_count INT           (measure additive)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (nl_string)
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (slice_body
+        (identifier)
+        (identifier)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (nl_string)))
+    (metric_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key)
+            (identifier))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key)
+            (identifier)))))))
+
+================================================================================
+Metric body with note block
+================================================================================
+
+metric mrr (source fact_subscriptions, grain monthly) {
+  value DECIMAL(14,2)
+  note {
+    "Sum of active subscription amounts, normalized to monthly."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier))
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (metric_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (note_block
+        (nl_string)))))
+
+================================================================================
+Metric distinct from schema block
+================================================================================
+
+schema subscriptions {
+  subscription_id UUID (pk)
+  amount DECIMAL(14,2)
+}
+
+metric mrr (source subscriptions) {
+  value DECIMAL(14,2) (measure additive)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))))
+  (metric_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key)
+        (identifier)))
+    (metric_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key)
+            (identifier)))))))

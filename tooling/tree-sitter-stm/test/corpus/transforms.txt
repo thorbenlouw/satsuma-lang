@@ -1,0 +1,354 @@
+================================================================================
+Empty transform body
+================================================================================
+
+transform 'clean email' {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))))
+
+================================================================================
+Single NL string pipe step
+================================================================================
+
+transform 'clean email' {
+  "Trim whitespace, lowercase, validate format"
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (nl_string)))))
+
+================================================================================
+Single token_call step
+================================================================================
+
+transform 'normalize' {
+  trim
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (token_call
+          (identifier))))))
+
+================================================================================
+Token call with arguments
+================================================================================
+
+transform 'coerce' {
+  coalesce("", null)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (token_call
+          (identifier)
+          (nl_string))))))
+
+================================================================================
+Multi-step pipe chain with token calls
+================================================================================
+
+transform 'clean email' {
+  trim | lowercase | validate_email
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (token_call
+          (identifier)))
+      (pipe_step
+        (token_call
+          (identifier)))
+      (pipe_step
+        (token_call
+          (identifier))))))
+
+================================================================================
+Pipe chain with NL string then token calls
+================================================================================
+
+transform 'normalize phone' {
+  "Strip non-digit chars, add country code prefix" | e164_format | validate
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (nl_string))
+      (pipe_step
+        (token_call
+          (identifier)))
+      (pipe_step
+        (token_call
+          (identifier))))))
+
+================================================================================
+Map literal with string keys
+================================================================================
+
+transform 'status map' {
+  map {
+    "A": "active"
+    "S": "suspended"
+    "C": "closed"
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (map_literal
+          (map_entry
+            (map_key
+              (nl_string))
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key
+              (nl_string))
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key
+              (nl_string))
+            (map_value
+              (nl_string))))))))
+
+================================================================================
+Map literal with identifier keys and wildcard
+================================================================================
+
+transform 'channel map' {
+  map {
+    R: "retail"
+    W: "wholesale"
+    _: "unknown"
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (map_literal
+          (map_entry
+            (map_key
+              (identifier))
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key
+              (identifier))
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string))))))))
+
+================================================================================
+Map literal with null key and default
+================================================================================
+
+transform 'status normalize' {
+  map {
+    null:    "unknown"
+    default: "active"
+    _:       "other"
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (map_literal
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string))))))))
+
+================================================================================
+Map literal with comparison keys
+================================================================================
+
+transform 'tier map' {
+  map {
+    >= 1000: "platinum"
+    >= 500:  "gold"
+    >= 100:  "silver"
+    _:       "bronze"
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (map_literal
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string))))))))
+
+================================================================================
+Map in pipe chain with preceding step
+================================================================================
+
+transform 'lookup then normalize' {
+  trim | map { A: "active", I: "inactive", _: "unknown" } | lowercase
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (token_call
+          (identifier)))
+      (pipe_step
+        (map_literal
+          (map_entry
+            (map_key
+              (identifier))
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key
+              (identifier))
+            (map_value
+              (nl_string)))
+          (map_entry
+            (map_key)
+            (map_value
+              (nl_string)))))
+      (pipe_step
+        (token_call
+          (identifier))))))
+
+================================================================================
+Fragment spread as pipe step
+================================================================================
+
+transform 'apply standard' {
+  trim | ...'email-normalization' | validate
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (token_call
+          (identifier)))
+      (pipe_step
+        (fragment_spread
+          (block_label
+            (quoted_name))))
+      (pipe_step
+        (token_call
+          (identifier))))))
+
+================================================================================
+Multiline pipe chain
+================================================================================
+
+transform 'phone normalization' {
+  "Strip non-digit characters and punctuation"
+  | e164_format
+  | validate_phone
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (quoted_name))
+    (pipe_chain
+      (pipe_step
+        (nl_string))
+      (pipe_step
+        (token_call
+          (identifier)))
+      (pipe_step
+        (token_call
+          (identifier))))))
