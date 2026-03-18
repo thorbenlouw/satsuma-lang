@@ -7,6 +7,24 @@ on:
     branches: [main]
 
 jobs:
+  stm-cli:
+    name: STM CLI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tooling/stm-cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm ci
+
+      - name: Run CLI tests
+        run: npm test
+
   parser:
     name: Tree-sitter parser
     runs-on: ubuntu-latest
