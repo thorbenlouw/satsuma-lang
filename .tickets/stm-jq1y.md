@@ -1,6 +1,6 @@
 ---
 id: stm-jq1y
-status: open
+status: closed
 deps: [stm-fjji, stm-26ez]
 links: []
 created: 2026-03-18T12:18:41Z
