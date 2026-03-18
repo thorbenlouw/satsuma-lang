@@ -20,11 +20,9 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Prepare tree-sitter-stm (generate parser before native build)
+      - name: Build tree-sitter-stm native bindings
         working-directory: tooling/tree-sitter-stm
-        run: |
-          npm ci --ignore-scripts
-          npm run generate
+        run: npm ci
 
       - run: npm ci
 
@@ -48,7 +46,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: npm ci --ignore-scripts
+      - run: npm ci
 
       - name: Generate parser
         run: npm run generate
