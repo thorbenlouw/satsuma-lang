@@ -29,7 +29,7 @@ const commands = [
   "commands/schema.js",
   "commands/metric.js",
   "commands/mapping.js",
-  // "commands/find.js",
+  "commands/find.js",
   // "commands/lineage.js",
   // "commands/where-used.js",
   // "commands/warnings.js",
