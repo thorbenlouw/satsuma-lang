@@ -1,58 +1,49 @@
-integration "Customer_Sync" {
-  cardinality 1:1
-}
+note { "Customer Sync — SAP CRM to Snowflake, 1:1 customer migration" }
 
-source sap_crm "SAP CRM" {
-  KUNNR      CHAR(10)     [pk, required]      // Primary key
-  NAME1      CHAR(35)     [required]
-  NAME2      CHAR(35)                         // Secondary name line
+schema sap_crm (note "SAP CRM") {
+  KUNNR      CHAR(10)   (pk, required)  // Primary key
+  NAME1      CHAR(35)   (required)
+  NAME2      CHAR(35)                   // Secondary name line
   STRAS      CHAR(35)
   ORT01      CHAR(35)
   PSTLZ      CHAR(10)
-  LAND1      CHAR(3)      [required]
-  SMTP_ADDR  CHAR(241)    [pii]               // PII field
-  TELF1      CHAR(16)     [pii]               // PII field
-  ERDAT      DATS(8)      [required]          // SAP date format
+  LAND1      CHAR(3)    (required)
+  SMTP_ADDR  CHAR(241)  (pii)           // PII field
+  TELF1      CHAR(16)   (pii)           // PII field
+  ERDAT      DATS(8)    (required)      // SAP date format YYYYMMDD
   AEDAT      DATS(8)
-  LOEVM      CHAR(1)      [required]          // Deletion flag
+  LOEVM      CHAR(1)    (required)      // Deletion flag: X=deleted, space=active
 }
 
-target snowflake_customer "Snowflake Customer Store" {
-  customer_id      VARCHAR(10)  [pk, required]
-  customer_name    VARCHAR(100) [required]
+schema snowflake_customer (note "Snowflake Customer Store") {
+  customer_id      VARCHAR(10)  (pk, required)
+  customer_name    VARCHAR(100) (required)
   customer_name_2  VARCHAR(100)
   street_address   VARCHAR(200)
   city             VARCHAR(100)
   postal_code      VARCHAR(20)
-  country_code     VARCHAR(3)   [required]
-  email            VARCHAR(255) [format: email]
+  country_code     VARCHAR(3)   (required)
+  email            VARCHAR(255) (format email)
   phone_primary    VARCHAR(20)
-  created_date     DATE         [required]
+  created_date     DATE         (required)
   modified_date    DATE
-  is_deleted       BOOLEAN      [required]
+  is_deleted       BOOLEAN      (required)
 }
 
-mapping sap_crm -> snowflake_customer {
+mapping {
+  source { `sap_crm` }
+  target { `snowflake_customer` }
+
   KUNNR     -> customer_id
-  NAME1     -> customer_name    : trim
-  NAME2     -> customer_name_2  : trim
-  STRAS     -> street_address   : trim
-  ORT01     -> city             : trim
-  
-  PSTLZ     -> postal_code      
-    : nl("Trim, remove leading zeros for US")
-  
-  LAND1     -> country_code     
-    : nl("Direct, validate ISO-3166")
-    
-  SMTP_ADDR -> email            
-    : trim | lowercase | validate_email | null_if_invalid
-    
-  TELF1     -> phone_primary    : to_e164
-  
-  ERDAT     -> created_date     : to_iso8601
-  AEDAT     -> modified_date    : to_iso8601
-  
-  LOEVM     -> is_deleted       
-    : map { "X": true, " ": false }
+  NAME1     -> customer_name    { trim }
+  NAME2     -> customer_name_2  { trim }
+  STRAS     -> street_address   { trim }
+  ORT01     -> city             { trim }
+  PSTLZ     -> postal_code      { "Trim, remove leading zeros for US postal codes" }
+  LAND1     -> country_code     { "Direct copy, validate against ISO-3166" }
+  SMTP_ADDR -> email            { trim | lowercase | validate_email | null_if_invalid }
+  TELF1     -> phone_primary    { to_e164 }
+  ERDAT     -> created_date     { to_iso8601 }
+  AEDAT     -> modified_date    { to_iso8601 }
+  LOEVM     -> is_deleted       { map { X: true, " ": false } }
 }

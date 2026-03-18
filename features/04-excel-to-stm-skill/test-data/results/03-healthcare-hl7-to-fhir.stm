@@ -1,124 +1,161 @@
-integration "HL7_ADT_to_FHIR_Patient" {
-  cardinality 1:1
-}
+note { "HL7 ADT A01/A08 → FHIR R4 Patient resource, 1:1 patient identity mapping" }
+
+
+// --- Shared Fragments ---
 
 fragment Address {
-  line[]       STRING
-  city         STRING
-  state        STRING
-  postalCode   STRING
-  country      STRING
-  use          CODE     [enum: {home, work, temp}]
+  list line { value STRING }
+  city       STRING
+  state      STRING
+  postalCode STRING
+  country    STRING
+  use        CODE   (enum {home, work, temp})
 }
 
 fragment HumanName {
-  family       STRING
-  given[]      STRING
-  prefix[]     STRING
-  use          CODE     [enum: {official, maiden, anonymous, nickname, pseudonym}]
+  family     STRING
+  list given { value STRING }
+  list prefix { value STRING }
+  use        CODE   (enum {official, maiden, anonymous, nickname, pseudonym})
 }
 
-source hl7_adt "HL7 ADT Message" {
-  PID_3_1      STRING      // ID Number
-  PID_3_4      STRING      // Assigning Authority
-  PID_3_5      STRING      // Identifier Type Code
-  PID_5_1      STRING      // Family Name
-  PID_5_2      STRING      // Given Name
-  PID_5_3      STRING      // Middle Name
-  PID_5_5      STRING      // Prefix
-  PID_5_7      STRING      // Name Type Code
-  PID_7        STRING      // Birth Date (YYYYMMDD)
-  PID_8        STRING      // Administrative Sex
-  PID_11_1     STRING      // Street
-  PID_11_2     STRING      // Other
-  PID_11_3     STRING      // City
-  PID_11_4     STRING      // State
-  PID_11_5     STRING      // Zip
-  PID_11_6     STRING      // Country
-  PID_11_7     STRING      // Address Type
-  PID_13_1     STRING      // Telephone
-  PID_13_2     STRING      // Use Code
-  PID_13_3     STRING      // Equipment Type
-  PID_19       STRING      // SSN
-  PD1_12       CHAR(1)     // Patient Consent Flag
+
+// --- Source Schema ---
+
+schema hl7_adt (note "HL7 v2.x ADT Message — PID and PD1 segments") {
+  PID_3_1   STRING  // ID Number
+  PID_3_4   STRING  // Assigning Authority
+  PID_3_5   STRING  // Identifier Type Code (MR=Medical Record, SS=Social Security)
+  PID_5_1   STRING  // Family Name
+  PID_5_2   STRING  // Given Name
+  PID_5_3   STRING  // Middle Name
+  PID_5_5   STRING  // Prefix (e.g. Dr, Mr)
+  PID_5_7   STRING  // Name Type Code
+  PID_7     STRING  // Birth Date (YYYYMMDD)
+  PID_8     STRING  // Administrative Sex
+  PID_11_1  STRING  // Street Address
+  PID_11_2  STRING  // Other Designation
+  PID_11_3  STRING  // City
+  PID_11_4  STRING  // State/Province
+  PID_11_5  STRING  // Zip/Postal Code
+  PID_11_6  STRING  // Country
+  PID_11_7  STRING  // Address Type
+  PID_13_1  STRING  // Telephone Number
+  PID_13_2  STRING  // Telecommunication Use Code
+  PID_13_3  STRING  // Telecommunication Equipment Type
+  PID_19    STRING  (pii)  // SSN — encrypt at rest per compliance requirement
+  PD1_12    CHAR(1)        // Patient Consent Flag: Y=consent given
 }
 
-target fhir_patient "FHIR Patient Resource" {
-  identifier[] {
-    value      STRING      [required]
-    system     URI         [required]
+
+// --- Target Schema ---
+
+schema fhir_patient (note "FHIR R4 Patient Resource") {
+  list identifier {
+    value   STRING  (required)
+    system  URI     (required)
   }
-  name[]       ...HumanName
-  birthDate    DATE
-  gender       CODE        [enum: {male, female, other, unknown}]
-  address[]    ...Address
-  telecom[] {
-    value      STRING
-    use        CODE
-    system     CODE
+  list name {
+    ...HumanName
   }
-  meta {
-    lastUpdated INSTANT    [required]
+  birthDate  DATE
+  gender     CODE  (enum {male, female, other, unknown})
+  list address {
+    ...Address
+  }
+  list telecom {
+    value   STRING
+    use     CODE
+    system  CODE
+  }
+  record meta {
+    lastUpdated  INSTANT  (required)
   }
 }
 
-mapping {
+
+// --- Mapping ---
+
+mapping 'hl7 adt to fhir patient' {
+  source { `hl7_adt` }
+  target { `fhir_patient` }
+
   // --- Identifiers ---
   PID_3_1 -> identifier[0].value
-  
-  PID_3_4 -> identifier[0].system
-    : when PID_3_5 == "MR" => "urn:oid:2.16.840.1.113883.1.13"
-      when PID_3_5 == "SS" => "http://hl7.org/fhir/sid/us-ssn"
-      else => nl("Map authority code to URI")
-    //? What if authority code is not MRN or SSN?
 
-  PID_19 -> identifier[1].value
-    @filter(PD1_12 == "Y")
-    : encrypt("AES-256", "system_key") // Requirement: PII must be encrypted at rest
-  
-  => identifier[1].system : "http://hl7.org/fhir/sid/us-ssn"
+  PID_3_5 -> identifier[0].system {
+    map {
+      MR: "urn:oid:2.16.840.1.113883.1.13"
+      SS: "http://hl7.org/fhir/sid/us-ssn"
+      _: "Derive OID/URI from assigning authority in PID_3_4"
+    }
+  }
+  //? What if authority code is not MR or SS?
+
+  PID_19 -> identifier[1].value (filter PD1_12 == "Y") {
+    encrypt("AES-256-GCM", "system_key")
+  }
+  // Requirement: PII (SSN) must be encrypted at rest per compliance policy
+
+  -> identifier[1].system { "http://hl7.org/fhir/sid/us-ssn" }
 
   // --- Name ---
-  PID_5_1 -> name[0].family : trim | title_case
-  PID_5_2 -> name[0].given[0] : nl("Trim, title case, and split space-separated values into array")
-  PID_5_3 -> name[0].given[1] : trim | title_case
-  PID_5_5 -> name[0].prefix[0]
-  PID_5_7 -> name[0].use
-    : map { L: "official", M: "maiden", A: "anonymous", N: "nickname", S: "pseudonym" }
-    //? Do we need to handle type D (adopted)?
+  PID_5_1 -> name[0].family                { trim | title_case }
+  PID_5_2 -> name[0].given[0].value        { "Trim, title case, split on spaces into multiple given[] entries" }
+  PID_5_3 -> name[0].given[1].value        { trim | title_case }
+  PID_5_5 -> name[0].prefix[0].value
+  PID_5_7 -> name[0].use {
+    map {
+      L: "official"  M: "maiden"  A: "anonymous"
+      N: "nickname"  S: "pseudonym"
+    }
+  }
+  //? Do we need to handle type D (adopted name)?
 
   // --- Demographics ---
-  PID_7 -> birthDate : nl("Parse HL7 (YYYYMMDD) to FHIR (YYYY-MM-DD) preserving partial precision")
-  
-  PID_8 -> gender
-    : map { M: "male", F: "female", O: "other", U: "unknown", A: "other", N: "unknown", null: "omit" }
-    //! Confirm: A->other and N->unknown correct per local policy?
+  PID_7 -> birthDate {
+    "Parse HL7 YYYYMMDD to FHIR YYYY-MM-DD. Preserve partial precision: YYYY→year only, YYYYMM→year-month only."
+  }
+
+  PID_8 -> gender {
+    map {
+      M: "male"    F: "female"    O: "other"
+      U: "unknown" A: "other"     N: "unknown"
+      null: "unknown"
+    }
+  }
+  //! Confirm: A→other and N→unknown are correct per local policy
 
   // --- Address ---
-  PID_11_1 -> address[0].line[0]
-  PID_11_2 -> address[0].line[1] : null_if_empty
-  PID_11_3 -> address[0].city : trim | title_case
-  PID_11_4 -> address[0].state : nl("Validate against US state codes or pass through with warning")
-  PID_11_5 -> address[0].postalCode 
-    : trim | nl("If 9 digits, format as XXXXX-XXXX")
-  PID_11_6 -> address[0].country 
-    : map { USA: "US", CAN: "CA", MEX: "MX" } //? Need full mapping table for all country codes
-  PID_11_7 -> address[0].use
-    : map { H: "home", B: "work", M: "temp", C: "temp" }
-    // Note: omit use if type not recognized
+  PID_11_1 -> address[0].line[0].value
+  PID_11_2 -> address[0].line[1].value { null_if_empty }
+  PID_11_3 -> address[0].city          { trim | title_case }
+  PID_11_4 -> address[0].state         { "Validate against US state codes; pass through with //! warning if unrecognised" }
+  PID_11_5 -> address[0].postalCode    { trim | "If 9 digits, format as XXXXX-XXXX" }
+  PID_11_6 -> address[0].country       {
+    map { USA: "US", CAN: "CA", MEX: "MX", _: "Pass through — needs full country code table" }
+  }
+  //? Provide full country code mapping table
+  PID_11_7 -> address[0].use {
+    map { H: "home", B: "work", M: "temp", C: "temp" }
+  }
+  // Note: omit use if type code is not recognised
 
   // --- Telecom ---
-  PID_13_1 -> telecom[0].value
-    : nl("Strip non-numeric except leading +, format to E.164")
-    //! If not parseable, store as-is with warning
-  
-  PID_13_2 -> telecom[0].use
-    : map { PRN: "home", WPN: "work", ORN: "home", BPN: "mobile" }
-  
-  PID_13_3 -> telecom[0].system
-    : map { PH: "phone", FX: "fax", CP: "phone", Internet: "email", BP: "pager" }
-    //? Confirm pager handling — do we even need it?
+  PID_13_1 -> telecom[0].value {
+    "Strip non-numeric characters except a leading +. Format to E.164."
+  }
+  //! If not parseable as a phone number, store as-is and add a //! warning
+
+  PID_13_2 -> telecom[0].use {
+    map { PRN: "home", WPN: "work", ORN: "home", BPN: "mobile" }
+  }
+
+  PID_13_3 -> telecom[0].system {
+    map { PH: "phone", FX: "fax", CP: "phone", Internet: "email", BP: "pager" }
+  }
+  //? Confirm pager handling — omit or retain?
 
   // --- Metadata ---
-  => meta.lastUpdated : now_utc()
+  -> meta.lastUpdated { now_utc() }
 }

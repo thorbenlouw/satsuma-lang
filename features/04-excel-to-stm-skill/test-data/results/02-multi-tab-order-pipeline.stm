@@ -1,117 +1,144 @@
-integration "Order_Migration" {
-  cardinality 1:N
-  author "Conversion Specialist"
-  note '''
+note {
+  """
   Order Migration Mapping — v2.3
-  This workbook documents the field-level mapping from the legacy Order Management System (OMS) 
-  to the new Order Service microservice.
-  '''
+
+  Maps from the legacy Order Management System (OMS) to the new
+  Order Service microservice. Includes header, line items, and
+  reference lookup tables from the Code Tables tab.
+  """
 }
 
-// Reference Lookups
-lookup status_codes {
-  OP "open"
-  IP "processing"
-  SH "shipped"
-  DL "delivered"
-  CN "cancelled"
-  RT "returned"
-  HD "on_hold"
-  BO "backordered"
-  PF "partial"
-  XX "unknown" //! Active: N (Unknown/Legacy)
+
+// --- Reference Schemas ---
+
+schema status_codes (note "Order/line status code lookup") {
+  code   CHAR(2)  (pk)
+  label  STRING
+  // OP: open        IP: processing  SH: shipped    DL: delivered
+  // CN: cancelled   RT: returned    HD: on_hold    BO: backordered
+  // PF: partial     XX: unknown (legacy) //! Active: N — do not use XX in new orders
 }
 
-lookup priority_codes {
-  H "rush"
-  N "standard"
-  L "economy"
+schema priority_codes (note "Order priority lookup") {
+  code   CHAR(1)  (pk)
+  label  STRING
+  // H: rush   N: standard   L: economy
 }
 
-// Source Schemas
-source oms_header "Legacy Order Header" {
-  ORDER_ID     NUMBER(12)    [pk]
+
+// --- Source Schemas ---
+
+schema oms_header (note "Legacy Order Header") {
+  ORDER_ID     NUMBER(12)   (pk)
   CUST_ID      NUMBER(10)
-  ORDER_DATE   DATE          //! All legacy dates are EST
+  ORDER_DATE   DATE         //! All legacy dates are stored in EST — convert to UTC
   SHIP_DATE    DATE
-  ORDER_STATUS CHAR(2)       [enum: {OP, IP, SH, DL, CN, RT, HD, BO, PF, XX}]
-  PRIORITY     CHAR(1)       [enum: {H, N, L}]
-  TOTAL_AMT    NUMBER(12, 2)
+  ORDER_STATUS CHAR(2)      (enum {OP, IP, SH, DL, CN, RT, HD, BO, PF, XX})
+  PRIORITY     CHAR(1)      (enum {H, N, L})
+  TOTAL_AMT    NUMBER(12,2)
   CURRENCY     CHAR(3)
-  DISCOUNT_PCT NUMBER(5, 2)  //! Inconsistent format in source
+  DISCOUNT_PCT NUMBER(5,2)  //! Inconsistent format: some rows store as whole number (e.g. 15 not 0.15)
   SALES_REP    VARCHAR(50)
-  CHANNEL      CHAR(3)       [enum: {WEB, POS, PHN, EDI}]
-  NOTES        CLOB          //! Legacy has no length limit
-  CREATED_BY   VARCHAR(30)   @deprecated
-  LEGACY_FLAG  CHAR(1)       @blocked
+  CHANNEL      CHAR(3)      (enum {WEB, POS, PHN, EDI})
+  NOTES        CLOB         //! Legacy has no length limit — truncate to 2000
+  // CREATED_BY omitted — deprecated field, not mapped to target
+  // LEGACY_FLAG omitted — blocked field, not mapped to target
 }
 
-source oms_line "Legacy Order Line" {
-  ORDER_ID     NUMBER(12)    [pk]
-  LINE_NO      NUMBER(5)     [pk]
+schema oms_line (note "Legacy Order Line") {
+  ORDER_ID     NUMBER(12)   (pk)
+  LINE_NO      NUMBER(5)    (pk)
   PRODUCT_CODE VARCHAR(20)
   PRODUCT_DESC VARCHAR(200)
-  QTY          NUMBER(8)     //! must be > 0
-  UNIT_PRICE   NUMBER(10, 2)
-  LINE_TOTAL   NUMBER(12, 2) //! Source data has rounding errors
-  LINE_STATUS  CHAR(2)       [enum: {OP, IP, SH, DL, CN, RT, HD, BO, PF, XX}]
+  QTY          NUMBER(8)    //! must be > 0
+  UNIT_PRICE   NUMBER(10,2)
+  LINE_TOTAL   NUMBER(12,2) //! Source data has rounding errors — recalculate in mapping
+  LINE_STATUS  CHAR(2)      (enum {OP, IP, SH, DL, CN, RT, HD, BO, PF, XX})
   WAREHOUSE    CHAR(4)
-  TAX_RATE     NUMBER(5, 4)  //! Stored as decimal, e.g. 0.0825
+  TAX_RATE     NUMBER(5,4)  //! Stored as decimal, e.g. 0.0825 for 8.25%
 }
 
-// Target Schema
-target order_service "Order Service Microservice" {
-  order_id         UUID           [pk, required]
-  customer_ref     STRING         [required]
-  placed_at        TIMESTAMP      [required]
+
+// --- Target Schema ---
+
+schema order_service (note "Order Service Microservice") {
+  order_id         UUID           (pk, required)
+  customer_ref     STRING         (required)
+  placed_at        TIMESTAMP      (required)
   shipped_at       TIMESTAMP
-  status           STRING         [required]
-  priority         STRING         [default: "standard"]
-  total_amount     DECIMAL(14, 2) [required]
-  currency_code    STRING(3)      [required]
-  discount_percent DECIMAL(5, 2)
+  status           STRING         (required)
+  priority         STRING         (default standard)
+  total_amount     DECIMAL(14,2)  (required)
+  currency_code    STRING(3)      (required)
+  discount_percent DECIMAL(5,2)
   assigned_rep     STRING
-  sales_channel    STRING         [required]
-  internal_notes   TEXT           [max_length: 2000]
+  sales_channel    STRING         (required)
+  internal_notes   TEXT
 
-  items[] {
-    line_number        INTEGER        [required]
-    product_sku        STRING         [required]
+  list items {
+    line_number        INTEGER        (required)
+    product_sku        STRING         (required)
     product_name       STRING
-    quantity           INTEGER        [required]
-    unit_price         DECIMAL(12, 2) [required]
-    line_total         DECIMAL(14, 2) [required]
-    status             STRING         [required]
+    quantity           INTEGER        (required)
+    unit_price         DECIMAL(12,2)  (required)
+    line_total         DECIMAL(14,2)  (required)
+    status             STRING         (required)
     fulfillment_center STRING
-    tax_rate           DECIMAL(5, 4)
+    tax_rate           DECIMAL(5,4)
   }
 }
 
-// Mappings
-mapping oms_header -> order_service {
-  ORDER_ID     -> order_id       : uuid_v5("orders", ORDER_ID)
-  CUST_ID      -> customer_ref   : prepend("CUST-")
-  ORDER_DATE   -> placed_at      : to_utc
-  SHIP_DATE    -> shipped_at     : to_utc
-  ORDER_STATUS -> status          : lookup(status_codes, ORDER_STATUS)
-  PRIORITY     -> priority        : lookup(priority_codes, PRIORITY, on_miss: "standard")
-  TOTAL_AMT    -> total_amount    : to_number
-  CURRENCY     -> currency_code  : uppercase //? Add ISO-4217 validation
-  DISCOUNT_PCT -> discount_percent : nl("Divide by 100 if > 1 (legacy stores as whole number)")
-  SALES_REP    -> assigned_rep   : trim
-  CHANNEL      -> sales_channel  : map { WEB: "online", POS: "in_store", PHN: "phone", EDI: "wholesale" }
-  NOTES        -> internal_notes : truncate(2000) | escape_html
 
-  // Line Items Nested Mapping
-  oms_line[]   -> items[] {
-    .LINE_NO      -> .line_number
-    .PRODUCT_CODE -> .product_sku        : uppercase | trim
-    .PRODUCT_DESC -> .product_name       : trim
-    .QTY          -> .quantity
-    .UNIT_PRICE   -> .unit_price
-    .LINE_TOTAL   -> .line_total         : nl("Recalculate as QTY * UNIT_PRICE")
-    .LINE_STATUS  -> .status             : lookup(status_codes, .LINE_STATUS)
-    .WAREHOUSE    -> .fulfillment_center : trim
-    .TAX_RATE     -> .tax_rate
+// --- Mappings ---
+
+mapping 'order header' {
+  source { `oms_header` }
+  target { `order_service` }
+
+  ORDER_ID     -> order_id        { uuid_v5("orders", ORDER_ID) }
+  CUST_ID      -> customer_ref    { prepend("CUST-") }
+  ORDER_DATE   -> placed_at       { to_utc }
+  SHIP_DATE    -> shipped_at      { to_utc }
+  ORDER_STATUS -> status          {
+    map {
+      OP: "open"    IP: "processing"  SH: "shipped"
+      DL: "delivered"  CN: "cancelled"  RT: "returned"
+      HD: "on_hold"    BO: "backordered"  PF: "partial"
+      XX: "unknown"
+    }
   }
+  PRIORITY     -> priority        { map { H: "rush", N: "standard", L: "economy", _: "standard" } }
+  TOTAL_AMT    -> total_amount    { to_number }
+  CURRENCY     -> currency_code   { uppercase } //? Add ISO-4217 validation
+  DISCOUNT_PCT -> discount_percent {
+    "Divide by 100 if value is > 1 (legacy stores as whole number, e.g. 15 means 15%)"
+  }
+  SALES_REP    -> assigned_rep    { trim }
+  CHANNEL      -> sales_channel   {
+    map { WEB: "online", POS: "in_store", PHN: "phone", EDI: "wholesale" }
+  }
+  NOTES        -> internal_notes  { truncate(2000) | escape_html }
+}
+
+mapping 'order lines' (note "Each oms_line row maps to one items[] entry on its parent order") {
+  source { `oms_line` }
+  target { `order_service` }
+
+  // Joined to parent order via ORDER_ID — handled by the pipeline orchestrator
+  LINE_NO      -> items[].line_number
+  PRODUCT_CODE -> items[].product_sku        { uppercase | trim }
+  PRODUCT_DESC -> items[].product_name       { trim }
+  QTY          -> items[].quantity
+  UNIT_PRICE   -> items[].unit_price
+  LINE_TOTAL   -> items[].line_total         { "Recalculate as QTY * UNIT_PRICE to correct source rounding errors" }
+  LINE_STATUS  -> items[].status             {
+    map {
+      OP: "open"    IP: "processing"  SH: "shipped"
+      DL: "delivered"  CN: "cancelled"  RT: "returned"
+      HD: "on_hold"    BO: "backordered"  PF: "partial"
+      XX: "unknown"
+    }
+  }
+  WAREHOUSE    -> items[].fulfillment_center { trim }
+  TAX_RATE     -> items[].tax_rate
 }
