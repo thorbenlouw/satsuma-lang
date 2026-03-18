@@ -34,6 +34,32 @@ import {
  * @property {object}              referenceGraph
  * @property {number}              totalErrors
  */
+/**
+ * Extract all structured data from a single parsed file's CST.
+ *
+ * This must be called while the tree-sitter tree is still valid (before
+ * the parser is reused for another file). The returned data is plain JS
+ * objects that remain valid after the tree is released.
+ *
+ * @param {{filePath:string, tree:object, errorCount:number}} parsedFile
+ * @returns {object} extracted data for one file
+ */
+export function extractFileData({ filePath, tree, errorCount }) {
+  const root = tree.rootNode;
+  return {
+    filePath,
+    errorCount,
+    schemas: extractSchemas(root),
+    metrics: extractMetrics(root),
+    mappings: extractMappings(root),
+    fragments: extractFragments(root),
+    transforms: extractTransforms(root),
+    warnings: extractWarnings(root),
+    questions: extractQuestions(root),
+    arrowRecords: extractArrowRecords(root),
+  };
+}
+
 export function buildIndex(parsedFiles) {
   const schemas = new Map();
   const metrics = new Map();
@@ -45,33 +71,39 @@ export function buildIndex(parsedFiles) {
   const allArrowRecords = [];
   let totalErrors = 0;
 
-  for (const { filePath, tree, errorCount } of parsedFiles) {
-    totalErrors += errorCount;
-    const root = tree.rootNode;
+  // Accept either pre-extracted data or raw parsedFile objects.
+  // When receiving raw parsedFile objects (with .tree), extract immediately.
+  const fileDataList = parsedFiles.map((pf) =>
+    pf.schemas ? pf : extractFileData(pf),
+  );
 
-    for (const s of extractSchemas(root)) {
+  for (const fileData of fileDataList) {
+    const { filePath } = fileData;
+    totalErrors += fileData.errorCount;
+
+    for (const s of fileData.schemas) {
       schemas.set(s.name, { ...s, file: filePath });
     }
-    for (const m of extractMetrics(root)) {
+    for (const m of fileData.metrics) {
       metrics.set(m.name, { ...m, file: filePath });
     }
-    for (const m of extractMappings(root)) {
+    for (const m of fileData.mappings) {
       const key = m.name ?? `<anon>@${filePath}:${m.row}`;
       mappings.set(key, { ...m, file: filePath });
     }
-    for (const f of extractFragments(root)) {
+    for (const f of fileData.fragments) {
       fragments.set(f.name, { ...f, file: filePath });
     }
-    for (const t of extractTransforms(root)) {
+    for (const t of fileData.transforms) {
       transforms.set(t.name, { ...t, file: filePath });
     }
-    for (const w of extractWarnings(root)) {
+    for (const w of fileData.warnings) {
       warnings.push({ ...w, file: filePath });
     }
-    for (const q of extractQuestions(root)) {
+    for (const q of fileData.questions) {
       questions.push({ ...q, file: filePath });
     }
-    for (const ar of extractArrowRecords(root)) {
+    for (const ar of fileData.arrowRecords) {
       allArrowRecords.push({ ...ar, file: filePath });
     }
   }
