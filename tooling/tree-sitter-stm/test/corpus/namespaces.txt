@@ -1,0 +1,313 @@
+================================================================================
+namespace block with schema
+================================================================================
+
+namespace pos {
+  schema stores {
+    STORE_ID VARCHAR(20)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+namespace block with metadata
+================================================================================
+
+namespace pos (note "POS system") {
+  schema stores {
+    STORE_ID VARCHAR(20)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (metadata_block (note_tag (nl_string)))
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+namespace with multiple definitions
+================================================================================
+
+namespace vault {
+  schema hub_customer {
+    hub_key BINARY(20)
+  }
+
+  fragment audit_cols {
+    load_ts TIMESTAMP
+  }
+
+  transform dv_hash {
+    sha2
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))
+    (fragment_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))
+    (transform_block
+      (block_label (identifier))
+      (pipe_chain (pipe_step (token_call (identifier)))))))
+
+================================================================================
+namespace with mapping
+================================================================================
+
+namespace vault {
+  mapping 'load hub_customer' {
+    source { `pos::stores` }
+    target { `hub_customer` }
+    STORE_ID -> hub_key { dv_hash }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (mapping_block
+      (block_label (quoted_name))
+      (mapping_body
+        (source_block
+          (source_ref (backtick_name)))
+        (target_block
+          (source_ref (backtick_name)))
+        (map_arrow
+          (src_path (field_path (identifier)))
+          (tgt_path (field_path (identifier)))
+          (pipe_chain (pipe_step (token_call (identifier)))))))))
+
+================================================================================
+namespace with metric
+================================================================================
+
+namespace analytics {
+  metric revenue (source fact_sales) {
+    amount DECIMAL(18,2)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (metric_block
+      (block_label (identifier))
+      (metadata_block
+        (key_value_pair
+          (kv_key
+            (identifier))
+          (identifier)))
+      (metric_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+empty namespace
+================================================================================
+
+namespace staging {
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)))
+
+================================================================================
+multiple namespaces in one file
+================================================================================
+
+namespace pos {
+  schema stores {
+    STORE_ID VARCHAR(20)
+  }
+}
+
+namespace ecom {
+  schema orders {
+    order_id BIGINT
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr)))))
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+global and namespaced definitions mixed
+================================================================================
+
+transform dv_hash {
+  sha2
+}
+
+namespace vault {
+  schema hub_customer {
+    hub_key BINARY(20)
+  }
+}
+
+schema dim_date {
+  date_key INT
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label (identifier))
+    (pipe_chain (pipe_step (token_call (identifier)))))
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr)))))
+  (schema_block
+    (block_label (identifier))
+    (schema_body
+      (field_decl (field_name (identifier)) (type_expr)))))
+
+================================================================================
+qualified import names
+================================================================================
+
+import { pos::stores, vault::hub_customer } from "platform.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name (qualified_name (identifier) (identifier)))
+    (import_name (qualified_name (identifier) (identifier)))
+    (import_path (nl_string))))
+
+================================================================================
+mixed qualified and unqualified imports
+================================================================================
+
+import { pos::stores, dv_hash } from "common.stm"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name (qualified_name (identifier) (identifier)))
+    (import_name (identifier))
+    (import_path (nl_string))))
+
+================================================================================
+qualified source and target refs
+================================================================================
+
+namespace vault {
+  mapping 'cross namespace' {
+    source { pos::stores }
+    target { hub_store }
+    STORE_ID -> hub_key
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (mapping_block
+      (block_label (quoted_name))
+      (mapping_body
+        (source_block
+          (source_ref (qualified_name (identifier) (identifier))))
+        (target_block
+          (source_ref (identifier)))
+        (map_arrow
+          (src_path (field_path (identifier)))
+          (tgt_path (field_path (identifier))))))))
+
+================================================================================
+qualified fragment spread
+================================================================================
+
+namespace vault {
+  schema hub_customer {
+    hub_key BINARY(20)
+    ...shared::audit_fields
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))
+        (fragment_spread
+          (spread_label (qualified_name (identifier) (identifier))))))))
+
+================================================================================
+namespace with note block
+================================================================================
+
+namespace pos {
+  note {
+    "This namespace covers POS data"
+  }
+
+  schema stores {
+    STORE_ID VARCHAR(20)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (note_block (nl_string))
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))))

@@ -13,7 +13,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -48,7 +48,8 @@ export function register(program) {
       const index = buildIndex(parsedFiles);
 
       // Validate schema exists
-      if (!index.schemas.has(schemaName)) {
+      const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
+      if (!resolvedSchema) {
         console.error(`Schema '${schemaName}' not found.`);
         const close = [...index.schemas.keys()].find(
           (k) => k.toLowerCase() === schemaName.toLowerCase(),
@@ -58,7 +59,7 @@ export function register(program) {
       }
 
       // Validate field exists in schema
-      const schema = index.schemas.get(schemaName);
+      const schema = resolvedSchema.entry;
       const fieldExists = schema.fields.some((f) => f.name === fieldName);
       if (!fieldExists) {
         console.error(

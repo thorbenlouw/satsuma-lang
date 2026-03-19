@@ -23,6 +23,83 @@
         },
         {
           "type": "SYMBOL",
+          "name": "namespace_block"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "schema_block"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "fragment_block"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "transform_block"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "mapping_block"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "metric_block"
+        }
+      ]
+    },
+    "namespace_block": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "namespace"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "metadata_block"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_namespace_item"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
+    "_namespace_item": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "note_block"
+        },
+        {
+          "type": "SYMBOL",
           "name": "schema_block"
         },
         {
@@ -98,7 +175,28 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "qualified_name"
+        },
+        {
+          "type": "SYMBOL",
           "name": "quoted_name"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        }
+      ]
+    },
+    "qualified_name": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "STRING",
+          "value": "::"
         },
         {
           "type": "SYMBOL",
@@ -357,6 +455,10 @@
         {
           "type": "CHOICE",
           "members": [
+            {
+              "type": "SYMBOL",
+              "name": "qualified_name"
+            },
             {
               "type": "SYMBOL",
               "name": "backtick_name"
@@ -721,6 +823,10 @@
     "spread_label": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "qualified_name"
+        },
         {
           "type": "SYMBOL",
           "name": "quoted_name"

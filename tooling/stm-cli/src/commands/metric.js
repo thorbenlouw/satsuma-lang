@@ -12,7 +12,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -35,8 +35,8 @@ export function register(program) {
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      const entry = index.metrics.get(name);
-      if (!entry) {
+      const resolved = resolveIndexKey(name, index.metrics);
+      if (!resolved) {
         const keys = [...index.metrics.keys()];
         const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
         if (close) {
@@ -47,9 +47,11 @@ export function register(program) {
         }
         process.exit(1);
       }
+      const entry = resolved.entry;
+      const resolvedName = resolved.key;
 
       const parsed = parsedFiles.find((p) => p.filePath === entry.file);
-      const metricNode = parsed ? findMetricNode(parsed.tree.rootNode, name) : null;
+      const metricNode = parsed ? findMetricNode(parsed.tree.rootNode, resolvedName) : null;
 
       if (opts.json) {
         printJson(entry, metricNode);
@@ -64,13 +66,20 @@ export function register(program) {
 // ── CST helpers ───────────────────────────────────────────────────────────────
 
 function findMetricNode(rootNode, name) {
+  // name may be namespace-qualified like "ns::metric_name"
+  const bare = name.includes("::") ? name.split("::").pop() : name;
   for (const c of rootNode.namedChildren) {
+    if (c.type === "namespace_block") {
+      const result = findMetricNode(c, name);
+      if (result) return result;
+      continue;
+    }
     if (c.type !== "metric_block") continue;
     const lbl = c.namedChildren.find((x) => x.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let n = inner?.text ?? "";
     if (inner?.type === "quoted_name") n = n.slice(1, -1);
-    if (n === name) return c;
+    if (n === bare) return c;
   }
   return null;
 }

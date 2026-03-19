@@ -11,7 +11,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractNLContent } from "../nl-extract.js";
 
 /** @param {import('commander').Command} program */
@@ -72,12 +72,12 @@ function extractFromAll(parsedFiles) {
 }
 
 function extractFromBlock(blockName, parsedFiles, index) {
-  // Check if it's a schema, mapping, or metric
-  const isSchema = index.schemas.has(blockName);
-  const isMapping = index.mappings.has(blockName);
-  const isMetric = index.metrics.has(blockName);
+  // Check if it's a schema, mapping, or metric (resolving namespace-qualified keys)
+  const schemaResolved = resolveIndexKey(blockName, index.schemas);
+  const mappingResolved = resolveIndexKey(blockName, index.mappings);
+  const metricResolved = resolveIndexKey(blockName, index.metrics);
 
-  if (!isSchema && !isMapping && !isMetric) {
+  if (!schemaResolved && !mappingResolved && !metricResolved) {
     console.error(`'${blockName}' not found as a schema, mapping, or metric.`);
     const allNames = [
       ...index.schemas.keys(),
@@ -91,18 +91,20 @@ function extractFromBlock(blockName, parsedFiles, index) {
     process.exit(1);
   }
 
-  const blockType = isSchema
+  const resolvedKey = (schemaResolved ?? mappingResolved ?? metricResolved).key;
+  const blockType = schemaResolved
     ? "schema_block"
-    : isMapping
+    : mappingResolved
       ? "mapping_block"
       : "metric_block";
+  const bareName = resolvedKey.includes("::") ? resolvedKey.split("::").pop() : resolvedKey;
 
   const items = [];
   for (const { filePath, tree } of parsedFiles) {
     const root = tree.rootNode;
-    for (const node of root.namedChildren) {
+    for (const node of iterBlocks(root)) {
       if (node.type !== blockType) continue;
-      if (getBlockName(node) !== blockName) continue;
+      if (getBlockName(node) !== bareName) continue;
       for (const item of extractNLContent(node, blockName)) {
         items.push({ ...item, file: filePath });
       }
@@ -116,12 +118,14 @@ function extractFromField(fieldRef, parsedFiles, index) {
   const schemaName = fieldRef.slice(0, dot);
   const fieldName = fieldRef.slice(dot + 1);
 
-  if (!index.schemas.has(schemaName)) {
+  const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
+  if (!resolvedSchema) {
     console.error(`Schema '${schemaName}' not found.`);
     process.exit(1);
   }
 
-  const schema = index.schemas.get(schemaName);
+  const schema = resolvedSchema.entry;
+  const bareSchemaName = resolvedSchema.key.includes("::") ? resolvedSchema.key.split("::").pop() : resolvedSchema.key;
   if (!schema.fields.some((f) => f.name === fieldName)) {
     console.error(
       `Field '${fieldName}' not found in schema '${schemaName}'.`,
@@ -132,9 +136,9 @@ function extractFromField(fieldRef, parsedFiles, index) {
   const items = [];
   for (const { filePath, tree } of parsedFiles) {
     const root = tree.rootNode;
-    for (const node of root.namedChildren) {
+    for (const node of iterBlocks(root)) {
       if (node.type !== "schema_block") continue;
-      if (getBlockName(node) !== schemaName) continue;
+      if (getBlockName(node) !== bareSchemaName) continue;
       const body = node.namedChildren.find((c) => c.type === "schema_body");
       if (!body) continue;
 
@@ -151,7 +155,7 @@ function extractFromField(fieldRef, parsedFiles, index) {
   // Also extract NL from arrows targeting/sourcing this field in mappings
   for (const { filePath, tree } of parsedFiles) {
     const root = tree.rootNode;
-    for (const mappingNode of root.namedChildren.filter(
+    for (const mappingNode of [...iterBlocks(root)].filter(
       (c) => c.type === "mapping_block",
     )) {
       const body = mappingNode.namedChildren.find(
@@ -179,6 +183,17 @@ function extractFromField(fieldRef, parsedFiles, index) {
   }
 
   return items;
+}
+
+/** Yield block nodes from rootNode, searching inside namespace_block children. */
+function* iterBlocks(rootNode) {
+  for (const c of rootNode.namedChildren) {
+    if (c.type === "namespace_block") {
+      yield* iterBlocks(c);
+    } else {
+      yield c;
+    }
+  }
 }
 
 function getBlockName(node) {

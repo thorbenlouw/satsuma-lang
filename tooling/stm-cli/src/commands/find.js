@@ -125,13 +125,20 @@ function searchTag(index, parsedFiles, tag, scope) {
 }
 
 function findBlock(rootNode, nodeType, name) {
+  // name may be namespace-qualified like "ns::block_name"
+  const bare = name.includes("::") ? name.split("::").pop() : name;
   for (const c of rootNode.namedChildren) {
+    if (c.type === "namespace_block") {
+      const result = findBlock(c, nodeType, name);
+      if (result) return result;
+      continue;
+    }
     if (c.type !== nodeType) continue;
     const lbl = c.namedChildren.find((x) => x.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let n = inner?.text ?? "";
     if (inner?.type === "quoted_name") n = n.slice(1, -1);
-    if (n === name) return c;
+    if (n === bare) return c;
   }
   return null;
 }

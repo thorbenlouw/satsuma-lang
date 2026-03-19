@@ -133,11 +133,17 @@ function printDefault(index, fileCount) {
   }
   console.log();
 
+  /** Format a display name with namespace prefix when applicable. */
+  const displayName = (entity) => {
+    if (entity.namespace) return `${entity.namespace}::${entity.name}`;
+    return entity.name;
+  };
+
   if (schemas.length > 0) {
     console.log(`Schemas (${schemas.length}):`);
     for (const s of schemas) {
       const note = s.note ? `  — ${s.note}` : "";
-      console.log(`  ${s.name}  [${s.fields.length} fields]${note}`);
+      console.log(`  ${displayName(s)}  [${s.fields.length} fields]${note}`);
     }
     console.log();
   }
@@ -147,7 +153,7 @@ function printDefault(index, fileCount) {
     for (const m of metrics) {
       const display = m.displayName ? ` "${m.displayName}"` : "";
       const grain = m.grain ? `  grain=${m.grain}` : "";
-      console.log(`  ${m.name}${display}  [${m.fields.length} fields]${grain}`);
+      console.log(`  ${displayName(m)}${display}  [${m.fields.length} fields]${grain}`);
     }
     console.log();
   }
@@ -155,7 +161,7 @@ function printDefault(index, fileCount) {
   if (mappings.length > 0) {
     console.log(`Mappings (${mappings.length}):`);
     for (const m of mappings) {
-      const name = m.name ?? "(anonymous)";
+      const name = m.name ? displayName(m) : "(anonymous)";
       const src = m.sources.join(", ") || "?";
       const tgt = m.targets.join(", ") || "?";
       console.log(`  ${name}  ${src} → ${tgt}  [${m.arrowCount} arrows]`);
@@ -166,7 +172,7 @@ function printDefault(index, fileCount) {
   if (fragments.length > 0) {
     console.log(`Fragments (${fragments.length}):`);
     for (const f of fragments) {
-      console.log(`  ${f.name}  [${f.fields.length} fields]`);
+      console.log(`  ${displayName(f)}  [${f.fields.length} fields]`);
     }
     console.log();
   }
@@ -174,7 +180,7 @@ function printDefault(index, fileCount) {
   if (transforms.length > 0) {
     console.log(`Transforms (${transforms.length}):`);
     for (const t of transforms) {
-      console.log(`  ${t.name}`);
+      console.log(`  ${displayName(t)}`);
     }
     console.log();
   }

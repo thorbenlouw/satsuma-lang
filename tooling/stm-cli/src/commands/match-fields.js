@@ -11,7 +11,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { matchFields } from "../normalize.js";
 
 /** @param {import('commander').Command} program */
@@ -38,8 +38,10 @@ export function register(program) {
       const index = buildIndex(parsedFiles);
 
       // Validate schemas
+      const resolvedNames = {};
       for (const name of [opts.source, opts.target]) {
-        if (!index.schemas.has(name)) {
+        const resolved = resolveIndexKey(name, index.schemas);
+        if (!resolved) {
           console.error(`Schema '${name}' not found.`);
           const close = [...index.schemas.keys()].find(
             (k) => k.toLowerCase() === name.toLowerCase(),
@@ -47,10 +49,11 @@ export function register(program) {
           if (close) console.error(`Did you mean '${close}'?`);
           process.exit(1);
         }
+        resolvedNames[name] = resolved;
       }
 
-      const srcFields = index.schemas.get(opts.source).fields;
-      const tgtFields = index.schemas.get(opts.target).fields;
+      const srcFields = resolvedNames[opts.source].entry.fields;
+      const tgtFields = resolvedNames[opts.target].entry.fields;
       const result = matchFields(srcFields, tgtFields);
 
       if (opts.json) {

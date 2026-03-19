@@ -17,7 +17,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -49,11 +49,12 @@ export function register(program) {
       const graph = buildFullGraph(index);
 
       if (opts.from) {
-        const start = opts.from;
-        if (!graph.nodes.has(start)) {
-          console.error(`Node '${start}' not found.`);
+        const resolved = resolveIndexKey(opts.from, graph.nodes);
+        if (!resolved) {
+          console.error(`Node '${opts.from}' not found.`);
           process.exit(1);
         }
+        const start = resolved.key;
         const dag = buildDownstream(graph, start, opts.depth);
         if (opts.json) {
           console.log(JSON.stringify(dag, null, 2));
@@ -63,11 +64,12 @@ export function register(program) {
           printTree(dag, start, 0);
         }
       } else {
-        const target = opts.to;
-        if (!graph.nodes.has(target)) {
-          console.error(`Node '${target}' not found.`);
+        const resolvedTo = resolveIndexKey(opts.to, graph.nodes);
+        if (!resolvedTo) {
+          console.error(`Node '${opts.to}' not found.`);
           process.exit(1);
         }
+        const target = resolvedTo.key;
         const path = bfsPath(graph, target, opts.depth);
         if (!path) {
           console.log(`No upstream path found to '${target}'.`);

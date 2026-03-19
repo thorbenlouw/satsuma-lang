@@ -8,6 +8,7 @@
   "mapping"
   "transform"
   "metric"
+  "namespace"
   "note"
   "record"
   "list"
@@ -61,6 +62,7 @@
 (transform_block (block_label (identifier)) @function.definition)
 (mapping_block (block_label (identifier)) @function.definition)
 (metric_block (block_label (identifier)) @type.definition)
+(namespace_block name: (identifier) @module)
 (record_block (block_label (identifier)) @type)
 (list_block (block_label (identifier)) @type)
 
@@ -122,6 +124,9 @@
 (map_key) @constant.builtin  ; catches "_", "null", "default" nodes
 
 ; ── Import paths ──────────────────────────────────────────────────────────────
+; ── Qualified names (ns::name) ──────────────────────────────────────────────
+(qualified_name (identifier) @module "::" @operator)
+
 (import_name (quoted_name) @string.special)
 (import_name (identifier) @variable)
 (import_path (nl_string) @string.path)
@@ -139,6 +144,8 @@
 (comment) @comment                    ; // — regular author comment
 
 ; ── Fragment spread ───────────────────────────────────────────────────────────
+(fragment_spread
+  (spread_label (qualified_name) @type))
 (fragment_spread
   (spread_label (identifier) @type))
 (fragment_spread

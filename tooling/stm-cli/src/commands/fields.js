@@ -12,7 +12,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -35,7 +35,8 @@ export function register(program) {
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      if (!index.schemas.has(schemaName)) {
+      const resolved = resolveIndexKey(schemaName, index.schemas);
+      if (!resolved) {
         console.error(`Schema '${schemaName}' not found.`);
         const close = [...index.schemas.keys()].find(
           (k) => k.toLowerCase() === schemaName.toLowerCase(),
@@ -43,18 +44,20 @@ export function register(program) {
         if (close) console.error(`Did you mean '${close}'?`);
         process.exit(1);
       }
+      const resolvedSchemaName = resolved.key;
 
-      const schema = index.schemas.get(schemaName);
+      const schema = resolved.entry;
       let fields = schema.fields.map((f) => ({ ...f }));
 
       // Enrich with metadata if requested
       if (opts.withMeta) {
-        enrichFieldMeta(schemaName, fields, parsedFiles);
+        enrichFieldMeta(schema.name, fields, parsedFiles);
       }
 
       // Filter to unmapped fields
       if (opts.unmappedBy) {
-        if (!index.mappings.has(opts.unmappedBy)) {
+        const resolvedMapping = resolveIndexKey(opts.unmappedBy, index.mappings);
+        if (!resolvedMapping) {
           console.error(`Mapping '${opts.unmappedBy}' not found.`);
           const close = [...index.mappings.keys()].find(
             (k) => k.toLowerCase() === opts.unmappedBy.toLowerCase(),
@@ -63,7 +66,7 @@ export function register(program) {
           process.exit(1);
         }
 
-        const mappedFields = getMappedFieldNames(opts.unmappedBy, schemaName, index);
+        const mappedFields = getMappedFieldNames(resolvedMapping.key, resolvedSchemaName, index);
         fields = fields.filter((f) => !mappedFields.has(f.name));
       }
 
@@ -115,15 +118,8 @@ function getMappedFieldNames(mappingName, schemaName, index) {
 function enrichFieldMeta(schemaName, fields, parsedFiles) {
   for (const { tree } of parsedFiles) {
     const root = tree.rootNode;
-    for (const schemaNode of root.namedChildren.filter(
-      (c) => c.type === "schema_block",
-    )) {
-      const lbl = schemaNode.namedChildren.find((c) => c.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let name = inner?.text ?? "";
-      if (inner?.type === "quoted_name") name = name.slice(1, -1);
-      if (name !== schemaName) continue;
-
+    const schemaNodes = findAllSchemaNodes(root, schemaName);
+    for (const schemaNode of schemaNodes) {
       const body = schemaNode.namedChildren.find(
         (c) => c.type === "schema_body",
       );
@@ -158,6 +154,31 @@ function enrichFieldMeta(schemaName, fields, parsedFiles) {
       }
     }
   }
+}
+
+/** Find all schema_block nodes with the given name, including inside namespace_blocks. */
+function findAllSchemaNodes(rootNode, name) {
+  const results = [];
+  for (const c of rootNode.namedChildren) {
+    if (c.type === "schema_block" && matchBlockLabel(c, name)) {
+      results.push(c);
+    } else if (c.type === "namespace_block") {
+      for (const inner of c.namedChildren) {
+        if (inner.type === "schema_block" && matchBlockLabel(inner, name)) {
+          results.push(inner);
+        }
+      }
+    }
+  }
+  return results;
+}
+
+function matchBlockLabel(node, name) {
+  const lbl = node.namedChildren.find((c) => c.type === "block_label");
+  const inner = lbl?.namedChildren[0];
+  let n = inner?.text ?? "";
+  if (inner?.type === "quoted_name") n = n.slice(1, -1);
+  return n === name;
 }
 
 function printDefault(_schemaName, fields, opts) {
