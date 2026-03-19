@@ -18,6 +18,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
+import { findBlockNode } from "../cst-query.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -89,7 +90,7 @@ function searchTag(index, parsedFiles, tag, scope) {
     const parsed = fileMap.get(blockEntry.file);
     if (!parsed) return;
 
-    const blockNode = findBlock(parsed.tree.rootNode, blockType + "_block", blockName);
+    const blockNode = findBlockNode(parsed.tree.rootNode, blockType + "_block", blockName);
     if (!blockNode) {
       // Fallback: use index fields (no tag info)
       return;
@@ -122,25 +123,6 @@ function searchTag(index, parsedFiles, tag, scope) {
   for (const [name, entry] of index.fragments) search("fragment", name, entry, "schema_body");
 
   return matches;
-}
-
-function findBlock(rootNode, nodeType, name) {
-  // name may be namespace-qualified like "ns::block_name"
-  const bare = name.includes("::") ? name.split("::").pop() : name;
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "namespace_block") {
-      const result = findBlock(c, nodeType, name);
-      if (result) return result;
-      continue;
-    }
-    if (c.type !== nodeType) continue;
-    const lbl = c.namedChildren.find((x) => x.type === "block_label");
-    const inner = lbl?.namedChildren[0];
-    let n = inner?.text ?? "";
-    if (inner?.type === "quoted_name") n = n.slice(1, -1);
-    if (n === bare) return c;
-  }
-  return null;
 }
 
 /**

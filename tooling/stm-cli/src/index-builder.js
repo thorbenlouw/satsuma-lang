@@ -69,8 +69,20 @@ export function extractFileData({ filePath, tree, errorCount }) {
  * Global entities (namespace=null) use their bare name.
  * Namespaced entities use "ns::name".
  */
-function qualifiedKey(namespace, name) {
+export function qualifiedKey(namespace, name) {
   return namespace ? `${namespace}::${name}` : name;
+}
+
+export function resolveScopedEntityRef(ref, currentNs, entityMap) {
+  if (ref.includes("::")) {
+    return entityMap.has(ref) ? ref : null;
+  }
+  if (currentNs) {
+    const nsKey = `${currentNs}::${ref}`;
+    if (entityMap.has(nsKey)) return nsKey;
+  }
+  if (entityMap.has(ref)) return ref;
+  return null;
 }
 
 export function buildIndex(parsedFiles) {
@@ -201,6 +213,23 @@ export function buildIndex(parsedFiles) {
   const namespaceNames = new Set();
   for (const key of namesByNamespace.keys()) {
     if (key !== "__global__") namespaceNames.add(key);
+  }
+
+  const allDefinitions = new Map([...schemas, ...fragments]);
+  for (const mapping of mappings.values()) {
+    const currentNs = mapping.namespace ?? null;
+    mapping.sources = mapping.sources.map((ref) =>
+      resolveScopedEntityRef(ref, currentNs, allDefinitions) ?? ref,
+    );
+    mapping.targets = mapping.targets.map((ref) =>
+      resolveScopedEntityRef(ref, currentNs, allDefinitions) ?? ref,
+    );
+  }
+  for (const metric of metrics.values()) {
+    const currentNs = metric.namespace ?? null;
+    metric.sources = metric.sources.map((ref) =>
+      resolveScopedEntityRef(ref, currentNs, schemas) ?? ref,
+    );
   }
 
   const referenceGraph = buildReferenceGraph({ metrics, mappings });

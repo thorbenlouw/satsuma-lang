@@ -238,6 +238,29 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
     const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 1, "Unknown schema qualifier should still warn");
   });
+
+  it("does not cross-wire arrows between same-named mappings in different namespaces", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "alpha::customer", namespace: "alpha", fields: [{ name: "alpha_flag", type: "STRING" }] },
+        { name: "alpha::customer_out", namespace: "alpha", fields: [{ name: "alpha_flag", type: "STRING" }] },
+        { name: "beta::customer", namespace: "beta", fields: [{ name: "beta_score", type: "NUMBER" }] },
+        { name: "beta::customer_out", namespace: "beta", fields: [{ name: "beta_score", type: "NUMBER" }] },
+      ],
+      mappings: [
+        { name: "alpha::load_customer", namespace: "alpha", sources: ["alpha::customer"], targets: ["alpha::customer_out"] },
+        { name: "beta::load_customer", namespace: "beta", sources: ["beta::customer"], targets: ["beta::customer_out"] },
+      ],
+      fieldArrows: [
+        { mapping: "load_customer", namespace: "alpha", source: "alpha_flag", target: "alpha_flag", file: "test.stm", line: 10 },
+        { mapping: "load_customer", namespace: "beta", source: "beta_score", target: "beta_score", file: "test.stm", line: 20 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "same-named mappings in different namespaces should validate independently");
+  });
 });
 
 // ── Bug 3: Metric source extraction ──────────────────────────────────────────

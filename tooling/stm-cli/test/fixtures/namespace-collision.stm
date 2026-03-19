@@ -1,0 +1,47 @@
+namespace alpha {
+  schema customer (note "Alpha customer schema") {
+    customer_id STRING (pk)
+    alpha_flag  STRING (default alpha)
+  }
+
+  schema customer_out (note "Alpha projection") {
+    customer_id STRING (pk)
+    alpha_flag  STRING
+  }
+
+  mapping load_customer (note "Alpha mapping") {
+    source { `customer` }
+    target { `customer_out` }
+
+    customer_id -> customer_id
+    alpha_flag  -> alpha_flag
+  }
+
+  metric customer_health "Alpha Health" (source customer_out, grain daily) {
+    score NUMBER (measure additive)
+  }
+}
+
+namespace beta {
+  schema customer (note "Beta customer schema") {
+    customer_id STRING (pk)
+    beta_score  NUMBER (default 7)
+  }
+
+  schema customer_out (note "Beta projection") {
+    customer_id STRING (pk)
+    beta_score  NUMBER
+  }
+
+  mapping load_customer (note "Beta mapping") {
+    source { `customer` }
+    target { `customer_out` }
+
+    customer_id -> customer_id
+    beta_score  -> beta_score { round(0) }
+  }
+
+  metric customer_health "Beta Health" (source customer_out, grain weekly) {
+    score NUMBER (measure non_additive)
+  }
+}

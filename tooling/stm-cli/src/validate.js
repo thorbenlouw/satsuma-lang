@@ -12,6 +12,7 @@ import {
   resolveRef,
   isSchemaInMappingSources,
 } from "./nl-ref-extract.js";
+import { resolveScopedEntityRef } from "./index-builder.js";
 
 /**
  * @typedef {Object} Diagnostic
@@ -73,18 +74,7 @@ function walkErrors(node, file, diagnostics) {
  * @returns {string|null}  The resolved qualified key, or null if not found
  */
 function resolveEntityRef(ref, currentNs, entityMap) {
-  // Qualified reference — direct lookup
-  if (ref.includes("::")) {
-    return entityMap.has(ref) ? ref : null;
-  }
-  // Unqualified: try current namespace first (if inside one)
-  if (currentNs) {
-    const nsKey = `${currentNs}::${ref}`;
-    if (entityMap.has(nsKey)) return nsKey;
-  }
-  // Then try global (bare name)
-  if (entityMap.has(ref)) return ref;
-  return null;
+  return resolveScopedEntityRef(ref, currentNs, entityMap);
 }
 
 /**
@@ -314,7 +304,7 @@ export function collectSemanticWarnings(index) {
       const tgtHasSpreads = resolvedTgtKey ? (index.schemas.get(resolvedTgtKey)?.hasSpreads ?? false) : false;
 
       for (const arrow of uniqueArrows) {
-        if (arrow.mapping !== mapping.name) continue;
+        if (arrow.mapping !== mapping.name || (arrow.namespace ?? null) !== currentNs) continue;
 
         if (
           arrow.source &&

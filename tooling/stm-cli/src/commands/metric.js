@@ -13,6 +13,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { findBlockNode } from "../cst-query.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -51,7 +52,7 @@ export function register(program) {
       const resolvedName = resolved.key;
 
       const parsed = parsedFiles.find((p) => p.filePath === entry.file);
-      const metricNode = parsed ? findMetricNode(parsed.tree.rootNode, resolvedName) : null;
+      const metricNode = parsed ? findBlockNode(parsed.tree.rootNode, "metric_block", resolvedName) : null;
 
       if (opts.json) {
         printJson(entry, metricNode);
@@ -64,25 +65,6 @@ export function register(program) {
 }
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
-
-function findMetricNode(rootNode, name) {
-  // name may be namespace-qualified like "ns::metric_name"
-  const bare = name.includes("::") ? name.split("::").pop() : name;
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "namespace_block") {
-      const result = findMetricNode(c, name);
-      if (result) return result;
-      continue;
-    }
-    if (c.type !== "metric_block") continue;
-    const lbl = c.namedChildren.find((x) => x.type === "block_label");
-    const inner = lbl?.namedChildren[0];
-    let n = inner?.text ?? "";
-    if (inner?.type === "quoted_name") n = n.slice(1, -1);
-    if (n === bare) return c;
-  }
-  return null;
-}
 
 /**
  * Extract metadata entries from a metadata_block for display.

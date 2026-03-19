@@ -13,6 +13,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractNLContent } from "../nl-extract.js";
+import { findBlockNode, getBlockName } from "../cst-query.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -92,22 +93,19 @@ function extractFromBlock(blockName, parsedFiles, index) {
   }
 
   const resolvedKey = (schemaResolved ?? mappingResolved ?? metricResolved).key;
+  const resolvedEntry = (schemaResolved ?? mappingResolved ?? metricResolved).entry;
   const blockType = schemaResolved
     ? "schema_block"
     : mappingResolved
       ? "mapping_block"
       : "metric_block";
-  const bareName = resolvedKey.includes("::") ? resolvedKey.split("::").pop() : resolvedKey;
 
   const items = [];
-  for (const { filePath, tree } of parsedFiles) {
-    const root = tree.rootNode;
-    for (const node of iterBlocks(root)) {
-      if (node.type !== blockType) continue;
-      if (getBlockName(node) !== bareName) continue;
-      for (const item of extractNLContent(node, blockName)) {
-        items.push({ ...item, file: filePath });
-      }
+  const parsed = parsedFiles.find((p) => p.filePath === resolvedEntry.file);
+  const node = parsed ? findBlockNode(parsed.tree.rootNode, blockType, resolvedKey) : null;
+  if (node) {
+    for (const item of extractNLContent(node, blockName)) {
+      items.push({ ...item, file: resolvedEntry.file });
     }
   }
   return items;
@@ -125,8 +123,7 @@ function extractFromField(fieldRef, parsedFiles, index) {
   }
 
   const schema = resolvedSchema.entry;
-  const bareSchemaName = resolvedSchema.key.includes("::") ? resolvedSchema.key.split("::").pop() : resolvedSchema.key;
-  if (!schema.fields.some((f) => f.name === fieldName)) {
+  if (!schemaHasField(schema.fields, fieldName)) {
     console.error(
       `Field '${fieldName}' not found in schema '${schemaName}'.`,
     );
@@ -134,20 +131,13 @@ function extractFromField(fieldRef, parsedFiles, index) {
   }
 
   const items = [];
-  for (const { filePath, tree } of parsedFiles) {
-    const root = tree.rootNode;
-    for (const node of iterBlocks(root)) {
-      if (node.type !== "schema_block") continue;
-      if (getBlockName(node) !== bareSchemaName) continue;
-      const body = node.namedChildren.find((c) => c.type === "schema_body");
-      if (!body) continue;
-
-      for (const fieldDecl of body.namedChildren) {
-        if (fieldDecl.type !== "field_decl") continue;
-        if (getFieldDeclName(fieldDecl) !== fieldName) continue;
-        for (const item of extractNLContent(fieldDecl, fieldName)) {
-          items.push({ ...item, file: filePath });
-        }
+  const parsed = parsedFiles.find((p) => p.filePath === schema.file);
+  const schemaNode = parsed ? findBlockNode(parsed.tree.rootNode, "schema_block", resolvedSchema.key) : null;
+  const body = schemaNode?.namedChildren.find((c) => c.type === "schema_body");
+  if (body) {
+    for (const fieldDecl of findFieldDecls(body, fieldName)) {
+      for (const item of extractNLContent(fieldDecl, fieldName)) {
+        items.push({ ...item, file: schema.file });
       }
     }
   }
@@ -196,14 +186,6 @@ function* iterBlocks(rootNode) {
   }
 }
 
-function getBlockName(node) {
-  const lbl = node.namedChildren.find((c) => c.type === "block_label");
-  const inner = lbl?.namedChildren[0];
-  if (!inner) return null;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
-  return inner.text;
-}
-
 function getFieldDeclName(fieldDecl) {
   const nameNode = fieldDecl.namedChildren.find(
     (c) => c.type === "field_name",
@@ -212,6 +194,28 @@ function getFieldDeclName(fieldDecl) {
   if (!inner) return null;
   if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text;
+}
+
+function schemaHasField(fields, fieldName) {
+  for (const field of fields) {
+    if (field.name === fieldName) return true;
+    if (field.children && schemaHasField(field.children, fieldName)) return true;
+  }
+  return false;
+}
+
+function findFieldDecls(bodyNode, fieldName, acc = []) {
+  for (const child of bodyNode.namedChildren) {
+    if (child.type === "field_decl" && getFieldDeclName(child) === fieldName) {
+      acc.push(child);
+      continue;
+    }
+    if (child.type === "record_block" || child.type === "list_block") {
+      const nestedBody = child.namedChildren.find((c) => c.type === "schema_body");
+      if (nestedBody) findFieldDecls(nestedBody, fieldName, acc);
+    }
+  }
+  return acc;
 }
 
 function printDefault(items) {
