@@ -5,6 +5,7 @@ import { link_sale, sat_sale_detail } from "link-sale.stm"
 import { hub_customer } from "hub-customer.stm"
 import { hub_product } from "hub-product.stm"
 import { hub_store } from "hub-store.stm"
+import { dim_date } from "common.stm"
 
 note {
   """
@@ -39,10 +40,10 @@ note {
 schema mart_fact_sales (
   fact,
   grain {transaction_id, line_number},
-  ref mart_customer_360 on customer_id,
-  ref dim_product on sku,
-  ref dim_store on store_id,
-  ref dim_date on transaction_date,
+  ref mart_customer_360.customer_id,
+  ref dim_product.sku,
+  ref dim_store.store_id,
+  ref dim_date.transaction_date,
   note "Denormalized transaction fact for analytics"
 ) {
   // Keys
