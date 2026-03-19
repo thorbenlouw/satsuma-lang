@@ -6,6 +6,7 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#import-declaration" },
+    { "include": "#namespace-block" },
     { "include": "#transform-block" },
     { "include": "#schema-block" },
     { "include": "#fragment-block" },
@@ -33,6 +34,63 @@
       ]
     },
 
+    "qualified-name": {
+      "comment": "Namespace-qualified name: ns::identifier",
+      "match": "([A-Za-z_][\\w]*)(::)([A-Za-z_][\\w]*)",
+      "captures": {
+        "1": { "name": "entity.name.namespace.stm" },
+        "2": { "name": "punctuation.separator.namespace.stm" },
+        "3": { "name": "entity.name.type.stm" }
+      }
+    },
+
+    "namespaced-path": {
+      "comment": "Namespace-qualified dotted path: ns::schema.field[]",
+      "match": "([A-Za-z_][\\w]*)(::)([A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+      "captures": {
+        "1": { "name": "entity.name.namespace.stm" },
+        "2": { "name": "punctuation.separator.namespace.stm" },
+        "3": { "name": "variable.other.field.stm" }
+      }
+    },
+
+    "namespace-block": {
+      "comment": "namespace name (metadata) { ... }",
+      "name": "meta.block.namespace.stm",
+      "begin": "^\\s*(namespace)\\b",
+      "end": "(?<=\\})",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.stm" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#block-label" },
+        { "include": "#metadata-parens" },
+        {
+          "comment": "Namespace body — contains schemas, fragments, mappings, transforms, metrics",
+          "begin": "(\\{)",
+          "end": "(\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.section.block.begin.stm" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.section.block.end.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#import-declaration" },
+            { "include": "#transform-block" },
+            { "include": "#schema-block" },
+            { "include": "#fragment-block" },
+            { "include": "#mapping-block" },
+            { "include": "#metric-block" },
+            { "include": "#note-block" },
+            { "include": "#expression" }
+          ]
+        }
+      ]
+    },
+
     "import-declaration": {
       "comment": "import { 'name', 'name' } from \"path\"",
       "name": "meta.import.stm",
@@ -51,6 +109,7 @@
         { "include": "#string-double" },
         { "include": "#string-single" },
         { "include": "#backtick-identifier" },
+        { "include": "#qualified-name" },
         {
           "name": "punctuation.section.block.begin.stm",
           "match": "\\{"
@@ -204,7 +263,7 @@
         },
         {
           "comment": "bare block name after keyword",
-          "match": "(?<=(?:schema|fragment|mapping|transform|record|list|metric)\\s)([A-Za-z_][\\w]*)",
+          "match": "(?<=(?:schema|fragment|mapping|transform|record|list|metric|namespace)\\s)([A-Za-z_][\\w]*)",
           "captures": {
             "1": { "name": "entity.name.type.stm" }
           }
@@ -279,6 +338,7 @@
         { "include": "#boolean" },
         { "include": "#null" },
         { "include": "#constant-other-reference" },
+        { "include": "#qualified-name" },
         { "include": "#punctuation-comma" },
         { "include": "#identifier-plain" }
       ]
@@ -366,6 +426,7 @@
             { "include": "#comment" },
             { "include": "#backtick-identifier" },
             { "include": "#string-double" },
+            { "include": "#qualified-name" },
             { "include": "#punctuation-comma" },
             { "include": "#identifier-plain" }
           ]
@@ -385,6 +446,7 @@
             { "include": "#comment" },
             { "include": "#backtick-identifier" },
             { "include": "#string-double" },
+            { "include": "#qualified-name" },
             { "include": "#punctuation-comma" },
             { "include": "#identifier-plain" }
           ]
@@ -408,29 +470,47 @@
         { "include": "#wildcard" },
         { "include": "#constant-other-reference" },
         { "include": "#punctuation-comma" },
+        { "include": "#namespaced-path" },
         { "include": "#dotted-path" },
         { "include": "#identifier-plain" }
       ]
     },
 
     "map-entry": {
-      "comment": "source -> target or -> target (computed)",
+      "comment": "source -> target or -> target (computed), with optional ns:: prefix",
       "patterns": [
         {
+          "comment": "direct mapping with namespace-qualified source: ns::path -> target",
+          "match": "([A-Za-z_][\\w]*)(::)(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+          "captures": {
+            "1": { "name": "entity.name.namespace.stm" },
+            "2": { "name": "punctuation.separator.namespace.stm" },
+            "3": { "name": "variable.other.field.stm" },
+            "4": { "name": "keyword.operator.arrow.stm" },
+            "5": { "name": "entity.name.namespace.stm" },
+            "6": { "name": "punctuation.separator.namespace.stm" },
+            "7": { "name": "variable.other.field.stm" }
+          }
+        },
+        {
           "comment": "direct mapping: source -> target with dotted/array paths",
-          "match": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+          "match": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
           "captures": {
             "1": { "name": "variable.other.field.stm" },
             "2": { "name": "keyword.operator.arrow.stm" },
-            "3": { "name": "variable.other.field.stm" }
+            "3": { "name": "entity.name.namespace.stm" },
+            "4": { "name": "punctuation.separator.namespace.stm" },
+            "5": { "name": "variable.other.field.stm" }
           }
         },
         {
           "comment": "computed mapping: -> target (no left side)",
-          "match": "(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+          "match": "(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
           "captures": {
             "1": { "name": "keyword.operator.arrow.stm" },
-            "2": { "name": "variable.other.field.stm" }
+            "2": { "name": "entity.name.namespace.stm" },
+            "3": { "name": "punctuation.separator.namespace.stm" },
+            "4": { "name": "variable.other.field.stm" }
           }
         }
       ]
@@ -440,13 +520,34 @@
       "comment": "Arrow declaration followed by { transform body }",
       "patterns": [
         {
+          "comment": "ns::source -> target { ... } (namespace-qualified source)",
+          "begin": "([A-Za-z_][\\w]*)(::)(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\(|\\{)",
+          "end": "(?<=\\})",
+          "beginCaptures": {
+            "1": { "name": "entity.name.namespace.stm" },
+            "2": { "name": "punctuation.separator.namespace.stm" },
+            "3": { "name": "variable.other.field.stm" },
+            "4": { "name": "keyword.operator.arrow.stm" },
+            "5": { "name": "entity.name.namespace.stm" },
+            "6": { "name": "punctuation.separator.namespace.stm" },
+            "7": { "name": "variable.other.field.stm" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#metadata-parens" },
+            { "include": "#arrow-body" }
+          ]
+        },
+        {
           "comment": "source -> target { ... }",
-          "begin": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\(|\\{)",
+          "begin": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\(|\\{)",
           "end": "(?<=\\})",
           "beginCaptures": {
             "1": { "name": "variable.other.field.stm" },
             "2": { "name": "keyword.operator.arrow.stm" },
-            "3": { "name": "variable.other.field.stm" }
+            "3": { "name": "entity.name.namespace.stm" },
+            "4": { "name": "punctuation.separator.namespace.stm" },
+            "5": { "name": "variable.other.field.stm" }
           },
           "patterns": [
             { "include": "#comment" },
@@ -456,11 +557,13 @@
         },
         {
           "comment": "-> target { ... } (computed)",
-          "begin": "(->)\\s*(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\{)",
+          "begin": "(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\{)",
           "end": "(?<=\\})",
           "beginCaptures": {
             "1": { "name": "keyword.operator.arrow.stm" },
-            "2": { "name": "variable.other.field.stm" }
+            "2": { "name": "entity.name.namespace.stm" },
+            "3": { "name": "punctuation.separator.namespace.stm" },
+            "4": { "name": "variable.other.field.stm" }
           },
           "patterns": [
             { "include": "#comment" },
@@ -500,6 +603,7 @@
         { "include": "#wildcard" },
         { "include": "#constant-other-reference" },
         { "include": "#punctuation-comma" },
+        { "include": "#namespaced-path" },
         { "include": "#dotted-path" },
         { "include": "#function-call" },
         { "include": "#identifier-plain" }
@@ -573,12 +677,27 @@
     },
 
     "spread": {
-      "comment": "...name — spread fragment or transform",
-      "match": "(\\.\\.\\.)([A-Za-z_][\\w]*(?:\\s+[A-Za-z_][\\w]*)*)",
-      "captures": {
-        "1": { "name": "keyword.operator.spread.stm" },
-        "2": { "name": "entity.name.type.stm" }
-      }
+      "comment": "...name or ...ns::name — spread fragment or transform",
+      "patterns": [
+        {
+          "comment": "qualified spread: ...ns::name",
+          "match": "(\\.\\.\\.)([A-Za-z_][\\w]*)(::)([A-Za-z_][\\w]*)",
+          "captures": {
+            "1": { "name": "keyword.operator.spread.stm" },
+            "2": { "name": "entity.name.namespace.stm" },
+            "3": { "name": "punctuation.separator.namespace.stm" },
+            "4": { "name": "entity.name.type.stm" }
+          }
+        },
+        {
+          "comment": "unqualified spread: ...name",
+          "match": "(\\.\\.\\.)([A-Za-z_][\\w]*(?:\\s+[A-Za-z_][\\w]*)*)",
+          "captures": {
+            "1": { "name": "keyword.operator.spread.stm" },
+            "2": { "name": "entity.name.type.stm" }
+          }
+        }
+      ]
     },
 
     "string-triple-double": {
@@ -742,6 +861,8 @@
         { "include": "#operator-pipe" },
         { "include": "#array-indicator" },
         { "include": "#punctuation-comma" },
+        { "include": "#namespaced-path" },
+        { "include": "#qualified-name" },
         { "include": "#dotted-path" },
         { "include": "#identifier-plain" }
       ]
