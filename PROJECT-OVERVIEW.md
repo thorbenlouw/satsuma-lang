@@ -182,28 +182,30 @@ How we'll know STM is working:
 
 ## Project Roadmap
 
-### Phase 1: Specification & Reference (NOW)
-- Formal language specification (STM-V2-SPEC.md)
-- Canonical example library covering all integration patterns
-- AI-optimized cheat sheet and grammar for system prompts
+### Phase 1: Specification & Reference — DONE
+- Formal language specification ([STM-V2-SPEC.md](STM-V2-SPEC.md))
+- Canonical example library covering all major integration patterns (11 files)
+- AI-optimized cheat sheet and grammar for system prompts ([AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md))
+- BA tutorial ([BA-TUTORIAL.md](BA-TUTORIAL.md))
+- Data modelling conventions for Kimball and Data Vault patterns with canonical examples
 
-### Phase 2: Core Tooling
-- Parser (tree-sitter or PEG-based)
-- Linter / validator (`stm lint`)
-- Formatter (`stm fmt`)
-- VS Code extension (syntax highlighting, diagnostics)
+### Phase 2: Core Tooling — DONE
+- Tree-sitter parser (190 corpus tests, all examples parse clean)
+- CLI (`stm`) with 16 commands for workspace extraction, structural analysis, validation, and diff — see [STM-CLI.md](STM-CLI.md)
+- VS Code extension with TextMate grammar for v2 syntax highlighting
+- Pre-built CLI release artifacts published on every merge to `main`
 
-### Phase 3: AI Integration
-- System prompt templates for major LLM providers
-- Excel-to-STM conversion agent
-- STM-to-code generation (Python, Java, SQL, dbt)
-- Validation agent (compare implementation against spec)
+### Phase 3: AI Integration — IN PROGRESS
+- System prompt for Excel-to-STM conversion (lite variant authored, untested)
+- STM-to-Excel export (not started — see [FUTURE-WORK.md](FUTURE-WORK.md))
+- STM-to-code generation (Python, Java, SQL, dbt) — not started
+- Validation agent (compare implementation against spec) — not started
 
-### Phase 4: Ecosystem
+### Phase 4: Ecosystem — NOT STARTED
 - Web-based visualizer (render STM as interactive diagrams)
-- Diff tool (compare two STM versions)
+- Structural diff tool — `stm diff` command exists for structural comparison
 - Registry (share and discover reusable schemas/fragments)
-- CI/CD integration (lint STM files in pull requests)
+- CI/CD integration — CI runs parser, CLI, and extension tests on every PR
 
 ---
 
