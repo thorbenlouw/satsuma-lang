@@ -1,0 +1,26 @@
+namespace source {
+  schema orders {
+    order_id INT
+    amount DECIMAL
+  }
+}
+
+namespace staging {
+  schema stg_orders {
+    order_id INT
+    amount DECIMAL
+  }
+
+  mapping 'stage orders' {
+    source { source::orders }
+    target { staging::stg_orders }
+
+    orders.order_id -> stg_orders.order_id {
+      | "Copy `order_id` directly"
+    }
+
+    orders.amount -> stg_orders.amount {
+      | "Copy `amount` from `source::orders`"
+    }
+  }
+}

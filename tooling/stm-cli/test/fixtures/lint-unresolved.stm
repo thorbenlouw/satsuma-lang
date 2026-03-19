@@ -1,0 +1,26 @@
+namespace source {
+  schema orders {
+    order_id INT
+    customer_id INT
+  }
+}
+
+namespace staging {
+  schema stg_orders {
+    order_id INT
+    customer_name STRING
+  }
+
+  mapping 'stage orders' {
+    source { source::orders }
+    target { staging::stg_orders }
+
+    orders.order_id -> stg_orders.order_id {
+      | "Copy `order_id` directly"
+    }
+
+    orders.customer_id -> stg_orders.customer_name {
+      | "Lookup `customer_name` from `nonexistent_schema` using `customer_id`"
+    }
+  }
+}

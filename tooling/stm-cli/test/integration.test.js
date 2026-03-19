@@ -1297,3 +1297,78 @@ describe("stm where-used (NL refs)", () => {
     assert.ok(nlRefs.length > 0, "should find NL references to source::hr_employees");
   });
 });
+
+// ---------------------------------------------------------------------------
+// stm lint
+// ---------------------------------------------------------------------------
+const LINT_FIXTURES = resolve(__dirname, "fixtures");
+
+describe("stm lint", () => {
+  it("reports no issues for a clean file", async () => {
+    const { stdout, code } = await run("lint", resolve(LINT_FIXTURES, "lint-clean.stm"));
+    assert.equal(code, 0);
+    assert.match(stdout, /no issues found/);
+  });
+
+  it("exits 2 when findings are present", async () => {
+    const { stdout, code } = await run("lint", resolve(LINT_FIXTURES, "lint-hidden-source.stm"));
+    assert.equal(code, 2);
+    assert.match(stdout, /hidden-source-in-nl/);
+  });
+
+  it("reports unresolved NL references", async () => {
+    const { stdout, code } = await run("lint", resolve(LINT_FIXTURES, "lint-unresolved.stm"));
+    assert.equal(code, 2);
+    assert.match(stdout, /unresolved-nl-ref/);
+    assert.match(stdout, /nonexistent_schema/);
+  });
+
+  it("--json produces valid structured output", async () => {
+    const { stdout, code } = await run("lint", "--json", resolve(LINT_FIXTURES, "lint-hidden-source.stm"));
+    assert.equal(code, 2);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.findings));
+    assert.ok(data.findings.length > 0);
+    assert.ok(data.summary);
+    assert.equal(typeof data.summary.files, "number");
+    assert.equal(typeof data.summary.findings, "number");
+    assert.equal(typeof data.summary.fixable, "number");
+    // Verify diagnostic shape
+    const d = data.findings[0];
+    assert.equal(typeof d.file, "string");
+    assert.equal(typeof d.line, "number");
+    assert.equal(typeof d.column, "number");
+    assert.ok(["error", "warning"].includes(d.severity));
+    assert.equal(typeof d.rule, "string");
+    assert.equal(typeof d.message, "string");
+    assert.equal(typeof d.fixable, "boolean");
+  });
+
+  it("--quiet returns only exit code", async () => {
+    const { stdout, code } = await run("lint", "--quiet", resolve(LINT_FIXTURES, "lint-hidden-source.stm"));
+    assert.equal(code, 2);
+    assert.equal(stdout.trim(), "");
+  });
+
+  it("--quiet returns 0 for clean file", async () => {
+    const { stdout, code } = await run("lint", "--quiet", resolve(LINT_FIXTURES, "lint-clean.stm"));
+    assert.equal(code, 0);
+    assert.equal(stdout.trim(), "");
+  });
+
+  it("--rules lists available rules", async () => {
+    const { stdout, code } = await run("lint", "--rules");
+    assert.equal(code, 0);
+    assert.match(stdout, /hidden-source-in-nl/);
+    assert.match(stdout, /unresolved-nl-ref/);
+  });
+
+  it("--select filters to specified rules only", async () => {
+    const { stdout } = await run(
+      "lint", "--select", "unresolved-nl-ref",
+      resolve(LINT_FIXTURES, "lint-hidden-source.stm"),
+    );
+    // Should only show unresolved-nl-ref, not hidden-source-in-nl
+    assert.ok(!stdout.includes("hidden-source-in-nl"));
+  });
+});
