@@ -1,6 +1,6 @@
 ---
 id: stm-3af2
-status: open
+status: closed
 deps: []
 links: [stm-ku9i]
 created: 2026-03-19T12:03:58Z

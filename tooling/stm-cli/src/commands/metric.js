@@ -94,7 +94,7 @@ function extractMetaEntries(metaNode) {
   for (const c of metaNode.namedChildren) {
     if (c.type === "key_value_pair") {
       const key = c.namedChildren.find((x) => x.type === "kv_key");
-      const val = c.namedChildren.find((x) => x !== key);
+      const val = c.namedChildren.find((x) => x.type !== "kv_key");
       if (key) {
         let valText = val?.text ?? "";
         if (val?.type === "nl_string") valText = val.text.slice(1, -1);

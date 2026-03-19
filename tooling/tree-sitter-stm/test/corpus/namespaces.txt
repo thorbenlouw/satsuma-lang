@@ -363,3 +363,138 @@ namespace pos {
       (block_label (identifier))
       (schema_body
         (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+fragment spread inside namespace schema (ns-platform pattern)
+================================================================================
+
+fragment audit_cols {
+  load_ts TIMESTAMP
+}
+
+namespace raw {
+  schema contacts {
+    contact_id VARCHAR(36)
+    ...audit_cols
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label (identifier))
+    (schema_body
+      (field_decl (field_name (identifier)) (type_expr))))
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))
+        (fragment_spread (spread_label (identifier)))))))
+
+================================================================================
+cross-namespace mapping with computed arrow (ns-platform pattern)
+================================================================================
+
+namespace vault {
+  mapping 'load hub' {
+    source { `raw::contacts` }
+    target { `hub_contact` }
+
+    contact_id -> hub_key { dv_hash }
+
+    -> hash_diff {
+      "MD5 hash for change detection"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (mapping_block
+      (block_label (quoted_name))
+      (mapping_body
+        (source_block
+          (source_ref (backtick_name)))
+        (target_block
+          (source_ref (backtick_name)))
+        (map_arrow
+          (src_path (field_path (identifier)))
+          (tgt_path (field_path (identifier)))
+          (pipe_chain (pipe_step (token_call (identifier)))))
+        (computed_arrow
+          (tgt_path (field_path (identifier)))
+          (pipe_chain (pipe_step (nl_string))))))))
+
+================================================================================
+repeated namespace blocks (ns-merging pattern)
+================================================================================
+
+namespace source {
+  schema employees {
+    emp_id VARCHAR(20)
+  }
+}
+
+namespace source {
+  schema departments {
+    dept_id VARCHAR(20)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr)))))
+  (namespace_block
+    name: (identifier)
+    (schema_block
+      (block_label (identifier))
+      (schema_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+cross-namespace staging mapping (ns-merging pattern)
+================================================================================
+
+namespace staging {
+  mapping 'stage employees' {
+    source { `source::employees` }
+    target { `stg_employees` }
+
+    emp_id -> emp_id
+    name -> name { trim | uppercase }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (mapping_block
+      (block_label (quoted_name))
+      (mapping_body
+        (source_block
+          (source_ref (backtick_name)))
+        (target_block
+          (source_ref (backtick_name)))
+        (map_arrow
+          (src_path (field_path (identifier)))
+          (tgt_path (field_path (identifier))))
+        (map_arrow
+          (src_path (field_path (identifier)))
+          (tgt_path (field_path (identifier)))
+          (pipe_chain
+            (pipe_step (token_call (identifier)))
+            (pipe_step (token_call (identifier)))))))))

@@ -1,6 +1,6 @@
 ---
 id: stm-9mao
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-19T12:04:37Z

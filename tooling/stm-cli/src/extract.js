@@ -294,7 +294,12 @@ export function extractMappings(rootNode) {
         allDescendants(body, "nested_arrow").length;
     }
 
-    return { name, namespace, sources, targets, arrowCount, row: node.startPosition.row };
+    // Qualify unqualified targets with their enclosing namespace
+    const qualifiedTargets = targets.map((t) =>
+      namespace && !t.includes("::") ? `${namespace}::${t}` : t,
+    );
+
+    return { name, namespace, sources, targets: qualifiedTargets, arrowCount, row: node.startPosition.row };
   });
 }
 

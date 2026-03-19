@@ -196,7 +196,7 @@ export function buildIndex(parsedFiles) {
   }
 
   const referenceGraph = buildReferenceGraph({ metrics, mappings });
-  const fieldArrows = buildFieldArrows(allArrowRecords);
+  const fieldArrows = buildFieldArrows(allArrowRecords, mappings);
 
   return {
     schemas,
@@ -255,9 +255,10 @@ export function resolveIndexKey(name, entityMap) {
  * mapping's source/target declarations.
  *
  * @param {Array<object>} arrowRecords
+ * @param {Map<string, object>} mappings  mapping index for schema resolution
  * @returns {Map<string, object[]>}
  */
-function buildFieldArrows(arrowRecords) {
+function buildFieldArrows(arrowRecords, mappings) {
   const index = new Map();
 
   function addToIndex(key, record) {
@@ -267,8 +268,25 @@ function buildFieldArrows(arrowRecords) {
   }
 
   for (const record of arrowRecords) {
-    if (record.source) addToIndex(record.source, record);
-    if (record.target) addToIndex(record.target, record);
+    const mappingKey = qualifiedKey(record.namespace, record.mapping);
+    const mapping = mappings.get(mappingKey);
+    const sourceSchemas = mapping?.sources ?? [];
+    const targetSchemas = mapping?.targets ?? [];
+
+    if (record.source) {
+      // Index under each source schema — most mappings have exactly one
+      for (const schema of sourceSchemas) {
+        addToIndex(`${schema}.${record.source}`, record);
+      }
+      // Also index by bare field name for backwards compatibility
+      addToIndex(record.source, record);
+    }
+    if (record.target) {
+      for (const schema of targetSchemas) {
+        addToIndex(`${schema}.${record.target}`, record);
+      }
+      addToIndex(record.target, record);
+    }
   }
 
   return index;

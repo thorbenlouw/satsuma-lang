@@ -102,9 +102,14 @@ function getMappedFieldNames(mappingName, schemaName, index) {
   const isSource = mapping.sources.includes(schemaName);
   const isTarget = mapping.targets.includes(schemaName);
 
+  // Arrow records use bare mapping names; qualified key uses "ns::name"
+  const bareMappingName = mappingName.includes("::") ? mappingName.split("::").slice(1).join("::") : mappingName;
+
   for (const [_key, arrows] of index.fieldArrows) {
     for (const arrow of arrows) {
-      if (arrow.mapping !== mappingName) continue;
+      // Match arrow by bare mapping name and namespace
+      const arrowQualified = arrow.namespace ? `${arrow.namespace}::${arrow.mapping}` : arrow.mapping;
+      if (arrowQualified !== mappingName && arrow.mapping !== bareMappingName) continue;
       if (isSource && arrow.source) mapped.add(arrow.source.replace(/\[\]$/, ""));
       if (isTarget && arrow.target) mapped.add(arrow.target.replace(/\[\]$/, ""));
     }

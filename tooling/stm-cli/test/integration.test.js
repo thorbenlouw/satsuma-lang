@@ -1021,3 +1021,201 @@ describe("stm mapping (namespaces)", () => {
     assert.ok(data.sources.includes("pos::stores") || data.sources.some((s) => s.includes("stores")));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bug fix: arrows command (stm-sbgx) — schema qualifier respected
+// ---------------------------------------------------------------------------
+const NS_PLATFORM = resolve(EXAMPLES, "ns-platform.stm");
+const NS_MERGING = resolve(EXAMPLES, "ns-merging.stm");
+
+describe("stm arrows (namespace bugs)", () => {
+  it("scopes arrows to the correct schema", async () => {
+    const { stdout, code } = await run("arrows", "raw::crm_contacts.email", NS_PLATFORM);
+    assert.equal(code, 0);
+    // Should find only the arrow in vault::load sat_contact
+    assert.match(stdout, /load sat_contact/);
+    // Should NOT find the arrow in mart::build dim_contact
+    assert.doesNotMatch(stdout, /build dim_contact/);
+  });
+
+  it("returns different results for different schemas with same field name", async () => {
+    const { stdout: srcOut } = await run("arrows", "raw::crm_contacts.email", NS_PLATFORM);
+    const { stdout: tgtOut } = await run("arrows", "mart::dim_contact.email", NS_PLATFORM);
+    // Different result sets
+    assert.notEqual(srcOut, tgtOut);
+    assert.match(tgtOut, /build dim_contact/);
+    assert.doesNotMatch(tgtOut, /load sat_contact/);
+  });
+
+  it("JSON shows resolved target schema", async () => {
+    const { stdout, code } = await run("arrows", "raw::crm_contacts.email", "--json", NS_PLATFORM);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length >= 1);
+    // Target should be resolved, not "?.email"
+    const arrow = data.find((a) => a.target);
+    assert.ok(arrow.target.includes("sat_contact_details"), `expected qualified target, got ${arrow.target}`);
+    assert.doesNotMatch(arrow.target, /^\?/);
+  });
+
+  it("summary count is arithmetically correct", async () => {
+    const { stdout, code } = await run("arrows", "raw::crm_contacts.email", NS_PLATFORM);
+    assert.equal(code, 0);
+    // Parse "N arrow(s) (M as source, K as target)"
+    const totalMatch = stdout.match(/(\d+) arrows?/);
+    const sourceMatch = stdout.match(/(\d+) as source/);
+    const targetMatch = stdout.match(/(\d+) as target/);
+    assert.ok(totalMatch, "should have arrow count");
+    const total = parseInt(totalMatch[1]);
+    const asSource = sourceMatch ? parseInt(sourceMatch[1]) : 0;
+    const asTarget = targetMatch ? parseInt(targetMatch[1]) : 0;
+    assert.ok(total <= asSource + asTarget, `total ${total} should be <= source ${asSource} + target ${asTarget}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: lineage --from (stm-ku9i) — qualified target names
+// ---------------------------------------------------------------------------
+describe("stm lineage --from (namespace bugs)", () => {
+  it("shows fully qualified target schema names", async () => {
+    const { stdout, code } = await run("lineage", "--from", "raw::crm_deals", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /vault::hub_deal/);
+    assert.match(stdout, /vault::link_contact_deal/);
+  });
+
+  it("multi-hop lineage works end-to-end", async () => {
+    const { stdout, code } = await run("lineage", "--from", "raw::crm_deals", NS_PLATFORM);
+    assert.equal(code, 0);
+    // Should reach mart layer via vault
+    assert.match(stdout, /mart::fact_deals/);
+  });
+
+  it("--json nodes include namespace prefix", async () => {
+    const { stdout, code } = await run("lineage", "--from", "raw::crm_deals", "--json", NS_PLATFORM);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const nodeNames = data.nodes.map((n) => n.name);
+    assert.ok(nodeNames.includes("vault::hub_deal"), `expected vault::hub_deal in ${nodeNames}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: lineage --to (stm-3af2) — works with namespaced schemas
+// ---------------------------------------------------------------------------
+describe("stm lineage --to (namespace bugs)", () => {
+  it("traces upstream for namespaced target", async () => {
+    const { stdout, code } = await run("lineage", "--to", "mart::fact_revenue", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /raw::erp_invoices/);
+    assert.match(stdout, /mart::build fact_revenue/);
+  });
+
+  it("traces multi-hop upstream through vault", async () => {
+    const { stdout, code } = await run("lineage", "--to", "mart::dim_contact", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /vault::hub_contact/);
+    assert.match(stdout, /raw::crm_contacts/);
+  });
+
+  it("traces upstream with merged namespaces", async () => {
+    const { stdout, code } = await run("lineage", "--to", "staging::stg_gl_entries", NS_MERGING);
+    assert.equal(code, 0);
+    assert.match(stdout, /source::finance_gl/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: metric metadata (stm-axj8) — values not lost
+// ---------------------------------------------------------------------------
+describe("stm metric (namespace bugs)", () => {
+  it("displays correct metadata values for namespaced sources", async () => {
+    const { stdout, code } = await run("metric", "pipeline_value", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /source vault::hub_deal/);
+    assert.match(stdout, /grain daily/);
+    // Should NOT show "source source" or "grain grain"
+    assert.doesNotMatch(stdout, /source source/);
+    assert.doesNotMatch(stdout, /grain grain/);
+  });
+
+  it("JSON metadata array has correct values", async () => {
+    const { stdout, code } = await run("metric", "pipeline_value", "--json", NS_PLATFORM);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const sourceMeta = data.metadata.find((m) => m.key === "source");
+    assert.ok(sourceMeta);
+    assert.equal(sourceMeta.value, "vault::hub_deal");
+    const grainMeta = data.metadata.find((m) => m.key === "grain");
+    assert.ok(grainMeta);
+    assert.equal(grainMeta.value, "daily");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: where-used (stm-4oop) — fragment spreads and transform refs
+// ---------------------------------------------------------------------------
+describe("stm where-used (namespace bugs)", () => {
+  it("finds fragment spreads inside namespace blocks", async () => {
+    const { stdout, code } = await run("where-used", "standard_metadata", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /7/);
+    assert.match(stdout, /raw::crm_contacts/);
+    assert.match(stdout, /vault::hub_contact/);
+    assert.match(stdout, /vault::link_contact_deal/);
+  });
+
+  it("finds transform invocations inside namespace mappings", async () => {
+    const { stdout, code } = await run("where-used", "dv_hash_key", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /5/);
+    assert.match(stdout, /vault::load hub_contact/);
+    assert.match(stdout, /vault::load hub_deal/);
+  });
+
+  it("finds single transform reference", async () => {
+    const { stdout, code } = await run("where-used", "normalize_email", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /1/);
+    assert.match(stdout, /vault::load sat_contact/);
+  });
+
+  it("finds schema references from both source and target mappings", async () => {
+    const { stdout, code } = await run("where-used", "hub_contact", NS_PLATFORM);
+    assert.equal(code, 0);
+    // Should find vault::load hub_contact (target) and mart::build dim_contact (source)
+    assert.match(stdout, /vault::load hub_contact/);
+    assert.match(stdout, /mart::build dim_contact/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: fields --unmapped-by (stm-9mao) — correct with namespaces
+// ---------------------------------------------------------------------------
+describe("stm fields --unmapped-by (namespace bugs)", () => {
+  it("returns only unmapped fields for namespace-scoped mapping", async () => {
+    const { stdout, code } = await run(
+      "fields", "mart::dim_contact", "--unmapped-by", "build dim_contact", NS_PLATFORM,
+    );
+    assert.equal(code, 0);
+    // Only is_current, valid_from, valid_to are unmapped
+    assert.match(stdout, /is_current/);
+    assert.match(stdout, /valid_from/);
+    assert.match(stdout, /valid_to/);
+    // Mapped fields should NOT appear
+    assert.doesNotMatch(stdout, /contact_sk/);
+    assert.doesNotMatch(stdout, /contact_bk/);
+    assert.doesNotMatch(stdout, /full_name/);
+    assert.doesNotMatch(stdout, /email/);
+    assert.doesNotMatch(stdout, /company/);
+  });
+
+  it("works with qualified mapping name", async () => {
+    const { stdout, code } = await run(
+      "fields", "mart::dim_contact", "--unmapped-by", "mart::build dim_contact", NS_PLATFORM,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /is_current/);
+    assert.doesNotMatch(stdout, /contact_sk/);
+  });
+});

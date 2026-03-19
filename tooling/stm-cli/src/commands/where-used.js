@@ -57,7 +57,7 @@ export function register(program) {
         process.exit(1);
       }
 
-      const refs = gatherRefs(resolvedName, index, parsedFiles, isSchema, isFragment);
+      const refs = gatherRefs(resolvedName, index, parsedFiles, isSchema, isFragment, isTransform);
 
       if (opts.json) {
         console.log(JSON.stringify({ name, refs }, null, 2));
@@ -83,7 +83,7 @@ export function register(program) {
  * @property {number} [row]
  */
 
-function gatherRefs(name, index, parsedFiles, isSchema, isFragment) {
+function gatherRefs(name, index, parsedFiles, isSchema, isFragment, isTransform) {
   const refs = [];
 
   if (isSchema) {
@@ -113,6 +113,16 @@ function gatherRefs(name, index, parsedFiles, isSchema, isFragment) {
     }
   }
 
+  if (isTransform) {
+    // Find transform invocations in arrow pipe chains
+    for (const { filePath, tree } of parsedFiles) {
+      const transformRefs = findTransformRefs(tree.rootNode, name);
+      for (const { mapping, row } of transformRefs) {
+        refs.push({ kind: "transform_call", name: mapping, file: filePath, row });
+      }
+    }
+  }
+
   return refs;
 }
 
@@ -122,12 +132,13 @@ function gatherRefs(name, index, parsedFiles, isSchema, isFragment) {
  */
 function findFragmentSpreads(rootNode, fragmentName) {
   const results = [];
-  function checkBlock(topLevel) {
+  function checkBlock(topLevel, namespace) {
     if (topLevel.type !== "schema_block" && topLevel.type !== "fragment_block") return;
     const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let blockName = inner?.text ?? "";
     if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
+    if (namespace) blockName = `${namespace}::${blockName}`;
 
     const body = topLevel.namedChildren.find((c) => c.type === "schema_body");
     if (body) {
@@ -135,10 +146,12 @@ function findFragmentSpreads(rootNode, fragmentName) {
     }
   }
   for (const topLevel of rootNode.namedChildren) {
-    checkBlock(topLevel);
+    checkBlock(topLevel, null);
     if (topLevel.type === "namespace_block") {
+      const nsName = topLevel.namedChildren.find((c) => c.type === "identifier");
+      const ns = nsName?.text ?? null;
       for (const inner of topLevel.namedChildren) {
-        checkBlock(inner);
+        checkBlock(inner, ns);
       }
     }
   }
@@ -148,10 +161,9 @@ function findFragmentSpreads(rootNode, fragmentName) {
 function walkForSpreads(bodyNode, fragmentName, blockName, results) {
   for (const c of bodyNode.namedChildren) {
     if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let sname = inner?.text ?? "";
-      if (inner?.type === "quoted_name") sname = sname.slice(1, -1);
+      // fragment_spread children use spread_label, not block_label
+      const lbl = c.namedChildren.find((x) => x.type === "spread_label" || x.type === "block_label");
+      let sname = lbl?.text ?? "";
       if (sname === fragmentName) {
         results.push({ block: blockName, row: c.startPosition.row });
       }
@@ -159,6 +171,49 @@ function walkForSpreads(bodyNode, fragmentName, blockName, results) {
       const nested = c.namedChildren.find((x) => x.type === "schema_body");
       if (nested) walkForSpreads(nested, fragmentName, blockName, results);
     }
+  }
+}
+
+/**
+ * Find all transform invocations (token_call) matching `transformName` in mapping arrows.
+ * Returns [{mapping, row}] where mapping is the qualified mapping name.
+ */
+function findTransformRefs(rootNode, transformName) {
+  const results = [];
+
+  function scanMappings(node, namespace) {
+    for (const c of node.namedChildren) {
+      if (c.type === "namespace_block") {
+        const nsName = c.namedChildren.find((x) => x.type === "identifier");
+        scanMappings(c, nsName?.text ?? null);
+        continue;
+      }
+      if (c.type !== "mapping_block") continue;
+
+      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const inner = lbl?.namedChildren[0];
+      let mappingName = inner?.text ?? "";
+      if (inner?.type === "quoted_name") mappingName = mappingName.slice(1, -1);
+      if (namespace) mappingName = `${namespace}::${mappingName}`;
+
+      // Walk all pipe_step/token_call descendants
+      walkForTransformCalls(c, transformName, mappingName, results);
+    }
+  }
+
+  scanMappings(rootNode, null);
+  return results;
+}
+
+function walkForTransformCalls(node, transformName, mappingName, results) {
+  for (const c of node.namedChildren) {
+    if (c.type === "pipe_step") {
+      const inner = c.namedChildren[0];
+      if (inner?.type === "token_call" && inner.text === transformName) {
+        results.push({ mapping: mappingName, row: c.startPosition.row });
+      }
+    }
+    walkForTransformCalls(c, transformName, mappingName, results);
   }
 }
 
@@ -178,6 +233,7 @@ function printDefault(name, refs) {
     mapping: "Used as source/target in mappings",
     metric: "Referenced by metrics",
     fragment_spread: "Spread into schemas/fragments",
+    transform_call: "Invoked in mapping transforms",
   };
 
   for (const [kind, kindRefs] of byKind) {
