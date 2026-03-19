@@ -357,8 +357,9 @@ export function extractArrowRecords(rootNode) {
 
     const mapArrows = allDescendants(body, "map_arrow");
     const computedArrows = allDescendants(body, "computed_arrow");
+    const nestedArrows = allDescendants(body, "nested_arrow");
 
-    for (const arrow of [...mapArrows, ...computedArrows]) {
+    for (const arrow of [...mapArrows, ...computedArrows, ...nestedArrows]) {
       const srcNode = child(arrow, "src_path");
       const tgtNode = child(arrow, "tgt_path");
       const pipeChain = child(arrow, "pipe_chain");

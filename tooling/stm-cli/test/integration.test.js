@@ -204,6 +204,15 @@ describe("stm find", () => {
       assert.match(stdout, /pii/i);
     }
   });
+
+  it("finds schema-level metadata tags", async () => {
+    const { stdout, code } = await run("find", "--tag", "format", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    // Should include schema-level matches (field "(schema)") in addition to field-level
+    const schemaLevel = data.filter((m) => m.field === "(schema)");
+    assert.ok(schemaLevel.length > 0, "expected schema-level format matches");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -483,6 +492,18 @@ describe("stm fields", () => {
     );
     assert.equal(code, 0);
     assert.match(stdout, /pii/);
+  });
+
+  it("--unmapped-by does not report nested list as unmapped", async () => {
+    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs.stm");
+    const { stdout, code } = await run(
+      "fields", "mfcs_purchase_order", "--unmapped-by", "sap po to mfcs", "--json", SAP,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.map((f) => f.name);
+    // "items" list is targeted by nested arrow Items[] -> items[], so should NOT be unmapped
+    assert.ok(!names.includes("items"), `"items" should not be reported as unmapped, got: ${names}`);
   });
 
   it("exits 1 for unknown schema", async () => {

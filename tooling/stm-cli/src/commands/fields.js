@@ -102,8 +102,8 @@ function getMappedFieldNames(mappingName, schemaName, index) {
   for (const [_key, arrows] of index.fieldArrows) {
     for (const arrow of arrows) {
       if (arrow.mapping !== mappingName) continue;
-      if (isSource && arrow.source) mapped.add(arrow.source);
-      if (isTarget && arrow.target) mapped.add(arrow.target);
+      if (isSource && arrow.source) mapped.add(arrow.source.replace(/\[\]$/, ""));
+      if (isTarget && arrow.target) mapped.add(arrow.target.replace(/\[\]$/, ""));
     }
   }
   return mapped;
