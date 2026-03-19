@@ -369,10 +369,10 @@ describe("stm arrows", () => {
     assert.match(stdout, /trim/);
   });
 
-  it("shows nl classification on NL-only transform", async () => {
+  it("shows mixed classification on NL + structural transform", async () => {
     const { stdout, code } = await run("arrows", "legacy_sqlserver.PHONE_NBR", DB);
     assert.equal(code, 0);
-    assert.match(stdout, /\[nl\]/);
+    assert.match(stdout, /\[mixed\]/);
   });
 
   it("shows mixed classification on mixed transform", async () => {
@@ -1121,7 +1121,9 @@ describe("stm lineage --to (namespace bugs)", () => {
   it("traces upstream with merged namespaces", async () => {
     const { stdout, code } = await run("lineage", "--to", "staging::stg_gl_entries", NS_MERGING);
     assert.equal(code, 0);
-    assert.match(stdout, /source::finance_gl/);
+    // BFS finds a valid upstream path — may go through structural source
+    // (finance_gl) or NL-derived source (hr_employees); both are correct
+    assert.match(stdout, /source::(finance_gl|hr_employees)/);
   });
 });
 
@@ -1217,5 +1219,81 @@ describe("stm fields --unmapped-by (namespace bugs)", () => {
     assert.equal(code, 0);
     assert.match(stdout, /is_current/);
     assert.doesNotMatch(stdout, /contact_sk/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm nl-refs
+// ---------------------------------------------------------------------------
+describe("stm nl-refs", () => {
+  it("extracts backtick references from ns-merging.stm", async () => {
+    const { stdout, code } = await run("nl-refs", NS_MERGING);
+    assert.equal(code, 0);
+    assert.match(stdout, /NL backtick references/);
+    assert.match(stdout, /source::hr_employees/);
+    assert.match(stdout, /department/);
+    assert.match(stdout, /posted_by/);
+  });
+
+  it("supports --json output", async () => {
+    const { stdout, code } = await run("nl-refs", "--json", NS_MERGING);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    assert.ok(Array.isArray(refs));
+    assert.ok(refs.length > 0);
+    assert.ok(refs[0].ref);
+    assert.ok(refs[0].classification);
+    assert.ok("resolved" in refs[0]);
+  });
+
+  it("supports --mapping filter", async () => {
+    const { stdout, code } = await run(
+      "nl-refs", "--mapping", "stage gl entries", "--json", NS_MERGING,
+    );
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    assert.ok(refs.length > 0);
+    // All refs should be from this mapping
+    for (const ref of refs) {
+      assert.match(ref.mapping, /stage gl entries/);
+    }
+  });
+
+  it("supports --unresolved filter with no results", async () => {
+    const { _stdout, code } = await run("nl-refs", "--unresolved", NS_MERGING);
+    assert.equal(code, 0);
+  });
+
+  it("extracts refs from db-to-db.stm with COUNTRY_CD backtick", async () => {
+    const dbFile = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("nl-refs", "--json", dbFile);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    const countryCd = refs.find((r) => r.ref === "COUNTRY_CD");
+    assert.ok(countryCd, "should find COUNTRY_CD backtick ref");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm validate — NL ref warnings
+// ---------------------------------------------------------------------------
+describe("stm validate (NL refs)", () => {
+  it("validates ns-merging.stm without NL ref warnings", async () => {
+    const { stdout, code } = await run("validate", NS_MERGING);
+    assert.equal(code, 0);
+    assert.match(stdout, /no issues found/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stm where-used — NL ref surface
+// ---------------------------------------------------------------------------
+describe("stm where-used (NL refs)", () => {
+  it("includes NL refs in where-used results", async () => {
+    const { stdout, code } = await run("where-used", "source::hr_employees", "--json", NS_MERGING);
+    assert.equal(code, 0);
+    const result = JSON.parse(stdout);
+    const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
+    assert.ok(nlRefs.length > 0, "should find NL references to source::hr_employees");
   });
 });

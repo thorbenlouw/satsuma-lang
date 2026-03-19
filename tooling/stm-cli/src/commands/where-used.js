@@ -16,6 +16,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { resolveAllNLRefs } from "../nl-ref-extract.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -120,6 +121,26 @@ function gatherRefs(name, index, parsedFiles, isSchema, isFragment, isTransform)
       for (const { mapping, row } of transformRefs) {
         refs.push({ kind: "transform_call", name: mapping, file: filePath, row });
       }
+    }
+  }
+
+  // NL backtick references — find references inside NL transform bodies
+  const nlRefs = resolveAllNLRefs(index);
+  const seenNLRefs = new Set();
+  for (const nlRef of nlRefs) {
+    if (!nlRef.resolved || !nlRef.resolvedTo) continue;
+    const resolvedName = nlRef.resolvedTo.name;
+    // Match the queried name against the resolved reference
+    if (resolvedName === name || resolvedName.startsWith(name + ".")) {
+      const dedup = `${nlRef.mapping}:${nlRef.file}:${nlRef.line}`;
+      if (seenNLRefs.has(dedup)) continue;
+      seenNLRefs.add(dedup);
+      refs.push({
+        kind: "nl_ref",
+        name: nlRef.mapping,
+        file: nlRef.file,
+        row: nlRef.line,
+      });
     }
   }
 
@@ -234,6 +255,7 @@ function printDefault(name, refs) {
     metric: "Referenced by metrics",
     fragment_spread: "Spread into schemas/fragments",
     transform_call: "Invoked in mapping transforms",
+    nl_ref: "Referenced in NL transform bodies",
   };
 
   for (const [kind, kindRefs] of byKind) {

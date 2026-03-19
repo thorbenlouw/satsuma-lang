@@ -14,6 +14,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { resolveAllNLRefs } from "../nl-ref-extract.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -75,6 +76,27 @@ export function register(program) {
       // Find matching arrows using schema-qualified key
       const qualifiedField = `${resolvedSchema.key}.${fieldName}`;
       let arrows = findFieldArrows(qualifiedField, index);
+
+      // Add NL-derived arrows for this field
+      const nlRefs = resolveAllNLRefs(index);
+      for (const nlRef of nlRefs) {
+        if (!nlRef.resolved || !nlRef.resolvedTo) continue;
+        const resolvedTo = nlRef.resolvedTo.name;
+        if (resolvedTo === qualifiedField || resolvedTo === `${resolvedSchema.key}.${fieldName}`) {
+          arrows.push({
+            mapping: nlRef.mapping?.split("::").pop() ?? nlRef.mapping,
+            namespace: nlRef.namespace,
+            source: fieldName,
+            target: nlRef.targetField,
+            transform_raw: `(NL ref)`,
+            steps: [],
+            classification: "nl-derived",
+            derived: true,
+            line: nlRef.line,
+            file: nlRef.file,
+          });
+        }
+      }
 
       // Apply direction filters
       if (opts.asSource) {

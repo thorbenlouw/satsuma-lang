@@ -2,8 +2,16 @@
  * validate.js — Structural and semantic validation for STM workspaces
  *
  * Structural checks: CST ERROR/MISSING nodes from tree-sitter.
- * Semantic checks: undefined references, duplicates, field mismatches.
+ * Semantic checks: undefined references, duplicates, field mismatches,
+ * NL backtick reference validation.
  */
+
+import {
+  extractBacktickRefs,
+  classifyRef,
+  resolveRef,
+  isSchemaInMappingSources,
+} from "./nl-ref-extract.js";
 
 /**
  * @typedef {Object} Diagnostic
@@ -202,6 +210,50 @@ export function collectSemanticWarnings(index) {
             severity: "warning",
             rule: "undefined-ref",
             message: `Metric '${name}' references undefined source '${src}'`,
+          });
+        }
+      }
+    }
+  }
+
+  // Check NL backtick references in transform bodies
+  if (index.nlRefData) {
+    for (const item of index.nlRefData) {
+      const refs = extractBacktickRefs(item.text);
+      const mappingKey = item.namespace
+        ? `${item.namespace}::${item.mapping}`
+        : item.mapping;
+      const mapping = index.mappings.get(mappingKey);
+      const mappingContext = {
+        sources: mapping?.sources ?? [],
+        targets: mapping?.targets ?? [],
+        namespace: item.namespace,
+      };
+
+      for (const { ref, offset } of refs) {
+        const classification = classifyRef(ref);
+        const resolution = resolveRef(ref, mappingContext, index);
+
+        if (!resolution.resolved) {
+          diagnostics.push({
+            file: item.file,
+            line: item.line + 1,
+            column: item.column + offset + 1,
+            severity: "warning",
+            rule: "nl-ref-unresolved",
+            message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
+          });
+        } else if (
+          classification === "namespace-qualified-schema" &&
+          !isSchemaInMappingSources(ref, mapping)
+        ) {
+          diagnostics.push({
+            file: item.file,
+            line: item.line + 1,
+            column: item.column + offset + 1,
+            severity: "warning",
+            rule: "nl-ref-not-in-source",
+            message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,
           });
         }
       }

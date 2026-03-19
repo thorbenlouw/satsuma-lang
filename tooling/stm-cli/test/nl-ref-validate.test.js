@@ -1,0 +1,186 @@
+/**
+ * nl-ref-validate.test.js — Tests for NL backtick reference validation
+ */
+
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { collectSemanticWarnings } from "../src/validate.js";
+
+/** Build a minimal WorkspaceIndex with nlRefData for testing. */
+function makeIndex({ schemas = [], mappings = [], nlRefData = [] }) {
+  const schemaMap = new Map();
+  for (const s of schemas) {
+    schemaMap.set(s.name, { ...s, file: s.file ?? "test.stm", row: s.row ?? 0 });
+  }
+  const mappingMap = new Map();
+  for (const m of mappings) {
+    mappingMap.set(m.name, { ...m, file: m.file ?? "test.stm", row: m.row ?? 0 });
+  }
+  return {
+    schemas: schemaMap,
+    mappings: mappingMap,
+    metrics: new Map(),
+    fragments: new Map(),
+    transforms: new Map(),
+    warnings: [],
+    questions: [],
+    fieldArrows: new Map(),
+    referenceGraph: { usedByMappings: new Map(), fragmentsUsedIn: new Map(), metricsReferences: new Map() },
+    namespaceNames: new Set(),
+    nlRefData,
+    totalErrors: 0,
+  };
+}
+
+describe("NL ref validation: nl-ref-unresolved", () => {
+  it("does not warn for valid NL backtick references", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::hr_employees", fields: [{ name: "department" }, { name: "employee_id" }] },
+        { name: "source::finance_gl", fields: [{ name: "posted_by" }] },
+        { name: "staging::stg_gl_entries", fields: [{ name: "department" }] },
+      ],
+      mappings: [{
+        name: "staging::stage gl entries",
+        namespace: "staging",
+        sources: ["source::finance_gl", "source::hr_employees"],
+        targets: ["staging::stg_gl_entries"],
+      }],
+      nlRefData: [{
+        text: "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`",
+        mapping: "stage gl entries",
+        namespace: "staging",
+        targetField: "department",
+        file: "test.stm",
+        line: 99,
+        column: 6,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Valid NL refs should produce no warnings");
+  });
+
+  it("warns for unresolvable NL backtick references", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::finance_gl", fields: [{ name: "posted_by" }] },
+        { name: "staging::stg_gl_entries", fields: [] },
+      ],
+      mappings: [{
+        name: "staging::my_mapping",
+        namespace: "staging",
+        sources: ["source::finance_gl"],
+        targets: ["staging::stg_gl_entries"],
+      }],
+      nlRefData: [{
+        text: "Lookup `nonexistent_field` from `source::unknown_schema`",
+        mapping: "my_mapping",
+        namespace: "staging",
+        targetField: "foo",
+        file: "test.stm",
+        line: 10,
+        column: 6,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const unresolvedWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    assert.equal(unresolvedWarnings.length, 2, "Should warn for both unresolved refs");
+    assert.ok(unresolvedWarnings[0].message.includes("nonexistent_field"));
+    assert.ok(unresolvedWarnings[1].message.includes("source::unknown_schema"));
+  });
+});
+
+describe("NL ref validation: nl-ref-not-in-source", () => {
+  it("warns when NL schema ref is not in mapping source/target list", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::hr_employees", fields: [{ name: "employee_id" }] },
+        { name: "source::finance_gl", fields: [{ name: "posted_by" }] },
+        { name: "staging::stg_gl_entries", fields: [] },
+      ],
+      mappings: [{
+        name: "staging::my_mapping",
+        namespace: "staging",
+        sources: ["source::finance_gl"],
+        targets: ["staging::stg_gl_entries"],
+      }],
+      nlRefData: [{
+        text: "Lookup from `source::hr_employees` using `posted_by`",
+        mapping: "my_mapping",
+        namespace: "staging",
+        targetField: "dept",
+        file: "test.stm",
+        line: 15,
+        column: 6,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const notInSrcWarnings = warnings.filter((w) => w.rule === "nl-ref-not-in-source");
+    assert.equal(notInSrcWarnings.length, 1);
+    assert.ok(notInSrcWarnings[0].message.includes("source::hr_employees"));
+    assert.ok(notInSrcWarnings[0].message.includes("not declared in its source or target list"));
+  });
+
+  it("does not warn when NL schema ref is in the source list", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::hr_employees", fields: [{ name: "employee_id" }] },
+        { name: "source::finance_gl", fields: [] },
+        { name: "staging::stg_gl_entries", fields: [] },
+      ],
+      mappings: [{
+        name: "staging::my_mapping",
+        namespace: "staging",
+        sources: ["source::finance_gl", "source::hr_employees"],
+        targets: ["staging::stg_gl_entries"],
+      }],
+      nlRefData: [{
+        text: "Lookup from `source::hr_employees`",
+        mapping: "my_mapping",
+        namespace: "staging",
+        targetField: "dept",
+        file: "test.stm",
+        line: 15,
+        column: 6,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const notInSrcWarnings = warnings.filter((w) => w.rule === "nl-ref-not-in-source");
+    assert.equal(notInSrcWarnings.length, 0, "Should not warn when schema is declared");
+  });
+});
+
+describe("NL ref validation: bare field matching", () => {
+  it("does not warn for bare field that matches a source schema field", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::gl", fields: [{ name: "amount" }, { name: "department" }] },
+        { name: "staging::stg", fields: [{ name: "amount" }] },
+      ],
+      mappings: [{
+        name: "staging::m1",
+        namespace: "staging",
+        sources: ["source::gl"],
+        targets: ["staging::stg"],
+      }],
+      nlRefData: [{
+        text: "Sum of `amount` grouped by `department`",
+        mapping: "m1",
+        namespace: "staging",
+        targetField: "total",
+        file: "test.stm",
+        line: 20,
+        column: 6,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Bare fields matching source schema should not warn");
+  });
+});
