@@ -1,5 +1,8 @@
 # STM
 
+[![CI](https://github.com/thorbenlouw/stm-grammar/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/stm-grammar/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+[![Release](https://github.com/thorbenlouw/stm-grammar/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/thorbenlouw/stm-grammar/actions/workflows/release.yml)
+
 STM is a domain-specific language for source-to-target data mapping.
 
 It is designed to replace ad hoc spreadsheets, wiki tables, and overly verbose
@@ -53,6 +56,25 @@ The long-term tooling model is parser-first:
 5. editor support
 6. visualizers and generators
 
+## Install the CLI
+
+Pre-built binaries are published on every merge to `main`. Install with npm
+(no local build required):
+
+```bash
+# macOS (Apple Silicon)
+npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/stm-cli-darwin-arm64.tgz
+
+# macOS (Intel)
+npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/stm-cli-darwin-x64.tgz
+
+# Linux (x64)
+npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/stm-cli-linux-x64.tgz
+```
+
+This gives you the `stm` command on your PATH. Run `stm --help` to see
+available commands.
+
 ## Example
 
 ```stm
@@ -105,6 +127,8 @@ What exists today:
 - a canonical example corpus
 - implementation guidance for downstream tools
 - an in-repo `tree-sitter-stm` grammar package for syntax parsing work
+- a CLI (`stm`) for querying schemas, mappings, lineage, and more
+- pre-built release artifacts published on every merge to `main`
 
 What is not complete yet:
 
@@ -113,7 +137,6 @@ What is not complete yet:
 - import resolution
 - type checking
 - code generation
-- end-user CLI workflows
 
 ## Workspace And Lineage Model
 
