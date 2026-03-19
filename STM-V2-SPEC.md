@@ -99,6 +99,16 @@ These are **not reserved** — they are context-dependent tokens interpreted by 
 
 New vocabulary tokens can be introduced at any time without language changes.
 
+### 2.8 Definition Uniqueness
+
+All named definitions — `schema`, `metric`, `mapping`, `fragment`, and `transform` — share a single name space. **No two definitions of any kind may have the same name**, even if they are different entity types. For example, a schema named `customer` and a metric named `customer` is an error.
+
+This rule applies across files: when multiple `.stm` files are validated together, all names across all files must be unique.
+
+Anonymous mappings (those without a name) are exempt from this rule.
+
+> **Future**: The `namespace` block (see `features/15-namespaces/PRD.md`) will scope definitions so that the same base name can exist in different namespaces. Uniqueness will then be enforced per-namespace rather than globally.
+
 ---
 
 ## 3. Schema Blocks

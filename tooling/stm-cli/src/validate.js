@@ -62,6 +62,25 @@ function walkErrors(node, file, diagnostics) {
 export function collectSemanticWarnings(index) {
   const diagnostics = [];
 
+  // Check for duplicate named definitions (schemas, metrics, mappings, fragments, transforms).
+  // Names must be unique across all entity types within a namespace.
+  if (index.duplicates) {
+    for (const dup of index.duplicates) {
+      const sameKind = dup.kind === dup.previousKind;
+      const msg = sameKind
+        ? `${capitalize(dup.kind)} '${dup.name}' is already defined in ${dup.previousFile}:${dup.previousRow + 1}`
+        : `${capitalize(dup.kind)} '${dup.name}' conflicts with ${dup.previousKind} already defined in ${dup.previousFile}:${dup.previousRow + 1}`;
+      diagnostics.push({
+        file: dup.file,
+        line: dup.row + 1,
+        column: 1,
+        severity: "error",
+        rule: "duplicate-definition",
+        message: msg,
+      });
+    }
+  }
+
   // Check mapping source/target references
   for (const [name, mapping] of index.mappings) {
     for (const src of mapping.sources) {
@@ -264,4 +283,8 @@ function resolveFieldPath(path, schemaNames, index, fieldPaths) {
   }
 
   return false;
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }

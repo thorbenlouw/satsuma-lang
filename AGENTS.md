@@ -23,18 +23,16 @@ All tooling is parser-backed. Downstream tools should be built on the tree-sitte
 
 ## Platform Lineage Entry Point
 
-When reasoning about lineage across a multi-file data platform, look for a **workspace file** (a `.stm` file containing a `workspace` block). The workspace file is the canonical entry point for platform-wide lineage traversal — it maps namespace names to source files and resolves name collisions between identically-named schemas in different projects.
+When reasoning about lineage across a multi-file data platform, look for a **platform entry point file** that uses `import` with namespace-qualified names to pull definitions from across the platform. This is the canonical entry point for platform-wide lineage traversal.
 
 ```stm
 // platform.stm — the entry point
-workspace "data_platform" {
-  schema "crm"       from "crm/pipeline.stm"
-  schema "billing"   from "billing/pipeline.stm"
-  schema "warehouse" from "warehouse/ingest.stm"
-}
+import { crm::customers, crm::orders } from "crm/pipeline.stm"
+import { billing::invoices } from "billing/pipeline.stm"
+import { warehouse::inventory } from "warehouse/ingest.stm"
 ```
 
-Use `stm lineage --from <schema> <workspace-dir>` to trace data flow through the platform. When building lineage analysis, start by finding and parsing the workspace file, then follow `schema ... from ...` entries to resolve all namespaces.
+Use `stm lineage --from <schema> <dir>` to trace data flow through the platform. See `features/15-namespaces/PRD.md` for the full namespace specification.
 
 ## Source of Truth
 

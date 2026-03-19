@@ -62,6 +62,7 @@ export function extractFileData({ filePath, tree, errorCount }) {
 
 export function buildIndex(parsedFiles) {
   const schemas = new Map();
+  const duplicates = [];
   const metrics = new Map();
   const mappings = new Map();
   const fragments = new Map();
@@ -70,6 +71,26 @@ export function buildIndex(parsedFiles) {
   const questions = [];
   const allArrowRecords = [];
   let totalErrors = 0;
+
+  // Track all named definitions across entity types for cross-kind duplicate detection.
+  // A schema and a metric with the same name in the same namespace is a conflict.
+  const allNames = new Map(); // name → {kind, file, row}
+
+  function checkDuplicate(kind, name, file, row) {
+    if (allNames.has(name)) {
+      const prev = allNames.get(name);
+      duplicates.push({
+        kind,
+        name,
+        file,
+        row,
+        previousKind: prev.kind,
+        previousFile: prev.file,
+        previousRow: prev.row,
+      });
+    }
+    allNames.set(name, { kind, file, row });
+  }
 
   // Accept either pre-extracted data or raw parsedFile objects.
   // When receiving raw parsedFile objects (with .tree), extract immediately.
@@ -82,19 +103,26 @@ export function buildIndex(parsedFiles) {
     totalErrors += fileData.errorCount;
 
     for (const s of fileData.schemas) {
+      checkDuplicate("schema", s.name, filePath, s.row);
       schemas.set(s.name, { ...s, file: filePath });
     }
     for (const m of fileData.metrics) {
+      checkDuplicate("metric", m.name, filePath, m.row);
       metrics.set(m.name, { ...m, file: filePath });
     }
     for (const m of fileData.mappings) {
       const key = m.name ?? `<anon>@${filePath}:${m.row}`;
+      if (m.name) {
+        checkDuplicate("mapping", key, filePath, m.row);
+      }
       mappings.set(key, { ...m, file: filePath });
     }
     for (const f of fileData.fragments) {
+      checkDuplicate("fragment", f.name, filePath, f.row);
       fragments.set(f.name, { ...f, file: filePath });
     }
     for (const t of fileData.transforms) {
+      checkDuplicate("transform", t.name, filePath, t.row);
       transforms.set(t.name, { ...t, file: filePath });
     }
     for (const w of fileData.warnings) {
@@ -113,6 +141,7 @@ export function buildIndex(parsedFiles) {
 
   return {
     schemas,
+    duplicates,
     metrics,
     mappings,
     fragments,
