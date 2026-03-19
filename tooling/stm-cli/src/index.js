@@ -53,6 +53,7 @@ const commands = [
   "commands/diff.js",
   "commands/nl-refs.js",
   "commands/graph.js",
+  "commands/lint.js",
 ];
 
 for (const cmd of commands) {

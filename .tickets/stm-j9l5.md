@@ -1,6 +1,6 @@
 ---
 id: stm-j9l5
-status: open
+status: closed
 deps: [stm-mpw7]
 links: []
 created: 2026-03-19T19:52:20Z

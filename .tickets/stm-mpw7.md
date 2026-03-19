@@ -1,6 +1,6 @@
 ---
 id: stm-mpw7
-status: open
+status: closed
 deps: [stm-58nl]
 links: []
 created: 2026-03-19T19:52:20Z
