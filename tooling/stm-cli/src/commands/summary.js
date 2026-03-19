@@ -63,16 +63,22 @@ export function register(program) {
 // ── Formatters ────────────────────────────────────────────────────────────────
 
 function printJson(index) {
+  /** Format a display name with namespace prefix when applicable. */
+  const displayName = (entity) => {
+    if (entity.namespace) return `${entity.namespace}::${entity.name}`;
+    return entity.name;
+  };
+
   const out = {
     schemas: [...index.schemas.values()].map((s) => ({
-      name: s.name,
+      name: displayName(s),
       note: s.note,
       fieldCount: s.fields.length,
       file: s.file,
       row: s.row,
     })),
     metrics: [...index.metrics.values()].map((m) => ({
-      name: m.name,
+      name: displayName(m),
       displayName: m.displayName,
       fieldCount: m.fields.length,
       grain: m.grain,
@@ -81,7 +87,7 @@ function printJson(index) {
       row: m.row,
     })),
     mappings: [...index.mappings.values()].map((m) => ({
-      name: m.name,
+      name: displayName(m),
       sources: m.sources,
       targets: m.targets,
       arrowCount: m.arrowCount,
@@ -89,13 +95,13 @@ function printJson(index) {
       row: m.row,
     })),
     fragments: [...index.fragments.values()].map((f) => ({
-      name: f.name,
+      name: displayName(f),
       fieldCount: f.fields.length,
       file: f.file,
       row: f.row,
     })),
     transforms: [...index.transforms.values()].map((t) => ({
-      name: t.name,
+      name: displayName(t),
       file: t.file,
       row: t.row,
     })),

@@ -1,0 +1,13 @@
+// Namespace metadata conflict fixture — conflicting notes on same namespace
+
+namespace pos (note "Oracle Retail POS") {
+  schema stores {
+    STORE_ID VARCHAR(20)
+  }
+}
+
+namespace pos (note "Different POS system") {
+  schema transactions {
+    TXN_ID BIGINT
+  }
+}

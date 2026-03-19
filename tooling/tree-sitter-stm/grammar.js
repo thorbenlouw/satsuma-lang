@@ -498,12 +498,13 @@ module.exports = grammar({
         $.dotted_name,
         $.number_literal,
         $.boolean_literal,
+        $.qualified_name,
         $.identifier,
       ),
 
     // Value forms: source {a, b}, slice {x, y} (inline braced list)
     kv_braced_list: ($) =>
-      seq("{", commaSep1($.identifier), optional(","), "}"),
+      seq("{", commaSep1(choice($.qualified_name, $.identifier)), optional(","), "}"),
 
     // Value form: FIELD == "literal" (comparison expression)
     kv_comparison: ($) =>

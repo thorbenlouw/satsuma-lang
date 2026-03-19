@@ -1,0 +1,71 @@
+// Namespace integration test fixture
+
+// Global definitions
+fragment audit_fields {
+  created_at    TIMESTAMPTZ
+  updated_at    TIMESTAMPTZ
+}
+
+transform trim_and_lower {
+  trim | lowercase
+}
+
+// POS namespace
+namespace pos (note "Oracle Retail POS") {
+  schema stores (note "POS store reference") {
+    STORE_ID    VARCHAR(20)  (pk)
+    STORE_NAME  VARCHAR(100) (required)
+    REGION_CD   CHAR(2)      (pii)
+  }
+
+  schema transactions {
+    TXN_ID      BIGINT       (pk)
+    STORE_ID    VARCHAR(20)
+    TXN_AMOUNT  DECIMAL(12,2)
+  }
+}
+
+// E-Commerce namespace
+namespace ecom (note "Shopify platform") {
+  schema orders {
+    order_id    BIGINT       (pk)
+    total       DECIMAL(10,2)
+    store_code  VARCHAR(20)
+  }
+
+  schema customers {
+    customer_id BIGINT       (pk)
+    email       VARCHAR(255) (pii)
+    first_name  VARCHAR(100)
+  }
+}
+
+// Warehouse namespace with cross-namespace refs
+namespace warehouse {
+  schema hub_store {
+    store_hk    BINARY(32)   (pk)
+    store_id    VARCHAR(20)
+    store_name  VARCHAR(100)
+    ...audit_fields
+  }
+
+  mapping 'load hub_store' {
+    source { `pos::stores` }
+    target { `hub_store` }
+
+    STORE_ID   -> store_hk    { md5(STORE_ID) }
+    STORE_ID   -> store_id
+    STORE_NAME -> store_name  { trim }
+  }
+}
+
+// Analytics namespace with metric
+namespace analytics {
+  metric daily_sales "Daily Sales Volume" (
+    source ecom::orders,
+    grain daily
+  ) {
+    sale_date    DATE
+    order_count  INTEGER  (measure)
+  }
+}

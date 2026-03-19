@@ -325,6 +325,10 @@
         {
           "type": "number_literal",
           "named": true
+        },
+        {
+          "type": "qualified_name",
+          "named": true
         }
       ]
     }
@@ -339,6 +343,10 @@
       "types": [
         {
           "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "qualified_name",
           "named": true
         }
       ]

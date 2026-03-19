@@ -234,9 +234,15 @@ export function extractMetrics(rootNode) {
           if (key?.text === "source") {
             if (!val) continue;
             if (val.type === "kv_braced_list") {
-              for (const id of children(val, "identifier")) {
-                sources.push(id.text);
+              for (const item of val.namedChildren) {
+                if (item.type === "qualified_name") {
+                  sources.push(qualifiedNameText(item));
+                } else if (item.type === "identifier") {
+                  sources.push(item.text);
+                }
               }
+            } else if (val.type === "qualified_name") {
+              sources.push(qualifiedNameText(val));
             } else {
               sources.push(entryText(val));
             }
