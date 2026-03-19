@@ -1,6 +1,6 @@
 ---
 id: stm-eq1n
-status: open
+status: closed
 deps: []
 links: [stm-7rz4]
 created: 2026-03-19T07:16:41Z

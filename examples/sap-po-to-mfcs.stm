@@ -1,0 +1,182 @@
+// STM v2 — SAP Purchase Order to Oracle MFCS
+
+note {
+  """
+  # SAP Purchase Order to Oracle MFCS
+
+  Maps a logical SAP ERP purchase order into an Oracle MFCS purchase order
+  ingestion contract.
+
+  This example is intentionally business-level rather than transport-level:
+  it models the SAP purchase order as a normalized contract instead of raw
+  IDoc or BAPI payload segments so the mapping intent stays readable.
+
+  ## Assumptions
+  - One MFCS purchase order is emitted per SAP purchase order
+  - Header-level receiving site is available and authoritative for location
+  - Currency is already aligned to the MFCS target environment
+
+  ## Open issues
+  - Supplier resolution depends on an MFCS supplier cross-reference
+  - Material resolution depends on an MFCS item cross-reference
+  - UOM and pack conversion rules depend on MFCS supplier-item setup
+  - If line-level plants differ from the header receiving site, the target
+    flow may need to split one SAP PO into multiple MFCS orders
+  """
+}
+
+
+// --- Source ---
+
+schema sap_purchase_order (
+  format sap,
+  note "Logical SAP ERP purchase order contract"
+) {
+  EBELN          STRING(10)    (pk, required, note "SAP purchase order number")
+  BUKRS          STRING(4)     (required, note "Company code")
+  BSART          STRING(4)     (required, enum {NB, UB, FO, ZST}, note "Purchasing document type")
+  BSTYP          STRING(1)     (required, enum {F}, note "Document category: purchase order")
+  LIFNR          STRING(10)    (required, note "Vendor account number")
+  EKORG          STRING(4)     (required, note "Purchasing organization")
+  EKGRP          STRING(3)     (note "Purchasing group")
+  WAERS          STRING(3)     (required, note "Document currency")
+  BEDAT          DATE          (required, note "PO document date")
+  ReceivingSite  STRING(10)    (required, note "Business receiving site used for MFCS location resolution")
+  HeaderText     STRING(1000)
+
+  list Items {
+    EBELP        STRING(5)     (required, note "PO line number")
+    MATNR        STRING(18)    (required, note "SAP material number")
+    TXZ01        STRING(250)   (note "Short item description")
+    MENGE        NUMBER(13,3)  (required, note "Ordered quantity")
+    MEINS        STRING(3)     (required, note "Base unit of measure")
+    NETPR        NUMBER(13,4)  (required, note "Net price")
+    PEINH        NUMBER(5)     (default 1, note "Price unit divisor")
+    WERKS        STRING(4)     (required, note "Plant")
+    LGORT        STRING(4)     (note "Storage location")
+    EINDT        DATE          (note "Requested delivery date")
+  }
+}
+
+
+// --- Target ---
+
+schema mfcs_purchase_order (
+  format json,
+  note "Logical Oracle MFCS purchase order ingestion contract"
+) {
+  orderNo        NUMBER(12)    (required)
+  supplier       NUMBER(10)    (required)   //! requires MFCS supplier cross-reference
+  location       NUMBER(10)    (required)   //! requires site-to-location resolution
+  currencyCode   STRING(3)     (required)
+  orderType      STRING(20)    (required)
+  notBeforeDate  DATE
+  comments       STRING(1000)
+
+  list items {
+    item         STRING(25)      (required)   //! requires material-to-item cross-reference
+    orderedQty   NUMBER(12,4)    (required)
+    unitCost     NUMBER(12,4)
+    uom          STRING(10)      (required)
+    needByDate   DATE
+    referenceLine NUMBER(6)      (required)
+    description  STRING(250)
+  }
+}
+
+
+// --- Mapping ---
+
+mapping 'sap po to mfcs' {
+  note {
+    """
+    Mapping policy:
+    - Preserve one target line per SAP PO item
+    - Resolve supplier, item, and location through MFCS reference data
+    - Keep pack/UOM conversion logic explicit in NL until a deterministic
+      token vocabulary exists for supplier-item conversion rules
+    """
+  }
+
+  source { `sap_purchase_order` }
+  target { `mfcs_purchase_order` }
+
+  //! ASSUMPTION: header ReceivingSite is authoritative for target location
+  //? If Items[].WERKS varies by line, should this integration split one SAP PO
+  //? into multiple MFCS orders by location instead of rejecting the document?
+
+  // --- Header ---
+  EBELN -> orderNo { to_number }
+
+  LIFNR -> supplier {
+    trim
+    | "Resolve SAP vendor number to MFCS supplier id using the approved
+       supplier cross-reference. Reject the document if no active MFCS
+       supplier exists for the vendor."
+  }
+
+  ReceivingSite -> location {
+    trim
+    | "Resolve the business receiving site to an MFCS location id.
+       If no direct mapping exists, fall back to a plant-to-location mapping
+       approved by merchandising operations."
+  }
+
+  WAERS -> currencyCode { trim | uppercase }
+
+  BSART -> orderType {
+    map {
+      NB: "standard"
+      UB: "transfer"
+      FO: "framework"
+      ZST: "stock"
+      default: "standard"
+    }
+  }
+
+  Items[].EINDT -> notBeforeDate {
+    "Take the earliest non-null requested delivery date across all lines.
+     If all line dates are null, fall back to BEDAT."
+  }
+
+  HeaderText -> comments {
+    trim
+    | max_length(1000)
+  }
+
+  // --- Lines ---
+  Items[] -> items[] (
+    note "One MFCS target line per SAP purchase order item."
+  ) {
+    .EBELP -> .referenceLine { to_number }
+
+    .MATNR -> .item {
+      trim
+      | uppercase
+      | "Translate SAP material number to the MFCS item identifier using the
+         supplier-item or material cross-reference. Reject the line if no
+         active MFCS item can be resolved."
+    }
+
+    .MENGE -> .orderedQty {
+      "If MEINS represents supplier packs or cases, convert to the target
+       stocking quantity using the MFCS supplier-item pack configuration.
+       Otherwise preserve the numeric quantity. Round to 4 decimal places."
+    }
+
+    .NETPR -> .unitCost {
+      "If PEINH is greater than 1, divide NETPR by PEINH to derive the
+       per-unit cost in document currency. Round to 4 decimal places."
+    }
+
+    .MEINS -> .uom {
+      trim
+      | uppercase
+      | "Map SAP UOM values to the MFCS UOM vocabulary. Escalate any value
+         that cannot be resolved through the approved conversion table."
+    }
+
+    .EINDT -> .needByDate
+    .TXZ01 -> .description { trim | max_length(250) }
+  }
+}
