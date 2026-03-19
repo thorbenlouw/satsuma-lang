@@ -1,6 +1,6 @@
 ---
 id: stm-58nl
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-19T19:52:20Z
