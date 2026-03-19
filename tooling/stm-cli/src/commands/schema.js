@@ -13,6 +13,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { findBlockNode } from "../cst-query.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -58,7 +59,7 @@ export function register(program) {
       // Find the raw CST node for richer reconstruction
       const parsed = parsedFiles.find((p) => p.filePath === entry.file);
       const schemaNode = parsed
-        ? findSchemaNode(parsed.tree.rootNode, entry.name)
+        ? findBlockNode(parsed.tree.rootNode, "schema_block", resolved.key)
         : null;
 
       if (opts.json) {
@@ -72,28 +73,6 @@ export function register(program) {
 }
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
-
-function findSchemaNode(rootNode, name) {
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "schema_block") {
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let n = inner?.text ?? "";
-      if (inner?.type === "quoted_name") n = n.slice(1, -1);
-      if (n === name) return c;
-    } else if (c.type === "namespace_block") {
-      for (const inner of c.namedChildren) {
-        if (inner.type !== "schema_block") continue;
-        const lbl = inner.namedChildren.find((x) => x.type === "block_label");
-        const linner = lbl?.namedChildren[0];
-        let n = linner?.text ?? "";
-        if (linner?.type === "quoted_name") n = n.slice(1, -1);
-        if (n === name) return inner;
-      }
-    }
-  }
-  return null;
-}
 
 /** Collect fields from schema_body, recursing into record_block / list_block. */
 function collectFields(bodyNode, indent = 0) {

@@ -13,6 +13,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractMetadata } from "../meta-extract.js";
+import { findBlockNode } from "../cst-query.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -89,13 +90,16 @@ function extractBlockMeta(blockName, parsedFiles, index) {
     process.exit(1);
   }
 
-  // Use the bare name for CST matching
-  const bareName = resolvedName.includes("::") ? resolvedName.split("::").pop() : resolvedName;
+  const resolvedEntry =
+    schemaResolved?.entry ?? mappingResolved?.entry ?? metricResolved?.entry ?? null;
 
-  for (const { tree } of parsedFiles) {
-    for (const node of iterBlocks(tree.rootNode)) {
-      if (!blockTypes.includes(node.type)) continue;
-      if (getBlockName(node) !== bareName) continue;
+  const parsed = resolvedEntry
+    ? parsedFiles.find((p) => p.filePath === resolvedEntry.file)
+    : null;
+  if (parsed) {
+    for (const blockType of blockTypes) {
+      const node = findBlockNode(parsed.tree.rootNode, blockType, resolvedName);
+      if (!node) continue;
       const metaNode = node.namedChildren.find(
         (c) => c.type === "metadata_block",
       );
@@ -118,9 +122,7 @@ function extractFieldMeta(fieldRef, parsedFiles, index) {
   }
 
   const schema = resolvedSchema.entry;
-  const resolvedSchemaName = resolvedSchema.key;
-  const bareSchemaName = resolvedSchemaName.includes("::") ? resolvedSchemaName.split("::").pop() : resolvedSchemaName;
-  const field = schema.fields.find((f) => f.name === fieldName);
+  const field = findField(schema.fields, fieldName);
   if (!field) {
     console.error(
       `Field '${fieldName}' not found in schema '${schemaName}'.`,
@@ -128,49 +130,24 @@ function extractFieldMeta(fieldRef, parsedFiles, index) {
     process.exit(1);
   }
 
-  for (const { tree } of parsedFiles) {
-    for (const node of iterBlocks(tree.rootNode)) {
-      if (node.type !== "schema_block") continue;
-      if (getBlockName(node) !== bareSchemaName) continue;
-      const body = node.namedChildren.find((c) => c.type === "schema_body");
-      if (!body) continue;
-
-      for (const fieldDecl of body.namedChildren) {
-        if (fieldDecl.type !== "field_decl") continue;
-        if (getFieldDeclName(fieldDecl) !== fieldName) continue;
-        const metaNode = fieldDecl.namedChildren.find(
-          (c) => c.type === "metadata_block",
-        );
-        const entries = extractMetadata(metaNode);
-        return {
+  const parsed = parsedFiles.find((p) => p.filePath === schema.file);
+  const schemaNode = parsed ? findBlockNode(parsed.tree.rootNode, "schema_block", resolvedSchema.key) : null;
+  const body = schemaNode?.namedChildren.find((c) => c.type === "schema_body");
+  if (body) {
+    for (const fieldDecl of findFieldDecls(body, fieldName)) {
+      const metaNode = fieldDecl.namedChildren.find(
+        (c) => c.type === "metadata_block",
+      );
+      const entries = extractMetadata(metaNode);
+      return {
           scope: fieldRef,
-          type: field.type,
+          type: field?.type ?? null,
           entries,
         };
       }
-    }
   }
 
   return { scope: fieldRef, type: field.type, entries: [] };
-}
-
-/** Yield block nodes from rootNode, searching inside namespace_block children. */
-function* iterBlocks(rootNode) {
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "namespace_block") {
-      yield* iterBlocks(c);
-    } else {
-      yield c;
-    }
-  }
-}
-
-function getBlockName(node) {
-  const lbl = node.namedChildren.find((c) => c.type === "block_label");
-  const inner = lbl?.namedChildren[0];
-  if (!inner) return null;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
-  return inner.text;
 }
 
 function getFieldDeclName(fieldDecl) {
@@ -181,6 +158,31 @@ function getFieldDeclName(fieldDecl) {
   if (!inner) return null;
   if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text;
+}
+
+function findField(fields, fieldName) {
+  for (const field of fields) {
+    if (field.name === fieldName) return field;
+    if (field.children) {
+      const nested = findField(field.children, fieldName);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function findFieldDecls(bodyNode, fieldName, acc = []) {
+  for (const child of bodyNode.namedChildren) {
+    if (child.type === "field_decl" && getFieldDeclName(child) === fieldName) {
+      acc.push(child);
+      continue;
+    }
+    if (child.type === "record_block" || child.type === "list_block") {
+      const nestedBody = child.namedChildren.find((c) => c.type === "schema_body");
+      if (nestedBody) findFieldDecls(nestedBody, fieldName, acc);
+    }
+  }
+  return acc;
 }
 
 function printDefault(result) {

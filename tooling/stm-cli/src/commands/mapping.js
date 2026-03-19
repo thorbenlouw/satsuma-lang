@@ -13,6 +13,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { findBlockNode } from "../cst-query.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -50,7 +51,7 @@ export function register(program) {
       const entry = resolved.entry;
 
       const parsed = parsedFiles.find((p) => p.filePath === entry.file);
-      const mappingNode = parsed ? findMappingNode(parsed.tree.rootNode, entry.name) : null;
+      const mappingNode = parsed ? findBlockNode(parsed.tree.rootNode, "mapping_block", resolved.key) : null;
 
       if (opts.json) {
         printJson(entry, mappingNode);
@@ -63,32 +64,6 @@ export function register(program) {
 }
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
-
-function findMappingNode(rootNode, name) {
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "mapping_block") {
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      if (!lbl && name === null) return c;
-      if (!lbl) continue;
-      const inner = lbl.namedChildren[0];
-      let n = inner?.text ?? "";
-      if (inner?.type === "quoted_name") n = n.slice(1, -1);
-      if (n === name) return c;
-    } else if (c.type === "namespace_block") {
-      for (const inner of c.namedChildren) {
-        if (inner.type !== "mapping_block") continue;
-        const lbl = inner.namedChildren.find((x) => x.type === "block_label");
-        if (!lbl && name === null) return inner;
-        if (!lbl) continue;
-        const linner = lbl.namedChildren[0];
-        let n = linner?.text ?? "";
-        if (linner?.type === "quoted_name") n = n.slice(1, -1);
-        if (n === name) return inner;
-      }
-    }
-  }
-  return null;
-}
 
 /** Extract text from a path node (_path_expr variants). */
 function pathText(pathNode) {
