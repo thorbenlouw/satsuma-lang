@@ -2,21 +2,24 @@
 
 ## Project Summary
 
-STM is a domain-specific language for source-to-target data mapping. The repository currently centers on the language specification, examples, and planning for tooling such as a parser, linter, formatter, visualizer, and editor support.
+STM is a domain-specific language for source-to-target data mapping. The repository contains the language specification, a canonical example corpus, a tree-sitter parser, a 16-command CLI for structural extraction and validation, and a VS Code syntax highlighting extension.
 
-The immediate implementation priority is parser-first tooling. Downstream tools should be built on a correct, well-tested parser and stable AST/CST conventions rather than ad hoc text processing.
+All tooling is parser-backed. Downstream tools should be built on the tree-sitter CST and stable AST conventions rather than ad hoc text processing.
 
 ## Repository Layout
 
 - `STM-V2-SPEC.md`: authoritative language specification (v2)
 - `PROJECT-OVERVIEW.md`: product vision, motivation, and roadmap
-- `IMPLEMENTATION-GUIDE.md`: technical architecture and tooling strategy
+- `STM-CLI.md`: CLI command reference (16 commands)
 - `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented STM guidance (v2)
+- `FUTURE-WORK.md`: deferred and speculative work items
 - `examples/`: canonical `.stm` examples and fixtures (v2 syntax)
 - `archive/v1/`: archived v1 specification and examples — for historical reference only, not for new work
 - `features/`: feature plans and task breakdown inputs
 - `scripts/`: utility scripts used during development
-- `tooling/tree-sitter-stm/`: tree-sitter grammar, generated parser artifacts, and corpus tests
+- `tooling/tree-sitter-stm/`: tree-sitter grammar (190 corpus tests), generated parser artifacts, and queries
+- `tooling/stm-cli/`: CLI tool for workspace extraction, validation, and structural analysis (224 tests)
+- `tooling/vscode-stm/`: VS Code TextMate grammar for STM v2 syntax highlighting
 
 ## Platform Lineage Entry Point
 
@@ -31,7 +34,7 @@ workspace "data_platform" {
 }
 ```
 
-Use `stm lineage <workspace-file>` (future tooling) to generate the full platform graph. When building lineage analysis, start by finding and parsing the workspace file, then follow `schema ... from ...` entries to resolve all namespaces.
+Use `stm lineage --from <schema> <workspace-dir>` to trace data flow through the platform. When building lineage analysis, start by finding and parsing the workspace file, then follow `schema ... from ...` entries to resolve all namespaces.
 
 ## Source of Truth
 
@@ -39,7 +42,7 @@ When making changes or answering questions about syntax, semantics, or supported
 
 1. Treat `STM-V2-SPEC.md` as the primary authority. The v1 spec is archived at `archive/v1/STM-SPEC.md` — do not use it for new work.
 2. Use `examples/` as the executable corpus of valid language patterns (v2 syntax).
-3. Use `IMPLEMENTATION-GUIDE.md` and feature docs to guide tooling order and architecture.
+3. Use feature docs in `features/` to guide tooling order and architecture.
 4. If docs conflict, prefer the spec and call out the mismatch explicitly.
 
 ## Engineering Expectations

@@ -110,33 +110,36 @@ and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
 
 - [STM-V2-SPEC.md](STM-V2-SPEC.md): authoritative language specification
 - [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
-- [IMPLEMENTATION-GUIDE.md](IMPLEMENTATION-GUIDE.md): tooling architecture and parser-first implementation strategy
+- [STM-CLI.md](STM-CLI.md): CLI command reference (16 commands for workspace extraction, structural analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents
+- [BA-TUTORIAL.md](BA-TUTORIAL.md): practical tutorial for business analysts
 - [USE_CASES.md](USE_CASES.md): practical scenarios and personas
+- [FUTURE-WORK.md](FUTURE-WORK.md): deferred and speculative work items
 - [examples/](examples): canonical STM examples
 - [tooling/tree-sitter-stm/](tooling/tree-sitter-stm): tree-sitter parser package
+- [tooling/stm-cli/](tooling/stm-cli): CLI tool for structural extraction and validation
 - [tooling/vscode-stm/](tooling/vscode-stm): VS Code syntax highlighting extension
 
 ## Current Status
 
-The repository is centered on specification and parser-first tooling.
-
 What exists today:
 
-- the STM v2 language spec
-- a canonical example corpus
-- implementation guidance for downstream tools
-- an in-repo `tree-sitter-stm` grammar package for syntax parsing work
-- a CLI (`stm`) for querying schemas, mappings, lineage, and more
-- pre-built release artifacts published on every merge to `main`
+- the STM v2 language specification
+- a canonical example corpus (11 `.stm` files covering all major integration patterns)
+- a tree-sitter parser (190 corpus tests, all examples parse clean)
+- a CLI (`stm`) with 16 commands for workspace extraction, structural analysis, validation, and diff — see [STM-CLI.md](STM-CLI.md)
+- a VS Code extension with TextMate grammar for v2 syntax highlighting
+- data modelling conventions for Kimball and Data Vault patterns with canonical examples
+- pre-built CLI release artifacts published on every merge to `main`
 
 What is not complete yet:
 
-- semantic linting and validation
-- formatting
-- import resolution
+- semantic linting beyond current `stm validate` checks
+- formatting (`stm fmt`)
+- cross-file import resolution in single-file validation
 - type checking
 - code generation
+- Excel-to-STM and STM-to-Excel conversion tooling
 
 ## Workspace And Lineage Model
 
@@ -168,7 +171,8 @@ If you are contributing tooling, start here:
 
 - read [STM-V2-SPEC.md](STM-V2-SPEC.md)
 - inspect the example corpus in [examples/](examples)
-- review the parser plan in [features/01-treesitter-parser/PRD.md](features/01-treesitter-parser/PRD.md)
+- review the parser in [tooling/tree-sitter-stm/](tooling/tree-sitter-stm) and its grammar
+- review the CLI in [tooling/stm-cli/](tooling/stm-cli) and its command reference in [STM-CLI.md](STM-CLI.md)
 - treat CST and AST naming stability as part of the public implementation surface
 
 ## Development
@@ -196,6 +200,26 @@ python3 scripts/test_fixtures.py          # example and recovery fixtures
 python3 scripts/test_cst_summary.py       # CST consumer unit tests
 python3 scripts/test_smoke_summary.py     # smoke test all examples
 ```
+
+### STM CLI
+
+```bash
+cd tooling/stm-cli
+npm install
+npm test                  # 224 tests covering all 16 commands
+npm link                  # makes `stm` available globally
+```
+
+Quick usage:
+
+```bash
+stm summary examples/            # workspace overview
+stm validate examples/           # structural + semantic validation
+stm schema customers examples/   # show a specific schema
+stm lineage --from legacy_sqlserver examples/   # trace data flow
+```
+
+See [STM-CLI.md](STM-CLI.md) for full command reference.
 
 ### VS Code extension
 
