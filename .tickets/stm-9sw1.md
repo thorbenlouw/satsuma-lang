@@ -1,6 +1,6 @@
 ---
 id: stm-9sw1
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-19T09:19:26Z
