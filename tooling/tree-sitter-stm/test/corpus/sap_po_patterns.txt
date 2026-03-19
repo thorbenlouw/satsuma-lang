@@ -1,0 +1,488 @@
+================================================================================
+Relative-to-relative arrow inside nested block
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact_orders }
+  items[] -> lines[] {
+    .sku -> .product_code
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))))))
+
+================================================================================
+Relative-to-relative arrow with transform
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  items[] -> lines[] {
+    .line_no -> .ref_line { to_number }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))))))))
+
+================================================================================
+Pipe chain with token then NL string
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  vendor_id -> supplier {
+    trim
+    | "Resolve vendor to supplier using cross-reference."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Pipe chain with multiple tokens then NL string
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  material -> item {
+    trim
+    | uppercase
+    | "Translate material number to item identifier."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (token_call
+              (identifier)))
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Nested arrow with note metadata
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  items[] -> lines[] (
+    note "One target line per source item."
+  ) {
+    .sku -> .product_code
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (note_tag
+            (nl_string)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))))))
+
+================================================================================
+Nested arrow with mixed relative arrow types
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  Items[] -> items[] {
+    .line_no -> .ref { to_number }
+    .code -> .item {
+      trim | uppercase | "Resolve code to item."
+    }
+    .qty -> .quantity {
+      "Convert quantity using pack config."
+    }
+    .desc -> .description { trim | max_length(250) }
+    .date -> .need_date
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))
+            (pipe_step
+              (token_call
+                (identifier)))
+            (pipe_step
+              (nl_string))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (nl_string))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))
+            (pipe_step
+              (token_call
+                (identifier)
+                (number_literal)))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))))))
+
+================================================================================
+Map literal with default key inside arrow
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  doc_type -> order_type {
+    map {
+      NB: "standard"
+      UB: "transfer"
+      default: "standard"
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key
+                  (identifier))
+                (map_value
+                  (nl_string)))
+              (map_entry
+                (map_key)
+                (map_value
+                  (nl_string))))))))))
+
+================================================================================
+Array-dotted source path to simple target
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  Items[].EINDT -> notBeforeDate {
+    "Take the earliest date across all lines."
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Schema with list block and field-level note metadata
+================================================================================
+
+schema purchase_order (
+  format sap,
+  note "Logical purchase order contract"
+) {
+  order_no STRING(10) (pk, required, note "Order number")
+  doc_type STRING(4)  (required, enum {NB, UB})
+  currency STRING(3)  (required)
+
+  list Items {
+    line_no  STRING(5)     (required, note "Line number")
+    quantity NUMBER(13,3)  (required)
+    price    NUMBER(13,4)  (required)
+    divisor  NUMBER(5)     (default 1, note "Price unit divisor")
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (identifier))
+      (note_tag
+        (nl_string)))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token
+            (identifier))
+          (tag_token
+            (identifier))
+          (note_tag
+            (nl_string))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token
+            (identifier))
+          (enum_body
+            (identifier)
+            (identifier))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token
+            (identifier))))
+      (list_block
+        (block_label
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))
+              (note_tag
+                (nl_string))))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (key_value_pair
+                (kv_key
+                  (identifier))
+                (number_literal))
+              (note_tag
+                (nl_string)))))))))
