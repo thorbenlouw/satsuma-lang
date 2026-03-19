@@ -16,6 +16,7 @@ import {
   extractArrowRecords,
   extractNamespaces,
 } from "./extract.js";
+import { extractNLRefData } from "./nl-ref-extract.js";
 
 /**
  * Build a WorkspaceIndex from an array of parsed file results.
@@ -59,6 +60,7 @@ export function extractFileData({ filePath, tree, errorCount }) {
     questions: extractQuestions(root),
     arrowRecords: extractArrowRecords(root),
     namespaces: extractNamespaces(root),
+    nlRefData: extractNLRefData(root),
   };
 }
 
@@ -81,6 +83,7 @@ export function buildIndex(parsedFiles) {
   const warnings = [];
   const questions = [];
   const allArrowRecords = [];
+  const allNLRefData = [];
   let totalErrors = 0;
 
   // Track all named definitions per namespace for cross-kind duplicate detection.
@@ -187,6 +190,11 @@ export function buildIndex(parsedFiles) {
     for (const ar of fileData.arrowRecords) {
       allArrowRecords.push({ ...ar, file: filePath });
     }
+    if (fileData.nlRefData) {
+      for (const nr of fileData.nlRefData) {
+        allNLRefData.push({ ...nr, file: filePath });
+      }
+    }
   }
 
   // Build a set of known namespace names for reference resolution.
@@ -210,6 +218,7 @@ export function buildIndex(parsedFiles) {
     fieldArrows,
     referenceGraph,
     namespaceNames,
+    nlRefData: allNLRefData,
     totalErrors,
   };
 }

@@ -21,6 +21,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
+import { extractBacktickRefs } from "../nl-ref-extract.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -141,6 +142,41 @@ function scoreAll(index, terms) {
   for (const [name, e] of index.mappings) scoreEntry(name, "mapping", e);
   for (const [name, e] of index.fragments) scoreEntry(name, "fragment", e);
   for (const [name, e] of index.transforms) scoreEntry(name, "transform", e);
+
+  // Boost mappings that contain NL backtick refs matching query terms
+  if (index.nlRefData) {
+    // Group NL ref data by mapping key
+    const nlByMapping = new Map();
+    for (const item of index.nlRefData) {
+      const key = item.namespace ? `${item.namespace}::${item.mapping}` : item.mapping;
+      if (!nlByMapping.has(key)) nlByMapping.set(key, []);
+      nlByMapping.get(key).push(item);
+    }
+
+    for (const [mappingKey, items] of nlByMapping) {
+      // Collect all backtick ref texts for this mapping
+      const refTexts = [];
+      for (const item of items) {
+        for (const { ref } of extractBacktickRefs(item.text)) {
+          refTexts.push(ref);
+        }
+      }
+      if (refTexts.length === 0) continue;
+
+      const nlScore = refTexts.reduce((sum, ref) => sum + scoreText(ref, terms) * 3, 0);
+      if (nlScore > 0) {
+        const existing = results.find((r) => r.name === mappingKey);
+        if (existing) {
+          existing.score += nlScore;
+        } else {
+          const m = index.mappings.get(mappingKey);
+          if (m) {
+            results.push({ name: mappingKey, type: "mapping", score: nlScore, file: m.file, row: m.row });
+          }
+        }
+      }
+    }
+  }
 
   return results;
 }

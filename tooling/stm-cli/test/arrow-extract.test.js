@@ -231,10 +231,10 @@ describe("extractArrowRecords against real examples", () => {
     assert.equal(trimArrow.derived, false);
     assert.equal(trimArrow.steps.length, 3);
 
-    // Check an NL arrow
+    // Check a mixed arrow (NL body + warn_if_invalid structural step)
     const phoneArrow = records.find((r) => r.source === "PHONE_NBR");
     assert.ok(phoneArrow);
-    assert.equal(phoneArrow.classification, "nl");
+    assert.equal(phoneArrow.classification, "mixed");
 
     // Check a mixed arrow
     const notesArrow = records.find(

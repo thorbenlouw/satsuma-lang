@@ -18,6 +18,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { extractBacktickRefs, classifyRef } from "../nl-ref-extract.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -133,6 +134,33 @@ function buildFullGraph(index) {
     for (const src of metric) {
       addNode(src, "schema");
       addEdge(src, metricName);
+    }
+  }
+
+  // NL backtick references — add edges for schema refs found in NL transform bodies
+  if (index.nlRefData) {
+    for (const item of index.nlRefData) {
+      const refs = extractBacktickRefs(item.text);
+      const mappingKey = item.namespace
+        ? `${item.namespace}::${item.mapping}`
+        : item.mapping;
+
+      for (const { ref } of refs) {
+        const classification = classifyRef(ref);
+        if (classification === "namespace-qualified-schema" && index.schemas.has(ref)) {
+          // NL block references a schema — add edge from that schema to the mapping
+          addNode(ref, "schema");
+          addEdge(ref, mappingKey);
+        } else if (classification === "namespace-qualified-field") {
+          // ns::schema.field — add edge from the schema part
+          const dotIdx = ref.indexOf(".", ref.indexOf("::") + 2);
+          const schemaRef = ref.slice(0, dotIdx);
+          if (index.schemas.has(schemaRef)) {
+            addNode(schemaRef, "schema");
+            addEdge(schemaRef, mappingKey);
+          }
+        }
+      }
     }
   }
 
