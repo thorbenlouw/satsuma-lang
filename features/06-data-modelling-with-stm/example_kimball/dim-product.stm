@@ -75,9 +75,9 @@ mapping 'sap to dim_product' {
   MAKTX -> product_name                { trim | title_case }
 
   // Hierarchy resolved via lookup
-  MATKL -> department    { "Look up department from `product_hierarchy` using MATKL" }
-  MATKL -> category      { "Look up category from `product_hierarchy` using MATKL" }
-  MATKL -> subcategory   { "Look up subcategory from `product_hierarchy` using MATKL" }
+  MATKL -> department    { "Look up department from `product_hierarchy` using `MATKL`" }
+  MATKL -> category      { "Look up category from `product_hierarchy` using `MATKL`" }
+  MATKL -> subcategory   { "Look up subcategory from `product_hierarchy` using `MATKL`" }
 
   BRAND -> brand                       { trim | title_case }
   SUPPLIER_NAME -> supplier_name       { trim }

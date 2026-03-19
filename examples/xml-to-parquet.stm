@@ -137,17 +137,17 @@ mapping 'order headers' {
   Order.Totals.TotalAmount -> total_amount
 
   -> discount_codes {
-    "Collect DiscountCode values from Order.Discounts[] preserving source order.
+    "Collect `DiscountCode` values from `Order.Discounts[]` preserving source order.
      Emit as a JSON array string. If no discounts, emit []."
   }
 
   -> discount_total {
-    "Sum DiscountAmount across Order.Discounts[] for the current order.
+    "Sum `DiscountAmount` across `Order.Discounts[]` for the current order.
      If no discounts, emit 0.00."
   }
 
   -> line_count {
-    "Count Order.LineItems[] elements for the current order."
+    "Count `Order.LineItems[]` elements for the current order."
   }
 
   -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }

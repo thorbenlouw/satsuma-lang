@@ -654,6 +654,12 @@ Vocabulary tokens are **not keywords** — they are interpreted by the LLM based
 | `parse(fmt)` | Parse string with format |
 | `null_if_empty` | Convert empty string to null |
 | `null_if_invalid` | Convert invalid value to null |
+| `drop_if_invalid` | Drop the record if value is invalid |
+| `drop_if_null` | Drop the record if value is null |
+| `warn_if_invalid` | Log a warning if value is invalid |
+| `warn_if_null` | Log a warning if value is null |
+| `error_if_invalid` | Fail the pipeline if value is invalid |
+| `error_if_null` | Fail the pipeline if value is null |
 | `validate_email` | Validate email format |
 | `now_utc()` | Current UTC timestamp |
 | `title_case` | Convert to title case |
@@ -662,6 +668,23 @@ Vocabulary tokens are **not keywords** — they are interpreted by the LLM based
 | `to_number` | Convert to numeric type |
 | `prepend(str)` | Prefix a string |
 | `max_length(n)` | Enforce maximum length |
+
+#### Error-handling convention
+
+The `null_if_*`, `drop_if_*`, `warn_if_*`, and `error_if_*` tokens follow a consistent `<action>_if_<condition>` pattern for expressing fallback and error-handling intent in pipelines:
+
+- **`null_if_*`** — replace the value with null (record survives).
+- **`drop_if_*`** — discard the entire record.
+- **`warn_if_*`** — log a warning and pass the value through.
+- **`error_if_*`** — halt the pipeline (fail loudly).
+
+These are vocabulary tokens, not reserved keywords. Implementations decide what "log a warning" or "halt" means concretely. Common conditions include `null`, `invalid`, and `empty`, but the pattern is open — e.g. `drop_if_duplicate` or `warn_if_stale` are valid by convention.
+
+```
+EMAIL_ADDR -> email { trim | lowercase | validate_email | drop_if_invalid }
+TAX_ID -> tax_id { error_if_null }
+PHONE_NBR -> phone { "Parse as E.164" | warn_if_invalid }
+```
 
 ### 7.3 Domain Tokens
 

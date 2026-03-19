@@ -78,7 +78,7 @@ mapping 'opportunity ingestion' {
   }
 
   `ARR_Override__c` -> arr_value {
-    "Use ARR_Override__c if not null, otherwise fall back to Amount"
+    "Use `ARR_Override__c` if not null, otherwise fall back to `Amount`"
     | coalesce(0)
   }
 

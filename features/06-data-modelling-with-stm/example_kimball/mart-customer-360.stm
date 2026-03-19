@@ -129,33 +129,33 @@ mapping 'fact to mart' {
   target { `mart_customer_360` }
 
   note {
-    "Aggregated from fact_sales grouped by customer_id.
-     Only non-anonymous transactions (customer_id IS NOT NULL)."
+    "Aggregated from `fact_sales` grouped by `customer_id`.
+     Only non-anonymous transactions (`customer_id` IS NOT NULL)."
   }
 
   -> total_in_store_orders {
-    "COUNT(*) WHERE channel = 'in_store', grouped by customer_id"
+    "COUNT(*) WHERE `channel` = 'in_store', grouped by `customer_id`"
   }
   -> total_online_orders {
-    "COUNT(*) WHERE channel = 'online', grouped by customer_id"
+    "COUNT(*) WHERE `channel` = 'online', grouped by `customer_id`"
   }
   -> in_store_revenue {
-    "SUM(net_amount) WHERE channel = 'in_store', grouped by customer_id"
+    "SUM(`net_amount`) WHERE `channel` = 'in_store', grouped by `customer_id`"
   }
   -> online_revenue {
-    "SUM(net_amount) WHERE channel = 'online', grouped by customer_id"
+    "SUM(`net_amount`) WHERE `channel` = 'online', grouped by `customer_id`"
   }
   -> first_purchase_date {
-    "MIN(transaction_date) grouped by customer_id"
+    "MIN(`transaction_date`) grouped by `customer_id`"
   }
   -> last_purchase_date {
-    "MAX(transaction_date) grouped by customer_id"
+    "MAX(`transaction_date`) grouped by `customer_id`"
   }
   -> days_since_last_purchase {
-    "DATEDIFF(days, MAX(transaction_date), CURRENT_DATE)"
+    "DATEDIFF(days, MAX(`transaction_date`), CURRENT_DATE)"
   }
   -> avg_order_value {
-    "SUM(net_amount) / COUNT(DISTINCT transaction_id), grouped by customer_id"
+    "SUM(`net_amount`) / COUNT(DISTINCT `transaction_id`), grouped by `customer_id`"
   }
 
   // Derived from aggregates
@@ -166,9 +166,9 @@ mapping 'fact to mart' {
   }
 
   -> rfm_score {
-    "3-digit RFM score. Recency: days_since_last_purchase bucketed 1-5.
-     Frequency: lifetime_order_count bucketed 1-5.
-     Monetary: lifetime_spend bucketed 1-5.
+    "3-digit RFM score. Recency: `days_since_last_purchase` bucketed 1-5.
+     Frequency: `lifetime_order_count` bucketed 1-5.
+     Monetary: `lifetime_spend` bucketed 1-5.
      5 = best in each dimension."
   }
 }

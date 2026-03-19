@@ -132,7 +132,7 @@ namespace vault (note "Data Vault 2.0 — hubs, links, and satellites") {
     company_name -> company_name { trim }
 
     -> hash_diff {
-      "MD5 hash of first_name, last_name, email, phone, company_name for change detection"
+      "MD5 hash of `first_name`, `last_name`, `email`, `phone`, `company_name` for change detection"
     }
   }
 
@@ -151,7 +151,7 @@ namespace vault (note "Data Vault 2.0 — hubs, links, and satellites") {
     target { `link_contact_deal` }
 
     -> link_hk {
-      "MD5 hash of contact_id + deal_id"
+      "MD5 hash of `contact_id` + `deal_id`"
     }
     contact_id -> contact_hk  { dv_hash_key }
     deal_id    -> deal_hk     { dv_hash_key }
@@ -205,15 +205,15 @@ namespace mart (note "Business-facing dimensional models") {
     }
 
     -> full_name {
-      "Concatenate first_name and last_name from vault::sat_contact_details"
+      "Concatenate `first_name` and `last_name` from `vault::sat_contact_details`"
     }
 
     -> email {
-      "Latest email from vault::sat_contact_details satellite"
+      "Latest `email` from `vault::sat_contact_details` satellite"
     }
 
     -> company {
-      "Latest company_name from vault::sat_contact_details satellite"
+      "Latest `company_name` from `vault::sat_contact_details` satellite"
     }
   }
 
@@ -227,11 +227,11 @@ namespace mart (note "Business-facing dimensional models") {
     }
 
     -> contact_sk {
-      "Lookup via vault::link_contact_deal -> vault::hub_contact -> dim_contact"
+      "Lookup via `vault::link_contact_deal` -> `vault::hub_contact` -> `dim_contact`"
     }
 
     -> deal_name {
-      "From sat_deal if it existed — placeholder for future satellite"
+      "From `sat_deal` if it existed — placeholder for future satellite"
     }
 
     -> amount_usd {
@@ -239,7 +239,7 @@ namespace mart (note "Business-facing dimensional models") {
     }
 
     -> is_won {
-      "True if stage = 'closed_won'"
+      "True if `stage` = 'closed_won'"
     }
 
     -> days_in_pipeline {
@@ -257,7 +257,7 @@ namespace mart (note "Business-facing dimensional models") {
     }
 
     -> contact_sk {
-      "Join erp_invoices.customer_code to CRM contact via lookup table"
+      "Join `erp_invoices.customer_code` to CRM contact via lookup table"
     }
 
     invoice_id   -> invoice_id

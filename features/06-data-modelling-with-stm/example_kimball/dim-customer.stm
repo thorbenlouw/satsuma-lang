@@ -114,7 +114,7 @@ mapping 'sfdc to dim_customer' {
 
   FirstName -> first_name              { trim | title_case }
   LastName -> last_name                { trim | title_case }
-  -> full_name { "Trim and concat FirstName + ' ' + LastName, title case" }
+  -> full_name { "Trim and concat `FirstName` + ' ' + `LastName`, title case" }
 
   Email -> email                       { trim | lowercase | validate_email | null_if_invalid }
   Phone -> phone                       { trim | to_e164 }
@@ -144,9 +144,9 @@ mapping 'sfdc to dim_customer' {
 
   // Derived
   -> customer_segment {
-    "Assign 'vip' if LoyaltyTier is Diamond and ecom_shopify.total_spent > 10000.
-     Assign 'high_value' if LoyaltyTier is Gold, Platinum, or Diamond.
-     Assign 'growth' if LoyaltyTier is Silver.
+    "Assign 'vip' if `LoyaltyTier` is Diamond and `ecom_shopify.total_spent` > 10000.
+     Assign 'high_value' if `LoyaltyTier` is Gold, Platinum, or Diamond.
+     Assign 'growth' if `LoyaltyTier` is Silver.
      Otherwise assign 'standard'."
   }
 }

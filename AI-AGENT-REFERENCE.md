@@ -106,6 +106,8 @@ mapping <name> (<metadata>) {
 
   Transforms (combine with | inside { }):
     trim, lowercase, uppercase, title_case, null_if_empty, null_if_invalid
+    drop_if_invalid, drop_if_null, warn_if_invalid, warn_if_null
+    error_if_invalid, error_if_null
     coalesce(val), round(n), truncate(n), max_length(n)
     prepend("x"), append("x"), split("x") | first | last
     validate_email, to_e164, to_iso8601, to_utc, now_utc()
@@ -247,7 +249,7 @@ When reporting results to humans, be transparent about which parts of your analy
 3. Define `schema` blocks with all fields, types, and metadata
 4. Add `fragment` blocks if you have reusable field sets
 5. Write the `mapping { }` block with source/target refs and all arrows
-6. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline
+6. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline — backtick any field or schema names referenced inside the NL string (e.g. `` "Sum `amount` grouped by `customer_id`" ``)
 7. Add `//!` warnings for known data quality issues
 8. Add `//?` for any open questions or ambiguities
 9. Add `(note "...")` metadata for persistent field-level documentation
@@ -284,6 +286,7 @@ When reporting results to humans, be transparent about which parts of your analy
 | Using `schema` for a business metric | Use `metric` — it signals a terminal node to lineage tooling |
 | Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
 | Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
+| Writing field names bare in NL strings | Backtick field/schema references inside `"..."` strings — e.g. `"Sum \`order_total\` grouped by \`customer_id\`"`. This enables deterministic extraction by tooling. |
 
 ---
 

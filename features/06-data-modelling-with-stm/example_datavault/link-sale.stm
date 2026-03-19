@@ -153,10 +153,10 @@ mapping 'pos to sat_sale_detail' {
 
   QTY -> quantity
   UNIT_PRICE -> unit_price
-  -> gross_amount { "QTY * UNIT_PRICE" }
+  -> gross_amount { "`QTY` * `UNIT_PRICE`" }
   DISCOUNT_AMT -> discount_amount      { coalesce(0) }
   TAX_AMT -> tax_amount                { coalesce(0) }
-  -> net_amount { "gross_amount - discount_amount + tax_amount" }
+  -> net_amount { "`gross_amount` - `discount_amount` + `tax_amount`" }
 
   -> record_source { "POS" }
 }
@@ -175,10 +175,10 @@ mapping 'shopify to sat_sale_detail' {
   unit_price -> unit_price {
     "Convert from order currency to USD using daily spot rate"
   }
-  -> gross_amount { "quantity * unit_price (after currency conversion)" }
+  -> gross_amount { "`quantity` * `unit_price` (after currency conversion)" }
   discount_amount -> discount_amount   { coalesce(0) }
   tax_amount -> tax_amount             { coalesce(0) }
-  -> net_amount { "gross_amount - discount_amount + tax_amount" }
+  -> net_amount { "`gross_amount` - `discount_amount` + `tax_amount`" }
 
   -> record_source { "SHOPIFY" }
 }
