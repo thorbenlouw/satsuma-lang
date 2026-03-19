@@ -52,6 +52,7 @@ const commands = [
   "commands/validate.js",
   "commands/diff.js",
   "commands/nl-refs.js",
+  "commands/graph.js",
 ];
 
 for (const cmd of commands) {

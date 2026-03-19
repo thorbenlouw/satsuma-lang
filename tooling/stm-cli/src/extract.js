@@ -226,6 +226,7 @@ export function extractMetrics(rootNode) {
     const meta = child(node, "metadata_block");
     const sources = [];
     let grain = null;
+    const slices = [];
     if (meta) {
       for (const entry of meta.namedChildren) {
         if (entry.type === "key_value_pair") {
@@ -249,13 +250,17 @@ export function extractMetrics(rootNode) {
           } else if (key?.text === "grain") {
             if (val) grain = entryText(val);
           }
+        } else if (entry.type === "slice_body") {
+          for (const item of entry.namedChildren) {
+            if (item.type === "identifier") slices.push(item.text);
+          }
         }
       }
     }
 
     const body = child(node, "metric_body");
     const fields = body ? extractDirectFields(body) : [];
-    return { name, namespace, displayName, sources, grain, fields, row: node.startPosition.row };
+    return { name, namespace, displayName, sources, grain, slices, fields, row: node.startPosition.row };
   });
 }
 

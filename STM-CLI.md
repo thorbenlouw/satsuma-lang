@@ -50,6 +50,16 @@ Fine-grained extraction — slice below block level to get specific arrows, NL c
 | `fields <schema>` | Field list with types and metadata | `stm fields sat_customer_demographics` |
 | `match-fields --source <s> --target <t>` | Normalized name comparison between two schemas | `stm match-fields --source loyalty_sfdc --target sat_customer_demographics` |
 
+### Workspace Graph
+
+Full workspace topology export for one-shot reasoning.
+
+| Command | Operation | Example |
+|---|---|---|
+| `graph [path]` | Complete semantic graph — nodes, edges, and field-level data flow | `stm graph examples/ --json` |
+
+Flags: `--json` (full graph), `--compact` (schema-level adjacency list), `--schema-only` (omit field-level edges), `--namespace <ns>` (filter to namespace), `--no-nl` (strip NL text from edges).
+
 ### Structural Analysis
 
 Operations that check or compare workspace structure.
@@ -151,6 +161,23 @@ stm nl schema sat_customer_demographics
 stm meta field sat_customer_demographics.country_code
 
 # 4. Agent writes the mapping, applying its own judgment
+```
+
+### Whole-workspace reasoning (single load)
+
+```bash
+# 1. Load the full workspace graph in one call
+stm graph examples/ --json > workspace.json
+
+# 2. Agent has all nodes, edges, and field-level data flow
+#    — impact analysis, PII audit, coverage check without round-trips
+#    — schema_edges for topology, edges for field-level detail
+#    — unresolved_nl section surfaces all NL arrows for interpretation
+
+# 3. For large workspaces, narrow the scope:
+stm graph examples/ --json --namespace warehouse
+stm graph examples/ --json --schema-only    # topology only
+stm graph examples/ --json --no-nl          # smaller payload
 ```
 
 ### Reviewing a change
