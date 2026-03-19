@@ -88,7 +88,7 @@ metric conversion_rate (
   value  DECIMAL(5,4)  (measure non_additive)  // wins / total by stage
 
   note {
-    "Opportunities closed_won divided by total opportunities entering that stage."
+    "Opportunities `closed_won` divided by total opportunities entering that stage."
   }
 }
 
@@ -100,7 +100,7 @@ metric pipeline_value "ARR Pipeline" (
 ) {
   arr_value           DECIMAL(18,2)  (measure additive)
   weighted_arr_value  DECIMAL(18,2)  (measure additive,
-    note "arr_value * probability — use for forecast roll-ups")
+    note "`arr_value` * `probability` — use for forecast roll-ups")
 
   note {
     "Open pipeline as of the snapshot date, expressed in ARR."

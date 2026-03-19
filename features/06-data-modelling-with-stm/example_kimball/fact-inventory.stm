@@ -94,19 +94,19 @@ mapping 'wms to fact_inventory_snapshot' {
   //! QTY_AVAILABLE in source is sometimes stale (calculated async).
   //  We recalculate it here for consistency.
   -> quantity_available {
-    "QTY_ON_HAND - QTY_RESERVED. Floor at zero."
+    "`QTY_ON_HAND` - `QTY_RESERVED`. Floor at zero."
   }
 
   -> inventory_value {
-    "QTY_ON_HAND * UNIT_COST. Null if UNIT_COST is null."
+    "`QTY_ON_HAND` * `UNIT_COST`. Null if `UNIT_COST` is null."
   }
 
   -> days_since_count {
-    "DATEDIFF(days, LAST_COUNT_DATE, SNAPSHOT_TS). Null if never counted."
+    "DATEDIFF(days, `LAST_COUNT_DATE`, `SNAPSHOT_TS`). Null if never counted."
   }
 
   -> is_below_reorder {
-    "True if QTY_ON_HAND < REORDER_POINT, false otherwise."
+    "True if `QTY_ON_HAND` < `REORDER_POINT`, false otherwise."
   }
 
   REORDER_QTY -> reorder_quantity

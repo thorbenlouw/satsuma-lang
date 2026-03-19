@@ -92,13 +92,13 @@ mapping 'pos to dim_store' {
   OPEN_DATE -> opened_date
 
   // Region enrichment from lookup
-  STORE_ID -> region     { "Look up region from `store_region_map` using STORE_ID" }
-  STORE_ID -> country    { "Look up country from `store_region_map` using STORE_ID" }
-  STORE_ID -> timezone   { "Look up timezone from `store_region_map` using STORE_ID" }
+  STORE_ID -> region     { "Look up region from `store_region_map` using `STORE_ID`" }
+  STORE_ID -> country    { "Look up country from `store_region_map` using `STORE_ID`" }
+  STORE_ID -> timezone   { "Look up timezone from `store_region_map` using `STORE_ID`" }
 
   STATUS -> status {
     map { A: "active", T: "temporarily_closed", C: "closed" }
   }
 
-  -> is_active { "True if STATUS is 'A', false otherwise" }
+  -> is_active { "True if `STATUS` is 'A', false otherwise" }
 }

@@ -101,19 +101,19 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   -> event_count { count }
 
   event_type -> distinct_event_types {
-    distinct | "Emit the distinct event_type values as a JSON array string."
+    distinct | "Emit the distinct `event_type` values as a JSON array string."
   }
 
   -> viewed_product_count {
-    "Count records in the group where event_type == 'product_view'."
+    "Count records in the group where `event_type` == 'product_view'."
   }
 
   -> cart_add_count {
-    "Count records in the group where event_type == 'add_to_cart'."
+    "Count records in the group where `event_type` == 'add_to_cart'."
   }
 
   -> purchase_event_count {
-    "Count records in the group where event_type == 'purchase'."
+    "Count records in the group where `event_type` == 'purchase'."
   }
 
   event_type -> checkout_completed {
@@ -121,16 +121,16 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   }
 
   CartLines[].unit_price -> gross_merchandise_value {
-    "For each event, multiply CartLines[].unit_price by CartLines[].quantity,
+    "For each event, multiply `CartLines[].unit_price` by `CartLines[].quantity`,
      sum within the event, then sum across the session group."
   }
 
   CartLines[].discount_amt -> total_discount_amount {
-    "Sum discount_amt across all CartLines[] elements in all events in the group."
+    "Sum `discount_amt` across all `CartLines[]` elements in all events in the group."
   }
 
   -> distinct_product_count {
-    "Count distinct CartLines[].sku values across all events in the session."
+    "Count distinct `CartLines[].sku` values across all events in the session."
   }
 
   -> top_category {

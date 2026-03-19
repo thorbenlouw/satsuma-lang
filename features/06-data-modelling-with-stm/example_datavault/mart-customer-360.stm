@@ -106,7 +106,7 @@ mapping 'demographics to mart' {
 
   first_name -> first_name
   last_name -> last_name
-  -> full_name { "Trim and concat first_name + ' ' + last_name, title case" }
+  -> full_name { "Trim and concat `first_name` + ' ' + `last_name`, title case" }
 
   email -> email
   phone -> phone
@@ -145,7 +145,7 @@ mapping 'online to mart' {
   }
 
   -> has_online_account {
-    "True if sat_customer_online.hub_customer_hk is not null, false otherwise."
+    "True if `sat_customer_online.hub_customer_hk` is not null, false otherwise."
   }
 
   lifetime_order_count -> online_order_count   { coalesce(0) }
@@ -153,7 +153,7 @@ mapping 'online to mart' {
   last_order_at -> last_online_order_at
 
   -> online_account_age_days {
-    "DATEDIFF(days, account_created_at, CURRENT_DATE). Null if no online account."
+    "DATEDIFF(days, `account_created_at`, CURRENT_DATE). Null if no online account."
   }
 }
 
@@ -168,14 +168,14 @@ mapping 'derived segments' {
   }
 
   -> customer_segment {
-    "Assign 'vip' if loyalty_tier is 'diamond' and online lifetime spend > 10000.
-     Assign 'high_value' if loyalty_tier is gold, platinum, or diamond.
-     Assign 'growth' if loyalty_tier is silver.
+    "Assign 'vip' if `loyalty_tier` is 'diamond' and online lifetime spend > 10000.
+     Assign 'high_value' if `loyalty_tier` is gold, platinum, or diamond.
+     Assign 'growth' if `loyalty_tier` is silver.
      Otherwise assign 'standard'."
   }
 
   -> is_omnichannel {
-    "True if preferred_store_id is not null and online order count > 0,
+    "True if `preferred_store_id` is not null and online order count > 0,
      false otherwise."
   }
 }

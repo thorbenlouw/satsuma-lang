@@ -87,7 +87,7 @@ namespace staging (note "Cleaned and conformed staging area") {
 
   // Map GL entries — joins to employees across merged namespace
   mapping 'stage gl entries' {
-    source { `source::finance_gl` }
+    source { `source::finance_gl`, `source::hr_employees` }
     target { `stg_gl_entries` }
 
     gl_entry_id -> gl_hk        { hash_key }
@@ -97,11 +97,11 @@ namespace staging (note "Cleaned and conformed staging area") {
     amount      -> amount
 
     -> department {
-      "Lookup department from source::hr_employees using posted_by -> employee_id"
+      "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`"
     }
 
     -> employee_name {
-      "Lookup full_name from source::hr_employees using posted_by -> employee_id"
+      "Lookup `full_name` from `source::hr_employees` using `posted_by` -> `employee_id`"
     }
   }
 }
@@ -119,33 +119,33 @@ namespace reporting (note "Executive reporting layer") {
   }
 
   mapping 'build budget vs actual' {
-    source { `staging::stg_gl_entries` }
+    source { `staging::stg_gl_entries`, `source::finance_budgets`, `staging::stg_employees` }
     target { `dept_budget_vs_actual` }
 
     department -> department
 
     -> fiscal_year {
-      "Extract year from entry_date"
+      "Extract year from `entry_date`"
     }
 
     -> budget_amount {
-      "Lookup from source::finance_budgets matching department and fiscal year"
+      "Lookup from `source::finance_budgets` matching `department` and `fiscal_year`"
     }
 
     amount -> actual_spend {
-      "Sum of amount grouped by department and fiscal year"
+      "Sum of `amount` grouped by `department` and `fiscal_year`"
     }
 
     -> variance {
-      "budget_amount minus actual_spend"
+      "`budget_amount` minus `actual_spend`"
     }
 
     -> variance_pct {
-      "variance divided by budget_amount times 100"
+      "`variance` divided by `budget_amount` times 100"
     }
 
     -> headcount {
-      "Count distinct employees from staging::stg_employees for this department"
+      "Count distinct employees from `staging::stg_employees` for this `department`"
     }
   }
 

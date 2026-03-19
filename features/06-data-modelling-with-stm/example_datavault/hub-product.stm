@@ -108,9 +108,9 @@ mapping 'sap to sat_product_attributes' {
 
   MAKTX -> product_name               { trim | title_case }
 
-  MATKL -> department    { "Look up department from `product_hierarchy` using MATKL" }
-  MATKL -> category      { "Look up category from `product_hierarchy` using MATKL" }
-  MATKL -> subcategory   { "Look up subcategory from `product_hierarchy` using MATKL" }
+  MATKL -> department    { "Look up department from `product_hierarchy` using `MATKL`" }
+  MATKL -> category      { "Look up category from `product_hierarchy` using `MATKL`" }
+  MATKL -> subcategory   { "Look up subcategory from `product_hierarchy` using `MATKL`" }
 
   BRAND -> brand                       { trim | title_case }
   SUPPLIER_ID -> supplier_id

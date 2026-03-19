@@ -127,8 +127,8 @@ mapping 'customer 360' {
     `crm_customers`       (filter "email NOT LIKE '%@test.internal'")
     `order_transactions`   (filter "status IN ('completed', 'refunded')")
     `support_tickets`      (filter "created_at >= date_sub(now(), interval 12 month)")
-    "Join crm_customers to order_transactions on crm_customers.customer_id = order_transactions.customer_id (left join — customers may have no orders).
-     Join crm_customers to support_tickets on crm_customers.customer_id = cast(support_tickets.customer_id as UUID) (left join — customers may have no tickets)."
+    "Join `crm_customers` to `order_transactions` on `crm_customers.customer_id` = `order_transactions.customer_id` (left join — customers may have no orders).
+     Join `crm_customers` to `support_tickets` on `crm_customers.customer_id` = cast(`support_tickets.customer_id` as UUID) (left join — customers may have no tickets)."
   }
   target { `customer_360` }
 
@@ -143,8 +143,8 @@ mapping 'customer 360' {
   crm_customers.email -> email { trim | lowercase }
 
   -> full_name {
-    "Concat crm_customers.first_name + ' ' + crm_customers.last_name.
-     Trim whitespace. If both are null, use company_name instead."
+    "Concat `crm_customers.first_name` + ' ' + `crm_customers.last_name`.
+     Trim whitespace. If both are null, use `company_name` instead."
   }
 
   crm_customers.company_name -> company_name { trim | null_if_empty }
@@ -155,68 +155,68 @@ mapping 'customer 360' {
   crm_customers.is_active -> is_active
 
   -> tenure_months {
-    "Calculate months between crm_customers.signup_date and current_date.
+    "Calculate months between `crm_customers.signup_date` and current_date.
      Round down to nearest whole month."
   }
 
   // --- Order metrics (aggregated from order_transactions) ---
   -> total_orders {
-    "Count of order_transactions where status = 'completed'."
+    "Count of `order_transactions` where `status` = 'completed'."
   }
 
   -> total_revenue {
-    "Sum order_transactions.total where status = 'completed'."
+    "Sum `order_transactions.total` where `status` = 'completed'."
     | coalesce(0) | round(2)
   }
 
   -> total_refunds {
-    "Sum abs(order_transactions.total) where status = 'refunded'."
+    "Sum abs(`order_transactions.total`) where `status` = 'refunded'."
     | coalesce(0) | round(2)
   }
 
   -> net_revenue {
-    "total_revenue minus total_refunds."
+    "`total_revenue` minus `total_refunds`."
     | round(2)
   }
 
   -> avg_order_value {
-    "total_revenue divided by total_orders. Null if total_orders = 0."
+    "`total_revenue` divided by `total_orders`. Null if `total_orders` = 0."
     | round(2)
   }
 
   -> first_order_date {
-    "Min order_transactions.order_date where status = 'completed'."
+    "Min `order_transactions.order_date` where `status` = 'completed'."
   }
 
   -> last_order_date {
-    "Max order_transactions.order_date where status = 'completed'."
+    "Max `order_transactions.order_date` where `status` = 'completed'."
   }
 
   -> preferred_channel {
-    "Mode of order_transactions.channel where status = 'completed'.
+    "Mode of `order_transactions.channel` where `status` = 'completed'.
      If tied, prefer in order: web > mobile > api > pos.
      Null if no orders."
   }
 
   -> distinct_coupon_count {
-    "Count distinct non-null order_transactions.coupon_code."
+    "Count distinct non-null `order_transactions.coupon_code`."
     | coalesce(0)
   }
 
   // --- Support metrics (aggregated from support_tickets) ---
   -> tickets_last_12m {
-    "Count of support_tickets (already filtered to last 12 months)."
+    "Count of `support_tickets` (already filtered to last 12 months)."
     | coalesce(0)
   }
 
   -> open_tickets {
-    "Count of support_tickets where status IN ('open', 'in_progress')."
+    "Count of `support_tickets` where `status` IN ('open', 'in_progress')."
     | coalesce(0)
   }
 
   -> avg_resolution_hours {
-    "Average hours between support_tickets.created_at and resolved_at
-     where resolved_at is not null. Null if no resolved tickets."
+    "Average hours between `support_tickets.created_at` and `resolved_at`
+     where `resolved_at` is not null. Null if no resolved tickets."
     | round(1)
   }
 
