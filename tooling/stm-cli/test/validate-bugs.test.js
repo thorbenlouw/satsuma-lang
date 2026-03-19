@@ -7,6 +7,7 @@
  * - Bug 3: Metric source extraction (keyword vs value, block form)
  * - Bug 4: Suppress field-not-in-schema for schemas with unresolved spreads
  * - Bug 5: Duplicate warning elimination
+ * - Bug 6: Duplicate named definitions across files
  */
 
 import assert from "node:assert/strict";
@@ -311,6 +312,187 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
     const warnings = collectSemanticWarnings(index);
     const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Should not warn for target schema with unresolved spreads");
+  });
+});
+
+// ── Bug 6: Duplicate named definitions ───────────────────────────────────────
+
+describe("Bug 6: duplicate named definitions", () => {
+  it("emits error when the same schema name is defined twice", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "pos_oracle", fields: [{ name: "STORE_ID", type: "VARCHAR(20)" }], file: "hub-store.stm", row: 20 },
+      ],
+    });
+    index.duplicates = [{
+      kind: "schema",
+      previousKind: "schema",
+      name: "pos_oracle",
+      file: "link-sale.stm",
+      row: 26,
+      previousFile: "hub-store.stm",
+      previousRow: 20,
+    }];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 1, "Should emit one duplicate-definition error");
+    assert.equal(dupErrors[0].severity, "error");
+    assert.ok(dupErrors[0].message.includes("pos_oracle"));
+    assert.ok(dupErrors[0].message.includes("Schema"));
+    assert.ok(dupErrors[0].message.includes("hub-store.stm"));
+    assert.equal(dupErrors[0].file, "link-sale.stm");
+    assert.equal(dupErrors[0].line, 27); // row 26 + 1
+  });
+
+  it("emits multiple errors for a schema defined in three files", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "pos_oracle", fields: [], file: "link-sale.stm", row: 26 },
+      ],
+    });
+    index.duplicates = [
+      {
+        kind: "schema",
+        previousKind: "schema",
+        name: "pos_oracle",
+        file: "hub-store.stm",
+        row: 20,
+        previousFile: "hub-customer.stm",
+        previousRow: 49,
+      },
+      {
+        kind: "schema",
+        previousKind: "schema",
+        name: "pos_oracle",
+        file: "link-sale.stm",
+        row: 26,
+        previousFile: "hub-store.stm",
+        previousRow: 20,
+      },
+    ];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 2, "Should emit two errors for three definitions");
+  });
+
+  it("emits error for duplicate metrics", () => {
+    const index = makeIndex({
+      metrics: [{ name: "mrr", sources: [], fields: [], file: "b.stm", row: 10 }],
+    });
+    index.duplicates = [{
+      kind: "metric",
+      previousKind: "metric",
+      name: "mrr",
+      file: "b.stm",
+      row: 10,
+      previousFile: "a.stm",
+      previousRow: 5,
+    }];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 1);
+    assert.ok(dupErrors[0].message.includes("Metric"));
+    assert.ok(dupErrors[0].message.includes("mrr"));
+  });
+
+  it("emits error for duplicate named mappings", () => {
+    const index = makeIndex({
+      mappings: [{ name: "load customers", sources: ["s"], targets: ["t"], file: "b.stm", row: 15 }],
+    });
+    index.duplicates = [{
+      kind: "mapping",
+      previousKind: "mapping",
+      name: "load customers",
+      file: "b.stm",
+      row: 15,
+      previousFile: "a.stm",
+      previousRow: 8,
+    }];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 1);
+    assert.ok(dupErrors[0].message.includes("Mapping"));
+    assert.ok(dupErrors[0].message.includes("load customers"));
+  });
+
+  it("emits error for duplicate fragments", () => {
+    const index = makeIndex({
+      fragments: [{ name: "audit_fields", fields: [], file: "b.stm", row: 3 }],
+    });
+    index.duplicates = [{
+      kind: "fragment",
+      previousKind: "fragment",
+      name: "audit_fields",
+      file: "b.stm",
+      row: 3,
+      previousFile: "a.stm",
+      previousRow: 1,
+    }];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 1);
+    assert.ok(dupErrors[0].message.includes("Fragment"));
+  });
+
+  it("emits error for duplicate transforms", () => {
+    const index = makeIndex({});
+    index.duplicates = [{
+      kind: "transform",
+      previousKind: "transform",
+      name: "dv_hash",
+      file: "b.stm",
+      row: 7,
+      previousFile: "a.stm",
+      previousRow: 2,
+    }];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 1);
+    assert.ok(dupErrors[0].message.includes("Transform"));
+    assert.ok(dupErrors[0].message.includes("dv_hash"));
+  });
+
+  it("emits error when a schema and metric share the same name", () => {
+    const index = makeIndex({
+      schemas: [{ name: "customer", fields: [], file: "a.stm", row: 5 }],
+      metrics: [{ name: "customer", sources: [], fields: [], file: "b.stm", row: 10 }],
+    });
+    index.duplicates = [{
+      kind: "metric",
+      previousKind: "schema",
+      name: "customer",
+      file: "b.stm",
+      row: 10,
+      previousFile: "a.stm",
+      previousRow: 5,
+    }];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 1);
+    assert.ok(dupErrors[0].message.includes("Metric"));
+    assert.ok(dupErrors[0].message.includes("conflicts with schema"));
+    assert.ok(dupErrors[0].message.includes("customer"));
+  });
+
+  it("does not emit error when all names are unique", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "schema_a", fields: [] },
+        { name: "schema_b", fields: [] },
+      ],
+    });
+    index.duplicates = [];
+
+    const warnings = collectSemanticWarnings(index);
+    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    assert.equal(dupErrors.length, 0, "Should not emit errors for unique names");
   });
 });
 
