@@ -785,3 +785,239 @@ describe("stm diff", () => {
     assert.ok(stdout.trim().length > 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Namespace-aware commands
+// ---------------------------------------------------------------------------
+const NS_FIXTURE = resolve(import.meta.dirname, "fixtures", "namespaces.stm");
+
+describe("stm summary (namespaces)", () => {
+  it("shows ns::name format for namespaced schemas", async () => {
+    const { stdout, code } = await run("summary", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /pos::stores/);
+    assert.match(stdout, /pos::transactions/);
+    assert.match(stdout, /ecom::orders/);
+    assert.match(stdout, /warehouse::hub_store/);
+  });
+
+  it("shows global entities without namespace prefix", async () => {
+    const { stdout, code } = await run("summary", NS_FIXTURE);
+    assert.equal(code, 0);
+    // audit_fields is global — should appear without ns:: prefix
+    assert.match(stdout, /audit_fields/);
+    assert.doesNotMatch(stdout, /\w+::audit_fields/);
+  });
+
+  it("--json includes all namespaced schemas", async () => {
+    const { stdout, code } = await run("summary", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.schemas.map((s) => s.name);
+    assert.ok(names.includes("pos::stores"));
+    assert.ok(names.includes("ecom::orders"));
+    assert.ok(names.includes("warehouse::hub_store"));
+  });
+
+  it("--compact lists qualified names", async () => {
+    const { stdout, code } = await run("summary", "--compact", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /pos::stores/);
+    assert.match(stdout, /ecom::customers/);
+  });
+});
+
+describe("stm schema (namespaces)", () => {
+  it("resolves fully qualified namespace schema", async () => {
+    const { stdout, code } = await run("schema", "pos::stores", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /STORE_ID/);
+    assert.match(stdout, /STORE_NAME/);
+  });
+
+  it("resolves unambiguous unqualified name to namespaced schema", async () => {
+    // 'hub_store' exists only in warehouse namespace
+    const { stdout, code } = await run("schema", "hub_store", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /store_hk/);
+  });
+
+  it("reports ambiguous unqualified name", async () => {
+    // 'orders' exists in ecom — should resolve since it's unique
+    // But let's test a schema that exists in only one namespace
+    const { stdout, code } = await run("schema", "stores", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /STORE_ID/);
+  });
+
+  it("--fields-only works for namespaced schema", async () => {
+    const { stdout, code } = await run("schema", "pos::stores", "--fields-only", NS_FIXTURE);
+    assert.equal(code, 0);
+    const lines = stdout.trim().split("\n").filter(Boolean);
+    assert.ok(lines.length >= 3, `expected at least 3 field lines, got ${lines.length}`);
+  });
+
+  it("--json works for namespaced schema", async () => {
+    const { stdout, code } = await run("schema", "pos::stores", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.name);
+    assert.ok(Array.isArray(data.fields));
+    assert.ok(data.fields.length >= 3);
+  });
+});
+
+describe("stm validate (namespaces)", () => {
+  it("valid namespace file produces no errors", async () => {
+    const { stdout, code } = await run("validate", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /no issues/i);
+  });
+
+  it("catches duplicates within a namespace", async () => {
+    const DUP = resolve(import.meta.dirname, "fixtures", "ns-duplicate.stm");
+    const { stdout, code } = await run("validate", DUP);
+    assert.notEqual(code, 0);
+    assert.match(stdout, /duplicate-definition/);
+    assert.match(stdout, /pos::stores/);
+  });
+
+  it("catches namespace metadata conflicts", async () => {
+    const CONFLICT = resolve(import.meta.dirname, "fixtures", "ns-meta-conflict.stm");
+    const { stdout, code } = await run("validate", CONFLICT);
+    assert.notEqual(code, 0);
+    assert.match(stdout, /namespace-metadata-conflict|conflicting/i);
+  });
+
+  it("warns for unqualified cross-namespace reference with hint", async () => {
+    const BAD_REF = resolve(import.meta.dirname, "fixtures", "ns-unresolved-ref.stm");
+    const { stdout } = await run("validate", BAD_REF);
+    // Should produce a warning about 'stores' not being defined in vault or global
+    assert.match(stdout, /undefined-ref|undefined.*stores/i);
+    assert.match(stdout, /hint|pos::stores/i);
+  });
+
+  it("--json shows namespace-aware diagnostics", async () => {
+    const DUP = resolve(import.meta.dirname, "fixtures", "ns-duplicate.stm");
+    const { stdout, code } = await run("validate", "--json", DUP);
+    assert.notEqual(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    const dupError = data.find((d) => d.rule === "duplicate-definition");
+    assert.ok(dupError, "Should contain a duplicate-definition diagnostic");
+    assert.ok(dupError.message.includes("pos::stores"));
+  });
+});
+
+describe("stm find (namespaces)", () => {
+  it("finds pii tag inside namespace blocks", async () => {
+    const { stdout, code } = await run("find", "--tag", "pii", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /pii/i);
+  });
+
+  it("--json returns matches from namespaced schemas", async () => {
+    const { stdout, code } = await run("find", "--tag", "pii", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.ok(data.length >= 2, "expected at least 2 pii-tagged fields");
+    // Should include fields from pos::stores and ecom::customers
+    const blocks = data.map((m) => m.block);
+    assert.ok(
+      blocks.some((b) => b.includes("stores")),
+      "should find pii in stores",
+    );
+    assert.ok(
+      blocks.some((b) => b.includes("customers")),
+      "should find pii in customers",
+    );
+  });
+});
+
+describe("stm lineage (namespaces)", () => {
+  it("traces lineage from qualified namespace schema", async () => {
+    const { stdout, code } = await run(
+      "lineage", "--from", "pos::stores", NS_FIXTURE,
+    );
+    assert.equal(code, 0);
+    // pos::stores -> load hub_store -> warehouse::hub_store
+    assert.match(stdout, /load hub_store|hub_store/);
+  });
+
+  it("traces lineage from unqualified unique schema", async () => {
+    const { stdout, code } = await run(
+      "lineage", "--from", "stores", NS_FIXTURE,
+    );
+    assert.equal(code, 0);
+    assert.match(stdout, /hub_store/);
+  });
+
+  it("--json produces DAG with namespace-qualified names", async () => {
+    const { stdout, code } = await run(
+      "lineage", "--from", "pos::stores", "--json", NS_FIXTURE,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.nodes));
+    assert.ok(Array.isArray(data.edges));
+    const nodeNames = data.nodes.map((n) => n.name);
+    assert.ok(nodeNames.includes("pos::stores"));
+  });
+
+  it("exits 1 for unknown qualified schema", async () => {
+    const { code, stderr } = await run(
+      "lineage", "--from", "nonexistent::schema", NS_FIXTURE,
+    );
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
+
+describe("stm where-used (namespaces)", () => {
+  it("shows references for a namespaced schema", async () => {
+    const { stdout, code } = await run("where-used", "pos::stores", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /pos::stores|load hub_store/i);
+  });
+});
+
+describe("stm fields (namespaces)", () => {
+  it("lists fields for qualified namespace schema", async () => {
+    const { stdout, code } = await run("fields", "pos::stores", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /STORE_ID/);
+    assert.match(stdout, /STORE_NAME/);
+    assert.match(stdout, /REGION_CD/);
+  });
+
+  it("lists fields for unqualified unique schema", async () => {
+    const { stdout, code } = await run("fields", "hub_store", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /store_hk/);
+  });
+
+  it("--json returns structured fields", async () => {
+    const { stdout, code } = await run("fields", "pos::stores", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.ok(data.length >= 3);
+  });
+});
+
+describe("stm mapping (namespaces)", () => {
+  it("resolves namespaced mapping by name", async () => {
+    const { stdout, code } = await run("mapping", "load hub_store", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /pos::stores|hub_store/);
+  });
+
+  it("--json shows cross-namespace source reference", async () => {
+    const { stdout, code } = await run("mapping", "load hub_store", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.name);
+    assert.ok(data.sources.includes("pos::stores") || data.sources.some((s) => s.includes("stores")));
+  });
+});

@@ -7,7 +7,12 @@
 
 import assert from "node:assert/strict";
 import { before, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { extractArrowRecords } from "../src/extract.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const EXAMPLES = resolve(__dirname, "../../../examples");
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
@@ -206,7 +211,7 @@ describe("extractArrowRecords against real examples", () => {
   });
 
   it("extracts all arrows from db-to-db.stm", () => {
-    const { tree } = parseFile("../../examples/db-to-db.stm");
+    const { tree } = parseFile(resolve(EXAMPLES, "db-to-db.stm"));
     const records = extractArrowRecords(tree.rootNode);
 
     // db-to-db.stm has 16 map_arrows + 3 computed_arrows = 19
@@ -250,7 +255,7 @@ describe("extractArrowRecords against real examples", () => {
   });
 
   it("extracts arrows from multi-source-hub.stm", () => {
-    const { tree } = parseFile("../../examples/multi-source-hub.stm");
+    const { tree } = parseFile(resolve(EXAMPLES, "multi-source-hub.stm"));
     const records = extractArrowRecords(tree.rootNode);
     assert.ok(records.length > 0, "should have arrows");
 

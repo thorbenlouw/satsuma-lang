@@ -1,0 +1,20 @@
+// Unresolved cross-namespace reference fixture
+
+namespace pos {
+  schema stores {
+    STORE_ID VARCHAR(20)
+  }
+}
+
+namespace vault {
+  schema hub_store {
+    store_id VARCHAR(20)
+  }
+
+  mapping 'bad ref' {
+    source { `stores` }
+    target { `hub_store` }
+
+    STORE_ID -> store_id
+  }
+}

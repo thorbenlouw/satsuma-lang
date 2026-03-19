@@ -1,0 +1,11 @@
+// Namespace duplicate test fixture — two 'stores' in same namespace
+
+namespace pos {
+  schema stores {
+    STORE_ID VARCHAR(20) (pk)
+  }
+
+  schema stores {
+    ID INT (pk)
+  }
+}

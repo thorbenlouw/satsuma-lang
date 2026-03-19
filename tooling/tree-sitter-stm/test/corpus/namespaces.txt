@@ -129,6 +129,58 @@ namespace analytics {
         (field_decl (field_name (identifier)) (type_expr))))))
 
 ================================================================================
+metric with qualified source name
+================================================================================
+
+namespace analytics {
+  metric revenue (source ecom::orders) {
+    amount DECIMAL(18,2)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (metric_block
+      (block_label (identifier))
+      (metadata_block
+        (key_value_pair
+          (kv_key
+            (identifier))
+          (qualified_name (identifier) (identifier))))
+      (metric_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
+metric with qualified sources in braced list
+================================================================================
+
+namespace analytics {
+  metric revenue (source {ecom::orders, pos::transactions}) {
+    amount DECIMAL(18,2)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace_block
+    name: (identifier)
+    (metric_block
+      (block_label (identifier))
+      (metadata_block
+        (key_value_pair
+          (kv_key
+            (identifier))
+          (kv_braced_list
+            (qualified_name (identifier) (identifier))
+            (qualified_name (identifier) (identifier)))))
+      (metric_body
+        (field_decl (field_name (identifier)) (type_expr))))))
+
+================================================================================
 empty namespace
 ================================================================================
 
