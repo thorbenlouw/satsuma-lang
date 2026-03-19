@@ -1,6 +1,6 @@
 ---
 id: stm-n5i6
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-19T07:38:38Z
