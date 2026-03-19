@@ -179,6 +179,20 @@ describe("extractArrowRecords", () => {
     const root = n("source_file", [mapping]);
     assert.deepEqual(extractArrowRecords(root), []);
   });
+
+  it("extracts nested_arrow source and target", () => {
+    const innerArrow = mapArrow("EBELP", "referenceLine", [], 15);
+    const nested = n("nested_arrow", [srcPath("Items[]"), tgtPath("items[]"), innerArrow], "", 14);
+    const mapping = mappingBlock("m1", [nested]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    // Should include the nested_arrow itself and the inner map_arrow
+    const nestedRecord = records.find((r) => r.target === "items[]");
+    assert.ok(nestedRecord, "should extract nested_arrow target");
+    assert.equal(nestedRecord.source, "Items[]");
+    assert.equal(nestedRecord.line, 14);
+  });
 });
 
 // ── Integration with real example files ──────────────────────────────────────

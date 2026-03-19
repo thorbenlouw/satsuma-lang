@@ -95,6 +95,22 @@ function searchTag(index, parsedFiles, tag, scope) {
       return;
     }
 
+    // Check schema-level metadata block for matching tags
+    const meta = blockNode.namedChildren.find((c) => c.type === "metadata_block");
+    if (meta) {
+      const matched = findTagInMeta(meta, tag);
+      if (matched) {
+        matches.push({
+          blockType,
+          block: blockName,
+          field: "(schema)",
+          tag: matched,
+          file: blockEntry.file,
+          row: blockNode.startPosition.row,
+        });
+      }
+    }
+
     const body = blockNode.namedChildren.find((c) => c.type === bodyType);
     if (!body) return;
 
