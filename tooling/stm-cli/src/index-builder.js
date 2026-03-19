@@ -14,6 +14,7 @@ import {
   extractWarnings,
   extractQuestions,
   extractArrowRecords,
+  extractNamespaces,
 } from "./extract.js";
 
 /**
@@ -57,7 +58,17 @@ export function extractFileData({ filePath, tree, errorCount }) {
     warnings: extractWarnings(root),
     questions: extractQuestions(root),
     arrowRecords: extractArrowRecords(root),
+    namespaces: extractNamespaces(root),
   };
+}
+
+/**
+ * Compute the qualified index key for a namespaced entity.
+ * Global entities (namespace=null) use their bare name.
+ * Namespaced entities use "ns::name".
+ */
+function qualifiedKey(namespace, name) {
+  return namespace ? `${namespace}::${name}` : name;
 }
 
 export function buildIndex(parsedFiles) {
@@ -72,16 +83,20 @@ export function buildIndex(parsedFiles) {
   const allArrowRecords = [];
   let totalErrors = 0;
 
-  // Track all named definitions across entity types for cross-kind duplicate detection.
+  // Track all named definitions per namespace for cross-kind duplicate detection.
   // A schema and a metric with the same name in the same namespace is a conflict.
-  const allNames = new Map(); // name → {kind, file, row}
+  // namespace key: null → "__global__", otherwise the namespace name.
+  const namesByNamespace = new Map(); // nsKey → Map(name → {kind, file, row})
 
-  function checkDuplicate(kind, name, file, row) {
-    if (allNames.has(name)) {
-      const prev = allNames.get(name);
+  function checkDuplicate(kind, name, namespace, file, row) {
+    const nsKey = namespace ?? "__global__";
+    if (!namesByNamespace.has(nsKey)) namesByNamespace.set(nsKey, new Map());
+    const nsNames = namesByNamespace.get(nsKey);
+    if (nsNames.has(name)) {
+      const prev = nsNames.get(name);
       duplicates.push({
         kind,
-        name,
+        name: qualifiedKey(namespace, name),
         file,
         row,
         previousKind: prev.kind,
@@ -89,8 +104,12 @@ export function buildIndex(parsedFiles) {
         previousRow: prev.row,
       });
     }
-    allNames.set(name, { kind, file, row });
+    nsNames.set(name, { kind, file, row });
   }
+
+  // Track namespace block metadata for merge conflict detection.
+  // nsName → Map(tagKey → {value, file, row})
+  const namespaceMeta = new Map();
 
   // Accept either pre-extracted data or raw parsedFile objects.
   // When receiving raw parsedFile objects (with .tree), extract immediately.
@@ -102,28 +121,62 @@ export function buildIndex(parsedFiles) {
     const { filePath } = fileData;
     totalErrors += fileData.errorCount;
 
+    // Process namespace block metadata — detect conflicting values across blocks.
+    if (fileData.namespaces) {
+      for (const ns of fileData.namespaces) {
+        if (!ns.name) continue;
+        if (!namespaceMeta.has(ns.name)) namespaceMeta.set(ns.name, new Map());
+        const tags = namespaceMeta.get(ns.name);
+        if (ns.note != null) {
+          if (tags.has("note")) {
+            const prev = tags.get("note");
+            if (prev.value !== ns.note) {
+              duplicates.push({
+                kind: "namespace-metadata",
+                name: ns.name,
+                file: filePath,
+                row: ns.row,
+                previousKind: "namespace-metadata",
+                previousFile: prev.file,
+                previousRow: prev.row,
+                tag: "note",
+                value: ns.note,
+                previousValue: prev.value,
+              });
+            }
+          } else {
+            tags.set("note", { value: ns.note, file: filePath, row: ns.row });
+          }
+        }
+      }
+    }
+
     for (const s of fileData.schemas) {
-      checkDuplicate("schema", s.name, filePath, s.row);
-      schemas.set(s.name, { ...s, file: filePath });
+      const key = qualifiedKey(s.namespace, s.name);
+      checkDuplicate("schema", s.name, s.namespace, filePath, s.row);
+      schemas.set(key, { ...s, file: filePath });
     }
     for (const m of fileData.metrics) {
-      checkDuplicate("metric", m.name, filePath, m.row);
-      metrics.set(m.name, { ...m, file: filePath });
+      const key = qualifiedKey(m.namespace, m.name);
+      checkDuplicate("metric", m.name, m.namespace, filePath, m.row);
+      metrics.set(key, { ...m, file: filePath });
     }
     for (const m of fileData.mappings) {
-      const key = m.name ?? `<anon>@${filePath}:${m.row}`;
+      const qKey = m.name ? qualifiedKey(m.namespace, m.name) : `<anon>@${filePath}:${m.row}`;
       if (m.name) {
-        checkDuplicate("mapping", key, filePath, m.row);
+        checkDuplicate("mapping", m.name, m.namespace, filePath, m.row);
       }
-      mappings.set(key, { ...m, file: filePath });
+      mappings.set(qKey, { ...m, file: filePath });
     }
     for (const f of fileData.fragments) {
-      checkDuplicate("fragment", f.name, filePath, f.row);
-      fragments.set(f.name, { ...f, file: filePath });
+      const key = qualifiedKey(f.namespace, f.name);
+      checkDuplicate("fragment", f.name, f.namespace, filePath, f.row);
+      fragments.set(key, { ...f, file: filePath });
     }
     for (const t of fileData.transforms) {
-      checkDuplicate("transform", t.name, filePath, t.row);
-      transforms.set(t.name, { ...t, file: filePath });
+      const key = qualifiedKey(t.namespace, t.name);
+      checkDuplicate("transform", t.name, t.namespace, filePath, t.row);
+      transforms.set(key, { ...t, file: filePath });
     }
     for (const w of fileData.warnings) {
       warnings.push({ ...w, file: filePath });
@@ -134,6 +187,12 @@ export function buildIndex(parsedFiles) {
     for (const ar of fileData.arrowRecords) {
       allArrowRecords.push({ ...ar, file: filePath });
     }
+  }
+
+  // Build a set of known namespace names for reference resolution.
+  const namespaceNames = new Set();
+  for (const key of namesByNamespace.keys()) {
+    if (key !== "__global__") namespaceNames.add(key);
   }
 
   const referenceGraph = buildReferenceGraph({ metrics, mappings });
@@ -150,8 +209,42 @@ export function buildIndex(parsedFiles) {
     questions,
     fieldArrows,
     referenceGraph,
+    namespaceNames,
     totalErrors,
   };
+}
+
+/**
+ * Resolve a user-provided entity name against an index map.
+ *
+ * Resolution order:
+ * 1. Exact match (handles both qualified "ns::name" and global "name")
+ * 2. If unqualified and no exact match, search for any "ns::name" match
+ *
+ * @param {string} name  User-provided entity name
+ * @param {Map} entityMap  The index map to search
+ * @returns {{key: string, entry: object}|null}  Resolved key and entry, or null
+ */
+export function resolveIndexKey(name, entityMap) {
+  // Exact match first
+  if (entityMap.has(name)) {
+    return { key: name, entry: entityMap.get(name) };
+  }
+  // If already qualified, no further search
+  if (name.includes("::")) return null;
+  // Search for ns::name matches
+  for (const [key, entry] of entityMap) {
+    if (key.endsWith(`::${name}`)) {
+      // Check for ambiguity — if multiple namespaces have this name, require qualification
+      const matches = [...entityMap.keys()].filter((k) => k.endsWith(`::${name}`));
+      if (matches.length === 1) {
+        return { key, entry };
+      }
+      // Ambiguous — return null (caller should suggest alternatives)
+      return null;
+    }
+  }
+  return null;
 }
 
 /**

@@ -245,6 +245,10 @@
           "named": true
         },
         {
+          "type": "qualified_name",
+          "named": true
+        },
+        {
           "type": "quoted_name",
           "named": true
         }
@@ -674,6 +678,56 @@
     }
   },
   {
+    "type": "namespace_block",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "fragment_block",
+          "named": true
+        },
+        {
+          "type": "mapping_block",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "metric_block",
+          "named": true
+        },
+        {
+          "type": "note_block",
+          "named": true
+        },
+        {
+          "type": "schema_block",
+          "named": true
+        },
+        {
+          "type": "transform_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "namespaced_path",
     "named": true,
     "fields": {},
@@ -810,6 +864,21 @@
         },
         {
           "type": "token_call",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "qualified_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
           "named": true
         }
       ]
@@ -967,6 +1036,10 @@
           "named": true
         },
         {
+          "type": "namespace_block",
+          "named": true
+        },
+        {
           "type": "note_block",
           "named": true
         },
@@ -1004,6 +1077,10 @@
         {
           "type": "nl_string",
           "named": true
+        },
+        {
+          "type": "qualified_name",
+          "named": true
         }
       ]
     }
@@ -1018,6 +1095,10 @@
       "types": [
         {
           "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "qualified_name",
           "named": true
         },
         {
@@ -1253,6 +1334,10 @@
   {
     "type": "multiline_string",
     "named": true
+  },
+  {
+    "type": "namespace",
+    "named": false
   },
   {
     "type": "nl_string",

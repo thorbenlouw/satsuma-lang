@@ -2,31 +2,23 @@
 // @ts-check
 
 /**
- * STM v2 Grammar — Phase 6: Mapping blocks
+ * STM v2 Grammar — Phase 7: Namespace blocks
  *
- * Adds structured parsing for mapping blocks:
- *   mapping <name>? (<metadata>)? {
- *     source { <source_entries> }
- *     target { <target_entry> }
- *     <note_block | arrow_decl>*
- *   }
+ * Adds flat namespace blocks for scoped definitions:
+ *   namespace <name> (<metadata>)? { <definitions> }
  *
- * Arrow types:
- *   map_arrow      src_path -> tgt_path (metadata)? transform_body?
- *   computed_arrow -> tgt_path (metadata)? transform_body?
- *   nested_arrow   src_path -> tgt_path (metadata)? { arrow_decl* }
+ * Namespace blocks cannot nest. All named entity types (schemas, metrics,
+ * mappings, fragments, transforms) can appear inside a namespace.
  *
- * Path types: field_path (a.b.c), relative_field_path (.field),
- *   backtick_path (`Foo`.bar), namespaced_path (ns::schema.field),
- *   all with optional [] suffix.
+ * Import names support namespace-qualified form: ns::identifier.
  *
- * Pipe_chain from Phase 5 is reused for transform bodies.
+ * Fragment spreads support namespace-qualified form: ...ns::fragment_name.
  *
  * GLR conflicts declared:
- *   - map_arrow vs nested_arrow (both start with src_path -> tgt_path;
- *     distinguished by body: pipe_chain vs arrow_decl list)
- *   - namespaced_path vs field_path (both start with identifier; ::  vs
- *     . or -> determines which)
+ *   - map_arrow vs nested_arrow (both start with src_path -> tgt_path)
+ *   - namespaced_path vs field_path (both start with identifier; :: vs .)
+ *   - namespace_block vs field_path/namespaced_path (identifier followed by
+ *     :: or { could be a namespace block or a path — resolved by context)
  */
 
 module.exports = grammar({
@@ -63,6 +55,30 @@ module.exports = grammar({
       choice(
         $.import_decl,
         $.note_block,
+        $.namespace_block,
+        $.schema_block,
+        $.fragment_block,
+        $.transform_block,
+        $.mapping_block,
+        $.metric_block,
+      ),
+
+    // ── Namespace block ──────────────────────────────────────────────────
+    // Flat (non-nestable) namespace: namespace <name> (<metadata>)? { <defs> }
+
+    namespace_block: ($) =>
+      seq(
+        "namespace",
+        field("name", $.identifier),
+        optional($.metadata_block),
+        "{",
+        repeat($._namespace_item),
+        "}",
+      ),
+
+    _namespace_item: ($) =>
+      choice(
+        $.note_block,
         $.schema_block,
         $.fragment_block,
         $.transform_block,
@@ -82,7 +98,10 @@ module.exports = grammar({
         $.import_path,
       ),
 
-    import_name: ($) => choice($.quoted_name, $.identifier),
+    import_name: ($) => choice($.qualified_name, $.quoted_name, $.identifier),
+
+    // ns::identifier — used in imports
+    qualified_name: ($) => seq($.identifier, "::", $.identifier),
 
     import_path: ($) => $.nl_string,
 
@@ -155,7 +174,7 @@ module.exports = grammar({
 
     source_ref: ($) =>
       seq(
-        choice($.backtick_name, $.identifier, $.nl_string),
+        choice($.qualified_name, $.backtick_name, $.identifier, $.nl_string),
         optional($.metadata_block),
       ),
 
@@ -256,11 +275,12 @@ module.exports = grammar({
     fragment_spread: ($) => seq("...", $.spread_label),
 
     // Multi-word spreads: ...audit fields, ...to utc date
+    // Qualified spreads: ...ns::fragment_name
     // The spread consumes identifiers until it hits a token that cannot be
     // part of a label (newline-sensitive in practice; the grammar uses a
     // type_expr lookahead via prec to disambiguate from field_decl).
     spread_label: ($) =>
-      choice($.quoted_name, $._spread_words),
+      choice($.qualified_name, $.quoted_name, $._spread_words),
 
     _spread_words: ($) =>
       prec.dynamic(-1, seq($.identifier, repeat($.identifier))),

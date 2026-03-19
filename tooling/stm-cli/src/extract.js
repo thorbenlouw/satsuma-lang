@@ -62,23 +62,6 @@ function entryText(node) {
 }
 
 /**
- * Extract a clean schema name from a source_ref node.
- * Returns the unquoted name from the first backtick_name or identifier child,
- * or null if the source_ref only contains an nl_string (join description).
- */
-function sourceRefName(node) {
-  if (!node) return null;
-  // If this isn't a source_ref wrapper, fall back to entryText
-  if (node.type !== "source_ref") return entryText(node);
-  for (const c of node.namedChildren) {
-    if (c.type === "backtick_name") return c.text.slice(1, -1);
-    if (c.type === "identifier") return c.text;
-  }
-  // nl_string-only source_ref entries are join descriptions, not schema refs
-  return null;
-}
-
-/**
  * Extract direct field_decl children of a body node.
  * Returns [{name, type}]
  */
@@ -130,6 +113,71 @@ function extractFieldTree(bodyNode) {
   return { fields, hasSpreads };
 }
 
+/**
+ * Extract the text from a qualified_name node (ns::identifier).
+ * Returns "ns::name" string.
+ */
+function qualifiedNameText(node) {
+  if (!node || node.type !== "qualified_name") return null;
+  const ids = children(node, "identifier");
+  if (ids.length < 2) return null;
+  return `${ids[0].text}::${ids[1].text}`;
+}
+
+/**
+ * Extract a source_ref name, handling qualified_name (ns::name) in addition
+ * to backtick_name, identifier, and nl_string.
+ */
+function sourceRefNameNs(node) {
+  if (!node) return null;
+  if (node.type !== "source_ref") return entryText(node);
+  for (const c of node.namedChildren) {
+    if (c.type === "qualified_name") return qualifiedNameText(c);
+    if (c.type === "backtick_name") return c.text.slice(1, -1);
+    if (c.type === "identifier") return c.text;
+  }
+  return null;
+}
+
+/**
+ * Collect nodes of a given type from both top-level and inside namespace blocks.
+ * Returns [{node, namespace: string|null}] pairs.
+ */
+function collectFromNamespaces(rootNode, nodeType) {
+  const results = [];
+  for (const c of rootNode.namedChildren) {
+    if (c.type === nodeType) {
+      results.push({ node: c, namespace: null });
+    } else if (c.type === "namespace_block") {
+      const nsName = c.namedChildren.find((x) => x.type === "identifier");
+      const ns = nsName?.text ?? null;
+      for (const inner of c.namedChildren) {
+        if (inner.type === nodeType) {
+          results.push({ node: inner, namespace: ns });
+        }
+      }
+    }
+  }
+  return results;
+}
+
+/**
+ * Extract namespace block metadata.
+ * Returns [{name, note, row}] for each namespace block.
+ */
+export function extractNamespaces(rootNode) {
+  return children(rootNode, "namespace_block").map((node) => {
+    const nameNode = node.namedChildren.find((c) => c.type === "identifier");
+    const name = nameNode?.text ?? null;
+    const meta = child(node, "metadata_block");
+    const noteTag = meta ? child(meta, "note_tag") : null;
+    const noteStr = noteTag
+      ? stringText(noteTag.namedChildren.find((c) => c.type === "nl_string" || c.type === "multiline_string"))
+      : null;
+    return { name, note: noteStr, row: node.startPosition.row };
+  });
+}
+
 // ── Public extract functions ──────────────────────────────────────────────────
 
 /**
@@ -139,7 +187,7 @@ function extractFieldTree(bodyNode) {
  * @returns {Array<{name:string, note:string|null, fields:Array<{name,type}>, row:number}>}
  */
 export function extractSchemas(rootNode) {
-  return children(rootNode, "schema_block").map((node) => {
+  return collectFromNamespaces(rootNode, "schema_block").map(({ node, namespace }) => {
     const name = labelText(node);
     const meta = child(node, "metadata_block");
     const noteTag = meta ? child(meta, "note_tag") : null;
@@ -150,6 +198,7 @@ export function extractSchemas(rootNode) {
     const fieldTree = body ? extractFieldTree(body) : { fields: [], hasSpreads: false };
     return {
       name,
+      namespace,
       note: noteStr,
       fields: fieldTree.fields,
       hasSpreads: fieldTree.hasSpreads,
@@ -165,7 +214,7 @@ export function extractSchemas(rootNode) {
  * @returns {Array<{name:string, displayName:string|null, sources:string[], grain:string|null, fields:Array<{name,type}>, row:number}>}
  */
 export function extractMetrics(rootNode) {
-  return children(rootNode, "metric_block").map((node) => {
+  return collectFromNamespaces(rootNode, "metric_block").map(({ node, namespace }) => {
     const name = labelText(node);
     // Optional display name: nl_string directly inside metric_block (not inside metadata)
     const displayNameNode = node.namedChildren.find(
@@ -181,18 +230,14 @@ export function extractMetrics(rootNode) {
       for (const entry of meta.namedChildren) {
         if (entry.type === "key_value_pair") {
           const key = child(entry, "kv_key");
-          // tree-sitter creates new wrapper objects per access, so reference
-          // equality (c !== key) is unreliable — use type to find the value.
           const val = entry.namedChildren.find((c) => c.type !== "kv_key");
           if (key?.text === "source") {
             if (!val) continue;
             if (val.type === "kv_braced_list") {
-              // Block form: source {fact_subscriptions, dim_customer}
               for (const id of children(val, "identifier")) {
                 sources.push(id.text);
               }
             } else {
-              // Single value: source fact_subscriptions
               sources.push(entryText(val));
             }
           } else if (key?.text === "grain") {
@@ -204,7 +249,7 @@ export function extractMetrics(rootNode) {
 
     const body = child(node, "metric_body");
     const fields = body ? extractDirectFields(body) : [];
-    return { name, displayName, sources, grain, fields, row: node.startPosition.row };
+    return { name, namespace, displayName, sources, grain, fields, row: node.startPosition.row };
   });
 }
 
@@ -215,7 +260,7 @@ export function extractMetrics(rootNode) {
  * @returns {Array<{name:string|null, sources:string[], targets:string[], arrowCount:number, row:number}>}
  */
 export function extractMappings(rootNode) {
-  return children(rootNode, "mapping_block").map((node) => {
+  return collectFromNamespaces(rootNode, "mapping_block").map(({ node, namespace }) => {
     const name = labelText(node);
     const body = child(node, "mapping_body");
     const sources = [];
@@ -228,12 +273,12 @@ export function extractMappings(rootNode) {
 
       if (srcBlock) {
         for (const c of srcBlock.namedChildren) {
-          const t = sourceRefName(c);
+          const t = sourceRefNameNs(c);
           if (t) sources.push(t);
         }
       }
       if (tgtBlock) {
-        const t = sourceRefName(tgtBlock.namedChildren[0]);
+        const t = sourceRefNameNs(tgtBlock.namedChildren[0]);
         if (t) targets.push(t);
       }
 
@@ -243,7 +288,7 @@ export function extractMappings(rootNode) {
         allDescendants(body, "nested_arrow").length;
     }
 
-    return { name, sources, targets, arrowCount, row: node.startPosition.row };
+    return { name, namespace, sources, targets, arrowCount, row: node.startPosition.row };
   });
 }
 
@@ -254,11 +299,11 @@ export function extractMappings(rootNode) {
  * @returns {Array<{name:string, fields:Array<{name,type}>, row:number}>}
  */
 export function extractFragments(rootNode) {
-  return children(rootNode, "fragment_block").map((node) => {
+  return collectFromNamespaces(rootNode, "fragment_block").map(({ node, namespace }) => {
     const name = labelText(node);
     const body = child(node, "schema_body");
     const fields = body ? extractDirectFields(body) : [];
-    return { name, fields, row: node.startPosition.row };
+    return { name, namespace, fields, row: node.startPosition.row };
   });
 }
 
@@ -269,8 +314,9 @@ export function extractFragments(rootNode) {
  * @returns {Array<{name:string, row:number}>}
  */
 export function extractTransforms(rootNode) {
-  return children(rootNode, "transform_block").map((node) => ({
+  return collectFromNamespaces(rootNode, "transform_block").map(({ node, namespace }) => ({
     name: labelText(node),
+    namespace,
     row: node.startPosition.row,
   }));
 }
@@ -350,7 +396,7 @@ function decomposePipeSteps(steps) {
 export function extractArrowRecords(rootNode) {
   const records = [];
 
-  for (const mappingNode of children(rootNode, "mapping_block")) {
+  for (const { node: mappingNode, namespace } of collectFromNamespaces(rootNode, "mapping_block")) {
     const mappingName = labelText(mappingNode);
     const body = child(mappingNode, "mapping_body");
     if (!body) continue;
@@ -377,6 +423,7 @@ export function extractArrowRecords(rootNode) {
 
       records.push({
         mapping: mappingName,
+        namespace,
         source,
         target,
         transform_raw: transformRaw,

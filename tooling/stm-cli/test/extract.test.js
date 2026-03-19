@@ -16,6 +16,7 @@ import {
   extractTransforms,
   extractWarnings,
   extractQuestions,
+  extractNamespaces,
 } from "../src/extract.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
@@ -310,5 +311,126 @@ describe("extractQuestions", () => {
 
   it("returns empty when no question comments", () => {
     assert.deepEqual(extractQuestions(n("source_file", [])), []);
+  });
+});
+
+// ── Namespace extraction ──────────────────────────────────────────────────────
+
+/** Build a namespace_block mock node. */
+function namespaceBlock(name, childNodes = [], metaNode = null, row = 0) {
+  const kids = [ident(name), ...(metaNode ? [metaNode] : []), ...childNodes];
+  return n("namespace_block", kids, "", row);
+}
+
+describe("extractNamespaces", () => {
+  it("extracts namespace names and rows", () => {
+    const ns = namespaceBlock("pos", [], null, 5);
+    const root = n("source_file", [ns]);
+    const result = extractNamespaces(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "pos");
+    assert.equal(result[0].row, 5);
+    assert.equal(result[0].note, null);
+  });
+
+  it("extracts namespace note from metadata", () => {
+    const noteTag = n("note_tag", [str("POS system")]);
+    const meta = n("metadata_block", [noteTag]);
+    const ns = namespaceBlock("pos", [], meta, 0);
+    const root = n("source_file", [ns]);
+    const result = extractNamespaces(root);
+    assert.equal(result[0].note, "POS system");
+  });
+
+  it("extracts multiple namespaces", () => {
+    const root = n("source_file", [
+      namespaceBlock("pos"),
+      namespaceBlock("ecom"),
+    ]);
+    assert.equal(extractNamespaces(root).length, 2);
+  });
+});
+
+describe("extractSchemas with namespaces", () => {
+  it("sets namespace=null for top-level schemas", () => {
+    const body = n("schema_body", [fieldDecl("id", "INT")]);
+    const block = n("schema_block", [blockLabel("orders"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    assert.equal(result[0].namespace, null);
+  });
+
+  it("extracts schemas inside namespace blocks with namespace field", () => {
+    const body = n("schema_body", [fieldDecl("STORE_ID", "VARCHAR(20)")]);
+    const schemaNode = n("schema_block", [blockLabel("stores"), body], "", 3);
+    const ns = namespaceBlock("pos", [schemaNode], null, 0);
+    const root = n("source_file", [ns]);
+
+    const result = extractSchemas(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "stores");
+    assert.equal(result[0].namespace, "pos");
+    assert.equal(result[0].fields[0].name, "STORE_ID");
+  });
+
+  it("extracts both global and namespaced schemas", () => {
+    const globalSchema = n("schema_block", [blockLabel("dim_date"), n("schema_body", [])]);
+    const nsSchema = n("schema_block", [blockLabel("stores"), n("schema_body", [])], "", 5);
+    const ns = namespaceBlock("pos", [nsSchema]);
+    const root = n("source_file", [globalSchema, ns]);
+
+    const result = extractSchemas(root);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].name, "dim_date");
+    assert.equal(result[0].namespace, null);
+    assert.equal(result[1].name, "stores");
+    assert.equal(result[1].namespace, "pos");
+  });
+});
+
+describe("extractMappings with namespaces", () => {
+  it("extracts namespaced mapping with qualified source ref", () => {
+    const qualName = n("qualified_name", [ident("pos"), ident("stores")], "pos::stores");
+    const srcEntry = sourceRef(qualName);
+    const tgtEntry = sourceRef(n("identifier", [], "hub_store"));
+    const srcBlock = n("source_block", [srcEntry]);
+    const tgtBlock = n("target_block", [tgtEntry]);
+    const body = n("mapping_body", [srcBlock, tgtBlock]);
+    const block = n("mapping_block", [blockLabel("load"), body], "", 10);
+    const ns = namespaceBlock("vault", [block]);
+    const root = n("source_file", [ns]);
+
+    const result = extractMappings(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].namespace, "vault");
+    assert.deepEqual(result[0].sources, ["pos::stores"]);
+    assert.deepEqual(result[0].targets, ["hub_store"]);
+  });
+});
+
+describe("extractFragments with namespaces", () => {
+  it("extracts namespaced fragments", () => {
+    const body = n("schema_body", [fieldDecl("load_ts", "TIMESTAMP")]);
+    const frag = n("fragment_block", [blockLabel("audit_cols"), body], "", 2);
+    const ns = namespaceBlock("shared", [frag]);
+    const root = n("source_file", [ns]);
+
+    const result = extractFragments(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "audit_cols");
+    assert.equal(result[0].namespace, "shared");
+  });
+});
+
+describe("extractTransforms with namespaces", () => {
+  it("extracts namespaced transforms", () => {
+    const block = n("transform_block", [blockLabel("dv_hash")], "", 4);
+    const ns = namespaceBlock("vault", [block]);
+    const root = n("source_file", [ns]);
+
+    const result = extractTransforms(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "dv_hash");
+    assert.equal(result[0].namespace, "vault");
   });
 });

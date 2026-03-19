@@ -12,7 +12,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -37,12 +37,15 @@ export function register(program) {
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      const entry = index.schemas.get(name);
-      if (!entry) {
-        // Try case-insensitive search and suggest
+      const resolved = resolveIndexKey(name, index.schemas);
+      if (!resolved) {
         const keys = [...index.schemas.keys()];
         const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
-        if (close) {
+        // Check for ambiguous unqualified name
+        const ambiguous = !name.includes("::") && keys.filter((k) => k.endsWith(`::${name}`));
+        if (ambiguous && ambiguous.length > 1) {
+          console.error(`Schema '${name}' is ambiguous. Found in: ${ambiguous.join(", ")}`);
+        } else if (close) {
           console.error(`Schema '${name}' not found. Did you mean '${close}'?`);
         } else {
           console.error(`Schema '${name}' not found.`);
@@ -50,11 +53,12 @@ export function register(program) {
         }
         process.exit(1);
       }
+      const entry = resolved.entry;
 
       // Find the raw CST node for richer reconstruction
       const parsed = parsedFiles.find((p) => p.filePath === entry.file);
       const schemaNode = parsed
-        ? findSchemaNode(parsed.tree.rootNode, name)
+        ? findSchemaNode(parsed.tree.rootNode, entry.name)
         : null;
 
       if (opts.json) {
@@ -71,12 +75,22 @@ export function register(program) {
 
 function findSchemaNode(rootNode, name) {
   for (const c of rootNode.namedChildren) {
-    if (c.type !== "schema_block") continue;
-    const lbl = c.namedChildren.find((x) => x.type === "block_label");
-    const inner = lbl?.namedChildren[0];
-    let n = inner?.text ?? "";
-    if (inner?.type === "quoted_name") n = n.slice(1, -1);
-    if (n === name) return c;
+    if (c.type === "schema_block") {
+      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const inner = lbl?.namedChildren[0];
+      let n = inner?.text ?? "";
+      if (inner?.type === "quoted_name") n = n.slice(1, -1);
+      if (n === name) return c;
+    } else if (c.type === "namespace_block") {
+      for (const inner of c.namedChildren) {
+        if (inner.type !== "schema_block") continue;
+        const lbl = inner.namedChildren.find((x) => x.type === "block_label");
+        const linner = lbl?.namedChildren[0];
+        let n = linner?.text ?? "";
+        if (linner?.type === "quoted_name") n = n.slice(1, -1);
+        if (n === name) return inner;
+      }
+    }
   }
   return null;
 }

@@ -15,7 +15,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -36,10 +36,14 @@ export function register(program) {
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      // Determine entity type
-      const isSchema = index.schemas.has(name);
-      const isFragment = index.fragments.has(name);
-      const isTransform = index.transforms.has(name);
+      // Determine entity type — resolve namespace-qualified lookups
+      const schemaResolved = resolveIndexKey(name, index.schemas);
+      const fragmentResolved = resolveIndexKey(name, index.fragments);
+      const transformResolved = resolveIndexKey(name, index.transforms);
+      const isSchema = schemaResolved != null;
+      const isFragment = fragmentResolved != null;
+      const isTransform = transformResolved != null;
+      const resolvedName = schemaResolved?.key ?? fragmentResolved?.key ?? transformResolved?.key ?? name;
 
       if (!isSchema && !isFragment && !isTransform) {
         console.error(`'${name}' not found as a schema, fragment, or transform.`);
@@ -53,7 +57,7 @@ export function register(program) {
         process.exit(1);
       }
 
-      const refs = gatherRefs(name, index, parsedFiles, isSchema, isFragment);
+      const refs = gatherRefs(resolvedName, index, parsedFiles, isSchema, isFragment);
 
       if (opts.json) {
         console.log(JSON.stringify({ name, refs }, null, 2));
@@ -118,8 +122,8 @@ function gatherRefs(name, index, parsedFiles, isSchema, isFragment) {
  */
 function findFragmentSpreads(rootNode, fragmentName) {
   const results = [];
-  for (const topLevel of rootNode.namedChildren) {
-    if (topLevel.type !== "schema_block" && topLevel.type !== "fragment_block") continue;
+  function checkBlock(topLevel) {
+    if (topLevel.type !== "schema_block" && topLevel.type !== "fragment_block") return;
     const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let blockName = inner?.text ?? "";
@@ -128,6 +132,14 @@ function findFragmentSpreads(rootNode, fragmentName) {
     const body = topLevel.namedChildren.find((c) => c.type === "schema_body");
     if (body) {
       walkForSpreads(body, fragmentName, blockName, results);
+    }
+  }
+  for (const topLevel of rootNode.namedChildren) {
+    checkBlock(topLevel);
+    if (topLevel.type === "namespace_block") {
+      for (const inner of topLevel.namedChildren) {
+        checkBlock(inner);
+      }
     }
   }
   return results;

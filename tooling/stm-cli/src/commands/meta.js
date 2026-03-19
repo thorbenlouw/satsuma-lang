@@ -11,7 +11,7 @@
 
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractMetadata } from "../meta-extract.js";
 
 /** @param {import('commander').Command} program */
@@ -65,11 +65,15 @@ export function register(program) {
 }
 
 function extractBlockMeta(blockName, parsedFiles, index) {
-  // Determine block type
+  // Determine block type, resolving namespace-qualified keys
   const blockTypes = [];
-  if (index.schemas.has(blockName)) blockTypes.push("schema_block");
-  if (index.mappings.has(blockName)) blockTypes.push("mapping_block");
-  if (index.metrics.has(blockName)) blockTypes.push("metric_block");
+  let resolvedName = blockName;
+  const schemaResolved = resolveIndexKey(blockName, index.schemas);
+  const mappingResolved = resolveIndexKey(blockName, index.mappings);
+  const metricResolved = resolveIndexKey(blockName, index.metrics);
+  if (schemaResolved) { blockTypes.push("schema_block"); resolvedName = schemaResolved.key; }
+  if (mappingResolved) { blockTypes.push("mapping_block"); resolvedName = mappingResolved.key; }
+  if (metricResolved) { blockTypes.push("metric_block"); resolvedName = metricResolved.key; }
 
   if (blockTypes.length === 0) {
     console.error(`'${blockName}' not found as a schema, mapping, or metric.`);
@@ -85,10 +89,13 @@ function extractBlockMeta(blockName, parsedFiles, index) {
     process.exit(1);
   }
 
+  // Use the bare name for CST matching
+  const bareName = resolvedName.includes("::") ? resolvedName.split("::").pop() : resolvedName;
+
   for (const { tree } of parsedFiles) {
-    for (const node of tree.rootNode.namedChildren) {
+    for (const node of iterBlocks(tree.rootNode)) {
       if (!blockTypes.includes(node.type)) continue;
-      if (getBlockName(node) !== blockName) continue;
+      if (getBlockName(node) !== bareName) continue;
       const metaNode = node.namedChildren.find(
         (c) => c.type === "metadata_block",
       );
@@ -104,12 +111,15 @@ function extractFieldMeta(fieldRef, parsedFiles, index) {
   const schemaName = fieldRef.slice(0, dot);
   const fieldName = fieldRef.slice(dot + 1);
 
-  if (!index.schemas.has(schemaName)) {
+  const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
+  if (!resolvedSchema) {
     console.error(`Schema '${schemaName}' not found.`);
     process.exit(1);
   }
 
-  const schema = index.schemas.get(schemaName);
+  const schema = resolvedSchema.entry;
+  const resolvedSchemaName = resolvedSchema.key;
+  const bareSchemaName = resolvedSchemaName.includes("::") ? resolvedSchemaName.split("::").pop() : resolvedSchemaName;
   const field = schema.fields.find((f) => f.name === fieldName);
   if (!field) {
     console.error(
@@ -119,9 +129,9 @@ function extractFieldMeta(fieldRef, parsedFiles, index) {
   }
 
   for (const { tree } of parsedFiles) {
-    for (const node of tree.rootNode.namedChildren) {
+    for (const node of iterBlocks(tree.rootNode)) {
       if (node.type !== "schema_block") continue;
-      if (getBlockName(node) !== schemaName) continue;
+      if (getBlockName(node) !== bareSchemaName) continue;
       const body = node.namedChildren.find((c) => c.type === "schema_body");
       if (!body) continue;
 
@@ -142,6 +152,17 @@ function extractFieldMeta(fieldRef, parsedFiles, index) {
   }
 
   return { scope: fieldRef, type: field.type, entries: [] };
+}
+
+/** Yield block nodes from rootNode, searching inside namespace_block children. */
+function* iterBlocks(rootNode) {
+  for (const c of rootNode.namedChildren) {
+    if (c.type === "namespace_block") {
+      yield* iterBlocks(c);
+    } else {
+      yield c;
+    }
+  }
 }
 
 function getBlockName(node) {

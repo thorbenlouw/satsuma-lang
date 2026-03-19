@@ -54,6 +54,49 @@ function walkErrors(node, file, diagnostics) {
 }
 
 /**
+ * Resolve an entity name against the index with namespace-aware lookup.
+ *
+ * Qualified names (ns::name) are direct lookups.
+ * Unqualified names resolve in: (1) current namespace, (2) global namespace.
+ *
+ * @param {string} ref  The reference name (possibly ns::qualified)
+ * @param {string|null} currentNs  The namespace of the referring entity
+ * @param {Map} entityMap  The index map to search (schemas, fragments, etc.)
+ * @returns {string|null}  The resolved qualified key, or null if not found
+ */
+function resolveEntityRef(ref, currentNs, entityMap) {
+  // Qualified reference — direct lookup
+  if (ref.includes("::")) {
+    return entityMap.has(ref) ? ref : null;
+  }
+  // Unqualified: try current namespace first (if inside one)
+  if (currentNs) {
+    const nsKey = `${currentNs}::${ref}`;
+    if (entityMap.has(nsKey)) return nsKey;
+  }
+  // Then try global (bare name)
+  if (entityMap.has(ref)) return ref;
+  return null;
+}
+
+/**
+ * Suggest qualified alternatives for an unresolved reference.
+ *
+ * @param {string} ref  The unresolved reference name
+ * @param {Map} entityMap  The index map to search
+ * @returns {string[]}  Qualified names that match the base name
+ */
+function suggestAlternatives(ref, entityMap) {
+  // Only suggest for unqualified refs
+  if (ref.includes("::")) return [];
+  const hints = [];
+  for (const key of entityMap.keys()) {
+    if (key.endsWith(`::${ref}`)) hints.push(key);
+  }
+  return hints;
+}
+
+/**
  * Run semantic checks against a WorkspaceIndex.
  *
  * @param {object} index  WorkspaceIndex
@@ -66,6 +109,17 @@ export function collectSemanticWarnings(index) {
   // Names must be unique across all entity types within a namespace.
   if (index.duplicates) {
     for (const dup of index.duplicates) {
+      if (dup.kind === "namespace-metadata") {
+        diagnostics.push({
+          file: dup.file,
+          line: dup.row + 1,
+          column: 1,
+          severity: "error",
+          rule: "namespace-metadata-conflict",
+          message: `Namespace '${dup.name}' has conflicting '${dup.tag}' values: "${dup.value}" vs "${dup.previousValue}" in ${dup.previousFile}:${dup.previousRow + 1}`,
+        });
+        continue;
+      }
       const sameKind = dup.kind === dup.previousKind;
       const msg = sameKind
         ? `${capitalize(dup.kind)} '${dup.name}' is already defined in ${dup.previousFile}:${dup.previousRow + 1}`
@@ -81,29 +135,45 @@ export function collectSemanticWarnings(index) {
     }
   }
 
-  // Check mapping source/target references
+  // Helper: build a combined map of schemas + fragments for reference resolution
+  const allDefinitions = new Map([...index.schemas, ...index.fragments]);
+
+  // Check mapping source/target references with namespace-aware resolution
   for (const [name, mapping] of index.mappings) {
+    const currentNs = mapping.namespace ?? null;
     for (const src of mapping.sources) {
-      if (!index.schemas.has(src) && !index.fragments.has(src)) {
+      const resolved = resolveEntityRef(src, currentNs, allDefinitions);
+      if (!resolved) {
+        const hints = suggestAlternatives(src, allDefinitions);
+        let msg = `Mapping '${name}' references undefined source '${src}'`;
+        if (hints.length > 0) {
+          msg += `\n  hint: did you mean ${hints.map((h) => `'${h}'`).join(" or ")}?`;
+        }
         diagnostics.push({
           file: mapping.file,
           line: mapping.row + 1,
           column: 1,
           severity: "warning",
           rule: "undefined-ref",
-          message: `Mapping '${name}' references undefined source '${src}'`,
+          message: msg,
         });
       }
     }
     for (const tgt of mapping.targets) {
-      if (!index.schemas.has(tgt) && !index.fragments.has(tgt)) {
+      const resolved = resolveEntityRef(tgt, currentNs, allDefinitions);
+      if (!resolved) {
+        const hints = suggestAlternatives(tgt, allDefinitions);
+        let msg = `Mapping '${name}' references undefined target '${tgt}'`;
+        if (hints.length > 0) {
+          msg += `\n  hint: did you mean ${hints.map((h) => `'${h}'`).join(" or ")}?`;
+        }
         diagnostics.push({
           file: mapping.file,
           line: mapping.row + 1,
           column: 1,
           severity: "warning",
           rule: "undefined-ref",
-          message: `Mapping '${name}' references undefined target '${tgt}'`,
+          message: msg,
         });
       }
     }
@@ -115,12 +185,16 @@ export function collectSemanticWarnings(index) {
   // that often reference external tables not present in the local workspace,
   // so blanket warnings create false positives.
   const anyMetricSourceResolvable = [...index.metrics.values()].some((m) =>
-    (m.sources ?? []).some((s) => index.schemas.has(s)),
+    (m.sources ?? []).some((s) => {
+      const currentNs = m.namespace ?? null;
+      return resolveEntityRef(s, currentNs, index.schemas) != null;
+    }),
   );
   if (anyMetricSourceResolvable) {
     for (const [name, metric] of index.metrics) {
+      const currentNs = metric.namespace ?? null;
       for (const src of (metric.sources ?? [])) {
-        if (!index.schemas.has(src)) {
+        if (!resolveEntityRef(src, currentNs, index.schemas)) {
           diagnostics.push({
             file: metric.file,
             line: metric.row + 1,
@@ -149,32 +223,43 @@ export function collectSemanticWarnings(index) {
     }
 
     for (const [_name, mapping] of index.mappings) {
-      const srcSchemas = mapping.sources;
-      const tgtSchema = mapping.targets[0];
-      const srcSchema = srcSchemas[0];
+      const currentNs = mapping.namespace ?? null;
+
+      // Resolve source/target names to qualified index keys
+      const resolvedSrcKeys = mapping.sources.map((s) =>
+        resolveEntityRef(s, currentNs, index.schemas),
+      ).filter(Boolean);
+      const resolvedTgtKey = mapping.targets[0]
+        ? resolveEntityRef(mapping.targets[0], currentNs, index.schemas)
+        : null;
+
+      const srcSchema = resolvedSrcKeys[0];
 
       // Build source field name set: for multi-source mappings, collect fields
       // from all source schemas. Build a nested-path-aware set.
       const srcFieldPaths = new Set();
-      for (const s of srcSchemas) {
+      for (const s of resolvedSrcKeys) {
         const fields = index.schemas.get(s)?.fields ?? [];
         collectFieldPaths(fields, "", srcFieldPaths);
       }
       // For multi-source, also allow schema-qualified references (schema.field)
-      if (srcSchemas.length > 1) {
-        for (const s of srcSchemas) {
-          const fields = index.schemas.get(s)?.fields ?? [];
-          collectFieldPaths(fields, s + ".", srcFieldPaths);
+      // using the original (unresolved) source names as written in the mapping
+      if (resolvedSrcKeys.length > 1) {
+        for (let i = 0; i < mapping.sources.length; i++) {
+          const resolvedKey = resolveEntityRef(mapping.sources[i], currentNs, index.schemas);
+          if (!resolvedKey) continue;
+          const fields = index.schemas.get(resolvedKey)?.fields ?? [];
+          collectFieldPaths(fields, mapping.sources[i] + ".", srcFieldPaths);
         }
       }
 
-      const tgtFields = index.schemas.get(tgtSchema)?.fields ?? [];
+      const tgtFields = resolvedTgtKey ? (index.schemas.get(resolvedTgtKey)?.fields ?? []) : [];
       const tgtFieldPaths = new Set();
       collectFieldPaths(tgtFields, "", tgtFieldPaths);
 
       // Check if source or target schema has unresolved spreads
-      const srcHasSpreads = srcSchemas.some((s) => index.schemas.get(s)?.hasSpreads);
-      const tgtHasSpreads = index.schemas.get(tgtSchema)?.hasSpreads ?? false;
+      const srcHasSpreads = resolvedSrcKeys.some((s) => index.schemas.get(s)?.hasSpreads);
+      const tgtHasSpreads = resolvedTgtKey ? (index.schemas.get(resolvedTgtKey)?.hasSpreads ?? false) : false;
 
       for (const arrow of uniqueArrows) {
         if (arrow.mapping !== mapping.name) continue;
@@ -184,7 +269,7 @@ export function collectSemanticWarnings(index) {
           srcSchema &&
           index.schemas.has(srcSchema) &&
           !srcHasSpreads &&
-          !resolveFieldPath(arrow.source, srcSchemas, index, srcFieldPaths)
+          !resolveFieldPath(arrow.source, resolvedSrcKeys, index, srcFieldPaths)
         ) {
           diagnostics.push({
             file: arrow.file,
@@ -197,10 +282,10 @@ export function collectSemanticWarnings(index) {
         }
         if (
           arrow.target &&
-          tgtSchema &&
-          index.schemas.has(tgtSchema) &&
+          resolvedTgtKey &&
+          index.schemas.has(resolvedTgtKey) &&
           !tgtHasSpreads &&
-          !resolveFieldPath(arrow.target, [tgtSchema], index, tgtFieldPaths)
+          !resolveFieldPath(arrow.target, [resolvedTgtKey], index, tgtFieldPaths)
         ) {
           diagnostics.push({
             file: arrow.file,
@@ -208,7 +293,7 @@ export function collectSemanticWarnings(index) {
             column: 1,
             severity: "warning",
             rule: "field-not-in-schema",
-            message: `Arrow target '${arrow.target}' not declared in schema '${tgtSchema}'`,
+            message: `Arrow target '${arrow.target}' not declared in schema '${resolvedTgtKey}'`,
           });
         }
       }
