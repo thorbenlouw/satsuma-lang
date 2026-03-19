@@ -121,16 +121,16 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   }
 
   CartLines[].unit_price -> gross_merchandise_value {
-    "For each event, multiply `CartLines[].unit_price` by `CartLines[].quantity`,
+    "For each event, multiply `unit_price` by `quantity`,
      sum within the event, then sum across the session group."
   }
 
   CartLines[].discount_amt -> total_discount_amount {
-    "Sum `discount_amt` across all `CartLines[]` elements in all events in the group."
+    "Sum `discount_amt` across all cart line elements in all events in the group."
   }
 
   -> distinct_product_count {
-    "Count distinct `CartLines[].sku` values across all events in the session."
+    "Count distinct `sku` values across all events in the session."
   }
 
   -> top_category {
