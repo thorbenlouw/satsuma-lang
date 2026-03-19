@@ -1,5 +1,7 @@
 # Feature 08 — Tree-sitter Parser for STM v2
 
+> **Status: COMPLETED** (2026-03-18). All acceptance criteria verified — see `ACCEPTANCE-CHECKLIST.md`.
+
 ## Goal
 
 Replace the existing `tooling/tree-sitter-stm/` parser (written against v1 syntax) with a new grammar that covers STM v2. The new parser should produce a concrete syntax tree (CST) that exposes every structurally meaningful element tooling needs to extract — with particular emphasis on the queries that will power the LLM context CLI (Feature 09) and a future language server.

@@ -1,5 +1,7 @@
 # STM-to-Excel Export
 
+> **Status: NOT STARTED** — All phases deferred. See `FUTURE-WORK.md`.
+
 ## Goal
 
 Generate beautiful, human-readable Excel workbooks from STM files — optimised for stakeholders who live in Excel, not code. The output is a **read-only, point-in-time snapshot** designed for forums, review meetings, and email distribution to non-technical audiences.

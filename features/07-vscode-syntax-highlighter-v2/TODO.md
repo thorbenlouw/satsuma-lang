@@ -1,5 +1,7 @@
 # TODO: VS Code Syntax Highlighter for STM v2
 
+> **Status: COMPLETED** (2026-03-18). Grammar rewritten, fixture + golden tests pass. Multi-schema support added.
+
 ## Phase 1: Taxonomy and Test Plan
 
 - [ ] Write `HIGHLIGHTING-TAXONOMY.md` — canonical v2 token-to-scope mapping

@@ -1,5 +1,7 @@
 # TODO: Tree-sitter Parser for STM
 
+> **Status: SUPERSEDED** by Feature 08. This v1 TODO is archived — do not use for new work.
+
 ## Phase 0: Scope and structure
 
 - [ ] Create parser workspace, preferably `tooling/tree-sitter-stm/`

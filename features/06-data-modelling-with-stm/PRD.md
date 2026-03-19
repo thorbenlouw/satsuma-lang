@@ -1,5 +1,7 @@
 # Data Modelling with STM: Metadata Conventions for Kimball and Data Vault
 
+> **Status: COMPLETED** (2026-03-18). Convention dictionary, canonical examples (Kimball + Data Vault), and LLM-Guidelines.md authored for both example sets. Tooling bugs against these examples are tracked in Feature 13.
+
 ## Goal
 
 Define a set of **free-form metadata conventions** that allow STM to express Kimball dimensional modelling and Data Vault 2.0 patterns declaratively — without boilerplate, without grammar changes, and without losing BA readability.

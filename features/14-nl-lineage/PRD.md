@@ -1,5 +1,7 @@
 # Natural Language Lineage Plan
 
+> **Status: DEFERRED** — Spec/proposal only. Requires language change to STM syntax. See `FUTURE-WORK.md`.
+
 ## Goal
 
 Require every `nl()` transform to declare the source fields it reads as explicit parameters so lineage tooling can trace dependencies through natural-language transforms without parsing free-form prompt text.

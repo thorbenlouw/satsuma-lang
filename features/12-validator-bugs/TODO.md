@@ -1,5 +1,7 @@
 # TODO: Validator Bugs — False Positives from `stm validate`
 
+> **Status: COMPLETED** (2026-03-18). All 5 bugs fixed. `stm validate examples/` clean. Remaining false positives against Feature 06 data-modelling examples are tracked in Feature 13.
+
 ## Bug 1: Resolve nested record/list field paths in field-not-in-schema check
 
 - [ ] Extend `extractDirectFields()` (or add `extractFieldTree()`) in `src/extract.js` to build a nested field structure that includes fields inside `record` and `list` children, preserving the dotted path (e.g., `Order.Customer.CustomerId`)

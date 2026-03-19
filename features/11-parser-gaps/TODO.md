@@ -1,5 +1,7 @@
 # TODO: Parser Gaps from Example Corpus
 
+> **Status: COMPLETED** (2026-03-18). All gaps closed for `examples/` corpus. Remaining gaps against Feature 06 data-modelling examples are tracked in Feature 13.
+
 ## Phase 1: Add failing corpus coverage
 
 - [ ] Add reduced corpus tests for richer metadata values:

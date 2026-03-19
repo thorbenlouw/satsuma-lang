@@ -1,5 +1,7 @@
 # TODO: STM CLI — LLM Context Slicer
 
+> **Status: COMPLETED** (2026-03-18). All phases done. All commands implemented and tested. 224 tests passing.
+
 Depends on Feature 08 (tree-sitter parser v2) being complete before Phase 2.
 
 ## Phase 0: Scaffold

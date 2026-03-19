@@ -1,5 +1,7 @@
 # Excel-to-STM Skill — TODO
 
+> **Status: PARTIAL** — Phase 0 lite prompt authored. Remaining phases deferred (see `FUTURE-WORK.md`).
+
 ## Phase 0: Lite System Prompt
 - [x] Author `excel-to-stm-prompt.md` — assemble grammar, cheat sheet, examples, generation rules, and self-critique checklist from `AI-AGENT-REFERENCE.md`
 - [ ] Test lite prompt against 2–3 sample spreadsheets on ChatGPT / Gemini / Claude.ai

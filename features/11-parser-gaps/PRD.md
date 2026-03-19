@@ -1,5 +1,7 @@
 # Feature 11 — Parser Gaps from Example Corpus
 
+> **Status: COMPLETED** (2026-03-18). All `examples/*.stm` files parse with zero errors. 190/190 corpus tests pass.
+
 ## Goal
 
 Close the remaining tree-sitter grammar gaps exposed by the current `examples/` corpus so the parser matches the STM v2 spec and the canonical examples we want to preserve.

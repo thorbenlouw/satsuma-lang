@@ -1,5 +1,7 @@
 # TODO: Tree-sitter Parser for STM v2
 
+> **Status: COMPLETED** (2026-03-18). All phases done. 190/190 corpus tests pass, all examples parse clean. See `ACCEPTANCE-CHECKLIST.md` for sign-off.
+
 ## Phase 0: Teardown and setup
 
 - [ ] Delete the existing `grammar.js`, corpus files, and queries in `tooling/tree-sitter-stm/` (preserve `package.json` and build config)

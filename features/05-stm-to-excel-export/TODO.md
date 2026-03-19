@@ -1,5 +1,7 @@
 # STM-to-Excel Export — TODO
 
+> **Status: NOT STARTED** — All phases deferred. See `FUTURE-WORK.md`.
+
 ## Phase 1: Lite System Prompt
 - [ ] Author `stm-to-excel-prompt.md` — condense workbook layout, styling, column definitions, transform translation rules, and row grouping into a self-contained prompt (~2,900 tokens)
 - [ ] Ensure prompt covers STMv2 syntax: `( )` metadata, `{ }` transforms, `"..."` NL strings, unified `schema` keyword, `-> target` computed fields, `map { }` conditionals

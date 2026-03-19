@@ -1,5 +1,7 @@
 # Tree-sitter Parser Plan for STM
 
+> **Status: SUPERSEDED** by Feature 08 (Tree-sitter Parser v2). This was the v1 parser; v2 replaced it entirely.
+
 ## Goal
 
 Build a Tree-sitter parser for STM so tooling can produce a stable concrete syntax tree and a practical structured AST foundation for:

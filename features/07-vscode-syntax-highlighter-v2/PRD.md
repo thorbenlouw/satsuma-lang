@@ -1,5 +1,7 @@
 # PRD: VS Code Syntax Highlighter for STM v2
 
+> **Status: COMPLETED** (2026-03-18). TextMate grammar rewritten for v2 syntax. All fixture tests and golden tests pass against canonical examples.
+
 ## Feature: `07-vscode-syntax-highlighter-v2`
 
 ---
