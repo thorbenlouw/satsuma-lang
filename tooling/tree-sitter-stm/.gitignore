@@ -48,3 +48,20 @@ zig-out/
 *.tar.gz
 *.tgz
 *.zip
+
+# Generated multi-language bindings (not used; Node bindings are tracked separately)
+bindings/c/
+bindings/go/
+bindings/python/
+bindings/rust/
+bindings/swift/
+bindings/node/binding_test.js
+
+# Generated build system files for unused language bindings
+CMakeLists.txt
+Cargo.toml
+Makefile
+Package.swift
+go.mod
+pyproject.toml
+setup.py
