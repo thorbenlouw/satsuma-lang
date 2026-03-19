@@ -195,7 +195,7 @@ namespace mart (note "Business-facing dimensional models") {
 
   // Build contact dimension from vault
   mapping 'build dim_contact' {
-    source { `vault::hub_contact` }
+    source { `vault::hub_contact`, `vault::sat_contact_details` }
     target { `dim_contact` }
 
     contact_bk -> contact_bk
@@ -219,7 +219,7 @@ namespace mart (note "Business-facing dimensional models") {
 
   // Build deal fact from vault
   mapping 'build fact_deals' {
-    source { `vault::hub_deal` }
+    source { `vault::hub_deal`, `vault::link_contact_deal`, `vault::hub_contact`, `mart::dim_contact` }
     target { `fact_deals` }
 
     -> deal_sk {
@@ -231,7 +231,7 @@ namespace mart (note "Business-facing dimensional models") {
     }
 
     -> deal_name {
-      "From `sat_deal` if it existed — placeholder for future satellite"
+      "From a future deal satellite if it existed — placeholder for future extension"
     }
 
     -> amount_usd {

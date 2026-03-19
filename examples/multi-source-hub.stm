@@ -90,7 +90,7 @@ mapping 'payments to analytics' {
 }
 
 mapping 'crm to notifications' {
-  source { `crm_system` }
+  source { `crm_system`, `payment_gateway` }
   target { `notification_service` }
 
   email -> recipient_email
@@ -101,7 +101,7 @@ mapping 'crm to notifications' {
   }
 
   -> priority {
-    "Check `payment_gateway`: if any transaction has `status` = 'failed' for
+    "Check `payment_gateway`: if any transaction has `payment_gateway.status` = 'failed' for
      this customer, set 'high'. Otherwise 'low'."
   }
 }
