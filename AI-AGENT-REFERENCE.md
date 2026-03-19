@@ -191,6 +191,13 @@ stm fields sat_customer_demographics     # field list with types
 stm fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
 stm match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
 
+# Workspace graph — full topology in one call
+stm graph path/to/workspace/ --json      # complete semantic graph (nodes, edges, field-level flow)
+stm graph path/ --json --schema-only     # topology only (no field-level edges)
+stm graph path/ --json --namespace crm   # filter to a namespace
+stm graph path/ --json --no-nl           # strip NL text for smaller payload
+stm graph path/ --compact                # flat schema-level adjacency list
+
 # Structural analysis
 stm validate                             # parse errors + semantic reference checks
 stm diff v1/ v2/                         # structural comparison of two snapshots
@@ -209,6 +216,8 @@ Every arrow the CLI returns carries a classification from CST node types:
 
 ### How you compose workflows
 
+**Whole-workspace reasoning:** Call `stm graph path/ --json` to load the entire workspace topology in one call — nodes (schemas, mappings, metrics, fragments, transforms), field-level edges with transform classification, and schema-level topology. Use `--schema-only` for topology-only queries, `--namespace <ns>` to scope, `--no-nl` to reduce payload size. The `unresolved_nl` section lists all NL arrows requiring interpretation.
+
 **Impact analysis:** Call `stm arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `stm nl` to read the NL content and reason about it yourself.
 
 **Coverage check:** Call `stm fields <target> --unmapped-by <mapping> --json` for each mapping. Intersect results to find fields unmapped by all mappings. For mapped fields, check classification via `stm arrows`.
@@ -223,6 +232,7 @@ Every arrow the CLI returns carries a classification from CST node types:
 
 | Situation | Approach |
 |---|---|
+| Need full workspace topology in one call | `stm graph --json` — all nodes, edges, and field-level flow |
 | Need to understand a workspace | `stm summary`, then drill with `stm schema` / `stm mapping` |
 | Need arrows for a specific field | `stm arrows <schema.field>` — not reading the whole mapping |
 | Need NL content for interpretation | `stm nl <scope>` — not pulling the entire block |
