@@ -404,7 +404,7 @@ describe("extractMappings with namespaces", () => {
     assert.equal(result.length, 1);
     assert.equal(result[0].namespace, "vault");
     assert.deepEqual(result[0].sources, ["pos::stores"]);
-    assert.deepEqual(result[0].targets, ["hub_store"]);
+    assert.deepEqual(result[0].targets, ["vault::hub_store"]);
   });
 });
 

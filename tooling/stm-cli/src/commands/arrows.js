@@ -72,8 +72,9 @@ export function register(program) {
         process.exit(1);
       }
 
-      // Find matching arrows
-      let arrows = findFieldArrows(fieldName, index);
+      // Find matching arrows using schema-qualified key
+      const qualifiedField = `${resolvedSchema.key}.${fieldName}`;
+      let arrows = findFieldArrows(qualifiedField, index);
 
       // Apply direction filters
       if (opts.asSource) {
@@ -88,19 +89,22 @@ export function register(program) {
       }
 
       if (opts.json) {
-        const jsonArrows = arrows.map((a) => ({
-          mapping: a.mapping,
-          source: a.source ? `${schemaName}.${a.source}` : null,
-          target: a.target
-            ? `${resolveTargetSchema(a.mapping, index)}.${a.target}`
-            : null,
-          classification: a.classification,
-          transform_raw: a.transform_raw,
-          steps: a.steps,
-          derived: a.derived,
-          file: a.file,
-          line: a.line + 1,
-        }));
+        const jsonArrows = arrows.map((a) => {
+          const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : a.mapping;
+          return {
+            mapping: qMapping,
+            source: a.source ? `${resolvedSchema.key}.${a.source}` : null,
+            target: a.target
+              ? `${resolveTargetSchema(qMapping, index)}.${a.target}`
+              : null,
+            classification: a.classification,
+            transform_raw: a.transform_raw,
+            steps: a.steps,
+            derived: a.derived,
+            file: a.file,
+            line: a.line + 1,
+          };
+        });
         console.log(JSON.stringify(jsonArrows, null, 2));
         return;
       }
@@ -110,15 +114,16 @@ export function register(program) {
 }
 
 /**
- * Find all unique arrow records involving a given field name (as source or target).
+ * Find all unique arrow records involving a given field (as source or target).
+ * Accepts either a schema-qualified key ("schema.field") or bare field name.
  * Deduplicates since an arrow with source === target gets indexed under both.
  */
-function findFieldArrows(fieldName, index) {
-  if (!index.fieldArrows.has(fieldName)) return [];
+function findFieldArrows(fieldKey, index) {
+  if (!index.fieldArrows.has(fieldKey)) return [];
   const seen = new Set();
   const results = [];
-  for (const arrow of index.fieldArrows.get(fieldName)) {
-    const key = `${arrow.mapping}:${arrow.source}:${arrow.target}:${arrow.line}`;
+  for (const arrow of index.fieldArrows.get(fieldKey)) {
+    const key = `${arrow.mapping}:${arrow.namespace}:${arrow.source}:${arrow.target}:${arrow.line}`;
     if (!seen.has(key)) {
       seen.add(key);
       results.push(arrow);
@@ -136,8 +141,9 @@ function resolveTargetSchema(mappingName, index) {
 }
 
 function printDefault(fieldRef, arrows, _index) {
-  const asSource = arrows.filter((a) => a.source && fieldRef.endsWith(a.source));
-  const asTarget = arrows.filter((a) => a.target && fieldRef.endsWith(a.target));
+  const fieldName = fieldRef.split(".").pop();
+  const asSource = arrows.filter((a) => a.source === fieldName);
+  const asTarget = arrows.filter((a) => a.target === fieldName);
 
   const parts = [];
   if (asSource.length > 0) parts.push(`${asSource.length} as source`);
@@ -150,11 +156,12 @@ function printDefault(fieldRef, arrows, _index) {
   );
   console.log();
 
-  // Group by mapping
+  // Group by qualified mapping name
   const byMapping = new Map();
   for (const a of arrows) {
-    if (!byMapping.has(a.mapping)) byMapping.set(a.mapping, []);
-    byMapping.get(a.mapping).push(a);
+    const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : a.mapping;
+    if (!byMapping.has(qMapping)) byMapping.set(qMapping, []);
+    byMapping.get(qMapping).push(a);
   }
 
   for (const [mappingName, mappingArrows] of byMapping) {
