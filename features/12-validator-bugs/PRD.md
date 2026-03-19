@@ -1,5 +1,7 @@
 # Feature 12 — Validator Bugs: False Positives from `stm validate`
 
+> **Status: COMPLETED** (2026-03-18). `stm validate examples/` produces 0 errors and 0 warnings. All 5 bugs fixed.
+
 ## Goal
 
 Fix the false-positive warnings emitted by `stm validate` so that the canonical `examples/` corpus produces zero warnings when all referenced fields and sources are correctly declared.

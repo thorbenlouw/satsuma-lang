@@ -1,5 +1,7 @@
 # Excel-to-STM Agent Skill
 
+> **Status: PARTIAL** — Lite system prompt authored. Phases 1-5 (Python CLI tool, skill prompt, critique loop, end-to-end validation) not started. See `FUTURE-WORK.md` for deferred scope.
+
 ## Goal
 
 Enable any user — from a BA with a web browser to an engineer with Claude Code — to convert an Excel-based source-to-target mapping spreadsheet into well-formed, idiomatic STM files.

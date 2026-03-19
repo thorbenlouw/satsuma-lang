@@ -1,5 +1,7 @@
 # Feature 09 — STM CLI: LLM Context Slicer
 
+> **Status: COMPLETED** (2026-03-18). All 16 commands implemented, 224 tests passing, `stm validate examples/` clean.
+
 ## Goal
 
 Build a command-line tool (`stm`) that lets an LLM (or a human) extract precise, minimal slices of an STM workspace — reducing the context load needed to work with large or complex STM files. The CLI is the primary interface between LLM agents and STM; it turns a multi-file workspace into targeted, structured answers.

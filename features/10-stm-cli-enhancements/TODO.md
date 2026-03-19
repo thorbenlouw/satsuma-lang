@@ -1,5 +1,7 @@
 # TODO: STM CLI — Structural Primitives for Agent Composition
 
+> **Status: COMPLETED** (2026-03-18). All phases done. All commands implemented and tested. 224 CLI tests passing.
+
 Depends on Feature 09 (STM CLI: LLM Context Slicer) being complete.
 
 ## Phase 0: Transform Classifier and Field-Level Index

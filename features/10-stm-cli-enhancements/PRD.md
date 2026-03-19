@@ -1,5 +1,7 @@
 # Feature 10 — STM CLI: Structural Primitives for Agent Composition
 
+> **Status: COMPLETED** (2026-03-18). All structural primitive commands (arrows, nl, meta, fields, match-fields, validate, diff) implemented and tested.
+
 ## Goal
 
 Extend the `stm` CLI (Feature 09) with low-level structural extraction commands that agents use as building blocks. Every new command produces 100% deterministically correct results from the parse tree. The agent — not the CLI — composes these primitives into higher-level workflows like impact analysis, coverage assessment, and audit.

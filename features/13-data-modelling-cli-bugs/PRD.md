@@ -1,5 +1,7 @@
 # Feature 13 — Data Modelling CLI Bugs
 
+> **Status: OPEN** — 15 parse errors + 65 false-positive warnings remain against Feature 06 examples. Ready to implement.
+
 ## Goal
 
 Fix the parser and CLI issues discovered when running `stm` commands against the Feature 06 data-modelling examples (`example_kimball/` and `example_datavault/`). Currently these files produce **15 parse errors and 65 false-positive warnings** across both example sets, plus several CLI output bugs.
