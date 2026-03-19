@@ -1,6 +1,8 @@
 // RetailCo International — Kimball Star Schema
 // Inventory Snapshot Fact
 
+import { dim_date } from "common.stm"
+
 note {
   """
   # Inventory Snapshot Fact
@@ -44,8 +46,8 @@ schema wms_manhattan (note "Manhattan Associates WMS — stock positions") {
 schema fact_inventory_snapshot (
   fact, snapshot periodic,
   grain {snapshot_date, sku, warehouse_id},
-  ref dim_product on sku,
-  ref dim_date on snapshot_date,
+  ref dim_product.sku,
+  ref dim_date.snapshot_date,
   note "Daily inventory position"
 ) {
   snapshot_date        DATE            (required)

@@ -1,7 +1,7 @@
 // RetailCo International — Kimball Star Schema
 // Sales Transaction Fact
 
-import { channel_codes } from "common.stm"
+import { channel_codes, dim_date } from "common.stm"
 
 note {
   """
@@ -70,10 +70,10 @@ schema ecom_shopify (note "Shopify Plus — online orders") {
 schema fact_sales (
   fact,
   grain {transaction_id, line_number},
-  ref dim_customer on customer_id,
-  ref dim_product on sku,
-  ref dim_store on store_id,
-  ref dim_date on transaction_date,
+  ref dim_customer.customer_id,
+  ref dim_product.sku,
+  ref dim_store.store_id,
+  ref dim_date.transaction_date,
   note "Transaction line-item fact"
 ) {
   transaction_id       VARCHAR(30)     (required)          // Prefixed: POS-{id} or WEB-{id}

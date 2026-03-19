@@ -34,3 +34,21 @@ schema channel_codes (note "Sales channel normalisation") {
   channel_code    VARCHAR(20)
   channel_name    VARCHAR(50)
 }
+
+schema dim_date (note "Conformed date dimension — one row per calendar day") {
+  date_key             DATE            (pk)
+  day_of_week          VARCHAR(10)
+  day_of_week_number   INTEGER
+  day_of_month         INTEGER
+  day_of_year          INTEGER
+  week_of_year         INTEGER
+  month_number         INTEGER
+  month_name           VARCHAR(10)
+  quarter_number       INTEGER
+  quarter_name         VARCHAR(2)
+  year                 INTEGER
+  is_weekend           BOOLEAN
+  is_holiday           BOOLEAN
+  fiscal_year          INTEGER
+  fiscal_quarter       INTEGER
+}
