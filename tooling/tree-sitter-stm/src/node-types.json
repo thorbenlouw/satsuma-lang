@@ -307,6 +307,10 @@
           "named": true
         },
         {
+          "type": "kv_ref_on",
+          "named": true
+        },
+        {
           "type": "multiline_string",
           "named": true
         },
@@ -384,6 +388,21 @@
     "fields": {},
     "children": {
       "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "kv_ref_on",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -1250,6 +1269,10 @@
   {
     "type": "number_literal",
     "named": true
+  },
+  {
+    "type": "on",
+    "named": false
   },
   {
     "type": "question_comment",
