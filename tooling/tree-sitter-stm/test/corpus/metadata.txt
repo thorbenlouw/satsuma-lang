@@ -343,3 +343,45 @@ schema salesforce (ref `Account`.id) {}
         (backtick_name))
       (ERROR
         (identifier)))))
+
+================================================================================
+Ref-on compound metadata
+================================================================================
+
+schema fact_sales (
+  fact,
+  grain {transaction_id, line_number},
+  ref dim_customer on customer_id,
+  ref dim_product on sku,
+  note "Transaction line-item fact"
+) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (metadata_block
+      (tag_token
+        (identifier))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_braced_list
+          (identifier)
+          (identifier)))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_ref_on
+          (identifier)
+          (identifier)))
+      (key_value_pair
+        (kv_key
+          (identifier))
+        (kv_ref_on
+          (identifier)
+          (identifier)))
+      (note_tag
+        (nl_string)))))

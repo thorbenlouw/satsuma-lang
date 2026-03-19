@@ -473,6 +473,7 @@ module.exports = grammar({
         $.backtick_name,
         $.kv_braced_list,
         $.kv_comparison,
+        $.kv_ref_on,
         $.kv_compound,
         $.dotted_name,
         $.number_literal,
@@ -491,6 +492,9 @@ module.exports = grammar({
     // Value form: identifier "string" (compound value, e.g. namespace ord "uri")
     kv_compound: ($) => seq($.identifier, $.nl_string),
 
+    // Value form: identifier "on" identifier (ref compound, e.g. ref dim_customer on customer_id)
+    kv_ref_on: ($) => seq($.identifier, "on", $.identifier),
+
     dotted_name: ($) =>
       prec.left(seq($.identifier, repeat1(seq(".", choice($.identifier, $.number_literal))))),
 
@@ -508,7 +512,7 @@ module.exports = grammar({
 
     backtick_name: (_) => /`(?:[^`\\]|\\.)*`/,
 
-    multiline_string: (_) => token(prec(1, /"""[^"]*"""/)),
+    multiline_string: (_) => token(prec(1, /"""([^"]|"[^"]|""[^"])*"""/)),
 
     nl_string: (_) => /"(?:[^"\\]|\\.)*"/,
 
