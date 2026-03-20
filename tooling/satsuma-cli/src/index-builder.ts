@@ -138,7 +138,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
 
   // Accept either pre-extracted data or raw parsedFile objects.
   const fileDataList = parsedFiles.map((pf) =>
-    "schemas" in pf ? pf as FileData : extractFileData(pf as ParsedFile),
+    "schemas" in pf ? pf : extractFileData(pf),
   );
 
   for (const fileData of fileDataList) {

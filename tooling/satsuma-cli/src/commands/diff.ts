@@ -121,17 +121,17 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
     console.log(`  ~ ${name}`);
     for (const c of changes) {
       if (c.kind === "field-added") {
-        console.log(`      + field ${(c as SchemaChange).field}`);
+        console.log(`      + field ${c.field}`);
       } else if (c.kind === "field-removed") {
-        console.log(`      - field ${(c as SchemaChange).field}`);
+        console.log(`      - field ${c.field}`);
       } else if (c.kind === "type-changed") {
-        console.log(`      ~ ${(c as SchemaChange).field}: ${(c as SchemaChange).from} -> ${(c as SchemaChange).to}`);
+        console.log(`      ~ ${c.field}: ${String(c.from)} -> ${String(c.to)}`);
       } else if (c.kind === "arrow-count-changed") {
-        console.log(`      ~ arrows: ${(c as MappingChange).from} -> ${(c as MappingChange).to}`);
+        console.log(`      ~ arrows: ${String(c.from)} -> ${String(c.to)}`);
       } else if (c.kind === "sources-changed") {
-        console.log(`      ~ sources: ${((c as MappingChange).from as string[]).join(", ")} -> ${((c as MappingChange).to as string[]).join(", ")}`);
+        console.log(`      ~ sources: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
       } else if (c.kind === "targets-changed") {
-        console.log(`      ~ targets: ${((c as MappingChange).from as string[]).join(", ")} -> ${((c as MappingChange).to as string[]).join(", ")}`);
+        console.log(`      ~ targets: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
       }
     }
   }

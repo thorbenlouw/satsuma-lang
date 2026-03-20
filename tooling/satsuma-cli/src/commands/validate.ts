@@ -47,7 +47,7 @@ export function register(program: Command): void {
       const index = buildIndex(extracted);
 
       // Collect diagnostics
-      let diagnostics: LintDiagnostic[] = [...parseErrors];
+      const diagnostics: LintDiagnostic[] = [...parseErrors];
 
       // Semantic warnings
       if (!opts.errorsOnly) {

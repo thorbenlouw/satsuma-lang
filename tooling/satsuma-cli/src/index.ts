@@ -29,7 +29,7 @@ program
 
 // Unhandled rejections go to stderr with exit 2
 process.on("unhandledRejection", (err: unknown) => {
-  console.error(`Unhandled error: ${(err as { message?: string })?.message ?? err}`);
+  console.error(`Unhandled error: ${(err as { message?: string })?.message ?? String(err)}`);
   process.exit(2);
 });
 
