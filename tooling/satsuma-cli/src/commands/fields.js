@@ -13,6 +13,7 @@
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { expandEntityFields } from "../spread-expand.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -48,6 +49,10 @@ export function register(program) {
 
       const schema = resolved.entry;
       let fields = schema.fields.map((f) => ({ ...f }));
+
+      // Expand fragment spreads — inline fields from spread fragments
+      const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
+      fields = [...fields, ...spreadFields];
 
       // Enrich with metadata if requested
       if (opts.withMeta) {

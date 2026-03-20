@@ -13,6 +13,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { matchFields } from "../normalize.js";
+import { expandEntityFields } from "../spread-expand.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -52,8 +53,16 @@ export function register(program) {
         resolvedNames[name] = resolved;
       }
 
-      const srcFields = resolvedNames[opts.source].entry.fields;
-      const tgtFields = resolvedNames[opts.target].entry.fields;
+      const srcEntry = resolvedNames[opts.source].entry;
+      const tgtEntry = resolvedNames[opts.target].entry;
+      const srcFields = [
+        ...srcEntry.fields,
+        ...expandEntityFields(srcEntry, srcEntry.namespace ?? null, index),
+      ];
+      const tgtFields = [
+        ...tgtEntry.fields,
+        ...expandEntityFields(tgtEntry, tgtEntry.namespace ?? null, index),
+      ];
       const result = matchFields(srcFields, tgtFields);
 
       if (opts.json) {

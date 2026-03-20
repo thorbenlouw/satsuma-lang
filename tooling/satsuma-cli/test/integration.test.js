@@ -1269,7 +1269,7 @@ describe("satsuma nl-refs", () => {
   });
 
   it("supports --unresolved filter with no results", async () => {
-    const { _stdout, code } = await run("nl-refs", "--unresolved", NS_MERGING);
+    const { code } = await run("nl-refs", "--unresolved", NS_MERGING);
     assert.equal(code, 0);
   });
 
@@ -1596,6 +1596,142 @@ describe("satsuma lineage --to upstream branches (sg-pufq)", () => {
     const names = data.nodes.map((n) => n.name);
     assert.ok(names.includes("vault::hub_contact"), `expected vault::hub_contact in ${names}`);
     assert.ok(names.includes("vault::sat_contact_details"), `expected vault::sat_contact_details in ${names}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fixes: fragment spread expansion across CLI commands
+// (sl-3aff, sl-h1b0, sl-wrzl, sl-t6lt, sl-zjec, sl-307v)
+// ---------------------------------------------------------------------------
+const SPREAD_FIXTURE = resolve(__dirname, "fixtures", "fragment-spread-commands.stm");
+
+describe("satsuma fields — fragment spread expansion (sl-3aff)", () => {
+  it("includes fields from fragment spreads", async () => {
+    const { stdout, code } = await run("fields", "tgt_customers", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    // Direct fields
+    assert.match(stdout, /customer_id/);
+    assert.match(stdout, /email/);
+    // Fragment spread fields from 'audit fields'
+    assert.match(stdout, /created_at/);
+    assert.match(stdout, /updated_at/);
+    assert.match(stdout, /created_by/);
+    // Fragment spread fields from 'address fields'
+    assert.match(stdout, /street_line_1/);
+    assert.match(stdout, /city/);
+  });
+
+  it("--json includes fragment spread fields", async () => {
+    const { stdout, code } = await run("fields", "tgt_customers", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const fields = JSON.parse(stdout);
+    const names = fields.map((f) => f.name);
+    assert.ok(names.includes("created_at"), "should include created_at from audit fields");
+    assert.ok(names.includes("street_line_1"), "should include street_line_1 from address fields");
+  });
+
+  it("includes transitive spread fields", async () => {
+    const { stdout, code } = await run("fields", "customer_with_full_address", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const fields = JSON.parse(stdout);
+    const names = fields.map((f) => f.name);
+    // From 'full address' fragment directly
+    assert.ok(names.includes("country"), "should include country from full address");
+    // Transitive from 'address fields' via 'full address'
+    assert.ok(names.includes("street_line_1"), "should include street_line_1 transitively");
+    assert.ok(names.includes("city"), "should include city transitively");
+  });
+});
+
+describe("satsuma arrows — fragment spread expansion (sl-h1b0)", () => {
+  it("finds arrows targeting fields from fragment spreads", async () => {
+    const { stdout, code } = await run("arrows", "tgt_customers.created_at", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /now_utc/);
+  });
+
+  it("finds arrows targeting spread source fields", async () => {
+    const { stdout, code } = await run("arrows", "src_customers.street_line_1", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /street_line_1/);
+  });
+
+  it("does not error for spread field lookup", async () => {
+    const { stderr, code } = await run("arrows", "tgt_customers.updated_at", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    assert.ok(!stderr.includes("not found"), "should not error for spread field");
+  });
+});
+
+describe("satsuma match-fields — fragment spread expansion (sl-wrzl)", () => {
+  it("matches fields from shared fragment spreads", async () => {
+    const { stdout, code } = await run(
+      "match-fields", "--source", "src_customers", "--target", "tgt_customers",
+      "--json", SPREAD_FIXTURE,
+    );
+    assert.equal(code, 0);
+    const result = JSON.parse(stdout);
+    const matchedNames = result.matched.map((m) => m.source);
+    // Both schemas spread 'address fields' — these should match
+    assert.ok(matchedNames.includes("street_line_1"), "street_line_1 should be matched");
+    assert.ok(matchedNames.includes("city"), "city should be matched");
+    assert.ok(matchedNames.includes("state"), "state should be matched");
+  });
+});
+
+describe("satsuma graph --json — fragment spread expansion (sl-t6lt)", () => {
+  it("includes fragment spread fields in schema node fields arrays", async () => {
+    const { stdout, code } = await run("graph", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const graph = JSON.parse(stdout);
+    const tgtNode = graph.nodes.find((n) => n.id === "tgt_customers");
+    assert.ok(tgtNode, "tgt_customers node should exist");
+    const fieldNames = tgtNode.fields.map((f) => f.name);
+    assert.ok(fieldNames.includes("created_at"), "should include created_at from audit fields");
+    assert.ok(fieldNames.includes("street_line_1"), "should include street_line_1 from address fields");
+  });
+
+  it("includes fragment spread edges", async () => {
+    const { stdout, code } = await run("graph", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const graph = JSON.parse(stdout);
+    const spreadEdges = graph.schema_edges.filter((e) => e.role === "fragment_spread");
+    assert.ok(spreadEdges.length > 0, "should have fragment_spread edges");
+  });
+});
+
+describe("satsuma schema --json — fragment spread expansion (sl-zjec)", () => {
+  it("includes expanded fragment fields in fields array", async () => {
+    const { stdout, code } = await run("schema", "tgt_customers", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const fieldNames = data.fields.map((f) => f.name);
+    assert.ok(fieldNames.includes("created_at"), "should include created_at from audit fields");
+    assert.ok(fieldNames.includes("updated_at"), "should include updated_at from audit fields");
+    assert.ok(fieldNames.includes("created_by"), "should include created_by from audit fields");
+    assert.ok(fieldNames.includes("street_line_1"), "should include street_line_1 from address fields");
+  });
+
+  it("still shows spread syntax in fieldLines", async () => {
+    const { stdout, code } = await run("schema", "tgt_customers", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.fieldLines.some((l) => l.includes("...audit fields")));
+    assert.ok(data.fieldLines.some((l) => l.includes("...address fields")));
+  });
+});
+
+describe("satsuma where-used — fragment-to-fragment spreads (sl-307v)", () => {
+  it("finds fragment-to-fragment spread references", async () => {
+    const { stdout, code } = await run("where-used", "address fields", "--json", SPREAD_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const spreadRefs = data.refs.filter((r) => r.kind === "fragment_spread");
+    const refNames = spreadRefs.map((r) => r.name);
+    // Should find spreads in: src_customers, tgt_customers, full address, customer_with_full_address (transitive via full address)
+    assert.ok(refNames.includes("src_customers"), "should find spread in src_customers");
+    assert.ok(refNames.includes("tgt_customers"), "should find spread in tgt_customers");
+    assert.ok(refNames.includes("full address"), "should find spread in fragment 'full address'");
   });
 });
 

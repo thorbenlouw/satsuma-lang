@@ -1,6 +1,6 @@
 ---
 id: sl-t6lt
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T16:25:31Z

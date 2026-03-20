@@ -13,6 +13,7 @@ import {
   isSchemaInMappingSources,
 } from "./nl-ref-extract.js";
 import { resolveScopedEntityRef } from "./index-builder.js";
+import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
 
 /**
  * @typedef {Object} Diagnostic
@@ -352,32 +353,6 @@ export function collectSemanticWarnings(index) {
 // ── Field path resolution helpers ─────────────────────────────────────────────
 
 /**
- * Recursively collect all valid dotted field paths from a field tree.
- * E.g. for schema { record Order { OrderId INT, record Customer { Email STRING } } }
- * collects: "Order", "Order.OrderId", "Order.Customer", "Order.Customer.Email"
- *
- * @param {Array<{name:string, type:string, children?:Array}>} fields
- * @param {string} prefix  dot-separated path prefix (e.g. "Order.")
- * @param {Set<string>} paths  accumulator set
- */
-function collectFieldPaths(fields, prefix, paths) {
-  for (const f of fields) {
-    const fullPath = prefix + f.name;
-    paths.add(fullPath);
-    // list fields can be accessed with [] notation — add both forms
-    if (f.isList) {
-      paths.add(prefix + f.name + "[]");
-    }
-    if (f.children && f.children.length > 0) {
-      collectFieldPaths(f.children, fullPath + ".", paths);
-      if (f.isList) {
-        collectFieldPaths(f.children, fullPath + "[].", paths);
-      }
-    }
-  }
-}
-
-/**
  * Resolve an arrow field path against available schemas and field paths.
  * Handles:
  * - Direct match in fieldPaths set (covers nested dotted paths)
@@ -416,90 +391,6 @@ function resolveFieldPath(path, schemaNames, index, fieldPaths) {
   return false;
 }
 
-/**
- * Expand fragment spreads for a set of schemas, adding fragment fields to the
- * fieldPaths set. Returns true if any spread references an unresolvable
- * fragment (in which case validation should be suppressed for that side).
- *
- * @param {string[]} schemaKeys  resolved schema keys to expand
- * @param {string|null} currentNs  namespace context for resolution
- * @param {object} index  WorkspaceIndex
- * @param {Set<string>} fieldPaths  accumulator set (mutated)
- * @param {Array} diagnostics  accumulator for cycle warnings
- * @returns {boolean}  true if any spread could not be resolved
- */
-function expandSpreads(schemaKeys, currentNs, index, fieldPaths, diagnostics) {
-  let hasUnresolved = false;
-  const visited = new Set(); // prevent infinite loops from circular spreads
-  for (const key of schemaKeys) {
-    const schema = index.schemas.get(key);
-    if (!schema?.hasSpreads) continue;
-    if (!expandEntitySpreads(schema, currentNs, index, fieldPaths, visited, diagnostics, [])) {
-      hasUnresolved = true;
-    }
-  }
-  return hasUnresolved;
-}
-
-/**
- * Recursively expand spreads for a schema or fragment, adding fragment fields
- * to the fieldPaths set. Detects cycles and emits diagnostics for them.
- *
- * Uses two tracking sets:
- * - `ancestors`: keys currently on the recursion stack (for cycle detection)
- * - `expanded`: keys already fully expanded (to avoid redundant work in diamonds)
- *
- * @param {object} entity  schema or fragment with spreads/hasSpreads/fields
- * @param {string|null} currentNs  namespace context for resolution
- * @param {object} index  WorkspaceIndex
- * @param {Set<string>} fieldPaths  accumulator set (mutated)
- * @param {Set<string>} expanded  already fully expanded keys (efficiency)
- * @param {Array} diagnostics  accumulator for cycle warnings
- * @param {string[]} chain  current expansion chain for cycle reporting
- * @returns {boolean}  true if all spreads resolved, false if any unresolvable
- */
-function expandEntitySpreads(entity, currentNs, index, fieldPaths, expanded, diagnostics, chain) {
-  const spreads = entity.spreads ?? [];
-  if (spreads.length === 0 && entity.hasSpreads) return false; // hasSpreads but no extracted names
-  const ancestors = new Set(chain);
-  let allResolved = true;
-  for (const spreadName of spreads) {
-    const resolvedKey = resolveEntityRef(spreadName, currentNs, index.fragments);
-    if (!resolvedKey) {
-      allResolved = false;
-      continue;
-    }
-    if (ancestors.has(resolvedKey)) {
-      // Cycle detected — emit diagnostic
-      const cycleStart = chain.indexOf(resolvedKey);
-      const cyclePath = [...chain.slice(cycleStart), resolvedKey];
-      diagnostics.push({
-        file: entity.file ?? "unknown",
-        line: entity.row != null ? entity.row + 1 : 1,
-        column: 1,
-        severity: "error",
-        rule: "circular-spread",
-        message: `Circular fragment spread detected: ${cyclePath.join(" → ")}`,
-      });
-      continue;
-    }
-    if (expanded.has(resolvedKey)) continue; // already expanded via another path (diamond)
-    expanded.add(resolvedKey);
-    const fragment = index.fragments.get(resolvedKey);
-    if (!fragment) {
-      allResolved = false;
-      continue;
-    }
-    collectFieldPaths(fragment.fields, "", fieldPaths);
-    // Recursively expand spreads within this fragment
-    if (fragment.hasSpreads) {
-      if (!expandEntitySpreads(fragment, currentNs, index, fieldPaths, expanded, diagnostics, [...chain, resolvedKey])) {
-        allResolved = false;
-      }
-    }
-  }
-  return allResolved;
-}
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);

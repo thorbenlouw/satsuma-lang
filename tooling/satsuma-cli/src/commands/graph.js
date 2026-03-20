@@ -19,6 +19,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
+import { expandEntityFields } from "../spread-expand.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -105,7 +106,8 @@ function buildWorkspaceGraph(index, schemaGraph, root, opts) {
       note: schema.note ?? null,
     };
     if (!schemaOnly) {
-      node.fields = schema.fields.map((f) => ({
+      const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
+      node.fields = [...schema.fields, ...spreadFields].map((f) => ({
         name: f.name,
         type: f.type ?? null,
       }));
@@ -168,6 +170,22 @@ function buildWorkspaceGraph(index, schemaGraph, root, opts) {
 
   // Build schema-level edges from the directed graph
   const schemaEdges = buildSchemaEdges(index, schemaGraph, includedNodeIds, nsFilter);
+
+  // Add fragment spread edges: fragment -> schema that spreads it
+  for (const [id, schema] of index.schemas) {
+    if (nsFilter && schema.namespace !== nsFilter) continue;
+    if (!schema.hasSpreads) continue;
+    for (const spreadName of (schema.spreads ?? [])) {
+      // Resolve fragment name in the schema's namespace context
+      const fragKey = [...index.fragments.keys()].find((k) => {
+        const bare = k.includes("::") ? k.split("::")[1] : k;
+        return bare === spreadName || k === spreadName;
+      });
+      if (fragKey && includedNodeIds.has(fragKey)) {
+        schemaEdges.push({ from: fragKey, to: id, role: "fragment_spread" });
+      }
+    }
+  }
 
   // Build field-level edges from arrow records
   let fieldEdges = [];
