@@ -12,8 +12,8 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { collectSemanticWarnings } from "../src/validate.js";
-import { extractSchemas, extractMetrics } from "../src/extract.js";
+import { collectSemanticWarnings } from "#src/validate.js";
+import { extractSchemas, extractMetrics } from "#src/extract.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 

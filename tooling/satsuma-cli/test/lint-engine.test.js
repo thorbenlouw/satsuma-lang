@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { runLint, applyFixes } from "../src/lint-engine.js";
+import { runLint, applyFixes } from "#src/lint-engine.js";
 
 /** Build a minimal WorkspaceIndex for lint testing. */
 function makeIndex({ schemas = [], mappings = [], nlRefData = [] } = {}) {

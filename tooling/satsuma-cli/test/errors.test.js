@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { findSuggestion } from "../src/errors.js";
+import { findSuggestion } from "#src/errors.js";
 
 describe("findSuggestion", () => {
   it("returns exact case-insensitive match", () => {

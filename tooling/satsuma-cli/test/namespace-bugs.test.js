@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CLI = resolve(__dirname, "../src/index.js");
+const CLI = resolve(__dirname, "../dist/index.js");
 const FIXTURE = resolve(__dirname, "fixtures/namespace-collision.stm");
 
 function run(...args) {

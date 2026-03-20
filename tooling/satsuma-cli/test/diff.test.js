@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { diffIndex } from "../src/diff.js";
+import { diffIndex } from "#src/diff.js";
 
 function makeIndex(schemas = {}, mappings = {}) {
   return {

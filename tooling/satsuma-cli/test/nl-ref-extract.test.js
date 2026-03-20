@@ -10,7 +10,7 @@ import {
   resolveRef,
   isSchemaInMappingSources,
   resolveAllNLRefs,
-} from "../src/nl-ref-extract.js";
+} from "#src/nl-ref-extract.js";
 
 // ── extractBacktickRefs ─────────────────────────────────────────────────────
 
