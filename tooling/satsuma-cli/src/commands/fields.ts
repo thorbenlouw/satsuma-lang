@@ -10,26 +10,31 @@
  *   --json              structured JSON output
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
+import type { WorkspaceIndex, FieldDecl, ParsedFile, SyntaxNode } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface FieldWithTags extends FieldDecl {
+  tags?: string[];
+}
+
+export function register(program: Command): void {
   program
     .command("fields <schema> [path]")
     .description("List fields in a schema with types")
     .option("--with-meta", "include metadata tags")
     .option("--unmapped-by <mapping>", "only unmapped fields relative to a mapping")
     .option("--json", "structured JSON output")
-    .action(async (schemaName, pathArg, opts) => {
+    .action(async (schemaName: string, pathArg: string | undefined, opts: { withMeta?: boolean; unmappedBy?: string; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -48,7 +53,7 @@ export function register(program) {
       const resolvedSchemaName = resolved.key;
 
       const schema = resolved.entry;
-      let fields = schema.fields.map((f) => ({ ...f }));
+      let fields: FieldWithTags[] = schema.fields.map((f) => ({ ...f }));
 
       // Expand fragment spreads — inline fields from spread fragments
       const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
@@ -65,7 +70,7 @@ export function register(program) {
         if (!resolvedMapping) {
           console.error(`Mapping '${opts.unmappedBy}' not found.`);
           const close = [...index.mappings.keys()].find(
-            (k) => k.toLowerCase() === opts.unmappedBy.toLowerCase(),
+            (k) => k.toLowerCase() === opts.unmappedBy!.toLowerCase(),
           );
           if (close) console.error(`Did you mean '${close}'?`);
           process.exit(1);
@@ -99,8 +104,8 @@ export function register(program) {
  * Get the set of field names from the given schema that participate in arrows
  * for the specified mapping — checking both source and target sides.
  */
-function getMappedFieldNames(mappingName, schemaName, index) {
-  const mapped = new Set();
+function getMappedFieldNames(mappingName: string, schemaName: string, index: WorkspaceIndex): Set<string> {
+  const mapped = new Set<string>();
   const mapping = index.mappings.get(mappingName);
   if (!mapping) return mapped;
 
@@ -126,7 +131,7 @@ function getMappedFieldNames(mappingName, schemaName, index) {
 /**
  * Enrich field objects with metadata tags from the CST.
  */
-function enrichFieldMeta(schemaName, fields, parsedFiles) {
+function enrichFieldMeta(schemaName: string, fields: FieldWithTags[], parsedFiles: ParsedFile[]): void {
   for (const { tree } of parsedFiles) {
     const root = tree.rootNode;
     const schemaNodes = findAllSchemaNodes(root, schemaName);
@@ -155,7 +160,7 @@ function enrichFieldMeta(schemaName, fields, parsedFiles) {
         );
         if (!meta) continue;
 
-        const tags = [];
+        const tags: string[] = [];
         for (const entry of meta.namedChildren) {
           if (entry.type === "tag_token") {
             tags.push(entry.text);
@@ -168,8 +173,8 @@ function enrichFieldMeta(schemaName, fields, parsedFiles) {
 }
 
 /** Find all schema_block nodes with the given name, including inside namespace_blocks. */
-function findAllSchemaNodes(rootNode, name) {
-  const results = [];
+function findAllSchemaNodes(rootNode: SyntaxNode, name: string): SyntaxNode[] {
+  const results: SyntaxNode[] = [];
   for (const c of rootNode.namedChildren) {
     if (c.type === "schema_block" && matchBlockLabel(c, name)) {
       results.push(c);
@@ -184,7 +189,7 @@ function findAllSchemaNodes(rootNode, name) {
   return results;
 }
 
-function matchBlockLabel(node, name) {
+function matchBlockLabel(node: SyntaxNode, name: string): boolean {
   const lbl = node.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   let n = inner?.text ?? "";
@@ -192,7 +197,7 @@ function matchBlockLabel(node, name) {
   return n === name;
 }
 
-function printDefault(_schemaName, fields, opts) {
+function printDefault(_schemaName: string, fields: FieldWithTags[], opts: { withMeta?: boolean }): void {
   const maxName = Math.max(...fields.map((f) => f.name.length));
   const maxType = Math.max(...fields.map((f) => f.type.length));
 

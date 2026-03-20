@@ -11,21 +11,22 @@
  *   --json        structured JSON with decomposed pipe steps
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
+import type { WorkspaceIndex, ArrowRecord } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("arrows <schema.field> [path]")
     .description("Show all arrows involving a field with transform classification")
     .option("--as-source", "only arrows where the field is the source")
     .option("--as-target", "only arrows where the field is the target")
     .option("--json", "structured JSON output")
-    .action(async (fieldRef, pathArg, opts) => {
+    .action(async (fieldRef: string, pathArg: string | undefined, opts: { asSource?: boolean; asTarget?: boolean; json?: boolean }) => {
       const dot = fieldRef.indexOf(".");
       if (dot === -1) {
         console.error(
@@ -38,11 +39,11 @@ export function register(program) {
       const fieldName = fieldRef.slice(dot + 1);
 
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -95,7 +96,7 @@ export function register(program) {
             target: nlRef.targetField,
             transform_raw: `(NL ref)`,
             steps: [],
-            classification: "nl-derived",
+            classification: "nl-derived" as ArrowRecord["classification"],
             derived: true,
             line: nlRef.line,
             file: nlRef.file,
@@ -145,11 +146,11 @@ export function register(program) {
  * Accepts either a schema-qualified key ("schema.field") or bare field name.
  * Deduplicates since an arrow with source === target gets indexed under both.
  */
-function findFieldArrows(fieldKey, index) {
+function findFieldArrows(fieldKey: string, index: WorkspaceIndex): ArrowRecord[] {
   if (!index.fieldArrows.has(fieldKey)) return [];
-  const seen = new Set();
-  const results = [];
-  for (const arrow of index.fieldArrows.get(fieldKey)) {
+  const seen = new Set<string>();
+  const results: ArrowRecord[] = [];
+  for (const arrow of index.fieldArrows.get(fieldKey)!) {
     const key = `${arrow.mapping}:${arrow.namespace}:${arrow.source}:${arrow.target}:${arrow.line}`;
     if (!seen.has(key)) {
       seen.add(key);
@@ -162,17 +163,17 @@ function findFieldArrows(fieldKey, index) {
 /**
  * Resolve the target schema name for a mapping by looking at its target list.
  */
-function resolveTargetSchema(mappingName, index) {
-  const mapping = index.mappings.get(mappingName);
+function resolveTargetSchema(mappingName: string | null, index: WorkspaceIndex): string {
+  const mapping = index.mappings.get(mappingName ?? "");
   return mapping?.targets[0] ?? "?";
 }
 
-function printDefault(fieldRef, arrows, _index) {
+function printDefault(fieldRef: string, arrows: ArrowRecord[], _index: WorkspaceIndex): void {
   const fieldName = fieldRef.split(".").pop();
   const asSource = arrows.filter((a) => a.source === fieldName);
   const asTarget = arrows.filter((a) => a.target === fieldName);
 
-  const parts = [];
+  const parts: string[] = [];
   if (asSource.length > 0) parts.push(`${asSource.length} as source`);
   if (asTarget.length > 0) parts.push(`${asTarget.length} as target`);
   // arrows that are both (field used on both sides) — avoid double-count
@@ -184,11 +185,11 @@ function printDefault(fieldRef, arrows, _index) {
   console.log();
 
   // Group by qualified mapping name
-  const byMapping = new Map();
+  const byMapping = new Map<string, ArrowRecord[]>();
   for (const a of arrows) {
-    const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : a.mapping;
+    const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
     if (!byMapping.has(qMapping)) byMapping.set(qMapping, []);
-    byMapping.get(qMapping).push(a);
+    byMapping.get(qMapping)!.push(a);
   }
 
   for (const [mappingName, mappingArrows] of byMapping) {

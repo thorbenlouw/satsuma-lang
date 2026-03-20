@@ -14,15 +14,63 @@
  *   --no-nl         strip NL text from edges
  */
 
+import type { Command } from "commander";
 import { resolve } from "node:path";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
+import type { WorkspaceIndex, ArrowRecord } from "../types.js";
+import type { FullGraph } from "../graph-builder.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface GraphOpts {
+  json?: boolean;
+  compact?: boolean;
+  schemaOnly?: boolean;
+  namespace?: string;
+  nl?: boolean;
+}
+
+interface SchemaEdge {
+  from: string;
+  to: string;
+  role: string;
+}
+
+interface FieldEdge {
+  from: string | null;
+  to: string | null;
+  mapping: string;
+  classification: string;
+  file: string;
+  row: number;
+  transforms?: string[];
+  nl_text?: string;
+  derived?: boolean;
+}
+
+interface WorkspaceGraph {
+  version: number;
+  generated: string;
+  workspace: string;
+  stats: {
+    schemas: number;
+    mappings: number;
+    metrics: number;
+    fragments: number;
+    transforms: number;
+    arrows: number;
+    errors: number;
+  };
+  nodes: Array<Record<string, unknown>>;
+  edges: FieldEdge[];
+  schema_edges: SchemaEdge[];
+  warnings: Array<{ text: string; file: string; row: number }>;
+  unresolved_nl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }>;
+}
+
+export function register(program: Command): void {
   program
     .command("graph [path]")
     .description("Export workspace semantic graph")
@@ -31,13 +79,13 @@ export function register(program) {
     .option("--schema-only", "omit field-level edges and field arrays")
     .option("--namespace <ns>", "filter to a namespace")
     .option("--no-nl", "strip NL text from edges")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: GraphOpts) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -68,7 +116,7 @@ export function register(program) {
 
 // ── Graph construction ────────────────────────────────────────────────────────
 
-function emptyGraph(root) {
+function emptyGraph(root: string): WorkspaceGraph {
   return {
     version: 1,
     generated: new Date().toISOString(),
@@ -85,19 +133,19 @@ function emptyGraph(root) {
 /**
  * Build the full workspace graph output structure.
  */
-function buildWorkspaceGraph(index, schemaGraph, root, opts) {
+function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root: string, opts: GraphOpts): WorkspaceGraph {
   const nsFilter = opts.namespace ?? null;
   const includeNl = opts.nl !== false; // --no-nl sets opts.nl to false
   const schemaOnly = opts.schemaOnly ?? false;
 
   // Build nodes
-  const nodes = [];
-  const includedNodeIds = new Set();
+  const nodes: Array<Record<string, unknown>> = [];
+  const includedNodeIds = new Set<string>();
 
   for (const [id, schema] of index.schemas) {
     if (nsFilter && schema.namespace !== nsFilter) continue;
     includedNodeIds.add(id);
-    const node = {
+    const node: Record<string, unknown> = {
       id,
       kind: "schema",
       namespace: schema.namespace ?? null,
@@ -188,8 +236,8 @@ function buildWorkspaceGraph(index, schemaGraph, root, opts) {
   }
 
   // Build field-level edges from arrow records
-  let fieldEdges = [];
-  const unresolvedNl = [];
+  let fieldEdges: FieldEdge[] = [];
+  const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> = [];
 
   if (!schemaOnly) {
     const result = buildFieldEdges(index, includedNodeIds, nsFilter, includeNl);
@@ -225,8 +273,8 @@ function buildWorkspaceGraph(index, schemaGraph, root, opts) {
  * Build schema-level edges from the directed graph.
  * Each edge has: from, to, role (source/target/metric_source).
  */
-function buildSchemaEdges(index, schemaGraph, includedNodeIds, nsFilter) {
-  const edges = [];
+function buildSchemaEdges(index: WorkspaceIndex, schemaGraph: FullGraph, includedNodeIds: Set<string>, nsFilter: string | null): SchemaEdge[] {
+  const edges: SchemaEdge[] = [];
 
   for (const [mappingName, mapping] of index.mappings) {
     if (nsFilter && mapping.namespace !== nsFilter) continue;
@@ -281,14 +329,14 @@ function buildSchemaEdges(index, schemaGraph, includedNodeIds, nsFilter) {
 /**
  * Build field-level edges from arrow records in the workspace index.
  */
-function buildFieldEdges(index, includedNodeIds, nsFilter, includeNl) {
-  const edges = [];
-  const unresolvedNl = [];
+function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, nsFilter: string | null, includeNl: boolean): { edges: FieldEdge[]; unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> } {
+  const edges: FieldEdge[] = [];
+  const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> = [];
 
   // Iterate all arrow records via the fieldArrows index
   // But fieldArrows duplicates records under multiple keys, so iterate raw arrow records instead.
   // We need to reconstruct from the index's mappings + arrow records.
-  const seen = new Set();
+  const seen = new Set<string>();
 
   for (const [_key, records] of index.fieldArrows) {
     for (const record of records) {
@@ -299,7 +347,7 @@ function buildFieldEdges(index, includedNodeIds, nsFilter, includeNl) {
 
       const mappingKey = record.namespace
         ? `${record.namespace}::${record.mapping}`
-        : record.mapping;
+        : (record.mapping ?? "");
 
       if (nsFilter) {
         const mapping = index.mappings.get(mappingKey);
@@ -318,7 +366,7 @@ function buildFieldEdges(index, includedNodeIds, nsFilter, includeNl) {
         ? (targetSchemas.length > 0 ? `${targetSchemas[0]}.${record.target}` : record.target)
         : null;
 
-      const edge = {
+      const edge: FieldEdge = {
         from: fromField,
         to: toField,
         mapping: mappingKey,
@@ -371,7 +419,7 @@ function buildFieldEdges(index, includedNodeIds, nsFilter, includeNl) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printDefault(graph) {
+function printDefault(graph: WorkspaceGraph): void {
   console.log(`Satsuma Graph — ${graph.workspace}`);
   console.log();
 
@@ -389,7 +437,7 @@ function printDefault(graph) {
   console.log(`  field-level:  ${graph.edges.length}`);
 
   // Classification breakdown
-  const byClass = {};
+  const byClass: Record<string, number> = {};
   for (const e of graph.edges) {
     byClass[e.classification] = (byClass[e.classification] ?? 0) + 1;
   }
@@ -406,10 +454,10 @@ function printDefault(graph) {
   // Compact adjacency list
   if (graph.schema_edges.length > 0) {
     console.log("Schema topology:");
-    const adj = new Map();
+    const adj = new Map<string, string[]>();
     for (const e of graph.schema_edges) {
       if (!adj.has(e.from)) adj.set(e.from, []);
-      adj.get(e.from).push(`${e.to} [${e.role}]`);
+      adj.get(e.from)!.push(`${e.to} [${e.role}]`);
     }
     for (const [src, targets] of adj) {
       console.log(`  ${src} -> ${targets.join(", ")}`);
@@ -417,7 +465,7 @@ function printDefault(graph) {
   }
 }
 
-function printCompact(graph) {
+function printCompact(graph: WorkspaceGraph): void {
   for (const e of graph.schema_edges) {
     console.log(`${e.from} -> ${e.to}  [${e.role}]`);
   }

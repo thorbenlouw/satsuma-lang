@@ -1,5 +1,5 @@
 /**
- * validate.js — `satsuma validate` command
+ * validate.ts — `satsuma validate` command
  *
  * Reports parse errors and semantic warnings.
  *
@@ -9,33 +9,34 @@
  *   --quiet         exit code only (0=clean, 2=errors)
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
 import { collectParseErrors, collectSemanticWarnings } from "../validate.js";
+import type { LintDiagnostic } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("validate [path]")
     .description("Validate Satsuma files for parse errors and semantic issues")
     .option("--json", "structured JSON output")
     .option("--errors-only", "suppress warnings")
     .option("--quiet", "exit code only (0=clean, 2=errors)")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { json?: boolean; errorsOnly?: boolean; quiet?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
       // Parse each file and extract data immediately (tree-sitter reuses a
       // single parser buffer, so prior trees become invalid after a new parse).
       const extracted = [];
-      const parseErrors = [];
+      const parseErrors: LintDiagnostic[] = [];
       for (const f of files) {
         const parsed = parseFile(f);
         // Collect parse errors and extract data while tree is still valid
@@ -46,7 +47,7 @@ export function register(program) {
       const index = buildIndex(extracted);
 
       // Collect diagnostics
-      let diagnostics = [...parseErrors];
+      let diagnostics: LintDiagnostic[] = [...parseErrors];
 
       // Semantic warnings
       if (!opts.errorsOnly) {
@@ -82,10 +83,10 @@ export function register(program) {
       }
 
       // Group by file
-      const byFile = new Map();
+      const byFile = new Map<string, LintDiagnostic[]>();
       for (const d of diagnostics) {
         if (!byFile.has(d.file)) byFile.set(d.file, []);
-        byFile.get(d.file).push(d);
+        byFile.get(d.file)!.push(d);
       }
 
       for (const [file, fileDiags] of byFile) {

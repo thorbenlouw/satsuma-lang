@@ -1,5 +1,5 @@
 /**
- * summary.js — `satsuma summary` command
+ * summary.ts — `satsuma summary` command
  *
  * Prints a high-level overview of the Satsuma workspace:
  *   - schemas (name, note, field count)
@@ -13,24 +13,25 @@
  *   --json      full structured JSON output
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
+import type { WorkspaceIndex } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("summary [path]")
     .description("Summarise a Satsuma workspace or file")
     .option("--compact", "show names only")
     .option("--json", "output JSON")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -42,8 +43,8 @@ export function register(program) {
       const parsed = files.map((f) => {
         try {
           return parseFile(f);
-        } catch (err) {
-          console.error(`Parse error in ${f}: ${err.message}`);
+        } catch (err: unknown) {
+          console.error(`Parse error in ${f}: ${(err as Error).message}`);
           process.exit(1);
         }
       });
@@ -62,11 +63,11 @@ export function register(program) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(index) {
+function printJson(index: WorkspaceIndex): void {
   /** Format a display name with namespace prefix when applicable. */
-  const displayName = (entity) => {
+  const displayName = (entity: { namespace?: string; name: string | null }): string => {
     if (entity.namespace) return `${entity.namespace}::${entity.name}`;
-    return entity.name;
+    return entity.name ?? "";
   };
 
   const out = {
@@ -112,8 +113,8 @@ function printJson(index) {
   console.log(JSON.stringify(out, null, 2));
 }
 
-function printCompact(index) {
-  const section = (label, items) => {
+function printCompact(index: WorkspaceIndex): void {
+  const section = (label: string, items: string[]): void => {
     if (items.length === 0) return;
     console.log(`${label}:`);
     for (const name of items) console.log(`  ${name}`);
@@ -126,7 +127,7 @@ function printCompact(index) {
   section("transforms", [...index.transforms.keys()]);
 }
 
-function printDefault(index, fileCount) {
+function printDefault(index: WorkspaceIndex, fileCount: number): void {
   const schemas = [...index.schemas.values()];
   const metrics = [...index.metrics.values()];
   const mappings = [...index.mappings.values()];
@@ -140,9 +141,9 @@ function printDefault(index, fileCount) {
   console.log();
 
   /** Format a display name with namespace prefix when applicable. */
-  const displayName = (entity) => {
+  const displayName = (entity: { namespace?: string; name: string | null }): string => {
     if (entity.namespace) return `${entity.namespace}::${entity.name}`;
-    return entity.name;
+    return entity.name ?? "";
   };
 
   if (schemas.length > 0) {
@@ -191,7 +192,7 @@ function printDefault(index, fileCount) {
     console.log();
   }
 
-  const notes = [];
+  const notes: string[] = [];
   if (index.warnings.length > 0) notes.push(`${index.warnings.length} warning comment${index.warnings.length !== 1 ? "s" : ""}`);
   if (index.questions.length > 0) notes.push(`${index.questions.length} question comment${index.questions.length !== 1 ? "s" : ""}`);
   if (notes.length > 0) console.log(notes.join("  ·  "));

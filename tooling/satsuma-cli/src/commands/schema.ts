@@ -1,5 +1,5 @@
 /**
- * schema.js — `satsuma schema <name>` command
+ * schema.ts — `satsuma schema <name>` command
  *
  * Looks up a schema by name and renders it. Output modes:
  *   default    — reconstructed schema with nesting and notes
@@ -10,27 +10,28 @@
  * Exits 1 if the schema name is not found.
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
+import type { SyntaxNode, WorkspaceIndex, SchemaRecord } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("schema <name> [path]")
     .description("Show a schema definition")
     .option("--compact", "omit notes and inline strings")
     .option("--fields-only", "one line per field")
     .option("--json", "output JSON")
-    .action(async (name, pathArg, opts) => {
+    .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; fieldsOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -75,9 +76,14 @@ export function register(program) {
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
 
+interface CollectedLine {
+  indent: number;
+  text: string;
+}
+
 /** Collect fields from schema_body, recursing into record_block / list_block. */
-function collectFields(bodyNode, indent = 0) {
-  const lines = [];
+function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[] {
+  const lines: CollectedLine[] = [];
   for (const c of bodyNode.namedChildren) {
     const pad = "  ".repeat(indent);
     if (c.type === "field_decl") {
@@ -121,10 +127,10 @@ function collectFields(bodyNode, indent = 0) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(entry, schemaNode, index) {
+function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: WorkspaceIndex): void {
   const spreadFields = expandEntityFields(entry, entry.namespace ?? null, index);
   const allFields = [...entry.fields, ...spreadFields];
-  const out = {
+  const out: Record<string, unknown> = {
     name: entry.name,
     note: entry.note,
     file: entry.file,
@@ -143,13 +149,13 @@ function printJson(entry, schemaNode, index) {
   console.log(JSON.stringify(out, null, 2));
 }
 
-function printFieldsOnly(entry) {
+function printFieldsOnly(entry: SchemaRecord): void {
   for (const f of entry.fields) {
     console.log(`${f.name.padEnd(24)}${f.type}`);
   }
 }
 
-function printDefault(entry, schemaNode, compact) {
+function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compact: boolean | undefined): void {
   const note = entry.note && !compact ? `  (note "${entry.note}")` : "";
   console.log(`schema ${entry.name}${note} {`);
 

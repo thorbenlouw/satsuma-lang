@@ -1,5 +1,5 @@
 /**
- * warnings.js — `satsuma warnings` command
+ * warnings.ts — `satsuma warnings` command
  *
  * Lists all warning comments (//! ...) from the workspace.
  * With --questions, lists question comments (//?  ...) instead.
@@ -12,24 +12,25 @@
  *   --json        structured JSON output
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
+import type { WarningRecord, QuestionRecord } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("warnings [path]")
     .description("List warning or question comments in the workspace")
     .option("--questions", "show question comments (//?  ...) instead")
     .option("--json", "output JSON")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { questions?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -50,10 +51,10 @@ export function register(program) {
       }
 
       // Group by file
-      const byFile = new Map();
+      const byFile = new Map<string, Array<WarningRecord | QuestionRecord>>();
       for (const item of items) {
         if (!byFile.has(item.file)) byFile.set(item.file, []);
-        byFile.get(item.file).push(item);
+        byFile.get(item.file)!.push(item);
       }
 
       const prefix = opts.questions ? "//?" : "//!";

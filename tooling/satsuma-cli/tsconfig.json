@@ -4,7 +4,6 @@
     "moduleResolution": "node16",
     "target": "es2022",
     "strict": true,
-    "allowJs": true,
     "checkJs": false,
     "outDir": "dist",
     "rootDir": "src",

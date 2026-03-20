@@ -1,5 +1,5 @@
 /**
- * lint.js — `satsuma lint` command
+ * lint.ts — `satsuma lint` command
  *
  * Policy-oriented linting for Satsuma workspaces.  Surfaces workspace
  * hygiene and modelling convention issues as structured diagnostics.
@@ -17,14 +17,15 @@
  *   --quiet    exit code only
  */
 
+import type { Command } from "commander";
 import { readFileSync, writeFileSync } from "fs";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
 import { runLint, applyFixes, RULES } from "../lint-engine.js";
+import type { LintFix } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("lint [path]")
     .description("Lint Satsuma files for policy and convention issues")
@@ -34,7 +35,7 @@ export function register(program) {
     .option("--ignore <rules>", "skip listed rules (comma-separated)")
     .option("--quiet", "exit code only")
     .option("--rules", "list available lint rules and exit")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { json?: boolean; fix?: boolean; select?: string; ignore?: string; quiet?: boolean; rules?: boolean }) => {
       // --rules: list available rules and exit
       if (opts.rules) {
         for (const r of RULES) {
@@ -44,11 +45,11 @@ export function register(program) {
       }
 
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -63,20 +64,20 @@ export function register(program) {
       const index = buildIndex(extracted);
 
       // Run lint rules
-      const ruleOpts = {};
+      const ruleOpts: { select?: string[]; ignore?: string[] } = {};
       if (opts.select) ruleOpts.select = opts.select.split(",").map((s) => s.trim());
       if (opts.ignore) ruleOpts.ignore = opts.ignore.split(",").map((s) => s.trim());
 
       let diagnostics = runLint(index, ruleOpts);
 
       // --fix: apply safe fixes
-      let appliedFixes = [];
+      let appliedFixes: LintFix[] = [];
       if (opts.fix && diagnostics.some((d) => d.fixable)) {
         // Read source files that have fixable diagnostics
         const fixableFiles = new Set(
-          diagnostics.filter((d) => d.fixable && d.fix).map((d) => d.fix.file),
+          diagnostics.filter((d) => d.fixable && d.fix).map((d) => d.fix!.file),
         );
-        const sourceByFile = new Map();
+        const sourceByFile = new Map<string, string>();
         for (const f of fixableFiles) {
           try {
             sourceByFile.set(f, readFileSync(f, "utf8"));
