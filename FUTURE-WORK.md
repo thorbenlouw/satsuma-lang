@@ -42,6 +42,6 @@ The Feature 06 convention spec and examples are complete. Future phases include:
 - **Phase 2:** Linting rules that validate metadata token combinations (e.g., `hub` + `dimension` conflict)
 - **Phase 3:** DDL/dbt model generation from convention-annotated schemas
 
-**Why deferred:** These are tooling features that build on the convention spec. The convention spec itself needs real-world validation first, and the parser/CLI bugs against the examples (Feature 13) need to be fixed before downstream tooling makes sense.
+**Why deferred:** These are tooling features that build on the convention spec. Feature 13 parser/CLI bugs are near-complete (6/8 fixed; only convention-field suppression remains in [stm-1hsk]). Once that last validator issue is resolved, the examples will validate clean and this tooling work can proceed.
 
 **Source:** `features/06-data-modelling-with-stm/PRD.md` (Non-Goals section)
