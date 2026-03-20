@@ -94,14 +94,14 @@ A schema marked `(fact)` is a **fact table** — a table of measurements at a sp
 
 **Companion tokens:**
 - `grain {field, ...}` — the grain of the fact table. Required.
-- `ref <dim> on <field>` — declares a dimension reference. One per dimension. Each infers a surrogate key FK column.
+- `ref <dim>.<field>` — declares a dimension reference. One per dimension. Each infers a surrogate key FK column.
 - `snapshot periodic` or `snapshot accumulating` — for snapshot fact types. Optional.
 
 **Inferred columns:**
 - `etl_batch_id` BIGINT — load batch identifier for auditability
 - `loaded_at` TIMESTAMPTZ — when this row was loaded
 
-**For each `ref <dim> on <field>`:**
+**For each `ref <dim>.<field>`:**
 - `{dim}_key` BIGINT (ref {dim}.surrogate_key) — surrogate key FK to the dimension
 
 **Example:**
@@ -109,8 +109,8 @@ A schema marked `(fact)` is a **fact table** — a table of measurements at a sp
 schema fact_sales (
   fact,
   grain {transaction_id, line_number},
-  ref dim_customer on customer_id,
-  ref dim_product on sku
+  ref dim_customer.customer_id,
+  ref dim_product.sku
 ) {
   transaction_id  VARCHAR(30)  (required)
   line_number     INTEGER      (required)
@@ -151,7 +151,7 @@ Declares the **grain** of a fact table — the combination of fields that unique
 
 ---
 
-### `ref <dim> on <field>`
+### `ref <dim>.<field>`
 
 Declares a **dimension reference** (foreign key relationship) from a fact to a dimension.
 
@@ -160,7 +160,7 @@ Declares a **dimension reference** (foreign key relationship) from a fact to a d
 - Tooling infers a surrogate key FK column: `{dim}_key` BIGINT
 - At load time, the ETL resolves the business key to the dimension's current surrogate key
 
-**Example:** `(ref dim_customer on customer_id)` means the fact joins to `dim_customer` via `customer_id`, and tooling adds a `dim_customer_key` FK column.
+**Example:** `(ref dim_customer.customer_id)` means the fact joins to `dim_customer` via `customer_id`, and tooling adds a `dim_customer_key` FK column.
 
 ---
 

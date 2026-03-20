@@ -106,7 +106,7 @@ mapping 'sfdc to dim_customer' {
 
   note {
     "Golden source mapping. All demographic and loyalty fields come from
-     Salesforce. The POS and e-commerce mappings below supplement with
+     Salesforce. The Shopify mapping below supplements with
      behavioural data and cross-references only."
   }
 
@@ -141,14 +141,6 @@ mapping 'sfdc to dim_customer' {
   AccountCreatedDate -> member_since
   OptInEmail -> opt_in_email           { coalesce(false) }
   OptInSMS -> opt_in_sms              { coalesce(false) }
-
-  // Derived
-  -> customer_segment {
-    "Assign 'vip' if `LoyaltyTier` is Diamond and `ecom_shopify.total_spent` > 10000.
-     Assign 'high_value' if `LoyaltyTier` is Gold, Platinum, or Diamond.
-     Assign 'growth' if `LoyaltyTier` is Silver.
-     Otherwise assign 'standard'."
-  }
 }
 
 // Supplementary: e-commerce behavioural data
@@ -168,4 +160,24 @@ mapping 'shopify to dim_customer' {
   orders_count -> lifetime_order_count
   total_spent -> lifetime_spend
   -> last_login_channel { "online" }
+}
+
+// Derived: cross-source computed fields
+mapping 'derived segments' {
+  source { `loyalty_sfdc`, `ecom_shopify` }
+  target { `dim_customer` }
+
+  note {
+    "Computed after both source mappings have populated the dimension row.
+     `customer_segment` depends on data from both SFDC (loyalty tier) and
+     Shopify (lifetime spend), so it is computed in a dedicated mapping
+     that explicitly declares both sources."
+  }
+
+  -> customer_segment {
+    "Assign 'vip' if `loyalty_tier` is 'diamond' and `lifetime_spend` > 10000.
+     Assign 'high_value' if `loyalty_tier` is gold, platinum, or diamond.
+     Assign 'growth' if `loyalty_tier` is silver.
+     Otherwise assign 'standard'."
+  }
 }

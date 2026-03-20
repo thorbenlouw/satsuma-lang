@@ -1,6 +1,8 @@
 # Data Modelling with STM: Metadata Conventions for Kimball and Data Vault
 
 > **Status: COMPLETED** (2026-03-18). Convention dictionary, canonical examples (Kimball + Data Vault), and LLM-Guidelines.md authored for both example sets. Tooling bugs against these examples are tracked in Feature 13.
+>
+> **Canonical examples** are now at [`docs/data-modelling/`](../../docs/data-modelling/) with platform entry points, improved multi-source handling, and a comprehensive guide. The feature subdirectories below have been removed — see `docs/data-modelling/` for the authoritative copies.
 
 ## Goal
 
@@ -112,7 +114,7 @@ No redeclaration is needed. The imported blocks carry their metadata tokens, and
 | `snapshot periodic` | Schema metadata | None | Periodic snapshot fact (semi-additive measures). |
 | `snapshot accumulating` | Schema metadata | None | Accumulating snapshot fact (lifecycle milestones). |
 | `grain {field, ...}` | Schema metadata | One or more field names | The grain of a fact table. |
-| `ref <dim> on <field>` | Schema metadata | Dimension name + join field | Dimension reference. Tooling infers the surrogate key FK column. |
+| `ref <dim>.<field>` | Schema metadata | Dimension name + join field | Dimension reference. Tooling infers the surrogate key FK column. |
 | `measure additive` | Field metadata | None | Fully additive measure. |
 | `measure semi_additive` | Field metadata | None | Semi-additive measure (not summable across time). |
 | `measure non_additive` | Field metadata | None | Non-additive measure (cannot be summed). |
@@ -162,7 +164,7 @@ Same as `scd 2`, plus:
 | `etl_batch_id` | `BIGINT` | Load batch identifier |
 | `loaded_at` | `TIMESTAMPTZ` | Row load timestamp |
 
-#### `fact` with `ref <dim> on <field>`
+#### `fact` with `ref <dim>.<field>`
 | Inferred field | Type | Description |
 |---------------|------|-------------|
 | `{dim}_key` | `BIGINT (ref {dim}.surrogate_key)` | Surrogate key FK to the dimension (one per `ref`) |
@@ -223,12 +225,15 @@ Both the Kimball and Data Vault examples model the same fictional retailer to en
 
 ### Example File Structure
 
+Canonical examples live at `docs/data-modelling/`:
+
 ```
-features/06-data-modelling-with-stm/
-├── PRD.md
-├── example_kimball/
+docs/data-modelling/
+├── README.md                        # Comprehensive guide to data modelling with STM
+├── kimball/
 │   ├── README.md
 │   ├── LLM-Guidelines.md            # How an LLM interprets Kimball tokens
+│   ├── platform.stm                 # Platform entry point with imports
 │   ├── common.stm                   # Shared fragments and lookups
 │   ├── dim-customer.stm             # SCD2 conformed customer dimension
 │   ├── dim-product.stm              # SCD1 product dimension with hierarchy
@@ -236,9 +241,10 @@ features/06-data-modelling-with-stm/
 │   ├── fact-sales.stm               # Transaction-grain fact with dim refs
 │   ├── fact-inventory.stm           # Periodic snapshot fact
 │   └── mart-customer-360.stm        # Customer 360 with transaction aggregates
-└── example_datavault/
+└── datavault/
     ├── README.md
     ├── LLM-Guidelines.md            # How an LLM interprets Data Vault tokens
+    ├── platform.stm                 # Platform entry point with imports
     ├── common.stm                   # Shared transform (dv_hash) and lookups
     ├── hub-customer.stm             # Hub + 2 satellites from 3 sources
     ├── hub-product.stm              # Hub + 2 satellites (attributes + pricing)

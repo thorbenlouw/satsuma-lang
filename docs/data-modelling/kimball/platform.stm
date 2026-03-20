@@ -1,0 +1,46 @@
+// RetailCo International — Kimball Star Schema
+// Platform Entry Point
+//
+// This file imports every schema in the Kimball pipeline, providing a
+// single entry point for platform-wide lineage traversal:
+//
+//   stm lineage --from dim_customer .
+//
+// traces how customer data flows from source systems through dimensions
+// and facts into the customer 360 mart.
+
+// --- Shared lookups and fragments ---
+import { address_fields, audit_columns } from "common.stm"
+import { store_region_map, product_hierarchy, channel_codes, dim_date } from "common.stm"
+
+// --- Dimensions ---
+import { dim_customer } from "dim-customer.stm"
+import { dim_product } from "dim-product.stm"
+import { dim_store } from "dim-store.stm"
+
+// --- Facts ---
+import { fact_sales } from "fact-sales.stm"
+import { fact_inventory_snapshot } from "fact-inventory.stm"
+
+// --- Information Marts ---
+import { mart_customer_360 } from "mart-customer-360.stm"
+
+note {
+  """
+  # Kimball Platform Overview
+
+  Three-layer architecture:
+
+  1. **Dimensions** — conformed descriptive entities (customer, product, store)
+  2. **Facts** — transaction and snapshot measurements (sales, inventory)
+  3. **Marts** — enriched analytical views (customer 360)
+
+  Each layer imports from the one above. The `import` statements here
+  establish the full dependency graph so that `stm lineage` can trace
+  data flow across the entire platform.
+
+  See the companion Data Vault pipeline in `../datavault/platform.stm`
+  for a comparison of the same domain modelled with hubs, links, and
+  satellites.
+  """
+}

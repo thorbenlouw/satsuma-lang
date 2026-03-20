@@ -14,6 +14,7 @@ STM v2 uses `( )` metadata blocks for **all** annotations — there are no speci
 
 | File | Description | Key conventions demonstrated |
 |------|-------------|------------------------------|
+| `platform.stm` | Platform entry point — imports all pipeline schemas | Namespace-qualified imports, lineage traversal |
 | `common.stm` | Shared hash transform (`dv_hash`), lookups | `transform` block with NL, reusable across all vault loads |
 | `hub-customer.stm` | Customer hub + 2 satellites from 3 sources | `hub`, `business_key`, `satellite`, `parent`, multi-source loading |
 | `hub-product.stm` | Product hub + 2 satellites (attributes + pricing) | `hub`, `satellite`, split-by-rate-of-change pattern |
@@ -112,7 +113,7 @@ Cross-layer imports bring vault schemas into mart files as mapping sources. The 
 
 ## Comparison with Kimball
 
-The same RetailCo domain is modelled as a Kimball star schema in `../example_kimball/`. Key differences:
+The same RetailCo domain is modelled as a Kimball star schema in `../kimball/`. Key differences:
 
 - **Data Vault**: Insert-only, full history, source-aligned. Hubs and links capture structure; satellites capture change. Resilient to source system changes.
 - **Kimball**: Denormalized, query-optimized. History managed via SCD types on each dimension. Simpler for analytics queries but harder to extend.
