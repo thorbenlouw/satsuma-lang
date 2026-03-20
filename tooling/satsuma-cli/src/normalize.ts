@@ -1,44 +1,39 @@
 /**
- * normalize.js — Deterministic name normalization for field matching
+ * normalize.ts — Deterministic name normalization for field matching
  *
  * Normalizes field names by lowercasing and stripping underscores and hyphens.
  * Match is exact string equality after normalization — binary, no scoring.
  */
 
+import type { FieldDecl, FieldMatch, MatchResult } from "./types.js";
+
 /**
  * Normalize a field name for comparison.
  * Lowercase, strip underscores and hyphens.
- *
- * @param {string} name
- * @returns {string}
  */
-export function normalizeName(name) {
+export function normalizeName(name: string): string {
   return name.toLowerCase().replace(/[_-]/g, "");
 }
 
 /**
  * Match fields between source and target schemas by normalized name.
- *
- * @param {Array<{name:string, type:string}>} sourceFields
- * @param {Array<{name:string, type:string}>} targetFields
- * @returns {{matched: Array<{source:string, target:string, normalized:string}>, sourceOnly: string[], targetOnly: string[]}}
  */
-export function matchFields(sourceFields, targetFields) {
-  const targetByNorm = new Map();
+export function matchFields(sourceFields: FieldDecl[], targetFields: FieldDecl[]): MatchResult {
+  const targetByNorm = new Map<string, string>();
   for (const f of targetFields) {
     targetByNorm.set(normalizeName(f.name), f.name);
   }
 
-  const matched = [];
-  const matchedTargetNorms = new Set();
-  const sourceOnly = [];
+  const matched: FieldMatch[] = [];
+  const matchedTargetNorms = new Set<string>();
+  const sourceOnly: string[] = [];
 
   for (const f of sourceFields) {
     const norm = normalizeName(f.name);
     if (targetByNorm.has(norm)) {
       matched.push({
         source: f.name,
-        target: targetByNorm.get(norm),
+        target: targetByNorm.get(norm)!,
         normalized: norm,
       });
       matchedTargetNorms.add(norm);

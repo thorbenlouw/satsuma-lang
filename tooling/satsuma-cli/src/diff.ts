@@ -1,39 +1,44 @@
 /**
- * diff.js — Structural comparison of two WorkspaceIndex instances
+ * diff.ts — Structural comparison of two WorkspaceIndex instances
  *
  * Compares schemas (fields, types, metadata) and mappings (arrows, transforms).
  */
 
-/**
- * @typedef {Object} Delta
- * @property {object} schemas  {added: string[], removed: string[], changed: Array<{name, changes}>}
- * @property {object} mappings {added: string[], removed: string[], changed: Array<{name, changes}>}
- */
+import type {
+  BlockDelta,
+  Delta,
+  FieldDecl,
+  MappingChange,
+  MappingRecord,
+  SchemaChange,
+  SchemaRecord,
+  WorkspaceIndex,
+} from "./types.js";
 
 /**
  * Compute a structural delta between two WorkspaceIndex instances.
- *
- * @param {object} indexA
- * @param {object} indexB
- * @returns {Delta}
  */
-export function diffIndex(indexA, indexB) {
+export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta {
   return {
     schemas: diffBlockMap(indexA.schemas, indexB.schemas, diffSchema),
     mappings: diffBlockMap(indexA.mappings, indexB.mappings, diffMapping),
   };
 }
 
-function diffBlockMap(mapA, mapB, diffFn) {
-  const added = [];
-  const removed = [];
-  const changed = [];
+function diffBlockMap<T, C>(
+  mapA: Map<string, T>,
+  mapB: Map<string, T>,
+  diffFn: (a: T, b: T) => C[],
+): BlockDelta<C> {
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: Array<{ name: string; changes: C[] }> = [];
 
   for (const name of mapA.keys()) {
     if (!mapB.has(name)) {
       removed.push(name);
     } else {
-      const changes = diffFn(mapA.get(name), mapB.get(name));
+      const changes = diffFn(mapA.get(name)!, mapB.get(name)!);
       if (changes.length > 0) {
         changed.push({ name, changes });
       }
@@ -48,20 +53,20 @@ function diffBlockMap(mapA, mapB, diffFn) {
   return { added, removed, changed };
 }
 
-function diffSchema(a, b) {
-  const changes = [];
-  const aFields = new Map(a.fields.map((f) => [f.name, f]));
-  const bFields = new Map(b.fields.map((f) => [f.name, f]));
+function diffSchema(a: SchemaRecord, b: SchemaRecord): SchemaChange[] {
+  const changes: SchemaChange[] = [];
+  const aFields = new Map<string, FieldDecl>(a.fields.map((f) => [f.name, f]));
+  const bFields = new Map<string, FieldDecl>(b.fields.map((f) => [f.name, f]));
 
   for (const [name, field] of aFields) {
     if (!bFields.has(name)) {
       changes.push({ kind: "field-removed", field: name });
-    } else if (field.type !== bFields.get(name).type) {
+    } else if (field.type !== bFields.get(name)!.type) {
       changes.push({
         kind: "type-changed",
         field: name,
         from: field.type,
-        to: bFields.get(name).type,
+        to: bFields.get(name)!.type,
       });
     }
   }
@@ -74,8 +79,8 @@ function diffSchema(a, b) {
   return changes;
 }
 
-function diffMapping(a, b) {
-  const changes = [];
+function diffMapping(a: MappingRecord, b: MappingRecord): MappingChange[] {
+  const changes: MappingChange[] = [];
 
   if (a.arrowCount !== b.arrowCount) {
     changes.push({
