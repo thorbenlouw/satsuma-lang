@@ -9,7 +9,7 @@
     "satsuma": "./dist/index.js"
   },
   "imports": {
-    "#src/*": "./src/*"
+    "#src/*": "./dist/*"
   },
   "scripts": {
     "start": "node src/index.js",

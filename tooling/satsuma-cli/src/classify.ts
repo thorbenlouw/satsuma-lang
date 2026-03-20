@@ -1,9 +1,11 @@
 /**
- * classify.js — Transform classification for Satsuma arrows
+ * classify.ts — Transform classification for Satsuma arrows
  *
  * Classifies arrow transform bodies based on their pipe step node types.
  * Classification is a mechanical CST check, not a content interpretation.
  */
+
+import type { Classification, SyntaxNode } from "./types.js";
 
 /** Node types that indicate structural (deterministic) transform steps. */
 const STRUCTURAL_TYPES = new Set(["token_call", "map_literal", "fragment_spread"]);
@@ -13,11 +15,8 @@ const NL_TYPES = new Set(["nl_string", "multiline_string"]);
 
 /**
  * Classify a transform pipe chain based on its pipe step children.
- *
- * @param {object[]} steps  Array of pipe_step CST nodes
- * @returns {'structural'|'nl'|'mixed'|'none'}
  */
-export function classifyTransform(steps) {
+export function classifyTransform(steps: SyntaxNode[] | null | undefined): Classification {
   if (!steps || steps.length === 0) return "none";
 
   let hasStructural = false;
@@ -38,10 +37,7 @@ export function classifyTransform(steps) {
 
 /**
  * Determine if an arrow is derived (computed — no source path).
- *
- * @param {object} arrowNode  A map_arrow or computed_arrow CST node
- * @returns {boolean}
  */
-export function classifyArrow(arrowNode) {
+export function classifyArrow(arrowNode: SyntaxNode): boolean {
   return arrowNode.type === "computed_arrow";
 }

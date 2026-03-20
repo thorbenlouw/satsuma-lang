@@ -1,0 +1,235 @@
+/**
+ * types.ts — Core type definitions for the Satsuma CLI
+ *
+ * Central home for interfaces shared across modules. Leaf modules and
+ * extractors import from here rather than re-declaring shapes ad hoc.
+ */
+
+// ── Tree-sitter primitives ──────────────────────────────────────────────────
+
+export interface SyntaxNode {
+  type: string;
+  text: string;
+  namedChildren: SyntaxNode[];
+  startPosition: { row: number; column: number };
+  isMissing: boolean;
+}
+
+export interface Tree {
+  rootNode: SyntaxNode;
+}
+
+export interface Parser {
+  setLanguage(lang: unknown): void;
+  parse(source: string): Tree;
+}
+
+// ── Extracted record types ──────────────────────────────────────────────────
+
+export interface FieldDecl {
+  name: string;
+  type: string;
+}
+
+export interface SchemaRecord {
+  name: string;
+  note: string | null;
+  fields: FieldDecl[];
+  hasSpreads: boolean;
+  spreads: string[];
+  file: string;
+  row: number;
+  namespace?: string;
+}
+
+export interface MetricRecord {
+  name: string;
+  displayName: string | null;
+  sources: string[];
+  grain: string | null;
+  slices: string[];
+  fields: FieldDecl[];
+  file: string;
+  row: number;
+  namespace?: string;
+}
+
+export interface MappingRecord {
+  name: string | null;
+  sources: string[];
+  targets: string[];
+  arrowCount: number;
+  file: string;
+  row: number;
+  namespace?: string;
+}
+
+export interface FragmentRecord {
+  name: string;
+  fields: FieldDecl[];
+  hasSpreads: boolean;
+  spreads: string[];
+  file: string;
+  row: number;
+  namespace?: string;
+}
+
+export interface TransformRecord {
+  name: string;
+  file: string;
+  row: number;
+  namespace?: string;
+}
+
+export interface PipeStep {
+  type: string;
+  text: string;
+}
+
+export type Classification = "structural" | "nl" | "mixed" | "none";
+
+export interface ArrowRecord {
+  mapping: string | null;
+  namespace: string | null;
+  source: string | null;
+  target: string | null;
+  transform_raw: string;
+  steps: PipeStep[];
+  classification: Classification;
+  derived: boolean;
+  line: number;
+  file: string;
+}
+
+export interface WarningRecord {
+  text: string;
+  file: string;
+  row: number;
+}
+
+export interface QuestionRecord {
+  text: string;
+  file: string;
+  row: number;
+}
+
+export interface NLRefData {
+  text: string;
+  mapping: string;
+  namespace: string | null;
+  targetField: string | null;
+  line: number;
+  column: number;
+  file: string;
+}
+
+export interface DuplicateRecord {
+  kind: string;
+  name: string;
+  file: string;
+  row: number;
+  previousKind: string;
+  previousFile: string;
+  previousRow: number;
+}
+
+// ── Workspace index ─────────────────────────────────────────────────────────
+
+export interface ReferenceGraph {
+  usedByMappings: Map<string, string[]>;
+  fragmentsUsedIn: Map<string, string[]>;
+  metricsReferences: Map<string, string[]>;
+}
+
+export interface WorkspaceIndex {
+  schemas: Map<string, SchemaRecord>;
+  metrics: Map<string, MetricRecord>;
+  mappings: Map<string, MappingRecord>;
+  fragments: Map<string, FragmentRecord>;
+  transforms: Map<string, TransformRecord>;
+  warnings: WarningRecord[];
+  questions: QuestionRecord[];
+  fieldArrows: Map<string, ArrowRecord[]>;
+  referenceGraph: ReferenceGraph;
+  namespaceNames: Set<string>;
+  nlRefData: NLRefData[];
+  duplicates: DuplicateRecord[];
+  totalErrors: number;
+}
+
+// ── Parsed file ─────────────────────────────────────────────────────────────
+
+export interface ParsedFile {
+  filePath: string;
+  src: string;
+  tree: Tree;
+  errorCount: number;
+}
+
+// ── Lint types ──────────────────────────────────────────────────────────────
+
+export interface LintFix {
+  file: string;
+  rule: string;
+  description: string;
+  apply: (source: string) => string;
+}
+
+export interface LintDiagnostic {
+  file: string;
+  line: number;
+  column: number;
+  severity: "error" | "warning";
+  rule: string;
+  message: string;
+  fixable: boolean;
+  fix?: LintFix;
+}
+
+export interface LintRule {
+  id: string;
+  description: string;
+  check: (index: WorkspaceIndex) => LintDiagnostic[];
+}
+
+export type RegisterFn = (rule: LintRule) => void;
+
+// ── Diff types ──────────────────────────────────────────────────────────────
+
+export interface SchemaChange {
+  kind: "field-removed" | "field-added" | "type-changed";
+  field: string;
+  from?: string;
+  to?: string;
+}
+
+export interface MappingChange {
+  kind: "arrow-count-changed" | "sources-changed" | "targets-changed";
+  from?: unknown;
+  to?: unknown;
+}
+
+export interface BlockDelta<C> {
+  added: string[];
+  removed: string[];
+  changed: Array<{ name: string; changes: C[] }>;
+}
+
+export interface Delta {
+  schemas: BlockDelta<SchemaChange>;
+  mappings: BlockDelta<MappingChange>;
+}
+
+// ── Field match types ───────────────────────────────────────────────────────
+
+export interface FieldMatch {
+  source: string;
+  target: string;
+  normalized: string;
+}
+
+export interface MatchResult {
+  matched: FieldMatch[];
+  sourceOnly: string[];
+  targetOnly: string[];
+}
