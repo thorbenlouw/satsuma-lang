@@ -1,6 +1,6 @@
 ---
 id: sl-3aff
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T16:25:09Z

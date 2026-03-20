@@ -15,6 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
+import { expandEntityFields } from "../spread-expand.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -59,14 +60,16 @@ export function register(program) {
         process.exit(1);
       }
 
-      // Validate field exists in schema
+      // Validate field exists in schema (including fragment spread fields)
       const schema = resolvedSchema.entry;
-      const fieldExists = schema.fields.some((f) => f.name === fieldName);
+      const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
+      const allFields = [...schema.fields, ...spreadFields];
+      const fieldExists = allFields.some((f) => f.name === fieldName);
       if (!fieldExists) {
         console.error(
           `Field '${fieldName}' not found in schema '${schemaName}'.`,
         );
-        const close = schema.fields.find(
+        const close = allFields.find(
           (f) => f.name.toLowerCase() === fieldName.toLowerCase(),
         );
         if (close) console.error(`Did you mean '${close.name}'?`);

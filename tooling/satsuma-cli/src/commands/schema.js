@@ -14,6 +14,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
+import { expandEntityFields } from "../spread-expand.js";
 
 /** @param {import('commander').Command} program */
 export function register(program) {
@@ -63,7 +64,7 @@ export function register(program) {
         : null;
 
       if (opts.json) {
-        printJson(entry, schemaNode);
+        printJson(entry, schemaNode, index);
       } else if (opts.fieldsOnly) {
         printFieldsOnly(entry);
       } else {
@@ -120,13 +121,15 @@ function collectFields(bodyNode, indent = 0) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(entry, schemaNode) {
+function printJson(entry, schemaNode, index) {
+  const spreadFields = expandEntityFields(entry, entry.namespace ?? null, index);
+  const allFields = [...entry.fields, ...spreadFields];
   const out = {
     name: entry.name,
     note: entry.note,
     file: entry.file,
     row: entry.row,
-    fields: entry.fields,
+    fields: allFields,
   };
 
   // Enrich with nested structure if CST is available
