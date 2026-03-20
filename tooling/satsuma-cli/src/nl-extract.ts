@@ -1,39 +1,36 @@
 /**
- * nl-extract.js — Extract NL (natural language) content from Satsuma CST nodes
+ * nl-extract.ts — Extract NL (natural language) content from Satsuma CST nodes
  *
  * Walks a CST subtree and collects all NL content nodes: nl_string,
  * multiline_string, note_block, note_tag, warning_comment, question_comment.
  * Each item includes raw text, position type, and parent block/field context.
  */
 
-/**
- * @typedef {Object} NLItem
- * @property {string} text         raw text content (delimiters stripped)
- * @property {string} kind         note | warning | question | transform
- * @property {string|null} parent  parent block or field name
- * @property {number} line         0-based line number
- */
+import type { SyntaxNode } from "./types.js";
+
+export interface NLItem {
+  text: string;
+  kind: "note" | "warning" | "question" | "transform";
+  parent: string | null;
+  line: number;
+}
 
 /**
  * Extract all NL content from a CST subtree.
- *
- * @param {object} node       CST node to walk
- * @param {string|null} parent  parent context name
- * @returns {NLItem[]}
  */
-export function extractNLContent(node, parent = null) {
-  const items = [];
+export function extractNLContent(node: SyntaxNode, parent: string | null = null): NLItem[] {
+  const items: NLItem[] = [];
   walkNL(node, parent, items);
   return items;
 }
 
-function stripDelimiters(text, type) {
+function stripDelimiters(text: string, type: string): string {
   if (type === "multiline_string") return text.slice(3, -3).trim();
   if (type === "nl_string") return text.slice(1, -1);
   return text;
 }
 
-function walkNL(node, parent, items) {
+function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void {
   for (const c of node.namedChildren) {
     if (c.type === "warning_comment") {
       items.push({
@@ -74,9 +71,7 @@ function walkNL(node, parent, items) {
           line: c.startPosition.row,
         });
       }
-      // Don't recurse into pipe_step children further
     } else {
-      // Update parent context for block-level nodes
       let newParent = parent;
       if (
         c.type === "schema_block" ||
@@ -93,7 +88,7 @@ function walkNL(node, parent, items) {
   }
 }
 
-function getBlockName(node) {
+function getBlockName(node: SyntaxNode): string | null {
   const lbl = node.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   if (!inner) return null;
@@ -101,7 +96,7 @@ function getBlockName(node) {
   return inner.text;
 }
 
-function getFieldName(node) {
+function getFieldName(node: SyntaxNode): string | null {
   const nameNode = node.namedChildren.find((c) => c.type === "field_name");
   const inner = nameNode?.namedChildren[0];
   if (!inner) return null;

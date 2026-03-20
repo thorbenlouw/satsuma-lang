@@ -1,8 +1,15 @@
 /**
- * cst-query.js — Namespace-aware CST lookup helpers.
+ * cst-query.ts — Namespace-aware CST lookup helpers.
  */
 
-function splitQualifiedName(name) {
+import type { SyntaxNode } from "./types.js";
+
+interface QualifiedName {
+  namespace: string | null;
+  localName: string;
+}
+
+function splitQualifiedName(name: string): QualifiedName {
   if (!name || !name.includes("::")) return { namespace: null, localName: name };
   const idx = name.indexOf("::");
   return {
@@ -11,7 +18,7 @@ function splitQualifiedName(name) {
   };
 }
 
-export function getBlockName(node) {
+export function getBlockName(node: SyntaxNode): string | null {
   const lbl = node.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   if (!inner) return null;
@@ -19,7 +26,7 @@ export function getBlockName(node) {
   return inner.text;
 }
 
-export function findBlockNode(rootNode, nodeType, qualifiedName) {
+export function findBlockNode(rootNode: SyntaxNode, nodeType: string, qualifiedName: string): SyntaxNode | null {
   const { namespace, localName } = splitQualifiedName(qualifiedName);
 
   for (const c of rootNode.namedChildren) {
@@ -39,7 +46,7 @@ export function findBlockNode(rootNode, nodeType, qualifiedName) {
   return null;
 }
 
-function findBlockNodeInContainer(containerNode, nodeType, localName) {
+function findBlockNodeInContainer(containerNode: SyntaxNode, nodeType: string, localName: string): SyntaxNode | null {
   for (const c of containerNode.namedChildren) {
     if (c.type === nodeType && getBlockName(c) === localName) return c;
   }

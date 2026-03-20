@@ -29,6 +29,8 @@ export interface Parser {
 export interface FieldDecl {
   name: string;
   type: string;
+  children?: FieldDecl[];
+  isList?: boolean;
 }
 
 export interface SchemaRecord {

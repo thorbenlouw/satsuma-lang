@@ -1,29 +1,46 @@
 /**
- * meta-extract.js — Extract structured metadata from Satsuma CST metadata_block nodes
+ * meta-extract.ts — Extract structured metadata from Satsuma CST metadata_block nodes
  *
  * Parses metadata into tags (standalone tokens), key-value pairs, enum bodies,
  * and note strings.
  */
 
-/**
- * @typedef {Object} MetaEntry
- * @property {'tag'|'kv'|'enum'|'note'|'slice'} kind
- * @property {string} [key]     for kv entries
- * @property {string} [value]   for kv entries
- * @property {string} [tag]     for tag entries
- * @property {string[]} [values]  for enum entries
- * @property {string} [text]    for note entries
- */
+import type { SyntaxNode } from "./types.js";
+
+export interface MetaEntryTag {
+  kind: "tag";
+  tag: string;
+}
+
+export interface MetaEntryKV {
+  kind: "kv";
+  key: string;
+  value: string;
+}
+
+export interface MetaEntryEnum {
+  kind: "enum";
+  values: string[];
+}
+
+export interface MetaEntryNote {
+  kind: "note";
+  text: string;
+}
+
+export interface MetaEntrySlice {
+  kind: "slice";
+  values: string[];
+}
+
+export type MetaEntry = MetaEntryTag | MetaEntryKV | MetaEntryEnum | MetaEntryNote | MetaEntrySlice;
 
 /**
  * Extract structured metadata from a metadata_block CST node.
- *
- * @param {object} metaNode  metadata_block CST node
- * @returns {MetaEntry[]}
  */
-export function extractMetadata(metaNode) {
+export function extractMetadata(metaNode: SyntaxNode | null | undefined): MetaEntry[] {
   if (!metaNode) return [];
-  const entries = [];
+  const entries: MetaEntry[] = [];
 
   for (const c of metaNode.namedChildren) {
     if (c.type === "tag_token") {

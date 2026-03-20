@@ -1,5 +1,5 @@
 /**
- * nl-ref-extract.js — Extract and resolve backtick references from NL strings
+ * nl-ref-extract.ts — Extract and resolve backtick references from NL strings
  *
  * Parses NL strings inside transform pipe steps for backtick-delimited
  * references (e.g., `source::hr_employees`, `posted_by`), classifies them,
@@ -9,20 +9,23 @@
  * arrows, context, and the nl-refs command.
  */
 
+import type { FieldDecl, MappingRecord, NLRefData, SyntaxNode, WorkspaceIndex } from "./types.js";
 import { expandEntityFields } from "./spread-expand.js";
 
 // ── Extraction ──────────────────────────────────────────────────────────────
 
 const BACKTICK_RE = /`([^`]+)`/g;
 
+export interface BacktickRef {
+  ref: string;
+  offset: number;
+}
+
 /**
  * Extract backtick-delimited references from a single NL string.
- *
- * @param {string} text  NL string content (delimiters already stripped)
- * @returns {Array<{ref: string, offset: number}>}
  */
-export function extractBacktickRefs(text) {
-  const refs = [];
+export function extractBacktickRefs(text: string): BacktickRef[] {
+  const refs: BacktickRef[] = [];
   let match;
   BACKTICK_RE.lastIndex = 0;
   while ((match = BACKTICK_RE.exec(text)) !== null) {
@@ -33,15 +36,17 @@ export function extractBacktickRefs(text) {
 
 // ── Classification ──────────────────────────────────────────────────────────
 
+export type RefClassification =
+  | "namespace-qualified-field"
+  | "namespace-qualified-schema"
+  | "dotted-field"
+  | "bare";
+
 /**
  * Classify a backtick reference by its syntactic form.
- *
- * @param {string} ref  The reference text (without backticks)
- * @returns {'namespace-qualified-field'|'namespace-qualified-schema'|'dotted-field'|'bare'}
  */
-export function classifyRef(ref) {
+export function classifyRef(ref: string): RefClassification {
   if (ref.includes("::")) {
-    // ns::name.field or ns::name
     return ref.includes(".") ? "namespace-qualified-field" : "namespace-qualified-schema";
   }
   if (ref.includes(".")) return "dotted-field";
@@ -50,19 +55,24 @@ export function classifyRef(ref) {
 
 // ── Resolution ──────────────────────────────────────────────────────────────
 
+interface MappingContext {
+  sources: string[];
+  targets: string[];
+  namespace: string | null;
+}
+
+interface Resolution {
+  resolved: boolean;
+  resolvedTo: { kind: string; name: string } | null;
+}
+
 /**
  * Resolve a single backtick reference against the workspace index.
- *
- * @param {string} ref  The reference text
- * @param {object} mappingContext  {sources: string[], targets: string[], namespace: string|null}
- * @param {object} index  WorkspaceIndex
- * @returns {{resolved: boolean, resolvedTo: {kind: string, name: string}|null}}
  */
-export function resolveRef(ref, mappingContext, index) {
+export function resolveRef(ref: string, mappingContext: MappingContext, index: WorkspaceIndex): Resolution {
   const classification = classifyRef(ref);
 
   if (classification === "namespace-qualified-schema") {
-    // Direct schema lookup
     if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: ref } };
     if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: ref } };
     if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: ref } };
@@ -70,7 +80,6 @@ export function resolveRef(ref, mappingContext, index) {
   }
 
   if (classification === "namespace-qualified-field") {
-    // ns::schema.field
     const dotIdx = ref.indexOf(".", ref.indexOf("::") + 2);
     const schemaRef = ref.slice(0, dotIdx);
     const fieldName = ref.slice(dotIdx + 1);
@@ -82,7 +91,6 @@ export function resolveRef(ref, mappingContext, index) {
   }
 
   if (classification === "dotted-field") {
-    // schema.field — check if schema part matches a declared source/target
     const dotIdx = ref.indexOf(".");
     const schemaName = ref.slice(0, dotIdx);
     const fieldName = ref.slice(dotIdx + 1);
@@ -128,7 +136,7 @@ export function resolveRef(ref, mappingContext, index) {
 /**
  * Check if a field tree contains a field with the given name (flat or nested).
  */
-function hasField(fields, name) {
+function hasField(fields: FieldDecl[], name: string): boolean {
   for (const f of fields) {
     if (f.name === name) return true;
     if (f.children && hasField(f.children, name)) return true;
@@ -136,11 +144,17 @@ function hasField(fields, name) {
   return false;
 }
 
+interface SchemaLike {
+  fields: FieldDecl[];
+  hasSpreads: boolean;
+  spreads?: string[];
+  namespace?: string;
+}
+
 /**
  * Check if a schema has a field, including fields contributed by fragment spreads.
- * Falls back to expandEntityFields when the raw field list doesn't contain the name.
  */
-function hasFieldWithSpreads(schema, fieldName, index) {
+function hasFieldWithSpreads(schema: SchemaLike, fieldName: string, index: WorkspaceIndex): boolean {
   if (hasField(schema.fields, fieldName)) return true;
   if (!schema.hasSpreads) return false;
   const ns = schema.namespace ?? null;
@@ -153,18 +167,14 @@ function hasFieldWithSpreads(schema, fieldName, index) {
 /**
  * Extract NL ref data from a CST root node. Called during extractFileData()
  * while the tree is still valid.
- *
- * @param {object} rootNode  tree-sitter root node
- * @returns {Array<{text: string, mapping: string|null, namespace: string|null,
- *                   targetField: string|null, line: number, column: number}>}
  */
-export function extractNLRefData(rootNode) {
-  const results = [];
+export function extractNLRefData(rootNode: SyntaxNode): Omit<NLRefData, "file">[] {
+  const results: Omit<NLRefData, "file">[] = [];
   walkMappings(rootNode, null, results);
   return results;
 }
 
-function walkMappings(node, namespace, results) {
+function walkMappings(node: SyntaxNode, namespace: string | null, results: Omit<NLRefData, "file">[]): void {
   for (const c of node.namedChildren) {
     if (c.type === "namespace_block") {
       const nsName = c.namedChildren.find((x) => x.type === "identifier");
@@ -175,22 +185,27 @@ function walkMappings(node, namespace, results) {
   }
 }
 
-function extractMappingNLRefs(mappingNode, namespace, results) {
+function extractMappingNLRefs(mappingNode: SyntaxNode, namespace: string | null, results: Omit<NLRefData, "file">[]): void {
   const lbl = mappingNode.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   let mappingName = inner?.text ?? null;
-  if (inner?.type === "quoted_name") mappingName = mappingName.slice(1, -1);
+  if (inner?.type === "quoted_name") mappingName = mappingName!.slice(1, -1);
 
   const body = mappingNode.namedChildren.find((c) => c.type === "mapping_body");
   if (!body) return;
 
-  walkArrowsForNL(body, mappingName, namespace, null, results);
+  walkArrowsForNL(body, mappingName ?? "", namespace, null, results);
 }
 
-function walkArrowsForNL(node, mappingName, namespace, targetField, results) {
+function walkArrowsForNL(
+  node: SyntaxNode,
+  mappingName: string,
+  namespace: string | null,
+  targetField: string | null,
+  results: Omit<NLRefData, "file">[],
+): void {
   for (const c of node.namedChildren) {
     if (c.type === "map_arrow" || c.type === "computed_arrow" || c.type === "nested_arrow") {
-      // Get target field for this arrow
       const tgtNode = c.namedChildren.find((x) => x.type === "tgt_path");
       const tgt = extractPathText(tgtNode) ?? targetField;
 
@@ -203,7 +218,6 @@ function walkArrowsForNL(node, mappingName, namespace, targetField, results) {
               const text = innerNode.type === "multiline_string"
                 ? innerNode.text.slice(3, -3).trim()
                 : innerNode.text.slice(1, -1);
-              // Only include if text contains backtick refs
               if (text.includes("`")) {
                 results.push({
                   text,
@@ -219,13 +233,12 @@ function walkArrowsForNL(node, mappingName, namespace, targetField, results) {
         }
       }
 
-      // Recurse into nested arrows
       walkArrowsForNL(c, mappingName, namespace, tgt, results);
     }
   }
 }
 
-function extractPathText(pathNode) {
+function extractPathText(pathNode: SyntaxNode | undefined): string | null {
   if (!pathNode) return null;
   const inner = pathNode.namedChildren[0];
   if (!inner) return pathNode.text;
@@ -235,15 +248,24 @@ function extractPathText(pathNode) {
 
 // ── High-level extraction ───────────────────────────────────────────────────
 
+export interface ResolvedNLRef {
+  ref: string;
+  classification: RefClassification;
+  resolved: boolean;
+  resolvedTo: { kind: string; name: string } | null;
+  mapping: string;
+  namespace: string | null;
+  targetField: string | null;
+  file: string;
+  line: number;
+  column: number;
+}
+
 /**
  * Process pre-extracted NL ref data into fully resolved reference records.
- *
- * @param {object} index  WorkspaceIndex (must have nlRefData populated)
- * @returns {Array<{ref, classification, resolved, resolvedTo, mapping, namespace,
- *                   targetField, file, line, column}>}
  */
-export function resolveAllNLRefs(index) {
-  const results = [];
+export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
+  const results: ResolvedNLRef[] = [];
   const nlRefData = index.nlRefData ?? [];
 
   for (const item of nlRefData) {
@@ -252,7 +274,7 @@ export function resolveAllNLRefs(index) {
       ? `${item.namespace}::${item.mapping}`
       : item.mapping;
     const mapping = index.mappings.get(mappingKey);
-    const mappingContext = {
+    const mappingContext: MappingContext = {
       sources: mapping?.sources ?? [],
       targets: mapping?.targets ?? [],
       namespace: item.namespace,
@@ -283,12 +305,8 @@ export function resolveAllNLRefs(index) {
 /**
  * Check if a schema reference from an NL block is declared in the mapping's
  * source or target list.
- *
- * @param {string} schemaRef  Namespace-qualified schema name
- * @param {object} mapping  Mapping entry from index
- * @returns {boolean}
  */
-export function isSchemaInMappingSources(schemaRef, mapping) {
+export function isSchemaInMappingSources(schemaRef: string, mapping: MappingRecord | undefined): boolean {
   if (!mapping) return false;
   const allRefs = [...(mapping.sources ?? []), ...(mapping.targets ?? [])];
   return allRefs.includes(schemaRef);
