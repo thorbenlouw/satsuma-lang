@@ -225,6 +225,98 @@ describe("lint: unresolved-nl-ref", () => {
   });
 });
 
+// ── duplicate-definition ──────────────────────────────────────────────────
+
+describe("lint: duplicate-definition", () => {
+  it("flags schema declared twice in same namespace", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "staging::orders", fields: [{ name: "order_id" }] },
+      ],
+    });
+    index.duplicates = [
+      {
+        kind: "schema",
+        name: "staging::orders",
+        file: "pipeline-b.stm",
+        row: 10,
+        previousKind: "schema",
+        previousFile: "pipeline-a.stm",
+        previousRow: 5,
+      },
+    ];
+
+    const diags = runLint(index, { select: ["duplicate-definition"] });
+    assert.equal(diags.length, 1);
+    assert.equal(diags[0].rule, "duplicate-definition");
+    assert.equal(diags[0].severity, "error");
+    assert.equal(diags[0].fixable, false);
+    assert.equal(diags[0].file, "pipeline-b.stm");
+    assert.equal(diags[0].line, 11);
+    assert.match(diags[0].message, /Schema 'staging::orders' is already defined/);
+  });
+
+  it("flags cross-kind conflict (schema vs metric)", () => {
+    const index = makeIndex();
+    index.duplicates = [
+      {
+        kind: "metric",
+        name: "revenue",
+        file: "metrics.stm",
+        row: 20,
+        previousKind: "schema",
+        previousFile: "schemas.stm",
+        previousRow: 3,
+      },
+    ];
+
+    const diags = runLint(index, { select: ["duplicate-definition"] });
+    assert.equal(diags.length, 1);
+    assert.match(diags[0].message, /Metric 'revenue' conflicts with schema/);
+  });
+
+  it("does not flag namespace-metadata conflicts", () => {
+    const index = makeIndex();
+    index.duplicates = [
+      {
+        kind: "namespace-metadata",
+        name: "staging",
+        file: "b.stm",
+        row: 0,
+        previousKind: "namespace-metadata",
+        previousFile: "a.stm",
+        previousRow: 0,
+        tag: "note",
+        value: "v2",
+        previousValue: "v1",
+      },
+    ];
+
+    const diags = runLint(index, { select: ["duplicate-definition"] });
+    assert.equal(diags.length, 0);
+  });
+
+  it("produces no findings when no duplicates exist", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "orders", fields: [{ name: "order_id" }] },
+        { name: "customers", fields: [{ name: "customer_id" }] },
+      ],
+    });
+    index.duplicates = [];
+
+    const diags = runLint(index, { select: ["duplicate-definition"] });
+    assert.equal(diags.length, 0);
+  });
+
+  it("handles missing duplicates array gracefully", () => {
+    const index = makeIndex();
+    // duplicates not set — should not throw
+    const diags = runLint(index, { select: ["duplicate-definition"] });
+    assert.equal(diags.length, 0);
+  });
+});
+
 // ── Engine: select / ignore ────────────────────────────────────────────────
 
 describe("lint engine: rule filtering", () => {

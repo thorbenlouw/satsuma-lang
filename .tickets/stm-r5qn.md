@@ -1,6 +1,6 @@
 ---
 id: stm-r5qn
-status: open
+status: closed
 deps: [stm-eq1n, stm-zy83]
 links: [stm-7rz4]
 created: 2026-03-19T07:17:03Z

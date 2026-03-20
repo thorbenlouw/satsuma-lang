@@ -1,6 +1,6 @@
 ---
 id: stm-wy73
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-19T19:07:06Z
