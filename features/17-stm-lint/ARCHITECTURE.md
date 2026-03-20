@@ -1,7 +1,8 @@
 # satsuma lint — Architecture and Diagnostic Contract
 
-This document defines the implementation contract for `satsuma lint` before command
-and rule work begins. It captures the separation between validate and lint,
+> **Status: COMPLETED** (2026-03-20). `satsuma lint` command implemented with 3 rules (`hidden-source-in-nl`, `unresolved-nl-ref`, `duplicate-definition`), `--fix` support, JSON/text output, and end-to-end test coverage.
+
+This document defines the implementation contract for `satsuma lint`. It captures the separation between validate and lint,
 the diagnostic schema, exit-code semantics, fix mechanics, and rule registration.
 
 ## Command Separation: validate vs lint

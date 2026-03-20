@@ -1,6 +1,6 @@
 # Feature 13 — Data Modelling CLI Bugs
 
-> **Status: OPEN** — 15 parse errors + 65 false-positive warnings remain against Feature 06 examples. Ready to implement.
+> **Status: NEAR-COMPLETE** — Parser bugs and most CLI/validator bugs fixed. Kimball examples validate clean (0 errors, 0 warnings). Datavault examples have 0 errors but 23 convention-field false-positive warnings tracked in [stm-1hsk]. When validating both sets together, 10 duplicate-definition errors appear because kimball and datavault share source schema names — validate each set independently.
 
 ## Goal
 

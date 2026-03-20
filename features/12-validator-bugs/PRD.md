@@ -1,6 +1,6 @@
 # Feature 12 — Validator Bugs: False Positives from `satsuma validate`
 
-> **Status: COMPLETED** (2026-03-18). `satsuma validate examples/` produces 0 errors and 0 warnings. All 5 bugs fixed.
+> **Status: COMPLETED** (2026-03-18). All 5 original bugs fixed. Note: `satsuma validate examples/` now shows 1 error + 13 warnings due to rules added after this feature closed (duplicate-definition, metric undefined-ref). Tracked in [sg-yl8q].
 
 ## Goal
 
