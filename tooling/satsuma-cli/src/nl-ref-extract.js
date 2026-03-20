@@ -9,6 +9,8 @@
  * arrows, context, and the nl-refs command.
  */
 
+import { expandEntityFields } from "./spread-expand.js";
+
 // ── Extraction ──────────────────────────────────────────────────────────────
 
 const BACKTICK_RE = /`([^`]+)`/g;
@@ -73,7 +75,7 @@ export function resolveRef(ref, mappingContext, index) {
     const schemaRef = ref.slice(0, dotIdx);
     const fieldName = ref.slice(dotIdx + 1);
     const schema = index.schemas.get(schemaRef);
-    if (schema && hasField(schema.fields, fieldName)) {
+    if (schema && hasFieldWithSpreads(schema, fieldName, index)) {
       return { resolved: true, resolvedTo: { kind: "field", name: ref } };
     }
     return { resolved: false, resolvedTo: null };
@@ -90,7 +92,7 @@ export function resolveRef(ref, mappingContext, index) {
       const baseName = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
       if (baseName === schemaName || s === schemaName) {
         const schema = index.schemas.get(s);
-        if (schema && hasField(schema.fields, fieldName)) {
+        if (schema && hasFieldWithSpreads(schema, fieldName, index)) {
           return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${fieldName}` } };
         }
       }
@@ -102,7 +104,7 @@ export function resolveRef(ref, mappingContext, index) {
   const allSchemaNames = [...(mappingContext.sources ?? []), ...(mappingContext.targets ?? [])];
   for (const s of allSchemaNames) {
     const schema = index.schemas.get(s);
-    if (schema && hasField(schema.fields, ref)) {
+    if (schema && hasFieldWithSpreads(schema, ref, index)) {
       return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${ref}` } };
     }
   }
@@ -132,6 +134,18 @@ function hasField(fields, name) {
     if (f.children && hasField(f.children, name)) return true;
   }
   return false;
+}
+
+/**
+ * Check if a schema has a field, including fields contributed by fragment spreads.
+ * Falls back to expandEntityFields when the raw field list doesn't contain the name.
+ */
+function hasFieldWithSpreads(schema, fieldName, index) {
+  if (hasField(schema.fields, fieldName)) return true;
+  if (!schema.hasSpreads) return false;
+  const ns = schema.namespace ?? null;
+  const expanded = expandEntityFields(schema, ns, index);
+  return hasField(expanded, fieldName);
 }
 
 // ── CST Walking (for extractFileData integration) ───────────────────────────

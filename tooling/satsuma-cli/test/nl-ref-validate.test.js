@@ -155,6 +155,97 @@ describe("NL ref validation: nl-ref-not-in-source", () => {
   });
 });
 
+describe("NL ref validation: fragment spread fields", () => {
+  it("does not warn for NL refs targeting fields from fragment spreads", () => {
+    const index = makeIndex({
+      schemas: [
+        {
+          name: "ex::product_day",
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["common_measures"],
+          namespace: "ex",
+        },
+        { name: "ex::summary_day", fields: [{ name: "TOTAL_SALES" }, { name: "TOTAL_RETURNS" }] },
+      ],
+      mappings: [{
+        name: "ex::Product to Summary",
+        namespace: "ex",
+        sources: ["ex::product_day"],
+        targets: ["ex::summary_day"],
+      }],
+      nlRefData: [
+        {
+          text: "SUM(`ex::product_day.SALES_VALUE`)",
+          mapping: "Product to Summary",
+          namespace: "ex",
+          targetField: "TOTAL_SALES",
+          file: "test.stm",
+          line: 10,
+          column: 6,
+        },
+        {
+          text: "SUM(`ex::product_day.RETURN_VALUE`)",
+          mapping: "Product to Summary",
+          namespace: "ex",
+          targetField: "TOTAL_RETURNS",
+          file: "test.stm",
+          line: 11,
+          column: 6,
+        },
+      ],
+    });
+    // Add fragments to the index
+    index.fragments.set("ex::common_measures", {
+      fields: [{ name: "SALES_VALUE" }, { name: "RETURN_VALUE" }],
+      hasSpreads: false,
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    assert.equal(nlWarnings.length, 0, "Fields from fragment spreads should not produce nl-ref-unresolved warnings");
+  });
+
+  it("still warns for genuine misses even when schema has spreads", () => {
+    const index = makeIndex({
+      schemas: [
+        {
+          name: "ex::product_day",
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["common_measures"],
+          namespace: "ex",
+        },
+        { name: "ex::summary_day", fields: [{ name: "TOTAL" }] },
+      ],
+      mappings: [{
+        name: "ex::m1",
+        namespace: "ex",
+        sources: ["ex::product_day"],
+        targets: ["ex::summary_day"],
+      }],
+      nlRefData: [{
+        text: "SUM(`ex::product_day.NONEXISTENT`)",
+        mapping: "m1",
+        namespace: "ex",
+        targetField: "TOTAL",
+        file: "test.stm",
+        line: 10,
+        column: 6,
+      }],
+    });
+    index.fragments.set("ex::common_measures", {
+      fields: [{ name: "SALES_VALUE" }],
+      hasSpreads: false,
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    assert.equal(nlWarnings.length, 1, "Genuine miss should still warn");
+    assert.ok(nlWarnings[0].message.includes("NONEXISTENT"));
+  });
+});
+
 describe("NL ref validation: bare field matching", () => {
   it("does not warn for bare field that matches a source schema field", () => {
     const index = makeIndex({

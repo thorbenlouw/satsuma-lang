@@ -157,6 +157,138 @@ describe("resolveRef", () => {
   });
 });
 
+// ── resolveRef with fragment spreads ─────────────────────────────────────────
+
+describe("resolveRef — fragment spread expansion", () => {
+  const makeIndex = (schemas = {}, transforms = {}, fragments = {}) => ({
+    schemas: new Map(Object.entries(schemas)),
+    transforms: new Map(Object.entries(transforms)),
+    fragments: new Map(Object.entries(fragments)),
+  });
+
+  it("resolves namespace-qualified field via fragment spread", () => {
+    const index = makeIndex(
+      {
+        "ex::product_day": {
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["common_measures"],
+          namespace: "ex",
+        },
+      },
+      {},
+      {
+        "ex::common_measures": {
+          fields: [{ name: "SALES_VALUE" }, { name: "RETURN_VALUE" }],
+          hasSpreads: false,
+        },
+      },
+    );
+    const result = resolveRef("ex::product_day.SALES_VALUE", {}, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+  });
+
+  it("resolves dotted-field via fragment spread", () => {
+    const index = makeIndex(
+      {
+        "ex::product_day": {
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["common_measures"],
+          namespace: "ex",
+        },
+      },
+      {},
+      {
+        "ex::common_measures": {
+          fields: [{ name: "SALES_VALUE" }],
+          hasSpreads: false,
+        },
+      },
+    );
+    const context = { sources: ["ex::product_day"], targets: [] };
+    const result = resolveRef("product_day.SALES_VALUE", context, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+  });
+
+  it("resolves bare identifier via fragment spread", () => {
+    const index = makeIndex(
+      {
+        "ex::product_day": {
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["common_measures"],
+          namespace: "ex",
+        },
+      },
+      {},
+      {
+        "ex::common_measures": {
+          fields: [{ name: "SALES_VALUE" }],
+          hasSpreads: false,
+        },
+      },
+    );
+    const context = { sources: ["ex::product_day"], targets: [] };
+    const result = resolveRef("SALES_VALUE", context, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+  });
+
+  it("resolves field via transitive fragment spread", () => {
+    const index = makeIndex(
+      {
+        "ex::product_day": {
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["base_measures"],
+          namespace: "ex",
+        },
+      },
+      {},
+      {
+        "ex::base_measures": {
+          fields: [{ name: "QUANTITY" }],
+          hasSpreads: true,
+          spreads: ["audit_fields"],
+          namespace: "ex",
+        },
+        "ex::audit_fields": {
+          fields: [{ name: "CREATED_AT" }, { name: "UPDATED_AT" }],
+          hasSpreads: false,
+        },
+      },
+    );
+    const result = resolveRef("ex::product_day.CREATED_AT", {}, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+  });
+
+  it("still returns unresolved for genuine miss with spreads", () => {
+    const index = makeIndex(
+      {
+        "ex::product_day": {
+          fields: [{ name: "DAY_DATE" }],
+          hasSpreads: true,
+          spreads: ["common_measures"],
+          namespace: "ex",
+        },
+      },
+      {},
+      {
+        "ex::common_measures": {
+          fields: [{ name: "SALES_VALUE" }],
+          hasSpreads: false,
+        },
+      },
+    );
+    const result = resolveRef("ex::product_day.NONEXISTENT", {}, index);
+    assert.equal(result.resolved, false);
+  });
+});
+
 // ── isSchemaInMappingSources ────────────────────────────────────────────────
 
 describe("isSchemaInMappingSources", () => {
