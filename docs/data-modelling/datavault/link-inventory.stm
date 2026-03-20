@@ -54,7 +54,9 @@ schema link_inventory (
   store details satellite.
   """
 ) {
-  //  No additional business keys beyond the hub references.
+  // Hub business key resolution inputs (used to derive hub hash keys)
+  sku                  VARCHAR(18)     (required)
+  store_id             VARCHAR(10)     (required)          // Warehouse ID mapped to hub_store
 }
 
 

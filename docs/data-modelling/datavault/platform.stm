@@ -12,6 +12,7 @@
 // --- Shared transforms and lookups ---
 import { dv_hash } from "common.stm"
 import { store_region_map, product_hierarchy, dim_date } from "common.stm"
+import { pos_oracle, ecom_shopify } from "common.stm"
 
 // --- Hubs ---
 import { hub_customer } from "hub-customer.stm"

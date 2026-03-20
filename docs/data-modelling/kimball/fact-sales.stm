@@ -1,7 +1,7 @@
 // RetailCo International — Kimball Star Schema
 // Sales Transaction Fact
 
-import { channel_codes, dim_date } from "common.stm"
+import { channel_codes, dim_date, pos_oracle, ecom_shopify } from "common.stm"
 
 note {
   """
@@ -25,44 +25,6 @@ note {
   """
 }
 
-
-// --- Sources ---
-
-schema pos_oracle (note "Oracle Retail POS — in-store transactions") {
-  TRANS_ID            BIGINT          (pk)
-  STORE_ID            VARCHAR(20)     (required)
-  REGISTER_ID         VARCHAR(10)
-  TRANS_DATE          DATE            (required)
-  TRANS_TIME          TIME
-  CUST_ID             INTEGER                              //! NULL for ~35% (non-loyalty purchases)
-  LOYALTY_CARD_NBR    VARCHAR(20)
-  LINE_NBR            INTEGER         (required)
-  SKU                 VARCHAR(18)     (required)
-  QTY                 INTEGER         (required)
-  UNIT_PRICE          DECIMAL(10,2)   (required)
-  DISCOUNT_AMT        DECIMAL(10,2)   (default 0)
-  TAX_AMT             DECIMAL(10,2)   (default 0)
-  PAYMENT_TYPE        CHAR(2)         (enum {CA, CC, DC, GC, AP, GP})
-  CASHIER_ID          VARCHAR(20)
-  VOID_FLAG           CHAR(1)         (enum {Y, N}, default N)
-}
-
-schema ecom_shopify (note "Shopify Plus — online orders") {
-  order_id            BIGINT          (pk)
-  customer_id         BIGINT
-  email               STRING(255)     (pii)
-  order_date          DATE            (required)
-  line_number         INTEGER         (required)
-  variant_id          BIGINT
-  sku                 STRING(18)      (required)
-  quantity            INTEGER         (required)
-  unit_price          DECIMAL(10,2)   (required)
-  discount_amount     DECIMAL(10,2)   (default 0)
-  tax_amount          DECIMAL(10,2)   (default 0)
-  currency            CHAR(3)         (default USD)
-  fulfillment_status  STRING(20)      (enum {pending, shipped, delivered, returned})
-  discount_code       STRING(50)
-}
 
 
 // --- Target: Sales Transaction Fact ---

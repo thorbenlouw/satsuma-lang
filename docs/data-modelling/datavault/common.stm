@@ -9,6 +9,73 @@ transform dv_hash {
    Example: MD5(UPPER(field1) || '|' || UPPER(field2))"
 }
 
+// --- Shared source systems ---
+
+schema pos_oracle (note "Oracle Retail POS — master extract") {
+  // Transaction fields
+  TRANS_ID            BIGINT          (pk)
+  STORE_ID            VARCHAR(20)     (required)
+  REGISTER_ID         VARCHAR(10)
+  TRANS_DATE          DATE            (required)
+  TRANS_TIME          TIME
+  CUST_ID             INTEGER                              //! NULL for ~35% (non-loyalty purchases)
+  LOYALTY_CARD_NBR    VARCHAR(20)     (unique)             //! NULL for ~35% of transactions
+  LINE_NBR            INTEGER         (required)
+  SKU                 VARCHAR(18)     (required)
+  QTY                 INTEGER         (required)
+  UNIT_PRICE          DECIMAL(10,2)   (required)
+  DISCOUNT_AMT        DECIMAL(10,2)   (default 0)
+  TAX_AMT             DECIMAL(10,2)   (default 0)
+  PAYMENT_TYPE        CHAR(2)         (enum {CA, CC, DC, GC, AP, GP})
+  VOID_FLAG           CHAR(1)         (enum {Y, N}, default N)
+
+  // Store reference fields
+  STORE_NAME          VARCHAR(100)    (required)
+  STORE_FORMAT        VARCHAR(20)     (enum {FULL, OUTLET, EXPRESS, FLAGSHIP})
+  ADDR_LINE_1         VARCHAR(200)
+  ADDR_LINE_2         VARCHAR(200)
+  CITY                VARCHAR(100)
+  STATE_PROV          VARCHAR(50)
+  POSTAL_CD           VARCHAR(20)
+  COUNTRY_CD          CHAR(2)
+  PHONE_NBR           VARCHAR(20)
+  STORE_MGR           VARCHAR(100)
+  SQFT                INTEGER
+  OPEN_DATE           DATE
+  STATUS              CHAR(1)         (enum {A, T, C})     // Active/Temporary-closed/Closed
+
+  // Customer linkage fields
+  FIRST_PURCHASE_DT   DATE
+}
+
+schema ecom_shopify (note "Shopify Plus — online platform") {
+  // Order fields
+  order_id            BIGINT          (pk)
+  customer_id         BIGINT
+  email               STRING(255)     (pii)
+  order_date          DATE            (required)
+  line_number         INTEGER         (required)
+  sku                 STRING(18)      (required)
+  quantity            INTEGER         (required)
+  unit_price          DECIMAL(10,2)   (required)
+  discount_amount     DECIMAL(10,2)   (default 0)
+  tax_amount          DECIMAL(10,2)   (default 0)
+  currency            CHAR(3)         (default USD)
+  fulfillment_status  STRING(20)      (enum {pending, shipped, delivered, returned})
+  discount_code       STRING(50)
+
+  // Customer fields
+  first_name          STRING(100)
+  last_name           STRING(100)
+  created_at          TIMESTAMPTZ
+  last_order_at       TIMESTAMPTZ
+  orders_count        INTEGER
+  total_spent         DECIMAL(12,2)
+}
+
+
+// --- Lookups ---
+
 schema store_region_map (note "Store ID to operating region") {
   store_id      VARCHAR(20)   (pk)
   region        VARCHAR(50)

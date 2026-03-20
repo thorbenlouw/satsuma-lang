@@ -1,7 +1,7 @@
 // RetailCo International — Data Vault 2.0
 // Customer Hub + Satellites
 
-import { store_region_map } from "common.stm"
+import { store_region_map, pos_oracle, ecom_shopify } from "common.stm"
 
 note {
   """
@@ -45,24 +45,6 @@ schema loyalty_sfdc (note "Salesforce Service Cloud — Loyalty CRM") {
   OptInSMS            BOOLEAN
   DateOfBirth         DATE            (pii)
   Gender              PICKLIST        (enum {Male, Female, Non-binary, Undisclosed})
-}
-
-schema pos_oracle (note "Oracle Retail POS — customer linkage") {
-  CUST_ID             INTEGER         (pk)
-  LOYALTY_CARD_NBR    VARCHAR(20)     (unique)
-  FIRST_PURCHASE_DT   DATE
-  STORE_ID            VARCHAR(20)
-}
-
-schema ecom_shopify (note "Shopify Plus — online customer") {
-  customer_id         BIGINT          (pk)
-  email               STRING(255)     (pii)
-  first_name          STRING(100)
-  last_name           STRING(100)
-  created_at          TIMESTAMPTZ
-  last_order_at       TIMESTAMPTZ
-  orders_count        INTEGER
-  total_spent         DECIMAL(12,2)
 }
 
 
