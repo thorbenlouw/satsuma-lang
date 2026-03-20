@@ -45,7 +45,7 @@ Traditional schema languages either lose the physical layout detail (JSON Schema
 
 ## How Natural Language Helps
 
-Copybooks are the format where natural language adds the most value in STM. The key interpretation rules that NL captures:
+Copybooks are the format where natural language adds the most value in Satsuma. The key interpretation rules that NL captures:
 
 - **REDEFINES resolution** — "If RECORD_TYPE = 'P', interpret these bytes as CARD_PAYMENT" — this conditional logic has no structural home in a schema
 - **OCCURS population rules** — "Only the first N entries are valid; trailing entries have blank ITEM_CODE" — the schema says 5 slots, reality says fewer
@@ -57,7 +57,7 @@ These rules belong in `" "` descriptions within mapping blocks, not forced into 
 ## Example
 
 ```stm
-// STM v2 — COBOL Customer Master Record
+// Satsuma v2 — COBOL Customer Master Record
 
 schema cobol_customer (format copybook, encoding ebcdic,
   note "Customer master record from mainframe VSAM file"

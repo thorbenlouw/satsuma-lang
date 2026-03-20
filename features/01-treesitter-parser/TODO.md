@@ -1,14 +1,14 @@
-# TODO: Tree-sitter Parser for STM
+# TODO: Tree-sitter Parser for Satsuma
 
 > **Status: SUPERSEDED** by Feature 08. This v1 TODO is archived — do not use for new work.
 
 ## Phase 0: Scope and structure
 
-- [ ] Create parser workspace, preferably `tooling/tree-sitter-stm/`
+- [ ] Create parser workspace, preferably `tooling/tree-sitter-satsuma/`
 - [ ] Decide package ownership: in-repo first, publish later
 - [ ] Add README describing scope: syntax parser only, no semantic validation
 - [ ] Write `docs/ast-mapping.md` for CST-to-AST conventions
-- [ ] List grammar ambiguities from [STM-SPEC.md](/Users/thorben/dev/personal/stm/STM-SPEC.md) before implementation
+- [ ] List grammar ambiguities from [Satsuma-SPEC.md](/Users/thorben/dev/personal/stm/Satsuma-SPEC.md) before implementation
 
 ## Phase 1: Grammar skeleton
 
@@ -105,7 +105,7 @@
 - [ ] Add CI step to run corpus tests
 - [ ] Add CI step to parse every `.stm` example
 - [ ] Fail CI on parser conflicts unless explicitly accepted and documented
-- [ ] Document supported STM version in the parser README
+- [ ] Document supported Satsuma version in the parser README
 
 ## Acceptance checklist
 

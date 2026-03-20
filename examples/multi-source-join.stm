@@ -1,4 +1,4 @@
-// STM v2 — Multi-Source Join: Customer 360 View
+// Satsuma v2 — Multi-Source Join: Customer 360 View
 
 import { 'audit fields' } from "lib/common.stm"
 

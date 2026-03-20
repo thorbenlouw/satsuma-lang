@@ -1,0 +1,23 @@
+// SYNTAX TEST "source.satsuma" "computed fields with no left side of arrow"
+
+mapping {
+  source { `source_db` }
+  target { `target_db` }
+
+  // Computed with NL
+  -> display_name {
+  // <- keyword.operator.arrow.satsuma
+    "If CUST_TYPE is null or 'R', concat FIRST_NM + LAST_NM.
+     Otherwise use COMPANY_NM."
+  }
+
+  // Computed with function
+  -> migration_timestamp { now_utc() }
+  // <- keyword.operator.arrow.satsuma
+
+  // Computed with complex NL
+  -> address_id {
+    "Create a record in the addresses table using ADDR_LINE_1, ADDR_LINE_2,
+     CITY, STATE_PROV, ZIP_POSTAL, COUNTRY_CD."
+  }
+}

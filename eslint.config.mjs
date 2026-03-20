@@ -29,7 +29,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ["tooling/tree-sitter-stm/grammar.js"],
+    files: ["tooling/tree-sitter-satsuma/grammar.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "commonjs",
@@ -38,7 +38,7 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ignores: ["tooling/tree-sitter-stm/grammar.js"],
+    ignores: ["tooling/tree-sitter-satsuma/grammar.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -51,7 +51,7 @@ export default [
     },
   },
   {
-    files: ["tooling/tree-sitter-stm/grammar.js"],
+    files: ["tooling/tree-sitter-satsuma/grammar.js"],
     rules: {
       "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     },

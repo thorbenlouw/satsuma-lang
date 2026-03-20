@@ -1,4 +1,4 @@
-// STM v2 — Legacy Customer Migration
+// Satsuma v2 — Legacy Customer Migration
 
 import { 'address fields' } from "lib/common.stm"
 

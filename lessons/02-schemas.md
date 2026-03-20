@@ -1,6 +1,6 @@
 # Lesson 02 — Schemas: Defining Your Data
 
-In Lesson 1, you learned the basic STM mental model and wrote a minimal file with one source schema, one target schema, and one mapping. This lesson goes deeper into the `schema` block, because everything else in STM depends on describing data shape clearly and consistently first.
+In Lesson 1, you learned the basic Satsuma mental model and wrote a minimal file with one source schema, one target schema, and one mapping. This lesson goes deeper into the `schema` block, because everything else in Satsuma depends on describing data shape clearly and consistently first.
 
 By the end of this lesson, you will be able to model:
 
@@ -12,7 +12,7 @@ By the end of this lesson, you will be able to model:
 
 ## What a Schema Does
 
-A `schema` block defines the shape of a data asset. In STM, that could be:
+A `schema` block defines the shape of a data asset. In Satsuma, that could be:
 
 - a database table
 - a CSV or flat-file layout
@@ -21,7 +21,7 @@ A `schema` block defines the shape of a data asset. In STM, that could be:
 - a protobuf message
 - an API request or response body
 
-STM deliberately uses one keyword, `schema`, for all of these. You do not need separate constructs for “table”, “message”, “source”, or “target”. The role of a schema is determined by how it is used later.
+Satsuma deliberately uses one keyword, `schema`, for all of these. You do not need separate constructs for “table”, “message”, “source”, or “target”. The role of a schema is determined by how it is used later.
 
 ## Basic Schema Syntax
 
@@ -61,9 +61,9 @@ This tells you three things:
 - the field type is `VARCHAR(255)`
 - the field carries metadata: `format email` and `pii`
 
-## Types in STM
+## Types in Satsuma
 
-STM does not hard-code a tiny fixed type system. Types are vocabulary tokens interpreted in context. That gives you freedom to represent the source faithfully instead of forcing everything into generic placeholders.
+Satsuma does not hard-code a tiny fixed type system. Types are vocabulary tokens interpreted in context. That gives you freedom to represent the source faithfully instead of forcing everything into generic placeholders.
 
 Common examples:
 
@@ -80,7 +80,7 @@ Common examples:
 - `JSON`
 - `TEXT`
 
-This flexibility matters because a Snowflake target, an XML source, and a SQL Server extract may all describe types differently. STM lets you preserve useful signal.
+This flexibility matters because a Snowflake target, an XML source, and a SQL Server extract may all describe types differently. Satsuma lets you preserve useful signal.
 
 ## Schema-Level Metadata
 
@@ -119,7 +119,7 @@ The schema still works the same way. The metadata simply gives downstream reader
 
 ## Field Metadata
 
-Field metadata is where most schema meaning lives. STM v2 explicitly calls out these common metadata tokens:
+Field metadata is where most schema meaning lives. Satsuma v2 explicitly calls out these common metadata tokens:
 
 - `pk`
 - `required`
@@ -432,7 +432,7 @@ Nothing here says how to transform one into the other yet. That comes in the map
 
 ## Database, JSON, XML, and Files All Fit the Same Pattern
 
-A useful STM habit is to stop thinking “What syntax do I use for this source type?” and start thinking “What is the structure, and what metadata helps explain it?”
+A useful Satsuma habit is to stop thinking “What syntax do I use for this source type?” and start thinking “What is the structure, and what metadata helps explain it?”
 
 Flat relational table:
 
@@ -474,7 +474,7 @@ The model stays consistent. Only the metadata changes.
 - Putting field notes in comments when they should be durable `note` metadata
 - Flattening nested payloads into fake top-level names too early
 - Forgetting that `record` is one nested object and `list` is a repeated structure
-- Treating STM types as if they must conform to one universal validator
+- Treating Satsuma types as if they must conform to one universal validator
 
 Wrong:
 
@@ -534,7 +534,7 @@ If you can do that cleanly, you are ready for reusable fragments and imports.
 
 Lesson 2 covered the full schema foundation:
 
-- `schema` is STM’s universal structure block for tables, files, payloads, and messages
+- `schema` is Satsuma’s universal structure block for tables, files, payloads, and messages
 - fields follow a simple `name type (metadata)` pattern
 - types are context-aware vocabulary, not a rigid fixed type system
 - metadata captures delivery-critical meaning such as keys, formats, enums, defaults, references, PII, and encryption

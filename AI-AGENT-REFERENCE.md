@@ -1,9 +1,9 @@
-# STM — AI Agent Reference
+# Satsuma — AI Agent Reference
 
 ## System Prompt Insert (~900 tokens total)
 
 > Copy the sections below into your AI agent's system prompt to enable
-> reliable STM generation and consumption.
+> reliable Satsuma generation and consumption.
 
 ---
 
@@ -69,7 +69,7 @@ COMMENT          = ("//" | "//!" | "//?") TEXT_TO_EOL ;
 ### Cheat Sheet (~400 tokens)
 
 ```markdown
-# STM Quick Reference
+# Satsuma Quick Reference
 
 ## Three delimiters, three jobs
 ( ) = metadata      { } = structural content      " " = natural language
@@ -162,9 +162,9 @@ note { """multiline **Markdown** content""" }
 
 ---
 
-## STM CLI — Agent Tooling
+## Satsuma CLI — Agent Tooling
 
-The `stm` CLI is a deterministic structural extraction tool. It extracts facts from parse trees and delivers NL content verbatim. **It does not interpret natural language — that is your job.** The CLI is the toolkit. You are the runtime.
+The `satsuma` CLI is a deterministic structural extraction tool. It extracts facts from parse trees and delivers NL content verbatim. **It does not interpret natural language — that is your job.** The CLI is the toolkit. You are the runtime.
 
 Every command produces 100% correct results from structural analysis. There are no `impact`, `coverage`, `audit`, or `inventory` commands — those are workflows you compose from primitives, applying your own reasoning to the NL content the CLI surfaces.
 
@@ -172,35 +172,35 @@ Every command produces 100% correct results from structural analysis. There are 
 
 ```bash
 # Workspace extractors — retrieve whole blocks
-stm summary path/to/workspace/          # overview — schemas, mappings, metrics, counts
-stm schema hub_customer                  # full schema definition
-stm mapping 'sfdc to hub_customer'       # full mapping with all arrows
-stm metric monthly_revenue               # full metric definition
-stm lineage --from loyalty_sfdc          # schema-level graph traversal
-stm where-used hub_product               # all references to a name
-stm find --tag pii                       # fields carrying a metadata tag
-stm warnings                             # all //! and //? comments
-stm context "customer mapping"           # keyword-ranked block extraction (heuristic)
+satsuma summary path/to/workspace/          # overview — schemas, mappings, metrics, counts
+satsuma schema hub_customer                  # full schema definition
+satsuma mapping 'sfdc to hub_customer'       # full mapping with all arrows
+satsuma metric monthly_revenue               # full metric definition
+satsuma lineage --from loyalty_sfdc          # schema-level graph traversal
+satsuma where-used hub_product               # all references to a name
+satsuma find --tag pii                       # fields carrying a metadata tag
+satsuma warnings                             # all //! and //? comments
+satsuma context "customer mapping"           # keyword-ranked block extraction (heuristic)
 
 # Structural primitives — slice below block level
-stm arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
-stm nl mapping 'demographics to mart'    # NL content in this mapping (notes, transforms)
-stm nl field mart_customer_360.email     # NL content on this specific field
-stm meta field loyalty_sfdc.Email        # metadata entries (tags, type, constraints)
-stm fields sat_customer_demographics     # field list with types
-stm fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
-stm match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
+satsuma arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
+satsuma nl mapping 'demographics to mart'    # NL content in this mapping (notes, transforms)
+satsuma nl field mart_customer_360.email     # NL content on this specific field
+satsuma meta field loyalty_sfdc.Email        # metadata entries (tags, type, constraints)
+satsuma fields sat_customer_demographics     # field list with types
+satsuma fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
+satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
 
 # Workspace graph — full topology in one call
-stm graph path/to/workspace/ --json      # complete semantic graph (nodes, edges, field-level flow)
-stm graph path/ --json --schema-only     # topology only (no field-level edges)
-stm graph path/ --json --namespace crm   # filter to a namespace
-stm graph path/ --json --no-nl           # strip NL text for smaller payload
-stm graph path/ --compact                # flat schema-level adjacency list
+satsuma graph path/to/workspace/ --json      # complete semantic graph (nodes, edges, field-level flow)
+satsuma graph path/ --json --schema-only     # topology only (no field-level edges)
+satsuma graph path/ --json --namespace crm   # filter to a namespace
+satsuma graph path/ --json --no-nl           # strip NL text for smaller payload
+satsuma graph path/ --compact                # flat schema-level adjacency list
 
 # Structural analysis
-stm validate                             # parse errors + semantic reference checks
-stm diff v1/ v2/                         # structural comparison of two snapshots
+satsuma validate                             # parse errors + semantic reference checks
+satsuma diff v1/ v2/                         # structural comparison of two snapshots
 ```
 
 ### Transform classification
@@ -216,30 +216,30 @@ Every arrow the CLI returns carries a classification from CST node types:
 
 ### How you compose workflows
 
-**Whole-workspace reasoning:** Call `stm graph path/ --json` to load the entire workspace topology in one call — nodes (schemas, mappings, metrics, fragments, transforms), field-level edges with transform classification, and schema-level topology. Use `--schema-only` for topology-only queries, `--namespace <ns>` to scope, `--no-nl` to reduce payload size. The `unresolved_nl` section lists all NL arrows requiring interpretation.
+**Whole-workspace reasoning:** Call `satsuma graph path/ --json` to load the entire workspace topology in one call — nodes (schemas, mappings, metrics, fragments, transforms), field-level edges with transform classification, and schema-level topology. Use `--schema-only` for topology-only queries, `--namespace <ns>` to scope, `--no-nl` to reduce payload size. The `unresolved_nl` section lists all NL arrows requiring interpretation.
 
-**Impact analysis:** Call `stm arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `stm nl` to read the NL content and reason about it yourself.
+**Impact analysis:** Call `satsuma arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `satsuma nl` to read the NL content and reason about it yourself.
 
-**Coverage check:** Call `stm fields <target> --unmapped-by <mapping> --json` for each mapping. Intersect results to find fields unmapped by all mappings. For mapped fields, check classification via `stm arrows`.
+**Coverage check:** Call `satsuma fields <target> --unmapped-by <mapping> --json` for each mapping. Intersect results to find fields unmapped by all mappings. For mapped fields, check classification via `satsuma arrows`.
 
-**PII audit:** Call `stm find --tag pii --json`, then `stm arrows` for each tagged field, recurse downstream. At `[nl]` hops, read the NL to judge whether PII survives the transform.
+**PII audit:** Call `satsuma find --tag pii --json`, then `satsuma arrows` for each tagged field, recurse downstream. At `[nl]` hops, read the NL to judge whether PII survives the transform.
 
-**Drafting a mapping:** Call `stm match-fields` for deterministic name matches. Call `stm nl` on both schemas to read field notes. Apply your own judgment for non-obvious matches and transforms.
+**Drafting a mapping:** Call `satsuma match-fields` for deterministic name matches. Call `satsuma nl` on both schemas to read field notes. Apply your own judgment for non-obvious matches and transforms.
 
-**Reviewing a change:** Call `stm diff` for the structural delta. Call `stm arrows` for affected fields. Call `stm nl` to read NL content on changed arrows.
+**Reviewing a change:** Call `satsuma diff` for the structural delta. Call `satsuma arrows` for affected fields. Call `satsuma nl` to read NL content on changed arrows.
 
 ### When to use the CLI vs. reading files
 
 | Situation | Approach |
 |---|---|
-| Need full workspace topology in one call | `stm graph --json` — all nodes, edges, and field-level flow |
-| Need to understand a workspace | `stm summary`, then drill with `stm schema` / `stm mapping` |
-| Need arrows for a specific field | `stm arrows <schema.field>` — not reading the whole mapping |
-| Need NL content for interpretation | `stm nl <scope>` — not pulling the entire block |
-| Need metadata on a field | `stm meta field <schema.field>` — not parsing raw text |
-| Need to check which fields lack arrows | `stm fields <schema> --unmapped-by <mapping>` |
-| Need to validate after editing | `stm validate` |
-| Need to compare versions | `stm diff` — not text diff |
+| Need full workspace topology in one call | `satsuma graph --json` — all nodes, edges, and field-level flow |
+| Need to understand a workspace | `satsuma summary`, then drill with `satsuma schema` / `satsuma mapping` |
+| Need arrows for a specific field | `satsuma arrows <schema.field>` — not reading the whole mapping |
+| Need NL content for interpretation | `satsuma nl <scope>` — not pulling the entire block |
+| Need metadata on a field | `satsuma meta field <schema.field>` — not parsing raw text |
+| Need to check which fields lack arrows | `satsuma fields <schema> --unmapped-by <mapping>` |
+| Need to validate after editing | `satsuma validate` |
+| Need to compare versions | `satsuma diff` — not text diff |
 | Need full file content for editing | Read the file directly — CLI is for querying, not raw content |
 
 ### CLI output in prompts
@@ -252,9 +252,9 @@ When reporting results to humans, be transparent about which parts of your analy
 
 ## Agent Workflow
 
-### When generating STM from a description or spreadsheet:
+### When generating Satsuma from a description or spreadsheet:
 
-1. If source and target schemas already exist, run `stm match-fields --source <s> --target <t>` to find deterministic name matches, then `stm nl schema <s>` and `stm nl schema <t>` to read field notes for context
+1. If source and target schemas already exist, run `satsuma match-fields --source <s> --target <t>` to find deterministic name matches, then `satsuma nl schema <s>` and `satsuma nl schema <t>` to read field notes for context
 2. Start with a `note { }` block describing the integration context
 3. Define `schema` blocks with all fields, types, and metadata
 4. Add `fragment` blocks if you have reusable field sets
@@ -263,19 +263,19 @@ When reporting results to humans, be transparent about which parts of your analy
 7. Add `//!` warnings for known data quality issues
 8. Add `//?` for any open questions or ambiguities
 9. Add `(note "...")` metadata for persistent field-level documentation
-10. Run `stm validate` to check for parse errors and semantic issues
-11. Run `stm fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
+10. Run `satsuma validate` to check for parse errors and semantic issues
+11. Run `satsuma fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
 
-### When reading/interpreting STM:
+### When reading/interpreting Satsuma:
 
-1. Run `stm summary` to understand the workspace scope before reading individual files
-2. Use `stm schema <name>` and `stm mapping <name>` to inspect specific blocks
-3. Use `stm arrows <schema.field>` to trace specific fields through mappings — don't search manually
-4. Use `stm nl <scope>` to read NL content you need to interpret
+1. Run `satsuma summary` to understand the workspace scope before reading individual files
+2. Use `satsuma schema <name>` and `satsuma mapping <name>` to inspect specific blocks
+3. Use `satsuma arrows <schema.field>` to trace specific fields through mappings — don't search manually
+4. Use `satsuma nl <scope>` to read NL content you need to interpret
 5. `src -> tgt` means source-to-target; `-> tgt` (no left side) means computed/derived
 6. Transform content is in `{ }` after the arrow — pipelines read left-to-right
 7. `"..."` strings in transforms are natural language intent — interpret and implement
-8. `//!` comments are warnings about data quality or known issues — also visible via `stm warnings`
+8. `//!` comments are warnings about data quality or known issues — also visible via `satsuma warnings`
 9. `note { }` blocks contain rich documentation
 
 ### Common mistakes to avoid:
@@ -332,7 +332,7 @@ mapping {
 
 ---
 
-## Example: Converting an Excel mapping row to STM
+## Example: Converting an Excel mapping row to Satsuma
 
 **Excel row:**
 
@@ -340,7 +340,7 @@ mapping {
 |---|---|---|---|---|---|
 | CUST_TYPE | CHAR(1) | customer_type | VARCHAR(20) | R=Retail, B=Business, G=Government. If null, default to Retail | Some records have null values |
 
-**STM equivalent:**
+**Satsuma equivalent:**
 
 ```stm
 // In source schema:

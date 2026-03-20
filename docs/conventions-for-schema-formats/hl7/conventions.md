@@ -48,7 +48,7 @@ HL7 v2 is one of the formats where the gap between specification and reality is 
 ## Example
 
 ```stm
-// STM v2 — HL7 ADT Patient Demographics (simplified)
+// Satsuma v2 — HL7 ADT Patient Demographics (simplified)
 
 schema hl7_patient (format hl7, message_type "ADT^A08", version "2.5.1",
   note "Patient demographics from ADT update message"

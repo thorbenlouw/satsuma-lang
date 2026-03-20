@@ -1,10 +1,10 @@
-# TODO: Tree-sitter Parser for STM v2
+# TODO: Tree-sitter Parser for Satsuma v2
 
 > **Status: COMPLETED** (2026-03-18). All phases done. 190/190 corpus tests pass, all examples parse clean. See `ACCEPTANCE-CHECKLIST.md` for sign-off.
 
 ## Phase 0: Teardown and setup
 
-- [ ] Delete the existing `grammar.js`, corpus files, and queries in `tooling/tree-sitter-stm/` (preserve `package.json` and build config)
+- [ ] Delete the existing `grammar.js`, corpus files, and queries in `tooling/tree-sitter-satsuma/` (preserve `package.json` and build config)
 - [ ] Reset `src/` (regenerated from grammar; delete manually)
 - [ ] Update `package.json` name/description to reflect v2
 - [ ] Verify `tree-sitter` CLI and `node-gyp` still build cleanly after reset
@@ -189,7 +189,7 @@ The `( )` metadata block is shared by schemas, fields, mappings, arrows, and met
 
 ## Phase 13: CI and docs
 
-- [ ] Update `tooling/tree-sitter-stm/docs/cst-reference.md` with all node type names
+- [ ] Update `tooling/tree-sitter-satsuma/docs/cst-reference.md` with all node type names
 - [ ] Add grammar generation command to project-level `README.md` or `AGENTS.md`
 - [ ] Confirm `tree-sitter generate && tree-sitter test` runs clean in CI
 - [ ] Document any accepted grammar conflicts in `CONFLICTS.expected`

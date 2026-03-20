@@ -39,7 +39,7 @@ if _needs_cc "${1:-}" && [[ ! " $* " =~ " --wasm " ]]; then
 fi
 
 # Add locally-installed tree-sitter-cli to PATH
-LOCAL_BIN="$ROOT_DIR/tooling/tree-sitter-stm/node_modules/.bin"
+LOCAL_BIN="$ROOT_DIR/tooling/tree-sitter-satsuma/node_modules/.bin"
 if [ -d "$LOCAL_BIN" ]; then
   export PATH="$LOCAL_BIN:$PATH"
 fi

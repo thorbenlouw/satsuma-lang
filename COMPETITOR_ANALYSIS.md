@@ -1,8 +1,8 @@
 Excellent question — we should absolutely check this before investing further. Let me do a thorough survey.Now I have a comprehensive picture. Here's my honest assessment:
 
-## The honest answer: STM is NOT redundant, but it should learn from several existing languages
+## The honest answer: Satsuma is NOT redundant, but it should learn from several existing languages
 
-There is no existing standard that does what STM is trying to do. However, there are several languages that overlap with *parts* of STM's scope, and understanding exactly where they overlap (and don't) is critical for positioning this project correctly.
+There is no existing standard that does what Satsuma is trying to do. However, there are several languages that overlap with *parts* of Satsuma's scope, and understanding exactly where they overlap (and don't) is critical for positioning this project correctly.
 
 ### The competitive landscape, ranked by relevance
 
@@ -10,12 +10,12 @@ There is no existing standard that does what STM is trying to do. However, there
 
 FML is a QVT-based transformation language. Conceptually, it's similar to XSLT. It has a concrete text syntax with `source -> target` rules, nested mapping groups, conditional logic (`where` clauses), concept map translation, and variable binding. The mapping language describes how one set of Directed Acyclic Graphs is transformed to another set of directed acyclic graphs.
 
-FML is genuinely impressive and covers much of what we're building. But here's why it doesn't kill STM:
+FML is genuinely impressive and covers much of what we're building. But here's why it doesn't kill Satsuma:
 
 - **It's healthcare-coupled.** FML is deeply embedded in the FHIR specification and assumes FHIR StructureDefinitions as the type system. Approaches with high expressivity, such as CQL, FML, and Whistle, require significant implementation effort and specialised knowledge. Using it for a database-to-database migration or an EDI-to-JSON transformation would be fighting the tool.
-- **It's an execution language, not a specification format.** FML is designed to *run* — it transforms instances at runtime. STM is designed to *document* — it describes the intent so humans review it, AI generates code from it, and linters validate it. These are fundamentally different goals.
-- **It separates schema from mapping but not as cleanly.** FML schemas live in StructureDefinition resources (separate JSON/XML files), and the mapping rules reference them. STM co-locates schemas and mappings in a single readable file.
-- **Readability for non-technical reviewers.** FML's syntax is developer-readable, not BA-readable. Compare FML's `src.aa as s_aa -> tgt.aa as t_aa then { s_aa.ab as ab -> t_aa.ab = ab; }` to STM's `aa.ab -> aa.ab`. STM is deliberately optimized for non-developers to review.
+- **It's an execution language, not a specification format.** FML is designed to *run* — it transforms instances at runtime. Satsuma is designed to *document* — it describes the intent so humans review it, AI generates code from it, and linters validate it. These are fundamentally different goals.
+- **It separates schema from mapping but not as cleanly.** FML schemas live in StructureDefinition resources (separate JSON/XML files), and the mapping rules reference them. Satsuma co-locates schemas and mappings in a single readable file.
+- **Readability for non-technical reviewers.** FML's syntax is developer-readable, not BA-readable. Compare FML's `src.aa as s_aa -> tgt.aa as t_aa then { s_aa.ab as ab -> t_aa.ab = ab; }` to Satsuma's `aa.ab -> aa.ab`. Satsuma is deliberately optimized for non-developers to review.
 
 **Verdict:** FML is the strongest prior art. We should study it carefully and potentially cite it as inspiration. But its healthcare coupling and execution-focus make it a different tool for a different audience.
 
@@ -43,7 +43,7 @@ dbt describes SQL transformations beautifully but only works within the SQL worl
 
 These are model-driven engineering standards from OMG. They're theoretically sound and very powerful, but they never achieved real-world adoption outside academia. No business analyst has ever written or read an ATL transformation.
 
-### What doesn't exist (and this is the gap STM fills)
+### What doesn't exist (and this is the gap Satsuma fills)
 
 Here's the key insight from all this research: there are plenty of **transformation execution languages** (FML, JSONata, Jolt, XSLT, Whistle, jq, dbt) and plenty of **informal specification formats** (Excel spreadsheets, Confluence wikis, Word docs). But there is **nothing** that sits in the middle — a formal, parseable, human-readable specification language for mapping intent that is:
 
@@ -56,11 +56,11 @@ Here's the key insight from all this research: there are plenty of **transformat
 
 Source to target mapping involves understanding the domain, naming and processes in old and new systems, defining data transformation rules or logic, and establishing what mapping objects you have. Today, all of this lives in Excel or Confluence. That's the actual competitor — not FML, not JSONata, not XSLT.
 
-### What STM should steal from the competition
+### What Satsuma should steal from the competition
 
 | From | Steal |
 |---|---|
-| **FML** | The `where` clause on mapping rules for conditional logic. STM covers this with `map { }` blocks and conditional entries. FML's `translate()` using ConceptMaps remains strong inspiration for STM's future terminology translation support. |
+| **FML** | The `where` clause on mapping rules for conditional logic. Satsuma covers this with `map { }` blocks and conditional entries. FML's `translate()` using ConceptMaps remains strong inspiration for Satsuma's future terminology translation support. |
 | **FML** | The `group` concept — reusable mapping rule groups. We have fragments for schemas and named transforms for pipelines. |
 | **JSONata** | The elegance of path expressions. Our `.field` relative paths in nested mappings are similar in spirit. |
 | **Jolt** | The separation of structural transforms (shift, default, remove, sort, cardinality) as distinct operations. |
@@ -75,7 +75,7 @@ What we should do:
 
 1. **Acknowledge FML explicitly in the spec** as prior art and inspiration, particularly for conditional mapping rules and concept translation
 2. **Consider adopting FML's `group` concept** for reusable mapping rule sets (not just schema fragments)
-3. **Position STM clearly** as a *specification* language, not a *transformation execution* language — this is the key differentiator from everything else in the market
-4. **Add a "Comparison" section** to PROJECT-OVERVIEW.md that honestly explains where STM sits relative to FML, JSONata, XSLT, dbt, and Excel
+3. **Position Satsuma clearly** as a *specification* language, not a *transformation execution* language — this is the key differentiator from everything else in the market
+4. **Add a "Comparison" section** to PROJECT-OVERVIEW.md that honestly explains where Satsuma sits relative to FML, JSONata, XSLT, dbt, and Excel
 
-The tagline should be: *"STM is to data mapping what OpenAPI is to APIs — a specification format, not an implementation."* OpenAPI doesn't execute HTTP requests; it describes them. STM doesn't execute transforms; it describes them.
+The tagline should be: *"Satsuma is to data mapping what OpenAPI is to APIs — a specification format, not an implementation."* OpenAPI doesn't execute HTTP requests; it describes them. Satsuma doesn't execute transforms; it describes them.

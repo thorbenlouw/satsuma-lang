@@ -1,8 +1,8 @@
-# TODO: STM CLI — Structural Primitives for Agent Composition
+# TODO: Satsuma CLI — Structural Primitives for Agent Composition
 
 > **Status: COMPLETED** (2026-03-18). All phases done. All commands implemented and tested. 224 CLI tests passing.
 
-Depends on Feature 09 (STM CLI: LLM Context Slicer) being complete.
+Depends on Feature 09 (Satsuma CLI: LLM Context Slicer) being complete.
 
 ## Phase 0: Transform Classifier and Field-Level Index
 
@@ -24,7 +24,7 @@ Foundation modules that all new commands build on.
 - [ ] Unit tests for field-level extraction against `examples/` corpus
 - [ ] Verify existing commands still pass with the extended index
 
-## Phase 1: `stm arrows`
+## Phase 1: `satsuma arrows`
 
 - [ ] Implement `src/commands/arrows.js`
 - [ ] Accept `<schema.field>` argument; parse into schema name + field name
@@ -43,7 +43,7 @@ Foundation modules that all new commands build on.
   - [ ] `--json` includes decomposed steps
   - [ ] Unknown field exits 1
 
-## Phase 2: `stm nl`
+## Phase 2: `satsuma nl`
 
 - [ ] Create `src/nl-extract.js`:
   - [ ] Walk a CST subtree and collect all `nl_string`, `multiline_string`, `note_block`, `note_tag`, `warning_comment`, `question_comment` nodes
@@ -62,7 +62,7 @@ Foundation modules that all new commands build on.
   - [ ] `--kind transform` filters to transform NL only
   - [ ] `all` scope returns everything across the workspace
 
-## Phase 3: `stm meta`
+## Phase 3: `satsuma meta`
 
 - [ ] Create `src/meta-extract.js`:
   - [ ] Extract structured metadata from `metadata` CST nodes
@@ -81,7 +81,7 @@ Foundation modules that all new commands build on.
   - [ ] Mapping metadata extracts tags and notes
   - [ ] `--tags-only` returns just tokens
 
-## Phase 4: `stm fields` enhancements
+## Phase 4: `satsuma fields` enhancements
 
 - [ ] Implement `src/commands/fields.js` (or extend existing `schema --fields-only` into a standalone command)
 - [ ] Accept `<schema>` argument
@@ -98,7 +98,7 @@ Foundation modules that all new commands build on.
   - [ ] Field covered by a derived arrow is NOT in the unmapped list
   - [ ] Unknown schema exits 1
 
-## Phase 5: `stm match-fields`
+## Phase 5: `satsuma match-fields`
 
 - [ ] Create `src/normalize.js`:
   - [ ] `normalizeName(name)` → lowercase, strip `_` and `-`
@@ -119,7 +119,7 @@ Foundation modules that all new commands build on.
   - [ ] Source-only and target-only lists are correct
   - [ ] Unknown schema exits 1
 
-## Phase 6: `stm validate`
+## Phase 6: `satsuma validate`
 
 - [ ] Create `src/validate.js` module with two check categories:
   - [ ] **Structural checks**: walk tree-sitter CST for ERROR and MISSING nodes, report file/line/column/context
@@ -147,7 +147,7 @@ Foundation modules that all new commands build on.
   - [ ] `--quiet` returns correct exit code
   - [ ] `--json` produces valid JSON
 
-## Phase 7: `stm diff`
+## Phase 7: `satsuma diff`
 
 - [ ] Create `src/diff.js` module:
   - [ ] Accept two `WorkspaceIndex` instances (or two paths to build them)
@@ -174,36 +174,36 @@ Foundation modules that all new commands build on.
 
 ## Phase 8: Documentation
 
-- [ ] Update `stm --help` with three-tier grouping (workspace extractors, structural primitives, structural analysis)
+- [ ] Update `satsuma --help` with three-tier grouping (workspace extractors, structural primitives, structural analysis)
 - [ ] Add `--help` for each new command stating what structural operation it performs and that NL content is extracted verbatim, not interpreted
-- [ ] Update `STM-CLI.md` with new command reference and "How agents compose primitives" section
+- [ ] Update `Satsuma-CLI.md` with new command reference and "How agents compose primitives" section
 - [ ] Update `AI-AGENT-REFERENCE.md` CLI section with primitive commands and agent workflow patterns
 - [ ] Document the intended limitations of the CLI explicitly: what it can do (structural extraction), what it cannot do (NL interpretation), and why the boundary exists
 - [ ] Include example agent workflows (impact, coverage, audit, mapping draft, readiness) showing how an agent composes primitives
 
 ## Phase 9: Integration Tests
 
-- [ ] Write integration tests in `tooling/stm-cli/test/` using `examples/` and the Data Vault example as fixtures
-- [ ] `stm arrows` returns correct arrows with correct classification for fields across example corpus
-- [ ] `stm nl` extracts all NL content for schemas and mappings in examples
-- [ ] `stm meta` extracts correct metadata for schemas and fields
-- [ ] `stm fields --unmapped-by` returns correct set difference
-- [ ] `stm match-fields` returns correct normalized matches between example schemas
-- [ ] `stm validate` on clean workspace exits 0
-- [ ] `stm validate` on workspace with injected errors reports correct diagnostics
-- [ ] `stm diff` between original and modified fixture shows expected delta
+- [ ] Write integration tests in `tooling/satsuma-cli/test/` using `examples/` and the Data Vault example as fixtures
+- [ ] `satsuma arrows` returns correct arrows with correct classification for fields across example corpus
+- [ ] `satsuma nl` extracts all NL content for schemas and mappings in examples
+- [ ] `satsuma meta` extracts correct metadata for schemas and fields
+- [ ] `satsuma fields --unmapped-by` returns correct set difference
+- [ ] `satsuma match-fields` returns correct normalized matches between example schemas
+- [ ] `satsuma validate` on clean workspace exits 0
+- [ ] `satsuma validate` on workspace with injected errors reports correct diagnostics
+- [ ] `satsuma diff` between original and modified fixture shows expected delta
 - [ ] All commands produce valid JSON with `--json`
 - [ ] Exit codes are correct for success, not-found, and error cases
 
 ## Acceptance Checklist
 
-- [ ] `stm arrows` returns field-level arrows with correct transform classification
-- [ ] `stm nl` extracts NL content with structural position info
-- [ ] `stm meta` extracts metadata entries for any block or field
-- [ ] `stm fields --unmapped-by` correctly identifies fields with no arrows
-- [ ] `stm match-fields` returns correct exact-after-normalization matches
-- [ ] `stm validate` reports structural and semantic issues with file/line detail
-- [ ] `stm diff` produces correct structural delta
+- [ ] `satsuma arrows` returns field-level arrows with correct transform classification
+- [ ] `satsuma nl` extracts NL content with structural position info
+- [ ] `satsuma meta` extracts metadata entries for any block or field
+- [ ] `satsuma fields --unmapped-by` correctly identifies fields with no arrows
+- [ ] `satsuma match-fields` returns correct exact-after-normalization matches
+- [ ] `satsuma validate` reports structural and semantic issues with file/line detail
+- [ ] `satsuma diff` produces correct structural delta
 - [ ] All commands support `--json` and produce valid JSON
 - [ ] All commands follow exit code conventions (0/1/2)
 - [ ] CLI --help text explicitly states the CLI is a structural extraction tool that does not interpret NL

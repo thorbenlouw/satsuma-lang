@@ -1,6 +1,7 @@
 {
-  "name": "stm-repo",
+  "name": "satsuma-lang",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "lint": "npm run lint:js",
     "lint:js": "eslint .",

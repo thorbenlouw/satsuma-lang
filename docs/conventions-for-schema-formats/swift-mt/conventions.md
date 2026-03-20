@@ -46,7 +46,7 @@ SWIFT MT is being gradually replaced by ISO 20022 XML, but remains in widespread
 ## Example
 
 ```stm
-// STM v2 — SWIFT MT103 Single Customer Credit Transfer (simplified)
+// Satsuma v2 — SWIFT MT103 Single Customer Credit Transfer (simplified)
 
 schema swift_mt103 (format swift_mt, message_type "103",
   note "Single customer credit transfer — core payment fields"

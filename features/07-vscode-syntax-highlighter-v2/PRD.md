@@ -1,4 +1,4 @@
-# PRD: VS Code Syntax Highlighter for STM v2
+# PRD: VS Code Syntax Highlighter for Satsuma v2
 
 > **Status: COMPLETED** (2026-03-18). TextMate grammar rewritten for v2 syntax. All fixture tests and golden tests pass against canonical examples.
 
@@ -8,18 +8,18 @@
 
 ## 1. Problem Statement
 
-The existing VS Code syntax highlighter (feature 03) targets STM v1 syntax. STM v2 introduces significant language changes — a unified `schema` keyword, `()` metadata instead of `[]` tags, `record`/`list` for nesting, `map {}` blocks, `"""` triple-quoted strings, `transform` blocks, and the removal of `@annotation` syntax. The current TextMate grammar does not cover these constructs and will mis-highlight v2 files.
+The existing VS Code syntax highlighter (feature 03) targets Satsuma v1 syntax. Satsuma v2 introduces significant language changes — a unified `schema` keyword, `()` metadata instead of `[]` tags, `record`/`list` for nesting, `map {}` blocks, `"""` triple-quoted strings, `transform` blocks, and the removal of `@annotation` syntax. The current TextMate grammar does not cover these constructs and will mis-highlight v2 files.
 
-We need a v2-aligned TextMate grammar that replaces the v1 grammar and correctly highlights all constructs defined in `STM-V2-SPEC.md`.
+We need a v2-aligned TextMate grammar that replaces the v1 grammar and correctly highlights all constructs defined in `Satsuma-V2-SPEC.md`.
 
 ---
 
 ## 2. Goals
 
-1. Ship an updated VS Code extension that correctly highlights `.stm` files written in STM v2 syntax.
+1. Ship an updated VS Code extension that correctly highlights `.stm` files written in Satsuma v2 syntax.
 2. Cover all reserved keywords, vocabulary tokens, operators, comment forms, string forms, and structural patterns from the v2 spec.
 3. Maintain standard TextMate scope names for theme compatibility across Dark+, Light+, and popular community themes.
-4. Reuse the existing `tooling/vscode-stm/` extension structure — this is an update, not a separate extension.
+4. Reuse the existing `tooling/vscode-satsuma/` extension structure — this is an update, not a separate extension.
 5. Leave a clear path for semantic tokens once a parser/LSP exists.
 
 ---
@@ -29,7 +29,7 @@ We need a v2-aligned TextMate grammar that replaces the v1 grammar and correctly
 - LSP features (completion, hover, go-to-definition, rename, diagnostics).
 - Semantic validation of schema references, mapping correctness, or type checking.
 - Embedding a Tree-sitter parser into the extension.
-- Supporting STM v1 syntax — the grammar targets v2 only.
+- Supporting Satsuma v1 syntax — the grammar targets v2 only.
 
 ---
 
@@ -74,38 +74,38 @@ Vocabulary tokens are open-ended — the grammar should highlight known tokens b
 
 | Operator | Scope |
 |----------|-------|
-| `->` | `keyword.operator.arrow.stm` |
-| `\|` | `keyword.operator.pipe.stm` |
-| `...` | `keyword.operator.spread.stm` |
-| `:` | `punctuation.separator.key-value.stm` |
-| `.` | `punctuation.separator.accessor.stm` |
-| `[]` | `punctuation.definition.array.stm` |
+| `->` | `keyword.operator.arrow.satsuma` |
+| `\|` | `keyword.operator.pipe.satsuma` |
+| `...` | `keyword.operator.spread.satsuma` |
+| `:` | `punctuation.separator.key-value.satsuma` |
+| `.` | `punctuation.separator.accessor.satsuma` |
+| `[]` | `punctuation.definition.array.satsuma` |
 
 ### 5.4 Comments
 
 | Syntax | Scope |
 |--------|-------|
-| `//` | `comment.line.double-slash.stm` |
-| `//!` | `comment.line.double-slash.warning.stm` |
-| `//?` | `comment.line.double-slash.question.stm` |
+| `//` | `comment.line.double-slash.satsuma` |
+| `//!` | `comment.line.double-slash.warning.satsuma` |
+| `//?` | `comment.line.double-slash.question.satsuma` |
 
 ### 5.5 Strings
 
 | Form | Scope |
 |------|-------|
-| `"double quoted"` | `string.quoted.double.stm` |
-| `"""triple quoted"""` | `string.quoted.triple.stm` |
-| `` `backtick` `` | `entity.name.tag.stm` (identifier reference) |
-| `'block label'` | `string.quoted.single.stm` (block names only) |
+| `"double quoted"` | `string.quoted.double.satsuma` |
+| `"""triple quoted"""` | `string.quoted.triple.satsuma` |
+| `` `backtick` `` | `entity.name.tag.satsuma` (identifier reference) |
+| `'block label'` | `string.quoted.single.satsuma` (block names only) |
 
 ### 5.6 Literals
 
 | Form | Scope |
 |------|-------|
-| Numbers (integers, decimals) | `constant.numeric.stm` |
-| `null` | `constant.language.null.stm` |
-| `default` (in map catch-all) | `keyword.control.default.stm` |
-| `_` (wildcard default) | `keyword.control.default.stm` |
+| Numbers (integers, decimals) | `constant.numeric.satsuma` |
+| `null` | `constant.language.null.satsuma` |
+| `default` (in map catch-all) | `keyword.control.default.satsuma` |
+| `_` (wildcard default) | `keyword.control.default.satsuma` |
 
 ---
 
@@ -113,7 +113,7 @@ Vocabulary tokens are open-ended — the grammar should highlight known tokens b
 
 ### 6.1 Language Registration
 
-Same as feature 03 — `.stm` files, language id `stm`, line comment `//`, bracket pairs `{}`, `[]`, `()`.
+Same as feature 03 — `.stm` files, language id `satsuma`, line comment `//`, bracket pairs `{}`, `[]`, `()`.
 
 ### 6.2 TextMate Grammar Coverage
 
@@ -149,11 +149,11 @@ Malformed/in-progress files must not cause catastrophic over-scoping (e.g., an u
 
 ### D1: Updated TextMate grammar
 
-`tooling/vscode-stm/syntaxes/stm.tmLanguage.json` — rewritten for v2 syntax.
+`tooling/vscode-satsuma/syntaxes/satsuma.tmLanguage.json` — rewritten for v2 syntax.
 
 ### D2: Updated language configuration
 
-`tooling/vscode-stm/language-configuration.json` — review for v2 changes (auto-closing `"""`, etc.).
+`tooling/vscode-satsuma/language-configuration.json` — review for v2 changes (auto-closing `"""`, etc.).
 
 ### D3: Test fixtures
 

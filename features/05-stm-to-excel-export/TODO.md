@@ -1,17 +1,17 @@
-# STM-to-Excel Export — TODO
+# Satsuma-to-Excel Export — TODO
 
 > **Status: NOT STARTED** — All phases deferred. See `FUTURE-WORK.md`.
 
 ## Phase 1: Lite System Prompt
-- [ ] Author `stm-to-excel-prompt.md` — condense workbook layout, styling, column definitions, transform translation rules, and row grouping into a self-contained prompt (~2,900 tokens)
-- [ ] Ensure prompt covers STMv2 syntax: `( )` metadata, `{ }` transforms, `"..."` NL strings, unified `schema` keyword, `-> target` computed fields, `map { }` conditionals
+- [ ] Author `satsuma-to-excel-prompt.md` — condense workbook layout, styling, column definitions, transform translation rules, and row grouping into a self-contained prompt (~2,900 tokens)
+- [ ] Ensure prompt covers Satsuma v2 syntax: `( )` metadata, `{ }` transforms, `"..."` NL strings, unified `schema` keyword, `-> target` computed fields, `map { }` conditionals
 - [ ] Test lite prompt against canonical examples (`sfdc_to_snowflake.stm`, `db-to-db.stm`, `multi-source-join.stm`) on ChatGPT / Gemini / Claude.ai
 - [ ] Verify generated Python scripts run and produce correctly formatted `.xlsx` files
 - [ ] Iterate on prompt wording based on output quality (styling fidelity, transform translation, tab structure)
 
 ## Phase 2: Data Model + Heuristic Parser
 - [ ] Implement `model.py` — dataclasses for Integration, Schema, Field, Mapping, MappingEntry, Transform, Lookup, Comment, StmDocument
-- [ ] Implement `parser.py` — heuristic text-based parser for STMv2 files
+- [ ] Implement `parser.py` — heuristic text-based parser for Satsuma v2 files
 - [ ] Handle integration blocks (name, metadata key-value pairs, tags, note blocks)
 - [ ] Handle `schema` blocks with fields, types, `( )` metadata tokens (pk, required, pii, enum, default, etc.)
 - [ ] Handle `record` and `list` nested structures within schemas
@@ -25,7 +25,7 @@
 - [ ] Test against all files in `examples/`
 
 ## Phase 3: Transform Translation
-- [ ] Implement `transforms.py` — deterministic STM-to-human-readable translation rules
+- [ ] Implement `transforms.py` — deterministic Satsuma-to-human-readable translation rules
 - [ ] Translate pipe chains (`|` → `→`)
 - [ ] Translate common pipeline tokens (trim, lowercase, validate_email, first, last, etc.) to plain English
 - [ ] Translate parameterised functions (coalesce, round, truncate, pad_left, prepend, split, parse, etc.)
@@ -34,7 +34,7 @@
 - [ ] Pass through natural-language strings (`"..."`) verbatim (strip quotes only)
 - [ ] Handle mixed NL + mechanical pipelines (`"description" | round(2)` → `description → round to 2 decimal places`)
 - [ ] Resolve named transform spreads (`...clean email` → expand inline)
-- [ ] Handle unknown pipeline tokens gracefully (pass through as raw STM)
+- [ ] Handle unknown pipeline tokens gracefully (pass through as raw Satsuma)
 - [ ] Unit test against comprehensive set of transform expressions
 
 ## Phase 4: Workbook Generator
@@ -65,12 +65,12 @@
 
 ## Phase 6: Tree-sitter Parser Integration
 - [ ] Add tree-sitter-based parsing as preferred strategy in `parser.py`
-- [ ] Consume tree-sitter CST and walk to extract all STMv2 constructs
+- [ ] Consume tree-sitter CST and walk to extract all Satsuma v2 constructs
 - [ ] Fall back to heuristic parser if tree-sitter unavailable, with warning in Overview tab
 - [ ] Test parity between tree-sitter and heuristic parser outputs
 
 ## Phase 7: Claude Code Skill
-- [ ] Create `.claude/commands/stm-to-excel.md` — thin wrapper around CLI
+- [ ] Create `.claude/commands/satsuma-to-excel.md` — thin wrapper around CLI
 - [ ] Validate input file exists
 - [ ] Run CLI tool and summarise output (tab count, mapping count, issue count)
 - [ ] Offer to adjust (scope to targets, toggle options)

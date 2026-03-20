@@ -1,4 +1,4 @@
-# TODO: VS Code Syntax Highlighter for STM v2
+# TODO: VS Code Syntax Highlighter for Satsuma v2
 
 > **Status: COMPLETED** (2026-03-18). Grammar rewritten, fixture + golden tests pass. Multi-schema support added.
 
@@ -91,8 +91,8 @@
 ### 2g: Field declaration pattern
 
 - [ ] Match `name  TYPE  (metadata)` pattern inside schema/fragment/record/list bodies
-- [ ] Scope field name as `variable.other.field.stm`
-- [ ] Scope type as `support.type.stm`
+- [ ] Scope field name as `variable.other.field.satsuma`
+- [ ] Scope type as `support.type.satsuma`
 
 ### 2h: Mapping body patterns
 
@@ -128,8 +128,8 @@
 
 ## Phase 4: Documentation
 
-- [ ] Update `tooling/vscode-stm/README.md` — note v2 syntax support
-- [ ] Update `tooling/vscode-stm/package.json` — bump version, update description
+- [ ] Update `tooling/vscode-satsuma/README.md` — note v2 syntax support
+- [ ] Update `tooling/vscode-satsuma/package.json` — bump version, update description
 - [ ] Document known approximation limits (context-sensitive constructs)
   - [ ] `source`/`target` as keywords vs. field names
   - [ ] `map` as keyword vs. identifier

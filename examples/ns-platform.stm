@@ -1,4 +1,4 @@
-// STM v2 — Namespace Exploratory Test: Multi-Layer Data Platform
+// Satsuma v2 — Namespace Exploratory Test: Multi-Layer Data Platform
 //
 // Tests: namespace blocks, cross-namespace references, global definitions,
 // namespace-scoped metrics, fragment spreads across namespaces, imports,

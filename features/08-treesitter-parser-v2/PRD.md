@@ -1,16 +1,16 @@
-# Feature 08 — Tree-sitter Parser for STM v2
+# Feature 08 — Tree-sitter Parser for Satsuma v2
 
 > **Status: COMPLETED** (2026-03-18). All acceptance criteria verified — see `ACCEPTANCE-CHECKLIST.md`.
 
 ## Goal
 
-Replace the existing `tooling/tree-sitter-stm/` parser (written against v1 syntax) with a new grammar that covers STM v2. The new parser should produce a concrete syntax tree (CST) that exposes every structurally meaningful element tooling needs to extract — with particular emphasis on the queries that will power the LLM context CLI (Feature 09) and a future language server.
+Replace the existing `tooling/tree-sitter-satsuma/` parser (written against v1 syntax) with a new grammar that covers Satsuma v2. The new parser should produce a concrete syntax tree (CST) that exposes every structurally meaningful element tooling needs to extract — with particular emphasis on the queries that will power the LLM context CLI (Feature 09) and a future language server.
 
 ---
 
 ## Problem
 
-The v1 parser was built before the language settled into its current form. STM v2 changed the structure substantially:
+The v1 parser was built before the language settled into its current form. Satsuma v2 changed the structure substantially:
 
 - The `integration` block is gone
 - `table`, `message`, `event`, `source`, `target` at schema level are gone — there is only `schema`
@@ -40,12 +40,12 @@ The feature is complete when:
 
 - Semantic validation (reference resolution, type checking, constraint enforcement) — that is the linter's job, not the parser's.
 - Import resolution across files — the parser sees one file at a time; multi-file graph assembly is a CLI concern.
-- Code generation from STM.
+- Code generation from Satsuma.
 - Converting or migrating v1 files — the old grammar lives in git history.
 
 ---
 
-## STM v2 Grammar Surface
+## Satsuma v2 Grammar Surface
 
 The parser must cover the following constructs, in full structural detail.
 
@@ -281,13 +281,13 @@ All three comment types are captured as explicit CST nodes. This is essential fo
 
 ## File Locations
 
-- Grammar: `tooling/tree-sitter-stm/grammar.js` (replace existing)
-- Tests: `tooling/tree-sitter-stm/test/corpus/` (replace existing, new corpus files by area)
-- Highlights: `tooling/tree-sitter-stm/queries/highlights.scm` (replace existing)
-- Folds: `tooling/tree-sitter-stm/queries/folds.scm`
-- Locals: `tooling/tree-sitter-stm/queries/locals.scm` (for LSP scope resolution)
-- Smoke-test script: `tooling/tree-sitter-stm/scripts/smoke-test.js`
-- AST conventions doc: `tooling/tree-sitter-stm/docs/cst-reference.md`
+- Grammar: `tooling/tree-sitter-satsuma/grammar.js` (replace existing)
+- Tests: `tooling/tree-sitter-satsuma/test/corpus/` (replace existing, new corpus files by area)
+- Highlights: `tooling/tree-sitter-satsuma/queries/highlights.scm` (replace existing)
+- Folds: `tooling/tree-sitter-satsuma/queries/folds.scm`
+- Locals: `tooling/tree-sitter-satsuma/queries/locals.scm` (for LSP scope resolution)
+- Smoke-test script: `tooling/tree-sitter-satsuma/scripts/smoke-test.js`
+- AST conventions doc: `tooling/tree-sitter-satsuma/docs/cst-reference.md`
 
 The existing grammar, corpus, and queries are deleted and replaced entirely. v1 is considered retired.
 

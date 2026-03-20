@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        working-directory: tooling/stm-cli
+        working-directory: tooling/satsuma-cli
     steps:
       - uses: actions/checkout@v4
 
@@ -25,22 +25,22 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Build tree-sitter-stm native bindings
-        working-directory: tooling/tree-sitter-stm
+      - name: Build tree-sitter-satsuma native bindings
+        working-directory: tooling/tree-sitter-satsuma
         run: npm ci
 
-      - name: Install stm-cli dependencies
+      - name: Install satsuma-cli dependencies
         run: npm ci
 
       - name: Bundle for distribution
         run: |
           # Replace file: symlink with actual copy (includes prebuilt native addon)
-          rm -rf node_modules/tree-sitter-stm
-          cp -rf ../tree-sitter-stm node_modules/tree-sitter-stm
+          rm -rf node_modules/tree-sitter-satsuma
+          cp -rf ../tree-sitter-satsuma node_modules/tree-sitter-satsuma
 
           # Remove dev-only / non-runtime files from the bundled copy
-          rm -rf node_modules/tree-sitter-stm/{test,scripts,.beads,docs,queries,examples}
-          rm -rf node_modules/tree-sitter-stm/node_modules
+          rm -rf node_modules/tree-sitter-satsuma/{test,scripts,.beads,docs,queries,examples}
+          rm -rf node_modules/tree-sitter-satsuma/node_modules
 
           # Bundle all dependencies into the tarball so consumers skip native compilation
           node -e "
@@ -50,12 +50,12 @@ jobs:
           "
 
           npm pack
-          mv stm-cli-*.tgz stm-cli-${{ matrix.platform }}.tgz
+          mv satsuma-cli-*.tgz satsuma-cli-${{ matrix.platform }}.tgz
 
       - uses: actions/upload-artifact@v4
         with:
-          name: stm-cli-${{ matrix.platform }}
-          path: tooling/stm-cli/stm-cli-${{ matrix.platform }}.tgz
+          name: satsuma-cli-${{ matrix.platform }}
+          path: tooling/satsuma-cli/satsuma-cli-${{ matrix.platform }}.tgz
 
   release:
     needs: build
@@ -81,10 +81,10 @@ jobs:
           **Install:**
           ```bash
           # macOS (Apple Silicon)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/stm-cli-darwin-arm64.tgz
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-darwin-arm64.tgz
 
           # Linux (x64)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/stm-cli-linux-x64.tgz
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-linux-x64.tgz
           ```
           EOF
 
@@ -92,4 +92,4 @@ jobs:
             --title "Latest build" \
             --notes-file notes.md \
             --prerelease \
-            stm-cli-*.tgz
+            satsuma-cli-*.tgz

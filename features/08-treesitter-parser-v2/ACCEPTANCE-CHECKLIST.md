@@ -9,7 +9,7 @@ code review; items marked 🔲 require a live build and test run.
 ## Prerequisites
 
 ```bash
-cd tooling/tree-sitter-stm
+cd tooling/tree-sitter-satsuma
 npm install           # installs tree-sitter-cli
 npm run build         # tree-sitter generate && node-gyp build
 ```
@@ -170,4 +170,4 @@ All criteria verified ✅ (2026-03-18).
 
 Note: native binding rebuild (`node-gyp build`) requires a working C++ toolchain.
 The wasm-based test path (`npm run test:wasm`) was used for corpus verification.
-The existing native binding (compiled earlier) was used for smoke-test and stm-cli tests.
+The existing native binding (compiled earlier) was used for smoke-test and satsuma-cli tests.

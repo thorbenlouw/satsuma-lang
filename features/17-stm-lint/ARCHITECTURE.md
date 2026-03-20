@@ -1,12 +1,12 @@
-# stm lint — Architecture and Diagnostic Contract
+# satsuma lint — Architecture and Diagnostic Contract
 
-This document defines the implementation contract for `stm lint` before command
+This document defines the implementation contract for `satsuma lint` before command
 and rule work begins. It captures the separation between validate and lint,
 the diagnostic schema, exit-code semantics, fix mechanics, and rule registration.
 
 ## Command Separation: validate vs lint
 
-| Concern | `stm validate` | `stm lint` |
+| Concern | `satsuma validate` | `satsuma lint` |
 |---------|----------------|------------|
 | Purpose | Parser/semantic **correctness** | **Policy** and workspace hygiene |
 | Parse errors | Yes (CST ERROR/MISSING nodes) | No — delegate to validate |
@@ -17,8 +17,8 @@ the diagnostic schema, exit-code semantics, fix mechanics, and rule registration
 | Fixable diagnostics | No | Yes |
 | Exit on warnings | No (exit 0 unless errors) | Yes (exit non-zero on any finding) |
 
-**Guiding principle:** `stm validate` answers "is this valid STM?".
-`stm lint` answers "does this STM meet project quality standards?".
+**Guiding principle:** `satsuma validate` answers "is this valid Satsuma?".
+`satsuma lint` answers "does this Satsuma meet project quality standards?".
 Some checks (NL reference quality) are relevant to both; lint resurfaces them
 with fixability metadata rather than duplicating the detection logic.
 
@@ -104,8 +104,8 @@ pipeline.stm:28:3 warning [unresolved-nl-ref] NL reference `stale_name` does not
 | 1 | Internal error (filesystem, parser crash, bad arguments) |
 | 2 | Lint findings present |
 
-Key difference from `stm validate`: validate exits 0 on warnings-only.
-`stm lint` exits 2 on any finding, regardless of severity. This makes lint
+Key difference from `satsuma validate`: validate exits 0 on warnings-only.
+`satsuma lint` exits 2 on any finding, regardless of severity. This makes lint
 suitable for CI gates and pre-commit hooks where any policy violation should
 block.
 
@@ -207,7 +207,7 @@ resolveInput(path)
   → optionally apply fixes
 ```
 
-This is the same pipeline as `stm validate`. The lint command imports the same
+This is the same pipeline as `satsuma validate`. The lint command imports the same
 `resolveInput`, `parseFile`, `extractFileData`, and `buildIndex` functions.
 
 Lint rules receive the full `WorkspaceIndex` and can access schemas, mappings,
@@ -216,7 +216,7 @@ fragments, metrics, nlRefData, fieldArrows, and duplicates.
 ## File Layout
 
 ```
-tooling/stm-cli/src/
+tooling/satsuma-cli/src/
   lint-engine.js         # rule registry, runner, fix applier
   commands/lint.js       # CLI command handler (commander registration)
 test/

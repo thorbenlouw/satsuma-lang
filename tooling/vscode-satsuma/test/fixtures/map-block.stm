@@ -1,0 +1,47 @@
+// SYNTAX TEST "source.satsuma" "map {} value mappings with conditions"
+
+mapping {
+  source { `src` }
+  target { `tgt` }
+
+  // Simple value map
+  CUST_TYPE -> customer_type {
+    map {
+    // < keyword.other.satsuma
+      R: "retail"
+      //^ punctuation.separator.key-value.satsuma
+      B: "business"
+      G: "government"
+      null: "retail"
+      // <- constant.language.null.satsuma
+    }
+  }
+
+  // Conditional map
+  LOYALTY_POINTS -> loyalty_tier {
+    map {
+      < 1000: "bronze"
+      //      ^^^^^^^^ string.quoted.double.satsuma
+      < 5000: "silver"
+      < 10000: "gold"
+      default: "platinum"
+      // <--- keyword.control.default.satsuma
+    }
+  }
+
+  // Wildcard default
+  StageName -> pipeline_stage {
+    map {
+      Prospecting: "top_funnel"
+      Qualification: "mid_funnel"
+      "Value Prop": "mid_funnel"
+      Closed_Won: "closed_won"
+      _: "unknown"
+    }
+  }
+
+  // Inline map
+  ACCOUNT_STATUS -> status {
+    map { A: "active", S: "suspended", C: "closed", D: "delinquent" }
+  }
+}

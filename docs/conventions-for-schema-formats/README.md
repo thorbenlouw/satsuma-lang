@@ -1,13 +1,13 @@
 # Conventions for Schema Formats
 
-STM is designed to represent schemas from any data format — including legacy, binary, positional, and industry-specific interchange standards. The vocabulary token system means format-specific metadata can be expressed directly in `( )` without language changes.
+Satsuma is designed to represent schemas from any data format — including legacy, binary, positional, and industry-specific interchange standards. The vocabulary token system means format-specific metadata can be expressed directly in `( )` without language changes.
 
-This directory documents conventions for representing esoteric and non-standard formats in STM. Each subdirectory covers one format family with:
+This directory documents conventions for representing esoteric and non-standard formats in Satsuma. Each subdirectory covers one format family with:
 
 - **Why** the format is difficult to represent in traditional schema languages
 - **Metadata conventions** — which vocabulary tokens to use and what they mean
 - **How natural language helps** — where `" "` descriptions fill semantic gaps
-- **A short valid STM example**
+- **A short valid Satsuma example**
 
 ## Format Categories
 
@@ -50,13 +50,13 @@ These conventions apply across all formats:
 
 ## Formats Already Covered by Canonical Examples
 
-The `examples/` directory at the repo root contains full working STM files for several formats:
+The `examples/` directory at the repo root contains full working Satsuma files for several formats:
 
 - **EDIFACT** — `examples/edi-to-json.stm` (EDI 856 fixed-length)
 - **XML / WSDL** — `examples/xml-to-parquet.stm` (namespace-qualified XML)
 - **Protobuf** — `examples/protobuf-to-parquet.stm` (tagged fields, repeated groups)
 - **Avro** — referenced in the spec (JSON-based, unions, schema evolution)
-- **OpenAPI** — representable using standard STM metadata (`format`, `enum`, `pii`)
+- **OpenAPI** — representable using standard Satsuma metadata (`format`, `enum`, `pii`)
 - **COBOL → Avro** — `examples/cobol-to-avro.stm` (legacy-to-modern transformation bridge)
 
-The conventions in this directory focus on formats that are **not** yet covered by canonical examples and where STM's mixed-model approach provides the most value.
+The conventions in this directory focus on formats that are **not** yet covered by canonical examples and where Satsuma's mixed-model approach provides the most value.

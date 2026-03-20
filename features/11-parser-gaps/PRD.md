@@ -4,7 +4,7 @@
 
 ## Goal
 
-Close the remaining tree-sitter grammar gaps exposed by the current `examples/` corpus so the parser matches the STM v2 spec and the canonical examples we want to preserve.
+Close the remaining tree-sitter grammar gaps exposed by the current `examples/` corpus so the parser matches the Satsuma v2 spec and the canonical examples we want to preserve.
 
 This feature is explicitly parser-first: each gap should be turned into targeted corpus coverage before grammar changes land.
 
@@ -12,7 +12,7 @@ This feature is explicitly parser-first: each gap should be turned into targeted
 
 ## Problem
 
-The current parser already handles the core STM v2 block structure, but it still fails on multiple examples that the spec treats as canonical. The failures are not random; they cluster around a small set of unsupported constructs:
+The current parser already handles the core Satsuma v2 block structure, but it still fails on multiple examples that the spec treats as canonical. The failures are not random; they cluster around a small set of unsupported constructs:
 
 - richer metadata values
 - richer path syntax
@@ -20,7 +20,7 @@ The current parser already handles the core STM v2 block structure, but it still
 - richer pipeline steps and token-call arguments
 - fragment spreads using multi-word names
 
-As long as these gaps remain, downstream tooling will either reject valid STM or silently recover into misleading CST shapes.
+As long as these gaps remain, downstream tooling will either reject valid Satsuma or silently recover into misleading CST shapes.
 
 ---
 
@@ -350,7 +350,7 @@ import { address_fields } from "common.stm"
 import { channel_codes } from "common.stm"
 ```
 
-Spec status: strongly spec-backed — `STM-V2-SPEC.md` defines import syntax explicitly.
+Spec status: strongly spec-backed — `Satsuma-V2-SPEC.md` defines import syntax explicitly.
 
 ### 13. `ref` with `on` join clause in schema metadata
 
@@ -395,9 +395,9 @@ These are not parser gaps but CLI extraction and composition bugs that affect do
 Reproduction:
 
 ```bash
-stm lineage --from crm_system examples/     # shows no downstream edges
-stm where-used analytics_db examples/       # "No references found"
-stm validate examples/                       # false undefined-ref warnings for all mappings
+satsuma lineage --from crm_system examples/     # shows no downstream edges
+satsuma where-used analytics_db examples/       # "No references found"
+satsuma validate examples/                       # false undefined-ref warnings for all mappings
 ```
 
 ### CLI-2. Multi-source annotated entries pollute source refs

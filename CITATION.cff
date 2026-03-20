@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use Satsuma, please cite it as below."
+title: "Satsuma: A Data Mapping Language"
+type: software
+authors:
+  - family-names: Louw
+    given-names: Thorben
+    affiliation: Equal Experts
+license: MIT
+repository-code: "https://github.com/thorbenlouw/stm-grammar"
+url: "https://github.com/thorbenlouw/stm-grammar"
+abstract: >-
+  Satsuma is a domain-specific language for source-to-target data mapping,
+  designed to replace ad hoc spreadsheets and verbose structured specs
+  with a format that is human-readable, machine-parseable, and suitable
+  for AI-assisted data integration workflows.
+keywords:
+  - data mapping
+  - source-to-target
+  - domain-specific language
+  - ETL
+  - data integration
+  - tree-sitter

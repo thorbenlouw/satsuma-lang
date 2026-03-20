@@ -1,6 +1,6 @@
 # Natural Language Lineage Plan
 
-> **Status: DEFERRED** — Spec/proposal only. Requires language change to STM syntax. See `FUTURE-WORK.md`.
+> **Status: DEFERRED** — Spec/proposal only. Requires language change to Satsuma syntax. See `FUTURE-WORK.md`.
 
 ## Goal
 
@@ -8,7 +8,7 @@ Require every `nl()` transform to declare the source fields it reads as explicit
 
 ## Problem
 
-STM currently allows natural-language transforms in the form `nl("...")`. That is useful for underspecified or custom business logic, but it creates a lineage blind spot:
+Satsuma currently allows natural-language transforms in the form `nl("...")`. That is useful for underspecified or custom business logic, but it creates a lineage blind spot:
 
 - parsers treat `nl()` as opaque
 - linters and graph tooling cannot determine which source fields an `nl()` transform depends on
@@ -94,7 +94,7 @@ Every `nl()` expression must include:
 - one leading string literal prompt
 - one or more path-reference arguments declaring the source fields read by the expression
 
-Bare `nl("...")` is no longer sufficient for valid lineage-capable STM.
+Bare `nl("...")` is no longer sufficient for valid lineage-capable Satsuma.
 
 ### 2. Dependency arguments are lineage inputs
 
@@ -114,12 +114,12 @@ The prompt may mention fields that are omitted, aliased, or described indirectly
 
 ### 4. Path-reference compatibility
 
-`nl()` dependency arguments should use the same path-reference syntax already accepted elsewhere in STM, including:
+`nl()` dependency arguments should use the same path-reference syntax already accepted elsewhere in Satsuma, including:
 
 - sibling fields
 - dotted paths
 - array paths such as `LineItems[].sku`
-- cross-source qualified paths where STM already permits them
+- cross-source qualified paths where Satsuma already permits them
 
 ### 5. Stable structured representation
 
@@ -166,7 +166,7 @@ Add a rule for missing or malformed `nl()` dependencies. The existing warning/er
 
 ### Formatter
 
-`stm fmt` should preserve `nl()` dependency arguments and wrap long dependency lists across lines using normal function-call formatting rules.
+`satsuma fmt` should preserve `nl()` dependency arguments and wrap long dependency lists across lines using normal function-call formatting rules.
 
 ### Lineage / Visualisation
 
@@ -185,10 +185,10 @@ This feature does not require:
 
 This feature is complete when:
 
-1. STM syntax for `nl()` requires explicit dependency path arguments after the prompt string.
+1. Satsuma syntax for `nl()` requires explicit dependency path arguments after the prompt string.
 2. The parser produces a dedicated structured node for `nl()` prompt and dependencies.
 3. Corpus fixtures cover valid and invalid `nl()` declarations, including nested and array-path dependencies.
-4. Example STM files using `nl()` are updated to include dependency arguments.
+4. Example Satsuma files using `nl()` are updated to include dependency arguments.
 5. Lineage consumers can build dependency edges from declared `nl()` inputs without reading prompt text.
 6. Linting reports `nl()` expressions that omit dependency arguments.
 

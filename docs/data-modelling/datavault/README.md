@@ -1,14 +1,14 @@
 # RetailCo International — Data Vault 2.0
 
-A complete Data Vault 2.0 model for a multinational department store, expressed in STM v2 using free-form metadata conventions for hubs, links, satellites, effectivity patterns, and **information marts** that bridge the vault-to-Kimball boundary.
+A complete Data Vault 2.0 model for a multinational department store, expressed in Satsuma v2 using free-form metadata conventions for hubs, links, satellites, effectivity patterns, and **information marts** that bridge the vault-to-Kimball boundary.
 
 ## How it works
 
-STM v2 uses `( )` metadata blocks for **all** annotations — there are no special `@tag` annotations or reserved modelling keywords. Tokens like `hub`, `satellite`, `link`, `scd` are free-form vocabulary interpreted by an LLM, not by a deterministic parser. This means:
+Satsuma v2 uses `( )` metadata blocks for **all** annotations — there are no special `@tag` annotations or reserved modelling keywords. Tokens like `hub`, `satellite`, `link`, `scd` are free-form vocabulary interpreted by an LLM, not by a deterministic parser. This means:
 
 - The **grammar doesn't change** when you add new modelling patterns
 - The **meaning of tokens is conventional**, not enforced — see [LLM-Guidelines.md](LLM-Guidelines.md) for how an LLM should interpret them
-- **Tooling infers mechanical columns** (hash keys, load dates, etc.) based on these conventions — they are never written in the STM file
+- **Tooling infers mechanical columns** (hash keys, load dates, etc.) based on these conventions — they are never written in the Satsuma file
 
 ## Files
 
@@ -45,7 +45,7 @@ These are **vocabulary tokens** in `( )` metadata — not reserved keywords. An 
 
 ## What Tooling Would Infer
 
-The STM files contain **only business fields and descriptive attributes**. The following mechanical columns are inferred by convention:
+The Satsuma files contain **only business fields and descriptive attributes**. The following mechanical columns are inferred by convention:
 
 ### For `hub` (hub_customer, hub_product, hub_store)
 
@@ -109,7 +109,7 @@ Tracks the temporal validity of the product-warehouse relationship. The `driving
 
 ### Vault-to-mart boundary (mart-customer-360.stm, mart-sales.stm)
 
-Cross-layer imports bring vault schemas into mart files as mapping sources. The mart targets use Kimball conventions (`dimension`, `fact`, `grain`, `ref`, `measure`). STM describes both layers with the same vocabulary.
+Cross-layer imports bring vault schemas into mart files as mapping sources. The mart targets use Kimball conventions (`dimension`, `fact`, `grain`, `ref`, `measure`). Satsuma describes both layers with the same vocabulary.
 
 ## Comparison with Kimball
 

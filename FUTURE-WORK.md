@@ -4,7 +4,7 @@ Items below are speculative or aspirational and not ready to implement yet. They
 
 ---
 
-## Excel-to-STM Full Skill (Feature 04, Phases 1-5)
+## Excel-to-Satsuma Full Skill (Feature 04, Phases 1-5)
 
 The lite system prompt (`features/04-excel-to-stm-skill/excel-to-stm-prompt.md`) is authored but untested. The full skill — Python CLI tool (`excel_tool.py`), Claude Code skill prompt with survey/translate/critique phases, and end-to-end validation — is designed but not implemented.
 
@@ -16,11 +16,11 @@ The lite system prompt (`features/04-excel-to-stm-skill/excel-to-stm-prompt.md`)
 
 ---
 
-## STM-to-Excel Export (Feature 05)
+## Satsuma-to-Excel Export (Feature 05)
 
-Generate Excel workbooks from STM files for non-technical stakeholders. Ships in two tiers: lite system prompt + full CLI tool. Neither tier is started.
+Generate Excel workbooks from Satsuma files for non-technical stakeholders. Ships in two tiers: lite system prompt + full CLI tool. Neither tier is started.
 
-**Why deferred:** Lower priority than parser, CLI, and data-modelling foundations. The lite prompt approach should be validated with the Excel-to-STM skill first before investing in the reverse direction.
+**Why deferred:** Lower priority than parser, CLI, and data-modelling foundations. The lite prompt approach should be validated with the Excel-to-Satsuma skill first before investing in the reverse direction.
 
 **Source:** `features/05-stm-to-excel-export/PRD.md`
 

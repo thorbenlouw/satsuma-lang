@@ -1,18 +1,18 @@
-# STM-to-Excel Export
+# Satsuma-to-Excel Export
 
 > **Status: NOT STARTED** — All phases deferred. See `FUTURE-WORK.md`.
 
 ## Goal
 
-Generate beautiful, human-readable Excel workbooks from STM files — optimised for stakeholders who live in Excel, not code. The output is a **read-only, point-in-time snapshot** designed for forums, review meetings, and email distribution to non-technical audiences.
+Generate beautiful, human-readable Excel workbooks from Satsuma files — optimised for stakeholders who live in Excel, not code. The output is a **read-only, point-in-time snapshot** designed for forums, review meetings, and email distribution to non-technical audiences.
 
 This ships in two tiers:
-1. **Lite**: A self-contained system prompt that works with any web LLM (ChatGPT, Gemini, Claude.ai). Paste the STM content and the prompt, get a Python script that produces an `.xlsx` file. Zero setup beyond a Python interpreter.
-2. **Full**: A deterministic CLI tool (`stm-to-excel`) plus a Claude Code skill (`/stm-to-excel`) that reads `.stm` files and writes polished Excel workbooks. No LLM involvement at runtime — the output is reproducible.
+1. **Lite**: A self-contained system prompt that works with any web LLM (ChatGPT, Gemini, Claude.ai). Paste the Satsuma content and the prompt, get a Python script that produces an `.xlsx` file. Zero setup beyond a Python interpreter.
+2. **Full**: A deterministic CLI tool (`satsuma-to-excel`) plus a Claude Code skill (`/satsuma-to-excel`) that reads `.stm` files and writes polished Excel workbooks. No LLM involvement at runtime — the output is reproducible.
 
 ## Problem
 
-STM is the source of truth for data integration mappings. But the people who need to review, approve, and act on those mappings — business analysts, project managers, data stewards, compliance reviewers — often:
+Satsuma is the source of truth for data integration mappings. But the people who need to review, approve, and act on those mappings — business analysts, project managers, data stewards, compliance reviewers — often:
 
 - Don't have (or want) a code editor or terminal
 - Need to annotate, highlight, and filter during review meetings
@@ -25,26 +25,26 @@ Today there is no way to get from `.stm` files back to a high-quality Excel repr
 
 ### Lite variant
 
-1. A user can paste STM content + the system prompt into any capable web LLM and receive a working Python script that generates a well-formatted `.xlsx` file.
+1. A user can paste Satsuma content + the system prompt into any capable web LLM and receive a working Python script that generates a well-formatted `.xlsx` file.
 2. The generated workbook follows the layout and styling conventions defined in this PRD.
 3. The output is visually polished enough to send to a non-technical stakeholder without apology.
 
 ### Full variant
 
-4. A user can run `stm-to-excel input.stm -o output.xlsx` and receive a deterministic, reproducible Excel workbook.
+4. A user can run `satsuma-to-excel input.stm -o output.xlsx` and receive a deterministic, reproducible Excel workbook.
 5. Running the same command twice on the same input produces byte-identical output (excluding timestamp metadata).
-6. The user can scope output to specific targets: `stm-to-excel input.stm -o output.xlsx --targets warehouse,analytics_db`.
+6. The user can scope output to specific targets: `satsuma-to-excel input.stm -o output.xlsx --targets warehouse,analytics_db`.
 7. The tool resolves imports and expands fragments — the workbook is self-contained.
-8. The output handles every STM construct documented in `STM-V2-SPEC.md` gracefully, even if some constructs require prose representation.
+8. The output handles every Satsuma construct documented in `Satsuma-V2-SPEC.md` gracefully, even if some constructs require prose representation.
 9. The workbook is usable in Excel, Google Sheets, and LibreOffice Calc.
 
 ## Non-Goals
 
-- **Round-tripping**: This is a one-way export. The Excel is not designed to be parsed back into STM.
+- **Round-tripping**: This is a one-way export. The Excel is not designed to be parsed back into Satsuma.
 - **Editability**: The workbook is optimised for reading, not editing. No data validation dropdowns, no input cells.
-- **Complete expressiveness**: Some STM constructs (deeply nested array mappings, complex `map { }` conditionals, natural-language transforms) are represented in simplified prose rather than structured cells. This is intentional — the `.stm` file is the machine-readable version.
+- **Complete expressiveness**: Some Satsuma constructs (deeply nested array mappings, complex `map { }` conditionals, natural-language transforms) are represented in simplified prose rather than structured cells. This is intentional — the `.stm` file is the machine-readable version.
 - **Real-time sync**: This is a point-in-time snapshot, not a live view. Re-run the tool to get an updated export.
-- **Parsing STM**: The Full CLI tool consumes a parsed AST (from tree-sitter) or, as a fallback, applies heuristic text parsing. It does not implement a full STM parser itself.
+- **Parsing Satsuma**: The Full CLI tool consumes a parsed AST (from tree-sitter) or, as a fallback, applies heuristic text parsing. It does not implement a full Satsuma parser itself.
 - **Supporting `.xls` output**: Only `.xlsx` (Office Open XML) is supported.
 
 ## Design Principles
@@ -55,7 +55,7 @@ Every layout decision optimises for the person reading the workbook in a meeting
 
 ### 2. Consistent structure, flexible content
 
-The tab structure, column layout, and styling rules are **deterministic and identical** across all STM inputs. A stakeholder who has seen one export immediately knows how to read the next. Content within cells is flexible — natural language transforms, prose descriptions, and comments flow naturally.
+The tab structure, column layout, and styling rules are **deterministic and identical** across all Satsuma inputs. A stakeholder who has seen one export immediately knows how to read the next. Content within cells is flexible — natural language transforms, prose descriptions, and comments flow naturally.
 
 ### 3. Progressive disclosure
 
@@ -146,13 +146,13 @@ If the mapping block uses the short form `mapping { ... }` (no explicit source/t
 | G | Req | 5 | "Yes" if target field has `(required)` metadata. Blank otherwise |
 | H | Transform | 50 | Human-readable transformation description (see below) |
 | I | Tags | 15 | Comma-separated metadata tokens: `pk`, `pii`, `encrypt`, `unique`, `indexed`, etc. Merged from both source and target metadata |
-| J | Notes | 40 | Comments from the STM file, colour-coded by type (see below) |
+| J | Notes | 40 | Comments from the Satsuma file, colour-coded by type (see below) |
 
 **Transform column — human-readable notation:**
 
-STM syntax is translated to a friendlier form for non-technical readers:
+Satsuma syntax is translated to a friendlier form for non-technical readers:
 
-| STM syntax | Excel representation |
+| Satsuma syntax | Excel representation |
 |------------|---------------------|
 | `{ trim \| lowercase \| validate_email }` | `trim → lowercase → validate email` |
 | `map { A: "active", S: "suspended" }` | `A = "active", S = "suspended"` |
@@ -277,9 +277,9 @@ Tabs are ordered to follow the stakeholder's reading flow:
 
 1. `Overview` — always first
 2. `Issues` — always second (even if empty)
-3. Mapping tabs — ordered as they appear in the STM file(s)
-4. Target schema tabs — ordered as they appear in the STM file(s)
-5. Source schema tabs — ordered as they appear in the STM file(s)
+3. Mapping tabs — ordered as they appear in the Satsuma file(s)
+4. Target schema tabs — ordered as they appear in the Satsuma file(s)
+5. Source schema tabs — ordered as they appear in the Satsuma file(s)
 6. Lookup/reference tabs — alphabetical by name
 
 ---
@@ -362,11 +362,11 @@ The Lite variant ships first because it:
 
 ### Concept
 
-A self-contained Markdown file (`stm-to-excel-prompt.md`) that a user pastes into a web LLM alongside their STM content. The LLM generates a complete Python script (using `openpyxl`) that, when run, produces the formatted Excel workbook.
+A self-contained Markdown file (`satsuma-to-excel-prompt.md`) that a user pastes into a web LLM alongside their Satsuma content. The LLM generates a complete Python script (using `openpyxl`) that, when run, produces the formatted Excel workbook.
 
 The user's workflow:
 1. Paste the system prompt into a web LLM
-2. Paste the STM file content (or upload the `.stm` file)
+2. Paste the Satsuma file content (or upload the `.stm` file)
 3. LLM generates a Python script
 4. User runs the script locally (or via Code Interpreter) to produce the `.xlsx`
 5. User opens the workbook and reviews
@@ -375,7 +375,7 @@ The user's workflow:
 
 #### 1. Role & Goal (~100 tokens)
 
-You are an STM-to-Excel export specialist. The user will provide STMv2 file content. Your job is to generate a Python script (using openpyxl) that produces a beautifully formatted Excel workbook representing the STM content, optimised for non-technical stakeholders.
+You are a Satsuma-to-Excel export specialist. The user will provide Satsuma v2 file content. Your job is to generate a Python script (using openpyxl) that produces a beautifully formatted Excel workbook representing the Satsuma content, optimised for non-technical stakeholders.
 
 #### 2. Workbook Layout Specification (~800 tokens)
 
@@ -399,7 +399,7 @@ The colour palette, typography, and Excel features from the Styling Specificatio
 
 #### 5. Transform Translation Rules (~300 tokens)
 
-The human-readable notation table: how to convert STM pipe chains (`|`), `map { }` blocks, natural-language strings (`"..."`), and other constructs into friendly text.
+The human-readable notation table: how to convert Satsuma pipe chains (`|`), `map { }` blocks, natural-language strings (`"..."`), and other constructs into friendly text.
 
 #### 6. Row Grouping Rules (~200 tokens)
 
@@ -407,11 +407,11 @@ When and how to create parent/child row groups for conditional `map { }` blocks,
 
 #### 7. Example (~400 tokens)
 
-A small STM snippet and the expected Python code it should produce, demonstrating the layout, styling, and transform translation.
+A small Satsuma snippet and the expected Python code it should produce, demonstrating the layout, styling, and transform translation.
 
 #### 8. Generation Rules (~150 tokens)
 
-- Output a single, complete Python script that takes the STM content as a string constant and outputs an `.xlsx` file.
+- Output a single, complete Python script that takes the Satsuma content as a string constant and outputs an `.xlsx` file.
 - Use only `openpyxl` — no other dependencies.
 - The script must be runnable as-is: `python generate_workbook.py`
 - Include a shebang line and a brief usage comment.
@@ -422,7 +422,7 @@ A small STM snippet and the expected Python code it should produce, demonstratin
 - Don't skip tabs or columns defined in the layout spec.
 - Don't invent styling beyond what's specified.
 - Don't generate partial scripts or pseudo-code.
-- Don't attempt to parse STM with regex for the Full tool — this prompt is for generating a one-off script for the specific input provided.
+- Don't attempt to parse Satsuma with regex for the Full tool — this prompt is for generating a one-off script for the specific input provided.
 
 ### Total Prompt Size
 
@@ -430,18 +430,18 @@ A small STM snippet and the expected Python code it should produce, demonstratin
 
 ### Lite Variant Limitations
 
-- The LLM parses STM by reading it as text — structural errors in the STM may produce incorrect output.
+- The LLM parses Satsuma by reading it as text — structural errors in the Satsuma may produce incorrect output.
 - No tree-sitter validation of the input.
-- The generated script is specific to the provided STM content — it is not a general-purpose tool.
-- Complex STM files (multiple imports, many fragments) may produce less polished output.
+- The generated script is specific to the provided Satsuma content — it is not a general-purpose tool.
+- Complex Satsuma files (multiple imports, many fragments) may produce less polished output.
 - The LLM may take creative liberties with transform translation — the prompt guides but cannot enforce.
 
 ### Lite Variant File Location
 
 ```
-features/05-stm-to-excel-export/
+features/05-satsuma-to-excel-export/
 ├── PRD.md                           # This document
-└── stm-to-excel-prompt.md          # The self-contained lite prompt
+└── satsuma-to-excel-prompt.md          # The self-contained lite prompt
 ```
 
 ---
@@ -450,13 +450,13 @@ features/05-stm-to-excel-export/
 
 ### Concept
 
-A deterministic Python CLI tool that reads STM files (via tree-sitter AST or heuristic fallback) and produces a formatted Excel workbook. No LLM involvement at runtime — the output is reproducible and identical for identical input.
+A deterministic Python CLI tool that reads Satsuma files (via tree-sitter AST or heuristic fallback) and produces a formatted Excel workbook. No LLM involvement at runtime — the output is reproducible and identical for identical input.
 
 ### Architecture
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌────────────┐
-│  .stm files │ ──► │  STM Parser  │ ──► │  Workbook    │ ──► │  .xlsx     │
+│  .stm files │ ──► │  Satsuma Parser  │ ──► │  Workbook    │ ──► │  .xlsx     │
 │  (input)    │     │  (tree-sitter│     │  Generator   │     │  (output)  │
 │             │     │   or fallback)│     │  (openpyxl)  │     │            │
 └─────────────┘     └──────────────┘     └──────────────┘     └────────────┘
@@ -466,11 +466,11 @@ A deterministic Python CLI tool that reads STM files (via tree-sitter AST or heu
                     dataclasses)
 ```
 
-#### Layer 1: STM Parser
+#### Layer 1: Satsuma Parser
 
 Reads `.stm` files and produces a structured Python data model (dataclasses). Two strategies:
 
-1. **Tree-sitter (preferred)**: Use the project's tree-sitter grammar to parse STM into a CST, then walk the tree to extract blocks, fields, mappings, transforms, and comments. This is authoritative and handles all valid STM.
+1. **Tree-sitter (preferred)**: Use the project's tree-sitter grammar to parse Satsuma into a CST, then walk the tree to extract blocks, fields, mappings, transforms, and comments. This is authoritative and handles all valid Satsuma.
 
 2. **Heuristic fallback**: If tree-sitter is not available (parser not compiled), fall back to regex/text-based extraction. This handles the common cases (integration blocks, schema blocks with fields and `( )` metadata, mapping blocks with `->` arrows and `{ }` transforms, comments) but may miss edge cases. A warning is included in the workbook's Overview tab when the fallback parser is used.
 
@@ -523,7 +523,7 @@ class MappingEntry:
 
 @dataclass
 class Transform:
-    raw: str                     # original STM text from { }
+    raw: str                     # original Satsuma text from { }
     human_readable: str          # translated for Excel
     kind: str                    # "direct", "chain", "conditional", "map", "nl", "nested"
 
@@ -568,7 +568,7 @@ Consumes the scoped data model and produces the `.xlsx` file using `openpyxl`. T
 
 ### Transform Translation
 
-The workbook generator applies deterministic text transformations to convert STM syntax to human-readable form. The translation rules are applied in order:
+The workbook generator applies deterministic text transformations to convert Satsuma syntax to human-readable form. The translation rules are applied in order:
 
 ```python
 TRANSFORM_TRANSLATIONS = [
@@ -642,14 +642,14 @@ Natural-language strings in transforms are passed through verbatim:
 ### CLI Interface
 
 ```
-stm-to-excel <input.stm> [additional.stm ...] -o <output.xlsx> [options]
+satsuma-to-excel <input.stm> [additional.stm ...] -o <output.xlsx> [options]
 ```
 
 **Arguments:**
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `<input.stm>` | Yes | One or more STM files to process. Imports are resolved relative to each file's directory. |
+| `<input.stm>` | Yes | One or more Satsuma files to process. Imports are resolved relative to each file's directory. |
 | `-o, --output` | Yes | Output `.xlsx` file path |
 
 **Options:**
@@ -667,27 +667,27 @@ stm-to-excel <input.stm> [additional.stm ...] -o <output.xlsx> [options]
 
 ```bash
 # Export everything
-stm-to-excel customer-migration.stm -o customer-migration.xlsx
+satsuma-to-excel customer-migration.stm -o customer-migration.xlsx
 
 # Export only the warehouse target
-stm-to-excel customer-migration.stm -o warehouse-only.xlsx --targets postgres_db
+satsuma-to-excel customer-migration.stm -o warehouse-only.xlsx --targets postgres_db
 
 # Multiple input files (with imports between them)
-stm-to-excel main.stm common.stm -o full-export.xlsx
+satsuma-to-excel main.stm common.stm -o full-export.xlsx
 
 # Reproducible build (fixed timestamp)
-stm-to-excel customer-migration.stm -o export.xlsx --timestamp "2026-03-17T00:00:00Z"
+satsuma-to-excel customer-migration.stm -o export.xlsx --timestamp "2026-03-17T00:00:00Z"
 ```
 
 ### Claude Code Skill
 
-In addition to the CLI, a Claude Code skill (`/stm-to-excel`) provides a conversational wrapper:
+In addition to the CLI, a Claude Code skill (`/satsuma-to-excel`) provides a conversational wrapper:
 
 ```
-/stm-to-excel customer-migration.stm -o customer-migration.xlsx
+/satsuma-to-excel customer-migration.stm -o customer-migration.xlsx
 ```
 
-The skill prompt (`.claude/commands/stm-to-excel.md`) instructs the agent to:
+The skill prompt (`.claude/commands/satsuma-to-excel.md`) instructs the agent to:
 1. Validate the input file exists
 2. Run the CLI tool
 3. Open and summarise the output (tab count, mapping count, issue count)
@@ -698,13 +698,13 @@ This is a thin wrapper — the CLI does all the real work.
 ### File Structure
 
 ```
-features/05-stm-to-excel-export/
+features/05-satsuma-to-excel-export/
 ├── PRD.md                           # This document
-├── stm-to-excel-prompt.md          # Lite system prompt
-├── stm_to_excel/                   # Python package
+├── satsuma-to-excel-prompt.md          # Lite system prompt
+├── satsuma_to_excel/                   # Python package
 │   ├── __init__.py
 │   ├── __main__.py                 # CLI entry point
-│   ├── parser.py                   # STM parser (tree-sitter + fallback)
+│   ├── parser.py                   # Satsuma parser (tree-sitter + fallback)
 │   ├── model.py                    # Data model (dataclasses)
 │   ├── scoper.py                   # Target scoping logic
 │   ├── transforms.py               # Transform translation rules
@@ -715,30 +715,30 @@ features/05-stm-to-excel-export/
     ├── test_parser.py
     ├── test_transforms.py
     ├── test_generator.py
-    └── fixtures/                    # Sample STM files + expected outputs
+    └── fixtures/                    # Sample Satsuma files + expected outputs
 ```
 
 ### Dependency Management
 
 - **Runtime**: `openpyxl` (pure Python, no C dependencies)
-- **Optional**: `tree-sitter`, `tree-sitter-stm` (for authoritative parsing — falls back to heuristic if unavailable)
+- **Optional**: `tree-sitter`, `tree-sitter-satsuma` (for authoritative parsing — falls back to heuristic if unavailable)
 - **Dev**: `pytest` for testing
 
 The tool can be installed via:
 ```bash
-pip install -e features/05-stm-to-excel-export/
+pip install -e features/05-satsuma-to-excel-export/
 ```
 
 Or run directly:
 ```bash
-python -m stm_to_excel customer-migration.stm -o output.xlsx
+python -m satsuma_to_excel customer-migration.stm -o output.xlsx
 ```
 
 ---
 
 ## Risks
 
-### STM constructs that don't tabulate well
+### Satsuma constructs that don't tabulate well
 
 Deeply nested `record`/`list` structures (3+ levels), multi-source joins, and complex natural-language transforms don't map cleanly to rows and columns.
 
@@ -746,11 +746,11 @@ Deeply nested `record`/`list` structures (3+ levels), multi-source joins, and co
 
 ### Transform translation fidelity
 
-The deterministic translation rules may produce awkward phrasing for uncommon transform chains, or may not cover every possible STM pipeline token. Natural-language strings (`"..."`) in transforms are passed through verbatim, which works well for most cases but mixed NL + mechanical pipelines may read awkwardly.
+The deterministic translation rules may produce awkward phrasing for uncommon transform chains, or may not cover every possible Satsuma pipeline token. Natural-language strings (`"..."`) in transforms are passed through verbatim, which works well for most cases but mixed NL + mechanical pipelines may read awkwardly.
 
-**Mitigation**: The translation rules handle the documented STM pipeline tokens from `STM-V2-SPEC.md`. Unknown tokens fall through as raw STM syntax with a light italic style, making them visually distinct but still informative. Natural-language strings are the user's own words, so they pass through cleanly. The Lite variant is more creative (LLM-powered translation) while the Full variant is predictable.
+**Mitigation**: The translation rules handle the documented Satsuma pipeline tokens from `Satsuma-V2-SPEC.md`. Unknown tokens fall through as raw Satsuma syntax with a light italic style, making them visually distinct but still informative. Natural-language strings are the user's own words, so they pass through cleanly. The Lite variant is more creative (LLM-powered translation) while the Full variant is predictable.
 
-### Large STM files
+### Large Satsuma files
 
 A file with 500+ mapping entries produces a very long mapping tab.
 
@@ -758,15 +758,15 @@ A file with 500+ mapping entries produces a very long mapping tab.
 
 ### Import resolution
 
-STM files can import from other files using relative paths. The tool must resolve these correctly.
+Satsuma files can import from other files using relative paths. The tool must resolve these correctly.
 
-**Mitigation**: Import resolution follows the same semantics as the STM spec: paths are relative to the importing file's directory. The tool reads imported files recursively and flattens the result. Circular imports are detected and reported as errors.
+**Mitigation**: Import resolution follows the same semantics as the Satsuma spec: paths are relative to the importing file's directory. The tool reads imported files recursively and flattens the result. Circular imports are detected and reported as errors.
 
 ### Tree-sitter parser unavailable
 
 Not every environment will have the tree-sitter parser compiled.
 
-**Mitigation**: The heuristic fallback parser handles common STM patterns. A warning in the Overview tab notes when the fallback was used: "Note: This workbook was generated using heuristic parsing. Some constructs may not be fully represented. For authoritative output, compile the tree-sitter-stm parser."
+**Mitigation**: The heuristic fallback parser handles common Satsuma patterns. A warning in the Overview tab notes when the fallback was used: "Note: This workbook was generated using heuristic parsing. Some constructs may not be fully represented. For authoritative output, compile the tree-sitter-satsuma parser."
 
 ---
 
@@ -774,7 +774,7 @@ Not every environment will have the tree-sitter parser compiled.
 
 ### Phase 1: Lite system prompt
 
-Author `stm-to-excel-prompt.md` by condensing this PRD's layout, styling, and translation rules into a self-contained LLM prompt. Test against the canonical examples (`db-to-db.stm`, `sfdc_to_snowflake.stm`, `multi-source-hub.stm`) on ChatGPT and Claude.ai. Iterate on prompt wording and example quality.
+Author `satsuma-to-excel-prompt.md` by condensing this PRD's layout, styling, and translation rules into a self-contained LLM prompt. Test against the canonical examples (`db-to-db.stm`, `sfdc_to_snowflake.stm`, `multi-source-hub.stm`) on ChatGPT and Claude.ai. Iterate on prompt wording and example quality.
 
 This phase validates the workbook design before investing in deterministic tooling.
 
@@ -784,7 +784,7 @@ Implement `model.py` (dataclasses) and `parser.py` (heuristic text-based parser)
 
 ### Phase 3: Transform translation
 
-Implement `transforms.py` — the deterministic STM-to-human-readable translation rules. Unit test against a comprehensive set of transform expressions.
+Implement `transforms.py` — the deterministic Satsuma-to-human-readable translation rules. Unit test against a comprehensive set of transform expressions.
 
 ### Phase 4: Workbook generator
 
@@ -796,11 +796,11 @@ Implement `scoper.py` (dependency resolution) and `__main__.py` (CLI argument pa
 
 ### Phase 6: Tree-sitter parser integration
 
-Add tree-sitter-based parsing as the preferred strategy in `parser.py`. This requires the tree-sitter-stm grammar to be compiled. The heuristic parser remains as a fallback.
+Add tree-sitter-based parsing as the preferred strategy in `parser.py`. This requires the tree-sitter-satsuma grammar to be compiled. The heuristic parser remains as a fallback.
 
 ### Phase 7: Claude Code skill
 
-Create `.claude/commands/stm-to-excel.md` as a thin wrapper around the CLI tool.
+Create `.claude/commands/satsuma-to-excel.md` as a thin wrapper around the CLI tool.
 
 ### Phase 8: End-to-end validation
 

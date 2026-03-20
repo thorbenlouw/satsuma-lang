@@ -1,13 +1,13 @@
 # LLM Guidelines: Kimball Dimensional Modelling Metadata Conventions
 
-These guidelines tell an LLM how to interpret the free-form metadata tokens used in STM files that follow Kimball dimensional modelling conventions. None of these tokens are reserved keywords or enforced by the STM grammar — they are **vocabulary conventions** that carry meaning by agreement.
+These guidelines tell an LLM how to interpret the free-form metadata tokens used in Satsuma files that follow Kimball dimensional modelling conventions. None of these tokens are reserved keywords or enforced by the Satsuma grammar — they are **vocabulary conventions** that carry meaning by agreement.
 
 ## Core Principle
 
 When you see metadata tokens like `dimension`, `fact`, `grain` in a schema's `( )` block, they communicate the **structural role** of that schema in a Kimball star schema. Your job is to:
 
 1. **Recognise the pattern** from the tokens
-2. **Infer the mechanical columns** that the pattern implies (but that are omitted from the STM file)
+2. **Infer the mechanical columns** that the pattern implies (but that are omitted from the Satsuma file)
 3. **Understand the relationships** between schemas based on `ref`, `grain`, `natural_key`, etc.
 4. **Classify measures** using `measure additive`, `measure semi_additive`, or `measure non_additive`
 
@@ -236,7 +236,7 @@ When a schema marked `dimension` or `fact` is imported into another file:
 
 ## How to Generate DDL from These Conventions
 
-When generating physical DDL from a Kimball STM file:
+When generating physical DDL from a Kimball Satsuma file:
 
 1. Read the schema-level metadata tokens to determine the entity type (dimension/fact)
 2. For `dimension` + `scd 2`: add surrogate key, valid_from/to, is_current, row_hash

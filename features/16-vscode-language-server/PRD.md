@@ -1,22 +1,22 @@
-# Feature 16 — VS Code Language Server for STM
+# Feature 16 — VS Code Language Server for Satsuma
 
 > **Status: NOT STARTED**
 
 ## Goal
 
-Ship a VS Code extension that turns the existing TextMate syntax highlighter (Feature 07) into a full-featured language-aware editor experience for STM. The extension combines a Language Server Protocol (LSP) server backed by the tree-sitter parser with VS Code-specific features (commands, webviews, CodeLens) that surface the CLI's structural analysis directly in the editor.
+Ship a VS Code extension that turns the existing TextMate syntax highlighter (Feature 07) into a full-featured language-aware editor experience for Satsuma. The extension combines a Language Server Protocol (LSP) server backed by the tree-sitter parser with VS Code-specific features (commands, webviews, CodeLens) that surface the CLI's structural analysis directly in the editor.
 
 ---
 
 ## Problem
 
-STM now has strong tooling foundations — a tree-sitter parser with 190+ corpus tests, a 16-command CLI for structural extraction, tree-sitter queries for highlights/locals/folds, and a TextMate grammar for basic syntax colouring. But the editing experience is still "coloured text in a file":
+Satsuma now has strong tooling foundations — a tree-sitter parser with 190+ corpus tests, a 16-command CLI for structural extraction, tree-sitter queries for highlights/locals/folds, and a TextMate grammar for basic syntax colouring. But the editing experience is still "coloured text in a file":
 
 1. **No navigation.** A user reading a mapping that references `crm_customers` has to manually search for that schema. There is no go-to-definition, no find-references, no breadcrumb trail.
-2. **No live feedback.** Validation errors and semantic warnings (`stm validate`) only surface when run from the terminal. Parse errors sit silently in the file.
+2. **No live feedback.** Validation errors and semantic warnings (`satsuma validate`) only surface when run from the terminal. Parse errors sit silently in the file.
 3. **No structural overview.** The outline panel is empty. Users can't see or jump to schemas, mappings, fragments, or metrics without scrolling.
 4. **No completions.** Writing `source { ... }` requires memorising schema names. Arrow targets require memorising field names. There is no IntelliSense.
-5. **No lineage visibility.** The `stm lineage` and `stm graph` commands produce useful output, but only in the terminal. There is no way to visualise data flow in the editor.
+5. **No lineage visibility.** The `satsuma lineage` and `satsuma graph` commands produce useful output, but only in the terminal. There is no way to visualise data flow in the editor.
 6. **TextMate approximation limits.** Context-sensitive constructs (`source`/`target` as keyword vs. field name, `map` as keyword vs. identifier) can only be disambiguated by parser-backed semantic tokens, which require an LSP.
 
 The tree-sitter queries (`locals.scm`, `highlights.scm`, `folds.scm`) were written specifically to enable an LSP. The CLI commands produce exactly the structured data an extension needs. The gap is the glue layer that connects these to the VS Code API.
@@ -26,8 +26,8 @@ The tree-sitter queries (`locals.scm`, `highlights.scm`, `folds.scm`) were writt
 ## Design Principles
 
 1. **Parser-backed, not heuristic.** Every feature derives from the tree-sitter CST or the CLI's structural analysis. No regex hacks in the extension.
-2. **Workspace-aware.** STM workspaces span multiple files. Navigation, completions, and diagnostics work across the entire workspace, not just the active file.
-3. **CLI as the engine.** The extension calls `stm` CLI commands (via `--json`) for workspace-level operations rather than reimplementing extraction logic. The LSP server handles file-level operations directly via tree-sitter.
+2. **Workspace-aware.** Satsuma workspaces span multiple files. Navigation, completions, and diagnostics work across the entire workspace, not just the active file.
+3. **CLI as the engine.** The extension calls `satsuma` CLI commands (via `--json`) for workspace-level operations rather than reimplementing extraction logic. The LSP server handles file-level operations directly via tree-sitter.
 4. **Progressive enhancement.** Each phase delivers standalone value. Phase 1 (LSP core) is useful without Phase 2 (commands) or Phase 3 (visualisation).
 5. **Offline and fast.** No network dependencies. Parse on keystroke. Workspace indexing on open/save.
 
@@ -36,8 +36,8 @@ The tree-sitter queries (`locals.scm`, `highlights.scm`, `folds.scm`) were writt
 ## Non-Goals
 
 - Embedding an LLM in the extension (NL interpretation stays with the user/agent, not the editor).
-- STM formatting or auto-fix (a separate `stm fmt` feature).
-- Debugging or step-through execution (STM is declarative, not executable).
+- Satsuma formatting or auto-fix (a separate `satsuma fmt` feature).
+- Debugging or step-through execution (Satsuma is declarative, not executable).
 - Publishing to the VS Code Marketplace in Phase 1 (local install via `.vsix` is fine initially).
 - Supporting editors other than VS Code (Neovim/Zed tree-sitter integration is future work).
 
@@ -58,10 +58,10 @@ The tree-sitter queries (`locals.scm`, `highlights.scm`, `folds.scm`) were writt
           │                 │                 │
           ▼                 ▼                 ▼
 ┌──────────────────┐  ┌──────────┐  ┌──────────────────┐
-│   LSP Server     │  │ stm CLI  │  │  stm graph       │
+│   LSP Server     │  │ satsuma CLI  │  │  satsuma graph       │
 │   (Node.js)      │  │ --json   │  │  --json           │
 │                  │  └──────────┘  └──────────────────┘
-│  tree-sitter-stm │
+│  tree-sitter-satsuma │
 │  queries/*.scm   │
 │  workspace index │
 └──────────────────┘
@@ -69,7 +69,7 @@ The tree-sitter queries (`locals.scm`, `highlights.scm`, `folds.scm`) were writt
 
 ### LSP Server
 
-A standalone Node.js process using `vscode-languageserver` and `vscode-languageclient`. It loads `tree-sitter-stm` directly (same binding the CLI uses) and maintains an in-memory workspace index.
+A standalone Node.js process using `vscode-languageserver` and `vscode-languageclient`. It loads `tree-sitter-satsuma` directly (same binding the CLI uses) and maintains an in-memory workspace index.
 
 **Per-file (on edit):**
 - Incremental tree-sitter parse
@@ -81,17 +81,17 @@ A standalone Node.js process using `vscode-languageserver` and `vscode-languagec
 **Per-workspace (on open/save):**
 - Index all `.stm` files: block names, field names, fragment names, transform names, import paths
 - Reference graph for go-to-definition and find-references (powered by `locals.scm` patterns)
-- Semantic validation (unresolved references, duplicate names) — equivalent to `stm validate`
+- Semantic validation (unresolved references, duplicate names) — equivalent to `satsuma validate`
 
 ### CLI Integration
 
-For workspace-level operations that the CLI already handles well, the extension shells out to `stm <command> --json` rather than reimplementing:
+For workspace-level operations that the CLI already handles well, the extension shells out to `satsuma <command> --json` rather than reimplementing:
 
-- `stm lineage` — for lineage exploration commands
-- `stm graph` — for visualisation data
-- `stm where-used` — for cross-file reference search
-- `stm warnings` — for warning/question aggregation
-- `stm diff` — for structural comparison
+- `satsuma lineage` — for lineage exploration commands
+- `satsuma graph` — for visualisation data
+- `satsuma where-used` — for cross-file reference search
+- `satsuma warnings` — for warning/question aggregation
+- `satsuma diff` — for structural comparison
 
 ### Extension Client
 
@@ -164,7 +164,7 @@ Right-click a schema/fragment/transform name → find all references across the 
 
 #### 1.4 Document Symbols & Outline
 
-Populate the Outline panel and breadcrumbs with the structural hierarchy of an STM file.
+Populate the Outline panel and breadcrumbs with the structural hierarchy of a Satsuma file.
 
 ```
 schema customers
@@ -280,7 +280,7 @@ Inline annotations on blocks that show structural facts at a glance without runn
 **Acceptance criteria:**
 - [ ] CodeLens appears above every schema, mapping, fragment, and metric block
 - [ ] Click on "used in M mappings" opens a reference list
-- [ ] Click on "K unmapped" runs `stm fields --unmapped-by` and shows results
+- [ ] Click on "K unmapped" runs `satsuma fields --unmapped-by` and shows results
 - [ ] CodeLens updates on save
 
 #### 2.3 VS Code Commands
@@ -289,17 +289,17 @@ Command palette entries that invoke CLI operations and present results in the ed
 
 | Command | CLI backing | Presentation |
 |---|---|---|
-| `STM: Validate Workspace` | `stm validate --json` | Populate Problems panel |
-| `STM: Show Lineage From...` | `stm lineage --from <name> --json` | Quick pick → output panel or webview |
-| `STM: Where Used` | `stm where-used <name> --json` | References panel |
-| `STM: Show Warnings` | `stm warnings --json` | Problems panel (warnings) + `//?` as info |
-| `STM: Compare Workspaces` | `stm diff <a> <b> --json` | Diff-style output panel |
-| `STM: Show Workspace Summary` | `stm summary --json` | Custom tree view or output |
-| `STM: Show Arrows for Field` | `stm arrows <field> --json` | Quick pick from cursor → output |
-| `STM: Match Fields` | `stm match-fields --json` | Side-by-side panel |
+| `Satsuma: Validate Workspace` | `satsuma validate --json` | Populate Problems panel |
+| `Satsuma: Show Lineage From...` | `satsuma lineage --from <name> --json` | Quick pick → output panel or webview |
+| `Satsuma: Where Used` | `satsuma where-used <name> --json` | References panel |
+| `Satsuma: Show Warnings` | `satsuma warnings --json` | Problems panel (warnings) + `//?` as info |
+| `Satsuma: Compare Workspaces` | `satsuma diff <a> <b> --json` | Diff-style output panel |
+| `Satsuma: Show Workspace Summary` | `satsuma summary --json` | Custom tree view or output |
+| `Satsuma: Show Arrows for Field` | `satsuma arrows <field> --json` | Quick pick from cursor → output |
+| `Satsuma: Match Fields` | `satsuma match-fields --json` | Side-by-side panel |
 
 **Acceptance criteria:**
-- [ ] All commands appear in the command palette with `STM:` prefix
+- [ ] All commands appear in the command palette with `Satsuma:` prefix
 - [ ] Commands that need a block name infer it from cursor position or prompt via quick pick
 - [ ] Output appears in appropriate VS Code UI (Problems panel, references, output channel)
 - [ ] Commands work across multi-file workspaces
@@ -328,7 +328,7 @@ Render the semantic graph and lineage as interactive diagrams inside VS Code.
 
 #### 3.1 Workspace Graph Webview
 
-A webview panel that renders the `stm graph` output as an interactive node-edge diagram.
+A webview panel that renders the `satsuma graph` output as an interactive node-edge diagram.
 
 - **Nodes:** Schemas (rectangles), mappings (diamonds), metrics (circles), fragments (rounded rectangles)
 - **Edges:** Arrows between nodes showing data flow direction, coloured by classification (structural=solid, nl=dashed, mixed=dotted)
@@ -336,10 +336,10 @@ A webview panel that renders the `stm graph` output as an interactive node-edge 
 - **Layout:** Auto-layout with dagre or ELK. Manual repositioning optional.
 - **Rendering:** Use a lightweight library (e.g., D3, vis-network, or React Flow) in the webview. Keep the dependency footprint small.
 
-Data source: `stm graph --json` (or `--compact` for large workspaces).
+Data source: `satsuma graph --json` (or `--compact` for large workspaces).
 
 **Acceptance criteria:**
-- [ ] `STM: Show Workspace Graph` opens a webview panel
+- [ ] `Satsuma: Show Workspace Graph` opens a webview panel
 - [ ] All schemas, mappings, metrics, and fragments appear as nodes
 - [ ] Edges show data flow direction with classification colouring
 - [ ] Clicking a node opens the definition in the editor
@@ -350,13 +350,13 @@ Data source: `stm graph --json` (or `--compact` for large workspaces).
 
 Trace a single field's journey from source to target across all mappings.
 
-- Select a field (cursor on a field declaration or arrow path) → `STM: Trace Field Lineage`
-- The extension calls `stm arrows <field> --json` recursively, following the chain
+- Select a field (cursor on a field declaration or arrow path) → `Satsuma: Trace Field Lineage`
+- The extension calls `satsuma arrows <field> --json` recursively, following the chain
 - Renders as a horizontal flow diagram: `source.field → [transform] → mid.field → [transform] → target.field`
 - NL transforms shown with a distinct indicator (the user/agent interprets them, not the extension)
 
 **Acceptance criteria:**
-- [ ] `STM: Trace Field Lineage` works from cursor position
+- [ ] `Satsuma: Trace Field Lineage` works from cursor position
 - [ ] Multi-hop lineage renders as a connected flow
 - [ ] NL transforms are visually distinct from structural transforms
 - [ ] Clicking a node in the lineage jumps to the definition
@@ -365,8 +365,8 @@ Trace a single field's journey from source to target across all mappings.
 
 Visual overlay showing which target fields are mapped and which are not.
 
-- Open a mapping → `STM: Show Mapping Coverage`
-- The extension calls `stm fields <target> --unmapped-by <mapping> --json`
+- Open a mapping → `Satsuma: Show Mapping Coverage`
+- The extension calls `satsuma fields <target> --unmapped-by <mapping> --json`
 - In the editor: mapped fields get a green gutter marker, unmapped fields get a red one
 - In the webview: target schema rendered as a field list with coverage percentage
 
@@ -381,15 +381,15 @@ Visual overlay showing which target fields are mapped and which are not.
 
 ### Technology Choices
 
-- **LSP server:** Node.js with `vscode-languageserver` / `vscode-languageclient`. Same runtime as the CLI — shares `tree-sitter-stm` bindings, avoids a second language.
-- **Tree-sitter integration:** Use `tree-sitter` Node bindings directly (same as `stm-cli`). The server parses files itself for per-keystroke operations; delegates to CLI for workspace-level commands.
+- **LSP server:** Node.js with `vscode-languageserver` / `vscode-languageclient`. Same runtime as the CLI — shares `tree-sitter-satsuma` bindings, avoids a second language.
+- **Tree-sitter integration:** Use `tree-sitter` Node bindings directly (same as `satsuma-cli`). The server parses files itself for per-keystroke operations; delegates to CLI for workspace-level commands.
 - **Webview rendering:** Lightweight — vanilla JS + D3 or a small React app bundled with esbuild. No heavy framework.
 - **Extension bundling:** esbuild to produce a single extension bundle. Tree-sitter native bindings bundled per platform.
 
 ### Project Structure
 
 ```
-tooling/vscode-stm/
+tooling/vscode-satsuma/
   package.json              (extended with activationEvents, commands, LSP config)
   src/
     extension.ts            (activation, LSP client start, command registration)
@@ -421,7 +421,7 @@ tooling/vscode-stm/
       rename.ts             (workspace-wide rename)
     package.json            (server dependencies)
   syntaxes/
-    stm.tmLanguage.json     (existing, unchanged)
+    satsuma.tmLanguage.json     (existing, unchanged)
   language-configuration.json (existing, unchanged)
   test/
     fixtures/               (existing TextMate tests)
@@ -440,9 +440,9 @@ tooling/vscode-stm/
 
 ## Dependencies
 
-- **Feature 07 (TextMate grammar):** COMPLETED. The extension builds on the existing `vscode-stm` package.
-- **Feature 08 (tree-sitter parser v2):** COMPLETED. The LSP server uses `tree-sitter-stm` directly.
-- **Features 09+10 (CLI):** COMPLETED. The extension shells out to `stm` CLI for workspace-level operations.
+- **Feature 07 (TextMate grammar):** COMPLETED. The extension builds on the existing `vscode-satsuma` package.
+- **Feature 08 (tree-sitter parser v2):** COMPLETED. The LSP server uses `tree-sitter-satsuma` directly.
+- **Features 09+10 (CLI):** COMPLETED. The extension shells out to `satsuma` CLI for workspace-level operations.
 - **Feature 15 (namespaces):** IN PROGRESS. Namespace-aware completions and navigation depend on namespace index support in the CLI. Phase 1 LSP features work without it; Phase 2 completions benefit from it.
 
 ---
@@ -469,7 +469,7 @@ When both TextMate and semantic tokens are active, VS Code merges them with sema
 
 ### R4: CLI subprocess overhead
 
-Shelling out to `stm` for every command adds process startup latency (~50-100ms).
+Shelling out to `satsuma` for every command adds process startup latency (~50-100ms).
 
 **Mitigation:** Acceptable for on-save and on-demand operations. For per-keystroke features (diagnostics, completions, semantic tokens), use the in-process tree-sitter parser, not the CLI.
 
@@ -479,8 +479,8 @@ Shelling out to `stm` for every command adds process startup latency (~50-100ms)
 
 The feature is complete when:
 
-1. **Phase 1:** A user can open a multi-file STM workspace in VS Code and get: inline diagnostics, go-to-definition across files, find references, outline/breadcrumbs, semantic token highlighting, code folding, and hover information — all without leaving the editor.
+1. **Phase 1:** A user can open a multi-file Satsuma workspace in VS Code and get: inline diagnostics, go-to-definition across files, find references, outline/breadcrumbs, semantic token highlighting, code folding, and hover information — all without leaving the editor.
 
-2. **Phase 2:** A user writing new STM gets context-aware completions for schema names, field names, vocabulary tokens, and import paths. CodeLens shows structural facts inline. CLI operations are available from the command palette.
+2. **Phase 2:** A user writing new Satsuma gets context-aware completions for schema names, field names, vocabulary tokens, and import paths. CodeLens shows structural facts inline. CLI operations are available from the command palette.
 
 3. **Phase 3:** A user can visualise the workspace dependency graph and trace field-level lineage as interactive diagrams inside VS Code.

@@ -51,7 +51,7 @@ MARC21 is unlike any other format in this collection. It is not a data interchan
 ## Example
 
 ```stm
-// STM v2 — MARC21 Bibliographic Record (simplified)
+// Satsuma v2 — MARC21 Bibliographic Record (simplified)
 
 schema marc21_bibliographic (format marc21, record_type bibliographic,
   note "Core bibliographic fields for a monograph record"

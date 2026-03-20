@@ -49,7 +49,7 @@ The decoded logical structure is often straightforward; the difficulty is in doc
 ## Example
 
 ```stm
-// STM v2 — ASN.1 Telecom CDR Record (simplified TAP3)
+// Satsuma v2 — ASN.1 Telecom CDR Record (simplified TAP3)
 
 schema telecom_cdr (format asn1, encoding ber,
   module "TAP3-12",
