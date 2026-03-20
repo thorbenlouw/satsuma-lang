@@ -1,5 +1,5 @@
 /**
- * index-builder.js — Build a WorkspaceIndex from parsed Satsuma files.
+ * index-builder.ts — Build a WorkspaceIndex from parsed Satsuma files.
  *
  * Merges extraction results from all files in a workspace into a single
  * in-memory index with a cross-reference graph.
@@ -18,36 +18,46 @@ import {
   extractImports,
 } from "./extract.js";
 import { extractNLRefData } from "./nl-ref-extract.js";
+import type {
+  ArrowRecord,
+  DuplicateRecord,
+  FragmentRecord,
+  MappingRecord,
+  MetricRecord,
+  NLRefData,
+  ParsedFile,
+  QuestionRecord,
+  ReferenceGraph,
+  SchemaRecord,
+  TransformRecord,
+  WarningRecord,
+  WorkspaceIndex,
+} from "./types.js";
 
-/**
- * Build a WorkspaceIndex from an array of parsed file results.
- *
- * @param {Array<{filePath:string, src:string, tree:object, errorCount:number}>} parsedFiles
- * @returns {WorkspaceIndex}
- *
- * @typedef {Object} WorkspaceIndex
- * @property {Map<string, object>} schemas     name → {name, note, fields, file, row}
- * @property {Map<string, object>} metrics     name → {name, displayName, fields, file, row, ...}
- * @property {Map<string, object>} mappings    name → {name, sources, targets, file, row, ...}
- * @property {Map<string, object>} fragments   name → {name, fields, file, row}
- * @property {Map<string, object>} transforms  name → {name, file, row}
- * @property {Array<object>}       warnings    [{text, file, row}]
- * @property {Array<object>}       questions   [{text, file, row}]
- * @property {Map<string, object[]>} fieldArrows   "schema.field" → ArrowRecord[]
- * @property {object}              referenceGraph
- * @property {number}              totalErrors
- */
+interface FileData {
+  filePath: string;
+  errorCount: number;
+  schemas: ReturnType<typeof extractSchemas>;
+  metrics: ReturnType<typeof extractMetrics>;
+  mappings: ReturnType<typeof extractMappings>;
+  fragments: ReturnType<typeof extractFragments>;
+  transforms: ReturnType<typeof extractTransforms>;
+  warnings: ReturnType<typeof extractWarnings>;
+  questions: ReturnType<typeof extractQuestions>;
+  arrowRecords: ReturnType<typeof extractArrowRecords>;
+  namespaces: ReturnType<typeof extractNamespaces>;
+  imports: ReturnType<typeof extractImports>;
+  nlRefData: ReturnType<typeof extractNLRefData>;
+}
+
 /**
  * Extract all structured data from a single parsed file's CST.
  *
  * This must be called while the tree-sitter tree is still valid (before
  * the parser is reused for another file). The returned data is plain JS
  * objects that remain valid after the tree is released.
- *
- * @param {{filePath:string, tree:object, errorCount:number}} parsedFile
- * @returns {object} extracted data for one file
  */
-export function extractFileData({ filePath, tree, errorCount }) {
+export function extractFileData({ filePath, tree, errorCount }: ParsedFile): FileData {
   const root = tree.rootNode;
   return {
     filePath,
@@ -71,11 +81,11 @@ export function extractFileData({ filePath, tree, errorCount }) {
  * Global entities (namespace=null) use their bare name.
  * Namespaced entities use "ns::name".
  */
-export function qualifiedKey(namespace, name) {
-  return namespace ? `${namespace}::${name}` : name;
+export function qualifiedKey(namespace: string | null | undefined, name: string | null): string {
+  return namespace ? `${namespace}::${name}` : (name ?? "");
 }
 
-export function resolveScopedEntityRef(ref, currentNs, entityMap) {
+export function resolveScopedEntityRef(ref: string, currentNs: string | null, entityMap: Map<string, unknown>): string | null {
   if (ref.includes("::")) {
     return entityMap.has(ref) ? ref : null;
   }
@@ -87,30 +97,29 @@ export function resolveScopedEntityRef(ref, currentNs, entityMap) {
   return null;
 }
 
-export function buildIndex(parsedFiles) {
-  const schemas = new Map();
-  const duplicates = [];
-  const metrics = new Map();
-  const mappings = new Map();
-  const fragments = new Map();
-  const transforms = new Map();
-  const warnings = [];
-  const questions = [];
-  const allArrowRecords = [];
-  const allNLRefData = [];
+export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceIndex {
+  const schemas = new Map<string, SchemaRecord>();
+  const duplicates: DuplicateRecord[] = [];
+  const metrics = new Map<string, MetricRecord>();
+  const mappings = new Map<string, MappingRecord>();
+  const fragments = new Map<string, FragmentRecord>();
+  const transforms = new Map<string, TransformRecord>();
+  const warnings: WarningRecord[] = [];
+  const questions: QuestionRecord[] = [];
+  const allArrowRecords: ArrowRecord[] = [];
+  const allNLRefData: NLRefData[] = [];
   let totalErrors = 0;
 
   // Track all named definitions per namespace for cross-kind duplicate detection.
-  // A schema and a metric with the same name in the same namespace is a conflict.
-  // namespace key: null → "__global__", otherwise the namespace name.
-  const namesByNamespace = new Map(); // nsKey → Map(name → {kind, file, row})
+  const namesByNamespace = new Map<string, Map<string, { kind: string; file: string; row: number }>>();
 
-  function checkDuplicate(kind, name, namespace, file, row) {
+  function checkDuplicate(kind: string, name: string | null, namespace: string | null | undefined, file: string, row: number): void {
+    if (!name) return;
     const nsKey = namespace ?? "__global__";
     if (!namesByNamespace.has(nsKey)) namesByNamespace.set(nsKey, new Map());
-    const nsNames = namesByNamespace.get(nsKey);
+    const nsNames = namesByNamespace.get(nsKey)!;
     if (nsNames.has(name)) {
-      const prev = nsNames.get(name);
+      const prev = nsNames.get(name)!;
       duplicates.push({
         kind,
         name: qualifiedKey(namespace, name),
@@ -125,28 +134,26 @@ export function buildIndex(parsedFiles) {
   }
 
   // Track namespace block metadata for merge conflict detection.
-  // nsName → Map(tagKey → {value, file, row})
-  const namespaceMeta = new Map();
+  const namespaceMeta = new Map<string, Map<string, { value: string; file: string; row: number }>>();
 
   // Accept either pre-extracted data or raw parsedFile objects.
-  // When receiving raw parsedFile objects (with .tree), extract immediately.
   const fileDataList = parsedFiles.map((pf) =>
-    pf.schemas ? pf : extractFileData(pf),
+    "schemas" in pf ? pf as FileData : extractFileData(pf as ParsedFile),
   );
 
   for (const fileData of fileDataList) {
     const { filePath } = fileData;
     totalErrors += fileData.errorCount;
 
-    // Process namespace block metadata — detect conflicting values across blocks.
+    // Process namespace block metadata
     if (fileData.namespaces) {
       for (const ns of fileData.namespaces) {
         if (!ns.name) continue;
         if (!namespaceMeta.has(ns.name)) namespaceMeta.set(ns.name, new Map());
-        const tags = namespaceMeta.get(ns.name);
+        const tags = namespaceMeta.get(ns.name)!;
         if (ns.note != null) {
           if (tags.has("note")) {
-            const prev = tags.get("note");
+            const prev = tags.get("note")!;
             if (prev.value !== ns.note) {
               duplicates.push({
                 kind: "namespace-metadata",
@@ -173,9 +180,6 @@ export function buildIndex(parsedFiles) {
       checkDuplicate("schema", s.name, s.namespace, filePath, s.row);
       const existing = schemas.get(key);
       if (existing) {
-        // Merge fields from duplicate schema declarations across files.
-        // This is intentional in data-modelling patterns where source schemas
-        // are re-declared with different field subsets per mapping file.
         const existingNames = new Set(existing.fields.map((f) => f.name));
         for (const f of s.fields) {
           if (!existingNames.has(f.name)) existing.fields.push(f);
@@ -190,30 +194,30 @@ export function buildIndex(parsedFiles) {
           }
         }
       } else {
-        schemas.set(key, { ...s, file: filePath });
+        schemas.set(key, { ...s, file: filePath } as SchemaRecord);
       }
     }
     for (const m of fileData.metrics) {
       const key = qualifiedKey(m.namespace, m.name);
       checkDuplicate("metric", m.name, m.namespace, filePath, m.row);
-      metrics.set(key, { ...m, file: filePath });
+      metrics.set(key, { ...m, file: filePath } as MetricRecord);
     }
     for (const m of fileData.mappings) {
       const qKey = m.name ? qualifiedKey(m.namespace, m.name) : `<anon>@${filePath}:${m.row}`;
       if (m.name) {
         checkDuplicate("mapping", m.name, m.namespace, filePath, m.row);
       }
-      mappings.set(qKey, { ...m, file: filePath });
+      mappings.set(qKey, { ...m, file: filePath } as MappingRecord);
     }
     for (const f of fileData.fragments) {
       const key = qualifiedKey(f.namespace, f.name);
       checkDuplicate("fragment", f.name, f.namespace, filePath, f.row);
-      fragments.set(key, { ...f, file: filePath });
+      fragments.set(key, { ...f, file: filePath } as FragmentRecord);
     }
     for (const t of fileData.transforms) {
       const key = qualifiedKey(t.namespace, t.name);
       checkDuplicate("transform", t.name, t.namespace, filePath, t.row);
-      transforms.set(key, { ...t, file: filePath });
+      transforms.set(key, { ...t, file: filePath } as TransformRecord);
     }
     for (const w of fileData.warnings) {
       warnings.push({ ...w, file: filePath });
@@ -222,17 +226,17 @@ export function buildIndex(parsedFiles) {
       questions.push({ ...q, file: filePath });
     }
     for (const ar of fileData.arrowRecords) {
-      allArrowRecords.push({ ...ar, file: filePath });
+      allArrowRecords.push({ ...ar, file: filePath } as ArrowRecord);
     }
     if (fileData.nlRefData) {
       for (const nr of fileData.nlRefData) {
-        allNLRefData.push({ ...nr, file: filePath });
+        allNLRefData.push({ ...nr, file: filePath } as NLRefData);
       }
     }
   }
 
   // Build a set of known namespace names for reference resolution.
-  const namespaceNames = new Set();
+  const namespaceNames = new Set<string>();
   for (const key of namesByNamespace.keys()) {
     if (key !== "__global__") namespaceNames.add(key);
   }
@@ -276,31 +280,18 @@ export function buildIndex(parsedFiles) {
 
 /**
  * Resolve a user-provided entity name against an index map.
- *
- * Resolution order:
- * 1. Exact match (handles both qualified "ns::name" and global "name")
- * 2. If unqualified and no exact match, search for any "ns::name" match
- *
- * @param {string} name  User-provided entity name
- * @param {Map} entityMap  The index map to search
- * @returns {{key: string, entry: object}|null}  Resolved key and entry, or null
  */
-export function resolveIndexKey(name, entityMap) {
-  // Exact match first
+export function resolveIndexKey<T>(name: string, entityMap: Map<string, T>): { key: string; entry: T } | null {
   if (entityMap.has(name)) {
-    return { key: name, entry: entityMap.get(name) };
+    return { key: name, entry: entityMap.get(name)! };
   }
-  // If already qualified, no further search
   if (name.includes("::")) return null;
-  // Search for ns::name matches
   for (const [key, entry] of entityMap) {
     if (key.endsWith(`::${name}`)) {
-      // Check for ambiguity — if multiple namespaces have this name, require qualification
       const matches = [...entityMap.keys()].filter((k) => k.endsWith(`::${name}`));
       if (matches.length === 1) {
         return { key, entry };
       }
-      // Ambiguous — return null (caller should suggest alternatives)
       return null;
     }
   }
@@ -309,22 +300,14 @@ export function resolveIndexKey(name, entityMap) {
 
 /**
  * Build a field-level arrow index from arrow records.
- *
- * Maps "schema.field" keys to the arrow records that involve that field
- * (as either source or target). The schema name is resolved from the
- * mapping's source/target declarations.
- *
- * @param {Array<object>} arrowRecords
- * @param {Map<string, object>} mappings  mapping index for schema resolution
- * @returns {Map<string, object[]>}
  */
-function buildFieldArrows(arrowRecords, mappings) {
-  const index = new Map();
+function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, MappingRecord>): Map<string, ArrowRecord[]> {
+  const index = new Map<string, ArrowRecord[]>();
 
-  function addToIndex(key, record) {
+  function addToIndex(key: string | null, record: ArrowRecord): void {
     if (!key) return;
     if (!index.has(key)) index.set(key, []);
-    index.get(key).push(record);
+    index.get(key)!.push(record);
   }
 
   for (const record of arrowRecords) {
@@ -334,11 +317,9 @@ function buildFieldArrows(arrowRecords, mappings) {
     const targetSchemas = mapping?.targets ?? [];
 
     if (record.source) {
-      // Index under each source schema — most mappings have exactly one
       for (const schema of sourceSchemas) {
         addToIndex(`${schema}.${record.source}`, record);
       }
-      // Also index by bare field name for backwards compatibility
       addToIndex(record.source, record);
     }
     if (record.target) {
@@ -354,36 +335,31 @@ function buildFieldArrows(arrowRecords, mappings) {
 
 /**
  * Build a reference graph from the extracted items.
- *
- * @returns {{
- *   usedByMappings: Map<string, string[]>,  // schema/fragment → mapping names
- *   fragmentsUsedIn: Map<string, string[]>, // fragment → schema/fragment names
- *   metricsReferences: Map<string, string[]> // metric → source schema names
- * }}
  */
-function buildReferenceGraph({ schemas, metrics, mappings }) {
-  // schema/fragment → which mappings reference it (as source or target)
-  const usedByMappings = new Map();
+function buildReferenceGraph({ schemas, metrics, mappings }: {
+  schemas: Map<string, SchemaRecord>;
+  metrics: Map<string, MetricRecord>;
+  mappings: Map<string, MappingRecord>;
+}): ReferenceGraph {
+  const usedByMappings = new Map<string, string[]>();
 
   for (const [mappingName, mapping] of mappings) {
     const refs = [...mapping.sources, ...mapping.targets];
     for (const ref of refs) {
       if (!usedByMappings.has(ref)) usedByMappings.set(ref, []);
-      usedByMappings.get(ref).push(mappingName);
+      usedByMappings.get(ref)!.push(mappingName);
     }
   }
 
-  // fragment → which schemas use it via ...spread
-  const fragmentsUsedIn = new Map();
+  const fragmentsUsedIn = new Map<string, string[]>();
   for (const [schemaKey, schema] of schemas) {
     for (const spreadName of schema.spreads ?? []) {
       if (!fragmentsUsedIn.has(spreadName)) fragmentsUsedIn.set(spreadName, []);
-      fragmentsUsedIn.get(spreadName).push(schemaKey);
+      fragmentsUsedIn.get(spreadName)!.push(schemaKey);
     }
   }
 
-  // metric → source schema references
-  const metricsReferences = new Map();
+  const metricsReferences = new Map<string, string[]>();
   for (const [metricName, metric] of metrics) {
     if (metric.sources.length > 0) {
       metricsReferences.set(metricName, [...metric.sources]);
