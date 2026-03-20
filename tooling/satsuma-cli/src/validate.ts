@@ -201,19 +201,31 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
             message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
             fixable: false,
           });
-        } else if (
-          classification === "namespace-qualified-schema" &&
-          !isSchemaInMappingSources(ref, mapping)
-        ) {
-          diagnostics.push({
-            file: item.file,
-            line: item.line + 1,
-            column: item.column + offset + 1,
-            severity: "warning",
-            rule: "nl-ref-not-in-source",
-            message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,
-            fixable: false,
-          });
+        } else {
+          // Determine the schema name being referenced
+          let referencedSchema: string | null = null;
+          if (classification === "namespace-qualified-schema" || classification === "bare") {
+            if (resolution.resolvedTo?.kind === "schema") {
+              referencedSchema = resolution.resolvedTo.name;
+            }
+          } else if (classification === "dotted-field" || classification === "namespace-qualified-field") {
+            if (resolution.resolvedTo?.kind === "field") {
+              const fieldPath = resolution.resolvedTo.name;
+              const lastDot = fieldPath.lastIndexOf(".");
+              if (lastDot > 0) referencedSchema = fieldPath.slice(0, lastDot);
+            }
+          }
+          if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
+            diagnostics.push({
+              file: item.file,
+              line: item.line + 1,
+              column: item.column + offset + 1,
+              severity: "warning",
+              rule: "nl-ref-not-in-source",
+              message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,
+              fixable: false,
+            });
+          }
         }
       }
     }

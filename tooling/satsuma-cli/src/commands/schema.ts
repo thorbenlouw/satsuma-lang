@@ -32,7 +32,7 @@ export function register(program: Command): void {
         files = await resolveInput(root);
       } catch (err: unknown) {
         console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(1);
+        process.exit(2);
       }
 
       // Build index to locate the schema; also keep the per-file CST for

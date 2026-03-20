@@ -184,7 +184,7 @@ satsuma context "customer mapping"           # keyword-ranked block extraction (
 
 # Structural primitives — slice below block level
 satsuma arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
-satsuma nl mapping 'demographics to mart'    # NL content in this mapping (notes, transforms)
+satsuma nl 'demographics to mart'              # NL content in this mapping (notes, transforms)
 satsuma nl mart_customer_360.email            # NL content on this specific field
 satsuma meta loyalty_sfdc.Email              # metadata entries (tags, type, constraints)
 satsuma fields sat_customer_demographics     # field list with types
@@ -257,7 +257,7 @@ When reporting results to humans, be transparent about which parts of your analy
 
 ### When generating Satsuma from a description or spreadsheet:
 
-1. If source and target schemas already exist, run `satsuma match-fields --source <s> --target <t>` to find deterministic name matches, then `satsuma nl schema <s>` and `satsuma nl schema <t>` to read field notes for context
+1. If source and target schemas already exist, run `satsuma match-fields --source <s> --target <t>` to find deterministic name matches, then `satsuma nl <s>` and `satsuma nl <t>` to read field notes for context
 2. Start with a `note { }` block describing the integration context
 3. Define `schema` blocks with all fields, types, and metadata
 4. Add `fragment` blocks if you have reusable field sets

@@ -94,6 +94,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
     const dotIdx = ref.indexOf(".");
     const schemaName = ref.slice(0, dotIdx);
     const fieldName = ref.slice(dotIdx + 1);
+    // First check mapping sources/targets
     const allSchemas = [...(mappingContext.sources ?? []), ...(mappingContext.targets ?? [])];
     for (const s of allSchemas) {
       const nsIdx = s.indexOf("::");
@@ -102,6 +103,16 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
         const schema = index.schemas.get(s);
         if (schema && hasFieldWithSpreads(schema, fieldName, index)) {
           return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${fieldName}` } };
+        }
+      }
+    }
+    // Fall back to all workspace schemas (handles refs to schemas not in source/target list)
+    for (const [key, schema] of index.schemas) {
+      const nsIdx = key.indexOf("::");
+      const baseName = nsIdx !== -1 ? key.slice(nsIdx + 2) : key;
+      if (baseName === schemaName || key === schemaName) {
+        if (hasFieldWithSpreads(schema, fieldName, index)) {
+          return { resolved: true, resolvedTo: { kind: "field", name: `${key}.${fieldName}` } };
         }
       }
     }
