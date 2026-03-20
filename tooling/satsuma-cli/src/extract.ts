@@ -145,7 +145,7 @@ function qualifiedNameText(node: SyntaxNode | null): string | null {
   if (!node || node.type !== "qualified_name") return null;
   const ids = children(node, "identifier");
   if (ids.length < 2) return null;
-  return `${ids[0].text}::${ids[1].text}`;
+  return `${ids[0]!.text}::${ids[1]!.text}`;
 }
 
 /**

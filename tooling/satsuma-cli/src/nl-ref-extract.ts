@@ -29,7 +29,7 @@ export function extractBacktickRefs(text: string): BacktickRef[] {
   let match;
   BACKTICK_RE.lastIndex = 0;
   while ((match = BACKTICK_RE.exec(text)) !== null) {
-    refs.push({ ref: match[1], offset: match.index });
+    refs.push({ ref: match[1]!, offset: match.index });
   }
   return refs;
 }

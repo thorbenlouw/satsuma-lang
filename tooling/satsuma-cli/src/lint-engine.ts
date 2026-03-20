@@ -98,7 +98,7 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
     let braceDepth = 0;
 
     for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
+      const trimmed = lines[i]!.trim();
 
       if (!inMapping) {
         const mappingRe = /^mapping\s+(?:'([^']+)'|"([^"]+)"|(\S+))\s*\{/;
@@ -122,9 +122,9 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
       const sourceLineRe = /^source\s*\{([^}]*)\}\s*$/;
       const sm = trimmed.match(sourceLineRe);
       if (sm) {
-        const existing = sm[1].trim();
+        const existing = sm[1]!.trim();
         if (existing.split(/\s*,\s*/).includes(schemaRef)) return source;
-        const indent = lines[i].match(/^(\s*)/)![1];
+        const indent = lines[i]!.match(/^(\s*)/)![1];
         const newRefs = existing ? `${existing}, ${schemaRef}` : schemaRef;
         lines[i] = `${indent}source { ${newRefs} }`;
         return lines.join("\n");
