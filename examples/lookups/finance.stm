@@ -1,6 +1,6 @@
 // Satsuma v2 — Finance Lookups
 
-schema currency_rates (
+schema fx_spot_rates (
   note "Sourced from OpenExchangeRates API. Updated daily at 00:01 UTC."
 ) {
   iso_code    STRING(3)    (pk)
