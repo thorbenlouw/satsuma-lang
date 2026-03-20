@@ -54,8 +54,8 @@ export function register(program: Command): void {
         resolvedNames[name] = resolved;
       }
 
-      const srcEntry = resolvedNames[opts.source].entry;
-      const tgtEntry = resolvedNames[opts.target].entry;
+      const srcEntry = resolvedNames[opts.source]!.entry;
+      const tgtEntry = resolvedNames[opts.target]!.entry;
       const srcFields = [
         ...srcEntry.fields,
         ...expandEntityFields(srcEntry, srcEntry.namespace ?? null, index),

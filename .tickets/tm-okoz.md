@@ -1,6 +1,6 @@
 ---
 id: tm-okoz
-status: open
+status: closed
 deps: [tm-6lwq]
 links: []
 created: 2026-03-20T17:09:59Z

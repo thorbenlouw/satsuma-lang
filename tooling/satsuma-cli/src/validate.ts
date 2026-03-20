@@ -250,10 +250,10 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
       }
       if (resolvedSrcKeys.length > 1) {
         for (let i = 0; i < mapping.sources.length; i++) {
-          const resolvedKey = resolveEntityRef(mapping.sources[i], currentNs, index.schemas);
+          const resolvedKey = resolveEntityRef(mapping.sources[i]!, currentNs, index.schemas);
           if (!resolvedKey) continue;
           const fields = index.schemas.get(resolvedKey)?.fields ?? [];
-          collectFieldPaths(fields, mapping.sources[i] + ".", srcFieldPaths);
+          collectFieldPaths(fields, mapping.sources[i]! + ".", srcFieldPaths);
         }
       }
 
