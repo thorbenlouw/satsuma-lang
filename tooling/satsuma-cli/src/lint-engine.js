@@ -57,6 +57,11 @@ export const RULES = [
     description: "NL backtick reference does not resolve",
     check: checkUnresolvedNlRef,
   },
+  {
+    id: "duplicate-definition",
+    description: "Named definition is declared more than once in a namespace",
+    check: checkDuplicateDefinition,
+  },
 ];
 
 // ── Rule implementations ───────────────────────────────────────────────────
@@ -216,6 +221,43 @@ function checkUnresolvedNlRef(index) {
   }
 
   return diagnostics;
+}
+
+/**
+ * duplicate-definition — A named entity (schema, mapping, metric, fragment,
+ * transform) is declared more than once within the same namespace.
+ *
+ * Reuses the `index.duplicates` array already populated by buildIndex().
+ */
+function checkDuplicateDefinition(index) {
+  const diagnostics = [];
+  if (!index.duplicates) return diagnostics;
+
+  for (const dup of index.duplicates) {
+    // Namespace-metadata conflicts are a different concern — skip them here.
+    if (dup.kind === "namespace-metadata") continue;
+
+    const sameKind = dup.kind === dup.previousKind;
+    const msg = sameKind
+      ? `${capitalize(dup.kind)} '${dup.name}' is already defined in ${dup.previousFile}:${dup.previousRow + 1}`
+      : `${capitalize(dup.kind)} '${dup.name}' conflicts with ${dup.previousKind} already defined in ${dup.previousFile}:${dup.previousRow + 1}`;
+
+    diagnostics.push({
+      file: dup.file,
+      line: dup.row + 1,
+      column: 1,
+      severity: "error",
+      rule: "duplicate-definition",
+      message: msg,
+      fixable: false,
+    });
+  }
+
+  return diagnostics;
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ── Engine ─────────────────────────────────────────────────────────────────
