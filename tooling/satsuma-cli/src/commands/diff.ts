@@ -30,7 +30,7 @@ export function register(program: Command): void {
         filesB = await resolveInput(pathB);
       } catch (err: unknown) {
         console.error(`Error resolving paths: ${(err as Error).message}`);
-        process.exit(1);
+        process.exit(2);
       }
 
       const indexA = buildIndex(filesA.map((f) => parseFile(f)));

@@ -59,11 +59,27 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
       const classification = classifyRef(ref);
       const resolution = resolveRef(ref, mappingContext, index);
 
-      if (
-        resolution.resolved &&
-        classification === "namespace-qualified-schema" &&
-        !isSchemaInMappingSources(ref, mapping)
-      ) {
+      if (!resolution.resolved) continue;
+
+      // Determine the schema name being referenced
+      let referencedSchema: string | null = null;
+      if (classification === "namespace-qualified-schema" || classification === "bare") {
+        // Bare or ns-qualified schema name — check if it resolves to a schema
+        if (resolution.resolvedTo?.kind === "schema") {
+          referencedSchema = resolution.resolvedTo.name;
+        }
+      } else if (classification === "dotted-field" || classification === "namespace-qualified-field") {
+        // Dotted field ref like `hidden.code` — extract the schema part
+        if (resolution.resolvedTo?.kind === "field") {
+          const fieldName = resolution.resolvedTo.name;
+          const lastDot = fieldName.lastIndexOf(".");
+          if (lastDot > 0) {
+            referencedSchema = fieldName.slice(0, lastDot);
+          }
+        }
+      }
+
+      if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
         diagnostics.push({
           file: item.file,
           line: item.line + 1,
@@ -75,8 +91,8 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
           fix: {
             file: item.file,
             rule: "hidden-source-in-nl",
-            description: `Added '${ref}' to source list of mapping '${mappingKey}'`,
-            apply: makeAddSourceFix(mappingKey, ref),
+            description: `Added '${referencedSchema}' to source list of mapping '${mappingKey}'`,
+            apply: makeAddSourceFix(mappingKey, referencedSchema),
           },
         });
       }

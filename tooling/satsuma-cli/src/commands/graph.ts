@@ -86,7 +86,7 @@ export function register(program: Command): void {
         files = await resolveInput(root);
       } catch (err: unknown) {
         console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(1);
+        process.exit(2);
       }
 
       if (files.length === 0) {
@@ -239,14 +239,38 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
   let fieldEdges: FieldEdge[] = [];
   const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> = [];
 
-  if (!schemaOnly) {
-    const result = buildFieldEdges(index, includedNodeIds, nsFilter, includeNl);
-    fieldEdges = result.edges;
-    unresolvedNl.push(...result.unresolvedNl);
-  }
+  // Always build field edges (needed for --schema-only aggregation too)
+  const result = buildFieldEdges(index, includedNodeIds, nsFilter, includeNl);
 
-  // Count arrows
-  const arrowCount = fieldEdges.length;
+  if (schemaOnly) {
+    // Aggregate field-level edges into schema-level edges by extracting
+    // the schema prefix from dotted field paths and deduplicating.
+    const seen = new Set<string>();
+    for (const edge of result.edges) {
+      const fromSchema = edge.from ? edge.from.split(".")[0] : null;
+      const toSchema = edge.to ? edge.to.split(".")[0] : null;
+      if (fromSchema && toSchema) {
+        const key = `${fromSchema}->${toSchema}:${edge.mapping}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          fieldEdges.push({
+            from: fromSchema,
+            to: toSchema,
+            mapping: edge.mapping,
+            classification: edge.classification,
+            file: edge.file,
+            row: edge.row,
+          });
+        }
+      }
+    }
+  } else {
+    fieldEdges = result.edges;
+  }
+  unresolvedNl.push(...result.unresolvedNl);
+
+  // Count arrows (raw field arrows, not aggregated)
+  const arrowCount = result.edges.length;
 
   return {
     version: 1,
@@ -327,6 +351,40 @@ function buildSchemaEdges(index: WorkspaceIndex, schemaGraph: FullGraph, include
 }
 
 /**
+ * Qualify a field path with its schema name, handling edge cases:
+ *  - Leading dot (nested field, e.g. ".PHONE_TYPE") → "schema.PHONE_TYPE"
+ *  - Already schema-qualified (multi-source, e.g. "crm.customer_id") → unchanged
+ *    when the prefix matches a known schema
+ *  - Simple field name → "schema.field"
+ */
+function qualifyField(field: string, schemas: string[]): string {
+  if (schemas.length === 0) return field;
+
+  // Nested field: strip leading dot, prepend first schema
+  if (field.startsWith(".")) {
+    return `${schemas[0]}.${field.slice(1)}`;
+  }
+
+  // Multi-source: field may already be schema-qualified (e.g. "crm.customer_id")
+  const dotIdx = field.indexOf(".");
+  if (dotIdx > 0) {
+    const prefix = field.slice(0, dotIdx);
+    if (schemas.includes(prefix)) {
+      // Already qualified — don't double-prefix
+      return field;
+    }
+    // Check if prefix matches the bare name of a namespace-qualified schema
+    for (const s of schemas) {
+      const nsIdx = s.indexOf("::");
+      const bare = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
+      if (bare === prefix) return field;
+    }
+  }
+
+  return `${schemas[0]}.${field}`;
+}
+
+/**
  * Build field-level edges from arrow records in the workspace index.
  */
 function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, nsFilter: string | null, includeNl: boolean): { edges: FieldEdge[]; unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> } {
@@ -360,10 +418,10 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
       const targetSchemas = mapping?.targets ?? [];
 
       const fromField = record.source
-        ? (sourceSchemas.length > 0 ? `${sourceSchemas[0]}.${record.source}` : record.source)
+        ? qualifyField(record.source, sourceSchemas)
         : null;
       const toField = record.target
-        ? (targetSchemas.length > 0 ? `${targetSchemas[0]}.${record.target}` : record.target)
+        ? qualifyField(record.target, targetSchemas)
         : null;
 
       const edge: FieldEdge = {

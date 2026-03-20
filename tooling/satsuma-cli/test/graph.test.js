@@ -198,11 +198,17 @@ describe("satsuma graph --json", () => {
 // satsuma graph --schema-only
 // ---------------------------------------------------------------------------
 describe("satsuma graph --schema-only", () => {
-  it("omits field-level edges", async () => {
+  it("aggregates field-level edges to schema-level", async () => {
     const { stdout } = await run("graph", "--json", "--schema-only", EXAMPLES);
     const data = JSON.parse(stdout);
-    assert.equal(data.edges.length, 0);
+    // --schema-only aggregates field-level arrows into schema-level edges
+    assert.ok(data.edges.length > 0, "should have aggregated edges");
     assert.ok(data.schema_edges.length > 0);
+    // All edges should be schema-level (no dotted field paths)
+    for (const e of data.edges) {
+      if (e.from) assert.ok(!e.from.includes("."), `from should be schema-level: ${e.from}`);
+      if (e.to) assert.ok(!e.to.includes("."), `to should be schema-level: ${e.to}`);
+    }
   });
 
   it("omits fields from schema nodes", async () => {

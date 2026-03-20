@@ -30,7 +30,7 @@ export function register(program: Command): void {
         files = await resolveInput(root);
       } catch (err: unknown) {
         console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(1);
+        process.exit(2);
       }
 
       // Parse each file and extract data immediately (tree-sitter reuses a

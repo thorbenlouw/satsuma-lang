@@ -45,7 +45,7 @@ Fine-grained extraction — slice below block level to get specific arrows, NL c
 | Command | Operation | Example |
 |---|---|---|
 | `arrows <schema.field>` | All arrows involving a field, with transform classification | `satsuma arrows loyalty_sfdc.LoyaltyTier` |
-| `nl <scope>` | NL content (notes, transforms, comments) in a scope | `satsuma nl mapping 'demographics to mart'` |
+| `nl <scope>` | NL content (notes, transforms, comments) in a scope | `satsuma nl 'demographics to mart'` |
 | `meta <scope>` | Metadata entries for a block or field | `satsuma meta loyalty_sfdc.Email` |
 | `fields <schema>` | Field list with types and metadata | `satsuma fields sat_customer_demographics` |
 | `match-fields --source <s> --target <t>` | Normalized name comparison between two schemas | `satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics` |
@@ -102,7 +102,7 @@ Derived arrows (no source field) are flagged separately. This classification is 
 | Flag | Purpose |
 |---|---|
 | `--json` | Structured JSON output — the primary agent interface |
-| `--compact` | Minimal output, omitting notes and NL strings |
+| `--compact` | Minimal output, omitting notes and NL strings (summary, schema, metric, mapping, find, lineage, context, graph) |
 | `--help` | What the command does and what it does not do |
 
 ## Exit Codes
@@ -169,8 +169,8 @@ satsuma nl mart_customer_360.email
 satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics --json
 
 # 2. Agent reads NL notes on both schemas to verify matches
-satsuma nl schema loyalty_sfdc
-satsuma nl schema sat_customer_demographics
+satsuma nl loyalty_sfdc
+satsuma nl sat_customer_demographics
 
 # 3. Agent reads metadata to understand constraints
 satsuma meta sat_customer_demographics.country_code

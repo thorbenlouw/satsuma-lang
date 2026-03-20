@@ -32,7 +32,7 @@ export function register(program: Command): void {
         files = await resolveInput(root);
       } catch (err: unknown) {
         console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(1);
+        process.exit(2);
       }
 
       if (files.length === 0) {
@@ -45,7 +45,7 @@ export function register(program: Command): void {
           return parseFile(f);
         } catch (err: unknown) {
           console.error(`Parse error in ${f}: ${(err as Error).message}`);
-          process.exit(1);
+          process.exit(2);
         }
       });
 
