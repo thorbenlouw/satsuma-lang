@@ -103,7 +103,8 @@ function getMappedFieldNames(mappingName, schemaName, index) {
   const isTarget = mapping.targets.includes(schemaName);
 
   // Arrow records use bare mapping names; qualified key uses "ns::name"
-  const bareMappingName = mappingName.includes("::") ? mappingName.split("::").slice(1).join("::") : mappingName;
+  const nsIdx = mappingName.indexOf("::");
+  const bareMappingName = nsIdx !== -1 ? mappingName.slice(nsIdx + 2) : mappingName;
 
   for (const [_key, arrows] of index.fieldArrows) {
     for (const arrow of arrows) {

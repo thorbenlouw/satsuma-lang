@@ -80,6 +80,19 @@ export function buildFullGraph(index) {
             addNode(schemaRef, "schema");
             addEdge(schemaRef, mappingKey);
           }
+        } else if (classification === "bare" && item.namespace) {
+          // Bare ref inside a namespace — resolve to ns::ref first, then global
+          const nsRef = `${item.namespace}::${ref}`;
+          if (index.schemas.has(nsRef)) {
+            addNode(nsRef, "schema");
+            addEdge(nsRef, mappingKey);
+          } else if (index.schemas.has(ref)) {
+            addNode(ref, "schema");
+            addEdge(ref, mappingKey);
+          }
+        } else if (classification === "bare" && index.schemas.has(ref)) {
+          addNode(ref, "schema");
+          addEdge(ref, mappingKey);
         }
       }
     }
