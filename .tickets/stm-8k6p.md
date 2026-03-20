@@ -1,6 +1,6 @@
 ---
 id: stm-8k6p
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-19T20:04:30Z
@@ -79,3 +79,9 @@ This overlaps with `stm-bym9` and `stm-gde5` for validate, but the bug is broade
 4. `stm graph /tmp/stm-explore/import-platform.stm --json` contains schema nodes for `src::customers` and `mart::dim_customers` and `stats.schemas == 2`.
 5. `stm validate /tmp/stm-explore/import-platform.stm` does not emit `undefined-ref` for imported names.
 6. Relative import resolution is recursive and remains bounded or safe for cycles or missing files.
+
+## Notes
+
+**2026-03-20T11:57:43Z**
+
+Fixed. workspace.js resolveInput now follows import declarations when given a single file, discovering all transitively imported files. Missing targets warn on stderr. Cycle-safe via visited set.

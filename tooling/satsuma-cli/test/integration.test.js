@@ -1372,3 +1372,75 @@ describe("satsuma lint", () => {
     assert.ok(!stdout.includes("hidden-source-in-nl"));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Import resolution — stm-8k6p
+// ---------------------------------------------------------------------------
+const IMPORT_ENTRY = resolve(__dirname, "fixtures", "import-entry.stm");
+const IMPORT_CHAIN = resolve(__dirname, "fixtures", "import-chain-entry.stm");
+
+describe("import resolution: summary", () => {
+  it("includes imported schemas when pointing at entry file", async () => {
+    const { stdout, code } = await run("summary", "--json", IMPORT_ENTRY);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.schemas.map((s) => s.name);
+    assert.ok(names.includes("src::customers"), `expected src::customers, got ${names}`);
+    assert.ok(names.includes("mart::dim_customers"), `expected mart::dim_customers, got ${names}`);
+    assert.equal(data.mappings.length, 1);
+  });
+
+  it("follows transitive imports", async () => {
+    const { stdout, code } = await run("summary", "--json", IMPORT_CHAIN);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.schemas.map((s) => s.name);
+    assert.ok(names.includes("src::customers"), `transitive: expected src::customers, got ${names}`);
+    assert.ok(names.includes("mart::dim_customers"), `transitive: expected mart::dim_customers, got ${names}`);
+    assert.ok(names.includes("analytics::customer_stats"), `transitive: expected analytics::customer_stats, got ${names}`);
+  });
+});
+
+describe("import resolution: schema", () => {
+  it("finds imported schema by qualified name", async () => {
+    const { stdout, code } = await run("schema", "src::customers", IMPORT_ENTRY);
+    assert.equal(code, 0);
+    assert.match(stdout, /customer_id/);
+    assert.match(stdout, /email/);
+  });
+});
+
+describe("import resolution: where-used", () => {
+  it("finds mapping references to imported schema", async () => {
+    const { stdout, code } = await run("where-used", "src::customers", IMPORT_ENTRY);
+    assert.equal(code, 0);
+    assert.match(stdout, /build dim_customers/);
+  });
+});
+
+describe("import resolution: graph", () => {
+  it("includes schema nodes for imported definitions", async () => {
+    const { stdout, code } = await run("graph", "--json", IMPORT_ENTRY);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.stats.schemas, 2, `expected 2 schemas, got ${data.stats.schemas}`);
+    assert.equal(data.stats.mappings, 1);
+  });
+});
+
+describe("import resolution: validate", () => {
+  it("does not emit undefined-ref for imported names", async () => {
+    const { stdout, code } = await run("validate", IMPORT_ENTRY);
+    assert.equal(code, 0);
+    assert.match(stdout, /no issues/i);
+  });
+});
+
+describe("import resolution: missing target", () => {
+  it("warns on stderr for missing import target", async () => {
+    const { stderr, code } = await run("summary", "--json", resolve(__dirname, "fixtures", "import-missing.stm"));
+    // Should still succeed (warn, not fail)
+    assert.equal(code, 0);
+    assert.match(stderr, /import target.*not found/i);
+  });
+});

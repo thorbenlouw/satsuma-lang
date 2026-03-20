@@ -1,0 +1,5 @@
+import { foo } from "does-not-exist.stm"
+
+schema bar {
+  id INT
+}
