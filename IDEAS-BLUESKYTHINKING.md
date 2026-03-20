@@ -41,38 +41,11 @@ referenced file and inline the fields.
 
 ---
 
-## 2. Lineage Tracing
+## 2. ~~Lineage Tracing~~ ✅ Implemented
 
-Satsuma already *describes* lineage implicitly through its mappings. The question is
-whether we need any syntax to make lineage intent more explicit, or whether this
-is purely a tooling concern.
-
-**Verdict: mostly tooling, with one small syntactic addition.**
-
-```stm
-// The lineage token marks a field as a lineage anchor -- tooling can trace
-// upstream and downstream from here across integrations
-schema analytics_customer {
-  customer_id  UUID          (pk, lineage anchor)
-  email        VARCHAR(255)  (lineage sensitive)  // flag for lineage auditors
-}
-
-// Cross-integration lineage: reference another integration's field
-mapping {
-  source { `crm` }
-  target { `analytics_customer` }
-
-  crm.customer_id -> customer_id (
-    lineage upstream "INT1001_CRM_Ingest::raw_customers.cust_id"
-  )
-}
-```
-
-But honestly, the mapping syntax itself (`A -> B { transforms }`) already *is* the
-lineage graph. A `satsuma lineage` CLI tool should be able to walk the AST and emit
-a DAG without any extra metadata. The `lineage` tokens above are optional
-metadata for cross-integration tracing where a single Satsuma file doesn't contain
-the full picture.
+> **Implemented in Features 09/10.** `satsuma lineage --from <schema> [--to <schema>]` walks the AST and emits a DAG. `satsuma arrows <schema.field>` provides field-level edge extraction. The core tooling concern is solved.
+>
+> **Remaining blue-sky:** Cross-integration lineage metadata (`lineage upstream "..."`) for tracing across workspace boundaries where a single Satsuma workspace doesn't contain the full picture. This would be a metadata convention, not a grammar change.
 
 
 ---
@@ -116,180 +89,27 @@ the LLM interpreter interpolates it. No template engine needed.
 
 ---
 
-## 4. Dimensional Modelling Extensions
+## 4. ~~Dimensional Modelling Extensions~~ ✅ Implemented
 
-We don't want a whole new sub-language. Instead: use vocabulary tokens in `( )`
-metadata to declare dimensional intent, and let tooling/interpreters infer the
-DDL, surrogate keys, relationships, and boilerplate.
-
-```stm
-// A dimension is just a schema with intent declared
-schema dim_customer (dimension, natural_key customer_id, scd type 2 track {email, phone, tier}) {
-  customer_id    INTEGER       (required)
-  first_name     VARCHAR(100)
-  last_name      VARCHAR(100)
-  email          VARCHAR(255)
-  phone          VARCHAR(20)
-  tier           VARCHAR(20)
-
-  // These are INFERRED by dimension + scd type 2 -- don't need to write them
-  // surrogate_key  BIGINT      (pk, auto)
-  // valid_from     TIMESTAMPTZ
-  // valid_to       TIMESTAMPTZ
-  // is_current     BOOLEAN
-  // row_hash       CHAR(64)
-}
-
-// A fact is a schema with measures and dimension references
-schema fact_orders (fact, grain {order_id, line_number}) {
-  order_id       INTEGER       (required, ref dim_customer on customer_id)
-  line_number    INTEGER       (required, ref dim_product on product_sku)
-
-  // Measures
-  quantity       INTEGER       (measure additive)
-  unit_price     DECIMAL(12,2) (measure non_additive)
-  line_total     DECIMAL(14,2) (measure additive)
-  discount_pct   DECIMAL(5,2)  (measure non_additive)
-}
-
-// A conformed dimension shared across star schemas
-schema dim_date (dimension, conformed, natural_key date_value) {
-  date_value     DATE          (required)
-  // The rest is a well-known pattern -- an interpreter can generate the full
-  // date dimension from this seed:
-  note {
-    "Standard date dimension: fiscal calendar follows July fiscal year start.
-     Include ISO week numbers, US federal holidays, trading day flags."
-  }
-}
-```
-
-**Key insight:** The `dimension`, `fact`, `measure`, `scd`, `grain`, and
-`ref` tokens are *intent markers* in `( )` metadata. The interpreter fills in
-the mechanical parts (surrogate keys, valid_from/to, hash columns, FK constraints).
-A BA reads the file and sees the business fields. An engineer reads the tokens
-and knows the physical pattern. Nobody writes boilerplate.
+> **Implemented in Feature 06.** Kimball conventions (`dimension`, `fact`, `natural_key`, `scd type N`, `grain`, `measure`, `ref ... on`, `conformed`) are defined with canonical examples at `docs/data-modelling/kimball/`. All conventions use existing `( )` metadata — no grammar changes were needed.
+>
+> **Remaining blue-sky:** DDL/dbt generation tooling from convention-annotated schemas (Feature 06 Phase 3, tracked in FUTURE-WORK.md).
 
 
 ---
 
-## 5. Data Vault Extensions
+## 5. ~~Data Vault Extensions~~ ✅ Implemented
 
-Same philosophy as dimensional modelling: declare intent, infer the mechanical
-parts.
-
-```stm
-// A hub: the business key registry
-schema hub_customer (hub, business_key customer_id, source_system source_tag) {
-  customer_id    VARCHAR(50)   (required)
-
-  // INFERRED by hub:
-  // hub_customer_hk    CHAR(64)  (pk)       -- hash of business key
-  // load_date          TIMESTAMPTZ
-  // record_source      VARCHAR(100)
-}
-
-// A link: the relationship
-schema link_order_customer (link {hub_customer, hub_order}) {
-  // That's it. The rest is inferred:
-  // link_order_customer_hk  CHAR(64)  (pk)  -- hash of hub keys
-  // hub_customer_hk         CHAR(64)  (ref hub_customer)
-  // hub_order_hk            CHAR(64)  (ref hub_order)
-  // load_date               TIMESTAMPTZ
-  // record_source           VARCHAR(100)
-}
-
-// A satellite: the descriptive attributes
-schema sat_customer_details (satellite, parent hub_customer, scd type 2) {
-  first_name     VARCHAR(100)
-  last_name      VARCHAR(100)
-  email          VARCHAR(255)  (pii)
-  phone          VARCHAR(20)
-  tier           VARCHAR(20)
-
-  // INFERRED by satellite + scd type 2:
-  // hub_customer_hk  CHAR(64)  (ref hub_customer)
-  // load_date        TIMESTAMPTZ
-  // load_end_date    TIMESTAMPTZ
-  // hash_diff        CHAR(64)
-  // record_source    VARCHAR(100)
-}
-
-// An effectivity satellite for tracking relationship validity
-schema sat_order_customer_eff (satellite, effectivity, parent link_order_customer) {
-  // Just declaring intent -- the start/end dates, is_current flag,
-  // and driving key logic are all inferred from effectivity
-}
-```
-
-A BA reads: "hub_customer stores customer IDs from all systems." An engineer
-reads: "hash key, load_date, record_source auto-generated, SCD2 on the sat."
-The mapping from source to vault target is regular Satsuma:
-
-```stm
-mapping 'crm to hub' {
-  source { `crm_system` }
-  target { `hub_customer` }
-
-  customer_id -> customer_id
-  -> source_tag { "CRM" }
-}
-
-mapping 'crm to sat' {
-  source { `crm_system` }
-  target { `sat_customer_details` }
-
-  first_name -> first_name
-  last_name -> last_name
-  email -> email
-  phone -> phone { ...clean phone(country) }
-  loyalty_tier -> tier
-}
-```
+> **Implemented in Feature 06.** Data Vault 2.0 conventions (`hub`, `link`, `satellite`, `effectivity`, `business_key`, `parent`, `source_system`) are defined with canonical examples at `docs/data-modelling/datavault/`. Hub/link/satellite/effectivity patterns all use existing `( )` metadata with inferred mechanical columns.
+>
+> **Remaining blue-sky:** DDL/dbt generation tooling from convention-annotated schemas (Feature 06 Phase 3, tracked in FUTURE-WORK.md).
 
 
 ---
 
-## 6. SCD / Historisation Patterns
+## 6. ~~SCD / Historisation Patterns~~ ✅ Implemented
 
-This overlaps with dimensional/vault above but deserves its own spotlight since
-it applies broadly (not just star schemas or data vault).
-
-```stm
-schema customer_history (
-  scd type 2,
-  natural_key customer_id,
-  track {email, phone, status, tier},   // only these fields trigger a new version
-  ignore {last_login_at}                // changes here do NOT create new versions
-) {
-  customer_id   INTEGER       (required)
-  email         VARCHAR(255)
-  phone         VARCHAR(20)
-  status        VARCHAR(20)
-  tier          VARCHAR(20)
-  last_login_at TIMESTAMPTZ
-
-  // All historisation columns inferred. But you can override:
-  // valid_from_field effective_date
-  // valid_to_field expiry_date
-}
-
-// SCD Type 1: just overwrite, but declare it so tooling knows
-schema dim_product (scd type 1, natural_key sku) {
-  sku           VARCHAR(20)   (required)
-  description   VARCHAR(255)
-  category      VARCHAR(100)
-  // No history columns generated -- it's type 1
-}
-
-// SCD Type 6 (hybrid): current + historical view
-schema dim_customer_hybrid (scd type 6, natural_key customer_id, track {segment, region}) {
-  customer_id   INTEGER       (required)
-  segment       VARCHAR(50)
-  region        VARCHAR(50)
-  // Inferred: current_segment, current_region (Type 1 overlay on Type 2 history)
-}
-```
+> **Implemented in Feature 06.** SCD Type 1, 2, and 6 patterns are covered by the Kimball and Data Vault conventions with `scd type N`, `natural_key`, `track {...}`, and `ignore {...}` metadata tokens. See `docs/data-modelling/kimball/` for canonical examples.
 
 
 ---
@@ -411,45 +231,9 @@ governance_policy "ACME Corp Data Standards" {
 
 ---
 
-## 9. Metrics / KPI Declarations
+## 9. ~~Metrics / KPI Declarations~~ ✅ Implemented
 
-A metric is a thin concept: a name, a formula described in intent, dimensions it
-can be sliced by, and where it sources from. This is close to a `target` but
-semantically distinct.
-
-```stm
-metric monthly_recurring_revenue "MRR" (
-  source fact_subscriptions,
-  grain monthly,
-  slice {customer_segment, product_line, region},
-  filter "status = 'active' AND is_trial = false"
-) {
-  value  DECIMAL(14,2)  (measure additive)
-
-  note {
-    "Sum of active subscription amounts, normalized to monthly.
-     Annual subscriptions divided by 12. Quarterly by 3.
-     Excludes trials and churned subscriptions."
-  }
-}
-
-metric customer_lifetime_value "CLV" (
-  source {fact_orders, dim_customer},
-  slice {acquisition_channel, segment, cohort_year}
-) {
-  value  DECIMAL(14,2)
-
-  note {
-    "Average revenue per customer over their entire tenure.
-     Calculated as: total_revenue / months_active * expected_lifetime_months.
-     Expected lifetime derived from cohort survival curves."
-  }
-}
-```
-
-This is intentionally thin. The `note { }` block carries the actual logic because
-metric definitions are inherently squishy and best described in natural language.
-The `slice` and `source` metadata tokens give tooling enough to wire things up.
+> **Implemented in Features 08/09.** `metric` is a first-class keyword in the grammar and parser. The CLI provides `satsuma metric <name>` for extraction, and metrics participate in `satsuma summary`, `satsuma lineage`, `satsuma where-used`, and `satsuma validate`. Canonical examples at `examples/metrics.stm`.
 
 
 ---
@@ -564,9 +348,10 @@ comments rather than language extensions:
 ### Language Server (idea #3)
 Purely a tooling concern. The tree-sitter grammar already provides the
 foundation. A language server reads the AST -- no syntax changes needed.
+**PRD written (Feature 16), not yet started.**
 
-### Satsuma Linter (idea #4)
-Tooling. Linting rules are configuration, not grammar. Think ESLint for Satsuma.
+### ~~Satsuma Linter (idea #4)~~ ✅ Implemented
+`satsuma lint` shipped in Feature 17 with 3 rules, `--fix` support, and JSON/text output.
 
 ### Incremental Tutorial (idea #7)
 Documentation, not syntax. Though the examples in this file could *be* that
