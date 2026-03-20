@@ -1,0 +1,13 @@
+namespace src {
+  schema customers (note "Imported source schema") {
+    customer_id STRING (pk)
+    email       STRING (pii)
+  }
+}
+
+namespace mart {
+  schema dim_customers (note "Imported target schema") {
+    customer_id STRING (pk)
+    email       STRING
+  }
+}

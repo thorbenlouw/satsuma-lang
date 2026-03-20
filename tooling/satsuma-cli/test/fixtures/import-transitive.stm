@@ -1,0 +1,8 @@
+import { src::customers } from "import-source.stm"
+
+namespace analytics {
+  schema customer_stats (note "Transitive import test") {
+    customer_id STRING (pk)
+    order_count INT
+  }
+}

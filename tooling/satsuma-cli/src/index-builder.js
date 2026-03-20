@@ -15,6 +15,7 @@ import {
   extractQuestions,
   extractArrowRecords,
   extractNamespaces,
+  extractImports,
 } from "./extract.js";
 import { extractNLRefData } from "./nl-ref-extract.js";
 
@@ -60,6 +61,7 @@ export function extractFileData({ filePath, tree, errorCount }) {
     questions: extractQuestions(root),
     arrowRecords: extractArrowRecords(root),
     namespaces: extractNamespaces(root),
+    imports: extractImports(root),
     nlRefData: extractNLRefData(root),
   };
 }

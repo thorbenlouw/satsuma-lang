@@ -17,6 +17,7 @@ import {
   extractWarnings,
   extractQuestions,
   extractNamespaces,
+  extractImports,
 } from "../src/extract.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
@@ -432,5 +433,79 @@ describe("extractTransforms with namespaces", () => {
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "dv_hash");
     assert.equal(result[0].namespace, "vault");
+  });
+});
+
+// ── extractImports ──────────────────────────────────────────────────────────
+
+describe("extractImports", () => {
+  /** Build a qualified_name node (ns::name). */
+  function qualifiedName(ns, name) {
+    return n("qualified_name", [ident(ns), ident(name)], `${ns}::${name}`);
+  }
+
+  it("extracts a single bare identifier import", () => {
+    const imp = n("import_decl", [
+      n("import_name", [ident("address_fields")]),
+      n("import_path", [str("common.stm")]),
+    ], "", 0);
+    const root = n("source_file", [imp]);
+
+    const result = extractImports(root);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0].names, ["address_fields"]);
+    assert.equal(result[0].path, "common.stm");
+  });
+
+  it("extracts qualified name imports (ns::name)", () => {
+    const imp = n("import_decl", [
+      n("import_name", [qualifiedName("src", "customers")]),
+      n("import_name", [qualifiedName("mart", "dim_customers")]),
+      n("import_path", [str("source.stm")]),
+    ], "", 2);
+    const root = n("source_file", [imp]);
+
+    const result = extractImports(root);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0].names, ["src::customers", "mart::dim_customers"]);
+    assert.equal(result[0].path, "source.stm");
+    assert.equal(result[0].row, 2);
+  });
+
+  it("extracts quoted name imports", () => {
+    const imp = n("import_decl", [
+      n("import_name", [quoted("address fields")]),
+      n("import_name", [quoted("audit fields")]),
+      n("import_path", [str("lib/common.stm")]),
+    ]);
+    const root = n("source_file", [imp]);
+
+    const result = extractImports(root);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0].names, ["address fields", "audit fields"]);
+    assert.equal(result[0].path, "lib/common.stm");
+  });
+
+  it("extracts multiple import declarations", () => {
+    const imp1 = n("import_decl", [
+      n("import_name", [ident("foo")]),
+      n("import_path", [str("a.stm")]),
+    ], "", 0);
+    const imp2 = n("import_decl", [
+      n("import_name", [ident("bar")]),
+      n("import_path", [str("b.stm")]),
+    ], "", 1);
+    const root = n("source_file", [imp1, imp2]);
+
+    const result = extractImports(root);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].path, "a.stm");
+    assert.equal(result[1].path, "b.stm");
+  });
+
+  it("returns empty array when no imports", () => {
+    const root = n("source_file", []);
+    const result = extractImports(root);
+    assert.equal(result.length, 0);
   });
 });

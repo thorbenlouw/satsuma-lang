@@ -363,6 +363,34 @@ export function extractQuestions(rootNode) {
   }));
 }
 
+/**
+ * Extract all import_decl nodes from the CST.
+ *
+ * @param {object} rootNode  tree-sitter root node
+ * @returns {Array<{names:string[], path:string, row:number}>}
+ */
+export function extractImports(rootNode) {
+  return children(rootNode, "import_decl").map((node) => {
+    const names = children(node, "import_name")
+      .map((nm) => {
+        const qn = child(nm, "qualified_name");
+        if (qn) return qualifiedNameText(qn);
+        const q = child(nm, "quoted_name");
+        if (q) return q.text.slice(1, -1);
+        const id = child(nm, "identifier");
+        return id?.text ?? null;
+      })
+      .filter(Boolean);
+
+    const pathNode = child(node, "import_path");
+    const pathStr = pathNode
+      ? stringText(pathNode.namedChildren[0])
+      : null;
+
+    return { names, path: pathStr, row: node.startPosition.row };
+  });
+}
+
 // ── Arrow-level extraction ──────────────────────────────────────────────────
 
 /**
