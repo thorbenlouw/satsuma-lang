@@ -1,0 +1,58 @@
+# Conventions for Schema Formats
+
+STM is designed to represent schemas from any data format — including legacy, binary, positional, and industry-specific interchange standards. The vocabulary token system means format-specific metadata can be expressed directly in `( )` without language changes.
+
+This directory documents conventions for representing esoteric and non-standard formats in STM. Each subdirectory covers one format family with:
+
+- **Why** the format is difficult to represent in traditional schema languages
+- **Metadata conventions** — which vocabulary tokens to use and what they mean
+- **How natural language helps** — where `" "` descriptions fill semantic gaps
+- **A short valid STM example**
+
+## Format Categories
+
+### Legacy and Positional
+| Format | Directory | What it Stresses |
+|--------|-----------|-----------------|
+| COBOL Copybook | [`cobol-copybook/`](cobol-copybook/) | Positional layout, packed decimals, REDEFINES, OCCURS |
+| HL7 v2.x | [`hl7/`](hl7/) | Delimiter-based segments, inconsistent real-world feeds |
+| X12 / HIPAA | [`x12-hipaa/`](x12-hipaa/) | Loop hierarchies, qualifiers, implementation guide divergence |
+
+### Financial Messaging and Protocols
+| Format | Directory | What it Stresses |
+|--------|-----------|-----------------|
+| ISO 8583 | [`iso8583/`](iso8583/) | Bitmap-driven fields, numeric identifiers, variable-length encoding |
+| SWIFT MT | [`swift-mt/`](swift-mt/) | Block/tag structure, semi-structured text fields |
+| FIX Protocol | [`fix-protocol/`](fix-protocol/) | Tag=value encoding, repeating groups, order sensitivity |
+
+### Specialised Technical Formats
+| Format | Directory | What it Stresses |
+|--------|-----------|-----------------|
+| ASN.1 | [`asn1/`](asn1/) | Tag-based encoding, BER/DER, CHOICE/OPTIONAL semantics |
+| DICOM | [`dicom/`](dicom/) | Tag dictionaries, value representations, vendor extensions |
+
+## General Principles
+
+These conventions apply across all formats:
+
+1. **Preserve the original vocabulary.** Use metadata tokens that mirror the format's own terminology (`pic`, `segment`, `tag`, `block`). Engineers familiar with the format should recognise them immediately.
+
+2. **Separate physical layout from logical meaning.** Tokens like `offset`, `length`, and `encoding` describe the physical representation. The `record`/`list` structure and field names describe the logical model. Keep both.
+
+3. **Use natural language for interpretation rules.** Conditional logic (which REDEFINES variant to use, how to resolve a qualifier, when a field is populated) belongs in `" "` descriptions within mappings, not forced into metadata.
+
+4. **Format goes on the schema.** Declare the wire format in schema-level metadata: `(format copybook, encoding ebcdic)`. Field-level metadata then adds format-specific detail.
+
+5. **Derived fields belong in mappings.** Computed fields (`->`) are a mapping construct. Schema blocks describe structure; interpretation and derivation happen in `mapping` blocks.
+
+## Formats Already Covered by Canonical Examples
+
+The `examples/` directory at the repo root contains full working STM files for several formats:
+
+- **EDIFACT** — `examples/edi-to-json.stm` (EDI 856 fixed-length)
+- **XML / WSDL** — `examples/xml-to-parquet.stm` (namespace-qualified XML)
+- **Protobuf** — `examples/protobuf-to-parquet.stm` (tagged fields, repeated groups)
+- **Avro** — referenced in the spec (JSON-based, unions, schema evolution)
+- **OpenAPI** — representable using standard STM metadata (`format`, `enum`, `pii`)
+
+The conventions in this directory focus on formats that are **not** yet covered by canonical examples and where STM's mixed-model approach provides the most value.
