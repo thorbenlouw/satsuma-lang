@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "server",
-  "dolt_database": "tree_sitter_stm",
-  "project_id": "47cf9d93-d8d8-4509-b2e2-0ad8d8ea41e2"
-}
