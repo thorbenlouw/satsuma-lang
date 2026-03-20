@@ -45,7 +45,7 @@ Satsuma supports:
 - conditional mapping logic
 - comments and rich notes with semantic intent
 - reusable fragments and imports
-- multi-file workspaces for platform-wide lineage
+- multi-file platform modeling for platform-wide lineage
 
 The long-term tooling model is parser-first:
 
@@ -107,7 +107,7 @@ and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
 
 - [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md): authoritative language specification
 - [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
-- [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (16 commands for workspace extraction, structural analysis, and validation)
+- [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (16 commands for structural extraction, analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents
 - [BA-TUTORIAL.md](BA-TUTORIAL.md): practical tutorial for business analysts
 - [USE_CASES.md](USE_CASES.md): practical scenarios and personas
@@ -124,7 +124,7 @@ What exists today:
 - the Satsuma v2 language specification
 - a canonical example corpus (11 `.stm` files covering all major integration patterns)
 - a tree-sitter parser (190 corpus tests, all examples parse clean)
-- a CLI (`satsuma`) with 16 commands for workspace extraction, structural analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- a CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - a VS Code extension with TextMate grammar for v2 syntax highlighting
 - data modelling conventions for Kimball and Data Vault patterns with canonical examples
 - pre-built CLI release artifacts published on every merge to `main`
@@ -138,18 +138,17 @@ What is not complete yet:
 - code generation
 - Excel-to-Satsuma and Satsuma-to-Excel conversion tooling
 
-## Workspace And Lineage Model
+## Multi-File Lineage
 
-Satsuma supports multi-file platform modeling through workspace files. A workspace
-declares the schemas that make up a platform and maps namespace names to source
-files. That gives tooling one canonical entry point for platform-wide lineage
-and impact analysis.
+Satsuma supports multi-file platform modeling through imports and namespaces.
+That gives tooling a consistent way to traverse lineage and impact across a
+platform without introducing a special file type.
 
 In practical terms:
 
 - library files define reusable schemas, fragments, and lookups
 - integration files define source/target structures and mapping blocks
-- workspace files assemble many integrations into one platform scope
+- namespace-qualified imports connect those files into one platform graph
 
 This matters when multiple teams have similarly named schemas or when lineage
 needs to cross project boundaries cleanly.
@@ -210,7 +209,7 @@ npm link                  # makes `satsuma` available globally
 Quick usage:
 
 ```bash
-satsuma summary examples/            # workspace overview
+satsuma summary examples/            # structural overview
 satsuma validate examples/           # structural + semantic validation
 satsuma schema customers examples/   # show a specific schema
 satsuma lineage --from legacy_sqlserver examples/   # trace data flow

@@ -191,7 +191,7 @@ How we'll know Satsuma is working:
 
 ### Phase 2: Core Tooling — DONE
 - Tree-sitter parser (190 corpus tests, all examples parse clean)
-- CLI (`satsuma`) with 16 commands for workspace extraction, structural analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - VS Code extension with TextMate grammar for v2 syntax highlighting
 - Pre-built CLI release artifacts published on every merge to `main`
 
