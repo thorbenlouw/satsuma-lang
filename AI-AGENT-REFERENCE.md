@@ -200,6 +200,9 @@ satsuma graph path/ --compact                # flat schema-level adjacency list
 
 # Structural analysis
 satsuma validate                             # parse errors + semantic reference checks
+satsuma lint                                 # policy/convention checks (duplicates, NL refs)
+satsuma lint --fix                           # apply safe deterministic fixes
+satsuma lint --json                          # structured lint diagnostics
 satsuma diff v1/ v2/                         # structural comparison of two snapshots
 ```
 
@@ -238,7 +241,7 @@ Every arrow the CLI returns carries a classification from CST node types:
 | Need NL content for interpretation | `satsuma nl <scope>` — not pulling the entire block |
 | Need metadata on a field | `satsuma meta field <schema.field>` — not parsing raw text |
 | Need to check which fields lack arrows | `satsuma fields <schema> --unmapped-by <mapping>` |
-| Need to validate after editing | `satsuma validate` |
+| Need to validate after editing | `satsuma validate` for correctness, `satsuma lint` for conventions |
 | Need to compare versions | `satsuma diff` — not text diff |
 | Need full file content for editing | Read the file directly — CLI is for querying, not raw content |
 
@@ -264,7 +267,8 @@ When reporting results to humans, be transparent about which parts of your analy
 8. Add `//?` for any open questions or ambiguities
 9. Add `(note "...")` metadata for persistent field-level documentation
 10. Run `satsuma validate` to check for parse errors and semantic issues
-11. Run `satsuma fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
+11. Run `satsuma lint` to check for policy/convention issues; use `--fix` to auto-correct fixable ones
+12. Run `satsuma fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
 
 ### When reading/interpreting Satsuma:
 

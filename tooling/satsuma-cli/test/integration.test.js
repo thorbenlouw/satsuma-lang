@@ -9,8 +9,10 @@
  */
 
 import { execFile } from "node:child_process";
+import { copyFileSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, join } from "node:path";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
@@ -1361,6 +1363,7 @@ describe("satsuma lint", () => {
     assert.equal(code, 0);
     assert.match(stdout, /hidden-source-in-nl/);
     assert.match(stdout, /unresolved-nl-ref/);
+    assert.match(stdout, /duplicate-definition/);
   });
 
   it("--select filters to specified rules only", async () => {
@@ -1370,6 +1373,89 @@ describe("satsuma lint", () => {
     );
     // Should only show unresolved-nl-ref, not hidden-source-in-nl
     assert.ok(!stdout.includes("hidden-source-in-nl"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// satsuma lint --fix
+// ---------------------------------------------------------------------------
+
+describe("satsuma lint --fix", () => {
+  /** Copy a fixture to a temp dir so --fix can modify it safely. */
+  function copyFixture(name) {
+    const src = resolve(LINT_FIXTURES, name);
+    const tmp = mkdtempSync(join(tmpdir(), "satsuma-lint-"));
+    const dest = join(tmp, name);
+    copyFileSync(src, dest);
+    return dest;
+  }
+
+  it("fixes fixable findings and reports residual non-fixable ones", async () => {
+    const file = copyFixture("lint-mixed.stm");
+
+    const { stdout, code } = await run("lint", "--fix", file);
+    // Non-fixable finding remains → exit 2
+    assert.equal(code, 2);
+    assert.match(stdout, /Fixed:/);
+    assert.match(stdout, /hidden-source-in-nl/);
+    // Residual non-fixable finding still reported
+    assert.match(stdout, /unresolved-nl-ref/);
+
+    // Verify the source block was actually updated
+    const content = readFileSync(file, "utf8");
+    assert.match(content, /source::hr_employees/);
+  });
+
+  it("--fix --json reports fixes and residual findings", async () => {
+    const file = copyFixture("lint-mixed.stm");
+
+    const { stdout, code } = await run("lint", "--fix", "--json", file);
+    assert.equal(code, 2);
+    const data = JSON.parse(stdout);
+    assert.ok(data.fixes.length > 0, "should have applied fixes");
+    assert.ok(data.findings.length > 0, "should have residual findings");
+    assert.equal(data.summary.fixed, data.fixes.length);
+  });
+
+  it("--fix is idempotent — rerunning produces no new fixes", async () => {
+    const file = copyFixture("lint-mixed.stm");
+
+    // First run: apply fixes
+    const { stdout: first } = await run("lint", "--fix", "--json", file);
+    const firstData = JSON.parse(first);
+    assert.ok(firstData.summary.fixed > 0, "first run should fix something");
+
+    // Second run: no new fixes, only residual non-fixable findings
+    const { stdout, code } = await run("lint", "--fix", "--json", file);
+    assert.equal(code, 2);
+    const data = JSON.parse(stdout);
+    assert.equal(data.summary.fixed, 0, "no new fixes on second run");
+    // Persistent non-fixable finding (nonexistent_fx_rates) still present
+    assert.ok(data.findings.length > 0);
+    assert.ok(data.findings.every((d) => !d.fixable));
+  });
+
+  it("--fix on a clean file makes no changes", async () => {
+    const file = copyFixture("lint-clean.stm");
+    const before = readFileSync(file, "utf8");
+
+    const { code } = await run("lint", "--fix", file);
+    assert.equal(code, 0);
+
+    const after = readFileSync(file, "utf8");
+    assert.equal(before, after);
+  });
+
+  it("--fix on a purely fixable file exits 0 after fixing", async () => {
+    const file = copyFixture("lint-fixable-only.stm");
+
+    const { stdout, code } = await run("lint", "--fix", file);
+    assert.equal(code, 0);
+    assert.match(stdout, /Fixed:/);
+
+    // Verify fix was applied
+    const content = readFileSync(file, "utf8");
+    assert.match(content, /source \{ source::finance_gl, source::hr_employees \}/);
   });
 });
 

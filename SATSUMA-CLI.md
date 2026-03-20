@@ -67,7 +67,22 @@ Operations that check or compare workspace structure.
 | Command | Operation | Example |
 |---|---|---|
 | `validate [path]` | Parse errors and semantic reference checks | `satsuma validate` |
+| `lint [path]` | Policy and convention checks with optional autofix | `satsuma lint --json` |
 | `diff <a> <b>` | Structural comparison of two workspace snapshots | `satsuma diff v1/ v2/` |
+
+### validate vs lint
+
+`validate` checks **structural correctness**: parse errors, undefined references, missing schemas. It answers "is this workspace well-formed?"
+
+`lint` checks **policy and conventions**: duplicate definitions, hidden schema dependencies in NL text, unresolved NL backtick references. It answers "does this workspace follow best practices?" Some lint rules support `--fix` for safe, deterministic autofix.
+
+Flags: `--json` (structured output), `--fix` (apply safe fixes), `--select <rules>` / `--ignore <rules>` (filter rules), `--quiet` (exit code only), `--rules` (list available rules).
+
+| Rule | Severity | Fixable | Description |
+|---|---|---|---|
+| `hidden-source-in-nl` | warning | yes | NL text references a schema not in the mapping's source/target list |
+| `unresolved-nl-ref` | warning | no | Backtick reference in NL does not resolve to any known identifier |
+| `duplicate-definition` | error | no | Named definition is declared more than once in a namespace |
 
 ## Transform Classification
 
