@@ -23,6 +23,7 @@ This directory documents conventions for representing esoteric and non-standard 
 |--------|-----------|-----------------|
 | ISO 8583 | [`iso8583/`](iso8583/) | Bitmap-driven fields, numeric identifiers, variable-length encoding |
 | SWIFT MT | [`swift-mt/`](swift-mt/) | Block/tag structure, semi-structured text fields |
+| ISO 20022 | [`iso20022/`](iso20022/) | Verbose XML, structural compression, legacy MT migration |
 | FIX Protocol | [`fix-protocol/`](fix-protocol/) | Tag=value encoding, repeating groups, order sensitivity |
 
 ### Specialised Technical Formats
@@ -30,6 +31,8 @@ This directory documents conventions for representing esoteric and non-standard 
 |--------|-----------|-----------------|
 | ASN.1 | [`asn1/`](asn1/) | Tag-based encoding, BER/DER, CHOICE/OPTIONAL semantics |
 | DICOM | [`dicom/`](dicom/) | Tag dictionaries, value representations, vendor extensions |
+| MARC21 | [`marc21/`](marc21/) | Tag/indicator/subfield model, cataloguing semantics |
+| iCalendar | [`icalendar/`](icalendar/) | Line folding, recurrence rules, timezone handling |
 
 ## General Principles
 
@@ -54,5 +57,6 @@ The `examples/` directory at the repo root contains full working STM files for s
 - **Protobuf** — `examples/protobuf-to-parquet.stm` (tagged fields, repeated groups)
 - **Avro** — referenced in the spec (JSON-based, unions, schema evolution)
 - **OpenAPI** — representable using standard STM metadata (`format`, `enum`, `pii`)
+- **COBOL → Avro** — `examples/cobol-to-avro.stm` (legacy-to-modern transformation bridge)
 
 The conventions in this directory focus on formats that are **not** yet covered by canonical examples and where STM's mixed-model approach provides the most value.
