@@ -1,0 +1,32 @@
+namespace source {
+  schema hr_employees {
+    employee_id INT
+    department STRING
+  }
+
+  schema finance_gl {
+    posted_by STRING
+    amount DECIMAL
+  }
+}
+
+namespace staging {
+  schema stg_gl_entries {
+    department STRING
+    amount DECIMAL
+    region STRING
+  }
+
+  mapping 'stage gl entries' {
+    source { source::finance_gl }
+    target { staging::stg_gl_entries }
+
+    finance_gl.posted_by -> stg_gl_entries.department {
+      | "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`"
+    }
+
+    finance_gl.amount -> stg_gl_entries.amount {
+      | "Enrich `amount` using `nonexistent_fx_rates` for currency conversion"
+    }
+  }
+}
