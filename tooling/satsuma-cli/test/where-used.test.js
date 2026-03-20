@@ -16,16 +16,29 @@ function blockLabel(name) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
 }
+function spreadLabel(name) {
+  if (name.startsWith("'")) return n("spread_label", [quoted(name.slice(1, -1))]);
+  return n("spread_label", name.split(" ").map(ident));
+}
 
 // ── Inline findFragmentSpreads + walkForSpreads ───────────────────────────────
 
 function walkForSpreads(bodyNode, fragmentName, blockName, results) {
   for (const c of bodyNode.namedChildren) {
     if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let sname = inner?.text ?? "";
-      if (inner?.type === "quoted_name") sname = sname.slice(1, -1);
+      const lbl = c.namedChildren.find((x) => x.type === "spread_label" || x.type === "block_label");
+      let sname = "";
+      if (lbl) {
+        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        if (q) {
+          sname = q.text.slice(1, -1);
+        } else {
+          sname = lbl.namedChildren
+            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+            .map((x) => x.text)
+            .join(" ");
+        }
+      }
       if (sname === fragmentName) results.push({ block: blockName, row: c.startPosition.row });
     } else if (c.type === "record_block" || c.type === "list_block") {
       const nested = c.namedChildren.find((x) => x.type === "schema_body");
@@ -52,8 +65,8 @@ function findFragmentSpreads(rootNode, fragmentName) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("findFragmentSpreads", () => {
-  it("finds a fragment spread in a schema", () => {
-    const spread = n("fragment_spread", [blockLabel("'address fields'")], "", 5);
+  it("finds a quoted fragment spread in a schema", () => {
+    const spread = n("fragment_spread", [spreadLabel("'address fields'")], "", 5);
     const body = n("schema_body", [spread]);
     const schemaBlock = n("schema_block", [blockLabel("orders"), body]);
     const root = n("source_file", [schemaBlock]);
@@ -73,8 +86,8 @@ describe("findFragmentSpreads", () => {
   });
 
   it("finds fragment spread in multiple schemas", () => {
-    const spread1 = n("fragment_spread", [blockLabel("'audit columns'")]);
-    const spread2 = n("fragment_spread", [blockLabel("'audit columns'")]);
+    const spread1 = n("fragment_spread", [spreadLabel("'audit columns'")]);
+    const spread2 = n("fragment_spread", [spreadLabel("'audit columns'")]);
     const body1 = n("schema_body", [spread1]);
     const body2 = n("schema_body", [spread2]);
     const s1 = n("schema_block", [blockLabel("orders"), body1]);
@@ -88,7 +101,7 @@ describe("findFragmentSpreads", () => {
   });
 
   it("does not match different fragment names", () => {
-    const spread = n("fragment_spread", [blockLabel("'other frag'")]);
+    const spread = n("fragment_spread", [spreadLabel("'other frag'")]);
     const body = n("schema_body", [spread]);
     const block = n("schema_block", [blockLabel("t"), body]);
     const root = n("source_file", [block]);
@@ -97,11 +110,22 @@ describe("findFragmentSpreads", () => {
   });
 
   it("finds spreads in record_block nested bodies", () => {
-    const spread = n("fragment_spread", [blockLabel("'audit columns'")], "", 10);
+    const spread = n("fragment_spread", [spreadLabel("'audit columns'")], "", 10);
     const innerBody = n("schema_body", [spread]);
     const recBlock = n("record_block", [blockLabel("audit"), innerBody]);
     const outerBody = n("schema_body", [recBlock]);
     const schemaBlock = n("schema_block", [blockLabel("orders"), outerBody]);
+    const root = n("source_file", [schemaBlock]);
+
+    const results = findFragmentSpreads(root, "audit columns");
+    assert.equal(results.length, 1);
+    assert.equal(results[0].block, "orders");
+  });
+
+  it("finds unquoted multi-word fragment spreads", () => {
+    const spread = n("fragment_spread", [spreadLabel("audit columns")], "", 3);
+    const body = n("schema_body", [spread]);
+    const schemaBlock = n("schema_block", [blockLabel("orders"), body]);
     const root = n("source_file", [schemaBlock]);
 
     const results = findFragmentSpreads(root, "audit columns");

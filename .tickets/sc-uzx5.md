@@ -1,6 +1,6 @@
 ---
 id: sc-uzx5
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T16:04:43Z

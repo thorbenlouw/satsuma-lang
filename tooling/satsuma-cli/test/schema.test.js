@@ -18,6 +18,10 @@ function blockLabel(name) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
 }
+function spreadLabel(name) {
+  if (name.startsWith("'")) return n("spread_label", [quoted(name.slice(1, -1))]);
+  return n("spread_label", name.split(" ").map(ident));
+}
 function fieldName(name) { return n("field_name", [ident(name)]); }
 function typeExpr(t) { return n("type_expr", [], t); }
 function fieldDecl(name, type, meta = null) {
@@ -52,9 +56,19 @@ function collectFields(bodyNode, indent = 0) {
       if (nested) lines.push(...collectFields(nested, indent + 1));
       lines.push({ indent, text: `${pad}}` });
     } else if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      const sname = inner?.text ?? "";
+      const lbl = c.namedChildren.find((x) => x.type === "spread_label");
+      let sname = "";
+      if (lbl) {
+        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        if (q) {
+          sname = q.text;
+        } else {
+          sname = lbl.namedChildren
+            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+            .map((x) => x.text)
+            .join(" ");
+        }
+      }
       lines.push({ indent, text: `${pad}...${sname}` });
     }
   }
@@ -105,12 +119,19 @@ describe("collectFields", () => {
     assert.equal(lines[2].text, "}");
   });
 
-  it("renders fragment_spread", () => {
-    const spread = n("fragment_spread", [blockLabel("'address fields'")]);
+  it("renders quoted fragment_spread", () => {
+    const spread = n("fragment_spread", [spreadLabel("'address fields'")]);
     const body = n("schema_body", [spread]);
     const lines = collectFields(body, 1);
-    // quoted_name.text includes surrounding single quotes
+    // quoted_name.text includes surrounding single quotes in display
     assert.equal(lines[0].text.trim(), "...'address fields'");
+  });
+
+  it("renders unquoted fragment_spread", () => {
+    const spread = n("fragment_spread", [spreadLabel("audit fields")]);
+    const body = n("schema_body", [spread]);
+    const lines = collectFields(body, 0);
+    assert.equal(lines[0].text, "...audit fields");
   });
 
   it("returns empty array for empty body", () => {

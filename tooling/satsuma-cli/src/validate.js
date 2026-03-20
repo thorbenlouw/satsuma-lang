@@ -302,9 +302,9 @@ export function collectSemanticWarnings(index) {
       // Expand fragment spreads: inline fragment fields into the field path sets.
       // If a spread references an unknown fragment, fall back to suppressing
       // field-not-in-schema for that side (conservative: avoid false positives).
-      const srcHasUnresolved = expandSpreads(resolvedSrcKeys, currentNs, index, srcFieldPaths);
+      const srcHasUnresolved = expandSpreads(resolvedSrcKeys, currentNs, index, srcFieldPaths, diagnostics);
       const tgtHasUnresolved = resolvedTgtKey
-        ? expandSpreads([resolvedTgtKey], currentNs, index, tgtFieldPaths)
+        ? expandSpreads([resolvedTgtKey], currentNs, index, tgtFieldPaths, diagnostics)
         : false;
 
       for (const arrow of uniqueArrows) {
@@ -425,15 +425,16 @@ function resolveFieldPath(path, schemaNames, index, fieldPaths) {
  * @param {string|null} currentNs  namespace context for resolution
  * @param {object} index  WorkspaceIndex
  * @param {Set<string>} fieldPaths  accumulator set (mutated)
+ * @param {Array} diagnostics  accumulator for cycle warnings
  * @returns {boolean}  true if any spread could not be resolved
  */
-function expandSpreads(schemaKeys, currentNs, index, fieldPaths) {
+function expandSpreads(schemaKeys, currentNs, index, fieldPaths, diagnostics) {
   let hasUnresolved = false;
   const visited = new Set(); // prevent infinite loops from circular spreads
   for (const key of schemaKeys) {
     const schema = index.schemas.get(key);
     if (!schema?.hasSpreads) continue;
-    if (!expandSchemaFragments(schema, currentNs, index, fieldPaths, visited)) {
+    if (!expandEntitySpreads(schema, currentNs, index, fieldPaths, visited, diagnostics, [])) {
       hasUnresolved = true;
     }
   }
@@ -441,12 +442,26 @@ function expandSpreads(schemaKeys, currentNs, index, fieldPaths) {
 }
 
 /**
- * Recursively expand spreads for a single schema, adding fragment fields
- * to the fieldPaths set. Returns false if any spread is unresolvable.
+ * Recursively expand spreads for a schema or fragment, adding fragment fields
+ * to the fieldPaths set. Detects cycles and emits diagnostics for them.
+ *
+ * Uses two tracking sets:
+ * - `ancestors`: keys currently on the recursion stack (for cycle detection)
+ * - `expanded`: keys already fully expanded (to avoid redundant work in diamonds)
+ *
+ * @param {object} entity  schema or fragment with spreads/hasSpreads/fields
+ * @param {string|null} currentNs  namespace context for resolution
+ * @param {object} index  WorkspaceIndex
+ * @param {Set<string>} fieldPaths  accumulator set (mutated)
+ * @param {Set<string>} expanded  already fully expanded keys (efficiency)
+ * @param {Array} diagnostics  accumulator for cycle warnings
+ * @param {string[]} chain  current expansion chain for cycle reporting
+ * @returns {boolean}  true if all spreads resolved, false if any unresolvable
  */
-function expandSchemaFragments(schema, currentNs, index, fieldPaths, visited) {
-  const spreads = schema.spreads ?? [];
-  if (spreads.length === 0 && schema.hasSpreads) return false; // hasSpreads but no extracted names
+function expandEntitySpreads(entity, currentNs, index, fieldPaths, expanded, diagnostics, chain) {
+  const spreads = entity.spreads ?? [];
+  if (spreads.length === 0 && entity.hasSpreads) return false; // hasSpreads but no extracted names
+  const ancestors = new Set(chain);
   let allResolved = true;
   for (const spreadName of spreads) {
     const resolvedKey = resolveEntityRef(spreadName, currentNs, index.fragments);
@@ -454,14 +469,34 @@ function expandSchemaFragments(schema, currentNs, index, fieldPaths, visited) {
       allResolved = false;
       continue;
     }
-    if (visited.has(resolvedKey)) continue;
-    visited.add(resolvedKey);
+    if (ancestors.has(resolvedKey)) {
+      // Cycle detected — emit diagnostic
+      const cycleStart = chain.indexOf(resolvedKey);
+      const cyclePath = [...chain.slice(cycleStart), resolvedKey];
+      diagnostics.push({
+        file: entity.file ?? "unknown",
+        line: entity.row != null ? entity.row + 1 : 1,
+        column: 1,
+        severity: "error",
+        rule: "circular-spread",
+        message: `Circular fragment spread detected: ${cyclePath.join(" → ")}`,
+      });
+      continue;
+    }
+    if (expanded.has(resolvedKey)) continue; // already expanded via another path (diamond)
+    expanded.add(resolvedKey);
     const fragment = index.fragments.get(resolvedKey);
     if (!fragment) {
       allResolved = false;
       continue;
     }
     collectFieldPaths(fragment.fields, "", fieldPaths);
+    // Recursively expand spreads within this fragment
+    if (fragment.hasSpreads) {
+      if (!expandEntitySpreads(fragment, currentNs, index, fieldPaths, expanded, diagnostics, [...chain, resolvedKey])) {
+        allResolved = false;
+      }
+    }
   }
   return allResolved;
 }

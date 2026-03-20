@@ -423,6 +423,96 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
   });
 });
 
+// ── Bug 4b: Fragment spread cycles and nested expansion ──────────────────────
+
+describe("Bug 4b: fragment spread cycles and nested expansion", () => {
+  it("expands fragment that spreads another fragment (transitive)", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "src", fields: [{ name: "created_at", type: "TIMESTAMP" }] },
+        { name: "tgt", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["base_fields"] },
+      ],
+      fragments: [
+        { name: "base_fields", fields: [{ name: "name", type: "VARCHAR" }], hasSpreads: true, spreads: ["audit_fields"] },
+        { name: "audit_fields", fields: [{ name: "created_at", type: "TIMESTAMP" }, { name: "updated_at", type: "TIMESTAMP" }] },
+      ],
+      mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "Transitively spread fragment field should pass validation");
+  });
+
+  it("detects self-referential fragment spread", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "src", fields: [{ name: "id", type: "INT" }] },
+        { name: "tgt", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["loop"] },
+      ],
+      fragments: [
+        { name: "loop", fields: [{ name: "x", type: "INT" }], hasSpreads: true, spreads: ["loop"] },
+      ],
+      mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "id", target: "id", file: "test.stm", line: 1 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const cycleWarnings = warnings.filter((w) => w.rule === "circular-spread");
+    assert.equal(cycleWarnings.length, 1, "Should detect self-referential spread");
+    assert.ok(cycleWarnings[0].message.includes("loop"), "Should mention the cyclic fragment name");
+  });
+
+  it("detects mutual cycle between two fragments", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "tgt", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["frag_a"] },
+      ],
+      fragments: [
+        { name: "frag_a", fields: [{ name: "a", type: "INT" }], hasSpreads: true, spreads: ["frag_b"] },
+        { name: "frag_b", fields: [{ name: "b", type: "INT" }], hasSpreads: true, spreads: ["frag_a"] },
+      ],
+      mappings: [{ name: "m1", sources: ["tgt"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "id", target: "id", file: "test.stm", line: 1 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const cycleWarnings = warnings.filter((w) => w.rule === "circular-spread");
+    assert.ok(cycleWarnings.length >= 1, "Should detect cycle between frag_a and frag_b");
+    assert.ok(cycleWarnings[0].message.includes("Circular fragment spread"));
+  });
+
+  it("does not false-positive on diamond-shaped spreads", () => {
+    // base is spread by both frag_a and frag_b; schema spreads both.
+    // No cycle — just shared dependency.
+    const index = makeIndex({
+      schemas: [
+        { name: "tgt", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["frag_a", "frag_b"] },
+      ],
+      fragments: [
+        { name: "frag_a", fields: [{ name: "a", type: "INT" }], hasSpreads: true, spreads: ["base"] },
+        { name: "frag_b", fields: [{ name: "b", type: "INT" }], hasSpreads: true, spreads: ["base"] },
+        { name: "base", fields: [{ name: "created_at", type: "TIMESTAMP" }] },
+      ],
+      mappings: [{ name: "m1", sources: ["tgt"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "id", target: "id", file: "test.stm", line: 1 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const cycleWarnings = warnings.filter((w) => w.rule === "circular-spread");
+    assert.equal(cycleWarnings.length, 0, "Diamond shape is not a cycle");
+  });
+});
+
 // ── Bug 6: Duplicate named definitions ───────────────────────────────────────
 
 describe("Bug 6: duplicate named definitions", () => {

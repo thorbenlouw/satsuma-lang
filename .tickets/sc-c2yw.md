@@ -1,6 +1,6 @@
 ---
 id: sc-c2yw
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T16:04:01Z
