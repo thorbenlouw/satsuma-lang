@@ -99,10 +99,19 @@ function collectFields(bodyNode, indent = 0) {
       if (nested) lines.push(...collectFields(nested, indent + 1));
       lines.push({ indent, text: `${pad}}` });
     } else if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      // quoted_name.text already includes surrounding single quotes
-      const sname = inner?.text ?? "";
+      const lbl = c.namedChildren.find((x) => x.type === "spread_label");
+      let sname = "";
+      if (lbl) {
+        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        if (q) {
+          sname = q.text;
+        } else {
+          sname = lbl.namedChildren
+            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+            .map((x) => x.text)
+            .join(" ");
+        }
+      }
       lines.push({ indent, text: `${pad}...${sname}` });
     }
   }

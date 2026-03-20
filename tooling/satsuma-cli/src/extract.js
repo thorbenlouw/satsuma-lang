@@ -339,8 +339,15 @@ export function extractFragments(rootNode) {
   return collectFromNamespaces(rootNode, "fragment_block").map(({ node, namespace }) => {
     const name = labelText(node);
     const body = child(node, "schema_body");
-    const fields = body ? extractDirectFields(body) : [];
-    return { name, namespace, fields, row: node.startPosition.row };
+    const fieldTree = body ? extractFieldTree(body) : { fields: [], hasSpreads: false, spreads: [] };
+    return {
+      name,
+      namespace,
+      fields: fieldTree.fields,
+      hasSpreads: fieldTree.hasSpreads,
+      spreads: fieldTree.spreads,
+      row: node.startPosition.row,
+    };
   });
 }
 

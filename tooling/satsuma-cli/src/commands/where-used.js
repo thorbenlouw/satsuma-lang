@@ -184,7 +184,18 @@ function walkForSpreads(bodyNode, fragmentName, blockName, results) {
     if (c.type === "fragment_spread") {
       // fragment_spread children use spread_label, not block_label
       const lbl = c.namedChildren.find((x) => x.type === "spread_label" || x.type === "block_label");
-      let sname = lbl?.text ?? "";
+      let sname = "";
+      if (lbl) {
+        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        if (q) {
+          sname = q.text.slice(1, -1);
+        } else {
+          sname = lbl.namedChildren
+            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+            .map((x) => x.text)
+            .join(" ");
+        }
+      }
       if (sname === fragmentName) {
         results.push({ block: blockName, row: c.startPosition.row });
       }
