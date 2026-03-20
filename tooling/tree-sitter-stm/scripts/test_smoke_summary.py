@@ -156,6 +156,17 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 2,
         "block_types": {"schema_block"},
     },
+    "examples/cobol-to-avro.stm": {
+        "parse_ok": True,
+        "min_blocks": 3,
+        "min_schema_members": 39,
+        "min_map_items": 17,
+        "min_paths": 29,
+        "min_comments": 4,
+        "min_notes": 1,
+        "min_annotations": 30,
+        "block_types": {"mapping_block", "schema_block"},
+    },
 }
 
 
