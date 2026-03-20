@@ -1,6 +1,6 @@
 ---
 id: sg-u8sh
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T15:05:34Z

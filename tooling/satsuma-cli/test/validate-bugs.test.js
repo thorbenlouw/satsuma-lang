@@ -309,15 +309,39 @@ describe("Bug 3: metric source extraction", () => {
 
 // ── Bug 4: Suppress for schemas with unresolved spreads ──────────────────────
 
+function spreadLabel(name) {
+  // spread_label children: quoted_name for 'quoted', identifier for bare
+  if (name.startsWith("'") || name.startsWith('"')) {
+    return n("spread_label", [n("quoted_name", [], name)]);
+  }
+  const ids = name.split(" ").map((w) => ident(w));
+  return n("spread_label", ids);
+}
+
+function fragmentSpread(name) {
+  return n("fragment_spread", [spreadLabel(name)], `...${name}`);
+}
+
 describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
-  it("detects fragment_spread in schema body", () => {
-    const spread = n("fragment_spread", [], "...audit fields");
+  it("detects fragment_spread in schema body and extracts spread names", () => {
+    const spread = fragmentSpread("audit_fields");
     const body = n("schema_body", [fieldDecl("id", "INT"), spread]);
     const block = n("schema_block", [blockLabel("my_schema"), body]);
     const root = n("source_file", [block]);
 
     const schemas = extractSchemas(root);
     assert.equal(schemas[0].hasSpreads, true);
+    assert.deepEqual(schemas[0].spreads, ["audit_fields"]);
+  });
+
+  it("extracts quoted spread names", () => {
+    const spread = fragmentSpread("'audit fields'");
+    const body = n("schema_body", [fieldDecl("id", "INT"), spread]);
+    const block = n("schema_block", [blockLabel("my_schema"), body]);
+    const root = n("source_file", [block]);
+
+    const schemas = extractSchemas(root);
+    assert.deepEqual(schemas[0].spreads, ["audit fields"]);
   });
 
   it("suppresses field-not-in-schema for target with unresolved spreads", () => {
@@ -335,6 +359,67 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
     const warnings = collectSemanticWarnings(index);
     const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Should not warn for target schema with unresolved spreads");
+  });
+
+  it("expands fragment fields and validates arrow targets", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "src", fields: [{ name: "created_at", type: "TIMESTAMP" }] },
+        { name: "tgt", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["audit_fields"] },
+      ],
+      fragments: [
+        { name: "audit_fields", fields: [{ name: "created_at", type: "TIMESTAMP" }, { name: "updated_at", type: "TIMESTAMP" }] },
+      ],
+      mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "Fragment-contributed field should pass validation");
+  });
+
+  it("warns for fields not in schema or expanded fragments", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "src", fields: [{ name: "bogus_field", type: "VARCHAR" }] },
+        { name: "tgt", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["audit_fields"] },
+      ],
+      fragments: [
+        { name: "audit_fields", fields: [{ name: "created_at", type: "TIMESTAMP" }] },
+      ],
+      mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "bogus_field", target: "nonexistent_field", file: "test.stm", line: 10 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 1, "Should warn for field not in schema or fragment");
+    assert.ok(fieldWarnings[0].message.includes("nonexistent_field"));
+  });
+
+  it("expands fragment fields for source schemas", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "src", fields: [{ name: "id", type: "INT" }], hasSpreads: true, spreads: ["audit_fields"] },
+        { name: "tgt", fields: [{ name: "id", type: "INT" }, { name: "created_at", type: "TIMESTAMP" }] },
+      ],
+      fragments: [
+        { name: "audit_fields", fields: [{ name: "created_at", type: "TIMESTAMP" }] },
+      ],
+      mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
+      fieldArrows: [
+        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+      ],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "Fragment-contributed source field should pass validation");
   });
 });
 

@@ -299,9 +299,13 @@ export function collectSemanticWarnings(index) {
       const tgtFieldPaths = new Set();
       collectFieldPaths(tgtFields, "", tgtFieldPaths);
 
-      // Check if source or target schema has unresolved spreads
-      const srcHasSpreads = resolvedSrcKeys.some((s) => index.schemas.get(s)?.hasSpreads);
-      const tgtHasSpreads = resolvedTgtKey ? (index.schemas.get(resolvedTgtKey)?.hasSpreads ?? false) : false;
+      // Expand fragment spreads: inline fragment fields into the field path sets.
+      // If a spread references an unknown fragment, fall back to suppressing
+      // field-not-in-schema for that side (conservative: avoid false positives).
+      const srcHasUnresolved = expandSpreads(resolvedSrcKeys, currentNs, index, srcFieldPaths);
+      const tgtHasUnresolved = resolvedTgtKey
+        ? expandSpreads([resolvedTgtKey], currentNs, index, tgtFieldPaths)
+        : false;
 
       for (const arrow of uniqueArrows) {
         if (arrow.mapping !== mapping.name || (arrow.namespace ?? null) !== currentNs) continue;
@@ -310,7 +314,7 @@ export function collectSemanticWarnings(index) {
           arrow.source &&
           srcSchema &&
           index.schemas.has(srcSchema) &&
-          !srcHasSpreads &&
+          !srcHasUnresolved &&
           !resolveFieldPath(arrow.source, resolvedSrcKeys, index, srcFieldPaths)
         ) {
           diagnostics.push({
@@ -326,7 +330,7 @@ export function collectSemanticWarnings(index) {
           arrow.target &&
           resolvedTgtKey &&
           index.schemas.has(resolvedTgtKey) &&
-          !tgtHasSpreads &&
+          !tgtHasUnresolved &&
           !resolveFieldPath(arrow.target, [resolvedTgtKey], index, tgtFieldPaths)
         ) {
           diagnostics.push({
@@ -410,6 +414,56 @@ function resolveFieldPath(path, schemaNames, index, fieldPaths) {
   }
 
   return false;
+}
+
+/**
+ * Expand fragment spreads for a set of schemas, adding fragment fields to the
+ * fieldPaths set. Returns true if any spread references an unresolvable
+ * fragment (in which case validation should be suppressed for that side).
+ *
+ * @param {string[]} schemaKeys  resolved schema keys to expand
+ * @param {string|null} currentNs  namespace context for resolution
+ * @param {object} index  WorkspaceIndex
+ * @param {Set<string>} fieldPaths  accumulator set (mutated)
+ * @returns {boolean}  true if any spread could not be resolved
+ */
+function expandSpreads(schemaKeys, currentNs, index, fieldPaths) {
+  let hasUnresolved = false;
+  const visited = new Set(); // prevent infinite loops from circular spreads
+  for (const key of schemaKeys) {
+    const schema = index.schemas.get(key);
+    if (!schema?.hasSpreads) continue;
+    if (!expandSchemaFragments(schema, currentNs, index, fieldPaths, visited)) {
+      hasUnresolved = true;
+    }
+  }
+  return hasUnresolved;
+}
+
+/**
+ * Recursively expand spreads for a single schema, adding fragment fields
+ * to the fieldPaths set. Returns false if any spread is unresolvable.
+ */
+function expandSchemaFragments(schema, currentNs, index, fieldPaths, visited) {
+  const spreads = schema.spreads ?? [];
+  if (spreads.length === 0 && schema.hasSpreads) return false; // hasSpreads but no extracted names
+  let allResolved = true;
+  for (const spreadName of spreads) {
+    const resolvedKey = resolveEntityRef(spreadName, currentNs, index.fragments);
+    if (!resolvedKey) {
+      allResolved = false;
+      continue;
+    }
+    if (visited.has(resolvedKey)) continue;
+    visited.add(resolvedKey);
+    const fragment = index.fragments.get(resolvedKey);
+    if (!fragment) {
+      allResolved = false;
+      continue;
+    }
+    collectFieldPaths(fragment.fields, "", fieldPaths);
+  }
+  return allResolved;
 }
 
 function capitalize(str) {
