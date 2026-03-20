@@ -7,8 +7,8 @@ authors:
     given-names: Thorben
     affiliation: Equal Experts
 license: MIT
-repository-code: "https://github.com/thorbenlouw/stm-grammar"
-url: "https://github.com/thorbenlouw/stm-grammar"
+repository-code: "https://github.com/thorbenlouw/satsuma-lang"
+url: "https://github.com/thorbenlouw/satsuma-lang"
 abstract: >-
   Satsuma is a domain-specific language for source-to-target data mapping,
   designed to replace ad hoc spreadsheets and verbose structured specs

@@ -1,7 +1,7 @@
 # Satsuma
 
-[![CI](https://github.com/thorbenlouw/stm-grammar/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/stm-grammar/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
-[![Release](https://github.com/thorbenlouw/stm-grammar/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/thorbenlouw/stm-grammar/actions/workflows/release.yml)
+[![CI](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+[![Release](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/release.yml)
 
 Satsuma is a domain-specific language for source-to-target data mapping.
 
@@ -63,13 +63,13 @@ Pre-built binaries are published on every merge to `main`. Install with npm
 
 ```bash
 # macOS (Apple Silicon)
-npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/satsuma-cli-darwin-arm64.tgz
+npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-arm64.tgz
 
 # macOS (Intel)
-npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/satsuma-cli-darwin-x64.tgz
+npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-x64.tgz
 
 # Linux (x64)
-npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/satsuma-cli-linux-x64.tgz
+npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-linux-x64.tgz
 ```
 
 This gives you the `satsuma` command on your PATH. Run `satsuma --help` to see
