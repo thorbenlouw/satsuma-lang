@@ -6,15 +6,26 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "satsuma": "./src/index.js"
+    "satsuma": "./dist/index.js"
+  },
+  "imports": {
+    "#src/*": "./src/*"
   },
   "scripts": {
     "start": "node src/index.js",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "pretest": "tsc",
+    "prepare": "tsc",
     "test": "node --test test/**/*.test.js"
   },
   "dependencies": {
     "commander": "^12.0.0",
     "tree-sitter": "^0.25.0",
     "tree-sitter-satsuma": "file:../tree-sitter-satsuma"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
   }
 }

@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { normalizeName, matchFields } from "../src/normalize.js";
+import { normalizeName, matchFields } from "#src/normalize.js";
 
 describe("normalizeName", () => {
   it("lowercases and strips underscores", () => {

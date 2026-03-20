@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { classifyTransform, classifyArrow } from "../src/classify.js";
+import { classifyTransform, classifyArrow } from "#src/classify.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 

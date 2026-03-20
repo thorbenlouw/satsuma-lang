@@ -12,8 +12,8 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildIndex } from "../src/index-builder.js";
-import { collectSemanticWarnings } from "../src/validate.js";
+import { buildIndex } from "#src/index-builder.js";
+import { collectSemanticWarnings } from "#src/validate.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
