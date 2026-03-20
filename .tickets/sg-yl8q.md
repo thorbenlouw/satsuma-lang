@@ -1,6 +1,6 @@
 ---
 id: sg-yl8q
-status: open
+status: closed
 deps: []
 links: [stm-7rz4]
 created: 2026-03-20T13:13:53Z
