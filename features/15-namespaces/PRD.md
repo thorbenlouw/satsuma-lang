@@ -1,6 +1,6 @@
 # Namespaces: Scoped Definitions with `namespace` Blocks
 
-> **Status: DRAFT** (2026-03-19)
+> **Status: COMPLETED** (2026-03-20). Grammar (`namespace_block`, `namespaced_path`), index builder, all CLI commands, validator, VS Code syntax highlighting, and canonical examples implemented. All corpus tests pass.
 
 ## Goal
 
