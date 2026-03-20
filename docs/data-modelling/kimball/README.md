@@ -14,6 +14,7 @@ STM v2 uses `( )` metadata blocks for **all** annotations — there are no speci
 
 | File | Description | Key conventions demonstrated |
 |------|-------------|------------------------------|
+| `platform.stm` | Platform entry point — imports all pipeline schemas | Namespace-qualified imports, lineage traversal |
 | `common.stm` | Shared fragments (address, audit), lookups (regions, hierarchy, channels) | `fragment`, `schema` for lookups, `import` |
 | `dim-customer.stm` | Conformed customer dimension, SCD Type 2, fed by 3 sources | `dimension`, `conformed`, `scd 2`, `track`, `ignore`, multi-source mapping |
 | `dim-product.stm` | Product dimension with merchandise hierarchy, SCD Type 1 | `dimension`, `scd 1`, `natural_key`, lookup-via-NL |
@@ -40,7 +41,7 @@ These are **vocabulary tokens** in `( )` metadata — not reserved keywords. An 
 | `track {fields}` | Fields that trigger SCD versioning | `(track {email, phone})` |
 | `ignore {fields}` | Fields that do NOT trigger versioning | `(ignore {last_login_channel})` |
 | `grain {fields}` | Fact table grain | `(grain {transaction_id, line_number})` |
-| `ref <dim> on <field>` | Foreign key to a dimension | `(ref dim_customer on customer_id)` |
+| `ref <dim>.<field>` | Foreign key to a dimension | `(ref dim_customer.customer_id)` |
 
 ### Field-level tokens
 
@@ -76,22 +77,22 @@ No inferred columns — SCD Type 1 overwrites in place. The `natural_key` serves
 | `etl_batch_id` | `BIGINT` | Load batch identifier for auditability |
 | `loaded_at` | `TIMESTAMPTZ` | When this row was loaded |
 
-### For `ref <dim> on <field>`
+### For `ref <dim>.<field>`
 
 Each `ref` declaration infers a surrogate key FK column:
 
 | Declaration | Inferred column | Type |
 |------------|----------------|------|
-| `ref dim_customer on customer_id` | `dim_customer_key` | `BIGINT (ref dim_customer.surrogate_key)` |
-| `ref dim_product on sku` | `dim_product_key` | `BIGINT (ref dim_product.surrogate_key)` |
-| `ref dim_store on store_id` | `dim_store_key` | `BIGINT (ref dim_store.surrogate_key)` |
-| `ref dim_date on transaction_date` | `dim_date_key` | `BIGINT (ref dim_date.surrogate_key)` |
+| `ref dim_customer.customer_id` | `dim_customer_key` | `BIGINT (ref dim_customer.surrogate_key)` |
+| `ref dim_product.sku` | `dim_product_key` | `BIGINT (ref dim_product.surrogate_key)` |
+| `ref dim_store.store_id` | `dim_store_key` | `BIGINT (ref dim_store.surrogate_key)` |
+| `ref dim_date.transaction_date` | `dim_date_key` | `BIGINT (ref dim_date.surrogate_key)` |
 
 ## Cross-Layer Imports
 
 The `mart-customer-360.stm` file demonstrates cross-layer imports: `dim_customer` and `fact_sales` are schema blocks in their respective files, but appear on the source side of mappings in the mart. The `mapping` block's `source { }` / `target { }` determines data flow direction — not the file where the schema was originally defined.
 
-Compare the Kimball mart with the Data Vault equivalent in `../example_datavault/mart-customer-360.stm`:
+Compare the Kimball mart with the Data Vault equivalent in `../datavault/mart-customer-360.stm`:
 
 | Aspect | Kimball mart | Data Vault mart |
 |--------|-------------|----------------|
@@ -102,7 +103,7 @@ Compare the Kimball mart with the Data Vault equivalent in `../example_datavault
 
 ## Comparison with Data Vault
 
-The same RetailCo domain is modelled as a Data Vault in `../example_datavault/`. Key differences:
+The same RetailCo domain is modelled as a Data Vault in `../datavault/`. Key differences:
 
 - **Kimball**: Dimensions are denormalized, query-optimized. Fact tables reference dimensions via surrogate keys. History is managed per-dimension via SCD types.
 - **Data Vault**: Hubs hold business keys, satellites hold attributes, links hold relationships. Everything is insert-only with full history. More normalized, more resilient to source changes, but requires a mart layer for analytics queries.

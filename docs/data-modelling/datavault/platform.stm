@@ -1,0 +1,64 @@
+// RetailCo International — Data Vault 2.0
+// Platform Entry Point
+//
+// This file imports every schema in the Data Vault pipeline, providing a
+// single entry point for platform-wide lineage traversal:
+//
+//   stm lineage --from hub_customer .
+//
+// traces how customer data flows from source systems through the raw
+// vault (hubs, links, satellites) into information marts.
+
+// --- Shared transforms and lookups ---
+import { dv_hash } from "common.stm"
+import { store_region_map, product_hierarchy, dim_date } from "common.stm"
+
+// --- Hubs ---
+import { hub_customer } from "hub-customer.stm"
+import { hub_product } from "hub-product.stm"
+import { hub_store } from "hub-store.stm"
+
+// --- Satellites (customer) ---
+import { sat_customer_demographics, sat_customer_online } from "hub-customer.stm"
+
+// --- Satellites (product) ---
+import { sat_product_attributes, sat_product_pricing } from "hub-product.stm"
+
+// --- Satellites (store) ---
+import { sat_store_details } from "hub-store.stm"
+
+// --- Links ---
+import { link_sale } from "link-sale.stm"
+import { link_inventory } from "link-inventory.stm"
+
+// --- Satellites (transactional) ---
+import { sat_sale_detail } from "link-sale.stm"
+
+// --- Satellites (inventory) ---
+import { sat_inventory_effectivity, sat_inventory_levels } from "link-inventory.stm"
+
+// --- Information Marts ---
+import { mart_customer_360 } from "mart-customer-360.stm"
+import { mart_fact_sales } from "mart-sales.stm"
+
+note {
+  """
+  # Data Vault Platform Overview
+
+  Three-layer architecture:
+
+  1. **Raw Vault** — hubs (business keys), links (relationships), and
+     satellites (descriptive attributes with full history)
+  2. **Effectivity** — temporal validity tracking for link relationships
+  3. **Information Marts** — denormalized Kimball-style dimensions and
+     facts built from the vault for analytics consumption
+
+  Each layer imports from the one above. The `import` statements here
+  establish the full dependency graph so that `stm lineage` can trace
+  data flow across the entire platform.
+
+  See the companion Kimball pipeline in `../kimball/platform.stm`
+  for a comparison of the same domain modelled with dimensions, facts,
+  and SCD patterns directly.
+  """
+}
