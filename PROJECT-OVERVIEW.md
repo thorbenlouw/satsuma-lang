@@ -35,11 +35,24 @@ The rise of AI coding agents changes the equation. We are entering an era where:
 
 The world needs a **lingua franca** for data mapping that is simultaneously human-readable and machine-parseable.
 
+It also needs a format that acknowledges a hard truth: not all integration intent
+should be forced into a fully formal expression language. Some parts of a
+mapping are best represented as deterministic structure. Some parts are best
+represented as carefully scoped natural language. Satsuma is built around that
+split.
+
 ---
 
 ## The Vision
 
-**Satsuma is to data mapping what DBML is to database schemas** — a concise, beautiful, parseable domain-specific language that becomes the single source of truth for how data transforms between systems.
+**Satsuma is to data mapping what DBML is to database schemas** — a concise,
+beautiful, parseable domain-specific language that becomes the single source of
+truth for how data transforms between systems.
+
+But that analogy is only half the story. Satsuma is also designed as an
+**AI-native mapping spec**: a language where deterministic structure and natural
+language live together intentionally, so parser-backed tools and LLM reasoning
+can work side by side.
 
 ### Design goals
 
@@ -49,9 +62,11 @@ The world needs a **lingua franca** for data mapping that is simultaneously huma
 
 3. **A parser should be able to validate it.** Unlike free-text Excel cells, every structural element of Satsuma is formally specified. A linter can catch missing mappings, type mismatches, broken references, and schema inconsistencies automatically.
 
-4. **It should be 40-60% smaller than equivalent YAML.** Token efficiency matters for AI consumption, but it also matters for human scanning. Less ceremony means faster comprehension.
+4. **Natural language should be first-class, but bounded.** Notes, review context, and underspecified business rules should travel with the mapping instead of being pushed into Slack threads or detached documents. That natural language should be explicitly located and easy for tooling to extract.
 
-5. **It should handle the real world.** Not just clean REST-to-REST API mappings, but legacy SQL Server databases with dates stored as VARCHAR, EDI fixed-length messages with qualifier-filtered segments, COBOL copybooks with field names that contain spaces, and XML with deeply nested namespaces.
+5. **It should be 40-60% smaller than equivalent YAML.** Token efficiency matters for AI consumption, but it also matters for human scanning. Less ceremony means faster comprehension.
+
+6. **It should handle the real world.** Not just clean REST-to-REST API mappings, but legacy SQL Server databases with dates stored as VARCHAR, EDI fixed-length messages with qualifier-filtered segments, COBOL copybooks with field names that contain spaces, and XML with deeply nested namespaces.
 
 ### What Satsuma enables
 
@@ -64,6 +79,39 @@ The world needs a **lingua franca** for data mapping that is simultaneously huma
 | **Cross-team communication** | BAs, data engineers, and architects share one format |
 | **Tool ecosystem** | Visualizers, diff tools, code generators, IDE plugins |
 | **Migration from Excel** | AI agent reads existing Excel mapping → outputs `.stm` file |
+
+### Why the natural-language layer matters
+
+Many mapping languages make one of two mistakes:
+
+- they stay mostly prose, so tooling cannot trust them
+- they over-formalize everything, so real project intent escapes into side documents anyway
+
+Satsuma tries to avoid both failures.
+
+The parser-backed parts of the language carry the structure that must be exact:
+
+- schemas and field shapes
+- mapping arrows and references
+- metadata tags and constraints
+- imports, fragments, and reusable transforms
+
+The natural-language parts carry the intent that humans and agents still need:
+
+- business rule explanations
+- partially specified transforms
+- caveats, assumptions, and warnings
+- review context and implementation guidance
+
+This is the key product idea: **Satsuma lets deterministic tools extract facts,
+and lets AI agents reason over the parts that remain intentionally human.**
+
+That makes the language unusually well suited to agent workflows:
+
+- the CLI can answer structural questions exactly
+- the agent can read the extracted NL content without scraping arbitrary files
+- validation, lineage, and impact analysis stay grounded in the parser
+- implementation generation can combine hard constraints with contextual judgment
 
 ---
 
@@ -94,6 +142,11 @@ This separation of **structure** from **logic** from **context** is fundamental.
 - Schema blocks can be imported and reused across integrations
 - Mapping blocks can be reviewed independently of schema definitions
 - Notes and context travel with the spec, not in separate documents
+
+It also means Satsuma is compatible with a hybrid deterministic-plus-LLM tool
+model. Structural tooling extracts the parseable facts. Agents then reason over
+the explicit natural-language content in context, instead of treating the whole
+spec as opaque prose.
 
 ### A taste of the syntax
 
@@ -134,6 +187,11 @@ mapping {
 
 Compare this to the equivalent YAML (~35 lines) or Excel (a table with 6 columns and ambiguous free-text transforms). The Satsuma version is scannable, parseable, and complete.
 
+The important detail is that the natural-language line for `display_name` is
+not a failure of the language. It is a deliberate choice. Some transforms are
+better represented as business intent than as a prematurely formal mini-language.
+Satsuma keeps that intent in-band so both humans and AI agents can use it.
+
 ---
 
 ## Competitive Landscape & Inspiration
@@ -147,7 +205,10 @@ Compare this to the equivalent YAML (~35 lines) or Excel (a table with 6 columns
 | **Informatica / Talend mappings** | Visual, enterprise-grade | Satsuma is open, text-based, Git-friendly, vendor-neutral |
 | **AsyncAPI / OpenAPI** | Standardized API descriptions | Satsuma describes *transformations between* systems, not individual system interfaces |
 
-Satsuma is not trying to replace any of these. It fills a specific gap: **a standardized, parseable, human-readable format for the mapping document that sits between systems.**
+Satsuma is not trying to replace any of these. It fills a specific gap:
+**a standardized, parseable, human-readable format for the mapping document
+that sits between systems, with natural language retained as part of the spec
+instead of pushed outside it.**
 
 ---
 
@@ -174,38 +235,40 @@ How we'll know Satsuma is working:
 
 1. **Adoption:** Teams choose Satsuma over Excel for new mapping documents
 2. **AI reliability:** Claude/GPT can produce valid Satsuma >90% of the time from a system prompt
-3. **Tooling ecosystem:** At least parser, linter, and visualizer exist
-4. **Community:** Others contribute examples, tools, or extensions
-5. **Reduced rework:** Integration defects attributable to mapping ambiguity decrease
+3. **Agent leverage:** Teams use parser-backed Satsuma tooling plus LLM reasoning for code generation, review, lineage, or impact analysis
+4. **Tooling ecosystem:** Parser, extraction CLI, validator/lint, and visualizer/editor tooling exist
+5. **Community:** Others contribute examples, tools, or extensions
+6. **Reduced rework:** Integration defects attributable to mapping ambiguity decrease
 
 ---
 
-## Project Roadmap
+## Current State & Roadmap
 
-### Phase 1: Specification & Reference — DONE
+### What exists today
+
 - Formal language specification ([SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md))
-- Canonical example library covering all major integration patterns (11 files)
-- AI-optimized cheat sheet and grammar for system prompts ([AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md))
-- BA tutorial ([BA-TUTORIAL.md](BA-TUTORIAL.md))
-- Data modelling conventions for Kimball and Data Vault patterns with canonical examples
-
-### Phase 2: Core Tooling — DONE
-- Tree-sitter parser (190 corpus tests, all examples parse clean)
+- Canonical example library covering major integration patterns (16 `.stm` files)
+- AI-oriented quick reference and compact grammar for prompts ([AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md))
+- Tree-sitter parser (190 corpus tests)
 - CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
-- VS Code extension with TextMate grammar for v2 syntax highlighting
-- Pre-built CLI release artifacts published on every merge to `main`
+- VS Code syntax-highlighting extension
+- Validation improvements against the example corpus
+- Data-modelling conventions and examples for Kimball and Data Vault patterns
 
-### Phase 3: AI Integration — IN PROGRESS
-- System prompt for Excel-to-Satsuma conversion (lite variant authored, untested)
-- Satsuma-to-Excel export (not started — see [FUTURE-WORK.md](FUTURE-WORK.md))
-- Satsuma-to-code generation (Python, Java, SQL, dbt) — not started
-- Validation agent (compare implementation against spec) — not started
+### What is strategically important next
 
-### Phase 4: Ecosystem — NOT STARTED
-- Web-based visualizer (render Satsuma as interactive diagrams)
-- Structural diff tool — `satsuma diff` command exists for structural comparison
-- Registry (share and discover reusable schemas/fragments)
-- CI/CD integration — CI runs parser, CLI, and extension tests on every PR
+- **Agent workflows on top of deterministic tooling.** The immediate opportunity is not "replace the parser with AI." It is to use the parser and CLI as dependable primitives inside AI agents that draft mappings, explain lineage, review changes, and generate implementation scaffolding.
+- **Cross-file platform modelling.** Namespaces and imports are the path to workspace-scale lineage and cleaner large-platform composition. The namespace design is drafted but not yet implemented.
+- **Richer linting and semantics.** Structural validation exists today; policy linting, deeper conventions, and broader semantic checks are still maturing.
+- **Excel and code-generation loops.** Excel-to-Satsuma, Satsuma-to-Excel, and code generation remain important, but most of that work is still deferred or partial.
+- **Editor and visualization ecosystem.** Syntax highlighting exists; language-server features and visual exploration remain future work.
+
+### Near-term roadmap
+
+1. **Strengthen the parser-backed core.** Keep the spec, examples, parser, CLI, and validation behavior aligned as the language evolves.
+2. **Make agent workflows first-class.** Improve prompt/reference material and workflow patterns so agents consistently combine `satsuma` CLI output with LLM reasoning instead of scraping raw files.
+3. **Scale to platform modelling.** Implement namespaces/import-driven composition for large workspaces and cross-team lineage.
+4. **Expand downstream tooling.** Add linting, editor intelligence, visualization, and eventually generators/exporters on top of the stable parse tree model.
 
 ---
 

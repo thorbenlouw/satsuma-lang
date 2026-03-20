@@ -17,6 +17,17 @@ Satsuma is intended to sit between systems and describe how data moves from one
 shape to another, whether those systems are databases, APIs, files, messages,
 events, or mixed enterprise platforms.
 
+What makes Satsuma different is that it does not force a false choice between
+formal structure and human intent. The language keeps schemas, mappings,
+metadata, and references deterministic and parser-backed, while still allowing
+natural language exactly where real projects need it: notes, business rules,
+underspecified transforms, and review context.
+
+That makes Satsuma a good fit for AI agents. Deterministic tooling can extract
+the structural facts with high confidence, while an LLM handles the reasoning
+over the natural-language parts. The parser and CLI are not competing with the
+agent; they are the reliable substrate that lets the agent reason safely.
+
 ## Why Satsuma Exists
 
 Most mapping specifications today are hard to trust operationally:
@@ -33,6 +44,44 @@ That matters even more in AI-assisted delivery. Agents can produce better code,
 better reviews, and better impact analysis when they operate against a
 constrained language instead of reverse-engineering free-form implementation
 logic.
+
+The intended operating model is hybrid:
+
+- Satsuma captures the deterministic structure of the integration
+- the `satsuma` CLI extracts facts, topology, metadata, lineage, and NL content
+- the LLM reasons over those extracted facts plus the embedded natural-language intent
+
+This is the core idea: use deterministic tools for what must be exact, and use
+LLM reasoning for what cannot be fully formalized without making the language
+unusable.
+
+## Natural Language as a First-Class Part of the Spec
+
+Satsuma treats natural language as part of the specification surface, not as an
+embarrassing escape hatch.
+
+In real mapping work, some intent is naturally formal:
+
+- source and target structures
+- field references
+- metadata tags
+- imports and reusable definitions
+- deterministic transform pipelines
+
+Some intent is not naturally formal, at least not without turning the mapping
+document into a programming language:
+
+- business rules that depend on domain interpretation
+- legacy behaviors that are known but not fully codified
+- transformation notes that require analyst review
+- implementation guidance and caveats for downstream teams
+
+Satsuma keeps both in one versioned artifact. That is important for AI agents:
+
+- the parser-backed parts provide reliable structure
+- the natural-language parts preserve the reasoning context humans actually use
+- the CLI can surface both without inventing semantics
+- the agent can then apply judgment instead of scraping prose from Excel cells
 
 ## What Satsuma Covers
 
@@ -55,6 +104,13 @@ The long-term tooling model is parser-first:
 4. formatter
 5. editor support
 6. visualizers and generators
+
+For agent workflows specifically, the model is:
+
+1. author or generate `.stm`
+2. validate and extract with deterministic tooling
+3. let the agent reason over the extracted structure plus NL intent
+4. generate code, reviews, documentation, or impact analysis from that combined view
 
 ## Install the CLI
 
@@ -122,7 +178,7 @@ and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
 What exists today:
 
 - the Satsuma v2 language specification
-- a canonical example corpus (11 `.stm` files covering all major integration patterns)
+- a canonical example corpus (16 `.stm` files covering major integration patterns)
 - a tree-sitter parser (190 corpus tests, all examples parse clean)
 - a CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - a VS Code extension with TextMate grammar for v2 syntax highlighting
@@ -162,6 +218,11 @@ The parser work lives in
 and is responsible for syntax parsing only. Semantic validation, formatting,
 import resolution, and code generation should consume the parser output rather
 than reinterpreting raw Satsuma text.
+
+The same principle applies to AI-agent integrations. Agents should prefer
+parser-backed CLI output over raw file scraping for structural questions, then
+apply reasoning only where the language intentionally carries natural-language
+meaning.
 
 If you are contributing tooling, start here:
 

@@ -46,7 +46,7 @@ Fine-grained extraction — slice below block level to get specific arrows, NL c
 |---|---|---|
 | `arrows <schema.field>` | All arrows involving a field, with transform classification | `satsuma arrows loyalty_sfdc.LoyaltyTier` |
 | `nl <scope>` | NL content (notes, transforms, comments) in a scope | `satsuma nl mapping 'demographics to mart'` |
-| `meta <scope>` | Metadata entries for a block or field | `satsuma meta field loyalty_sfdc.Email` |
+| `meta <scope>` | Metadata entries for a block or field | `satsuma meta loyalty_sfdc.Email` |
 | `fields <schema>` | Field list with types and metadata | `satsuma fields sat_customer_demographics` |
 | `match-fields --source <s> --target <t>` | Normalized name comparison between two schemas | `satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics` |
 
@@ -112,7 +112,7 @@ satsuma arrows loyalty_sfdc.LoyaltyTier --as-source --json
 satsuma arrows sat_customer_demographics.loyalty_tier --as-source --json
 
 # 3. When a hop is classified [nl], read the NL content
-satsuma nl field mart_customer_360.loyalty_tier
+satsuma nl mart_customer_360.loyalty_tier
 
 # 4. Agent interprets the NL, discovers implicit dependencies,
 #    and calls arrows again to chase them
@@ -144,7 +144,7 @@ satsuma arrows loyalty_sfdc.Email --as-source --json
 satsuma arrows sat_customer_demographics.email --as-source --json
 
 # 4. At [nl] hops, agent reads the NL to judge whether PII survives
-satsuma nl field mart_customer_360.email
+satsuma nl mart_customer_360.email
 ```
 
 ### Drafting a new mapping
@@ -158,7 +158,7 @@ satsuma nl schema loyalty_sfdc
 satsuma nl schema sat_customer_demographics
 
 # 3. Agent reads metadata to understand constraints
-satsuma meta field sat_customer_demographics.country_code
+satsuma meta sat_customer_demographics.country_code
 
 # 4. Agent writes the mapping, applying its own judgment
 ```
