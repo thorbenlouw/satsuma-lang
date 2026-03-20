@@ -1,5 +1,5 @@
 /**
- * validate.js — Structural and semantic validation for Satsuma workspaces
+ * validate.ts — Structural and semantic validation for Satsuma workspaces
  *
  * Structural checks: CST ERROR/MISSING nodes from tree-sitter.
  * Semantic checks: undefined references, duplicates, field mismatches,
@@ -14,31 +14,18 @@ import {
 } from "./nl-ref-extract.js";
 import { resolveScopedEntityRef } from "./index-builder.js";
 import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
-
-/**
- * @typedef {Object} Diagnostic
- * @property {string} file
- * @property {number} line     1-based
- * @property {number} column   1-based
- * @property {'error'|'warning'} severity
- * @property {string} rule
- * @property {string} message
- */
+import type { ArrowRecord, LintDiagnostic, SyntaxNode, WorkspaceIndex } from "./types.js";
 
 /**
  * Collect all ERROR and MISSING nodes from a CST.
- *
- * @param {object} node  tree-sitter root node
- * @param {string} file  file path
- * @returns {Diagnostic[]}
  */
-export function collectParseErrors(node, file) {
-  const diagnostics = [];
+export function collectParseErrors(node: SyntaxNode, file: string): LintDiagnostic[] {
+  const diagnostics: LintDiagnostic[] = [];
   walkErrors(node, file, diagnostics);
   return diagnostics;
 }
 
-function walkErrors(node, file, diagnostics) {
+function walkErrors(node: SyntaxNode, file: string, diagnostics: LintDiagnostic[]): void {
   if (node.type === "ERROR") {
     diagnostics.push({
       file,
@@ -47,6 +34,7 @@ function walkErrors(node, file, diagnostics) {
       severity: "error",
       rule: "parse-error",
       message: `Syntax error: unexpected '${node.text.slice(0, 40).replace(/\n/g, "\\n")}'`,
+      fixable: false,
     });
   } else if (node.isMissing) {
     diagnostics.push({
@@ -56,6 +44,7 @@ function walkErrors(node, file, diagnostics) {
       severity: "error",
       rule: "missing-node",
       message: `Missing expected '${node.type}'`,
+      fixable: false,
     });
   }
   for (const c of node.namedChildren) {
@@ -63,32 +52,13 @@ function walkErrors(node, file, diagnostics) {
   }
 }
 
-/**
- * Resolve an entity name against the index with namespace-aware lookup.
- *
- * Qualified names (ns::name) are direct lookups.
- * Unqualified names resolve in: (1) current namespace, (2) global namespace.
- *
- * @param {string} ref  The reference name (possibly ns::qualified)
- * @param {string|null} currentNs  The namespace of the referring entity
- * @param {Map} entityMap  The index map to search (schemas, fragments, etc.)
- * @returns {string|null}  The resolved qualified key, or null if not found
- */
-function resolveEntityRef(ref, currentNs, entityMap) {
+function resolveEntityRef(ref: string, currentNs: string | null, entityMap: Map<string, unknown>): string | null {
   return resolveScopedEntityRef(ref, currentNs, entityMap);
 }
 
-/**
- * Suggest qualified alternatives for an unresolved reference.
- *
- * @param {string} ref  The unresolved reference name
- * @param {Map} entityMap  The index map to search
- * @returns {string[]}  Qualified names that match the base name
- */
-function suggestAlternatives(ref, entityMap) {
-  // Only suggest for unqualified refs
+function suggestAlternatives(ref: string, entityMap: Map<string, unknown>): string[] {
   if (ref.includes("::")) return [];
-  const hints = [];
+  const hints: string[] = [];
   for (const key of entityMap.keys()) {
     if (key.endsWith(`::${ref}`)) hints.push(key);
   }
@@ -97,15 +67,11 @@ function suggestAlternatives(ref, entityMap) {
 
 /**
  * Run semantic checks against a WorkspaceIndex.
- *
- * @param {object} index  WorkspaceIndex
- * @returns {Diagnostic[]}
  */
-export function collectSemanticWarnings(index) {
-  const diagnostics = [];
+export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[] {
+  const diagnostics: LintDiagnostic[] = [];
 
-  // Check for duplicate named definitions (schemas, metrics, mappings, fragments, transforms).
-  // Names must be unique across all entity types within a namespace.
+  // Check for duplicate named definitions
   if (index.duplicates) {
     for (const dup of index.duplicates) {
       if (dup.kind === "namespace-metadata") {
@@ -116,6 +82,7 @@ export function collectSemanticWarnings(index) {
           severity: "error",
           rule: "namespace-metadata-conflict",
           message: `Namespace '${dup.name}' has conflicting '${dup.tag}' values: "${dup.value}" vs "${dup.previousValue}" in ${dup.previousFile}:${dup.previousRow + 1}`,
+          fixable: false,
         });
         continue;
       }
@@ -130,14 +97,14 @@ export function collectSemanticWarnings(index) {
         severity: "error",
         rule: "duplicate-definition",
         message: msg,
+        fixable: false,
       });
     }
   }
 
-  // Helper: build a combined map of schemas + fragments for reference resolution
   const allDefinitions = new Map([...index.schemas, ...index.fragments]);
 
-  // Check mapping source/target references with namespace-aware resolution
+  // Check mapping source/target references
   for (const [name, mapping] of index.mappings) {
     const currentNs = mapping.namespace ?? null;
     for (const src of mapping.sources) {
@@ -155,6 +122,7 @@ export function collectSemanticWarnings(index) {
           severity: "warning",
           rule: "undefined-ref",
           message: msg,
+          fixable: false,
         });
       }
     }
@@ -173,16 +141,13 @@ export function collectSemanticWarnings(index) {
           severity: "warning",
           rule: "undefined-ref",
           message: msg,
+          fixable: false,
         });
       }
     }
   }
 
-  // Check metric source references — only warn when the metric source looks
-  // like it should resolve (i.e. at least one metric source in the workspace
-  // does resolve to a known schema).  Metric sources are metadata annotations
-  // that often reference external tables not present in the local workspace,
-  // so blanket warnings create false positives.
+  // Check metric source references
   const anyMetricSourceResolvable = [...index.metrics.values()].some((m) =>
     (m.sources ?? []).some((s) => {
       const currentNs = m.namespace ?? null;
@@ -201,13 +166,14 @@ export function collectSemanticWarnings(index) {
             severity: "warning",
             rule: "undefined-ref",
             message: `Metric '${name}' references undefined source '${src}'`,
+            fixable: false,
           });
         }
       }
     }
   }
 
-  // Check NL backtick references in transform bodies
+  // Check NL backtick references
   if (index.nlRefData) {
     for (const item of index.nlRefData) {
       const refs = extractBacktickRefs(item.text);
@@ -233,6 +199,7 @@ export function collectSemanticWarnings(index) {
             severity: "warning",
             rule: "nl-ref-unresolved",
             message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
+            fixable: false,
           });
         } else if (
           classification === "namespace-qualified-schema" &&
@@ -245,6 +212,7 @@ export function collectSemanticWarnings(index) {
             severity: "warning",
             rule: "nl-ref-not-in-source",
             message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,
+            fixable: false,
           });
         }
       }
@@ -253,11 +221,9 @@ export function collectSemanticWarnings(index) {
 
   // Check arrow field references against declared schemas
   if (index.fieldArrows) {
-    // Collect unique arrows from the fieldArrows index (each arrow may appear
-    // under both its source and target key — deduplicate by identity).
-    const seenArrows = new Set();
-    const uniqueArrows = [];
-    for (const [_fieldKey, arrows] of index.fieldArrows) {
+    const seenArrows = new Set<ArrowRecord>();
+    const uniqueArrows: ArrowRecord[] = [];
+    for (const [, arrows] of index.fieldArrows) {
       for (const arrow of arrows) {
         if (seenArrows.has(arrow)) continue;
         seenArrows.add(arrow);
@@ -265,28 +231,23 @@ export function collectSemanticWarnings(index) {
       }
     }
 
-    for (const [_name, mapping] of index.mappings) {
+    for (const [, mapping] of index.mappings) {
       const currentNs = mapping.namespace ?? null;
 
-      // Resolve source/target names to qualified index keys
       const resolvedSrcKeys = mapping.sources.map((s) =>
         resolveEntityRef(s, currentNs, index.schemas),
-      ).filter(Boolean);
+      ).filter((k): k is string => k != null);
       const resolvedTgtKey = mapping.targets[0]
         ? resolveEntityRef(mapping.targets[0], currentNs, index.schemas)
         : null;
 
       const srcSchema = resolvedSrcKeys[0];
 
-      // Build source field name set: for multi-source mappings, collect fields
-      // from all source schemas. Build a nested-path-aware set.
-      const srcFieldPaths = new Set();
+      const srcFieldPaths = new Set<string>();
       for (const s of resolvedSrcKeys) {
         const fields = index.schemas.get(s)?.fields ?? [];
         collectFieldPaths(fields, "", srcFieldPaths);
       }
-      // For multi-source, also allow schema-qualified references (schema.field)
-      // using the original (unresolved) source names as written in the mapping
       if (resolvedSrcKeys.length > 1) {
         for (let i = 0; i < mapping.sources.length; i++) {
           const resolvedKey = resolveEntityRef(mapping.sources[i], currentNs, index.schemas);
@@ -297,15 +258,12 @@ export function collectSemanticWarnings(index) {
       }
 
       const tgtFields = resolvedTgtKey ? (index.schemas.get(resolvedTgtKey)?.fields ?? []) : [];
-      const tgtFieldPaths = new Set();
+      const tgtFieldPaths = new Set<string>();
       collectFieldPaths(tgtFields, "", tgtFieldPaths);
 
-      // Expand fragment spreads: inline fragment fields into the field path sets.
-      // If a spread references an unknown fragment, fall back to suppressing
-      // field-not-in-schema for that side (conservative: avoid false positives).
-      const srcHasUnresolved = expandSpreads(resolvedSrcKeys, currentNs, index, srcFieldPaths, diagnostics);
+      const srcHasUnresolved = expandSpreads(resolvedSrcKeys, currentNs, index, srcFieldPaths, diagnostics as never[]);
       const tgtHasUnresolved = resolvedTgtKey
-        ? expandSpreads([resolvedTgtKey], currentNs, index, tgtFieldPaths, diagnostics)
+        ? expandSpreads([resolvedTgtKey], currentNs, index, tgtFieldPaths, diagnostics as never[])
         : false;
 
       for (const arrow of uniqueArrows) {
@@ -325,6 +283,7 @@ export function collectSemanticWarnings(index) {
             severity: "warning",
             rule: "field-not-in-schema",
             message: `Arrow source '${arrow.source}' not declared in schema '${srcSchema}'`,
+            fixable: false,
           });
         }
         if (
@@ -341,6 +300,7 @@ export function collectSemanticWarnings(index) {
             severity: "warning",
             rule: "field-not-in-schema",
             message: `Arrow target '${arrow.target}' not declared in schema '${resolvedTgtKey}'`,
+            fixable: false,
           });
         }
       }
@@ -350,30 +310,10 @@ export function collectSemanticWarnings(index) {
   return diagnostics;
 }
 
-// ── Field path resolution helpers ─────────────────────────────────────────────
-
-/**
- * Resolve an arrow field path against available schemas and field paths.
- * Handles:
- * - Direct match in fieldPaths set (covers nested dotted paths)
- * - Relative paths (starting with ".") — always considered valid
- *   (they reference fields relative to a nested arrow context)
- * - Schema-qualified paths for multi-source mappings (schema.field)
- *
- * @param {string} path  arrow source or target path
- * @param {string[]} schemaNames  available schema names for this side
- * @param {object} index  WorkspaceIndex
- * @param {Set<string>} fieldPaths  pre-collected valid field paths
- * @returns {boolean}  true if the path resolves
- */
-function resolveFieldPath(path, schemaNames, index, fieldPaths) {
-  // Relative paths (e.g. .REFNUM, .orderNo) are context-dependent — accept them
+function resolveFieldPath(path: string, schemaNames: string[], index: WorkspaceIndex, fieldPaths: Set<string>): boolean {
   if (path.startsWith(".")) return true;
-
-  // Direct match in the pre-collected paths
   if (fieldPaths.has(path)) return true;
 
-  // For multi-source mappings, try schema-qualified resolution (schema.field)
   if (schemaNames.length > 1) {
     const dotIdx = path.indexOf(".");
     if (dotIdx > 0) {
@@ -381,7 +321,7 @@ function resolveFieldPath(path, schemaNames, index, fieldPaths) {
       if (schemaNames.includes(qualifier)) {
         const rest = path.slice(dotIdx + 1);
         const schemaFields = index.schemas.get(qualifier)?.fields ?? [];
-        const qualPaths = new Set();
+        const qualPaths = new Set<string>();
         collectFieldPaths(schemaFields, "", qualPaths);
         if (qualPaths.has(rest)) return true;
       }
@@ -391,7 +331,6 @@ function resolveFieldPath(path, schemaNames, index, fieldPaths) {
   return false;
 }
 
-
-function capitalize(str) {
+function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }

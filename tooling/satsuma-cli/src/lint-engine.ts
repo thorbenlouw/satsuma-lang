@@ -1,5 +1,5 @@
 /**
- * lint-engine.js — Lint rule registry, runner, and fix applier
+ * lint-engine.ts — Lint rule registry, runner, and fix applier
  *
  * Provides a policy-oriented linting layer on top of the shared
  * parser/index pipeline.  Rules receive a WorkspaceIndex and return
@@ -13,40 +13,11 @@ import {
   resolveRef,
   isSchemaInMappingSources,
 } from "./nl-ref-extract.js";
-
-// ── Diagnostic / fix types (documented via JSDoc) ──────────────────────────
-
-/**
- * @typedef {Object} LintDiagnostic
- * @property {string}  file
- * @property {number}  line     1-based
- * @property {number}  column   1-based
- * @property {'error'|'warning'} severity
- * @property {string}  rule     kebab-case rule id
- * @property {string}  message
- * @property {boolean} fixable
- * @property {LintFix} [fix]    present when fixable === true
- */
-
-/**
- * @typedef {Object} LintFix
- * @property {string} file
- * @property {string} rule
- * @property {string} description   human-readable summary of the change
- * @property {(source: string) => string} apply   pure source→source rewrite
- */
+import type { LintDiagnostic, LintFix, LintRule, WorkspaceIndex } from "./types.js";
 
 // ── Rule registry ──────────────────────────────────────────────────────────
 
-/**
- * @typedef {Object} LintRule
- * @property {string} id
- * @property {string} description
- * @property {(index: object) => LintDiagnostic[]} check
- */
-
-/** @type {LintRule[]} */
-export const RULES = [
+export const RULES: LintRule[] = [
   {
     id: "hidden-source-in-nl",
     description: "NL references schema not in source/target list",
@@ -66,14 +37,8 @@ export const RULES = [
 
 // ── Rule implementations ───────────────────────────────────────────────────
 
-/**
- * hidden-source-in-nl — NL references a schema that resolves in the
- * workspace but is not declared in the mapping's source/target list.
- *
- * Fixable when the reference is namespace-qualified (unambiguous).
- */
-function checkHiddenSourceInNl(index) {
-  const diagnostics = [];
+function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
+  const diagnostics: LintDiagnostic[] = [];
   if (!index.nlRefData) return diagnostics;
 
   for (const item of index.nlRefData) {
@@ -121,30 +86,21 @@ function checkHiddenSourceInNl(index) {
   return diagnostics;
 }
 
-/**
- * Build a pure source→source rewrite that adds a schema ref to a
- * mapping's source block.
- */
-function makeAddSourceFix(mappingKey, schemaRef) {
-  // The mapping name is the part after the namespace (or the full key for
-  // global mappings).  We need the display name as it appears in the Satsuma file.
+function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: string) => string {
   const nsIdx = mappingKey.indexOf("::");
   const displayName = nsIdx !== -1
     ? mappingKey.slice(nsIdx + 2)
     : mappingKey;
 
-  return (source) => {
+  return (source: string): string => {
     const lines = source.split("\n");
-    // Find the mapping block, then find `source {` inside it.
     let inMapping = false;
     let braceDepth = 0;
 
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
 
-      // Detect start of the target mapping block
       if (!inMapping) {
-        // Match: mapping 'name' {  or  mapping "name" {  or  mapping name {
         const mappingRe = /^mapping\s+(?:'([^']+)'|"([^"]+)"|(\S+))\s*\{/;
         const m = trimmed.match(mappingRe);
         if (m) {
@@ -157,38 +113,30 @@ function makeAddSourceFix(mappingKey, schemaRef) {
         continue;
       }
 
-      // Track brace depth to know when the mapping block ends
       for (const ch of trimmed) {
         if (ch === "{") braceDepth++;
         else if (ch === "}") braceDepth--;
       }
       if (braceDepth <= 0) break;
 
-      // Look for `source { ... }` line inside the mapping
       const sourceLineRe = /^source\s*\{([^}]*)\}\s*$/;
       const sm = trimmed.match(sourceLineRe);
       if (sm) {
         const existing = sm[1].trim();
-        // Avoid duplicate
         if (existing.split(/\s*,\s*/).includes(schemaRef)) return source;
-        const indent = lines[i].match(/^(\s*)/)[1];
+        const indent = lines[i].match(/^(\s*)/)![1];
         const newRefs = existing ? `${existing}, ${schemaRef}` : schemaRef;
         lines[i] = `${indent}source { ${newRefs} }`;
         return lines.join("\n");
       }
     }
 
-    // Could not locate source block — return unchanged
     return source;
   };
 }
 
-/**
- * unresolved-nl-ref — NL backtick reference does not resolve to any
- * known schema, field, fragment, or transform.
- */
-function checkUnresolvedNlRef(index) {
-  const diagnostics = [];
+function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
+  const diagnostics: LintDiagnostic[] = [];
   if (!index.nlRefData) return diagnostics;
 
   for (const item of index.nlRefData) {
@@ -223,18 +171,11 @@ function checkUnresolvedNlRef(index) {
   return diagnostics;
 }
 
-/**
- * duplicate-definition — A named entity (schema, mapping, metric, fragment,
- * transform) is declared more than once within the same namespace.
- *
- * Reuses the `index.duplicates` array already populated by buildIndex().
- */
-function checkDuplicateDefinition(index) {
-  const diagnostics = [];
+function checkDuplicateDefinition(index: WorkspaceIndex): LintDiagnostic[] {
+  const diagnostics: LintDiagnostic[] = [];
   if (!index.duplicates) return diagnostics;
 
   for (const dup of index.duplicates) {
-    // Namespace-metadata conflicts are a different concern — skip them here.
     if (dup.kind === "namespace-metadata") continue;
 
     const sameKind = dup.kind === dup.previousKind;
@@ -256,23 +197,22 @@ function checkDuplicateDefinition(index) {
   return diagnostics;
 }
 
-function capitalize(s) {
+function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ── Engine ─────────────────────────────────────────────────────────────────
 
+interface LintOptions {
+  select?: string[];
+  ignore?: string[];
+}
+
 /**
  * Run all (or selected) lint rules against a WorkspaceIndex.
- *
- * @param {object} index  WorkspaceIndex
- * @param {object} [opts]
- * @param {string[]} [opts.select]  run only these rules
- * @param {string[]} [opts.ignore]  skip these rules
- * @returns {LintDiagnostic[]}
  */
-export function runLint(index, opts = {}) {
-  let rules = RULES;
+export function runLint(index: WorkspaceIndex, opts: LintOptions = {}): LintDiagnostic[] {
+  let rules: LintRule[] = RULES;
   if (opts.select?.length) {
     const set = new Set(opts.select);
     rules = rules.filter((r) => set.has(r.id));
@@ -282,12 +222,11 @@ export function runLint(index, opts = {}) {
     rules = rules.filter((r) => !set.has(r.id));
   }
 
-  const diagnostics = [];
+  const diagnostics: LintDiagnostic[] = [];
   for (const rule of rules) {
     diagnostics.push(...rule.check(index));
   }
 
-  // Sort by file, line, column
   diagnostics.sort(
     (a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column,
   );
@@ -297,39 +236,37 @@ export function runLint(index, opts = {}) {
 
 /**
  * Apply all fixable diagnostics.
- *
- * @param {Map<string, string>} sourceByFile  file path → source text
- * @param {LintDiagnostic[]} diagnostics
- * @returns {{ fixedFiles: Map<string, string>, appliedFixes: LintFix[] }}
  */
-export function applyFixes(sourceByFile, diagnostics) {
+export function applyFixes(
+  sourceByFile: Map<string, string>,
+  diagnostics: LintDiagnostic[],
+): { fixedFiles: Map<string, string>; appliedFixes: LintFix[] } {
   const fixable = diagnostics.filter((d) => d.fixable && d.fix);
 
-  // Group by file
-  const byFile = new Map();
+  const byFile = new Map<string, LintDiagnostic[]>();
   for (const d of fixable) {
-    if (!byFile.has(d.fix.file)) byFile.set(d.fix.file, []);
-    byFile.get(d.fix.file).push(d);
+    if (!byFile.has(d.fix!.file)) byFile.set(d.fix!.file, []);
+    byFile.get(d.fix!.file)!.push(d);
   }
 
-  const fixedFiles = new Map();
-  const appliedFixes = [];
+  const fixedFiles = new Map<string, string>();
+  const appliedFixes: LintFix[] = [];
 
   for (const [file, fileDiags] of byFile) {
-    let source = sourceByFile.get(file);
-    if (source === undefined) continue;
+    const originalSource = sourceByFile.get(file);
+    if (originalSource === undefined) continue;
+    let source: string = originalSource;
 
-    // Apply fixes from bottom to top to preserve line positions
     const sorted = [...fileDiags].sort((a, b) => b.line - a.line || b.column - a.column);
     for (const d of sorted) {
       const before = source;
-      source = d.fix.apply(source);
+      source = d.fix!.apply(source);
       if (source !== before) {
-        appliedFixes.push(d.fix);
+        appliedFixes.push(d.fix!);
       }
     }
 
-    if (source !== sourceByFile.get(file)) {
+    if (source !== originalSource) {
       fixedFiles.set(file, source);
     }
   }
