@@ -728,6 +728,13 @@ describe("satsuma validate", () => {
     assert.ok(data[0].rule);
     assert.ok(data[0].message);
   });
+
+  it("expands fragment spreads — no false field-not-in-schema warnings", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "fragment-spread-validate.stm");
+    const { stdout, code } = await run("validate", FIXTURE);
+    assert.equal(code, 0, `Expected clean validation but got:\n${stdout}`);
+    assert.match(stdout, /no issues/i);
+  });
 });
 
 // ---------------------------------------------------------------------------

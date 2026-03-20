@@ -181,6 +181,14 @@ export function buildIndex(parsedFiles) {
           if (!existingNames.has(f.name)) existing.fields.push(f);
         }
         existing.hasSpreads = existing.hasSpreads || s.hasSpreads;
+        if (s.spreads?.length) {
+          const existingSpreads = new Set(existing.spreads ?? []);
+          for (const sp of s.spreads) {
+            if (!existingSpreads.has(sp)) {
+              (existing.spreads ??= []).push(sp);
+            }
+          }
+        }
       } else {
         schemas.set(key, { ...s, file: filePath });
       }
@@ -246,7 +254,7 @@ export function buildIndex(parsedFiles) {
     );
   }
 
-  const referenceGraph = buildReferenceGraph({ metrics, mappings });
+  const referenceGraph = buildReferenceGraph({ schemas, metrics, mappings });
   const fieldArrows = buildFieldArrows(allArrowRecords, mappings);
 
   return {
@@ -353,7 +361,7 @@ function buildFieldArrows(arrowRecords, mappings) {
  *   metricsReferences: Map<string, string[]> // metric → source schema names
  * }}
  */
-function buildReferenceGraph({ metrics, mappings }) {
+function buildReferenceGraph({ schemas, metrics, mappings }) {
   // schema/fragment → which mappings reference it (as source or target)
   const usedByMappings = new Map();
 
@@ -365,10 +373,14 @@ function buildReferenceGraph({ metrics, mappings }) {
     }
   }
 
-  // fragment → which schemas/fragments use it via ...spread (tracked via fields named '...')
-  // We don't have spread info in the current extraction, so we leave a placeholder.
-  // (fragment_spread nodes are inside schema_body but not captured in extractDirectFields)
+  // fragment → which schemas use it via ...spread
   const fragmentsUsedIn = new Map();
+  for (const [schemaKey, schema] of schemas) {
+    for (const spreadName of schema.spreads ?? []) {
+      if (!fragmentsUsedIn.has(spreadName)) fragmentsUsedIn.set(spreadName, []);
+      fragmentsUsedIn.get(spreadName).push(schemaKey);
+    }
+  }
 
   // metric → source schema references
   const metricsReferences = new Map();

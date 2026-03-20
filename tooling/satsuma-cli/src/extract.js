@@ -85,6 +85,7 @@ function extractDirectFields(bodyNode) {
 function extractFieldTree(bodyNode) {
   const fields = [];
   let hasSpreads = false;
+  const spreads = [];
 
   for (const c of bodyNode.namedChildren) {
     if (c.type === "field_decl") {
@@ -97,7 +98,7 @@ function extractFieldTree(bodyNode) {
     } else if (c.type === "record_block" || c.type === "list_block") {
       const name = labelText(c);
       const innerBody = child(c, "schema_body");
-      const nested = innerBody ? extractFieldTree(innerBody) : { fields: [], hasSpreads: false };
+      const nested = innerBody ? extractFieldTree(innerBody) : { fields: [], hasSpreads: false, spreads: [] };
       fields.push({
         name,
         type: c.type === "list_block" ? "list" : "record",
@@ -105,12 +106,31 @@ function extractFieldTree(bodyNode) {
         children: nested.fields,
       });
       if (nested.hasSpreads) hasSpreads = true;
+      spreads.push(...nested.spreads);
     } else if (c.type === "fragment_spread") {
       hasSpreads = true;
+      const label = child(c, "spread_label");
+      if (label) {
+        spreads.push(spreadLabelText(label));
+      }
     }
   }
 
-  return { fields, hasSpreads };
+  return { fields, hasSpreads, spreads };
+}
+
+/**
+ * Extract the text from a spread_label node.
+ * spread_label → qualified_name | quoted_name | _spread_words (identifier+)
+ */
+function spreadLabelText(labelNode) {
+  const qn = child(labelNode, "qualified_name");
+  if (qn) return qualifiedNameText(qn);
+  const q = child(labelNode, "quoted_name");
+  if (q) return q.text.slice(1, -1);
+  // Multi-word or single-word: join all identifiers with spaces
+  const ids = children(labelNode, "identifier");
+  return ids.map((id) => id.text).join(" ");
 }
 
 /**
@@ -195,13 +215,14 @@ export function extractSchemas(rootNode) {
       ? stringText(noteTag.namedChildren.find((c) => c.type === "nl_string" || c.type === "multiline_string"))
       : null;
     const body = child(node, "schema_body");
-    const fieldTree = body ? extractFieldTree(body) : { fields: [], hasSpreads: false };
+    const fieldTree = body ? extractFieldTree(body) : { fields: [], hasSpreads: false, spreads: [] };
     return {
       name,
       namespace,
       note: noteStr,
       fields: fieldTree.fields,
       hasSpreads: fieldTree.hasSpreads,
+      spreads: fieldTree.spreads,
       row: node.startPosition.row,
     };
   });

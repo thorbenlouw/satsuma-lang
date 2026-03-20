@@ -1,0 +1,26 @@
+// Fixture: fragment spread expansion in validation
+// The mapping arrow references created_at which comes from the fragment,
+// not from the target schema's direct fields. Validation should pass.
+
+fragment audit_fields {
+  created_at    TIMESTAMPTZ
+  updated_at    TIMESTAMPTZ
+}
+
+schema src_orders {
+  order_id     INT
+  created_at   TIMESTAMPTZ
+}
+
+schema tgt_orders {
+  order_id     INT
+  ...audit_fields
+}
+
+mapping 'order load' {
+  source { src_orders }
+  target { tgt_orders }
+
+  order_id   -> order_id
+  created_at -> created_at
+}
