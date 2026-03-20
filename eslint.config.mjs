@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
+import tseslint from "typescript-eslint";
 
 const treeSitterDslGlobals = {
   grammar: "readonly",
@@ -24,6 +25,7 @@ export default [
       "**/src/grammar.json",
       "**/bindings/**",
       "**/build/**",
+      "**/dist/**",
       "**/*.min.js",
     ],
   },
@@ -54,6 +56,26 @@ export default [
     files: ["tooling/tree-sitter-satsuma/grammar.js"],
     rules: {
       "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    },
+  },
+  // TypeScript files — type-aware linting
+  ...tseslint.configs.recommendedTypeChecked.map((config) => ({
+    ...config,
+    files: ["tooling/satsuma-cli/src/**/*.ts"],
+  })),
+  {
+    files: ["tooling/satsuma-cli/src/**/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // Align with existing JS convention
+      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      // Allow non-null assertions — used intentionally for indexed access
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
 ];

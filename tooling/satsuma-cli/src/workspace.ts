@@ -25,8 +25,12 @@ let _importParser: TSParser | null = null;
 function getImportParser(): TSParser {
   if (!_importParser) {
     const require = createRequire(import.meta.url);
+    // CJS interop — tree-sitter has no ESM or @types exports
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const Parser = require("tree-sitter");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const STM = require("tree-sitter-satsuma");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     _importParser = new Parser() as TSParser;
     _importParser.setLanguage(STM);
   }

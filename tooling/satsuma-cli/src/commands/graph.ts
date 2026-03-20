@@ -21,7 +21,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, ArrowRecord } from "../types.js";
+import type { WorkspaceIndex } from "../types.js";
 import type { FullGraph } from "../graph-builder.js";
 
 interface GraphOpts {
