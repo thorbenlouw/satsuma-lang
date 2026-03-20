@@ -1,6 +1,6 @@
 ---
 id: stm-mt1d
-status: open
+status: closed
 deps: [stm-58nl, stm-w0qt]
 links: []
 created: 2026-03-19T19:50:41Z

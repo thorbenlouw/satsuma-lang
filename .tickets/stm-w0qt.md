@@ -1,6 +1,6 @@
 ---
 id: stm-w0qt
-status: in_progress
+status: closed
 deps: [stm-j9l5, stm-8x76]
 links: []
 created: 2026-03-19T19:52:20Z

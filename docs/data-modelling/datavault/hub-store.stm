@@ -1,7 +1,7 @@
 // RetailCo International — Data Vault 2.0
 // Store Hub + Satellite
 
-import { store_region_map } from "common.stm"
+import { store_region_map, pos_oracle } from "common.stm"
 
 note {
   """
@@ -15,25 +15,6 @@ note {
   """
 }
 
-
-// --- Source ---
-
-schema pos_oracle (note "Oracle Retail POS — store reference") {
-  STORE_ID            VARCHAR(20)     (pk)
-  STORE_NAME          VARCHAR(100)    (required)
-  STORE_FORMAT        VARCHAR(20)     (enum {FULL, OUTLET, EXPRESS, FLAGSHIP})
-  ADDR_LINE_1         VARCHAR(200)
-  ADDR_LINE_2         VARCHAR(200)
-  CITY                VARCHAR(100)
-  STATE_PROV          VARCHAR(50)
-  POSTAL_CD           VARCHAR(20)
-  COUNTRY_CD          CHAR(2)
-  PHONE_NBR           VARCHAR(20)
-  STORE_MGR           VARCHAR(100)
-  SQFT                INTEGER
-  OPEN_DATE           DATE
-  STATUS              CHAR(1)         (enum {A, T, C})
-}
 
 
 // --- Hub: Store ---

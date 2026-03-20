@@ -91,7 +91,7 @@ schema mart_customer_360 (
 
 // Primary: demographics from SFDC satellite
 mapping 'demographics to mart' {
-  source { `sat_customer_demographics` }
+  source { `sat_customer_demographics`, `hub_customer` }
   target { `mart_customer_360` }
 
   note {

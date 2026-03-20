@@ -12,6 +12,7 @@
 // --- Shared lookups and fragments ---
 import { address_fields, audit_columns } from "common.stm"
 import { store_region_map, product_hierarchy, channel_codes, dim_date } from "common.stm"
+import { pos_oracle, ecom_shopify } from "common.stm"
 
 // --- Dimensions ---
 import { dim_customer } from "dim-customer.stm"
