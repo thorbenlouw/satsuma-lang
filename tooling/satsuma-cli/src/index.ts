@@ -7,6 +7,7 @@
  * commander Program object passed to it.
  */
 
+import type { Command } from "commander";
 import { program } from "commander";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -14,8 +15,8 @@ import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
-  readFileSync(join(__dirname, "../package.json"), "utf8")
-);
+  readFileSync(join(__dirname, "../package.json"), "utf8"),
+) as { version: string };
 
 program
   .name("satsuma")
@@ -27,8 +28,8 @@ program
   .showHelpAfterError(true);
 
 // Unhandled rejections go to stderr with exit 2
-process.on("unhandledRejection", (err) => {
-  console.error(`Unhandled error: ${err?.message ?? err}`);
+process.on("unhandledRejection", (err: unknown) => {
+  console.error(`Unhandled error: ${(err as { message?: string })?.message ?? err}`);
   process.exit(2);
 });
 
@@ -57,7 +58,7 @@ const commands = [
 ];
 
 for (const cmd of commands) {
-  const mod = await import(join(__dirname, cmd));
+  const mod = await import(join(__dirname, cmd)) as { register: (program: Command) => void };
   mod.register(program);
 }
 

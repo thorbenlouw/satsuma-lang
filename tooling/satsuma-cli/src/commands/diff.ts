@@ -9,26 +9,27 @@
  *   --stat         summary counts
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { diffIndex } from "../diff.js";
+import type { Delta, BlockDelta, SchemaChange, MappingChange } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("diff <a> <b>")
     .description("Structural diff between two Satsuma files or directories")
     .option("--json", "structured JSON output")
     .option("--names-only", "list changed block names only")
     .option("--stat", "summary counts only")
-    .action(async (pathA, pathB, opts) => {
-      let filesA, filesB;
+    .action(async (pathA: string, pathB: string, opts: { json?: boolean; namesOnly?: boolean; stat?: boolean }) => {
+      let filesA: string[], filesB: string[];
       try {
         filesA = await resolveInput(pathA);
         filesB = await resolveInput(pathB);
-      } catch (err) {
-        console.error(`Error resolving paths: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving paths: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -68,8 +69,8 @@ export function register(program) {
     });
 }
 
-function printStat(delta) {
-  const counts = {
+function printStat(delta: Delta): void {
+  const counts: Record<string, number> = {
     "schemas added": delta.schemas.added.length,
     "schemas removed": delta.schemas.removed.length,
     "schemas changed": delta.schemas.changed.length,
@@ -82,8 +83,8 @@ function printStat(delta) {
   }
 }
 
-function printNamesOnly(delta) {
-  const names = new Set();
+function printNamesOnly(delta: Delta): void {
+  const names = new Set<string>();
   for (const n of [
     ...delta.schemas.added,
     ...delta.schemas.removed,
@@ -99,12 +100,12 @@ function printNamesOnly(delta) {
   }
 }
 
-function printDefault(delta) {
+function printDefault(delta: Delta): void {
   printSection("Schemas", delta.schemas);
   printSection("Mappings", delta.mappings);
 }
 
-function printSection(label, section) {
+function printSection(label: string, section: BlockDelta<SchemaChange | MappingChange>): void {
   const total =
     section.added.length + section.removed.length + section.changed.length;
   if (total === 0) return;
@@ -120,17 +121,17 @@ function printSection(label, section) {
     console.log(`  ~ ${name}`);
     for (const c of changes) {
       if (c.kind === "field-added") {
-        console.log(`      + field ${c.field}`);
+        console.log(`      + field ${(c as SchemaChange).field}`);
       } else if (c.kind === "field-removed") {
-        console.log(`      - field ${c.field}`);
+        console.log(`      - field ${(c as SchemaChange).field}`);
       } else if (c.kind === "type-changed") {
-        console.log(`      ~ ${c.field}: ${c.from} -> ${c.to}`);
+        console.log(`      ~ ${(c as SchemaChange).field}: ${(c as SchemaChange).from} -> ${(c as SchemaChange).to}`);
       } else if (c.kind === "arrow-count-changed") {
-        console.log(`      ~ arrows: ${c.from} -> ${c.to}`);
+        console.log(`      ~ arrows: ${(c as MappingChange).from} -> ${(c as MappingChange).to}`);
       } else if (c.kind === "sources-changed") {
-        console.log(`      ~ sources: ${c.from.join(", ")} -> ${c.to.join(", ")}`);
+        console.log(`      ~ sources: ${((c as MappingChange).from as string[]).join(", ")} -> ${((c as MappingChange).to as string[]).join(", ")}`);
       } else if (c.kind === "targets-changed") {
-        console.log(`      ~ targets: ${c.from.join(", ")} -> ${c.to.join(", ")}`);
+        console.log(`      ~ targets: ${((c as MappingChange).from as string[]).join(", ")} -> ${((c as MappingChange).to as string[]).join(", ")}`);
       }
     }
   }

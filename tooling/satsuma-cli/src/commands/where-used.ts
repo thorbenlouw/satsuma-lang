@@ -1,5 +1,5 @@
 /**
- * where-used.js — `satsuma where-used <name>` command
+ * where-used.ts — `satsuma where-used <name>` command
  *
  * Finds all references to a schema, fragment, or transform by name.
  *
@@ -13,24 +13,32 @@
  *   --json  structured JSON
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
+import type { SyntaxNode, WorkspaceIndex, ParsedFile } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface Ref {
+  kind: string;
+  name: string;
+  file: string;
+  row?: number;
+}
+
+export function register(program: Command): void {
   program
     .command("where-used <name> [path]")
     .description("Find all references to a schema, fragment, or transform")
     .option("--json", "output JSON")
-    .action(async (name, pathArg, opts) => {
+    .action(async (name: string, pathArg: string | undefined, opts: { json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -76,16 +84,8 @@ export function register(program) {
 
 // ── Reference gathering ───────────────────────────────────────────────────────
 
-/**
- * @typedef {Object} Ref
- * @property {string} kind   mapping|metric|schema|fragment
- * @property {string} name   the referencing entity name
- * @property {string} file
- * @property {number} [row]
- */
-
-function gatherRefs(name, index, parsedFiles, isSchema, isFragment, isTransform) {
-  const refs = [];
+function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile[], isSchema: boolean, isFragment: boolean, isTransform: boolean): Ref[] {
+  const refs: Ref[] = [];
 
   if (isSchema) {
     // Mappings that use this schema as source or target
@@ -126,12 +126,12 @@ function gatherRefs(name, index, parsedFiles, isSchema, isFragment, isTransform)
 
   // NL backtick references — find references inside NL transform bodies
   const nlRefs = resolveAllNLRefs(index);
-  const seenNLRefs = new Set();
+  const seenNLRefs = new Set<string>();
   for (const nlRef of nlRefs) {
     if (!nlRef.resolved || !nlRef.resolvedTo) continue;
-    const resolvedName = nlRef.resolvedTo.name;
+    const resolvedRefName = nlRef.resolvedTo.name;
     // Match the queried name against the resolved reference
-    if (resolvedName === name || resolvedName.startsWith(name + ".")) {
+    if (resolvedRefName === name || resolvedRefName.startsWith(name + ".")) {
       const dedup = `${nlRef.mapping}:${nlRef.file}:${nlRef.line}`;
       if (seenNLRefs.has(dedup)) continue;
       seenNLRefs.add(dedup);
@@ -151,9 +151,9 @@ function gatherRefs(name, index, parsedFiles, isSchema, isFragment, isTransform)
  * Find all fragment_spread usages of `fragmentName` in the CST.
  * Returns [{block, row}] where block is the containing schema/fragment name.
  */
-function findFragmentSpreads(rootNode, fragmentName) {
-  const results = [];
-  function checkBlock(topLevel, namespace) {
+function findFragmentSpreads(rootNode: SyntaxNode, fragmentName: string): Array<{ block: string; row: number }> {
+  const results: Array<{ block: string; row: number }> = [];
+  function checkBlock(topLevel: SyntaxNode, namespace: string | null): void {
     if (topLevel.type !== "schema_block" && topLevel.type !== "fragment_block") return;
     const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
     const inner = lbl?.namedChildren[0];
@@ -179,7 +179,7 @@ function findFragmentSpreads(rootNode, fragmentName) {
   return results;
 }
 
-function walkForSpreads(bodyNode, fragmentName, blockName, results) {
+function walkForSpreads(bodyNode: SyntaxNode, fragmentName: string, blockName: string, results: Array<{ block: string; row: number }>): void {
   for (const c of bodyNode.namedChildren) {
     if (c.type === "fragment_spread") {
       // fragment_spread children use spread_label, not block_label
@@ -210,10 +210,10 @@ function walkForSpreads(bodyNode, fragmentName, blockName, results) {
  * Find all transform invocations (token_call) matching `transformName` in mapping arrows.
  * Returns [{mapping, row}] where mapping is the qualified mapping name.
  */
-function findTransformRefs(rootNode, transformName) {
-  const results = [];
+function findTransformRefs(rootNode: SyntaxNode, transformName: string): Array<{ mapping: string; row: number }> {
+  const results: Array<{ mapping: string; row: number }> = [];
 
-  function scanMappings(node, namespace) {
+  function scanMappings(node: SyntaxNode, namespace: string | null): void {
     for (const c of node.namedChildren) {
       if (c.type === "namespace_block") {
         const nsName = c.namedChildren.find((x) => x.type === "identifier");
@@ -237,7 +237,7 @@ function findTransformRefs(rootNode, transformName) {
   return results;
 }
 
-function walkForTransformCalls(node, transformName, mappingName, results) {
+function walkForTransformCalls(node: SyntaxNode, transformName: string, mappingName: string, results: Array<{ mapping: string; row: number }>): void {
   for (const c of node.namedChildren) {
     if (c.type === "pipe_step") {
       const inner = c.namedChildren[0];
@@ -251,17 +251,17 @@ function walkForTransformCalls(node, transformName, mappingName, results) {
 
 // ── Formatter ─────────────────────────────────────────────────────────────────
 
-function printDefault(name, refs) {
+function printDefault(name: string, refs: Ref[]): void {
   console.log(`References to '${name}' (${refs.length}):`);
   console.log();
 
-  const byKind = new Map();
+  const byKind = new Map<string, Ref[]>();
   for (const ref of refs) {
     if (!byKind.has(ref.kind)) byKind.set(ref.kind, []);
-    byKind.get(ref.kind).push(ref);
+    byKind.get(ref.kind)!.push(ref);
   }
 
-  const kindLabels = {
+  const kindLabels: Record<string, string> = {
     mapping: "Used as source/target in mappings",
     metric: "Referenced by metrics",
     fragment_spread: "Spread into schemas/fragments",

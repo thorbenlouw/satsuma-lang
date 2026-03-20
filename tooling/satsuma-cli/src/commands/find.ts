@@ -15,13 +15,23 @@
  *   --json         structured JSON output
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
+import type { WorkspaceIndex, ParsedFile, SyntaxNode } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface Match {
+  blockType: string;
+  block: string;
+  field: string;
+  tag: string;
+  file: string;
+  row: number;
+}
+
+export function register(program: Command): void {
   program
     .command("find [path]")
     .description("Find fields or blocks by metadata tag")
@@ -29,13 +39,13 @@ export function register(program) {
     .option("--in <scope>", "scope: schema|metric|fragment|all", "all")
     .option("--compact", "one match per line")
     .option("--json", "output JSON")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { tag: string; in?: string; compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -63,29 +73,13 @@ export function register(program) {
 // ── Search logic ──────────────────────────────────────────────────────────────
 
 /**
- * @typedef {Object} Match
- * @property {string} blockType  schema|metric|fragment
- * @property {string} block      block name
- * @property {string} field      field name
- * @property {string} tag        matched tag/key
- * @property {string} file
- * @property {number} row        0-indexed
- */
-
-/**
  * Search for fields whose metadata contains the given tag/key.
- *
- * @param {object} index
- * @param {Array} parsedFiles
- * @param {string} tag  lowercase search token
- * @param {string} scope  all|schema|metric|fragment
- * @returns {Match[]}
  */
-function searchTag(index, parsedFiles, tag, scope) {
-  const matches = [];
-  const fileMap = new Map(parsedFiles.map((p) => [p.filePath, p]));
+function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string, scope: string): Match[] {
+  const matches: Match[] = [];
+  const fileMap = new Map<string, ParsedFile>(parsedFiles.map((p) => [p.filePath, p]));
 
-  const search = (blockType, blockName, blockEntry, bodyType) => {
+  const search = (blockType: string, blockName: string, blockEntry: { file: string; row: number }, bodyType: string) => {
     if (scope !== "all" && scope !== blockType) return;
     const parsed = fileMap.get(blockEntry.file);
     if (!parsed) return;
@@ -129,7 +123,7 @@ function searchTag(index, parsedFiles, tag, scope) {
  * Walk schema_body or metric_body and collect field_decls whose metadata
  * contains the given tag (case-insensitive prefix match).
  */
-function collectFieldMatches(bodyNode, blockType, blockName, file, tag, acc) {
+function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName: string, file: string, tag: string, acc: Match[]): void {
   for (const c of bodyNode.namedChildren) {
     if (c.type === "field_decl") {
       const nameNode = c.namedChildren.find((x) => x.type === "field_name");
@@ -167,7 +161,7 @@ function collectFieldMatches(bodyNode, blockType, blockName, file, tag, acc) {
  * Check if a metadata_block contains a tag matching `tag`.
  * Returns the matched tag text or null.
  */
-function findTagInMeta(metaNode, tag) {
+function findTagInMeta(metaNode: SyntaxNode, tag: string): string | null {
   for (const c of metaNode.namedChildren) {
     if (c.type === "tag_token" && c.text.toLowerCase() === tag) {
       return c.text;
@@ -188,18 +182,18 @@ function findTagInMeta(metaNode, tag) {
 
 // ── Default formatter ─────────────────────────────────────────────────────────
 
-function printDefault(matches) {
+function printDefault(matches: Match[]): void {
   if (matches.length === 0) {
     console.log("No matches found.");
     return;
   }
 
   // Group by block
-  const byBlock = new Map();
+  const byBlock = new Map<string, { blockType: string; block: string; file: string; fields: Match[] }>();
   for (const m of matches) {
     const key = `${m.blockType}:${m.block}`;
     if (!byBlock.has(key)) byBlock.set(key, { blockType: m.blockType, block: m.block, file: m.file, fields: [] });
-    byBlock.get(key).fields.push(m);
+    byBlock.get(key)!.fields.push(m);
   }
 
   for (const { blockType, block, file, fields } of byBlock.values()) {

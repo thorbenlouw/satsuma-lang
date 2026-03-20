@@ -1,5 +1,5 @@
 /**
- * lineage.js — `satsuma lineage` command
+ * lineage.ts — `satsuma lineage` command
  *
  * Traces data lineage through the workspace reference graph.
  *
@@ -15,33 +15,50 @@
  *   --json          emit {nodes, edges} DAG
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
+import type { FullGraph } from "../graph-builder.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface DagEdge {
+  src: string;
+  tgt: string;
+}
+
+interface DagNode {
+  name: string;
+  type?: string;
+  file?: string;
+}
+
+interface Dag {
+  nodes: DagNode[];
+  edges: DagEdge[];
+}
+
+export function register(program: Command): void {
   program
     .command("lineage [path]")
     .description("Trace data lineage through the workspace")
     .option("--from <name>", "start node for downstream walk")
     .option("--to <name>", "target node for upstream BFS")
-    .option("--depth <n>", "maximum recursion depth", (v) => parseInt(v, 10), 10)
+    .option("--depth <n>", "maximum recursion depth", (v: string) => parseInt(v, 10), 10)
     .option("--compact", "print names only")
     .option("--json", "emit {nodes, edges} DAG")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { from?: string; to?: string; depth: number; compact?: boolean; json?: boolean }) => {
       if (!opts.from && !opts.to) {
         console.error("Provide --from <name> or --to <name>.");
         process.exit(1);
       }
 
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -65,7 +82,7 @@ export function register(program) {
           printTree(dag, start, 0);
         }
       } else {
-        const resolvedTo = resolveIndexKey(opts.to, graph.nodes);
+        const resolvedTo = resolveIndexKey(opts.to!, graph.nodes);
         if (!resolvedTo) {
           console.error(`Node '${opts.to}' not found.`);
           process.exit(1);
@@ -91,14 +108,14 @@ export function register(program) {
  * Build a downstream DAG from a start node up to `maxDepth`.
  * Returns {nodes: [...], edges: [{src, tgt}]}.
  */
-function buildDownstream(graph, start, maxDepth) {
-  const visitedNodes = new Set();
-  const dagEdges = [];
+function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag {
+  const visitedNodes = new Set<string>();
+  const dagEdges: DagEdge[] = [];
 
-  function dfs(node, depth) {
+  function dfs(node: string, depth: number): void {
     if (depth > maxDepth || visitedNodes.has(node)) return;
     visitedNodes.add(node);
-    const children = graph.edges.get(node) ?? new Set();
+    const children = graph.edges.get(node) ?? new Set<string>();
     for (const child of children) {
       dagEdges.push({ src: node, tgt: child });
       dfs(child, depth + 1);
@@ -118,23 +135,23 @@ function buildDownstream(graph, start, maxDepth) {
  * Walks reverse edges to collect all reachable upstream nodes and edges.
  * Returns {nodes: [...], edges: [{src, tgt}]}.
  */
-function buildUpstream(graph, target, maxDepth) {
+function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag {
   // Build reverse edges
-  const reverseEdges = new Map();
+  const reverseEdges = new Map<string, Set<string>>();
   for (const [src, targets] of graph.edges) {
     for (const tgt of targets) {
       if (!reverseEdges.has(tgt)) reverseEdges.set(tgt, new Set());
-      reverseEdges.get(tgt).add(src);
+      reverseEdges.get(tgt)!.add(src);
     }
   }
 
-  const visitedNodes = new Set();
-  const dagEdges = [];
+  const visitedNodes = new Set<string>();
+  const dagEdges: DagEdge[] = [];
 
-  function dfs(node, depth) {
+  function dfs(node: string, depth: number): void {
     if (depth > maxDepth || visitedNodes.has(node)) return;
     visitedNodes.add(node);
-    const parents = reverseEdges.get(node) ?? new Set();
+    const parents = reverseEdges.get(node) ?? new Set<string>();
     for (const parent of parents) {
       dagEdges.push({ src: parent, tgt: node });
       dfs(parent, depth + 1);
@@ -151,12 +168,12 @@ function buildUpstream(graph, target, maxDepth) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printUpstreamFlat(dag, target) {
+function printUpstreamFlat(dag: Dag, target: string): void {
   // Build adjacency (upstream direction: parent → child)
-  const adj = new Map();
+  const adj = new Map<string, string[]>();
   for (const { src, tgt } of dag.edges) {
     if (!adj.has(src)) adj.set(src, []);
-    adj.get(src).push(tgt);
+    adj.get(src)!.push(tgt);
   }
 
   // Find roots (nodes with no incoming edges in the dag)
@@ -166,8 +183,8 @@ function printUpstreamFlat(dag, target) {
   if (roots.length === 0) roots.push(target);
 
   // Print each root-to-target path
-  const paths = [];
-  function findPaths(node, currentPath) {
+  const paths: string[][] = [];
+  function findPaths(node: string, currentPath: string[]): void {
     currentPath.push(node);
     const children = adj.get(node) ?? [];
     if (children.length === 0 || node === target) {
@@ -195,15 +212,15 @@ function printUpstreamFlat(dag, target) {
   }
 }
 
-function printTree(dag, start, _unused) {
+function printTree(dag: Dag, start: string, _unused: number): void {
   // Build adjacency from dag edges
-  const adj = new Map();
+  const adj = new Map<string, string[]>();
   for (const { src, tgt } of dag.edges) {
     if (!adj.has(src)) adj.set(src, []);
-    adj.get(src).push(tgt);
+    adj.get(src)!.push(tgt);
   }
 
-  function render(node, depth, visited) {
+  function render(node: string, depth: number, visited: Set<string>): void {
     const nodeInfo = dag.nodes.find((n) => n.name === node);
     const type = nodeInfo?.type ?? "?";
     const prefix = "  ".repeat(depth);
@@ -219,15 +236,15 @@ function printTree(dag, start, _unused) {
   render(start, 0, new Set());
 }
 
-function printCompact(dag, start) {
-  const adj = new Map();
+function printCompact(dag: Dag, start: string): void {
+  const adj = new Map<string, string[]>();
   for (const { src, tgt } of dag.edges) {
     if (!adj.has(src)) adj.set(src, []);
-    adj.get(src).push(tgt);
+    adj.get(src)!.push(tgt);
   }
 
-  const visited = new Set();
-  function walk(node) {
+  const visited = new Set<string>();
+  function walk(node: string): void {
     if (visited.has(node)) return;
     visited.add(node);
     console.log(node);

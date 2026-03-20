@@ -1,5 +1,5 @@
 /**
- * meta.js — `satsuma meta <scope>` command
+ * meta.ts — `satsuma meta <scope>` command
  *
  * Extracts metadata entries for a block or field.
  * Scope: schema <name>, field <schema.field>, mapping <name>, metric <name>.
@@ -9,33 +9,41 @@
  *   --json        structured metadata object
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractMetadata } from "../meta-extract.js";
+import type { MetaEntry } from "../meta-extract.js";
 import { findBlockNode } from "../cst-query.js";
+import type { SyntaxNode, WorkspaceIndex, ParsedFile, FieldDecl } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface MetaResult {
+  scope: string;
+  type?: string | null;
+  entries: MetaEntry[];
+}
+
+export function register(program: Command): void {
   program
     .command("meta <scope> [path]")
     .description("Extract metadata for a schema, field, mapping, or metric")
     .option("--tags-only", "only output tag tokens, one per line")
     .option("--json", "structured JSON output")
-    .action(async (scope, pathArg, opts) => {
+    .action(async (scope: string, pathArg: string | undefined, opts: { tagsOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      let result;
+      let result: MetaResult;
       if (scope.includes(".")) {
         result = extractFieldMeta(scope, parsedFiles, index);
       } else {
@@ -44,7 +52,7 @@ export function register(program) {
 
       if (opts.tagsOnly) {
         const tags = result.entries
-          .filter((e) => e.kind === "tag")
+          .filter((e): e is Extract<MetaEntry, { kind: "tag" }> => e.kind === "tag")
           .map((e) => e.tag);
         if (tags.length === 0) {
           console.log("No tags found.");
@@ -65,9 +73,9 @@ export function register(program) {
     });
 }
 
-function extractBlockMeta(blockName, parsedFiles, index) {
+function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {
   // Determine block type, resolving namespace-qualified keys
-  const blockTypes = [];
+  const blockTypes: string[] = [];
   let resolvedName = blockName;
   const schemaResolved = resolveIndexKey(blockName, index.schemas);
   const mappingResolved = resolveIndexKey(blockName, index.mappings);
@@ -110,7 +118,7 @@ function extractBlockMeta(blockName, parsedFiles, index) {
   return { scope: blockName, entries: [] };
 }
 
-function extractFieldMeta(fieldRef, parsedFiles, index) {
+function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {
   const dot = fieldRef.indexOf(".");
   const schemaName = fieldRef.slice(0, dot);
   const fieldName = fieldRef.slice(dot + 1);
@@ -150,7 +158,7 @@ function extractFieldMeta(fieldRef, parsedFiles, index) {
   return { scope: fieldRef, type: field.type, entries: [] };
 }
 
-function getFieldDeclName(fieldDecl) {
+function getFieldDeclName(fieldDecl: SyntaxNode): string | null {
   const nameNode = fieldDecl.namedChildren.find(
     (c) => c.type === "field_name",
   );
@@ -160,7 +168,7 @@ function getFieldDeclName(fieldDecl) {
   return inner.text;
 }
 
-function findField(fields, fieldName) {
+function findField(fields: FieldDecl[], fieldName: string): FieldDecl | null {
   for (const field of fields) {
     if (field.name === fieldName) return field;
     if (field.children) {
@@ -171,7 +179,7 @@ function findField(fields, fieldName) {
   return null;
 }
 
-function findFieldDecls(bodyNode, fieldName, acc = []) {
+function findFieldDecls(bodyNode: SyntaxNode, fieldName: string, acc: SyntaxNode[] = []): SyntaxNode[] {
   for (const child of bodyNode.namedChildren) {
     if (child.type === "field_decl" && getFieldDeclName(child) === fieldName) {
       acc.push(child);
@@ -185,7 +193,7 @@ function findFieldDecls(bodyNode, fieldName, acc = []) {
   return acc;
 }
 
-function printDefault(result) {
+function printDefault(result: MetaResult): void {
   console.log(`Metadata for '${result.scope}':`);
   if (result.type) {
     console.log(`  type: ${result.type}`);

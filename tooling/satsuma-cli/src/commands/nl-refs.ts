@@ -1,5 +1,5 @@
 /**
- * nl-refs.js — `satsuma nl-refs` command
+ * nl-refs.ts — `satsuma nl-refs` command
  *
  * Extracts and lists all backtick-delimited references from NL blocks
  * in transform bodies. Shows each reference with its classification,
@@ -11,26 +11,27 @@
  *   --unresolved       show only unresolved references
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
+import type { ResolvedNLRef } from "../nl-ref-extract.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("nl-refs [path]")
     .description("Extract backtick references from NL transform bodies")
     .option("--mapping <name>", "scope to a specific mapping")
     .option("--json", "structured JSON output")
     .option("--unresolved", "show only unresolved references")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { mapping?: string; json?: boolean; unresolved?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -68,15 +69,15 @@ export function register(program) {
     });
 }
 
-function printDefault(refs) {
+function printDefault(refs: ResolvedNLRef[]): void {
   console.log(`NL backtick references (${refs.length} total):`);
   console.log();
 
   // Group by mapping
-  const byMapping = new Map();
+  const byMapping = new Map<string, ResolvedNLRef[]>();
   for (const ref of refs) {
     if (!byMapping.has(ref.mapping)) byMapping.set(ref.mapping, []);
-    byMapping.get(ref.mapping).push(ref);
+    byMapping.get(ref.mapping)!.push(ref);
   }
 
   for (const [mapping, mappingRefs] of byMapping) {

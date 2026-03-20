@@ -18,26 +18,35 @@
  *   --json         emit ranked list as JSON (no budget truncation)
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { extractBacktickRefs } from "../nl-ref-extract.js";
+import type { WorkspaceIndex } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+interface ScoredCandidate {
+  name: string;
+  type: string;
+  score: number;
+  file: string;
+  row: number;
+}
+
+export function register(program: Command): void {
   program
     .command("context <query> [path]")
     .description("Rank and emit workspace blocks relevant to a query")
-    .option("--budget <n>", "token budget", (v) => parseInt(v, 10), 4000)
+    .option("--budget <n>", "token budget", (v: string) => parseInt(v, 10), 4000)
     .option("--compact", "omit notes and transform bodies")
     .option("--json", "emit ranked JSON list")
-    .action(async (query, pathArg, opts) => {
+    .action(async (query: string, pathArg: string | undefined, opts: { budget: number; compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -68,7 +77,7 @@ export function register(program) {
       // Emit within token budget
       const budget = opts.budget;
       let used = 0;
-      const emitted = [];
+      const emitted: Array<ScoredCandidate & { block: string }> = [];
 
       for (const c of candidates) {
         const block = renderBlock(index, c, opts.compact);
@@ -95,7 +104,7 @@ export function register(program) {
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
 /** Split query into lowercase terms, filtering stop words. */
-function tokenize(query) {
+function tokenize(query: string): string[] {
   const stop = new Set(["a", "an", "the", "to", "for", "in", "of", "and", "or", "is"]);
   return query
     .toLowerCase()
@@ -104,7 +113,7 @@ function tokenize(query) {
 }
 
 /** Score a string against terms — returns number of term hits. */
-function scoreText(text, terms) {
+function scoreText(text: string, terms: string[]): number {
   const lower = text.toLowerCase();
   return terms.filter((t) => lower.includes(t)).length;
 }
@@ -113,10 +122,10 @@ function scoreText(text, terms) {
  * Score all blocks in the index against terms.
  * Returns [{name, type, score, file, row}]
  */
-function scoreAll(index, terms) {
-  const results = [];
+function scoreAll(index: WorkspaceIndex, terms: string[]): ScoredCandidate[] {
+  const results: ScoredCandidate[] = [];
 
-  const scoreEntry = (name, type, entry) => {
+  const scoreEntry = (name: string, type: string, entry: { note?: string | null; fields?: Array<{ name: string; type: string }>; sources?: string[]; targets?: string[]; file: string; row: number }) => {
     let score = 0;
     score += scoreText(name, terms) * 10;
     if (entry.note) score += scoreText(entry.note, terms) * 2;
@@ -146,16 +155,16 @@ function scoreAll(index, terms) {
   // Boost mappings that contain NL backtick refs matching query terms
   if (index.nlRefData) {
     // Group NL ref data by mapping key
-    const nlByMapping = new Map();
+    const nlByMapping = new Map<string, typeof index.nlRefData>();
     for (const item of index.nlRefData) {
       const key = item.namespace ? `${item.namespace}::${item.mapping}` : item.mapping;
       if (!nlByMapping.has(key)) nlByMapping.set(key, []);
-      nlByMapping.get(key).push(item);
+      nlByMapping.get(key)!.push(item);
     }
 
     for (const [mappingKey, items] of nlByMapping) {
       // Collect all backtick ref texts for this mapping
-      const refTexts = [];
+      const refTexts: string[] = [];
       for (const item of items) {
         for (const { ref } of extractBacktickRefs(item.text)) {
           refTexts.push(ref);
@@ -183,14 +192,14 @@ function scoreAll(index, terms) {
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
-function estimateTokens(text) {
+function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
 /** Render a block as a compact string for output. */
-function renderBlock(index, candidate, compact) {
+function renderBlock(index: WorkspaceIndex, candidate: ScoredCandidate, compact?: boolean): string {
   const { name, type } = candidate;
-  const lines = [];
+  const lines: string[] = [];
 
   if (type === "schema") {
     const s = index.schemas.get(name);

@@ -1,5 +1,5 @@
 /**
- * match-fields.js — `satsuma match-fields --source <schema> --target <schema>` command
+ * match-fields.ts — `satsuma match-fields --source <schema> --target <schema>` command
  *
  * Deterministic normalized name comparison between two schemas.
  *
@@ -9,14 +9,15 @@
  *   --json            structured JSON output
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { matchFields } from "../normalize.js";
 import { expandEntityFields } from "../spread-expand.js";
+import type { SchemaRecord } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("match-fields [path]")
     .description("Match fields between source and target schemas by normalized name")
@@ -25,13 +26,13 @@ export function register(program) {
     .option("--matched-only", "show only matched pairs")
     .option("--unmatched-only", "show only unmatched fields")
     .option("--json", "structured JSON output")
-    .action(async (pathArg, opts) => {
+    .action(async (pathArg: string | undefined, opts: { source: string; target: string; matchedOnly?: boolean; unmatchedOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -39,7 +40,7 @@ export function register(program) {
       const index = buildIndex(parsedFiles);
 
       // Validate schemas
-      const resolvedNames = {};
+      const resolvedNames: Record<string, { key: string; entry: SchemaRecord }> = {};
       for (const name of [opts.source, opts.target]) {
         const resolved = resolveIndexKey(name, index.schemas);
         if (!resolved) {

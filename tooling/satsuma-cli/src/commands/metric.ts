@@ -1,5 +1,5 @@
 /**
- * metric.js — `satsuma metric <name>` command
+ * metric.ts — `satsuma metric <name>` command
  *
  * Looks up a metric by name and renders it. Output modes:
  *   default    — reconstructed metric block with metadata and measure fields
@@ -10,26 +10,27 @@
  * Exits 1 if the metric name is not found.
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
+import type { SyntaxNode, MetricRecord } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("metric <name> [path]")
     .description("Show a metric definition")
     .option("--compact", "suppress note text")
     .option("--sources", "print source names only")
     .option("--json", "output JSON")
-    .action(async (name, pathArg, opts) => {
+    .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; sources?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -66,13 +67,18 @@ export function register(program) {
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
 
+interface MetaEntry {
+  key: string;
+  value: string | null;
+}
+
 /**
  * Extract metadata entries from a metadata_block for display.
  * Returns an array of {key, value} pairs where value may be multi-word.
  */
-function extractMetaEntries(metaNode) {
+function extractMetaEntries(metaNode: SyntaxNode | undefined): MetaEntry[] {
   if (!metaNode) return [];
-  const entries = [];
+  const entries: MetaEntry[] = [];
   for (const c of metaNode.namedChildren) {
     if (c.type === "key_value_pair") {
       const key = c.namedChildren.find((x) => x.type === "kv_key");
@@ -95,9 +101,9 @@ function extractMetaEntries(metaNode) {
  * - 1–2 entries → inline ( k v, k v )
  * - 3+ entries → multi-line
  */
-function formatMeta(entries) {
+function formatMeta(entries: MetaEntry[]): string {
   if (entries.length === 0) return "";
-  const format = (e) => (e.value !== null ? `${e.key} ${e.value}` : e.key);
+  const format = (e: MetaEntry): string => (e.value !== null ? `${e.key} ${e.value}` : e.key);
   if (entries.length <= 2) {
     return ` (${entries.map(format).join(", ")})`;
   }
@@ -107,7 +113,7 @@ function formatMeta(entries) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(entry, metricNode) {
+function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
   const meta = metricNode
     ? extractMetaEntries(metricNode.namedChildren.find((c) => c.type === "metadata_block"))
     : [];
@@ -129,7 +135,7 @@ function printJson(entry, metricNode) {
   );
 }
 
-function printDefault(entry, metricNode, compact) {
+function printDefault(entry: MetricRecord, metricNode: SyntaxNode | null, compact: boolean | undefined): void {
   const metaNode = metricNode?.namedChildren.find((c) => c.type === "metadata_block");
   const meta = extractMetaEntries(metaNode);
   const display = entry.displayName ? ` "${entry.displayName}"` : "";

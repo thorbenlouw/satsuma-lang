@@ -1,5 +1,5 @@
 /**
- * mapping.js — `satsuma mapping <name>` command
+ * mapping.ts — `satsuma mapping <name>` command
  *
  * Looks up a mapping by name and renders it. Output modes:
  *   default      — reconstructed mapping block with arrows and transforms
@@ -10,26 +10,27 @@
  * Exits 1 if the mapping name is not found.
  */
 
+import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
+import type { SyntaxNode, MappingRecord } from "../types.js";
 
-/** @param {import('commander').Command} program */
-export function register(program) {
+export function register(program: Command): void {
   program
     .command("mapping <name> [path]")
     .description("Show a mapping definition")
     .option("--compact", "omit transform bodies and notes")
     .option("--arrows-only", "print src → tgt table")
     .option("--json", "output JSON")
-    .action(async (name, pathArg, opts) => {
+    .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; arrowsOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
-      let files;
+      let files: string[];
       try {
         files = await resolveInput(root);
-      } catch (err) {
-        console.error(`Error resolving path: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`Error resolving path: ${(err as Error).message}`);
         process.exit(1);
       }
 
@@ -66,16 +67,24 @@ export function register(program) {
 // ── CST helpers ───────────────────────────────────────────────────────────────
 
 /** Extract text from a path node (_path_expr variants). */
-function pathText(pathNode) {
+function pathText(pathNode: SyntaxNode | undefined): string {
   if (!pathNode) return "?";
   // The node's text is the full path text including :: separators etc.
   return pathNode.text;
 }
 
+interface ArrowInfo {
+  kind: string;
+  src: string | null;
+  tgt: string;
+  hasBody: boolean;
+  node: SyntaxNode;
+}
+
 /** Collect arrows from mapping_body as {kind, src, tgt, hasBody} objects. */
-function collectArrows(bodyNode) {
+function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
   if (!bodyNode) return [];
-  const arrows = [];
+  const arrows: ArrowInfo[] = [];
   for (const c of bodyNode.namedChildren) {
     if (c.type === "map_arrow") {
       const src = c.namedChildren.find((x) => x.type === "src_path");
@@ -97,9 +106,9 @@ function collectArrows(bodyNode) {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(entry, mappingNode) {
+function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
-  const arrows = collectArrows(body).map(({ kind, src, tgt, hasBody }) => ({
+  const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody }) => ({
     kind,
     src,
     tgt,
@@ -122,7 +131,7 @@ function printJson(entry, mappingNode) {
   );
 }
 
-function printArrowsOnly(entry, mappingNode) {
+function printArrowsOnly(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   if (body) {
     for (const { src, tgt } of collectArrows(body)) {
@@ -135,7 +144,7 @@ function printArrowsOnly(entry, mappingNode) {
   }
 }
 
-function printDefault(entry, mappingNode, compact) {
+function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, compact: boolean | undefined): void {
   const nameStr = entry.name ? ` '${entry.name}'` : "";
   console.log(`mapping${nameStr} {`);
 
