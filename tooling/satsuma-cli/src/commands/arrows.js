@@ -84,7 +84,9 @@ export function register(program) {
         const resolvedTo = nlRef.resolvedTo.name;
         if (resolvedTo === qualifiedField || resolvedTo === `${resolvedSchema.key}.${fieldName}`) {
           arrows.push({
-            mapping: nlRef.mapping?.split("::").pop() ?? nlRef.mapping,
+            mapping: nlRef.namespace && nlRef.mapping?.startsWith(`${nlRef.namespace}::`)
+              ? nlRef.mapping.slice(nlRef.namespace.length + 2)
+              : nlRef.mapping,
             namespace: nlRef.namespace,
             source: fieldName,
             target: nlRef.targetField,

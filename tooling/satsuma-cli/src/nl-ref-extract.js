@@ -86,7 +86,8 @@ export function resolveRef(ref, mappingContext, index) {
     const fieldName = ref.slice(dotIdx + 1);
     const allSchemas = [...(mappingContext.sources ?? []), ...(mappingContext.targets ?? [])];
     for (const s of allSchemas) {
-      const baseName = s.includes("::") ? s.split("::")[1] : s;
+      const nsIdx = s.indexOf("::");
+      const baseName = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
       if (baseName === schemaName || s === schemaName) {
         const schema = index.schemas.get(s);
         if (schema && hasField(schema.fields, fieldName)) {
@@ -106,17 +107,18 @@ export function resolveRef(ref, mappingContext, index) {
     }
   }
 
-  // Check if it's a schema, fragment, or transform name
-  if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: ref } };
-  if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: ref } };
-  if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: ref } };
-
-  // Try namespace-qualified lookup from mapping's namespace
+  // Try namespace-qualified lookup from mapping's namespace BEFORE global
   if (mappingContext.namespace) {
     const nsRef = `${mappingContext.namespace}::${ref}`;
     if (index.schemas.has(nsRef)) return { resolved: true, resolvedTo: { kind: "schema", name: nsRef } };
+    if (index.fragments?.has(nsRef)) return { resolved: true, resolvedTo: { kind: "fragment", name: nsRef } };
     if (index.transforms?.has(nsRef)) return { resolved: true, resolvedTo: { kind: "transform", name: nsRef } };
   }
+
+  // Check if it's a global schema, fragment, or transform name
+  if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: ref } };
+  if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: ref } };
+  if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: ref } };
 
   return { resolved: false, resolvedTo: null };
 }

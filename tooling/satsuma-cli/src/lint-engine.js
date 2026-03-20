@@ -123,8 +123,9 @@ function checkHiddenSourceInNl(index) {
 function makeAddSourceFix(mappingKey, schemaRef) {
   // The mapping name is the part after the namespace (or the full key for
   // global mappings).  We need the display name as it appears in the Satsuma file.
-  const displayName = mappingKey.includes("::")
-    ? mappingKey.split("::")[1]
+  const nsIdx = mappingKey.indexOf("::");
+  const displayName = nsIdx !== -1
+    ? mappingKey.slice(nsIdx + 2)
     : mappingKey;
 
   return (source) => {

@@ -1,6 +1,6 @@
 ---
 id: stm-prfz
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-19T20:04:30Z
