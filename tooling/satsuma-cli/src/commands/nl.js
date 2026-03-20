@@ -143,47 +143,49 @@ function extractFromField(fieldRef, parsedFiles, index) {
   }
 
   // Also extract NL from arrows targeting/sourcing this field in mappings
-  for (const { filePath, tree } of parsedFiles) {
-    const root = tree.rootNode;
-    for (const mappingNode of [...iterBlocks(root)].filter(
-      (c) => c.type === "mapping_block",
-    )) {
-      const body = mappingNode.namedChildren.find(
-        (c) => c.type === "mapping_body",
-      );
-      if (!body) continue;
+  // Only include arrows from mappings whose source or target schemas include the resolved schema
+  const resolvedSchemaKey = resolvedSchema.key;
+  for (const [, mapping] of index.mappings) {
+    const mappingSources = mapping.sources ?? [];
+    const mappingTargets = mapping.targets ?? [];
+    const schemaIsRelevant =
+      mappingSources.includes(resolvedSchemaKey) ||
+      mappingTargets.includes(resolvedSchemaKey);
+    if (!schemaIsRelevant) continue;
 
-      for (const arrow of body.namedChildren) {
-        if (arrow.type !== "map_arrow" && arrow.type !== "computed_arrow")
-          continue;
-        const src = arrow.namedChildren.find((c) => c.type === "src_path");
-        const tgt = arrow.namedChildren.find((c) => c.type === "tgt_path");
-        const srcText = src?.namedChildren[0]?.text ?? null;
-        const tgtText = tgt?.namedChildren[0]?.text ?? null;
-        if (srcText !== fieldName && tgtText !== fieldName) continue;
+    const parsed = parsedFiles.find((p) => p.filePath === mapping.file);
+    if (!parsed) continue;
 
-        for (const item of extractNLContent(
-          arrow,
-          `${getBlockName(mappingNode) ?? "?"}`,
-        )) {
-          items.push({ ...item, file: filePath });
-        }
+    const mappingKey = mapping.namespace
+      ? `${mapping.namespace}::${mapping.name}`
+      : mapping.name;
+    const mappingNode = findBlockNode(parsed.tree.rootNode, "mapping_block", mappingKey);
+    if (!mappingNode) continue;
+
+    const mBody = mappingNode.namedChildren.find(
+      (c) => c.type === "mapping_body",
+    );
+    if (!mBody) continue;
+
+    for (const arrow of mBody.namedChildren) {
+      if (arrow.type !== "map_arrow" && arrow.type !== "computed_arrow")
+        continue;
+      const src = arrow.namedChildren.find((c) => c.type === "src_path");
+      const tgt = arrow.namedChildren.find((c) => c.type === "tgt_path");
+      const srcText = src?.namedChildren[0]?.text ?? null;
+      const tgtText = tgt?.namedChildren[0]?.text ?? null;
+      if (srcText !== fieldName && tgtText !== fieldName) continue;
+
+      for (const item of extractNLContent(
+        arrow,
+        `${getBlockName(mappingNode) ?? "?"}`,
+      )) {
+        items.push({ ...item, file: mapping.file });
       }
     }
   }
 
   return items;
-}
-
-/** Yield block nodes from rootNode, searching inside namespace_block children. */
-function* iterBlocks(rootNode) {
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "namespace_block") {
-      yield* iterBlocks(c);
-    } else {
-      yield c;
-    }
-  }
 }
 
 function getFieldDeclName(fieldDecl) {

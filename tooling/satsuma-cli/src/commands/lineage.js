@@ -71,15 +71,17 @@ export function register(program) {
           process.exit(1);
         }
         const target = resolvedTo.key;
-        const path = bfsPath(graph, target, opts.depth);
-        if (!path) {
+        const dag = buildUpstream(graph, target, opts.depth);
+        if (dag.nodes.length === 0) {
           console.log(`No upstream path found to '${target}'.`);
           process.exit(1);
         }
         if (opts.json) {
-          console.log(JSON.stringify({ path }, null, 2));
+          console.log(JSON.stringify(dag, null, 2));
+        } else if (opts.compact) {
+          for (const n of dag.nodes) console.log(n.name);
         } else {
-          console.log(path.join(" -> "));
+          printUpstreamFlat(dag, target);
         }
       }
     });
@@ -112,10 +114,11 @@ function buildDownstream(graph, start, maxDepth) {
 }
 
 /**
- * BFS upstream: find shortest path from any source (no incoming edges) to `target`.
- * Returns the path array or null.
+ * Build the full upstream DAG from a target node up to `maxDepth`.
+ * Walks reverse edges to collect all reachable upstream nodes and edges.
+ * Returns {nodes: [...], edges: [{src, tgt}]}.
  */
-function bfsPath(graph, target, maxDepth) {
+function buildUpstream(graph, target, maxDepth) {
   // Build reverse edges
   const reverseEdges = new Map();
   for (const [src, targets] of graph.edges) {
@@ -125,33 +128,72 @@ function bfsPath(graph, target, maxDepth) {
     }
   }
 
-  // BFS from target backwards
-  const queue = [[target]];
-  const visited = new Set([target]);
+  const visitedNodes = new Set();
+  const dagEdges = [];
 
-  while (queue.length > 0) {
-    const path = queue.shift();
-    if (path.length > maxDepth + 1) break;
-    const current = path[path.length - 1];
-    const parents = reverseEdges.get(current) ?? new Set();
-
-    if (parents.size === 0) {
-      // Reached a root — return reversed path
-      return [...path].reverse();
-    }
-
+  function dfs(node, depth) {
+    if (depth > maxDepth || visitedNodes.has(node)) return;
+    visitedNodes.add(node);
+    const parents = reverseEdges.get(node) ?? new Set();
     for (const parent of parents) {
-      if (!visited.has(parent)) {
-        visited.add(parent);
-        queue.push([...path, parent]);
-      }
+      dagEdges.push({ src: parent, tgt: node });
+      dfs(parent, depth + 1);
     }
   }
 
-  return null;
+  dfs(target, 0);
+
+  return {
+    nodes: [...visitedNodes].map((n) => ({ name: n, ...graph.nodes.get(n) })),
+    edges: dagEdges,
+  };
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
+
+function printUpstreamFlat(dag, target) {
+  // Build adjacency (upstream direction: parent → child)
+  const adj = new Map();
+  for (const { src, tgt } of dag.edges) {
+    if (!adj.has(src)) adj.set(src, []);
+    adj.get(src).push(tgt);
+  }
+
+  // Find roots (nodes with no incoming edges in the dag)
+  const hasIncoming = new Set(dag.edges.map((e) => e.tgt));
+  const roots = dag.nodes.filter((n) => !hasIncoming.has(n.name)).map((n) => n.name);
+  // If no roots found (e.g. target is isolated), just use target
+  if (roots.length === 0) roots.push(target);
+
+  // Print each root-to-target path
+  const paths = [];
+  function findPaths(node, currentPath) {
+    currentPath.push(node);
+    const children = adj.get(node) ?? [];
+    if (children.length === 0 || node === target) {
+      if (node === target) paths.push([...currentPath]);
+    } else {
+      for (const child of children) {
+        findPaths(child, currentPath);
+      }
+    }
+    currentPath.pop();
+  }
+
+  for (const root of roots) {
+    findPaths(root, []);
+  }
+
+  if (paths.length === 0) {
+    // Fallback: print all nodes
+    console.log(dag.nodes.map((n) => n.name).join(" -> "));
+    return;
+  }
+
+  for (const path of paths) {
+    console.log(path.join(" -> "));
+  }
+}
 
 function printTree(dag, start, _unused) {
   // Build adjacency from dag edges

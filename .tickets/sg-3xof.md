@@ -1,6 +1,6 @@
 ---
 id: sg-3xof
-status: open
+status: done
 deps: []
 links: []
 created: 2026-03-20T12:48:02Z

@@ -136,7 +136,7 @@ $ satsuma nl mapping 'demographics to mart'
   block:
     (note "Maps customer demographics from vault to analytics mart") (note)
 
-$ satsuma nl field sat_customer_demographics.loyalty_tier
+$ satsuma nl sat_customer_demographics.loyalty_tier
 
 sat_customer_demographics.loyalty_tier — 1 NL item
 
@@ -155,7 +155,7 @@ sat_customer_demographics.loyalty_tier — 1 NL item
 
 Extract metadata entries for a block or field. Returns all tags, key-value pairs, notes, enums, and constraints from the metadata parentheses.
 
-Scope syntax: `schema <name>`, `field <schema.field>`, `mapping <name>`, `metric <name>`.
+Scope syntax: `<schema>` (block), `<schema.field>` (field), `<mapping>`, `<metric>`.
 
 ```
 $ satsuma meta schema hub_customer
@@ -165,13 +165,13 @@ hub_customer metadata:
     POS and Shopify customers are resolved to an SFDC ContactId via
     loyalty card and email matching respectively."
 
-$ satsuma meta field loyalty_sfdc.Email
+$ satsuma meta loyalty_sfdc.Email
 
 loyalty_sfdc.Email metadata:
   type: STRING(255)
   tags: pii
 
-$ satsuma meta field sat_customer_demographics.status
+$ satsuma meta sat_customer_demographics.status
 
 sat_customer_demographics.status metadata:
   type: VARCHAR(20)
@@ -355,7 +355,7 @@ The agent traces a field through the arrow graph:
 2. satsuma arrows sat_customer_demographics.loyalty_tier --as-source --json
    → finds arrow to mart_customer_360.loyalty_tier, classification: "nl"
 
-3. satsuma nl field mart_customer_360.loyalty_tier
+3. satsuma nl mart_customer_360.loyalty_tier
    → agent reads NL content, notices "points balance" dependency
 
 4. satsuma arrows loyalty_sfdc.LoyaltyPoints --as-source --json

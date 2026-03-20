@@ -185,8 +185,8 @@ satsuma context "customer mapping"           # keyword-ranked block extraction (
 # Structural primitives — slice below block level
 satsuma arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
 satsuma nl mapping 'demographics to mart'    # NL content in this mapping (notes, transforms)
-satsuma nl field mart_customer_360.email     # NL content on this specific field
-satsuma meta field loyalty_sfdc.Email        # metadata entries (tags, type, constraints)
+satsuma nl mart_customer_360.email            # NL content on this specific field
+satsuma meta loyalty_sfdc.Email              # metadata entries (tags, type, constraints)
 satsuma fields sat_customer_demographics     # field list with types
 satsuma fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
 satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
@@ -239,7 +239,7 @@ Every arrow the CLI returns carries a classification from CST node types:
 | Need to understand a workspace | `satsuma summary`, then drill with `satsuma schema` / `satsuma mapping` |
 | Need arrows for a specific field | `satsuma arrows <schema.field>` — not reading the whole mapping |
 | Need NL content for interpretation | `satsuma nl <scope>` — not pulling the entire block |
-| Need metadata on a field | `satsuma meta field <schema.field>` — not parsing raw text |
+| Need metadata on a field | `satsuma meta <schema.field>` — not parsing raw text |
 | Need to check which fields lack arrows | `satsuma fields <schema> --unmapped-by <mapping>` |
 | Need to validate after editing | `satsuma validate` for correctness, `satsuma lint` for conventions |
 | Need to compare versions | `satsuma diff` — not text diff |

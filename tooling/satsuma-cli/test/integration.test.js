@@ -1530,3 +1530,79 @@ describe("import resolution: missing target", () => {
     assert.match(stderr, /import target.*not found/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl field scope (sg-3xof) — schema qualifier respected for arrows
+// ---------------------------------------------------------------------------
+describe("satsuma nl field scope (sg-3xof)", () => {
+  it("does not leak NL from unrelated schemas sharing the same field name", async () => {
+    // ecom::customers.email has no NL-bearing arrows — should not pick up
+    // vault::sat_contact_details.email NL from 'build dim_contact'
+    const { stdout, code } = await run("nl", "ecom::customers.email", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.doesNotMatch(stdout, /vault::sat_contact_details/);
+    assert.doesNotMatch(stdout, /build dim_contact/);
+  });
+
+  it("returns NL for the correct schema when field name is shared", async () => {
+    // vault::sat_contact_details.email IS a source for 'build dim_contact'
+    const { stdout, code } = await run("nl", "vault::sat_contact_details.email", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /vault::sat_contact_details/);
+  });
+
+  it("unique field names continue to work", async () => {
+    // contact_bk is unique enough — should return NL from its mapping
+    const { code } = await run("nl", "vault::hub_contact.contact_bk", NS_PLATFORM);
+    assert.equal(code, 0);
+    // contact_bk -> contact_bk is a plain arrow with no NL, so no transform items
+    // but the command should succeed without error
+    assert.equal(code, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: lineage --to (sg-pufq) — all upstream branches returned
+// ---------------------------------------------------------------------------
+describe("satsuma lineage --to upstream branches (sg-pufq)", () => {
+  it("includes both upstream sources for mart::dim_contact", async () => {
+    const { stdout, code } = await run("lineage", "--to", "mart::dim_contact", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /vault::hub_contact/);
+    assert.match(stdout, /vault::sat_contact_details/);
+  });
+
+  it("includes all upstream branches for mart::fact_deals", async () => {
+    const { stdout, code } = await run("lineage", "--to", "mart::fact_deals", NS_PLATFORM);
+    assert.equal(code, 0);
+    assert.match(stdout, /vault::hub_deal/);
+    assert.match(stdout, /vault::link_contact_deal/);
+    assert.match(stdout, /vault::hub_contact/);
+  });
+
+  it("--json returns nodes and edges DAG for --to", async () => {
+    const { stdout, code } = await run("lineage", "--to", "mart::dim_contact", "--json", NS_PLATFORM);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.nodes));
+    assert.ok(Array.isArray(data.edges));
+    const names = data.nodes.map((n) => n.name);
+    assert.ok(names.includes("vault::hub_contact"), `expected vault::hub_contact in ${names}`);
+    assert.ok(names.includes("vault::sat_contact_details"), `expected vault::sat_contact_details in ${names}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl/meta field syntax (sg-95gr) — dot-separated scope works
+// ---------------------------------------------------------------------------
+describe("satsuma nl/meta field syntax (sg-95gr)", () => {
+  it("nl accepts schema.field without 'field' keyword", async () => {
+    const { code } = await run("nl", "mart::dim_contact.email", NS_PLATFORM);
+    assert.equal(code, 0);
+  });
+
+  it("meta accepts schema.field without 'field' keyword", async () => {
+    const { code } = await run("meta", "vault::sat_contact_details.email", NS_PLATFORM);
+    assert.equal(code, 0);
+  });
+});
