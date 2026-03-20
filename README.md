@@ -65,9 +65,6 @@ Pre-built binaries are published on every merge to `main`. Install with npm
 # macOS (Apple Silicon)
 npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-arm64.tgz
 
-# macOS (Intel)
-npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-x64.tgz
-
 # Linux (x64)
 npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-linux-x64.tgz
 ```
