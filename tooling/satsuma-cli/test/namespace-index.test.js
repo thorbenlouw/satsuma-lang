@@ -444,3 +444,173 @@ describe("backward compatibility: global-only workspaces", () => {
     assert.equal(index.duplicates[0].name, "orders");
   });
 });
+
+// ── Schema field merging across files ─────────────────────────────────────────
+
+describe("schema field merging across files", () => {
+  it("merges fields from duplicate schema declarations", () => {
+    const data1 = makeFileData({
+      filePath: "hub-customer.stm",
+      schemas: [{
+        name: "pos_oracle",
+        namespace: null,
+        fields: [
+          { name: "CUSTOMER_ID", type: "VARCHAR(20)" },
+          { name: "FIRST_NAME", type: "VARCHAR(100)" },
+        ],
+        row: 49,
+      }],
+    });
+    const data2 = makeFileData({
+      filePath: "hub-store.stm",
+      schemas: [{
+        name: "pos_oracle",
+        namespace: null,
+        fields: [
+          { name: "STORE_ID", type: "VARCHAR(20)" },
+          { name: "STORE_NAME", type: "VARCHAR(100)" },
+        ],
+        row: 20,
+      }],
+    });
+    const index = buildIndex([data1, data2]);
+    const schema = index.schemas.get("pos_oracle");
+    assert.ok(schema, "Schema should exist in index");
+    const fieldNames = schema.fields.map((f) => f.name);
+    assert.ok(fieldNames.includes("CUSTOMER_ID"), "Should have fields from first file");
+    assert.ok(fieldNames.includes("FIRST_NAME"), "Should have fields from first file");
+    assert.ok(fieldNames.includes("STORE_ID"), "Should have merged fields from second file");
+    assert.ok(fieldNames.includes("STORE_NAME"), "Should have merged fields from second file");
+    assert.equal(schema.fields.length, 4, "Should have all unique fields");
+  });
+
+  it("does not duplicate fields present in both declarations", () => {
+    const data1 = makeFileData({
+      filePath: "a.stm",
+      schemas: [{
+        name: "shared",
+        namespace: null,
+        fields: [
+          { name: "id", type: "INT" },
+          { name: "name", type: "VARCHAR" },
+        ],
+        row: 0,
+      }],
+    });
+    const data2 = makeFileData({
+      filePath: "b.stm",
+      schemas: [{
+        name: "shared",
+        namespace: null,
+        fields: [
+          { name: "id", type: "INT" },
+          { name: "email", type: "VARCHAR" },
+        ],
+        row: 5,
+      }],
+    });
+    const index = buildIndex([data1, data2]);
+    const schema = index.schemas.get("shared");
+    const fieldNames = schema.fields.map((f) => f.name);
+    assert.equal(fieldNames.filter((n) => n === "id").length, 1, "Should not duplicate shared field");
+    assert.equal(schema.fields.length, 3, "id + name + email");
+  });
+
+  it("merges hasSpreads flag across declarations", () => {
+    const data1 = makeFileData({
+      filePath: "a.stm",
+      schemas: [{
+        name: "src",
+        namespace: null,
+        fields: [{ name: "id", type: "INT" }],
+        hasSpreads: false,
+        row: 0,
+      }],
+    });
+    const data2 = makeFileData({
+      filePath: "b.stm",
+      schemas: [{
+        name: "src",
+        namespace: null,
+        fields: [{ name: "name", type: "VARCHAR" }],
+        hasSpreads: true,
+        row: 5,
+      }],
+    });
+    const index = buildIndex([data1, data2]);
+    assert.equal(index.schemas.get("src").hasSpreads, true, "hasSpreads should be true if any declaration has spreads");
+  });
+
+  it("merged schema fields resolve correctly in field-not-in-schema check", () => {
+    const data1 = makeFileData({
+      filePath: "hub-customer.stm",
+      schemas: [
+        {
+          name: "pos_oracle",
+          namespace: null,
+          fields: [{ name: "CUSTOMER_ID", type: "VARCHAR(20)" }],
+          row: 49,
+        },
+        {
+          name: "hub_customer",
+          namespace: null,
+          fields: [{ name: "customer_id", type: "VARCHAR(20)" }],
+          row: 70,
+        },
+      ],
+      mappings: [{
+        name: "pos to hub_customer",
+        namespace: null,
+        sources: ["pos_oracle"],
+        targets: ["hub_customer"],
+        arrowCount: 1,
+        row: 80,
+      }],
+      arrowRecords: [{
+        mapping: "pos to hub_customer",
+        namespace: null,
+        source: "CUSTOMER_ID",
+        target: "customer_id",
+        row: 85,
+      }],
+    });
+    const data2 = makeFileData({
+      filePath: "hub-store.stm",
+      schemas: [{
+        name: "pos_oracle",
+        namespace: null,
+        fields: [
+          { name: "STORE_ID", type: "VARCHAR(20)" },
+          { name: "STORE_NAME", type: "VARCHAR(100)" },
+        ],
+        row: 20,
+      }],
+      mappings: [{
+        name: "pos to hub_store",
+        namespace: null,
+        sources: ["pos_oracle"],
+        targets: ["hub_store"],
+        arrowCount: 1,
+        row: 40,
+      }],
+      arrowRecords: [{
+        mapping: "pos to hub_store",
+        namespace: null,
+        source: "STORE_NAME",
+        target: null,
+        row: 45,
+      }],
+    });
+    // Add the hub_store target schema in data2
+    data2.schemas.push({
+      name: "hub_store",
+      namespace: null,
+      fields: [{ name: "store_name", type: "VARCHAR(100)" }],
+      row: 30,
+    });
+    const index = buildIndex([data1, data2]);
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "Merged schema fields should resolve across files");
+  });
+});

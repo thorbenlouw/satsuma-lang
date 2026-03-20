@@ -171,7 +171,19 @@ export function buildIndex(parsedFiles) {
     for (const s of fileData.schemas) {
       const key = qualifiedKey(s.namespace, s.name);
       checkDuplicate("schema", s.name, s.namespace, filePath, s.row);
-      schemas.set(key, { ...s, file: filePath });
+      const existing = schemas.get(key);
+      if (existing) {
+        // Merge fields from duplicate schema declarations across files.
+        // This is intentional in data-modelling patterns where source schemas
+        // are re-declared with different field subsets per mapping file.
+        const existingNames = new Set(existing.fields.map((f) => f.name));
+        for (const f of s.fields) {
+          if (!existingNames.has(f.name)) existing.fields.push(f);
+        }
+        existing.hasSpreads = existing.hasSpreads || s.hasSpreads;
+      } else {
+        schemas.set(key, { ...s, file: filePath });
+      }
     }
     for (const m of fileData.metrics) {
       const key = qualifiedKey(m.namespace, m.name);
