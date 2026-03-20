@@ -1,33 +1,35 @@
 /**
- * graph-builder.js — Build a directed schema-level graph from a WorkspaceIndex.
+ * graph-builder.ts — Build a directed schema-level graph from a WorkspaceIndex.
  *
  * Shared by `satsuma lineage` and `satsuma graph` commands.
  */
 
 import { extractBacktickRefs, classifyRef } from "./nl-ref-extract.js";
+import type { WorkspaceIndex } from "./types.js";
+
+export interface GraphNode {
+  type: string;
+  file?: string;
+}
+
+export interface FullGraph {
+  nodes: Map<string, GraphNode>;
+  edges: Map<string, Set<string>>;
+}
 
 /**
  * Build a directed graph: edges go from source to target (downstream).
- *
- * Nodes: schema names, metric names, mapping names, fragment names, transform names
- * Edges: schema → mapping (via sources), mapping → schema (via targets),
- *        schema → metric (via metricsReferences), NL backtick refs → mapping
- *
- * @param {import('./index-builder.js').WorkspaceIndex} index
- * @returns {{ nodes: Map<string, {type: string, file?: string}>, edges: Map<string, Set<string>> }}
  */
-export function buildFullGraph(index) {
-  /** @type {Map<string, {type: string, file?: string}>} */
-  const nodes = new Map();
-  /** @type {Map<string, Set<string>>} */
-  const edges = new Map(); // src → Set<tgt>
+export function buildFullGraph(index: WorkspaceIndex): FullGraph {
+  const nodes = new Map<string, GraphNode>();
+  const edges = new Map<string, Set<string>>();
 
-  const addNode = (name, type, file) => {
+  const addNode = (name: string, type: string, file?: string): void => {
     if (!nodes.has(name)) nodes.set(name, { type, file });
   };
-  const addEdge = (src, tgt) => {
+  const addEdge = (src: string, tgt: string): void => {
     if (!edges.has(src)) edges.set(src, new Set());
-    edges.get(src).add(tgt);
+    edges.get(src)!.add(tgt);
   };
 
   // Add all known nodes
@@ -43,7 +45,6 @@ export function buildFullGraph(index) {
       addNode(src, "schema");
       addEdge(src, mappingName);
     }
-    // mapping → target schema
     for (const tgt of mapping.targets) {
       addNode(tgt, "schema");
       addEdge(mappingName, tgt);
@@ -58,7 +59,7 @@ export function buildFullGraph(index) {
     }
   }
 
-  // NL backtick references — add edges for schema refs found in NL transform bodies
+  // NL backtick references
   if (index.nlRefData) {
     for (const item of index.nlRefData) {
       const refs = extractBacktickRefs(item.text);
@@ -69,11 +70,9 @@ export function buildFullGraph(index) {
       for (const { ref } of refs) {
         const classification = classifyRef(ref);
         if (classification === "namespace-qualified-schema" && index.schemas.has(ref)) {
-          // NL block references a schema — add edge from that schema to the mapping
           addNode(ref, "schema");
           addEdge(ref, mappingKey);
         } else if (classification === "namespace-qualified-field") {
-          // ns::schema.field — add edge from the schema part
           const dotIdx = ref.indexOf(".", ref.indexOf("::") + 2);
           const schemaRef = ref.slice(0, dotIdx);
           if (index.schemas.has(schemaRef)) {
@@ -81,7 +80,6 @@ export function buildFullGraph(index) {
             addEdge(schemaRef, mappingKey);
           }
         } else if (classification === "bare" && item.namespace) {
-          // Bare ref inside a namespace — resolve to ns::ref first, then global
           const nsRef = `${item.namespace}::${ref}`;
           if (index.schemas.has(nsRef)) {
             addNode(nsRef, "schema");
