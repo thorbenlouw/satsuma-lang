@@ -1,16 +1,16 @@
-# Feature 10 — STM CLI: Structural Primitives for Agent Composition
+# Feature 10 — Satsuma CLI: Structural Primitives for Agent Composition
 
 > **Status: COMPLETED** (2026-03-18). All structural primitive commands (arrows, nl, meta, fields, match-fields, validate, diff) implemented and tested.
 
 ## Goal
 
-Extend the `stm` CLI (Feature 09) with low-level structural extraction commands that agents use as building blocks. Every new command produces 100% deterministically correct results from the parse tree. The agent — not the CLI — composes these primitives into higher-level workflows like impact analysis, coverage assessment, and audit.
+Extend the `satsuma` CLI (Feature 09) with low-level structural extraction commands that agents use as building blocks. Every new command produces 100% deterministically correct results from the parse tree. The agent — not the CLI — composes these primitives into higher-level workflows like impact analysis, coverage assessment, and audit.
 
 ---
 
 ## Problem
 
-Feature 09 built a set of workspace-level extractors (summary, schema, mapping, lineage, etc.) that let agents navigate STM efficiently. But agents performing deeper workflows — tracing a field through mappings, checking whether a target is fully covered, assessing what changed between versions — still need to pull entire blocks into context and do the cross-referencing themselves.
+Feature 09 built a set of workspace-level extractors (summary, schema, mapping, lineage, etc.) that let agents navigate Satsuma efficiently. But agents performing deeper workflows — tracing a field through mappings, checking whether a target is fully covered, assessing what changed between versions — still need to pull entire blocks into context and do the cross-referencing themselves.
 
 What's missing is not smarter analysis commands. It's lower-level structural primitives that let the agent slice precisely:
 
@@ -35,7 +35,7 @@ What's missing is not smarter analysis commands. It's lower-level structural pri
 
 ## The NL Boundary
 
-STM puts natural language in structurally meaningful positions: transform bodies (`{ "Normalize and deduplicate..." }`), notes (`(note "...")`), and comments (`//!`, `//?`). The CLI can parse the structure around NL content but cannot interpret its meaning.
+Satsuma puts natural language in structurally meaningful positions: transform bodies (`{ "Normalize and deduplicate..." }`), notes (`(note "...")`), and comments (`//!`, `//?`). The CLI can parse the structure around NL content but cannot interpret its meaning.
 
 Every arrow the CLI returns carries a **transform classification** derived purely from CST node types — no string content is examined:
 
@@ -54,13 +54,13 @@ This classification is a mechanical CST check. It tells the agent exactly where 
 
 ## Success Criteria
 
-1. `stm arrows <schema.field>` returns all arrows involving a field with correct transform classification.
-2. `stm nl <scope>` extracts all NL content within a scope with structural position info.
-3. `stm meta <scope>` extracts metadata entries for any block or field.
-4. `stm fields <schema> --unmapped-by <mapping>` correctly identifies fields with no arrows in a mapping.
-5. `stm match-fields --source <s> --target <t>` returns correct exact-after-normalization matches.
-6. `stm validate` reports all parse errors and semantic warnings with file/line/rule.
-7. `stm diff <a> <b>` produces correct structural delta.
+1. `satsuma arrows <schema.field>` returns all arrows involving a field with correct transform classification.
+2. `satsuma nl <scope>` extracts all NL content within a scope with structural position info.
+3. `satsuma meta <scope>` extracts metadata entries for any block or field.
+4. `satsuma fields <schema> --unmapped-by <mapping>` correctly identifies fields with no arrows in a mapping.
+5. `satsuma match-fields --source <s> --target <t>` returns correct exact-after-normalization matches.
+6. `satsuma validate` reports all parse errors and semantic warnings with file/line/rule.
+7. `satsuma diff <a> <b>` produces correct structural delta.
 8. All commands support `--json`.
 9. All commands follow exit code conventions: 0 = success, 1 = not found / no results, 2 = parse error.
 
@@ -68,21 +68,21 @@ This classification is a mechanical CST check. It tells the agent exactly where 
 
 ## Commands
 
-### `stm arrows <schema.field> [path]`
+### `satsuma arrows <schema.field> [path]`
 
 Extract all arrows from all mappings that involve a specific field as source or target. Returns verbatim arrow content with transform classification.
 
 This is the most important new primitive. It is what the agent calls to build field-level lineage, assess coverage, and trace tag propagation — composing the chain itself rather than trusting a pre-assembled one.
 
 ```
-$ stm arrows loyalty_sfdc.LoyaltyTier
+$ satsuma arrows loyalty_sfdc.LoyaltyTier
 
 loyalty_sfdc.LoyaltyTier — 1 arrow (as source)
 
   mapping 'sfdc to sat_customer_demographics':
     LoyaltyTier -> loyalty_tier { trim | lowercase }              [structural]
 
-$ stm arrows mart_customer_360.email
+$ satsuma arrows mart_customer_360.email
 
 mart_customer_360.email — 1 arrow (as target)
 
@@ -118,14 +118,14 @@ mart_customer_360.email — 1 arrow (as target)
 
 ---
 
-### `stm nl <scope> [path]`
+### `satsuma nl <scope> [path]`
 
 Extract all natural-language content within a scope. Returns the raw NL text with its structural position (what it's attached to).
 
 Scope syntax: `schema <name>`, `mapping <name>`, `field <schema.field>`, or `all`.
 
 ```
-$ stm nl mapping 'demographics to mart'
+$ satsuma nl mapping 'demographics to mart'
 
 'demographics to mart' — 3 NL items
 
@@ -136,7 +136,7 @@ $ stm nl mapping 'demographics to mart'
   block:
     (note "Maps customer demographics from vault to analytics mart") (note)
 
-$ stm nl field sat_customer_demographics.loyalty_tier
+$ satsuma nl field sat_customer_demographics.loyalty_tier
 
 sat_customer_demographics.loyalty_tier — 1 NL item
 
@@ -151,27 +151,27 @@ sat_customer_demographics.loyalty_tier — 1 NL item
 
 ---
 
-### `stm meta <scope> [path]`
+### `satsuma meta <scope> [path]`
 
 Extract metadata entries for a block or field. Returns all tags, key-value pairs, notes, enums, and constraints from the metadata parentheses.
 
 Scope syntax: `schema <name>`, `field <schema.field>`, `mapping <name>`, `metric <name>`.
 
 ```
-$ stm meta schema hub_customer
+$ satsuma meta schema hub_customer
 
 hub_customer metadata:
   note "Customer business key registry. Business key is the SFDC ContactId.
     POS and Shopify customers are resolved to an SFDC ContactId via
     loyalty card and email matching respectively."
 
-$ stm meta field loyalty_sfdc.Email
+$ satsuma meta field loyalty_sfdc.Email
 
 loyalty_sfdc.Email metadata:
   type: STRING(255)
   tags: pii
 
-$ stm meta field sat_customer_demographics.status
+$ satsuma meta field sat_customer_demographics.status
 
 sat_customer_demographics.status metadata:
   type: VARCHAR(20)
@@ -188,12 +188,12 @@ sat_customer_demographics.status metadata:
 
 ---
 
-### `stm fields <schema> [path]`
+### `satsuma fields <schema> [path]`
 
-List all fields in a schema with their types and metadata. This is the field-level complement to `stm schema` — it returns structured field data rather than the full block reconstruction.
+List all fields in a schema with their types and metadata. This is the field-level complement to `satsuma schema` — it returns structured field data rather than the full block reconstruction.
 
 ```
-$ stm fields sat_customer_demographics
+$ satsuma fields sat_customer_demographics
 
 sat_customer_demographics — 16 fields
 
@@ -221,7 +221,7 @@ sat_customer_demographics — 16 fields
 - `--json`: structured field array
 
 ```
-$ stm fields mart_customer_360 --unmapped-by 'demographics to mart'
+$ satsuma fields mart_customer_360 --unmapped-by 'demographics to mart'
 
 mart_customer_360 — 7 fields not targeted by 'demographics to mart'
 
@@ -238,14 +238,14 @@ mart_customer_360 — 7 fields not targeted by 'demographics to mart'
 
 ---
 
-### `stm match-fields --source <schema> --target <schema> [path]`
+### `satsuma match-fields --source <schema> --target <schema> [path]`
 
 Compare field names between two schemas using deterministic normalized string matching. Normalize = lowercase + strip `_` and `-`. Returns exact matches after normalization, source-only fields, and target-only fields.
 
 No fuzzy scoring, no thresholds. A match is binary: the normalized strings are identical or they aren't.
 
 ```
-$ stm match-fields --source loyalty_sfdc --target sat_customer_demographics
+$ satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics
 
 Exact matches after normalization (11):
   FirstName        ↔  first_name          (firstname)
@@ -277,7 +277,7 @@ Target-only (5):
 
 ---
 
-### `stm validate [path]`
+### `satsuma validate [path]`
 
 Parse all `.stm` files and report structural errors and semantic warnings. This is the one genuinely end-to-end command — structural correctness is fully deterministic.
 
@@ -295,7 +295,7 @@ Parse all `.stm` files and report structural errors and semantic warnings. This 
 - Metric referencing a source schema that does not exist
 
 ```
-$ stm validate
+$ satsuma validate
 
 hub-customer.stm:45:3  error   unexpected token — expected field or '}'
 hub-customer.stm:72:5  error   missing '->' in arrow
@@ -314,12 +314,12 @@ common.stm             warn    fragment 'audit_fields' defined but never spread
 
 ---
 
-### `stm diff <path-a> <path-b>`
+### `satsuma diff <path-a> <path-b>`
 
-Structural diff between two STM files or directories. Compares schemas, fields, mappings, and arrows by name identity and structural content.
+Structural diff between two Satsuma files or directories. Compares schemas, fields, mappings, and arrows by name identity and structural content.
 
 ```
-$ stm diff v1/hub-customer.stm v2/hub-customer.stm
+$ satsuma diff v1/hub-customer.stm v2/hub-customer.stm
 
 schema hub_customer:
   + gender                VARCHAR(20)           (field added)
@@ -349,16 +349,16 @@ The CLI does not have `impact`, `coverage`, `audit`, `scaffold`, or `inventory` 
 The agent traces a field through the arrow graph:
 
 ```
-1. stm arrows loyalty_sfdc.LoyaltyTier --as-source --json
+1. satsuma arrows loyalty_sfdc.LoyaltyTier --as-source --json
    → finds arrow to sat_customer_demographics.loyalty_tier
 
-2. stm arrows sat_customer_demographics.loyalty_tier --as-source --json
+2. satsuma arrows sat_customer_demographics.loyalty_tier --as-source --json
    → finds arrow to mart_customer_360.loyalty_tier, classification: "nl"
 
-3. stm nl field mart_customer_360.loyalty_tier
+3. satsuma nl field mart_customer_360.loyalty_tier
    → agent reads NL content, notices "points balance" dependency
 
-4. stm arrows loyalty_sfdc.LoyaltyPoints --as-source --json
+4. satsuma arrows loyalty_sfdc.LoyaltyPoints --as-source --json
    → agent chases the implicit dependency it discovered
 ```
 
@@ -367,25 +367,25 @@ The agent builds the chain, interprets NL hops, and discovers implicit dependenc
 ### Coverage assessment
 
 ```
-1. stm fields mart_customer_360 --unmapped-by 'demographics to mart' --json
+1. satsuma fields mart_customer_360 --unmapped-by 'demographics to mart' --json
    → fields not covered by this mapping
 
-2. stm fields mart_customer_360 --unmapped-by 'online to mart' --json
+2. satsuma fields mart_customer_360 --unmapped-by 'online to mart' --json
    → fields not covered by that mapping
 
 3. Agent intersects the results: fields unmapped by ALL mappings targeting this schema
 
-4. For mapped fields, agent calls stm arrows to check classification
+4. For mapped fields, agent calls satsuma arrows to check classification
    → decides whether NL-only arrows need review
 ```
 
 ### PII audit
 
 ```
-1. stm find --tag pii --json
+1. satsuma find --tag pii --json
    → all fields tagged pii
 
-2. For each: stm arrows <field> --as-source --json
+2. For each: satsuma arrows <field> --as-source --json
    → follow downstream
 
 3. Repeat recursively until no more outbound arrows
@@ -397,13 +397,13 @@ The agent builds the chain, interprets NL hops, and discovers implicit dependenc
 ### Mapping draft
 
 ```
-1. stm match-fields --source loyalty_sfdc --target sat_customer_demographics --json
+1. satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics --json
    → deterministic name matches
 
-2. stm nl schema loyalty_sfdc
+2. satsuma nl schema loyalty_sfdc
    → agent reads source field notes for context
 
-3. stm nl schema sat_customer_demographics
+3. satsuma nl schema sat_customer_demographics
    → agent reads target field notes to verify matches make semantic sense
 
 4. Agent writes the mapping, using its own judgment for non-obvious matches
@@ -412,10 +412,10 @@ The agent builds the chain, interprets NL hops, and discovers implicit dependenc
 ### Workspace readiness
 
 ```
-1. stm summary --json → counts
-2. stm validate --json → errors/warnings
-3. stm warnings --json → open questions
-4. For each target schema: stm fields <schema> --unmapped-by <mapping> --json
+1. satsuma summary --json → counts
+2. satsuma validate --json → errors/warnings
+3. satsuma warnings --json → open questions
+4. For each target schema: satsuma fields <schema> --unmapped-by <mapping> --json
 5. Agent assembles the readiness picture
 ```
 
@@ -440,9 +440,9 @@ All new commands build on the existing `WorkspaceIndex` from Feature 09. Extensi
 7. **Diff engine.** A new `src/diff.js` module that compares two `WorkspaceIndex` instances structurally.
 
 ```
-stm CLI (Node.js)
+satsuma CLI (Node.js)
   └── workspace loader          (Feature 09, unchanged)
-  └── CST layer                 (tree-sitter-stm, Feature 08)
+  └── CST layer                 (tree-sitter-satsuma, Feature 08)
   └── index builder             (Feature 09, extended with field-level arrows)
   └── classify.js               (new — transform classification from CST node types)
   └── nl-extract.js             (new — NL content extraction with position)
@@ -471,7 +471,7 @@ Feature 10 extends the CLI built in Feature 09. It does not replace or rewrite e
 - **No NL query interface.** Commands take explicit structural arguments. The CLI does not accept natural-language questions.
 - Autofix for validation errors (the agent decides how to fix; the CLI only reports).
 - Watch mode or incremental validation.
-- Formatting or rewriting STM files (`stm fmt` is a separate potential feature).
+- Formatting or rewriting Satsuma files (`satsuma fmt` is a separate potential feature).
 - Import resolution across repositories.
 
 ---
@@ -483,10 +483,10 @@ Every command's `--help` must state:
 1. **What structural operation it performs.**
 2. **That NL content is extracted verbatim, not interpreted.**
 
-The top-level `stm --help`:
+The top-level `satsuma --help`:
 
 ```
-STM CLI — deterministic structural analysis for STM workspaces.
+Satsuma CLI — deterministic structural analysis for Satsuma workspaces.
 
 Extracts facts from parse trees. Does not interpret natural-language
 content — NL transforms, notes, and comments are extracted verbatim

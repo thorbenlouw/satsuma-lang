@@ -1,23 +1,23 @@
-# Feature 09 — STM CLI: LLM Context Slicer
+# Feature 09 — Satsuma CLI: LLM Context Slicer
 
-> **Status: COMPLETED** (2026-03-18). All 16 commands implemented, 224 tests passing, `stm validate examples/` clean.
+> **Status: COMPLETED** (2026-03-18). All 16 commands implemented, 224 tests passing, `satsuma validate examples/` clean.
 
 ## Goal
 
-Build a command-line tool (`stm`) that lets an LLM (or a human) extract precise, minimal slices of an STM workspace — reducing the context load needed to work with large or complex STM files. The CLI is the primary interface between LLM agents and STM; it turns a multi-file workspace into targeted, structured answers.
+Build a command-line tool (`satsuma`) that lets an LLM (or a human) extract precise, minimal slices of a Satsuma workspace — reducing the context load needed to work with large or complex Satsuma files. The CLI is the primary interface between LLM agents and Satsuma; it turns a multi-file workspace into targeted, structured answers.
 
 ---
 
 ## Problem
 
-An LLM interpreting or editing STM faces a context problem as workspaces grow:
+An LLM interpreting or editing Satsuma faces a context problem as workspaces grow:
 
-- A realistic STM workspace might have 20+ schemas, 15+ mappings, dozens of named transforms and fragments, and hundreds of fields carrying governance metadata.
+- A realistic Satsuma workspace might have 20+ schemas, 15+ mappings, dozens of named transforms and fragments, and hundreds of fields carrying governance metadata.
 - Dumping everything into a prompt is wasteful and often exceeds context limits.
 - Regex-based extraction from raw text is fragile across multi-line metadata blocks, nested structures, and single-quoted names.
 - There is currently no tool to answer questions like "which schemas have PII fields?" or "what does `crm_customer` feed into?" without manually reading every file.
 
-The CLI solves this by sitting on top of the tree-sitter CST (Feature 08) and providing structured, query-driven extraction. An LLM can call `stm <command>` and get back only the fragment of the workspace it needs.
+The CLI solves this by sitting on top of the tree-sitter CST (Feature 08) and providing structured, query-driven extraction. An LLM can call `satsuma <command>` and get back only the fragment of the workspace it needs.
 
 ---
 
@@ -36,10 +36,10 @@ The CLI solves this by sitting on top of the tree-sitter CST (Feature 08) and pr
 The feature is complete when:
 
 1. All commands listed below work correctly against the `examples/` directory.
-2. `stm summary` output for the full examples workspace fits in under 2,000 tokens in `--compact` mode.
-3. `stm schema <name>`, `stm metric <name>`, and `stm mapping <name>` correctly reconstruct the full block from the CST (round-trip fidelity, not byte-identical).
-4. `stm lineage --from <schema>` produces a correct directed graph of all mappings downstream of the named schema.
-5. `stm find --tag <token>` returns every field carrying that token across all files.
+2. `satsuma summary` output for the full examples workspace fits in under 2,000 tokens in `--compact` mode.
+3. `satsuma schema <name>`, `satsuma metric <name>`, and `satsuma mapping <name>` correctly reconstruct the full block from the CST (round-trip fidelity, not byte-identical).
+4. `satsuma lineage --from <schema>` produces a correct directed graph of all mappings downstream of the named schema.
+5. `satsuma find --tag <token>` returns every field carrying that token across all files.
 6. All commands support `--json` for structured output.
 7. Exit codes: 0 = success, 1 = not found / no results, 2 = parse error.
 
@@ -47,12 +47,12 @@ The feature is complete when:
 
 ## Commands
 
-### `stm summary [path]`
+### `satsuma summary [path]`
 
 Print a compact overview of the entire workspace: all schemas, metrics, mappings, fragments, and transforms, with one line each.
 
 ```
-$ stm summary
+$ satsuma summary
 
 Schemas (4):
   customers          7 fields  [pii: email, phone]
@@ -79,12 +79,12 @@ Transforms (3): clean email, to utc date, clean phone
 
 ---
 
-### `stm schema <name> [--file <path>]`
+### `satsuma schema <name> [--file <path>]`
 
 Print the full declaration of a named schema: all fields, types, metadata, and notes. Nested `record`/`list` blocks are indented.
 
 ```
-$ stm schema customers
+$ satsuma schema customers
 
 schema customers (format parquet) {
   customer_id    UUID         (pk)
@@ -101,12 +101,12 @@ schema customers (format parquet) {
 
 ---
 
-### `stm metric <name>`
+### `satsuma metric <name>`
 
 Print the full declaration of a named metric: display label, metadata (source, grain, slice, filter), measure fields, and notes.
 
 ```
-$ stm metric monthly_recurring_revenue
+$ satsuma metric monthly_recurring_revenue
 
 metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
@@ -126,7 +126,7 @@ metric monthly_recurring_revenue "MRR" (
 
 ---
 
-### `stm mapping <name>`
+### `satsuma mapping <name>`
 
 Print the full content of a named mapping block: source/target schemas, note blocks, and all arrows with their transform bodies.
 
@@ -136,12 +136,12 @@ Print the full content of a named mapping block: source/target schemas, note blo
 
 ---
 
-### `stm find --tag <token> [--in schemas|mappings|metrics|fields]`
+### `satsuma find --tag <token> [--in schemas|mappings|metrics|fields]`
 
 Find every place a vocabulary token appears in the workspace.
 
 ```
-$ stm find --tag pii
+$ satsuma find --tag pii
 
 customers.email          (pii)
 customers.phone          (pii)
@@ -150,7 +150,7 @@ orders.customer_email    (pii)
 ```
 
 ```
-$ stm find --tag "scd type 2"
+$ satsuma find --tag "scd type 2"
 
 dim_customer  (scd type 2, natural_key customer_id)
 ```
@@ -169,19 +169,19 @@ Common token queries an LLM would make:
 
 ---
 
-### `stm lineage --from <schema> [--to <schema>] [--depth <n>]`
+### `satsuma lineage --from <schema> [--to <schema>] [--depth <n>]`
 
 Walk the mapping graph and show what data flows into and out of a schema.
 
 ```
-$ stm lineage --from legacy_sqlserver
+$ satsuma lineage --from legacy_sqlserver
 
 legacy_sqlserver
   -> postgres_db        via mapping 'customer migration'
 ```
 
 ```
-$ stm lineage --from fact_subscriptions --depth 2
+$ satsuma lineage --from fact_subscriptions --depth 2
 
 fact_subscriptions
   <- (source for metric monthly_recurring_revenue)
@@ -191,7 +191,7 @@ fact_subscriptions
 With `--to`: find the mapping chain(s) connecting two schemas.
 
 ```
-$ stm lineage --from crm_extract --to dim_customer
+$ satsuma lineage --from crm_extract --to dim_customer
 
 crm_extract
   -> [mapping 'crm to staging'] -> staging_customer
@@ -204,18 +204,18 @@ crm_extract
 
 ---
 
-### `stm where-used <name>`
+### `satsuma where-used <name>`
 
 Find every mapping, metric, or schema that references a named schema, fragment, or transform.
 
 ```
-$ stm where-used 'address fields'
+$ satsuma where-used 'address fields'
 
 fragment 'address fields' is spread into:
   schema customers    (lib/common.stm -> main.stm)
   schema suppliers    (lib/common.stm -> suppliers.stm)
 
-$ stm where-used customers
+$ satsuma where-used customers
 
 schema customers appears as:
   source in mapping 'customer migration'   (main.stm)
@@ -224,12 +224,12 @@ schema customers appears as:
 
 ---
 
-### `stm warnings [--questions]`
+### `satsuma warnings [--questions]`
 
 List all `//!` warning comments across the workspace, with the block they appear in.
 
 ```
-$ stm warnings
+$ satsuma warnings
 
 main.stm:legacy_sqlserver.CUST_TYPE   //! some records have NULL
 main.stm:legacy_sqlserver.EMAIL_ADDR  //! not validated — contains garbage
@@ -240,12 +240,12 @@ main.stm:legacy_sqlserver.CREATED_DATE //! stored as MM/DD/YYYY string
 
 ---
 
-### `stm context <description>`
+### `satsuma context <description>`
 
-**The LLM-first command.** Given a natural-language description of a task, emit the minimal set of STM blocks an LLM needs to perform that task — without the LLM having to know which schemas or mappings are relevant.
+**The LLM-first command.** Given a natural-language description of a task, emit the minimal set of Satsuma blocks an LLM needs to perform that task — without the LLM having to know which schemas or mappings are relevant.
 
 ```
-$ stm context "I need to add a new field to the customer schema and update the migration mapping"
+$ satsuma context "I need to add a new field to the customer schema and update the migration mapping"
 
 Relevant blocks (3):
 
@@ -271,7 +271,7 @@ Implementation strategy: keyword matching against block names, field names, note
 
 ### Default (human/LLM readable text)
 
-Compact STM-like syntax. Notes and NL strings are included by default; `--compact` strips them.
+Compact Satsuma-like syntax. Notes and NL strings are included by default; `--compact` strips them.
 
 ### `--json`
 
@@ -315,10 +315,10 @@ Metric example:
 ## Architecture
 
 ```
-stm CLI (Node.js or Rust)
+satsuma CLI (Node.js or Rust)
   └── workspace loader
         reads all .stm files in tree, builds file index
-  └── CST layer (tree-sitter-stm, Feature 08)
+  └── CST layer (tree-sitter-satsuma, Feature 08)
         parses each file into a CST
   └── index builder
         extracts all top-level blocks into an in-memory index:
@@ -339,8 +339,8 @@ The CST layer is the sole parser — no regex fallbacks. If a file has a parse e
 - Real-time file watching or incremental re-indexing (daemon mode).
 - LLM-powered interpretation of metadata tokens (that is the LLM's job after receiving the sliced context).
 - Import resolution across repositories or registries.
-- Formatting or modifying STM files (`stm fmt` is a separate feature).
-- Linting (`stm lint` is a separate feature).
+- Formatting or modifying Satsuma files (`satsuma fmt` is a separate feature).
+- Linting (`satsuma lint` is a separate feature).
 
 ---
 
@@ -348,6 +348,6 @@ The CST layer is the sole parser — no regex fallbacks. If a file has a parse e
 
 Node.js, using the `tree-sitter` Node bindings to the Feature 08 grammar. This keeps the implementation in the same language as the grammar and avoids a second language dependency. A Rust rewrite can be considered later if performance becomes an issue.
 
-Location: `tooling/stm-cli/`
+Location: `tooling/satsuma-cli/`
 
-Entry point: `tooling/stm-cli/src/index.js` (or `main.js`), exposed as `stm` via `package.json` `bin`.
+Entry point: `tooling/satsuma-cli/src/index.js` (or `main.js`), exposed as `satsuma` via `package.json` `bin`.

@@ -7,12 +7,12 @@ on:
     branches: [main]
 
 jobs:
-  stm-cli:
-    name: STM CLI
+  satsuma-cli:
+    name: Satsuma CLI
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: tooling/stm-cli
+        working-directory: tooling/satsuma-cli
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +20,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Build tree-sitter-stm native bindings
-        working-directory: tooling/tree-sitter-stm
+      - name: Build tree-sitter-satsuma native bindings
+        working-directory: tooling/tree-sitter-satsuma
         run: npm ci
 
       - run: npm ci
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: tooling/tree-sitter-stm
+        working-directory: tooling/tree-sitter-satsuma
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +54,7 @@ jobs:
       - name: Check generated sources are up to date
         run: |
           if ! git diff --exit-code src/; then
-            echo "::error::Generated parser sources are out of date. Run 'npm run generate' in tooling/tree-sitter-stm/ and commit the result."
+            echo "::error::Generated parser sources are out of date. Run 'npm run generate' in tooling/tree-sitter-satsuma/ and commit the result."
             exit 1
           fi
 
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: tooling/vscode-stm
+        working-directory: tooling/vscode-satsuma
     steps:
       - uses: actions/checkout@v4
 

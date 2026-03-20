@@ -1,0 +1,41 @@
+// SYNTAX TEST "source.satsuma" "all four string forms"
+
+// Double-quoted string
+schema test1 (note "Short description") {
+//                 ^^^^^^^^^^^^^^^^^^^ string.quoted.double.satsuma
+  name STRING
+}
+
+// Escape in double-quoted string
+mapping {
+  source { `src` }
+  target { `tgt` }
+  A -> b { "Contains \"escaped\" quotes" }
+  //                  ^^ constant.character.escape.satsuma
+}
+
+// Triple-double-quoted string
+note {
+  """
+  // <- string.quoted.triple.satsuma
+  # Markdown heading
+  Some **bold** text
+  """
+}
+
+// Backtick identifier
+schema test2 {
+  `Lead_Source_Detail__c`  STRING
+  // <----- variable.other.quoted.satsuma
+}
+
+// Single-quoted block label
+schema 'order-headers-parquet' {
+//     ^^^^^^^^^^^^^^^^^^^^^^^ string.quoted.single.satsuma
+  order_id STRING
+}
+
+fragment 'US Address' {
+//       ^^^^^^^^^^^^ string.quoted.single.satsuma
+  city VARCHAR(100)
+}

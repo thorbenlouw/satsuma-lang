@@ -17,7 +17,7 @@ note {
 
   ## Cross-layer imports
   All source entities are imported directly from the vault layer
-  STM files. The schema blocks defined there (`link_sale`,
+  Satsuma files. The schema blocks defined there (`link_sale`,
   `sat_sale_detail`, `hub_customer`, etc.) appear here on the
   source side of mappings.
 

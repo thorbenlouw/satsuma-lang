@@ -1,8 +1,8 @@
-# STM Tree-Sitter Ambiguities
+# Satsuma Tree-Sitter Ambiguities
 
 ## Goal
 
-This document records the grammar boundaries that must be locked before STM
+This document records the grammar boundaries that must be locked before Satsuma
 parser implementation expands. Each ambiguity listed here should receive
 targeted corpus coverage once the relevant grammar rules exist.
 
@@ -143,7 +143,7 @@ LOYALTY_POINTS -> loyalty_tier
 
 Risk:
 
-- STM supports both escaped physical line continuation and syntax-level
+- Satsuma supports both escaped physical line continuation and syntax-level
   continuation lines
 
 Resolution direction:

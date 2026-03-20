@@ -8,17 +8,17 @@ Introduce a flat `namespace` block that scopes all named definitions — schemas
 
 ## Problem
 
-STM requires all named definitions to be globally unique within a workspace. This is enforced today by the `duplicate-definition` validator error. In real-world data platforms, this breaks down:
+Satsuma requires all named definitions to be globally unique within a workspace. This is enforced today by the `duplicate-definition` validator error. In real-world data platforms, this breaks down:
 
-- **Same source system, different concerns**: A POS system exposes store reference data, transaction data, and customer linkage data. STM forces either one monolithic schema or name-mangling (`pos_oracle_store`, `pos_oracle_txn`).
-- **Multi-team convergence**: When teams merge STM files into a shared workspace, name collisions are inevitable. Two teams may independently model a `customer` schema from different source systems.
+- **Same source system, different concerns**: A POS system exposes store reference data, transaction data, and customer linkage data. Satsuma forces either one monolithic schema or name-mangling (`pos_oracle_store`, `pos_oracle_txn`).
+- **Multi-team convergence**: When teams merge Satsuma files into a shared workspace, name collisions are inevitable. Two teams may independently model a `customer` schema from different source systems.
 - **Layered architectures**: Data Vault, Kimball, and lakehouse patterns define schemas at multiple layers (raw, vault, mart). A `customer` schema might exist at each layer with different fields and semantics.
 
 Without namespaces, teams embed scope into names — sacrificing readability.
 
 ## Current State: Unique Names Across All Entity Types
 
-As a prerequisite (implemented), STM enforces that **all named definitions must be unique across entity types** within a workspace. A schema called `customer` and a metric called `customer` in the same workspace is an error:
+As a prerequisite (implemented), Satsuma enforces that **all named definitions must be unique across entity types** within a workspace. A schema called `customer` and a metric called `customer` in the same workspace is an error:
 
 ```
 error [duplicate-definition] Metric 'customer' conflicts with schema already defined in crm.stm:5
@@ -223,7 +223,7 @@ import { mart::mart_customer_360 } from "mart/dimensions.stm"
 5. Cross-kind uniqueness is enforced within each namespace.
 6. Same-named namespace blocks across files merge their definitions; conflicting metadata values are an error.
 7. The tree-sitter grammar parses namespace blocks (flat, non-nestable) and `::` qualified names in all reference positions (source/target, spreads, backticks, transforms, imports).
-8. Existing STM files without namespaces continue to work without changes (everything is in the global namespace).
+8. Existing Satsuma files without namespaces continue to work without changes (everything is in the global namespace).
 9. CLI commands (`schemas`, `fields`, `find`, `lineage`, `validate`) handle namespaced entities correctly.
 
 ## Non-Goals
@@ -272,6 +272,6 @@ import { mart::mart_customer_360 } from "mart/dimensions.stm"
 
 ### CLI
 
-- `stm schemas` output shows namespace prefixes for non-global entities.
-- `stm find` supports namespace-qualified queries.
-- `stm lineage` traces through qualified references.
+- `satsuma schemas` output shows namespace prefixes for non-global entities.
+- `satsuma find` supports namespace-qualified queries.
+- `satsuma lineage` traces through qualified references.

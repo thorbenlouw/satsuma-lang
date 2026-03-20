@@ -1,0 +1,38 @@
+// SYNTAX TEST "source.satsuma" "note blocks with triple-quoted content"
+
+// Top-level note block
+note {
+// < keyword.other.satsuma
+  """
+  # Legacy Customer Migration
+
+  Part of **Project Phoenix** — decommissioning the legacy SQL Server 2008
+  instance by Q2 2026.
+
+  ## Constraints
+  - Runs in **batches of 10,000** to prevent memory issues
+  - Target enforces referential integrity
+  """
+  // <- string.quoted.triple.satsuma
+}
+
+// Note in metadata
+schema legacy_customers (note "Primary customer store from 2005-2024.") {
+  PHONE_NBR  VARCHAR(50) (
+    note """
+    No consistent format across the dataset:
+    - **42%** `(555) 123-4567` — US with parentheses
+    - **31%** `555.123.4567` — dot-separated
+    """
+  )
+}
+
+// Note inside mapping
+mapping {
+  note {
+    "All timestamps assumed US Eastern unless otherwise noted."
+  }
+
+  source { `src` }
+  target { `tgt` }
+}

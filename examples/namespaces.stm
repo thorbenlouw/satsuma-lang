@@ -1,4 +1,4 @@
-// STM v2 — Namespace Example: Multi-System Retail Platform
+// Satsuma v2 — Namespace Example: Multi-System Retail Platform
 
 // Global definitions — visible from all namespaces without qualification
 fragment audit_fields {

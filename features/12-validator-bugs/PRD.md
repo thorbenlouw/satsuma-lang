@@ -1,18 +1,18 @@
-# Feature 12 — Validator Bugs: False Positives from `stm validate`
+# Feature 12 — Validator Bugs: False Positives from `satsuma validate`
 
-> **Status: COMPLETED** (2026-03-18). `stm validate examples/` produces 0 errors and 0 warnings. All 5 bugs fixed.
+> **Status: COMPLETED** (2026-03-18). `satsuma validate examples/` produces 0 errors and 0 warnings. All 5 bugs fixed.
 
 ## Goal
 
-Fix the false-positive warnings emitted by `stm validate` so that the canonical `examples/` corpus produces zero warnings when all referenced fields and sources are correctly declared.
+Fix the false-positive warnings emitted by `satsuma validate` so that the canonical `examples/` corpus produces zero warnings when all referenced fields and sources are correctly declared.
 
-Currently `stm validate examples/` reports 121 warnings across 5 files. Every single warning is a false positive caused by validator limitations in nested field resolution, schema-qualified references, metric source extraction, import spread resolution, and duplicate emission.
+Currently `satsuma validate examples/` reports 121 warnings across 5 files. Every single warning is a false positive caused by validator limitations in nested field resolution, schema-qualified references, metric source extraction, import spread resolution, and duplicate emission.
 
 ---
 
 ## Problem
 
-`stm validate` is the structural correctness check for STM workspaces. If it emits false positives on the canonical examples, users and agents cannot trust its output. The noise buries real issues and trains users to ignore warnings.
+`satsuma validate` is the structural correctness check for Satsuma workspaces. If it emits false positives on the canonical examples, users and agents cannot trust its output. The noise buries real issues and trains users to ignore warnings.
 
 The 121 false positives cluster into five distinct bugs:
 
@@ -70,7 +70,7 @@ Most `field-not-in-schema` warnings appear twice for the same arrow at the same 
 
 ## Success Criteria
 
-1. `stm validate examples/` produces 0 errors and 0 false-positive warnings.
+1. `satsuma validate examples/` produces 0 errors and 0 false-positive warnings.
 2. Arrows with nested `record`/`list` paths (e.g., `Order.Customer.Email`) are validated against the nested field tree, not just top-level names.
 3. Schema-qualified arrow paths in multi-source mappings (e.g., `crm_customers.email`) resolve the schema qualifier before field lookup.
 4. Metric `source` extraction returns actual source identifiers, both for single-value (`source fact_subscriptions`) and block form (`source {a, b}`).
@@ -90,6 +90,6 @@ Most `field-not-in-schema` warnings appear twice for the same arrow at the same 
 
 ## Files Affected
 
-- `tooling/stm-cli/src/validate.js` — field-not-in-schema check, dedup logic
-- `tooling/stm-cli/src/extract.js` — `extractDirectFields()`, `extractMetrics()`, field tree model
-- `tooling/stm-cli/test/` — new test cases for each bug fix
+- `tooling/satsuma-cli/src/validate.js` — field-not-in-schema check, dedup logic
+- `tooling/satsuma-cli/src/extract.js` — `extractDirectFields()`, `extractMetrics()`, field tree model
+- `tooling/satsuma-cli/test/` — new test cases for each bug fix

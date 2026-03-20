@@ -1,6 +1,6 @@
-# STM in 10 Lessons (+ 4 Playbooks)
+# Satsuma in 10 Lessons (+ 4 Playbooks)
 
-A structured learning path that takes you from first principles to real-world delivery with STM — Structured Transform Markup. The 10 core lessons cover every language feature and the key workflows. The 4 playbook extensions are persona-specific guides for the roles most likely to work with STM day-to-day.
+A structured learning path that takes you from first principles to real-world delivery with Satsuma — Structured Transform Markup. The 10 core lessons cover every language feature and the key workflows. The 4 playbook extensions are persona-specific guides for the roles most likely to work with Satsuma day-to-day.
 
 ---
 
@@ -20,9 +20,9 @@ All core lessons (1–7) use the same scenario: **Acme Corp migrating customer r
 
 ## Core Lessons
 
-### [Lesson 01 — What is STM & Your First File](01-what-is-stm.md)
+### [Lesson 01 — What is Satsuma & Your First File](01-what-is-stm.md)
 
-The problem with spreadsheet-based mapping documents, and how STM solves it. Covers the three-delimiter philosophy (`( )` metadata, `{ }` structure, `" "` natural language), all four string types, all three comment types, and a minimal working example: one schema, one mapping, one arrow. Ends with the first step of the running example.
+The problem with spreadsheet-based mapping documents, and how Satsuma solves it. Covers the three-delimiter philosophy (`( )` metadata, `{ }` structure, `" "` natural language), all four string types, all three comment types, and a minimal working example: one schema, one mapping, one arrow. Ends with the first step of the running example.
 
 **Covers:** design philosophy, delimiters, string types, comment types (`//`, `//!`, `//?`), first `schema` + `mapping` + `->` example.
 
@@ -46,7 +46,7 @@ How to avoid repeating field definitions across schemas. Introduces fragment blo
 
 ### [Lesson 04 — Mappings: Connecting Source to Target](04-mappings.md)
 
-The core of STM: describing how data flows from one schema to another. Covers the anatomy of a `mapping` block, direct arrows, computed/derived arrows that produce output with no direct source, arrow-level metadata, and how to express multi-source joins in natural language.
+The core of Satsuma: describing how data flows from one schema to another. Covers the anatomy of a `mapping` block, direct arrows, computed/derived arrows that produce output with no direct source, arrow-level metadata, and how to express multi-source joins in natural language.
 
 **Covers:** `mapping` block, `source { }`, `target { }`, `note { }`, direct `src -> tgt` arrows, computed `-> tgt { }` arrows, metadata on mappings and arrows, multi-source joins.
 
@@ -78,25 +78,25 @@ How to capture business metric definitions alongside your mapping specs so every
 
 ### [Lesson 08 — Working with AI Agents](08-ai-agents.md)
 
-How to configure your LLM agent to understand STM automatically and use it to accelerate your mapping work. Covers `AGENTS.md` setup, `AI-AGENT-REFERENCE.md` as a system-prompt include, the Excel-to-STM workflow, validating LLM-generated output, and iterative refinement patterns.
+How to configure your LLM agent to understand Satsuma automatically and use it to accelerate your mapping work. Covers `AGENTS.md` setup, `AI-AGENT-REFERENCE.md` as a system-prompt include, the Excel-to-Satsuma workflow, validating LLM-generated output, and iterative refinement patterns.
 
-**Covers:** `AGENTS.md` / `CLAUDE.md` configuration, `AI-AGENT-REFERENCE.md`, Excel-to-STM workflow (paste → schema draft → mapping draft → review), what LLMs typically get wrong, refinement prompt patterns.
+**Covers:** `AGENTS.md` / `CLAUDE.md` configuration, `AI-AGENT-REFERENCE.md`, Excel-to-Satsuma workflow (paste → schema draft → mapping draft → review), what LLMs typically get wrong, refinement prompt patterns.
 
 ---
 
-### [Lesson 09 — The STM CLI: Slicing & Dicing Your Workspace](09-stm-cli.md)
+### [Lesson 09 — The Satsuma CLI: Slicing & Dicing Your Workspace](09-satsuma-cli.md)
 
-A complete guide to the `stm` command-line tool. Covers installation, every command with real examples, and how to pipe `stm context` output into your agent's prompt for surgical, low-noise edits.
+A complete guide to the `satsuma` command-line tool. Covers installation, every command with real examples, and how to pipe `satsuma context` output into your agent's prompt for surgical, low-noise edits.
 
-**Covers:** `stm summary`, `stm schema`, `stm metric`, `stm mapping`, `stm find`, `stm lineage`, `stm where-used`, `stm warnings`, `stm context`, `--json` and `--compact` flags, integrating CLI output with agent prompts.
+**Covers:** `satsuma summary`, `satsuma schema`, `satsuma metric`, `satsuma mapping`, `satsuma find`, `satsuma lineage`, `satsuma where-used`, `satsuma warnings`, `satsuma context`, `--json` and `--compact` flags, integrating CLI output with agent prompts.
 
 ---
 
 ### [Lesson 10 — Real-World Workflows: Delivery End-to-End](10-real-world-workflows.md)
 
-Brings everything together with a complete project walkthrough: from an Excel spreadsheet all the way to a versioned, reviewed, exported STM workspace. Covers multi-file workspace organisation, namespaces (preview), Git-based review, stakeholder export, data vault and Kimball dimensional patterns, and building a project-level `AGENTS.md` for zero-context-overhead sessions.
+Brings everything together with a complete project walkthrough: from an Excel spreadsheet all the way to a versioned, reviewed, exported Satsuma workspace. Covers multi-file workspace organisation, namespaces (preview), Git-based review, stakeholder export, data vault and Kimball dimensional patterns, and building a project-level `AGENTS.md` for zero-context-overhead sessions.
 
-**Covers:** multi-file workspace layout, namespace/workspace blocks *(coming soon — preview)*, Git review workflow, Excel-to-STM-to-export end-to-end, data vault / Kimball patterns, shared `lib/`, breaking-change detection, team AGENTS.md.
+**Covers:** multi-file workspace layout, namespace/workspace blocks *(coming soon — preview)*, Git review workflow, Excel-to-Satsuma-to-export end-to-end, data vault / Kimball patterns, shared `lib/`, breaking-change detection, team AGENTS.md.
 
 ---
 
@@ -106,7 +106,7 @@ Persona-specific guides. Each assumes familiarity with the core lessons (or at l
 
 ### [Lesson 11 — The Business Analyst's Playbook](11-ba-playbook.md)
 
-For BAs and delivery leads who own mapping specifications and need to collaborate with engineers and agents without getting lost in syntax. Covers escaping Excel, writing NL transforms developers can actually implement, reviewing STM in GitHub, and using an agent as a drafting partner.
+For BAs and delivery leads who own mapping specifications and need to collaborate with engineers and agents without getting lost in syntax. Covers escaping Excel, writing NL transforms developers can actually implement, reviewing Satsuma in GitHub, and using an agent as a drafting partner.
 
 **Personas:** Business Analyst, Delivery Lead / Program Manager
 
@@ -114,7 +114,7 @@ For BAs and delivery leads who own mapping specifications and need to collaborat
 
 ### [Lesson 12 — The Data & Analytics Engineer's Playbook](12-data-engineer-playbook.md)
 
-For engineers building warehouse and lakehouse pipelines who want to use STM as the mapping source of truth. Covers lakehouse bronze-to-silver patterns, ERP-to-DWH canonical mappings, data vault and Kimball dimensional modelling in STM, and generating dbt model scaffolding from a metric block.
+For engineers building warehouse and lakehouse pipelines who want to use Satsuma as the mapping source of truth. Covers lakehouse bronze-to-silver patterns, ERP-to-DWH canonical mappings, data vault and Kimball dimensional modelling in Satsuma, and generating dbt model scaffolding from a metric block.
 
 **Personas:** Data Platform Engineer, Analytics Engineer / Data Modeler
 
@@ -122,7 +122,7 @@ For engineers building warehouse and lakehouse pipelines who want to use STM as 
 
 ### [Lesson 13 — The Governance & Audit Playbook](13-governance-playbook.md)
 
-For governance, risk, and audit stakeholders who need to trace sensitive fields, produce evidence for regulators, and maintain a versioned record of mapping decisions. Covers systematic PII tagging, `stm find` for data-asset inventories, lineage reports as audit evidence, `//!` warnings as a governance mechanism, and STM pull-request diffs as a change-control record.
+For governance, risk, and audit stakeholders who need to trace sensitive fields, produce evidence for regulators, and maintain a versioned record of mapping decisions. Covers systematic PII tagging, `satsuma find` for data-asset inventories, lineage reports as audit evidence, `//!` warnings as a governance mechanism, and Satsuma pull-request diffs as a change-control record.
 
 **Personas:** Governance / Risk / Audit Stakeholder, Enterprise Architect
 
@@ -140,12 +140,12 @@ For engineers building message, API, and file-based transformations between syst
 
 | Your role | Start here | Then |
 |-----------|-----------|------|
-| New to STM entirely | Lessons 1 → 2 → 3 → 4 → 5 | Continue sequentially |
+| New to Satsuma entirely | Lessons 1 → 2 → 3 → 4 → 5 | Continue sequentially |
 | BA who owns mapping docs | Lessons 1 → 2 → 4 → 5 → 8 | Lesson 11 playbook |
 | Data engineer building pipelines | Lessons 1 → 2 → 3 → 4 → 5 → 6 → 7 | Lesson 12 playbook |
 | Governance / audit role | Lessons 1 → 2 → 4 → 9 | Lesson 13 playbook |
 | Integration engineer | Lessons 1 → 2 → 3 → 4 → 5 → 6 | Lesson 14 playbook |
-| Using an AI agent with STM | Lesson 1 → Lesson 8 → Lesson 9 | Then your role playbook |
+| Using an AI agent with Satsuma | Lesson 1 → Lesson 8 → Lesson 9 | Then your role playbook |
 
 ---
 
@@ -162,7 +162,7 @@ lessons/
 ├── 06-nested-and-array-mappings.md
 ├── 07-metrics.md
 ├── 08-ai-agents.md
-├── 09-stm-cli.md
+├── 09-satsuma-cli.md
 ├── 10-real-world-workflows.md
 ├── 11-ba-playbook.md
 ├── 12-data-engineer-playbook.md

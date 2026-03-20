@@ -1,4 +1,4 @@
-// STM v2 — Salesforce to Snowflake Pipeline
+// Satsuma v2 — Salesforce to Snowflake Pipeline
 
 import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
 import { currency_rates } from "lookups/finance.stm"

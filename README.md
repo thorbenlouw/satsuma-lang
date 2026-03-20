@@ -1,9 +1,9 @@
-# STM
+# Satsuma
 
 [![CI](https://github.com/thorbenlouw/stm-grammar/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/stm-grammar/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 [![Release](https://github.com/thorbenlouw/stm-grammar/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/thorbenlouw/stm-grammar/actions/workflows/release.yml)
 
-STM is a domain-specific language for source-to-target data mapping.
+Satsuma is a domain-specific language for source-to-target data mapping.
 
 It is designed to replace ad hoc spreadsheets, wiki tables, and overly verbose
 structured specs with a format that is:
@@ -13,11 +13,11 @@ structured specs with a format that is:
 - compact enough for AI agents to generate and consume reliably
 - stable enough to act as the source of truth for downstream tooling
 
-STM is intended to sit between systems and describe how data moves from one
+Satsuma is intended to sit between systems and describe how data moves from one
 shape to another, whether those systems are databases, APIs, files, messages,
 events, or mixed enterprise platforms.
 
-## Why STM Exists
+## Why Satsuma Exists
 
 Most mapping specifications today are hard to trust operationally:
 
@@ -26,7 +26,7 @@ Most mapping specifications today are hard to trust operationally:
 - YAML and JSON are parseable but too noisy for large mapping inventories
 - vendor tools often hide critical logic behind UI configuration
 
-STM aims to solve that by making mapping intent explicit in a language that both
+Satsuma aims to solve that by making mapping intent explicit in a language that both
 people and parsers can work with directly.
 
 That matters even more in AI-assisted delivery. Agents can produce better code,
@@ -34,9 +34,9 @@ better reviews, and better impact analysis when they operate against a
 constrained language instead of reverse-engineering free-form implementation
 logic.
 
-## What STM Covers
+## What Satsuma Covers
 
-STM supports:
+Satsuma supports:
 
 - schema and record structure declarations
 - source-to-target field mappings
@@ -63,16 +63,16 @@ Pre-built binaries are published on every merge to `main`. Install with npm
 
 ```bash
 # macOS (Apple Silicon)
-npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/stm-cli-darwin-arm64.tgz
+npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/satsuma-cli-darwin-arm64.tgz
 
 # macOS (Intel)
-npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/stm-cli-darwin-x64.tgz
+npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/satsuma-cli-darwin-x64.tgz
 
 # Linux (x64)
-npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/stm-cli-linux-x64.tgz
+npm install -g https://github.com/thorbenlouw/stm-grammar/releases/download/latest/satsuma-cli-linux-x64.tgz
 ```
 
-This gives you the `stm` command on your PATH. Run `stm --help` to see
+This gives you the `satsuma` command on your PATH. Run `satsuma --help` to see
 available commands.
 
 ## Example
@@ -108,42 +108,42 @@ and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
 
 ## Repository Guide
 
-- [STM-V2-SPEC.md](STM-V2-SPEC.md): authoritative language specification
+- [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md): authoritative language specification
 - [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
-- [STM-CLI.md](STM-CLI.md): CLI command reference (16 commands for workspace extraction, structural analysis, and validation)
+- [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (16 commands for workspace extraction, structural analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents
 - [BA-TUTORIAL.md](BA-TUTORIAL.md): practical tutorial for business analysts
 - [USE_CASES.md](USE_CASES.md): practical scenarios and personas
 - [FUTURE-WORK.md](FUTURE-WORK.md): deferred and speculative work items
-- [examples/](examples): canonical STM examples
-- [tooling/tree-sitter-stm/](tooling/tree-sitter-stm): tree-sitter parser package
-- [tooling/stm-cli/](tooling/stm-cli): CLI tool for structural extraction and validation
-- [tooling/vscode-stm/](tooling/vscode-stm): VS Code syntax highlighting extension
+- [examples/](examples): canonical Satsuma examples
+- [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
+- [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation
+- [tooling/vscode-satsuma/](tooling/vscode-satsuma): VS Code syntax highlighting extension
 
 ## Current Status
 
 What exists today:
 
-- the STM v2 language specification
+- the Satsuma v2 language specification
 - a canonical example corpus (11 `.stm` files covering all major integration patterns)
 - a tree-sitter parser (190 corpus tests, all examples parse clean)
-- a CLI (`stm`) with 16 commands for workspace extraction, structural analysis, validation, and diff — see [STM-CLI.md](STM-CLI.md)
+- a CLI (`satsuma`) with 16 commands for workspace extraction, structural analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - a VS Code extension with TextMate grammar for v2 syntax highlighting
 - data modelling conventions for Kimball and Data Vault patterns with canonical examples
 - pre-built CLI release artifacts published on every merge to `main`
 
 What is not complete yet:
 
-- semantic linting beyond current `stm validate` checks
-- formatting (`stm fmt`)
+- semantic linting beyond current `satsuma validate` checks
+- formatting (`satsuma fmt`)
 - cross-file import resolution in single-file validation
 - type checking
 - code generation
-- Excel-to-STM and STM-to-Excel conversion tooling
+- Excel-to-Satsuma and Satsuma-to-Excel conversion tooling
 
 ## Workspace And Lineage Model
 
-STM supports multi-file platform modeling through workspace files. A workspace
+Satsuma supports multi-file platform modeling through workspace files. A workspace
 declares the schemas that make up a platform and maps namespace names to source
 files. That gives tooling one canonical entry point for platform-wide lineage
 and impact analysis.
@@ -162,17 +162,17 @@ needs to cross project boundaries cleanly.
 Downstream tools should be built on the parser, not on text heuristics.
 
 The parser work lives in
-[tooling/tree-sitter-stm/](tooling/tree-sitter-stm)
+[tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma)
 and is responsible for syntax parsing only. Semantic validation, formatting,
 import resolution, and code generation should consume the parser output rather
-than reinterpreting raw STM text.
+than reinterpreting raw Satsuma text.
 
 If you are contributing tooling, start here:
 
-- read [STM-V2-SPEC.md](STM-V2-SPEC.md)
+- read [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md)
 - inspect the example corpus in [examples/](examples)
-- review the parser in [tooling/tree-sitter-stm/](tooling/tree-sitter-stm) and its grammar
-- review the CLI in [tooling/stm-cli/](tooling/stm-cli) and its command reference in [STM-CLI.md](STM-CLI.md)
+- review the parser in [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma) and its grammar
+- review the CLI in [tooling/satsuma-cli/](tooling/satsuma-cli) and its command reference in [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - treat CST and AST naming stability as part of the public implementation surface
 
 ## Development
@@ -186,7 +186,7 @@ If you are contributing tooling, start here:
 ### Tree-sitter parser
 
 ```bash
-cd tooling/tree-sitter-stm
+cd tooling/tree-sitter-satsuma
 npm install
 npm run generate          # generate parser from grammar.js
 npm test                  # corpus tests + fixture tests + consumer tests + smoke tests
@@ -201,30 +201,30 @@ python3 scripts/test_cst_summary.py       # CST consumer unit tests
 python3 scripts/test_smoke_summary.py     # smoke test all examples
 ```
 
-### STM CLI
+### Satsuma CLI
 
 ```bash
-cd tooling/stm-cli
+cd tooling/satsuma-cli
 npm install
 npm test                  # 224 tests covering all 16 commands
-npm link                  # makes `stm` available globally
+npm link                  # makes `satsuma` available globally
 ```
 
 Quick usage:
 
 ```bash
-stm summary examples/            # workspace overview
-stm validate examples/           # structural + semantic validation
-stm schema customers examples/   # show a specific schema
-stm lineage --from legacy_sqlserver examples/   # trace data flow
+satsuma summary examples/            # workspace overview
+satsuma validate examples/           # structural + semantic validation
+satsuma schema customers examples/   # show a specific schema
+satsuma lineage --from legacy_sqlserver examples/   # trace data flow
 ```
 
-See [STM-CLI.md](STM-CLI.md) for full command reference.
+See [SATSUMA-CLI.md](SATSUMA-CLI.md) for full command reference.
 
 ### VS Code extension
 
 ```bash
-cd tooling/vscode-stm
+cd tooling/vscode-satsuma
 npm install
 npm run check             # validate manifest/grammar + run all tests
 ```
@@ -233,7 +233,7 @@ npm run check             # validate manifest/grammar + run all tests
 
 GitHub Actions runs both the parser and VS Code extension checks on every push
 and pull request to `main`. The workflow also enforces that grammar conflict count
-matches `tooling/tree-sitter-stm/CONFLICTS.expected` — update that file when
+matches `tooling/tree-sitter-satsuma/CONFLICTS.expected` — update that file when
 adding or removing documented conflicts.
 
 ## Contributing
@@ -250,3 +250,17 @@ Good contribution areas:
 
 When syntax, semantics, or supported constructs are in question, prefer the
 spec over secondary docs and call out mismatches explicitly.
+
+## Author
+
+Satsuma was created by [Thorben Louw](https://github.com/thorbenlouw) at
+[Equal Experts](https://www.equalexperts.com/).
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Citing Satsuma
+
+If you use Satsuma in academic or technical writing, please cite it. See
+[CITATION.cff](CITATION.cff) for machine-readable citation metadata.

@@ -77,8 +77,8 @@
 
 ## Phase 8: Resolve ambiguous constructs
 
-- [ ] Decide whether adjacent strings inside `note {}` are valid STM
-- [ ] Decide whether annotated `source` entries need spec text in `STM-V2-SPEC.md`
+- [ ] Decide whether adjacent strings inside `note {}` are valid Satsuma
+- [ ] Decide whether annotated `source` entries need spec text in `Satsuma-V2-SPEC.md`
 - [ ] Update spec/examples if the final answer is “normalize the example” instead of “extend the parser”
 
 ## Phase 9: Import declarations
@@ -104,5 +104,5 @@
 
 - [ ] All example files under `examples/` parse with zero errors
 - [ ] Every gap listed in `PRD.md` has targeted corpus coverage
-- [ ] `../../scripts/tree-sitter-local.sh test` passes in `tooling/tree-sitter-stm/`
+- [ ] `../../scripts/tree-sitter-local.sh test` passes in `tooling/tree-sitter-satsuma/`
 - [ ] Any construct kept from the examples is either already documented in the spec or documented as part of this feature

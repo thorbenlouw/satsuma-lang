@@ -1,22 +1,22 @@
-# STM for Business Analysts — A Practical Tutorial
+# Satsuma for Business Analysts — A Practical Tutorial
 
-## What Is STM and Why Should You Care?
+## What Is Satsuma and Why Should You Care?
 
 If you've ever worked on a data migration, system integration, or ETL project, you already know the pain of **source-to-target mapping documents**. They're almost always Excel spreadsheets — columns for Source Field, Target Field, Transformation, Data Type, Comments — and they're almost always a mess.
 
 Every team invents its own layout. Transformation logic lives in free-text cells like *"Convert to uppercase and validate"* (but what does "validate" mean, exactly?). Files get emailed, copied to SharePoint, and edited by three people at once. Which version is current? Nobody's entirely sure. And when an issue crops up in production six months later, nobody can trace the ambiguous spreadsheet cell back to a conscious decision.
 
-**STM** — Structured Transform Markup — is a simple, readable language designed to replace those spreadsheets. It's a plain-text format that you can version in Git, review in pull requests, and — crucially — read without needing a decoder ring.
+**Satsuma** is a simple, readable language designed to replace those spreadsheets. It's a plain-text format that you can version in Git, review in pull requests, and — crucially — read without needing a decoder ring.
 
-Think of STM as sitting between the business requirements and the implementation code. It captures **what** the data transformation should do — precisely enough that an engineer (or an AI agent) can implement it, yet readably enough that a BA can review and sign it off.
+Think of Satsuma as sitting between the business requirements and the implementation code. It captures **what** the data transformation should do — precisely enough that an engineer (or an AI agent) can implement it, yet readably enough that a BA can review and sign it off.
 
-Here's the headline: **if you can read a column list in a database tool, you can read STM**. This tutorial will walk you through the syntax step by step, starting from the simplest possible mapping and building up to real-world complexity.
+Here's the headline: **if you can read a column list in a database tool, you can read Satsuma**. This tutorial will walk you through the syntax step by step, starting from the simplest possible mapping and building up to real-world complexity.
 
 ---
 
 ## Your First Mapping: Two Fields, One Line
 
-Let's start with the smallest useful STM file. Imagine you're migrating customer records from an old system to a new one, and right now you only care about mapping the customer identifier.
+Let's start with the smallest useful Satsuma file. Imagine you're migrating customer records from an old system to a new one, and right now you only care about mapping the customer identifier.
 
 ```stm
 schema old_system {
@@ -39,11 +39,11 @@ Three types of block, and you can already see the entire story:
 
 1. **`schema`** — describes the structure of a data source or target. Every system, whether a database table, JSON API, XML message, or flat file, uses this same keyword.
 2. **`mapping`** — ties schemas together. Its `source { }` and `target { }` sub-blocks identify which schemas are being mapped, using backtick references. Arrow declarations follow.
-3. **`->`** — the heart of STM. Read it as *"maps to"* or *"becomes"*.
+3. **`->`** — the heart of Satsuma. Read it as *"maps to"* or *"becomes"*.
 
 The backtick references (`` `old_system` ``, `` `new_system` ``) inside the mapping block point to the schemas defined above.
 
-That's it. You've just read your first STM file.
+That's it. You've just read your first Satsuma file.
 
 ---
 
@@ -86,13 +86,13 @@ Some of the metadata tokens you'll encounter most often:
 | `format email` | Expected format (email, E.164, UUID, etc.) |
 | `ref table.field` | Foreign key reference to another schema |
 
-Notice that **data types are freeform** — STM doesn't enforce a type system. You write whatever matches the real system: `VARCHAR(200)`, `STRING(200)`, `DECIMAL(12,2)`, `TIMESTAMPTZ`. The goal is to describe what actually exists, not to conform to an abstract type model.
+Notice that **data types are freeform** — Satsuma doesn't enforce a type system. You write whatever matches the real system: `VARCHAR(200)`, `STRING(200)`, `DECIMAL(12,2)`, `TIMESTAMPTZ`. The goal is to describe what actually exists, not to conform to an abstract type model.
 
 ---
 
 ## Transforms: Where the Logic Lives
 
-A bare arrow (`->`) is fine for direct copies, but most real mappings require some transformation. In STM, you add transforms in `{ }` after the arrow:
+A bare arrow (`->`) is fine for direct copies, but most real mappings require some transformation. In Satsuma, you add transforms in `{ }` after the arrow:
 
 ```stm
 mapping {
@@ -111,7 +111,7 @@ The pipe character (`|`) chains transforms left to right, exactly like a Unix pi
 
 The credit limit mapping: *"Take `CREDIT_LIMIT`, replace null with zero, multiply by 100 (converting to cents), then round."*
 
-This is one of STM's big wins over spreadsheets. Instead of a free-text cell saying *"Clean up and convert to cents"*, you get a precise, ordered sequence of operations that an engineer can implement directly.
+This is one of Satsuma's big wins over spreadsheets. Instead of a free-text cell saying *"Clean up and convert to cents"*, you get a precise, ordered sequence of operations that an engineer can implement directly.
 
 ### Value Maps
 
@@ -179,7 +179,7 @@ LAST_MOD_DATE -> updated_at {
 
 ## Comments That Actually Mean Something
 
-STM has three kinds of comment, each carrying a different signal:
+Satsuma has three kinds of comment, each carrying a different signal:
 
 ```stm
 // A normal informational comment
@@ -199,7 +199,7 @@ STATE_PROV    VARCHAR(50)                    //? Should we normalise to 2-char c
 
 ## Notes: Rich Documentation In-Line
 
-For longer explanations — context a developer or reviewer needs, data-quality background, open issues — STM provides two ways to attach notes.
+For longer explanations — context a developer or reviewer needs, data-quality background, open issues — Satsuma provides two ways to attach notes.
 
 **On schemas and fields**, notes are metadata, so they go in `( )`. Use `"..."` for a short note, or `"""..."""` when you need Markdown headings, bullet points, or multiple paragraphs:
 
@@ -243,7 +243,7 @@ A `note { }` at the top of the file documents the whole integration. One inside 
 
 ## Natural Language Transforms: Bridging the Gap
 
-Sometimes a transformation is too complex or context-dependent to express as a neat chain of functions. In STM, a quoted string directly inside `{ }` is a **natural-language transform**:
+Sometimes a transformation is too complex or context-dependent to express as a neat chain of functions. In Satsuma, a quoted string directly inside `{ }` is a **natural-language transform**:
 
 ```stm
 PHONE_NBR -> phone {
@@ -272,7 +272,7 @@ This is enormously valuable for BAs. You can describe complex business logic in 
 
 ## Nested Structures: `record` and `list`
 
-Real data is rarely flat. STM handles nested structures with two keywords:
+Real data is rarely flat. Satsuma handles nested structures with two keywords:
 
 - **`record`** — a single nested object (one instance per parent record)
 - **`list`** — a repeated nested object (zero or more instances per parent record)
@@ -303,7 +303,7 @@ LineItems[] -> .items[] {
 
 ### Flatten: Exploding Arrays into Rows
 
-A common ETL pattern is taking a single source record with an array and producing one output row per array element. STM makes this explicit with a `flatten` annotation on the mapping:
+A common ETL pattern is taking a single source record with an array and producing one output row per array element. Satsuma makes this explicit with a `flatten` annotation on the mapping:
 
 ```stm
 mapping 'order lines' (flatten `Order.LineItems[]`) {
@@ -318,7 +318,7 @@ mapping 'order lines' (flatten `Order.LineItems[]`) {
 
 The `flatten` option on the mapping header tells the reader: *"For each element in `LineItems[]`, emit one target row. Parent-level fields like `OrderId` are repeated."*
 
-This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In STM, it's a single option on the mapping header and the array path references make the grain of the target table completely unambiguous.
+This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In Satsuma, it's a single option on the mapping header and the array path references make the grain of the target table completely unambiguous.
 
 ---
 
@@ -342,7 +342,7 @@ mapping 'opportunity enrichment' {
 
 ## Imports and Reuse
 
-In a large programme, the same structures appear again and again — address blocks, audit columns, phone normalisation logic. STM lets you define these once and share them.
+In a large programme, the same structures appear again and again — address blocks, audit columns, phone normalisation logic. Satsuma lets you define these once and share them.
 
 ### Fragments
 
@@ -443,7 +443,7 @@ You don't need to understand every format detail — the important thing is that
 Here's a realistic Salesforce-to-Snowflake integration, the kind of mapping you might review as a BA on a revenue operations project:
 
 ```stm
-// STM — Salesforce to Snowflake Pipeline
+// Satsuma — Salesforce to Snowflake Pipeline
 
 import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
 import { 'currency rates' } from "lookups/finance.stm"
@@ -545,7 +545,7 @@ mapping 'opportunity ingestion' {
 }
 ```
 
-Even if you've never seen STM before today, you can follow this specification and answer questions like:
+Even if you've never seen Satsuma before today, you can follow this specification and answer questions like:
 
 - *"What happens if Amount is null?"* — The `arr_value` mapping shows `coalesce(0)`, so it becomes zero.
 - *"How is pipeline stage determined?"* — There's an explicit value map from Salesforce picklist values to Snowflake categories.
@@ -554,7 +554,7 @@ Even if you've never seen STM before today, you can follow this specification an
 
 Compare that to hunting through a spreadsheet's comments column, a Confluence page, and a Slack thread to piece together the same answers.
 
-### STM vs the Spreadsheet: A Side-by-Side
+### Satsuma vs the Spreadsheet: A Side-by-Side
 
 To make the contrast concrete, consider how the stage-mapping rule above would look in a typical Excel mapping document:
 
@@ -562,13 +562,13 @@ To make the contrast concrete, consider how the stage-mapping rule above would l
 | ------------ | ------------ | -------------- | ----- |
 | StageName | pipeline_stage | Map values (see lookup tab) | Prospecting=top_funnel, Qualification=mid_funnel, etc. |
 
-That single row raises immediate questions. *"What about 'Value Prop' — is that top or mid funnel?"* *"What if the value doesn't match any of these?"* *"Where's the lookup tab — is it in this workbook or another one?"* The STM `map { }` block answers all of these inline, with a `_` wildcard for unrecognised values. There's no lookup tab to lose, no ambiguity to resolve in a follow-up meeting.
+That single row raises immediate questions. *"What about 'Value Prop' — is that top or mid funnel?"* *"What if the value doesn't match any of these?"* *"Where's the lookup tab — is it in this workbook or another one?"* The Satsuma `map { }` block answers all of these inline, with a `_` wildcard for unrecognised values. There's no lookup tab to lose, no ambiguity to resolve in a follow-up meeting.
 
 ---
 
 ## Metrics: Defining What You Measure
 
-Data pipelines don't just move data — they feed business metrics. STM has a dedicated `metric` keyword for declaring KPIs and measures, so that the definition of *"what does MRR mean?"* lives alongside the schemas and mappings it depends on, not in a Confluence page that nobody updates.
+Data pipelines don't just move data — they feed business metrics. Satsuma has a dedicated `metric` keyword for declaring KPIs and measures, so that the definition of *"what does MRR mean?"* lives alongside the schemas and mappings it depends on, not in a Confluence page that nobody updates.
 
 A metric block says: **what** the metric measures, **where** the data comes from, and **how** it can be sliced. It doesn't describe the implementation step-by-step — that's what mappings are for. Instead, the `note { }` block captures the business definition in natural language.
 
@@ -632,7 +632,7 @@ Metrics are *not* schemas — you can't use them as a source or target in a mapp
 
 Metrics aren't the only things that consume your data pipeline. Dashboards, scheduled reports, and ML models also depend on specific schemas — and when someone changes a field upstream, you need to know what breaks downstream.
 
-STM handles these using the same building blocks you already know: a `schema` with metadata tokens that declare intent. The `report` or `model` token tells tooling (and humans) that this isn't a database table to be loaded — it's a downstream consumer.
+Satsuma handles these using the same building blocks you already know: a `schema` with metadata tokens that declare intent. The `report` or `model` token tells tooling (and humans) that this isn't a database table to be loaded — it's a downstream consumer.
 
 ### Reports
 
@@ -703,9 +703,9 @@ The key insight is that no new syntax is needed. The `report` and `model` tokens
 
 ## Data Modelling: Kimball Stars and Data Vault
 
-If you work on a data warehouse or lakehouse project, you're likely using either **Kimball** (star schemas with dimensions and facts) or **Data Vault** (hubs, links, and satellites). STM handles both using vocabulary tokens in `( )` metadata — no special syntax needed, just conventions that declare the *intent* behind a schema.
+If you work on a data warehouse or lakehouse project, you're likely using either **Kimball** (star schemas with dimensions and facts) or **Data Vault** (hubs, links, and satellites). Satsuma handles both using vocabulary tokens in `( )` metadata — no special syntax needed, just conventions that declare the *intent* behind a schema.
 
-This matters for BAs because dimensional and vault patterns have a lot of mechanical boilerplate (surrogate keys, SCD history columns, hash keys, load timestamps). In STM, you declare the intent — *"this is a Type 2 slowly changing dimension"* — and the interpreter or tooling infers the boilerplate. You see the business fields; the engineer sees the pattern.
+This matters for BAs because dimensional and vault patterns have a lot of mechanical boilerplate (surrogate keys, SCD history columns, hash keys, load timestamps). In Satsuma, you declare the intent — *"this is a Type 2 slowly changing dimension"* — and the interpreter or tooling infers the boilerplate. You see the business fields; the engineer sees the pattern.
 
 ### Kimball: Dimensions and Facts
 
@@ -836,7 +836,7 @@ schema link_sale (
 }
 ```
 
-Mappings into vault targets look like regular STM mappings — the `hub`, `satellite`, and `link` tokens only affect the target schema's physical structure, not the mapping syntax:
+Mappings into vault targets look like regular Satsuma mappings — the `hub`, `satellite`, and `link` tokens only affect the target schema's physical structure, not the mapping syntax:
 
 ```stm
 mapping 'sfdc to hub_customer' {
@@ -863,7 +863,7 @@ mapping 'sfdc to sat_customer_demographics' {
 
 ### Which Approach Should You Use?
 
-You don't need to choose between these approaches to use STM — both use the same syntax. The tokens are just vocabulary conventions:
+You don't need to choose between these approaches to use Satsuma — both use the same syntax. The tokens are just vocabulary conventions:
 
 | Token | Meaning |
 | ----- | ------- |
@@ -884,11 +884,11 @@ You don't need to choose between these approaches to use STM — both use the sa
 | `measure non_additive` | Not summable |
 | `degenerate` | Dimension attribute stored in the fact |
 
-The key takeaway: STM's `( )` metadata system is extensible. Whether you're building a Kimball star, a Data Vault, or something else entirely, you declare intent with tokens and let tooling handle the mechanical details.
+The key takeaway: Satsuma's `( )` metadata system is extensible. Whether you're building a Kimball star, a Data Vault, or something else entirely, you declare intent with tokens and let tooling handle the mechanical details.
 
 ---
 
-## Quick Reference: The STM Building Blocks
+## Quick Reference: The Satsuma Building Blocks
 
 | Concept | Syntax | Purpose |
 | ------- | ------ | ------- |
@@ -926,11 +926,11 @@ The key takeaway: STM's `( )` metadata system is extensible. Whether you're buil
 
 You don't need to memorise every detail in this tutorial. The key takeaways are:
 
-1. **STM is readable** — if you can read a database column list, you can read STM.
+1. **Satsuma is readable** — if you can read a database column list, you can read Satsuma.
 2. **Everything lives in one place** — schema definitions, mapping logic, transformation rules, data-quality warnings, and documentation all sit together in a single versionable file.
 3. **Precision replaces ambiguity** — instead of free-text descriptions, transforms are explicit pipelines. Where precision isn't practical, quoted natural-language blocks capture intent rather than leaving it to tribal knowledge.
-4. **It scales** — from a two-field proof of concept to a multi-source enterprise data hub, STM uses the same consistent syntax.
-5. **It versions naturally** — because STM files are plain text, they slot straight into Git. You get full change history, pull-request reviews, and the ability to diff two versions of a mapping side by side. No more "v7_FINAL_FINAL_reviewed_JK.xlsx".
+4. **It scales** — from a two-field proof of concept to a multi-source enterprise data hub, Satsuma uses the same consistent syntax.
+5. **It versions naturally** — because Satsuma files are plain text, they slot straight into Git. You get full change history, pull-request reviews, and the ability to diff two versions of a mapping side by side. No more "v7_FINAL_FINAL_reviewed_JK.xlsx".
 6. **It describes the full picture** — metrics, reports, ML models, and data warehouse patterns (Kimball stars, Data Vault) all use the same token-based metadata system. One format covers everything from source schemas to the KPIs they feed.
 
 ### A practical review checklist

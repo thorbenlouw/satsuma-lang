@@ -1,14 +1,14 @@
 # RetailCo International — Kimball Star Schema
 
-A complete Kimball dimensional model for a multinational department store, expressed in STM v2 using free-form metadata conventions for dimensions, facts, and SCD patterns.
+A complete Kimball dimensional model for a multinational department store, expressed in Satsuma v2 using free-form metadata conventions for dimensions, facts, and SCD patterns.
 
 ## How it works
 
-STM v2 uses `( )` metadata blocks for **all** annotations — there are no special `@tag` annotations or reserved modelling keywords. Tokens like `dimension`, `fact`, `scd`, `grain` are free-form vocabulary interpreted by an LLM, not by a deterministic parser. This means:
+Satsuma v2 uses `( )` metadata blocks for **all** annotations — there are no special `@tag` annotations or reserved modelling keywords. Tokens like `dimension`, `fact`, `scd`, `grain` are free-form vocabulary interpreted by an LLM, not by a deterministic parser. This means:
 
 - The **grammar doesn't change** when you add new modelling patterns
 - The **meaning of tokens is conventional**, not enforced — see [LLM-Guidelines.md](LLM-Guidelines.md) for how an LLM should interpret them
-- **Tooling infers mechanical columns** (surrogate keys, validity dates, etc.) based on these conventions — they are never written in the STM file
+- **Tooling infers mechanical columns** (surrogate keys, validity dates, etc.) based on these conventions — they are never written in the Satsuma file
 
 ## Files
 
@@ -54,7 +54,7 @@ These are **vocabulary tokens** in `( )` metadata — not reserved keywords. An 
 
 ## What Tooling Would Infer
 
-The STM files contain **only business fields**. The following mechanical columns are inferred by convention:
+The Satsuma files contain **only business fields**. The following mechanical columns are inferred by convention:
 
 ### For `dimension` + `scd 2` (dim_customer, dim_store)
 
@@ -108,4 +108,4 @@ The same RetailCo domain is modelled as a Data Vault in `../datavault/`. Key dif
 - **Kimball**: Dimensions are denormalized, query-optimized. Fact tables reference dimensions via surrogate keys. History is managed per-dimension via SCD types.
 - **Data Vault**: Hubs hold business keys, satellites hold attributes, links hold relationships. Everything is insert-only with full history. More normalized, more resilient to source changes, but requires a mart layer for analytics queries.
 
-Both approaches express cleanly in STM. The same source schemas, the same transform logic — only the target structure and metadata tokens differ.
+Both approaches express cleanly in Satsuma. The same source schemas, the same transform logic — only the target structure and metadata tokens differ.

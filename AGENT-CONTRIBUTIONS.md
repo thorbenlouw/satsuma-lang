@@ -38,7 +38,7 @@ git worktree add .worktrees/<branch-name> -b <branch-name>
 Use the ticket ID as the branch name when the work maps to a ticket:
 
 ```bash
-git worktree add .worktrees/stm-14x.8 -b stm-14x.8
+git worktree add .worktrees/satsuma-14x.8 -b satsuma-14x.8
 ```
 
 For work spanning multiple tickets under one feature, use a descriptive name:
@@ -54,10 +54,10 @@ checkout — you can run tests, install dependencies, and commit just like the
 main working directory.
 
 ```bash
-cd .worktrees/stm-14x.8
+cd .worktrees/satsuma-14x.8
 npm install                                 # if touching node packages
 # ... do work, run tests, commit ...
-git push -u origin stm-14x.8
+git push -u origin satsuma-14x.8
 gh pr create --title "..." --body "..."
 ```
 
@@ -71,8 +71,8 @@ After a PR is merged:
 
 ```bash
 # From the repo root (main worktree)
-git worktree remove .worktrees/stm-14x.8
-git branch -d stm-14x.8
+git worktree remove .worktrees/satsuma-14x.8
+git branch -d satsuma-14x.8
 ```
 
 List active worktrees:
@@ -85,7 +85,7 @@ git worktree list
 
 | Scope | Pattern | Example |
 |-------|---------|---------|
-| Single ticket | `stm-<id>` | `stm-14x.8` |
+| Single ticket | `satsuma-<id>` | `satsuma-14x.8` |
 | Feature (multi-ticket) | `feat/<name>` | `feat/semantic-tokens` |
 | Bug fix | `fix/<name>` | `fix/conflict-count` |
 | Chore / CI / docs | `chore/<name>` | `chore/ci-caching` |
@@ -95,7 +95,7 @@ git worktree list
 - Keep commits focused — one logical change per commit.
 - Write commit messages that explain *why*, not just *what*.
 - PR titles should be under 70 characters. Use the body for details.
-- Reference ticket IDs in PR descriptions (e.g. "Closes stm-14x.8").
+- Reference ticket IDs in PR descriptions (e.g. "Closes satsuma-14x.8").
 - PRs must pass CI before merge. Do not ask reviewers to merge failing PRs.
 
 ## Parallel Agent Work

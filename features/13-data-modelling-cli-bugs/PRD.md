@@ -4,13 +4,13 @@
 
 ## Goal
 
-Fix the parser and CLI issues discovered when running `stm` commands against the Feature 06 data-modelling examples (`example_kimball/` and `example_datavault/`). Currently these files produce **15 parse errors and 65 false-positive warnings** across both example sets, plus several CLI output bugs.
+Fix the parser and CLI issues discovered when running `satsuma` commands against the Feature 06 data-modelling examples (`example_kimball/` and `example_datavault/`). Currently these files produce **15 parse errors and 65 false-positive warnings** across both example sets, plus several CLI output bugs.
 
 ---
 
 ## Problem
 
-The Feature 06 examples are canonical, production-grade STM files demonstrating Kimball and Data Vault conventions. They exercise syntax patterns that are valid per the STM v2 spec and the Feature 06 PRD, but the parser and CLI tools fail on them. This blocks any downstream use of these examples for testing, demos, or LLM-driven tooling.
+The Feature 06 examples are canonical, production-grade Satsuma files demonstrating Kimball and Data Vault conventions. They exercise syntax patterns that are valid per the Satsuma v2 spec and the Feature 06 PRD, but the parser and CLI tools fail on them. This blocks any downstream use of these examples for testing, demos, or LLM-driven tooling.
 
 The issues cluster into **3 parser bugs**, **3 validator bugs**, and **2 CLI output bugs**.
 
@@ -79,10 +79,10 @@ When a source schema (e.g., `pos_oracle`) is declared in multiple files with dif
 
 **Reproduction:**
 ```bash
-stm validate features/06-data-modelling-with-stm/example_kimball/dim-store.stm
+satsuma validate features/06-data-modelling-with-stm/example_kimball/dim-store.stm
 # → no issues
 
-stm validate features/06-data-modelling-with-stm/example_kimball/
+satsuma validate features/06-data-modelling-with-stm/example_kimball/
 # → 13 warnings: "Arrow source 'STORE_NAME' not declared in schema 'pos_oracle'" etc.
 ```
 
@@ -110,7 +110,7 @@ Examples:
 **5 false-positive warnings** when validating `mart-sales.stm` alone.
 
 ```bash
-stm validate example_datavault/mart-sales.stm
+satsuma validate example_datavault/mart-sales.stm
 # → 5 undefined-ref warnings for link_sale, sat_sale_detail, hub_customer, etc.
 ```
 
@@ -127,21 +127,21 @@ The file has `import { link_sale, sat_sale_detail } from "link-sale.stm"` at the
 **0 results** for schema-level tags like `dimension`, `fact`, `hub`, `link`, `satellite`.
 
 ```bash
-stm find --tag dimension features/06-data-modelling-with-stm/example_kimball/
+satsuma find --tag dimension features/06-data-modelling-with-stm/example_kimball/
 # → No matches found.
 
-stm find --tag hub features/06-data-modelling-with-stm/example_datavault/
+satsuma find --tag hub features/06-data-modelling-with-stm/example_datavault/
 # → No matches found.
 ```
 
-But `stm meta dim_customer` shows `[tag] dimension` and `stm meta hub_customer` shows `[tag] hub`. The `find --tag` command only searches field-level metadata tags, not schema-level tags.
+But `satsuma meta dim_customer` shows `[tag] dimension` and `satsuma meta hub_customer` shows `[tag] hub`. The `find --tag` command only searches field-level metadata tags, not schema-level tags.
 
 **Fix:** Extend `find --tag` to also search schema-level metadata entries from `metadata_block`.
 
 ### Bug 8: `meta` command truncates `ref ... on` compound metadata
 
 ```bash
-stm meta fact_sales features/06-data-modelling-with-stm/example_kimball/
+satsuma meta fact_sales features/06-data-modelling-with-stm/example_kimball/
 # Output includes: ref: dim_date on
 # Should be: ref: dim_date on transaction_date
 ```
@@ -167,8 +167,8 @@ The `on <field>` part is lost because the grammar doesn't parse it (see Bug 2). 
 
 ## Success Criteria
 
-1. `stm validate features/06-data-modelling-with-stm/example_datavault/` produces 0 errors and 0 false-positive warnings.
-2. `stm validate features/06-data-modelling-with-stm/example_kimball/` produces 0 errors and 0 false-positive warnings.
+1. `satsuma validate features/06-data-modelling-with-stm/example_datavault/` produces 0 errors and 0 false-positive warnings.
+2. `satsuma validate features/06-data-modelling-with-stm/example_kimball/` produces 0 errors and 0 false-positive warnings.
 3. Triple-quoted strings with embedded `"` characters parse correctly.
 4. `ref <schema> on <field>` metadata syntax parses correctly and is fully represented in `meta` output.
 5. `find --tag dimension` (and `hub`, `link`, `satellite`, `fact`) returns matching schemas.
@@ -187,12 +187,12 @@ The `on <field>` part is lost because the grammar doesn't parse it (see Bug 2). 
 
 ## Files Likely Affected
 
-- `tooling/tree-sitter-stm/grammar.js` — multiline_string regex (Bug 1), ref-on compound (Bug 2)
-- `tooling/tree-sitter-stm/test/corpus/` — new corpus tests for fixed syntax
-- `tooling/stm-cli/src/validate.js` — duplicate schema handling (Bug 4), import resolution (Bug 6)
-- `tooling/stm-cli/src/extract.js` — field merging for duplicate schemas
-- `tooling/stm-cli/src/meta-extract.js` — schema-level tag extraction for `find --tag` (Bug 7)
-- `tooling/stm-cli/src/commands/find.js` — schema-level tag search (Bug 7)
+- `tooling/tree-sitter-satsuma/grammar.js` — multiline_string regex (Bug 1), ref-on compound (Bug 2)
+- `tooling/tree-sitter-satsuma/test/corpus/` — new corpus tests for fixed syntax
+- `tooling/satsuma-cli/src/validate.js` — duplicate schema handling (Bug 4), import resolution (Bug 6)
+- `tooling/satsuma-cli/src/extract.js` — field merging for duplicate schemas
+- `tooling/satsuma-cli/src/meta-extract.js` — schema-level tag extraction for `find --tag` (Bug 7)
+- `tooling/satsuma-cli/src/commands/find.js` — schema-level tag search (Bug 7)
 
 ---
 

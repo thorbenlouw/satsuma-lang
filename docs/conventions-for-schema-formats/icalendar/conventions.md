@@ -11,7 +11,7 @@ iCalendar (RFC 5545) is the universal standard for calendar data exchange — `.
 - **Component nesting** — events (VEVENT), alarms (VALARM), and timezones (VTIMEZONE) nest within the calendar (VCALENDAR) with different property sets
 - **Real-world variance** — Google Calendar, Outlook, and Apple Calendar each produce subtly different iCalendar output
 
-iCalendar is a good "bridge" example: familiar enough that most readers have encountered `.ics` files, but complex enough to demonstrate STM's value.
+iCalendar is a good "bridge" example: familiar enough that most readers have encountered `.ics` files, but complex enough to demonstrate Satsuma's value.
 
 ## Metadata Conventions
 
@@ -47,7 +47,7 @@ iCalendar is a good "bridge" example: familiar enough that most readers have enc
 ## Example
 
 ```stm
-// STM v2 — iCalendar Event (simplified)
+// Satsuma v2 — iCalendar Event (simplified)
 
 schema icalendar_event (format icalendar, component VEVENT,
   note """

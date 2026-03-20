@@ -1,13 +1,13 @@
 # LLM Guidelines: Data Vault 2.0 Metadata Conventions
 
-These guidelines tell an LLM how to interpret the free-form metadata tokens used in STM files that follow Data Vault 2.0 conventions. None of these tokens are reserved keywords or enforced by the STM grammar — they are **vocabulary conventions** that carry meaning by agreement.
+These guidelines tell an LLM how to interpret the free-form metadata tokens used in Satsuma files that follow Data Vault 2.0 conventions. None of these tokens are reserved keywords or enforced by the Satsuma grammar — they are **vocabulary conventions** that carry meaning by agreement.
 
 ## Core Principle
 
 When you see metadata tokens like `hub`, `satellite`, `link` in a schema's `( )` block, they communicate the **structural role** of that schema in a Data Vault architecture. Your job is to:
 
 1. **Recognise the pattern** from the tokens
-2. **Infer the mechanical columns** that the pattern implies (but that are omitted from the STM file)
+2. **Infer the mechanical columns** that the pattern implies (but that are omitted from the Satsuma file)
 3. **Understand the relationships** between schemas based on `parent`, `link_hubs`, `business_key`, etc.
 
 ## Token Interpretation Rules
@@ -25,7 +25,7 @@ A schema marked `(hub)` is a **business key registry** — a Data Vault hub tabl
 **Companion tokens:**
 - `business_key <field>` — identifies which field(s) are the business key. Required.
 
-**Inferred columns** (not written in the STM file, but present in the physical table):
+**Inferred columns** (not written in the Satsuma file, but present in the physical table):
 - `{schema_name}_hk` CHAR(64) — MD5/SHA-256 hash of the business key(s). This is the primary key.
 - `load_date` TIMESTAMPTZ — timestamp when this business key was first seen in the vault.
 - `record_source` VARCHAR(100) — identifier for the source system that first provided this key.
@@ -161,13 +161,13 @@ This selects only the most recent satellite record for each parent hash key.
 
 When a schema marked `hub`, `link`, or `satellite` is imported into another file:
 
-1. **Inferred fields travel with the import.** A hub's `{hub}_hk` and `load_date` are available in mappings even though they don't appear in the STM source file.
+1. **Inferred fields travel with the import.** A hub's `{hub}_hk` and `load_date` are available in mappings even though they don't appear in the Satsuma source file.
 2. **Any schema can appear on either side of a mapping.** A schema defined as a vault target in one file can be a mapping source in a mart file. The `mapping` block's `source { }` / `target { }` determines data flow direction.
 3. **Hash key joins are conventional.** When a mart mapping references `hub_customer.customer_id`, the LLM understands this involves joining through `hub_customer_hk`.
 
 ## How to Generate DDL from These Conventions
 
-When generating physical DDL from a Data Vault STM file:
+When generating physical DDL from a Data Vault Satsuma file:
 
 1. Read the schema-level metadata tokens to determine the entity type (hub/link/satellite)
 2. Add the inferred columns documented above to the field list

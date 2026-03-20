@@ -1,6 +1,0 @@
-// Intentionally malformed STM file for testing parse-error reporting.
-// The unclosed brace and missing field type trigger ERROR nodes.
-
-schema broken_schema {
-  field_a
-  field_b VARCHAR(50)

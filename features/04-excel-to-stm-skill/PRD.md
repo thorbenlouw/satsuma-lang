@@ -1,14 +1,14 @@
-# Excel-to-STM Agent Skill
+# Excel-to-Satsuma Agent Skill
 
 > **Status: PARTIAL** — Lite system prompt authored. Phases 1-5 (Python CLI tool, skill prompt, critique loop, end-to-end validation) not started. See `FUTURE-WORK.md` for deferred scope.
 
 ## Goal
 
-Enable any user — from a BA with a web browser to an engineer with Claude Code — to convert an Excel-based source-to-target mapping spreadsheet into well-formed, idiomatic STM files.
+Enable any user — from a BA with a web browser to an engineer with Claude Code — to convert an Excel-based source-to-target mapping spreadsheet into well-formed, idiomatic Satsuma files.
 
 This ships in two tiers:
-1. **Lite**: A self-contained system prompt that works with any web LLM (ChatGPT, Gemini, Claude.ai). Upload the prompt and your spreadsheet, get STM output. Zero setup.
-2. **Full**: A Claude Code agent skill (`/excel-to-stm`) with code-first Excel extraction, tree-sitter validation, iterative self-critique, and a confidence-rated review. The full skill treats the Excel file as an opaque artefact — it never loads the full spreadsheet into LLM context. All interrogation happens through targeted Python code (openpyxl).
+1. **Lite**: A self-contained system prompt that works with any web LLM (ChatGPT, Gemini, Claude.ai). Upload the prompt and your spreadsheet, get Satsuma output. Zero setup.
+2. **Full**: A Claude Code agent skill (`/excel-to-satsuma`) with code-first Excel extraction, tree-sitter validation, iterative self-critique, and a confidence-rated review. The full skill treats the Excel file as an opaque artefact — it never loads the full spreadsheet into LLM context. All interrogation happens through targeted Python code (openpyxl).
 
 ## Problem
 
@@ -19,36 +19,36 @@ Source-to-target mappings live in Excel spreadsheets across virtually every ente
 - **Mixed-purpose** — tabs may contain mapping rows, changelogs, interpretation guides, links to external docs, sample data, or stakeholder sign-off matrices.
 - **Large** — production mapping docs routinely have 200–500+ rows across multiple tabs.
 
-There is no reliable way to convert these to STM by hand without significant effort and risk of transcription error. An AI skill that does this iteratively — with structured self-review — would dramatically lower the barrier to STM adoption.
+There is no reliable way to convert these to Satsuma by hand without significant effort and risk of transcription error. An AI skill that does this iteratively — with structured self-review — would dramatically lower the barrier to Satsuma adoption.
 
 ## Success Criteria
 
 ### Lite variant
 
-1. A BA can upload the prompt + an Excel file to any major web LLM and get syntactically plausible STM output.
-2. The output uses idiomatic STM patterns — not just generic code formatting.
+1. A BA can upload the prompt + an Excel file to any major web LLM and get syntactically plausible Satsuma output.
+2. The output uses idiomatic Satsuma patterns — not just generic code formatting.
 3. The self-critique checklist catches obvious issues (missing fields, invented functions).
 4. For a typical 50–100 row mapping spreadsheet, the output is >80% correct on first pass.
 
 ### Full variant
 
-5. A user can run `/excel-to-stm path/to/mapping.xlsx output-dir/` and receive valid STM files.
+5. A user can run `/excel-to-satsuma path/to/mapping.xlsx output-dir/` and receive valid Satsuma files.
 6. The skill handles spreadsheets it has never seen before — no hardcoded column assumptions.
 7. Non-mapping tabs (changelogs, guidance, reference links) are identified and excluded gracefully.
-8. The generated STM is syntactically valid (verified by tree-sitter parse) and uses idiomatic patterns (fragments, imports, `nl()` for ambiguous transforms, tiered comments).
-9. The skill produces a discovery report, structured critique, and multi-dimensional confidence rating alongside the STM output.
+8. The generated Satsuma is syntactically valid (verified by tree-sitter parse) and uses idiomatic patterns (fragments, imports, `nl()` for ambiguous transforms, tiered comments).
+9. The skill produces a discovery report, structured critique, and multi-dimensional confidence rating alongside the Satsuma output.
 10. The skill errors clearly if a spreadsheet is too large to process reliably rather than silently degrading.
-11. The user is shown the discovery report and asked to confirm before STM generation begins.
+11. The user is shown the discovery report and asked to confirm before Satsuma generation begins.
 
 ## Non-Goals
 
 - Parsing non-Excel formats (.csv, Google Sheets, .ods). Future work.
 - Supporting `.xls` (legacy format) — users should convert to `.xlsx` first (e.g., via LibreOffice).
-- Semantic validation of the generated STM against a running system.
-- Generating executable code (Python, SQL, dbt) from the STM. That is a downstream consumer.
+- Semantic validation of the generated Satsuma against a running system.
+- Generating executable code (Python, SQL, dbt) from the Satsuma. That is a downstream consumer.
 - Handling password-protected or macro-enabled workbooks (.xlsm).
 - Replacing human review — the confidence rating and critique are there precisely because this is advisory output.
-- Incremental re-runs or diffing against previously generated STM. Future work.
+- Incremental re-runs or diffing against previously generated Satsuma. Future work.
 
 ## Two Variants
 
@@ -61,7 +61,7 @@ This feature ships in two forms, in order:
 
 The Lite variant ships first because it:
 - Provides immediate value with zero infrastructure
-- Validates the core approach (can an LLM produce good STM from Excel?) before investing in tooling
+- Validates the core approach (can an LLM produce good Satsuma from Excel?) before investing in tooling
 - Serves the primary adopter persona (BAs migrating from spreadsheets)
 - Informs the design of the Full skill's generation rules and critique checklist
 
@@ -71,14 +71,14 @@ The Lite variant ships first because it:
 
 ### Concept
 
-A single, self-contained Markdown file (`excel-to-stm-prompt.md`) that a user uploads or pastes into any capable web LLM alongside their Excel file. The prompt contains everything the LLM needs: the STM grammar, generation rules, examples, and a self-critique checklist. No code execution, no tooling, no environment setup.
+A single, self-contained Markdown file (`excel-to-satsuma-prompt.md`) that a user uploads or pastes into any capable web LLM alongside their Excel file. The prompt contains everything the LLM needs: the Satsuma grammar, generation rules, examples, and a self-critique checklist. No code execution, no tooling, no environment setup.
 
-The LLM reads the Excel file natively (most web LLMs can now open `.xlsx` uploads), does its best to produce STM, and self-critiques the output. The user then validates locally using the tree-sitter parser or other tools.
+The LLM reads the Excel file natively (most web LLMs can now open `.xlsx` uploads), does its best to produce Satsuma, and self-critiques the output. The user then validates locally using the tree-sitter parser or other tools.
 
 ### Audience
 
 Business analysts, data architects, or anyone who:
-- Has a mapping spreadsheet and wants to try STM
+- Has a mapping spreadsheet and wants to try Satsuma
 - Doesn't have Claude Code, a terminal, or Python installed
 - Wants a quick conversion to review and refine, not a perfect first pass
 
@@ -88,13 +88,13 @@ The file is structured as a system prompt with these sections:
 
 #### 1. Role & Goal (~100 tokens)
 
-You are an STM conversion specialist. The user will upload an Excel spreadsheet containing source-to-target data mapping definitions. Your job is to convert it into well-formed, idiomatic STM files.
+You are a Satsuma conversion specialist. The user will upload an Excel spreadsheet containing source-to-target data mapping definitions. Your job is to convert it into well-formed, idiomatic Satsuma files.
 
-#### 2. STM Grammar — compact EBNF (~500 tokens)
+#### 2. Satsuma Grammar — compact EBNF (~500 tokens)
 
 Inlined verbatim from `AI-AGENT-REFERENCE.md` grammar section.
 
-#### 3. STM Quick Reference / Cheat Sheet (~400 tokens)
+#### 3. Satsuma Quick Reference / Cheat Sheet (~400 tokens)
 
 Inlined verbatim from `AI-AGENT-REFERENCE.md` cheat sheet section. Covers schema blocks, mapping blocks, transforms, tags, annotations, and other constructs.
 
@@ -104,8 +104,8 @@ Step-by-step instructions:
 
 1. **Survey the spreadsheet** — identify which tabs contain mapping data vs. reference/lookup data vs. documentation/changelog. Report your findings before generating.
 2. **Identify column roles** — determine which columns are source field, source type, target field, target type, transformation, notes, etc. Don't assume fixed positions.
-3. **Plan the output** — decide how many STM files to produce, whether shared fragments or lookups are needed.
-4. **Generate STM** following the rules below.
+3. **Plan the output** — decide how many Satsuma files to produce, whether shared fragments or lookups are needed.
+4. **Generate Satsuma** following the rules below.
 5. **Self-critique** against the checklist below.
 6. **Report confidence** honestly.
 
@@ -115,22 +115,22 @@ Step-by-step instructions:
 - Define `source` and `target` blocks with all fields, types, and tags before writing mappings.
 - Use `lookup` blocks for reference/code tables found in the spreadsheet.
 - Use `fragment` for any field pattern that appears 2+ times across schemas.
-- Use `nl("...")` for any transformation described in prose that you can't express as a standard STM transform. **Never invent functions.**
+- Use `nl("...")` for any transformation described in prose that you can't express as a standard Satsuma transform. **Never invent functions.**
 - Use `//!` for data quality warnings mentioned in the spreadsheet.
 - Use `//?` for anything ambiguous or unresolvable from the available information.
 - Use `note '''...'''` for rich context that doesn't fit in inline comments.
 - Use `when`/`else` for conditional logic, not nested `map`.
-- Prefer concise, idiomatic STM — don't over-specify.
+- Prefer concise, idiomatic Satsuma — don't over-specify.
 
-#### 6. Excel-to-STM Conversion Example (~350 tokens)
+#### 6. Excel-to-Satsuma Conversion Example (~350 tokens)
 
-Inlined from `AI-AGENT-REFERENCE.md`: the "Converting an Excel mapping row to STM" example showing an Excel row and its STM equivalent, plus the minimal 1:1 mapping example showing a complete small file.
+Inlined from `AI-AGENT-REFERENCE.md`: the "Converting an Excel mapping row to Satsuma" example showing an Excel row and its Satsuma equivalent, plus the minimal 1:1 mapping example showing a complete small file.
 
 #### 7. Self-Critique Checklist (~300 tokens)
 
 A simplified version of the Full skill's critique checklist, designed for the LLM to self-evaluate:
 
-> After generating STM, review your output against this checklist. Report each item as PASS, FAIL, or WARN with a brief explanation.
+> After generating Satsuma, review your output against this checklist. Report each item as PASS, FAIL, or WARN with a brief explanation.
 >
 > - **Coverage**: Every mapping row in the Excel has a corresponding `->` or `=>` entry
 > - **Coverage**: All source fields declared in source schema(s)
@@ -150,7 +150,7 @@ A simplified version of the Full skill's critique checklist, designed for the LL
 
 - Output each `.stm` file in a separate code block with a filename header.
 - If the platform supports file downloads, offer downloadable `.stm` files.
-- After the STM output, include:
+- After the Satsuma output, include:
   - The self-critique checklist results
   - A confidence summary (structural coverage, transform accuracy, type fidelity, ambiguity count)
   - A note reminding the user to validate with the tree-sitter parser
@@ -159,7 +159,7 @@ A simplified version of the Full skill's critique checklist, designed for the LL
 
 - Don't skip tabs without explaining why.
 - Don't silently drop mapping rows that are hard to interpret — use `nl()` or `//?`.
-- Don't invent STM syntax or transform functions not in the grammar/cheat sheet.
+- Don't invent Satsuma syntax or transform functions not in the grammar/cheat sheet.
 - Don't produce partial output without flagging it.
 - Don't claim the output is validated — remind the user it needs local verification.
 
@@ -174,14 +174,14 @@ A simplified version of the Full skill's critique checklist, designed for the LL
 - No tree-sitter validation — structural correctness is best-effort
 - No iterative refinement loop with separate critic — just a one-pass self-critique
 - No guaranteed handling of very large spreadsheets — LLM file reading has platform-specific limits
-- No machine-readable metadata or review artifacts — just the STM output and inline critique
+- No machine-readable metadata or review artifacts — just the Satsuma output and inline critique
 
 ### Lite Variant Limitations (documented for users)
 
 The prompt includes a brief "limitations" note for the user:
 
-> **Important**: This is a best-effort conversion. The generated STM has NOT been parsed or validated. Before using it:
-> 1. Run it through the STM tree-sitter parser to check syntax
+> **Important**: This is a best-effort conversion. The generated Satsuma has NOT been parsed or validated. Before using it:
+> 1. Run it through the Satsuma tree-sitter parser to check syntax
 > 2. Review all `//?` markers — these are open questions that need human judgement
 > 3. Review all `nl()` transforms — these describe intent but need implementation
 > 4. Check that all mapping rows from your spreadsheet are accounted for
@@ -189,9 +189,9 @@ The prompt includes a brief "limitations" note for the user:
 ### Lite Variant File Location
 
 ```
-features/04-excel-to-stm-skill/
+features/04-excel-to-satsuma-skill/
 ├── PRD.md                         # This document
-├── excel-to-stm-prompt.md        # The self-contained lite prompt
+├── excel-to-satsuma-prompt.md        # The self-contained lite prompt
 └── ...
 ```
 
@@ -199,7 +199,7 @@ features/04-excel-to-stm-skill/
 
 ## Variant B: Full Claude Code Skill
 
-Everything below describes the Full skill variant (`/excel-to-stm`).
+Everything below describes the Full skill variant (`/excel-to-satsuma`).
 
 ## Architecture
 
@@ -215,9 +215,9 @@ The skill runs as a **single Claude Code conversation** organised into three dis
 
 | Phase | Responsibility | Information needed |
 |-------|---------------|-------------------|
-| **Survey** | Interrogate Excel structure and content. Produce discovery report. No STM knowledge needed. | `excel_tool.py` output only |
-| **Translate** | Interpret discovery report and generate STM files. No direct Excel access. | Discovery report + STM spec (`AI-AGENT-REFERENCE.md`) + canonical examples + chunked row data via `excel_tool.py` |
-| **Critique & Refine** | Evaluate generated STM against structured checklist. Fix issues iteratively. | Discovery report + generated STM + STM spec + tree-sitter parse output |
+| **Survey** | Interrogate Excel structure and content. Produce discovery report. No Satsuma knowledge needed. | `excel_tool.py` output only |
+| **Translate** | Interpret discovery report and generate Satsuma files. No direct Excel access. | Discovery report + Satsuma spec (`AI-AGENT-REFERENCE.md`) + canonical examples + chunked row data via `excel_tool.py` |
+| **Critique & Refine** | Evaluate generated Satsuma against structured checklist. Fix issues iteratively. | Discovery report + generated Satsuma + Satsuma spec + tree-sitter parse output |
 
 Between Survey and Translate, there is a **user confirmation gate**: the skill presents the discovery report and waits for the user to confirm or correct before proceeding.
 
@@ -230,7 +230,7 @@ Before any processing:
 1. **Check Python dependency**: Verify `openpyxl` is importable. If not, offer to create a project-local venv and install it:
    ```
    openpyxl is required but not installed.
-   Shall I create a venv at ./features/04-excel-to-stm-skill/.venv and install it?
+   Shall I create a venv at ./features/04-excel-to-satsuma-skill/.venv and install it?
    ```
    Store the venv path so subsequent runs are zero-friction.
 2. **Validate input file**: Verify the file exists and is a valid `.xlsx` file.
@@ -240,7 +240,7 @@ Before any processing:
    That exceeds the reliable processing limit.
 
    Options:
-   1. Specify which tabs to process: /excel-to-stm file.xlsx output/ --tabs "Customer,Order"
+   1. Specify which tabs to process: /excel-to-satsuma file.xlsx output/ --tabs "Customer,Order"
    2. Split the spreadsheet into smaller files.
    ```
 4. **Check output directory**: If the output directory contains existing `.stm` files, error unless `--overwrite` is passed:
@@ -285,7 +285,7 @@ For each tab classified as **Mapping**, run `excel_tool.py headers` and `excel_t
 
 #### Step 1.4 — Reference Tab Extraction
 
-For tabs classified as **Reference/Lookup**, run `excel_tool.py lookup` to extract full content (these are typically small, capped at 500 rows). These become STM `lookup` blocks.
+For tabs classified as **Reference/Lookup**, run `excel_tool.py lookup` to extract full content (these are typically small, capped at 500 rows). These become Satsuma `lookup` blocks.
 
 #### Step 1.5 — Guidance Tab Summary
 
@@ -293,7 +293,7 @@ For tabs classified as **Guidance/Instructions**, extract a brief summary of con
 
 #### Output: Discovery Report
 
-A single `discovery-report.md` file written to the output directory's `.excel-to-stm/` subdirectory. Contains:
+A single `discovery-report.md` file written to the output directory's `.excel-to-satsuma/` subdirectory. Contains:
 - Tab classification table with confidence levels
 - Column role assignments for each mapping tab
 - Formatting semantic interpretations
@@ -320,9 +320,9 @@ Survey complete. Here's how I understood your spreadsheet:
     A: Source Field, B: Source Type, C: Target Field, D: Target Type,
     E: Transformation, F: Notes, G: Status, H: Priority
 
-  Full discovery report written to .excel-to-stm/discovery-report.md
+  Full discovery report written to .excel-to-satsuma/discovery-report.md
 
-Does this look correct? If not, tell me what to change before I generate STM.
+Does this look correct? If not, tell me what to change before I generate Satsuma.
 ```
 
 The user can correct classifications, override column roles, or exclude/include tabs. Only after confirmation does the skill proceed.
@@ -331,15 +331,15 @@ Use `--no-confirm` to skip this gate (e.g., for scripted usage).
 
 ### Phase 2: Translate
 
-The Translate phase works from the confirmed discovery report. It loads STM knowledge by reading:
+The Translate phase works from the confirmed discovery report. It loads Satsuma knowledge by reading:
 - `AI-AGENT-REFERENCE.md` — compact grammar + cheat sheet (~900 tokens)
 - 1–2 canonical examples from `examples/` appropriate to the mapping's cardinality and complexity
 
 It does **not** receive raw Excel data upfront. When it needs specific cell values, it requests targeted ranges via `excel_tool.py range`.
 
-#### Step 2.1 — Plan the STM File Structure
+#### Step 2.1 — Plan the Satsuma File Structure
 
-Before writing any STM, produce a file plan:
+Before writing any Satsuma, produce a file plan:
 
 - How many `.stm` files to produce and what each contains.
 - Which fragments to extract (repeated field patterns appearing in multiple schemas or mappings).
@@ -347,11 +347,11 @@ Before writing any STM, produce a file plan:
 - Which mapping blocks map to which source/target schemas.
 - Cardinality of the overall integration.
 
-The plan is informed by the tab structure but **not bound to it** — multiple tabs may contribute to a single STM file, or a single tab may produce multiple files.
+The plan is informed by the tab structure but **not bound to it** — multiple tabs may contribute to a single Satsuma file, or a single tab may produce multiple files.
 
-#### Step 2.2 — Chunked STM Generation
+#### Step 2.2 — Chunked Satsuma Generation
 
-Mapping rows are always extracted in chunks (up to 100 rows per request via `excel_tool.py range`). For each chunk, the skill generates STM entries and appends to the file being built. This is the default extraction strategy, not a fallback for large files.
+Mapping rows are always extracted in chunks (up to 100 rows per request via `excel_tool.py range`). For each chunk, the skill generates Satsuma entries and appends to the file being built. This is the default extraction strategy, not a fallback for large files.
 
 For each planned file:
 
@@ -363,18 +363,18 @@ For each planned file:
 Key generation rules:
 - **Use fragments** for any field pattern that appears 2+ times.
 - **Use imports** when producing multiple files — shared fragments and lookups go in a common file.
-- **Use `nl()`** for any transformation described in English prose that can't be expressed as a standard STM transform function. Don't invent functions.
+- **Use `nl()`** for any transformation described in English prose that can't be expressed as a standard Satsuma transform function. Don't invent functions.
 - **Use `//!`** for any data quality warning mentioned in the Excel (conditional formatting, comments, colour coding that indicates issues).
 - **Use `//?`** for any ambiguity that cannot be resolved from the available information.
 - **Use `note '''...'''`** blocks to preserve important context from the Excel that doesn't fit in inline comments.
-- **Prefer concise, idiomatic STM** — avoid verbose or over-specified mappings when a simpler expression works.
+- **Prefer concise, idiomatic Satsuma** — avoid verbose or over-specified mappings when a simpler expression works.
 
 #### Step 2.3 — Tree-Sitter Validation
 
 After generating each `.stm` file, validate it using the project's tree-sitter parser:
 
 ```bash
-./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-stm <file.stm> --quiet
+./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-satsuma <file.stm> --quiet
 ```
 
 If tree-sitter reports parse errors, fix them before proceeding. If tree-sitter is not available (parser not compiled), fall back to heuristic structural checks with a warning:
@@ -386,15 +386,15 @@ If tree-sitter reports parse errors, fix them before proceeding. If tree-sitter 
 
 ### Phase 3: Critique & Refine
 
-After all STM files pass structural validation, the skill enters the critique loop.
+After all Satsuma files pass structural validation, the skill enters the critique loop.
 
 #### Critique Checklist
 
-The skill evaluates the generated STM against the discovery report using this checklist:
+The skill evaluates the generated Satsuma against the discovery report using this checklist:
 
 | Category | Check | Severity |
 |----------|-------|----------|
-| **Coverage** | Every mapping-classified row in the Excel has a corresponding map entry in STM | FAIL |
+| **Coverage** | Every mapping-classified row in the Excel has a corresponding map entry in Satsuma | FAIL |
 | **Coverage** | All source fields declared in source schema(s) | FAIL |
 | **Coverage** | All target fields declared in target schema(s) | FAIL |
 | **Coverage** | Lookup/reference tabs converted to `lookup` blocks where appropriate | WARN |
@@ -453,15 +453,15 @@ The skill writes the following to the user-specified output directory:
 
 ```
 output-dir/
-├── *.stm                          # Generated STM file(s) — the deliverable
+├── *.stm                          # Generated Satsuma file(s) — the deliverable
 ├── common.stm                     # Shared fragments/lookups (if applicable)
-└── .excel-to-stm/                 # Review artifacts (gitignore-able)
+└── .excel-to-satsuma/                 # Review artifacts (gitignore-able)
     ├── discovery-report.md        # How the skill understood the spreadsheet
     ├── review.md                  # Final critique + confidence rating
     └── meta.json                  # Machine-readable metadata (source file, timestamp, iterations, exit condition)
 ```
 
-The `.stm` files are the primary output — ready to commit to version control. The `.excel-to-stm/` subdirectory contains review artifacts that are useful for human review but can be gitignored.
+The `.stm` files are the primary output — ready to commit to version control. The `.excel-to-satsuma/` subdirectory contains review artifacts that are useful for human review but can be gitignored.
 
 #### Confidence Rating (in review.md)
 
@@ -485,10 +485,10 @@ The skill must be disciplined about what information is loaded at each decision 
 
 | Phase | What the LLM needs to see | What stays out |
 |-------|--------------------------|----------------|
-| **Survey** | Tab metadata, sample rows, formatting summaries (from `excel_tool.py`) | STM spec, examples, raw cell data |
+| **Survey** | Tab metadata, sample rows, formatting summaries (from `excel_tool.py`) | Satsuma spec, examples, raw cell data |
 | **User Confirmation** | Discovery summary (compact) | Everything else |
-| **Translate** | Confirmed discovery report + STM spec + 1–2 examples + chunked row data | Full spreadsheet content, formatting details already captured |
-| **Critique** | Generated STM + discovery report + critique checklist + tree-sitter output | Raw Excel data, examples |
+| **Translate** | Confirmed discovery report + Satsuma spec + 1–2 examples + chunked row data | Full spreadsheet content, formatting details already captured |
+| **Critique** | Generated Satsuma + discovery report + critique checklist + tree-sitter output | Raw Excel data, examples |
 
 ### Chunking Strategy (default, not fallback)
 
@@ -535,7 +535,7 @@ All subcommands:
 
 `excel_tool.py` requires `openpyxl`. The skill manages this via a project-local venv:
 
-- **Location**: `features/04-excel-to-stm-skill/.venv/`
+- **Location**: `features/04-excel-to-satsuma-skill/.venv/`
 - **First run**: If openpyxl is not importable, the skill offers to create the venv and install it.
 - **Subsequent runs**: The skill uses the existing venv automatically.
 - **The venv is gitignored.**
@@ -547,9 +547,9 @@ The skill is packaged as a Claude Code custom slash command:
 ```
 .claude/
 └── commands/
-    └── excel-to-stm.md           # Skill prompt file
+    └── excel-to-satsuma.md           # Skill prompt file
 
-features/04-excel-to-stm-skill/
+features/04-excel-to-satsuma-skill/
 ├── PRD.md                         # This document
 ├── excel_tool.py                  # Python CLI for Excel access
 ├── requirements.txt               # openpyxl
@@ -558,27 +558,27 @@ features/04-excel-to-stm-skill/
 
 ### Skill Prompt Design
 
-The skill prompt file (`.claude/commands/excel-to-stm.md`) contains:
+The skill prompt file (`.claude/commands/excel-to-satsuma.md`) contains:
 
 1. **Role and goal statement** — what the skill does and its design principles.
 2. **Phase instructions** — step-by-step instructions for each phase, including what tools to use and what information to load.
-3. **STM reference loading instructions** — explicit paths to read:
+3. **Satsuma reference loading instructions** — explicit paths to read:
    - `AI-AGENT-REFERENCE.md` for grammar and cheat sheet
    - Specific example files from `examples/` based on mapping complexity
 4. **Generation rules** — the key generation rules from Phase 2 above.
 5. **Critique checklist** — the full checklist table.
 6. **Output format instructions** — directory structure and file contents.
 
-The prompt does **not** inline the STM spec or examples — it instructs the agent to read them at the appropriate phase. This keeps the prompt itself compact and the context loading lazy.
+The prompt does **not** inline the Satsuma spec or examples — it instructs the agent to read them at the appropriate phase. This keeps the prompt itself compact and the context loading lazy.
 
 ### Argument Passing
 
 Arguments are passed via the `$ARGUMENTS` variable that Claude Code provides to slash commands:
 
 ```
-/excel-to-stm ~/mappings/customer-migration.xlsx ./stm-output/
-/excel-to-stm ~/mappings/customer-migration.xlsx ./stm-output/ --tabs "Customer,Order"
-/excel-to-stm ~/mappings/customer-migration.xlsx ./stm-output/ --dry-run
+/excel-to-satsuma ~/mappings/customer-migration.xlsx ./stm-output/
+/excel-to-satsuma ~/mappings/customer-migration.xlsx ./stm-output/ --tabs "Customer,Order"
+/excel-to-satsuma ~/mappings/customer-migration.xlsx ./stm-output/ --dry-run
 ```
 
 ## Skill Interface
@@ -586,7 +586,7 @@ Arguments are passed via the `$ARGUMENTS` variable that Claude Code provides to 
 ### Invocation
 
 ```
-/excel-to-stm <excel-file> <output-dir> [options]
+/excel-to-satsuma <excel-file> <output-dir> [options]
 ```
 
 ### Options
@@ -595,15 +595,15 @@ Arguments are passed via the `$ARGUMENTS` variable that Claude Code provides to 
 |--------|---------|-------------|
 | `--tabs "Tab1,Tab2"` | All tabs | Process only the specified tabs |
 | `--max-iterations` | 3 | Maximum critique-refine iterations |
-| `--skip-critique` | false | Generate STM without the critique loop (faster, less reliable) |
-| `--dry-run` | false | Run Survey only, produce discovery report, no STM generation |
+| `--skip-critique` | false | Generate Satsuma without the critique loop (faster, less reliable) |
+| `--dry-run` | false | Run Survey only, produce discovery report, no Satsuma generation |
 | `--no-confirm` | false | Skip the user confirmation gate after Survey |
 | `--overwrite` | false | Overwrite existing `.stm` files in the output directory |
 
 ### Example Session
 
 ```
-> /excel-to-stm ~/mappings/customer-migration.xlsx ./stm-output/
+> /excel-to-satsuma ~/mappings/customer-migration.xlsx ./stm-output/
 
 Checking dependencies... ✓ openpyxl available
 
@@ -615,7 +615,7 @@ Surveying customer-migration.xlsx...
     A: Source Field, B: Source Type, C: Target Field, D: Target Type,
     E: Transformation, F: Notes, G: Status, H: Priority
 
-  Full discovery report written to .excel-to-stm/discovery-report.md
+  Full discovery report written to .excel-to-satsuma/discovery-report.md
 
 Does this look correct? [confirm to proceed]
 
@@ -623,8 +623,8 @@ Does this look correct? [confirm to proceed]
 
 Got it — reclassifying "Sign-off" as reference/lookup.
 
-Generating STM...
-  Reading AI-AGENT-REFERENCE.md for STM grammar...
+Generating Satsuma...
+  Reading AI-AGENT-REFERENCE.md for Satsuma grammar...
   Using examples/sfdc_to_snowflake.stm as reference (1:1 mapping with lookups)
   Planned: 3 files (customer.stm, order.stm, common.stm)
 
@@ -645,8 +645,8 @@ Output written to ./stm-output/
   customer.stm          (42 mapping entries)
   order.stm             (28 mapping entries)
   common.stm            (2 fragments, 2 lookups)
-  .excel-to-stm/discovery-report.md
-  .excel-to-stm/review.md  (coverage=High, transforms=Medium, types=High, exit=CLEAN)
+  .excel-to-satsuma/discovery-report.md
+  .excel-to-satsuma/review.md  (coverage=High, transforms=Medium, types=High, exit=CLEAN)
 ```
 
 ## Risks
@@ -655,7 +655,7 @@ Output written to ./stm-output/
 
 Every spreadsheet is different. Tab classification and column role identification will sometimes be wrong.
 
-**Mitigation**: The user confirmation gate catches misclassifications before they propagate into STM generation. Low-confidence classifications are explicitly flagged. The user can correct, reclassify, or exclude tabs before proceeding.
+**Mitigation**: The user confirmation gate catches misclassifications before they propagate into Satsuma generation. Low-confidence classifications are explicitly flagged. The user can correct, reclassify, or exclude tabs before proceeding.
 
 ### Large spreadsheets
 
@@ -667,7 +667,7 @@ A 500-row mapping tab with 20 columns is ~10,000 cells of content.
 
 Excel "Transformation" columns frequently contain ambiguous English prose, inconsistent notation, or references to external documents.
 
-**Mitigation**: The skill uses `nl()` liberally for anything it can't confidently express as a standard STM transform. The critique phase checks that ambiguous transforms were flagged, not silently dropped or invented.
+**Mitigation**: The skill uses `nl()` liberally for anything it can't confidently express as a standard Satsuma transform. The critique phase checks that ambiguous transforms were flagged, not silently dropped or invented.
 
 ### Critique-loop stalling
 
@@ -685,7 +685,7 @@ The tree-sitter parser may not be compiled in every environment.
 
 ### Phase 0: Lite system prompt
 
-Author `excel-to-stm-prompt.md` by assembling the grammar, cheat sheet, examples, generation rules, and self-critique checklist from existing materials (`AI-AGENT-REFERENCE.md`, canonical examples). Test against 2–3 sample spreadsheets on ChatGPT and Gemini. Iterate on the prompt wording based on output quality.
+Author `excel-to-satsuma-prompt.md` by assembling the grammar, cheat sheet, examples, generation rules, and self-critique checklist from existing materials (`AI-AGENT-REFERENCE.md`, canonical examples). Test against 2–3 sample spreadsheets on ChatGPT and Gemini. Iterate on the prompt wording based on output quality.
 
 This phase validates the core conversion approach and generation rules before any tooling investment. Lessons learned here feed directly into the Full skill's generation rules and critique checklist.
 
@@ -697,11 +697,11 @@ Includes: `requirements.txt`, venv bootstrap logic, output size enforcement.
 
 ### Phase 2: Skill prompt — Survey phase
 
-Write the skill prompt file (`.claude/commands/excel-to-stm.md`) with the Survey phase instructions, user confirmation gate, and `--dry-run` support. Test the survey flow end-to-end against varied spreadsheet layouts.
+Write the skill prompt file (`.claude/commands/excel-to-satsuma.md`) with the Survey phase instructions, user confirmation gate, and `--dry-run` support. Test the survey flow end-to-end against varied spreadsheet layouts.
 
 ### Phase 3: Skill prompt — Translate phase
 
-Extend the skill prompt with STM generation instructions. Start with single-tab, 1:1 mapping spreadsheets. Add chunked extraction, tree-sitter validation, and multi-tab/multi-file support incrementally.
+Extend the skill prompt with Satsuma generation instructions. Start with single-tab, 1:1 mapping spreadsheets. Add chunked extraction, tree-sitter validation, and multi-tab/multi-file support incrementally.
 
 ### Phase 4: Skill prompt — Critique & Refine phase
 

@@ -1,4 +1,4 @@
-# TODO: STM CLI — LLM Context Slicer
+# TODO: Satsuma CLI — LLM Context Slicer
 
 > **Status: COMPLETED** (2026-03-18). All phases done. All commands implemented and tested. 224 tests passing.
 
@@ -6,9 +6,9 @@ Depends on Feature 08 (tree-sitter parser v2) being complete before Phase 2.
 
 ## Phase 0: Scaffold
 
-- [ ] Create `tooling/stm-cli/` directory
-- [ ] Init `package.json` with `bin: { stm: "./src/index.js" }`
-- [ ] Add `tree-sitter` and `tree-sitter-stm` (local path dep on `../tree-sitter-stm`) to dependencies
+- [ ] Create `tooling/satsuma-cli/` directory
+- [ ] Init `package.json` with `bin: { satsuma: "./src/index.js" }`
+- [ ] Add `tree-sitter` and `tree-sitter-satsuma` (local path dep on `../tree-sitter-satsuma`) to dependencies
 - [ ] Set up basic CLI argument parser (use `commander` or `minimist`)
 - [ ] Write `src/index.js` entry point that dispatches to command modules
 - [ ] Add `README.md` with usage examples for each command
@@ -18,7 +18,7 @@ Depends on Feature 08 (tree-sitter parser v2) being complete before Phase 2.
 Before commands can be built, the index layer must exist.
 
 - [ ] `src/workspace.js` — finds all `.stm` files in a directory tree (`glob` or manual `fs.walk`)
-- [ ] `src/parser.js` — initialises tree-sitter with the STM grammar, parses a single file, returns CST root
+- [ ] `src/parser.js` — initialises tree-sitter with the Satsuma grammar, parses a single file, returns CST root
   - [ ] On parse error: collect error nodes, report `file:line parse error`, mark file as errored, continue
 - [ ] `src/extract.js` — walks a CST and extracts the index:
   - [ ] `extractSchemas(root)` → `[{ name, file, metadata, fields, notes }]`
@@ -46,7 +46,7 @@ Before commands can be built, the index layer must exist.
 - [ ] Build `referenceGraph` from mappings (sources/targets) and metrics (source metadata) during index build
 - [ ] Write unit tests for `extract.js` against the examples corpus
 
-## Phase 2: `stm summary`
+## Phase 2: `satsuma summary`
 
 - [ ] Implement `src/commands/summary.js`
 - [ ] Default output: schemas section, metrics section, mappings section, fragments line, transforms line
@@ -57,7 +57,7 @@ Before commands can be built, the index layer must exist.
 - [ ] `--json`: full structured output
 - [ ] Test: run against `examples/` and verify no crash, output looks correct
 
-## Phase 3: `stm schema`
+## Phase 3: `satsuma schema`
 
 - [ ] Implement `src/commands/schema.js`
 - [ ] Reconstruct schema declaration from index (not raw text — use CST node positions to re-emit)
@@ -67,9 +67,9 @@ Before commands can be built, the index layer must exist.
 - [ ] `--fields-only`: one line per field — name, type, and key metadata tokens only
 - [ ] `--json`: structured field list
 - [ ] Error: exit 1 with message if schema name not found
-- [ ] Test: `stm schema customers`, `stm schema legacy_sqlserver` against examples
+- [ ] Test: `satsuma schema customers`, `satsuma schema legacy_sqlserver` against examples
 
-## Phase 4: `stm metric`
+## Phase 4: `satsuma metric`
 
 - [ ] Implement `src/commands/metric.js`
 - [ ] Reconstruct metric block from index: keyword, name, display label, metadata, measure fields, notes
@@ -78,9 +78,9 @@ Before commands can be built, the index layer must exist.
 - [ ] `--sources`: print only source schema names (one per line)
 - [ ] `--json`: structured metric record
 - [ ] Error: exit 1 if metric not found
-- [ ] Test: `stm metric monthly_recurring_revenue` against examples
+- [ ] Test: `satsuma metric monthly_recurring_revenue` against examples
 
-## Phase 5: `stm mapping`
+## Phase 5: `satsuma mapping`
 
 - [ ] Implement `src/commands/mapping.js`
 - [ ] Reconstruct mapping block: header, source/target blocks, note, arrows
@@ -89,9 +89,9 @@ Before commands can be built, the index layer must exist.
 - [ ] `--arrows-only`: table of `src -> tgt`, no transform bodies
 - [ ] `--json`: structured mapping record with arrow array
 - [ ] Error: exit 1 if mapping not found
-- [ ] Test: `stm mapping 'customer migration'` against examples
+- [ ] Test: `satsuma mapping 'customer migration'` against examples
 
-## Phase 6: `stm find`
+## Phase 6: `satsuma find`
 
 - [ ] Implement `src/commands/find.js`
 - [ ] `--tag <token>`: search all fields in all schemas, metrics, and mappings for matching `tag_token` or key in `key_value_pair`
@@ -101,9 +101,9 @@ Before commands can be built, the index layer must exist.
 - [ ] `--in schemas|metrics|fields|mappings`: restrict search scope
 - [ ] `--compact`: paths only, no metadata context
 - [ ] `--json`: array of `{ file, block, blockType, field, matchedMetadata }`
-- [ ] Test: `stm find --tag pii`, `stm find --tag pk`, `stm find --tag measure`
+- [ ] Test: `satsuma find --tag pii`, `satsuma find --tag pk`, `satsuma find --tag measure`
 
-## Phase 7: `stm lineage`
+## Phase 7: `satsuma lineage`
 
 - [ ] Implement `src/commands/lineage.js`
 - [ ] Use `referenceGraph` from index (built in Phase 1)
@@ -118,7 +118,7 @@ Before commands can be built, the index layer must exist.
 - [ ] Error: exit 1 if named schema not found in index
 - [ ] Test: lineage from `legacy_sqlserver`, from `fact_subscriptions`
 
-## Phase 8: `stm where-used`
+## Phase 8: `satsuma where-used`
 
 - [ ] Implement `src/commands/where-used.js`
 - [ ] Accepts a name (schema, fragment, or transform)
@@ -128,7 +128,7 @@ Before commands can be built, the index layer must exist.
 - [ ] Output: grouped by usage type (source in mapping, target in mapping, spread into schema, source in metric)
 - [ ] `--json`: structured reference list
 
-## Phase 9: `stm warnings`
+## Phase 9: `satsuma warnings`
 
 - [ ] Implement `src/commands/warnings.js`
 - [ ] Pull from `WorkspaceIndex.warnings` (extracted in Phase 1)
@@ -136,7 +136,7 @@ Before commands can be built, the index layer must exist.
 - [ ] `--questions`: show `WorkspaceIndex.questions` instead
 - [ ] `--json`: array of `{ file, block, field, text, kind }`
 
-## Phase 10: `stm context`
+## Phase 10: `satsuma context`
 
 - [ ] Implement `src/commands/context.js`
 - [ ] Input: free-text description string
@@ -150,34 +150,34 @@ Before commands can be built, the index layer must exist.
 - [ ] `--compact`: apply `--compact` to all emitted blocks
 - [ ] `--budget <n>`: stop emitting blocks when cumulative estimated token count > n (default: 4000)
 - [ ] `--json`: array of `{ block, score, content }` sorted by score descending
-- [ ] Test: `stm context "add a PII field to the customer schema"` should surface `schema customers` and the customer migration mapping
+- [ ] Test: `satsuma context "add a PII field to the customer schema"` should surface `schema customers` and the customer migration mapping
 
 ## Phase 11: Error handling and polish
 
 - [ ] Consistent exit codes: 0 = success, 1 = not found / no results, 2 = parse/filesystem error
 - [ ] All commands: `--help` with usage and flag descriptions (via `commander`)
-- [ ] Top-level `stm --help` lists all commands with one-line descriptions
-- [ ] `stm --version` prints package version
+- [ ] Top-level `satsuma --help` lists all commands with one-line descriptions
+- [ ] `satsuma --version` prints package version
 - [ ] On workspace load errors: print parse errors to stderr, continue with valid files
 - [ ] Ambiguous name (same name in multiple files): warn and show all matches
 
 ## Phase 12: End-to-end tests
 
-- [ ] Write integration tests in `tooling/stm-cli/test/` using the `examples/` directory as fixture
+- [ ] Write integration tests in `tooling/satsuma-cli/test/` using the `examples/` directory as fixture
 - [ ] Test each command with valid input and verify output structure
 - [ ] Test each command with an unknown name and verify exit code 1
-- [ ] Test `stm find --tag pii` returns all expected PII fields from examples
-- [ ] Test `stm lineage --from legacy_sqlserver` returns the correct downstream path
-- [ ] Test `stm summary --json` is valid JSON with correct block counts
-- [ ] Test `stm context "customer pii migration"` surfaces the customer migration mapping
+- [ ] Test `satsuma find --tag pii` returns all expected PII fields from examples
+- [ ] Test `satsuma lineage --from legacy_sqlserver` returns the correct downstream path
+- [ ] Test `satsuma summary --json` is valid JSON with correct block counts
+- [ ] Test `satsuma context "customer pii migration"` surfaces the customer migration mapping
 
 ## Acceptance checklist
 
 - [ ] All commands run against `examples/` with no crashes
-- [ ] `stm summary --compact` output for examples is under 2,000 estimated tokens
-- [ ] `stm find --tag pii` finds all PII fields in examples
-- [ ] `stm lineage --from legacy_sqlserver` produces a correct graph
-- [ ] `stm metric monthly_recurring_revenue` outputs correct metric block
-- [ ] `stm context` surfaces relevant blocks for a natural-language description
+- [ ] `satsuma summary --compact` output for examples is under 2,000 estimated tokens
+- [ ] `satsuma find --tag pii` finds all PII fields in examples
+- [ ] `satsuma lineage --from legacy_sqlserver` produces a correct graph
+- [ ] `satsuma metric monthly_recurring_revenue` outputs correct metric block
+- [ ] `satsuma context` surfaces relevant blocks for a natural-language description
 - [ ] All commands support `--json` and produce valid JSON
 - [ ] Exit codes are correct for success, not-found, and parse errors

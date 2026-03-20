@@ -1,0 +1,21 @@
+// SYNTAX TEST "source.satsuma" "all three comment forms"
+
+// regular comment
+// <------------- comment.line.double-slash.satsuma
+
+//! warning comment — known issue
+// <---------------------- comment.line.double-slash.warning.satsuma
+
+//? question / TODO — needs clarification
+// <------------------------------ comment.line.double-slash.question.satsuma
+
+schema comments_test {
+  a INT // inline regular comment
+  //    // <- comment.line.double-slash.satsuma
+
+  b INT //! inline warning
+  //    //< comment.line.double-slash.warning.satsuma
+
+  c INT //? inline question
+  //    //< comment.line.double-slash.question.satsuma
+}

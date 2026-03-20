@@ -1,0 +1,19 @@
+// SYNTAX TEST "source.satsuma" "basic schema with fields and metadata"
+
+schema customers (format parquet) {
+// <-- keyword.other.satsuma
+//     ^^^^^^^^^ entity.name.type.satsuma
+
+  customer_id    UUID       (pk)
+  //             ^^^^ support.type.satsuma
+
+  name           VARCHAR(200) (required)
+  //             ^^^^^^^ support.type.satsuma
+
+  email          VARCHAR(255) (format email, pii)
+
+  status         VARCHAR(20)  (enum {active, suspended, closed})
+
+  created_at     TIMESTAMPTZ  (required)
+  //             ^^^^^^^^^^^ support.type.satsuma
+}

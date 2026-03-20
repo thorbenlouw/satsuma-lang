@@ -1,4 +1,4 @@
-// STM v2 — Common Lookups and Fragments
+// Satsuma v2 — Common Lookups and Fragments
 // Library file: import specific items into your integration files.
 
 schema country_codes (note "ISO 3166 country code mapping") {

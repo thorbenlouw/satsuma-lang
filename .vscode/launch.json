@@ -2,11 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch STM Extension",
+      "name": "Launch Satsuma Extension",
       "type": "extensionHost",
       "request": "launch",
       "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}/tooling/vscode-stm",
+        "--extensionDevelopmentPath=${workspaceFolder}/tooling/vscode-satsuma",
         "${workspaceFolder}/examples"   // opens examples/ so you immediately have .stm files
       ]
     }

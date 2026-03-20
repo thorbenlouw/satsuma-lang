@@ -1,4 +1,4 @@
-// STM v2 — SFDC Standard Fragments Library
+// Satsuma v2 — SFDC Standard Fragments Library
 // Reusable field sets for common Salesforce objects
 
 fragment 'sfdc standard types' {

@@ -1,22 +1,22 @@
-# Tree-sitter Parser Plan for STM
+# Tree-sitter Parser Plan for Satsuma
 
 > **Status: SUPERSEDED** by Feature 08 (Tree-sitter Parser v2). This was the v1 parser; v2 replaced it entirely.
 
 ## Goal
 
-Build a Tree-sitter parser for STM so tooling can produce a stable concrete syntax tree and a practical structured AST foundation for:
+Build a Tree-sitter parser for Satsuma so tooling can produce a stable concrete syntax tree and a practical structured AST foundation for:
 
-- `stm lint`
-- `stm fmt`
+- `satsuma lint`
+- `satsuma fmt`
 - visualisers
 - editor support
 - code generation and analysis
 
-The parser must cover the current STM v1.0.0 syntax in [STM-SPEC.md](/Users/thorben/dev/personal/stm/STM-SPEC.md) and the example corpus under [examples/](/Users/thorben/dev/personal/stm/examples).
+The parser must cover the current Satsuma v1.0.0 syntax in [Satsuma-SPEC.md](/Users/thorben/dev/personal/stm/Satsuma-SPEC.md) and the example corpus under [examples/](/Users/thorben/dev/personal/stm/examples).
 
 ## Problem
 
-STM already has a detailed language spec, but there is no machine-checked parser in the repo. That blocks all serious tooling:
+Satsuma already has a detailed language spec, but there is no machine-checked parser in the repo. That blocks all serious tooling:
 
 - linters cannot reason over mappings, notes, tags, and annotations reliably
 - formatters cannot preserve structure while normalising layout
@@ -34,8 +34,8 @@ We need a parser that is incremental, editor-friendly, and robust against incomp
 
 The feature is complete when:
 
-1. A `tree-sitter-stm` grammar parses all current canonical examples.
-2. The parser handles the full STM v1.0.0 surface area needed by tooling:
+1. A `tree-sitter-satsuma` grammar parses all current canonical examples.
+2. The parser handles the full Satsuma v1.0.0 surface area needed by tooling:
    - imports
    - integration blocks
    - schema/source/target/table/message/event/lookup blocks
@@ -53,10 +53,10 @@ The feature is complete when:
 This feature does not include:
 
 - semantic validation such as reference resolution or type checking
-- `stm lint` rule implementation
-- `stm fmt`
+- `satsuma lint` rule implementation
+- `satsuma fmt`
 - import resolution or circular dependency detection
-- code generation from STM
+- code generation from Satsuma
 
 Those consumers should be enabled by this parser, not bundled into it.
 
@@ -88,7 +88,7 @@ The grammar must model the constructs already present in the spec and examples:
   - pipe chain
   - `when` chains
   - `fallback`
-- line comments with STM-specific prefixes: `//`, `//!`, `//?`
+- line comments with Satsuma-specific prefixes: `//`, `//!`, `//?`
 - multiline `note '''...'''` blocks
 
 ### 2. Concrete tree shape that supports a stable AST layer
@@ -129,7 +129,7 @@ We should be able to attach Tree-sitter queries later for:
 
 ## Proposed Deliverables
 
-### Deliverable 1: `tree-sitter-stm` grammar package
+### Deliverable 1: `tree-sitter-satsuma` grammar package
 
 Suggested contents:
 
@@ -153,7 +153,7 @@ A short design note describing how downstream tools should convert CST nodes int
 
 ### Deliverable 3: Fixture suite
 
-Use the existing STM examples as golden fixtures and add smaller targeted cases for:
+Use the existing Satsuma examples as golden fixtures and add smaller targeted cases for:
 
 - every annotation form
 - arrays of primitives vs arrays of groups
@@ -243,7 +243,7 @@ Add:
 
 Build one thin consumer to validate the parser is practically usable. Recommended proof:
 
-- a small script that parses an STM file and emits a JSON summary of blocks, fields, maps, and comments
+- a small script that parses a Satsuma file and emits a JSON summary of blocks, fields, maps, and comments
 
 This keeps the feature honest without expanding into a full linter.
 
@@ -277,7 +277,7 @@ Recommended semantic AST shape for downstream tools:
 
 ### Grammar ambiguity in mapping syntax
 
-STM intentionally compresses mapping syntax. The main parser risk is distinguishing:
+Satsuma intentionally compresses mapping syntax. The main parser risk is distinguishing:
 
 - block-level `mapping`
 - value-map literal `map { ... }`
@@ -302,11 +302,11 @@ Mitigation:
 
 ### Spec drift
 
-The STM spec is still young and may change.
+The Satsuma spec is still young and may change.
 
 Mitigation:
 
-- treat [STM-SPEC.md](/Users/thorben/dev/personal/stm/STM-SPEC.md) as the authority
+- treat [Satsuma-SPEC.md](/Users/thorben/dev/personal/stm/Satsuma-SPEC.md) as the authority
 - parse all example files in CI
 - document unsupported future extensions explicitly rather than silently accepting them
 
@@ -330,11 +330,11 @@ Minimum test categories:
 
 If this repo will own the parser directly:
 
-- `tooling/tree-sitter-stm/`
+- `tooling/tree-sitter-satsuma/`
 
 If the parser should be published independently:
 
-- separate `tree-sitter-stm` repo, vendored back here for fixtures and integration tests
+- separate `tree-sitter-satsuma` repo, vendored back here for fixtures and integration tests
 
 For current momentum, keeping it inside this repo first is the better choice. It reduces setup friction and lets the examples/spec stay the golden source.
 

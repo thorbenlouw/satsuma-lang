@@ -1,0 +1,24 @@
+// SYNTAX TEST "source.satsuma" "nested record and list structures"
+
+schema order {
+// <-- keyword.other.satsuma
+//     ^^^^^ entity.name.type.satsuma
+
+  order_id     STRING (pk)
+
+  record customer {
+  // <-- keyword.other.satsuma
+  //     ^^^^^^^^ entity.name.type.satsuma
+    id           STRING
+    email        STRING (pii)
+  }
+
+  list line_items {
+  // < keyword.other.satsuma
+  //   ^^^^^^^^^^ entity.name.type.satsuma
+    sku          STRING (required)
+    quantity     INT
+    unit_price   DECIMAL(12,2)
+    //           ^^^^^^^ support.type.satsuma
+  }
+}

@@ -49,7 +49,7 @@ Without domain knowledge, an ISO 8583 message is essentially unreadable.
 ## Example
 
 ```stm
-// STM v2 — ISO 8583 Authorisation Request (simplified)
+// Satsuma v2 — ISO 8583 Authorisation Request (simplified)
 
 schema iso8583_auth_request (format iso8583, version "1987",
   note "Card authorisation request — common fields across networks"

@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "license": "MIT",
+    "description": "Tree-sitter grammar for Satsuma v2"
+  },
+  "grammars": [
+    {
+      "name": "satsuma",
+      "camelcase": "Satsuma",
+      "scope": "source.satsuma",
+      "file-types": [
+        "stm"
+      ],
+      "injection-regex": "^satsuma$"
+    }
+  ]
+}

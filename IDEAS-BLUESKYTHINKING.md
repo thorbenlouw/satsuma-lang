@@ -1,6 +1,6 @@
-# STM Blue-Sky Thinking
+# Satsuma Blue-Sky Thinking
 
-Explorations of how ideas from `ideas.MD` might look in extended STM syntax.
+Explorations of how ideas from `ideas.MD` might look in extended Satsuma syntax.
 
 **Design principles throughout:**
 - Stay declarative and BA-friendly -- describe *what*, not *how*
@@ -18,7 +18,7 @@ The grammar doesn't need to understand every schema language. We just need a
 clean way to say "this structure is defined over there, bring it in."
 
 ```stm
-// Pull in a DBML file -- the tooling resolves it to STM-equivalent fields
+// Pull in a DBML file -- the tooling resolves it to Satsuma-equivalent fields
 schema crm_database (from dbml "schemas/crm.dbml", table "customers") {}
 
 // Same idea for Avro, Protobuf, JSON Schema
@@ -34,7 +34,7 @@ schema crm_database (from dbml "schemas/crm.dbml", table "customers") {
 ```
 
 **Why metadata tokens and not a grammar extension:** The DBML/Avro/etc. parsers live
-in external tooling. STM just needs to say "resolve this" and then the AST looks
+in external tooling. Satsuma just needs to say "resolve this" and then the AST looks
 identical to a hand-written schema block. An LLM interpreter can read the
 referenced file and inline the fields.
 
@@ -43,7 +43,7 @@ referenced file and inline the fields.
 
 ## 2. Lineage Tracing
 
-STM already *describes* lineage implicitly through its mappings. The question is
+Satsuma already *describes* lineage implicitly through its mappings. The question is
 whether we need any syntax to make lineage intent more explicit, or whether this
 is purely a tooling concern.
 
@@ -69,9 +69,9 @@ mapping {
 ```
 
 But honestly, the mapping syntax itself (`A -> B { transforms }`) already *is* the
-lineage graph. A `stm lineage` CLI tool should be able to walk the AST and emit
+lineage graph. A `satsuma lineage` CLI tool should be able to walk the AST and emit
 a DAG without any extra metadata. The `lineage` tokens above are optional
-metadata for cross-integration tracing where a single STM file doesn't contain
+metadata for cross-integration tracing where a single Satsuma file doesn't contain
 the full picture.
 
 
@@ -224,7 +224,7 @@ schema sat_order_customer_eff (satellite, effectivity, parent link_order_custome
 
 A BA reads: "hub_customer stores customer IDs from all systems." An engineer
 reads: "hash key, load_date, record_source auto-generated, SCD2 on the sat."
-The mapping from source to vault target is regular STM:
+The mapping from source to vault target is regular Satsuma:
 
 ```stm
 mapping 'crm to hub' {
@@ -389,12 +389,12 @@ schema finance_ledger (
 
 **Why this works without grammar changes:** Vocabulary tokens in `( )` metadata
 are already in the grammar. Governance is just convention on top of it. An org
-publishes a "token dictionary" (itself possibly an STM file or YAML), and linting
+publishes a "token dictionary" (itself possibly an Satsuma file or YAML), and linting
 tooling validates that required tokens are present. The language stays clean;
 governance policy lives in config.
 
 ```stm
-// Possible: a governance policy file (this might be YAML, not STM -- TBD)
+// Possible: a governance policy file (this might be YAML, not Satsuma -- TBD)
 // Included here just to show the idea
 governance_policy "ACME Corp Data Standards" {
   require owner on all schemas
@@ -565,8 +565,8 @@ comments rather than language extensions:
 Purely a tooling concern. The tree-sitter grammar already provides the
 foundation. A language server reads the AST -- no syntax changes needed.
 
-### STM Linter (idea #4)
-Tooling. Linting rules are configuration, not grammar. Think ESLint for STM.
+### Satsuma Linter (idea #4)
+Tooling. Linting rules are configuration, not grammar. Think ESLint for Satsuma.
 
 ### Incremental Tutorial (idea #7)
 Documentation, not syntax. Though the examples in this file could *be* that
@@ -589,7 +589,7 @@ without helping BAs or engineers.
 ## Design Notes
 
 ### On Natural Language as the Escape Hatch
-Bare `"..."` strings inside `{ }` are STM's superpower. For anything too complex
+Bare `"..."` strings inside `{ }` are Satsuma's superpower. For anything too complex
 or domain-specific to express in a piped transform chain, you write intent in
 English and let the interpreter figure it out. This means the language can stay
 small while handling arbitrarily complex logic.
@@ -614,7 +614,7 @@ schema/fragment/mapping that using an existing keyword would confuse a BA readin
 the file?"
 
 ### On Keeping It BA-Friendly
-A BA should be able to read any STM file and understand:
+A BA should be able to read any Satsuma file and understand:
 1. Where data comes from (schemas used as sources)
 2. Where it goes (schemas used as targets)
 3. What happens to it along the way (mappings with NL descriptions)

@@ -1,4 +1,4 @@
-// STM v2 — Finance Lookups
+// Satsuma v2 — Finance Lookups
 
 schema currency_rates (
   note "Sourced from OpenExchangeRates API. Updated daily at 00:01 UTC."

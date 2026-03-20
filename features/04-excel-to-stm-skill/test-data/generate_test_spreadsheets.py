@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate diverse test spreadsheets for Excel-to-STM lite prompt testing."""
+"""Generate diverse test spreadsheets for Excel-to-Satsuma lite prompt testing."""
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side

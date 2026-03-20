@@ -1,8 +1,8 @@
-1. Allow importing a DBML schema as a source or target (external file). Use metadata tokens like `(from dbml "path")` and have EXTERNAL TOOLING resolve and inline the fields as STM-equivalent AST constructs. The aim is to inter-operate with DBML rather than forcing people to rewrite it for STM, but at the same time we do want STM-native constructs for the kinds of sources and targets that DBML doesn't currently target.
-2. [x] STM syntax highlighter for VSCode
-3. Language server to allow really efficient AI traversal of STM things (later)
-4. STM linter (CLI)
-5. Demonstrate using STM to trace lineage
+1. Allow importing a DBML schema as a source or target (external file). Use metadata tokens like `(from dbml "path")` and have EXTERNAL TOOLING resolve and inline the fields as Satsuma-equivalent AST constructs. The aim is to inter-operate with DBML rather than forcing people to rewrite it for Satsuma, but at the same time we do want Satsuma-native constructs for the kinds of sources and targets that DBML doesn't currently target.
+2. [x] Satsuma syntax highlighter for VSCode
+3. Language server to allow really efficient AI traversal of Satsuma things (later)
+4. Satsuma linter (CLI)
+5. Demonstrate using Satsuma to trace lineage
 6. Reason loosely about type changes as transforms... flesh this out
 7. [x] Incremental tutorial for BAs that starts simple and expands example-by-example to cover syntax and purpose
 8. [x] Change top-level map construct to mapping to disambiguate from map transform

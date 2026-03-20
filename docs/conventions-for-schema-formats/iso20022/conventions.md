@@ -11,7 +11,7 @@ ISO 20022 is the modern XML-based standard for financial messaging, gradually re
 - **Optional everywhere** — most elements are optional, making the actual population pattern message- and institution-dependent
 - **Code sets** — extensive external code lists (purpose codes, category purpose, charge bearer) with hundreds of values
 
-The irony is that ISO 20022 schemas are technically precise — the XSD is authoritative. But the schemas are so large and deeply nested that they are effectively unreadable for humans. STM's value here is compression: making a 400-element schema scannable.
+The irony is that ISO 20022 schemas are technically precise — the XSD is authoritative. But the schemas are so large and deeply nested that they are effectively unreadable for humans. Satsuma's value here is compression: making a 400-element schema scannable.
 
 ## Metadata Conventions
 
@@ -61,7 +61,7 @@ See [`swift-mt/conventions.md`](../swift-mt/conventions.md) for the legacy count
 ## Example
 
 ```stm
-// STM v2 — ISO 20022 pacs.008 Customer Credit Transfer (simplified)
+// Satsuma v2 — ISO 20022 pacs.008 Customer Credit Transfer (simplified)
 
 schema iso20022_credit_transfer (
   format iso20022,

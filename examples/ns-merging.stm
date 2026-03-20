@@ -1,4 +1,4 @@
-// STM v2 — Namespace Merging Test
+// Satsuma v2 — Namespace Merging Test
 //
 // Tests: same namespace appearing multiple times in one file,
 // cross-namespace references between merged blocks, global shadowing patterns.

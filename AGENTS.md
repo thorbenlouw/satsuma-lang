@@ -2,24 +2,24 @@
 
 ## Project Summary
 
-STM is a domain-specific language for source-to-target data mapping. The repository contains the language specification, a canonical example corpus, a tree-sitter parser, a 16-command CLI for structural extraction and validation, and a VS Code syntax highlighting extension.
+Satsuma is a domain-specific language for source-to-target data mapping. The repository contains the language specification, a canonical example corpus, a tree-sitter parser, a 16-command CLI for structural extraction and validation, and a VS Code syntax highlighting extension.
 
 All tooling is parser-backed. Downstream tools should be built on the tree-sitter CST and stable AST conventions rather than ad hoc text processing.
 
 ## Repository Layout
 
-- `STM-V2-SPEC.md`: authoritative language specification (v2)
+- `SATSUMA-V2-SPEC.md`: authoritative language specification (v2)
 - `PROJECT-OVERVIEW.md`: product vision, motivation, and roadmap
-- `STM-CLI.md`: CLI command reference (16 commands)
-- `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented STM guidance (v2)
+- `SATSUMA-CLI.md`: CLI command reference (16 commands)
+- `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented Satsuma guidance (v2)
 - `FUTURE-WORK.md`: deferred and speculative work items
 - `examples/`: canonical `.stm` examples and fixtures (v2 syntax)
 - `archive/v1/`: archived v1 specification and examples — for historical reference only, not for new work
 - `features/`: feature plans and task breakdown inputs
 - `scripts/`: utility scripts used during development
-- `tooling/tree-sitter-stm/`: tree-sitter grammar (190 corpus tests), generated parser artifacts, and queries
-- `tooling/stm-cli/`: CLI tool for workspace extraction, validation, and structural analysis (224 tests)
-- `tooling/vscode-stm/`: VS Code TextMate grammar for STM v2 syntax highlighting
+- `tooling/tree-sitter-satsuma/`: tree-sitter grammar (190 corpus tests), generated parser artifacts, and queries
+- `tooling/satsuma-cli/`: CLI tool for workspace extraction, validation, and structural analysis (224 tests)
+- `tooling/vscode-satsuma/`: VS Code TextMate grammar for Satsuma v2 syntax highlighting
 
 ## Platform Lineage Entry Point
 
@@ -32,20 +32,20 @@ import { billing::invoices } from "billing/pipeline.stm"
 import { warehouse::inventory } from "warehouse/ingest.stm"
 ```
 
-Use `stm lineage --from <schema> <dir>` to trace data flow through the platform. See `features/15-namespaces/PRD.md` for the full namespace specification.
+Use `satsuma lineage --from <schema> <dir>` to trace data flow through the platform. See `features/15-namespaces/PRD.md` for the full namespace specification.
 
 ## Source of Truth
 
 When making changes or answering questions about syntax, semantics, or supported constructs:
 
-1. Treat `STM-V2-SPEC.md` as the primary authority. The v1 spec is archived at `archive/v1/STM-SPEC.md` — do not use it for new work.
+1. Treat `SATSUMA-V2-SPEC.md` as the primary authority. The v1 spec is archived at `archive/v1/STM-SPEC.md` — do not use it for new work.
 2. Use `examples/` as the executable corpus of valid language patterns (v2 syntax).
 3. Use feature docs in `features/` to guide tooling order and architecture.
 4. If docs conflict, prefer the spec and call out the mismatch explicitly.
 
 ## Engineering Expectations
 
-- Preserve STM readability for both humans and machines.
+- Preserve Satsuma readability for both humans and machines.
 - Prefer parser-backed solutions over regex or line-oriented heuristics.
 - Keep CST/AST naming intentional and stable for downstream consumers.
 - Add or update tests with every behavior change.
@@ -106,10 +106,10 @@ Use the repo-local wrapper [`scripts/tree-sitter-local.sh`](scripts/tree-sitter-
 Preferred forms:
 
 ```bash
-./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-stm examples/common.stm --quiet
-./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-stm examples/common.stm
-cd tooling/tree-sitter-stm && ../../scripts/tree-sitter-local.sh test
-cd tooling/tree-sitter-stm && ../../scripts/tree-sitter-local.sh generate
+./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-satsuma examples/common.stm --quiet
+./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-satsuma examples/common.stm
+cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh test
+cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh generate
 ```
 
 Agent requirements:
@@ -129,7 +129,7 @@ Prefer `ast-grep` over `grep` when you care about syntax structure, not text:
 
 - **Searching `grammar.js`**: find rule definitions, specific combinators, or usages of a rule name without false positives from comments or strings.
 - **Searching Python scripts** under `scripts/`: structural function-call or import searches.
-- **Future STM linting**: once the grammar is registered as a custom language (see below), `ast-grep scan` can enforce structural rules over `.stm` files.
+- **Future Satsuma linting**: once the grammar is registered as a custom language (see below), `ast-grep scan` can enforce structural rules over `.stm` files.
 
 Use plain `Grep` when scanning corpus fixtures or other plain-text files — those aren't parsed as code.
 
@@ -137,31 +137,31 @@ Use plain `Grep` when scanning corpus fixtures or other plain-text files — tho
 
 ```bash
 # Find all seq() calls (and see their content)
-ast-grep run -l js -p 'seq($$$)' tooling/tree-sitter-stm/grammar.js
+ast-grep run -l js -p 'seq($$$)' tooling/tree-sitter-satsuma/grammar.js
 
 # Find all choice() calls
-ast-grep run -l js -p 'choice($$$)' tooling/tree-sitter-stm/grammar.js
+ast-grep run -l js -p 'choice($$$)' tooling/tree-sitter-satsuma/grammar.js
 
 # Find a specific property in the rules object
-ast-grep run -l js -p 'transform_body: $_' tooling/tree-sitter-stm/grammar.js
+ast-grep run -l js -p 'transform_body: $_' tooling/tree-sitter-satsuma/grammar.js
 ```
 
 Metavariables: `$NAME` matches a single node; `$$$` matches zero or more.
 
-### Registering STM as a custom language (future)
+### Registering Satsuma as a custom language (future)
 
 When the grammar is stable enough for structural search and lint, create `sgconfig.yml` at the repo root:
 
 ```yaml
 # sgconfig.yml
 customLanguages:
-  stm:
-    libraryPath: tooling/tree-sitter-stm/build/stm.dylib  # or .so on Linux
+  satsuma:
+    libraryPath: tooling/tree-sitter-satsuma/build/satsuma.dylib  # or .so on Linux
     extensions: [stm]
     expandoChar: _
 ```
 
-After building the dylib (`npm run build` in `tooling/tree-sitter-stm/`), `ast-grep run -l stm -p '...'` enables structural search over `.stm` files. This is also the foundation for a future STM linter implemented as `ast-grep scan` rules.
+After building the dylib (`npm run build` in `tooling/tree-sitter-satsuma/`), `ast-grep run -l satsuma -p '...'` enables structural search over `.stm` files. This is also the foundation for a future Satsuma linter implemented as `ast-grep scan` rules.
 
 ## Issue Tracking
 
@@ -189,7 +189,7 @@ Expected workflow:
 - Include relevant `.tickets/` changes in the same commit as the task implementation, since `tk` stores task state there.
 - Do not pick up the next task until the current task's relevant automated tests have been run locally and are passing.
 - If a requested change would contradict the spec, stop and raise the conflict clearly.
-- For work in `tooling/tree-sitter-stm/`, treat corpus tests in `tooling/tree-sitter-stm/test/corpus/` and generated parser artifacts as part of the implementation surface.
+- For work in `tooling/tree-sitter-satsuma/`, treat corpus tests in `tooling/tree-sitter-satsuma/test/corpus/` and generated parser artifacts as part of the implementation surface.
 - When changing the tree-sitter grammar, update the grammar source, regenerate parser outputs as needed, and verify the corpus fixtures.
 
 

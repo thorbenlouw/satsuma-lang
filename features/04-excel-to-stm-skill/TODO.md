@@ -1,9 +1,9 @@
-# Excel-to-STM Skill — TODO
+# Excel-to-Satsuma Skill — TODO
 
 > **Status: PARTIAL** — Phase 0 lite prompt authored. Remaining phases deferred (see `FUTURE-WORK.md`).
 
 ## Phase 0: Lite System Prompt
-- [x] Author `excel-to-stm-prompt.md` — assemble grammar, cheat sheet, examples, generation rules, and self-critique checklist from `AI-AGENT-REFERENCE.md`
+- [x] Author `excel-to-satsuma-prompt.md` — assemble grammar, cheat sheet, examples, generation rules, and self-critique checklist from `AI-AGENT-REFERENCE.md`
 - [ ] Test lite prompt against 2–3 sample spreadsheets on ChatGPT / Gemini / Claude.ai
 - [ ] Iterate on prompt wording based on output quality
 
@@ -20,18 +20,18 @@
 - [ ] Test against diverse sample spreadsheets
 
 ## Phase 2: Skill Prompt — Survey Phase
-- [ ] Create `.claude/commands/excel-to-stm.md` skill prompt
+- [ ] Create `.claude/commands/excel-to-satsuma.md` skill prompt
 - [ ] Implement Phase 0 (bootstrap & input validation) in prompt: dependency check, file validation, size check, output dir check
 - [ ] Implement Phase 1 (survey) in prompt: tab inventory, tab classification, mapping deep dive, reference extraction, guidance summary
-- [ ] Implement discovery report output (`.excel-to-stm/discovery-report.md`)
+- [ ] Implement discovery report output (`.excel-to-satsuma/discovery-report.md`)
 - [ ] Implement user confirmation gate
 - [ ] Support `--dry-run` flag
 - [ ] Test survey flow end-to-end
 
 ## Phase 3: Skill Prompt — Translate Phase
-- [ ] Add STM generation instructions to skill prompt (load `AI-AGENT-REFERENCE.md`, select canonical examples)
+- [ ] Add Satsuma generation instructions to skill prompt (load `AI-AGENT-REFERENCE.md`, select canonical examples)
 - [ ] Implement file structure planning (how many files, fragments, shared common file)
-- [ ] Implement chunked row extraction and STM generation (100 rows per chunk)
+- [ ] Implement chunked row extraction and Satsuma generation (100 rows per chunk)
 - [ ] Wire up tree-sitter validation (`scripts/tree-sitter-local.sh parse`)
 - [ ] Add heuristic fallback validation when tree-sitter unavailable
 - [ ] Support `--tabs` filtering

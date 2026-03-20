@@ -1,0 +1,30 @@
+// SYNTAX TEST "source.satsuma" "nested arrows with relative paths and array indicators"
+
+mapping 'edi to mfcs' {
+  source { `edi_desadv` }
+  target { `mfcs_json` }
+
+  // Dotted path
+  BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo { trim | max_length(30) }
+  // <------------- variable.other.field.satsuma
+
+  // Array path
+  POReferences[] -> ShipmentHeader.asnDetails[] (
+    note "Each PO reference generates one asnDetails entry."
+  ) {
+    // Relative path with dot prefix
+    .REFNUM -> .orderNo { split("/") | first | to_number }
+
+    // Nested arrow
+    LineItems[] -> .items[] {
+      .ITEMNO -> .item {
+        trim
+        | "Resolve via supplier item cross-reference"
+      }
+
+      Quantities[].QUANTITY -> .unitQuantity {
+        "Divide by 10000 (4 implied decimals)"
+      }
+    }
+  }
+}

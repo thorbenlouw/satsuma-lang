@@ -1,8 +1,8 @@
-# STM CST To AST Mapping
+# Satsuma CST To AST Mapping
 
 ## Purpose
 
-The Tree-sitter grammar should produce a concrete syntax tree that preserves STM
+The Tree-sitter grammar should produce a concrete syntax tree that preserves Satsuma
 syntax faithfully while making semantic AST construction straightforward. The
 parser should not emit a semantic AST directly; downstream tooling should build
 that layer from CST nodes without reparsing raw text.
@@ -105,7 +105,7 @@ Comments should parse as explicit nodes rather than disappear into `extras`.
 
 Rationale:
 
-- STM comment prefixes carry severity (`//`, `//!`, `//?`).
+- Satsuma comment prefixes carry severity (`//`, `//!`, `//?`).
 - Downstream tools need byte ranges for diagnostics and rendering.
 - Attachment decisions are semantic and should happen after parse.
 
