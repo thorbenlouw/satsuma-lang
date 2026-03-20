@@ -133,6 +133,9 @@ export interface DuplicateRecord {
   previousKind: string;
   previousFile: string;
   previousRow: number;
+  tag?: string;
+  value?: string;
+  previousValue?: string;
 }
 
 // ── Workspace index ─────────────────────────────────────────────────────────

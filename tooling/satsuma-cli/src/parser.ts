@@ -1,5 +1,5 @@
 /**
- * parser.js — tree-sitter Satsuma v2 parser wrapper
+ * parser.ts — tree-sitter Satsuma v2 parser wrapper
  *
  * Initialises the tree-sitter parser once and exposes a `parseFile` function
  * that reads a .stm file, parses it, and returns the tree together with any
@@ -11,29 +11,32 @@
 
 import { createRequire } from "module";
 import { readFileSync } from "fs";
+import type { ParsedFile, SyntaxNode, Tree } from "./types.js";
 
 const require = createRequire(import.meta.url);
 
+interface TSParser {
+  setLanguage(lang: unknown): void;
+  parse(source: string): Tree;
+}
+
 // Lazy-initialised — only required at first call so the module can be imported
 // in unit tests without needing a compiled native binding.
-let _parser = null;
+let _parser: TSParser | null = null;
 
-function getParser() {
+function getParser(): TSParser {
   if (_parser) return _parser;
   const Parser = require("tree-sitter");
   const STM = require("tree-sitter-satsuma");
-  _parser = new Parser();
+  _parser = new Parser() as TSParser;
   _parser.setLanguage(STM);
   return _parser;
 }
 
 /**
  * Parse a single .stm file.
- *
- * @param {string} filePath  Absolute path to a .stm file
- * @returns {{ filePath: string, src: string, tree: object, errorCount: number }}
  */
-export function parseFile(filePath) {
+export function parseFile(filePath: string): ParsedFile {
   const src = readFileSync(filePath, "utf8");
   const parser = getParser();
   const tree = parser.parse(src);
@@ -43,11 +46,8 @@ export function parseFile(filePath) {
 
 /**
  * Parse source text directly (useful for testing without file I/O).
- *
- * @param {string} src   Satsuma source text
- * @returns {{ src: string, tree: object, errorCount: number }}
  */
-export function parseSource(src) {
+export function parseSource(src: string): { src: string; tree: Tree; errorCount: number } {
   const parser = getParser();
   const tree = parser.parse(src);
   const errorCount = countErrors(tree.rootNode);
@@ -55,7 +55,7 @@ export function parseSource(src) {
 }
 
 /** Count ERROR nodes recursively in a tree node. */
-function countErrors(node) {
+function countErrors(node: SyntaxNode): number {
   let n = node.type === "ERROR" ? 1 : 0;
   for (const child of node.namedChildren) n += countErrors(child);
   return n;

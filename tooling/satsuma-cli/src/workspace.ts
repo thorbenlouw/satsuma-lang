@@ -1,5 +1,5 @@
 /**
- * workspace.js — Satsuma workspace file discovery
+ * workspace.ts — Satsuma workspace file discovery
  *
  * Finds .stm files in a directory tree. When given a single file, follows
  * import declarations to discover referenced files recursively.
@@ -10,18 +10,24 @@ import { readFileSync, statSync } from "fs";
 import { createRequire } from "module";
 import { join, dirname, extname, resolve } from "path";
 import { extractImports } from "./extract.js";
+import type { Tree } from "./types.js";
+
+interface TSParser {
+  setLanguage(lang: unknown): void;
+  parse(source: string): Tree;
+}
 
 /**
  * Lazy-initialised parser for import extraction. Defers native binding load
  * until actually needed (single-file mode with imports).
  */
-let _importParser = null;
-function getImportParser() {
+let _importParser: TSParser | null = null;
+function getImportParser(): TSParser {
   if (!_importParser) {
     const require = createRequire(import.meta.url);
     const Parser = require("tree-sitter");
     const STM = require("tree-sitter-satsuma");
-    _importParser = new Parser();
+    _importParser = new Parser() as TSParser;
     _importParser.setLanguage(STM);
   }
   return _importParser;
@@ -30,17 +36,14 @@ function getImportParser() {
 /**
  * Recursively find all .stm files under `dir`.
  * Returns an array of absolute paths, sorted lexicographically.
- *
- * @param {string} dir  Directory to search
- * @returns {Promise<string[]>}
  */
-export async function findStmFiles(dir) {
-  const results = [];
+export async function findStmFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
   await walk(resolve(dir), results);
   return results.sort();
 }
 
-async function walk(dir, acc) {
+async function walk(dir: string, acc: string[]): Promise<void> {
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });
@@ -64,17 +67,14 @@ async function walk(dir, acc) {
  * transitively imported file paths. Uses a visited set for cycle safety.
  *
  * Missing import targets are warned on stderr but do not halt discovery.
- *
- * @param {string} entryFile  Absolute path to the entry .stm file
- * @returns {string[]}  Sorted, deduplicated absolute paths (includes entryFile)
  */
-function followImports(entryFile) {
-  const visited = new Set();
+function followImports(entryFile: string): string[] {
+  const visited = new Set<string>();
   const queue = [entryFile];
   const parser = getImportParser();
 
   while (queue.length > 0) {
-    const filePath = queue.pop();
+    const filePath = queue.pop()!;
     if (visited.has(filePath)) continue;
     visited.add(filePath);
 
@@ -117,11 +117,8 @@ function followImports(entryFile) {
  *
  * When given a single file, follows import declarations to discover
  * referenced files recursively.
- *
- * @param {string} pathArg  File or directory path from CLI argument
- * @returns {Promise<string[]>}
  */
-export async function resolveInput(pathArg) {
+export async function resolveInput(pathArg: string): Promise<string[]> {
   const abs = resolve(pathArg);
   const s = await stat(abs);
   if (s.isDirectory()) {
