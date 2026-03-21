@@ -212,14 +212,22 @@ function matchBlockLabel(node: SyntaxNode, name: string): boolean {
 }
 
 function printDefault(_schemaName: string, fields: FieldWithTags[], opts: { withMeta?: boolean }): void {
-  const maxName = Math.max(...fields.map((f) => f.name.length));
-  const maxType = Math.max(...fields.map((f) => f.type.length));
+  printFieldTree(fields, opts, 1);
+}
+
+function printFieldTree(fields: FieldWithTags[], opts: { withMeta?: boolean }, indent: number): void {
+  const maxName = Math.max(...fields.map((f) => f.name.length), 4);
+  const maxType = Math.max(...fields.map((f) => f.type.length), 4);
+  const pad = "  ".repeat(indent);
 
   for (const f of fields) {
-    let line = `  ${f.name.padEnd(maxName)}  ${f.type.padEnd(maxType)}`;
+    let line = `${pad}${f.name.padEnd(maxName)}  ${f.type.padEnd(maxType)}`;
     if (opts.withMeta && f.tags) {
       line += `  (${f.tags.join(", ")})`;
     }
     console.log(line);
+    if (f.children && f.children.length > 0) {
+      printFieldTree(f.children, opts, indent + 1);
+    }
   }
 }

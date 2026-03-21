@@ -1,6 +1,6 @@
 ---
 id: sl-1ugo
-status: open
+status: closed
 deps: []
 links: [sl-jt7q]
 created: 2026-03-21T08:02:01Z
