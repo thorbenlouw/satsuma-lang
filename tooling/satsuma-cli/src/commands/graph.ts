@@ -291,7 +291,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
     edges: fieldEdges,
     schema_edges: schemaEdges,
     warnings: index.warnings.map((w) => ({ text: w.text, file: w.file, line: w.row + 1 })),
-    unresolved_nl: unresolvedNl,
+    unresolved_nl: includeNl ? unresolvedNl : [],
   };
 }
 

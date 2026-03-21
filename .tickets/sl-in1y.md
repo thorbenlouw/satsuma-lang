@@ -1,6 +1,6 @@
 ---
 id: sl-in1y
-status: open
+status: closed
 deps: []
 links: [sl-btgr]
 created: 2026-03-21T07:59:14Z
