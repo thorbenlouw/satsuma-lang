@@ -207,6 +207,23 @@ describe("satsuma schema", () => {
     assert.doesNotMatch(stdout, /"""/,  "triple-quoted note should be stripped in compact mode");
     assert.doesNotMatch(stdout, /No consistent format/, "note content should be stripped");
   });
+
+  it("text output includes all schema-level metadata (sl-pq65)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("schema", "commerce_order", XML);
+    assert.equal(code, 0);
+    assert.match(stdout, /format xml/, "should include format metadata");
+    assert.match(stdout, /namespace ord/, "should include namespace metadata");
+  });
+
+  it("--json includes metadata array for schemas with metadata (sl-pq65)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("schema", "commerce_order", "--json", XML);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.metadata), "should have metadata array");
+    assert.ok(data.metadata.some((m) => m.key === "format"), "should include format entry");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -932,6 +949,17 @@ describe("satsuma nl", () => {
     assert.ok(addressItems.length >= 1, "address block items should have parent 'address'");
     const contactItems = data.filter((d) => d.parent === "contacts");
     assert.ok(contactItems.length >= 1, "contacts block items should have parent 'contacts'");
+  });
+
+  it("unescapes escape sequences in NL strings (sl-j014)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "escape-test.stm");
+    const { stdout, code } = await run("nl", "all", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const note = data.find((d) => d.kind === "note");
+    assert.ok(note, "should have a note");
+    assert.match(note.text, /Contains "quoted" text/, "should unescape \\\" to \"");
+    assert.doesNotMatch(note.text, /\\"/, "should not contain escaped quotes");
   });
 });
 

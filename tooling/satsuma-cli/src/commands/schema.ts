@@ -16,6 +16,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
+import { extractMetadata } from "../meta-extract.js";
 import type { SyntaxNode, WorkspaceIndex, SchemaRecord } from "../types.js";
 
 export function register(program: Command): void {
@@ -148,6 +149,9 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
     return;
   }
 
+  const metaNode = schemaNode?.namedChildren.find((c) => c.type === "metadata_block");
+  const metadata = extractMetadata(metaNode);
+
   const out: Record<string, unknown> = {
     name: entry.name,
     ...(entry.namespace ? { namespace: entry.namespace } : {}),
@@ -156,9 +160,10 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
     fields: allFields,
   };
 
-  // --json --compact: omit note
+  // --json --compact: omit note and metadata
   if (!opts.compact) {
     out.note = entry.note;
+    if (metadata.length > 0) out.metadata = metadata;
   }
 
   // Enrich with nested structure if CST is available
@@ -179,10 +184,11 @@ function printFieldsOnly(entry: SchemaRecord): void {
 }
 
 function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compact: boolean | undefined): void {
-  const note = entry.note && !compact ? `  (note "${entry.note}")` : "";
+  const metaNode = schemaNode?.namedChildren.find((c) => c.type === "metadata_block");
+  const metaText = metaNode && !compact ? ` ${metaNode.text}` : "";
   const baseName = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
   const nameStr = entry.namespace ? `${entry.namespace}::${baseName}` : baseName;
-  console.log(`schema ${nameStr}${note} {`);
+  console.log(`schema ${nameStr}${metaText} {`);
 
   if (schemaNode) {
     const body = schemaNode.namedChildren.find((c) => c.type === "schema_body");

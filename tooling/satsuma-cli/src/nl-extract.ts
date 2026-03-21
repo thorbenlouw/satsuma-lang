@@ -26,7 +26,7 @@ export function extractNLContent(node: SyntaxNode, parent: string | null = null)
 
 function stripDelimiters(text: string, type: string): string {
   if (type === "multiline_string") return text.slice(3, -3).trim();
-  if (type === "nl_string") return text.slice(1, -1);
+  if (type === "nl_string") return text.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
   return text;
 }
 
