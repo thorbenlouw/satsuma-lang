@@ -110,6 +110,14 @@ describe("satsuma schema", () => {
     assert.equal(code, 1);
     assert.match(stderr, /did you mean/i);
   });
+
+  it("--json not-found error returns JSON instead of plain text", async () => {
+    const { stdout, code } = await run("schema", "no_such_schema_xyz", "--json", EXAMPLES);
+    assert.equal(code, 1);
+    const data = JSON.parse(stdout);
+    assert.ok(data.error, "should have error field");
+    assert.match(data.error, /not found/i);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -302,6 +310,13 @@ describe("satsuma where-used", () => {
     const { code, stderr } = await run("where-used", "no_such_thing_xyz", EXAMPLES);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
+  });
+
+  it("--json not-found error returns JSON instead of plain text", async () => {
+    const { stdout, code } = await run("where-used", "no_such_thing_xyz", "--json", EXAMPLES);
+    assert.equal(code, 1);
+    const data = JSON.parse(stdout);
+    assert.ok(data.error, "should have error field");
   });
 });
 
@@ -769,6 +784,13 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", FIXTURE);
     assert.equal(code, 0, `Expected clean validation but got:\n${stdout}`);
     assert.match(stdout, /no issues/i);
+  });
+
+  it("--errors-only keeps semantic errors (not just parse errors)", async () => {
+    const DUP = resolve(import.meta.dirname, "fixtures", "ns-duplicate.stm");
+    const { stdout, code } = await run("validate", "--errors-only", DUP);
+    assert.equal(code, 2, "duplicate-definition is severity error, should exit 2");
+    assert.match(stdout, /duplicate/i);
   });
 });
 
@@ -1306,6 +1328,14 @@ describe("satsuma nl-refs", () => {
   it("supports --unresolved filter with no results", async () => {
     const { code } = await run("nl-refs", "--unresolved", NS_MERGING);
     assert.equal(code, 1, "should exit 1 when no refs match filter");
+  });
+
+  it("--json outputs empty array when no refs found", async () => {
+    const { stdout, code } = await run("nl-refs", "--unresolved", "--json", NS_MERGING);
+    assert.equal(code, 1);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data), "should output JSON array");
+    assert.equal(data.length, 0);
   });
 
   it("extracts refs from db-to-db.stm with COUNTRY_CD backtick", async () => {

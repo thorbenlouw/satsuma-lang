@@ -55,14 +55,21 @@ export function register(program: Command): void {
       const resolvedName = schemaResolved?.key ?? fragmentResolved?.key ?? transformResolved?.key ?? name;
 
       if (!isSchema && !isFragment && !isTransform) {
-        console.error(`'${name}' not found as a schema, fragment, or transform.`);
+        const errorMsg = `'${name}' not found as a schema, fragment, or transform.`;
         const allNames = [
           ...index.schemas.keys(),
           ...index.fragments.keys(),
           ...index.transforms.keys(),
         ];
         const close = allNames.find((k) => k.toLowerCase() === name.toLowerCase());
-        if (close) console.error(`Did you mean '${close}'?`);
+        if (opts.json) {
+          const errorObj: Record<string, unknown> = { error: errorMsg };
+          if (close) errorObj.suggestion = close;
+          console.log(JSON.stringify(errorObj, null, 2));
+        } else {
+          console.error(errorMsg);
+          if (close) console.error(`Did you mean '${close}'?`);
+        }
         process.exit(1);
       }
 

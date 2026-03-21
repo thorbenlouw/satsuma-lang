@@ -49,9 +49,12 @@ export function register(program: Command): void {
       // Collect diagnostics
       const diagnostics: LintDiagnostic[] = [...parseErrors];
 
-      // Semantic warnings
-      if (!opts.errorsOnly) {
-        diagnostics.push(...collectSemanticWarnings(index));
+      // Semantic diagnostics (errors always included, warnings only when not --errors-only)
+      const semantics = collectSemanticWarnings(index);
+      if (opts.errorsOnly) {
+        diagnostics.push(...semantics.filter((d) => d.severity === "error"));
+      } else {
+        diagnostics.push(...semantics);
       }
 
       // Sort by file, then line
