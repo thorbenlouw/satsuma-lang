@@ -587,6 +587,20 @@ describe("satsuma fields", () => {
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
+
+  it("lists fields of a fragment (sl-3o9n)", async () => {
+    const { stdout, code } = await run("fields", "audit columns", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /created_at/);
+    assert.match(stdout, /updated_at/);
+  });
+
+  it("lists fields of a metric (sl-g4u2)", async () => {
+    const { stdout, code } = await run("fields", "order_revenue", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /gross_revenue/);
+    assert.match(stdout, /net_revenue/);
+  });
 });
 
 // ---------------------------------------------------------------------------
