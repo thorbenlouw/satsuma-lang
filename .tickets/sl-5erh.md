@@ -1,6 +1,6 @@
 ---
 id: sl-5erh
-status: open
+status: closed
 deps: []
 links: [sl-m02g]
 created: 2026-03-21T08:00:49Z

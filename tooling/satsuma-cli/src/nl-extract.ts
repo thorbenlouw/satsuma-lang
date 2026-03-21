@@ -37,14 +37,14 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         text: c.text.replace(/^\/\/!\s*/, ""),
         kind: "warning",
         parent,
-        line: c.startPosition.row,
+        line: c.startPosition.row + 1,
       });
     } else if (c.type === "question_comment") {
       items.push({
         text: c.text.replace(/^\/\/\?\s*/, ""),
         kind: "question",
         parent,
-        line: c.startPosition.row,
+        line: c.startPosition.row + 1,
       });
     } else if (c.type === "note_block" || c.type === "note_tag") {
       const strNode = c.namedChildren.find(
@@ -55,7 +55,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
           text: stripDelimiters(strNode.text, strNode.type),
           kind: "note",
           parent,
-          line: c.startPosition.row,
+          line: c.startPosition.row + 1,
         });
       }
     } else if (c.type === "pipe_step") {
@@ -68,7 +68,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
           text: stripDelimiters(inner.text, inner.type),
           kind: "transform",
           parent,
-          line: c.startPosition.row,
+          line: c.startPosition.row + 1,
         });
       }
     } else {
