@@ -44,7 +44,7 @@ interface FieldEdge {
   mapping: string;
   classification: string;
   file: string;
-  row: number;
+  line: number;
   transforms?: string[];
   nl_text?: string;
   derived?: boolean;
@@ -66,8 +66,8 @@ interface WorkspaceGraph {
   nodes: Array<Record<string, unknown>>;
   edges: FieldEdge[];
   schema_edges: SchemaEdge[];
-  warnings: Array<{ text: string; file: string; row: number }>;
-  unresolved_nl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }>;
+  warnings: Array<{ text: string; file: string; line: number }>;
+  unresolved_nl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }>;
 }
 
 export function register(program: Command): void {
@@ -150,7 +150,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       kind: "schema",
       namespace: schema.namespace ?? null,
       file: schema.file,
-      row: schema.row,
+      line: schema.row + 1,
       note: schema.note ?? null,
     };
     if (!schemaOnly) {
@@ -171,7 +171,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       kind: "mapping",
       namespace: mapping.namespace ?? null,
       file: mapping.file,
-      row: mapping.row,
+      line: mapping.row + 1,
       sources: mapping.sources,
       targets: mapping.targets,
     });
@@ -185,7 +185,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       kind: "metric",
       namespace: metric.namespace ?? null,
       file: metric.file,
-      row: metric.row,
+      line: metric.row + 1,
       sources: metric.sources,
       grain: metric.grain ?? null,
       slices: metric.slices ?? [],
@@ -200,7 +200,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       kind: "fragment",
       namespace: fragment.namespace ?? null,
       file: fragment.file,
-      row: fragment.row,
+      line: fragment.row + 1,
     });
   }
 
@@ -212,7 +212,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       kind: "transform",
       namespace: transform.namespace ?? null,
       file: transform.file,
-      row: transform.row,
+      line: transform.row + 1,
     });
   }
 
@@ -237,7 +237,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
 
   // Build field-level edges from arrow records
   let fieldEdges: FieldEdge[] = [];
-  const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> = [];
+  const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }> = [];
 
   // Always build field edges (needed for --schema-only aggregation too)
   const result = buildFieldEdges(index, includedNodeIds, nsFilter, includeNl);
@@ -259,7 +259,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
             mapping: edge.mapping,
             classification: edge.classification,
             file: edge.file,
-            row: edge.row,
+            line: edge.line,
           });
         }
       }
@@ -288,7 +288,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
     nodes,
     edges: fieldEdges,
     schema_edges: schemaEdges,
-    warnings: index.warnings.map((w) => ({ text: w.text, file: w.file, row: w.row })),
+    warnings: index.warnings.map((w) => ({ text: w.text, file: w.file, line: w.row + 1 })),
     unresolved_nl: unresolvedNl,
   };
 }
@@ -387,9 +387,9 @@ function qualifyField(field: string, schemas: string[]): string {
 /**
  * Build field-level edges from arrow records in the workspace index.
  */
-function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, nsFilter: string | null, includeNl: boolean): { edges: FieldEdge[]; unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> } {
+function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, nsFilter: string | null, includeNl: boolean): { edges: FieldEdge[]; unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }> } {
   const edges: FieldEdge[] = [];
-  const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; row: number }> = [];
+  const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }> = [];
 
   // Iterate all arrow records via the fieldArrows index
   // But fieldArrows duplicates records under multiple keys, so iterate raw arrow records instead.
@@ -430,7 +430,7 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
         mapping: mappingKey,
         classification: record.classification,
         file: record.file,
-        row: record.line,
+        line: record.line + 1,
       };
 
       if (record.classification === "structural" || record.classification === "mixed") {
@@ -465,7 +465,7 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
             arrow: `-> ${record.target ?? "?"}`,
             text: nlSteps.map((s) => s.text).join(" "),
             file: record.file,
-            row: record.line,
+            line: record.line + 1,
           });
         }
       }

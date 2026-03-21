@@ -91,7 +91,7 @@ describe("satsuma graph --json", () => {
     assert.ok(kinds.has("transform"), "should have transform nodes");
   });
 
-  it("schema nodes include id, kind, file, row, and fields", async () => {
+  it("schema nodes include id, kind, file, line, and fields", async () => {
     const { stdout } = await run("graph", "--json", EXAMPLES);
     const data = JSON.parse(stdout);
     const schema = data.nodes.find((n) => n.kind === "schema");
@@ -99,7 +99,8 @@ describe("satsuma graph --json", () => {
     assert.ok("id" in schema);
     assert.equal(schema.kind, "schema");
     assert.ok("file" in schema);
-    assert.ok("row" in schema);
+    assert.ok("line" in schema);
+    assert.ok(schema.line >= 1, "line should be 1-indexed");
     assert.ok(Array.isArray(schema.fields));
     if (schema.fields.length > 0) {
       assert.ok("name" in schema.fields[0]);
@@ -145,7 +146,8 @@ describe("satsuma graph --json", () => {
     assert.ok("mapping" in edge);
     assert.ok("classification" in edge);
     assert.ok("file" in edge);
-    assert.ok("row" in edge);
+    assert.ok("line" in edge);
+    assert.ok(edge.line >= 1, "line should be 1-indexed");
   });
 
   it("structural edges include transforms array", async () => {

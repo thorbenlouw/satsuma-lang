@@ -68,8 +68,8 @@ describe("namespace collision regressions", () => {
     const beta = data.find((m) => m.block === "beta::customer" && m.field === "beta_score");
     assert.ok(alpha);
     assert.ok(beta);
-    assert.equal(alpha.row, 3);
-    assert.equal(beta.row, 27);
+    assert.equal(alpha.line, 4);
+    assert.equal(beta.line, 28);
   });
 
   it("lineage follows namespace-qualified downstream edges", async () => {

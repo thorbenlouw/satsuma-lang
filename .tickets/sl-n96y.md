@@ -1,6 +1,6 @@
 ---
 id: sl-n96y
-status: open
+status: closed
 deps: []
 links: [sl-m02g]
 created: 2026-03-21T07:58:35Z

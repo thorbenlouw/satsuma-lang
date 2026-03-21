@@ -1,6 +1,6 @@
 ---
 id: sl-6mlu
-status: open
+status: closed
 deps: []
 links: [sl-m02g]
 created: 2026-03-21T08:02:22Z

@@ -28,7 +28,7 @@ interface Match {
   field: string;
   tag: string;
   file: string;
-  row: number;
+  line: number;
 }
 
 export function register(program: Command): void {
@@ -60,7 +60,7 @@ export function register(program: Command): void {
         console.log(JSON.stringify(matches, null, 2));
       } else if (opts.compact) {
         for (const m of matches) {
-          console.log(`${m.file}:${m.row + 1}  ${m.block}.${m.field}  [${m.tag}]`);
+          console.log(`${m.file}:${m.line}  ${m.block}.${m.field}  [${m.tag}]`);
         }
       } else {
         printDefault(matches);
@@ -79,7 +79,7 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
   const matches: Match[] = [];
   const fileMap = new Map<string, ParsedFile>(parsedFiles.map((p) => [p.filePath, p]));
 
-  const search = (blockType: string, blockName: string, blockEntry: { file: string; row: number }, bodyType: string) => {
+  const search = (blockType: string, blockName: string, blockEntry: { file: string; row: number; line?: number }, bodyType: string) => {
     if (scope !== "all" && scope !== blockType) return;
     const parsed = fileMap.get(blockEntry.file);
     if (!parsed) return;
@@ -101,7 +101,7 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
           field: "(schema)",
           tag: matched,
           file: blockEntry.file,
-          row: blockNode.startPosition.row,
+          line: blockNode.startPosition.row + 1,
         });
       }
     }
@@ -141,7 +141,7 @@ function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName:
             field: fname,
             tag: matched,
             file,
-            row: c.startPosition.row,
+            line: c.startPosition.row + 1,
           });
         }
       }
@@ -199,7 +199,7 @@ function printDefault(matches: Match[]): void {
   for (const { blockType, block, file, fields } of byBlock.values()) {
     console.log(`${blockType} ${block}  (${file})`);
     for (const f of fields) {
-      console.log(`  ${f.field.padEnd(24)}[${f.tag}]  line ${f.row + 1}`);
+      console.log(`  ${f.field.padEnd(24)}[${f.tag}]  line ${f.line}`);
     }
     console.log();
   }

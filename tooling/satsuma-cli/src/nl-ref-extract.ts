@@ -305,7 +305,7 @@ export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
         targetField: item.targetField,
         file: item.file,
         line: item.line,
-        column: item.column + offset,
+        column: item.column + 1 + offset,
       });
     }
   }

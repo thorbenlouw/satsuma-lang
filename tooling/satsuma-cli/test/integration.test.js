@@ -186,6 +186,18 @@ describe("satsuma find", () => {
     assert.ok(data[0].tag || data[0].field);
   });
 
+  it("--json uses 1-indexed line numbers", async () => {
+    const { stdout, code } = await run("find", "--tag", "pii", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0);
+    for (const m of data) {
+      assert.ok("line" in m, "JSON should use 'line' field");
+      assert.ok(!("row" in m), "JSON should not use 'row' field");
+      assert.ok(m.line >= 1, "line numbers should be 1-indexed");
+    }
+  });
+
   it("--compact prints one match per line", async () => {
     const { stdout, code } = await run("find", "--tag", "pii", "--compact", EXAMPLES);
     assert.equal(code, 0);
@@ -548,6 +560,18 @@ describe("satsuma nl", () => {
     assert.ok(data[0].text);
     assert.ok(data[0].kind);
     assert.ok(data[0].parent);
+  });
+
+  it("--json line numbers are 1-indexed", async () => {
+    const { stdout, code } = await run(
+      "nl", "customer migration", "--json", DB,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0);
+    for (const item of data) {
+      assert.ok(item.line >= 1, `line should be 1-indexed, got ${item.line}`);
+    }
   });
 
   it("extracts warnings from schema scope", async () => {
