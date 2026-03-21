@@ -132,6 +132,31 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
     }
   }
 
+  // Ref metadata references — find (ref schema.field) metadata pointing to this schema
+  if (isSchema) {
+    for (const [schemaName, schema] of index.schemas) {
+      for (const field of schema.fields) {
+        if (!field.metadata) continue;
+        for (const m of field.metadata) {
+          if (m.kind === "kv" && m.key === "ref") {
+            const refTarget = m.value.split(".")[0];
+            if (refTarget === name || refTarget === name.split("::").pop()) {
+              refs.push({ kind: "ref_metadata", name: `${schemaName}.${field.name}`, file: schema.file, row: schema.row });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Import references — find import declarations that reference this name
+  for (const { filePath, tree } of parsedFiles) {
+    const importRefs = findImportRefs(tree.rootNode, name);
+    for (const { path, row } of importRefs) {
+      refs.push({ kind: "import", name: path, file: filePath, row });
+    }
+  }
+
   // NL backtick references — find references inside NL transform bodies
   const nlRefs = resolveAllNLRefs(index);
   const seenNLRefs = new Set<string>();
@@ -252,9 +277,61 @@ function walkForTransformCalls(node: SyntaxNode, transformName: string, mappingN
       if (inner?.type === "token_call" && inner.text === transformName) {
         results.push({ mapping: mappingName, row: c.startPosition.row });
       }
+      // Check for fragment_spread inside pipe_step (transform spread: ...name)
+      if (inner?.type === "fragment_spread") {
+        const lbl = inner.namedChildren.find((x) => x.type === "spread_label");
+        const spreadName = getSpreadName(lbl);
+        if (spreadName === transformName) {
+          results.push({ mapping: mappingName, row: c.startPosition.row });
+        }
+      }
+    }
+    // Also check for fragment_spread directly in arrow bodies
+    if (c.type === "fragment_spread") {
+      const lbl = c.namedChildren.find((x) => x.type === "spread_label");
+      const spreadName = getSpreadName(lbl);
+      if (spreadName === transformName) {
+        results.push({ mapping: mappingName, row: c.startPosition.row });
+      }
     }
     walkForTransformCalls(c, transformName, mappingName, results);
   }
+}
+
+function getSpreadName(lbl: SyntaxNode | undefined): string {
+  if (!lbl) return "";
+  const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+  if (q) return q.text.slice(1, -1);
+  return lbl.namedChildren
+    .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+    .map((x) => x.text)
+    .join(" ");
+}
+
+/**
+ * Find import declarations that reference `name` in their import list.
+ */
+function findImportRefs(rootNode: SyntaxNode, name: string): Array<{ path: string; row: number }> {
+  const results: Array<{ path: string; row: number }> = [];
+  for (const c of rootNode.namedChildren) {
+    if (c.type !== "import_decl") continue;
+    // Check each import_name child
+    const importedNames: string[] = [];
+    for (const child of c.namedChildren) {
+      if (child.type === "import_name") {
+        // import_name wraps a quoted_name, identifier, or qualified_name
+        let text = child.text;
+        if (text.startsWith("'") && text.endsWith("'")) text = text.slice(1, -1);
+        importedNames.push(text);
+      }
+    }
+    if (importedNames.some((n) => n === name)) {
+      const pathNode = c.namedChildren.find((x) => x.type === "import_path");
+      const pathStr = pathNode?.namedChildren[0]?.text?.slice(1, -1) ?? pathNode?.text?.slice(1, -1) ?? "";
+      results.push({ path: pathStr, row: c.startPosition.row });
+    }
+  }
+  return results;
 }
 
 // ── Formatter ─────────────────────────────────────────────────────────────────
@@ -275,6 +352,8 @@ function printDefault(name: string, refs: Ref[]): void {
     fragment_spread: "Spread into schemas/fragments",
     transform_call: "Invoked in mapping transforms",
     nl_ref: "Referenced in NL transform bodies",
+    ref_metadata: "Referenced via (ref) metadata",
+    import: "Imported in",
   };
 
   for (const [kind, kindRefs] of byKind) {
