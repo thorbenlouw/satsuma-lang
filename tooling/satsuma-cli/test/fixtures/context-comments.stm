@@ -1,0 +1,12 @@
+schema crm_customers {
+  id INT
+  name VARCHAR
+  //? Should we validate phone numbers too?
+  phone VARCHAR
+}
+
+schema raw_orders {
+  order_id INT
+  //! Currency conversion not yet implemented
+  amount DECIMAL
+}
