@@ -191,7 +191,7 @@ function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compac
         if (compact) {
           // Strip comments and inline note text in compact mode
           if (text.trimStart().startsWith("//")) continue;
-          console.log(text.replace(/\s*\(note\s+"[^"]*"\)/, "").replace(/\s*\(note\s+"""[^"]*"""\)/, ""));
+          console.log(text.replace(/\s*\(\s*note\s+"""[\s\S]*?"""\s*\)/, "").replace(/\s*\(note\s+"[^"]*"\)/, ""));
         } else {
           console.log(text);
         }

@@ -113,10 +113,23 @@ function formatMeta(entries: MetaEntry[]): string {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
+function extractNoteText(node: SyntaxNode | undefined): string | null {
+  if (!node) return null;
+  const strNode = node.namedChildren.find(
+    (x) => x.type === "nl_string" || x.type === "multiline_string",
+  );
+  if (!strNode) return null;
+  if (strNode.type === "multiline_string") return strNode.text.slice(3, -3).trim();
+  return strNode.text.slice(1, -1);
+}
+
 function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
   const meta = metricNode
     ? extractMetaEntries(metricNode.namedChildren.find((c) => c.type === "metadata_block"))
     : [];
+  const body = metricNode?.namedChildren.find((c) => c.type === "metric_body");
+  const noteBlock = body?.namedChildren.find((c) => c.type === "note_block");
+  const note = extractNoteText(noteBlock);
   console.log(
     JSON.stringify(
       {
@@ -126,6 +139,7 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
         sources: entry.sources,
         grain: entry.grain,
         fields: entry.fields,
+        ...(note != null ? { note } : {}),
         metadata: meta,
         file: entry.file,
         row: entry.row,
