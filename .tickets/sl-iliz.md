@@ -1,6 +1,6 @@
 ---
 id: sl-iliz
-status: open
+status: closed
 deps: []
 links: [sl-6hot]
 created: 2026-03-21T07:58:02Z

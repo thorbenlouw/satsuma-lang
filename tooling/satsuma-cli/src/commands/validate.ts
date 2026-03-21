@@ -9,10 +9,13 @@
  *   --quiet         exit code only (0=clean, 2=errors)
  */
 
+import { dirname, resolve } from "node:path";
+import { statSync } from "node:fs";
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
+import { extractImports } from "../extract.js";
 import { collectParseErrors, collectSemanticWarnings } from "../validate.js";
 import type { LintDiagnostic } from "../types.js";
 
@@ -41,6 +44,27 @@ export function register(program: Command): void {
         const parsed = parseFile(f);
         // Collect parse errors and extract data while tree is still valid
         parseErrors.push(...collectParseErrors(parsed.tree.rootNode, parsed.filePath));
+
+        // Check for missing import files
+        const imports = extractImports(parsed.tree.rootNode);
+        for (const imp of imports) {
+          if (!imp.path) continue;
+          const resolved = resolve(dirname(parsed.filePath), imp.path);
+          try {
+            statSync(resolved);
+          } catch {
+            parseErrors.push({
+              file: parsed.filePath,
+              line: imp.row + 1,
+              column: 1,
+              severity: "warning",
+              rule: "missing-import",
+              message: `Import target "${imp.path}" not found`,
+              fixable: false,
+            });
+          }
+        }
+
         extracted.push(extractFileData(parsed));
       }
 
