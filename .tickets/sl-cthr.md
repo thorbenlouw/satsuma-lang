@@ -1,6 +1,6 @@
 ---
 id: sl-cthr
-status: open
+status: closed
 deps: []
 links: [sl-0ycs]
 created: 2026-03-21T07:58:39Z

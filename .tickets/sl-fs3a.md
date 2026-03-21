@@ -1,6 +1,6 @@
 ---
 id: sl-fs3a
-status: open
+status: closed
 deps: []
 links: [sl-0ycs]
 created: 2026-03-21T07:59:24Z

@@ -111,6 +111,8 @@ export function register(program: Command): void {
       } else {
         printDefault(graph);
       }
+
+      if (index.totalErrors > 0) process.exit(2);
     });
 }
 

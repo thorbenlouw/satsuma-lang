@@ -335,7 +335,7 @@ describe("satsuma graph (empty workspace)", () => {
 describe("satsuma graph (parse errors)", () => {
   it("produces partial graph with error count for files with parse errors", async () => {
     const { stdout, code } = await run("graph", "--json", resolve(FIXTURES, "parse-error.stm"));
-    assert.equal(code, 0);
+    assert.equal(code, 2, "should exit with code 2 for parse errors");
     const data = JSON.parse(stdout);
     assert.ok(data.stats.errors > 0, "should report parse errors");
   });

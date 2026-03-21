@@ -1,6 +1,6 @@
 ---
 id: sl-0ycs
-status: open
+status: closed
 deps: []
 links: [sl-cthr, sl-u0ev, sl-fs3a, sl-ht9n, sl-ivel, sl-la5z, sl-fzfx]
 created: 2026-03-21T21:52:59Z

@@ -273,6 +273,12 @@ describe("satsuma lineage", () => {
       assert.match(stdout, /legacy_sqlserver|customer migration/i);
     }
   });
+
+  it("errors when both --from and --to are specified", async () => {
+    const { code, stderr } = await run("lineage", "--from", "legacy_sqlserver", "--to", "postgres_db", EXAMPLES);
+    assert.equal(code, 1);
+    assert.match(stderr, /cannot specify both/i);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -324,6 +330,11 @@ describe("satsuma warnings", () => {
     assert.equal(code, 0);
     assert.ok(stdout.length > 0);
   });
+
+  it("exits 1 when no warnings found", async () => {
+    const { code } = await run("warnings", resolve(import.meta.dirname, "fixtures", "lint-clean.stm"));
+    assert.equal(code, 1, "should exit 1 when no warnings found");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -356,7 +367,7 @@ describe("satsuma context", () => {
 
   it("handles query with no matches gracefully", async () => {
     const { stdout, code } = await run("context", "zzz_no_match_xyz", EXAMPLES);
-    assert.equal(code, 0);
+    assert.equal(code, 1, "should exit 1 when no results found");
     assert.match(stdout, /no relevant/i);
   });
 });
@@ -1294,7 +1305,7 @@ describe("satsuma nl-refs", () => {
 
   it("supports --unresolved filter with no results", async () => {
     const { code } = await run("nl-refs", "--unresolved", NS_MERGING);
-    assert.equal(code, 0);
+    assert.equal(code, 1, "should exit 1 when no refs match filter");
   });
 
   it("extracts refs from db-to-db.stm with COUNTRY_CD backtick", async () => {
