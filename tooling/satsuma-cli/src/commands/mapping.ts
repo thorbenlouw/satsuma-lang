@@ -66,10 +66,13 @@ export function register(program: Command): void {
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
 
-/** Extract text from a path node (_path_expr variants). */
+/** Extract text from a path node (_path_expr variants), stripping backticks. */
 function pathText(pathNode: SyntaxNode | undefined): string {
   if (!pathNode) return "?";
-  // The node's text is the full path text including :: separators etc.
+  const inner = pathNode.namedChildren[0];
+  if (inner?.type === "backtick_path" || inner?.type === "backtick_name") {
+    return inner.text.slice(1, -1);
+  }
   return pathNode.text;
 }
 

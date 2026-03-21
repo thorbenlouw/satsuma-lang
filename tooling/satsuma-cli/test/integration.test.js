@@ -243,6 +243,12 @@ describe("satsuma find", () => {
     }
   });
 
+  it("--in with invalid scope errors", async () => {
+    const { code, stderr } = await run("find", "--tag", "pii", "--in", "invalid", EXAMPLES);
+    assert.equal(code, 1);
+    assert.match(stderr, /invalid scope/i);
+  });
+
   it("finds schema-level metadata tags", async () => {
     const { stdout, code } = await run("find", "--tag", "format", "--json", EXAMPLES);
     assert.equal(code, 0);
