@@ -329,6 +329,34 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
     }
   }
 
+  // Check transform spread references in arrows
+  if (index.fieldArrows) {
+    const seenForSpreads = new Set<ArrowRecord>();
+    for (const [, arrows] of index.fieldArrows) {
+      for (const arrow of arrows) {
+        if (seenForSpreads.has(arrow)) continue;
+        seenForSpreads.add(arrow);
+        for (const step of arrow.steps ?? []) {
+          if (step.type === "fragment_spread") {
+            const spreadName = step.text.replace(/^\.\.\./, "");
+            const currentNs = arrow.namespace ?? null;
+            if (!resolveEntityRef(spreadName, currentNs, index.transforms)) {
+              diagnostics.push({
+                file: arrow.file,
+                line: arrow.line + 1,
+                column: 1,
+                severity: "warning",
+                rule: "undefined-ref",
+                message: `Arrow in mapping '${arrow.mapping}' spreads undefined transform '${spreadName}'`,
+                fixable: false,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
   return diagnostics;
 }
 

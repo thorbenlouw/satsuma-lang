@@ -338,6 +338,21 @@ describe("satsuma mapping", () => {
       assert.ok(a.transform.length > 0);
     }
   });
+
+  it("--json includes classification field on arrows (sl-shwl)", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    for (const a of data.arrows) {
+      assert.ok(
+        ["structural", "nl", "mixed", "none"].includes(a.classification),
+        `arrow ${a.src} -> ${a.tgt} should have classification, got: ${a.classification}`,
+      );
+    }
+    // Should have at least one structural and one non-none classification
+    assert.ok(data.arrows.some((a) => a.classification === "structural"), "expected at least one structural arrow");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1060,6 +1075,16 @@ describe("satsuma validate", () => {
     assert.equal(code, 0, "warnings-only should exit 0");
     assert.match(stdout, /undefined-ref/);
     assert.match(stdout, /nonexistent_fragment/);
+  });
+
+  it("catches undefined transform spread references in arrows (sl-1s81)", async () => {
+    const BAD = resolve(import.meta.dirname, "fixtures", "transform-spread.stm");
+    const { stdout, code } = await run("validate", BAD);
+    assert.equal(code, 0, "warnings-only should exit 0");
+    assert.match(stdout, /undefined-ref/);
+    assert.match(stdout, /nonexistent_xform/);
+    assert.doesNotMatch(stdout, /cleanup/, "known transform 'cleanup' should not be flagged");
+    assert.match(stdout, /1 warning/);
   });
 });
 
