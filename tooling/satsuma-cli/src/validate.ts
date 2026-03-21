@@ -104,6 +104,24 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
 
   const allDefinitions = new Map([...index.schemas, ...index.fragments]);
 
+  // Check fragment spread references
+  for (const [name, schema] of index.schemas) {
+    const currentNs = schema.namespace ?? null;
+    for (const spread of (schema.spreads ?? [])) {
+      if (!resolveEntityRef(spread, currentNs, index.fragments)) {
+        diagnostics.push({
+          file: schema.file,
+          line: schema.row + 1,
+          column: 1,
+          severity: "warning",
+          rule: "undefined-ref",
+          message: `Schema '${name}' spreads undefined fragment '${spread}'`,
+          fixable: false,
+        });
+      }
+    }
+  }
+
   // Check mapping source/target references
   for (const [name, mapping] of index.mappings) {
     const currentNs = mapping.namespace ?? null;
