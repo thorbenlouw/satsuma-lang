@@ -159,6 +159,8 @@ function printDefault(entry: MetricRecord, metricNode: SyntaxNode | null, compac
         console.log(`  ${fname.padEnd(20)}${typeNode?.text ?? ""}${metaDeclText}`);
       } else if (c.type === "note_block" && !compact) {
         console.log(`  note { ... }`);
+      } else if ((c.type === "comment" || c.type === "warning_comment" || c.type === "question_comment") && !compact) {
+        console.log(`  ${c.text}`);
       }
     }
   } else {

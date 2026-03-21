@@ -129,6 +129,8 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
         }
       }
       lines.push({ indent, text: `${pad}...${sname}` });
+    } else if (c.type === "comment" || c.type === "warning_comment" || c.type === "question_comment") {
+      lines.push({ indent, text: `${pad}${c.text}` });
     }
   }
   return lines;
@@ -176,7 +178,8 @@ function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compac
     if (body) {
       for (const { text } of collectFields(body, 1)) {
         if (compact) {
-          // Strip inline note text: remove (note "...") from metadata
+          // Strip comments and inline note text in compact mode
+          if (text.trimStart().startsWith("//")) continue;
           console.log(text.replace(/\s*\(note\s+"[^"]*"\)/, "").replace(/\s*\(note\s+"""[^"]*"""\)/, ""));
         } else {
           console.log(text);
