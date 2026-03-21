@@ -47,12 +47,13 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         line: c.startPosition.row + 1,
       });
     } else if (c.type === "note_block" || c.type === "note_tag") {
-      const strNode = c.namedChildren.find(
+      const strNodes = c.namedChildren.filter(
         (x) => x.type === "nl_string" || x.type === "multiline_string",
       );
-      if (strNode) {
+      if (strNodes.length > 0) {
+        const text = strNodes.map((s) => stripDelimiters(s.text, s.type)).join("");
         items.push({
-          text: stripDelimiters(strNode.text, strNode.type),
+          text,
           kind: "note",
           parent,
           line: c.startPosition.row + 1,

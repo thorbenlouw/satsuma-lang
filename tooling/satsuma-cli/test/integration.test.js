@@ -913,6 +913,16 @@ describe("satsuma nl", () => {
     assert.ok(transformItems.length >= 2, "should have transform-parented items");
   });
 
+  it("concatenated note strings are fully extracted (sl-gu24)", async () => {
+    const { stdout, code } = await run("nl", "cart_abandonment_rate", resolve(EXAMPLES, "metrics.stm"), "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const note = data.find((d) => d.kind === "note");
+    assert.ok(note, "should have a note item");
+    assert.match(note.text, /checkout/i, "should include first string");
+    assert.match(note.text, /divided by/i, "should include second concatenated string");
+  });
+
   it("record/list block notes use block name as parent (sl-3nrg)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "nl-parent-test.stm");
     const { stdout, code } = await run("nl", "all", F, "--json");
