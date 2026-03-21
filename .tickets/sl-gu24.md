@@ -2,7 +2,7 @@
 id: sl-gu24
 status: open
 deps: []
-links: []
+links: [sl-wvn8]
 created: 2026-03-21T08:02:08Z
 type: bug
 priority: 2

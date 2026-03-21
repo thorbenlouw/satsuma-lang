@@ -2,7 +2,7 @@
 id: sl-fzfx
 status: open
 deps: []
-links: []
+links: [sl-0ycs]
 created: 2026-03-21T07:58:41Z
 type: bug
 priority: 2

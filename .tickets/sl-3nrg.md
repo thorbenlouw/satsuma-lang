@@ -2,7 +2,7 @@
 id: sl-3nrg
 status: open
 deps: []
-links: []
+links: [sl-jt7q]
 created: 2026-03-21T08:03:28Z
 type: bug
 priority: 2

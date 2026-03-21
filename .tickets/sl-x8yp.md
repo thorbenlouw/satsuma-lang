@@ -2,7 +2,7 @@
 id: sl-x8yp
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T08:04:35Z
 type: bug
 priority: 2

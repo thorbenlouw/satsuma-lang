@@ -2,7 +2,7 @@
 id: sl-8zij
 status: open
 deps: []
-links: []
+links: [sl-eoco]
 created: 2026-03-21T07:59:04Z
 type: bug
 priority: 2

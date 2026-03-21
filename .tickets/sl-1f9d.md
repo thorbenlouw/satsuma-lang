@@ -2,7 +2,7 @@
 id: sl-1f9d
 status: open
 deps: []
-links: []
+links: [sl-xh3b]
 created: 2026-03-21T07:59:46Z
 type: bug
 priority: 2

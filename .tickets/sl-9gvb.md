@@ -1,8 +1,8 @@
 ---
 id: sl-9gvb
 status: open
-deps: []
-links: []
+deps: [sl-wjb9]
+links: [sl-z4ya]
 created: 2026-03-21T07:59:43Z
 type: bug
 priority: 2

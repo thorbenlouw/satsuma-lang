@@ -2,7 +2,7 @@
 id: sl-9xiz
 status: open
 deps: []
-links: []
+links: [sl-btgr]
 created: 2026-03-21T08:00:09Z
 type: bug
 priority: 2

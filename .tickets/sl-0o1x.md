@@ -2,7 +2,7 @@
 id: sl-0o1x
 status: open
 deps: []
-links: []
+links: [sl-niix]
 created: 2026-03-21T08:00:05Z
 type: bug
 priority: 2

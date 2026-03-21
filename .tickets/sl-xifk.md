@@ -2,7 +2,7 @@
 id: sl-xifk
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T07:58:32Z
 type: bug
 priority: 2

@@ -2,7 +2,7 @@
 id: sl-n96y
 status: open
 deps: []
-links: []
+links: [sl-m02g]
 created: 2026-03-21T07:58:35Z
 type: bug
 priority: 2

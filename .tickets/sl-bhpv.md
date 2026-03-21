@@ -2,7 +2,7 @@
 id: sl-bhpv
 status: open
 deps: []
-links: []
+links: [sl-7i7j]
 created: 2026-03-21T07:58:54Z
 type: bug
 priority: 2

@@ -2,7 +2,7 @@
 id: sl-se2f
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T07:58:15Z
 type: bug
 priority: 2

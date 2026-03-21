@@ -2,7 +2,7 @@
 id: sl-3url
 status: open
 deps: []
-links: []
+links: [sl-6hot]
 created: 2026-03-21T08:01:31Z
 type: bug
 priority: 2

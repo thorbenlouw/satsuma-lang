@@ -2,7 +2,7 @@
 id: sl-g4u2
 status: open
 deps: []
-links: []
+links: [sl-xh3b]
 created: 2026-03-21T08:02:16Z
 type: bug
 priority: 2

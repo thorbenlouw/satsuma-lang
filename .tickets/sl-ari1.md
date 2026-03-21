@@ -2,7 +2,7 @@
 id: sl-ari1
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T08:00:18Z
 type: bug
 priority: 2

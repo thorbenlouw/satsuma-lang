@@ -1,8 +1,8 @@
 ---
 id: sl-lmcp
 status: open
-deps: []
-links: []
+deps: [sl-iliz]
+links: [sl-6hot]
 created: 2026-03-21T07:58:47Z
 type: bug
 priority: 2

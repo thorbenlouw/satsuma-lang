@@ -2,7 +2,7 @@
 id: sl-n11t
 status: open
 deps: []
-links: []
+links: [sl-6hot]
 created: 2026-03-21T08:03:18Z
 type: bug
 priority: 2

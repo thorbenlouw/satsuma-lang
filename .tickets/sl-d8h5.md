@@ -2,7 +2,7 @@
 id: sl-d8h5
 status: open
 deps: []
-links: []
+links: [sl-xh3b]
 created: 2026-03-21T08:03:27Z
 type: bug
 priority: 2

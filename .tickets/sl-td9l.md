@@ -2,7 +2,7 @@
 id: sl-td9l
 status: open
 deps: []
-links: []
+links: [sl-niix]
 created: 2026-03-21T08:02:25Z
 type: bug
 priority: 2

@@ -2,7 +2,7 @@
 id: sl-rks7
 status: open
 deps: []
-links: []
+links: [sl-x11k]
 created: 2026-03-21T08:01:03Z
 type: bug
 priority: 2

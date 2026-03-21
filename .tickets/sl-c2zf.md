@@ -2,7 +2,7 @@
 id: sl-c2zf
 status: open
 deps: []
-links: []
+links: [sl-4m85]
 created: 2026-03-21T07:59:35Z
 type: bug
 priority: 2

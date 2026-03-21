@@ -1,8 +1,8 @@
 ---
 id: sl-bfue
 status: open
-deps: []
-links: []
+deps: [sl-giss]
+links: [sl-jt7q]
 created: 2026-03-21T08:00:47Z
 type: bug
 priority: 2

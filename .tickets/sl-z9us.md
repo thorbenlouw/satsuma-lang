@@ -2,7 +2,7 @@
 id: sl-z9us
 status: open
 deps: []
-links: []
+links: [sl-42ev]
 created: 2026-03-21T08:01:37Z
 type: bug
 priority: 2

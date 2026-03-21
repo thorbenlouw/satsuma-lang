@@ -2,7 +2,7 @@
 id: sl-5pa2
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T07:59:59Z
 type: bug
 priority: 2

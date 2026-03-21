@@ -2,7 +2,7 @@
 id: sl-ij5p
 status: open
 deps: []
-links: []
+links: [sl-z4ya]
 created: 2026-03-21T08:00:02Z
 type: bug
 priority: 2

@@ -1,8 +1,8 @@
 ---
 id: sl-6gta
 status: open
-deps: []
-links: []
+deps: [sl-ck20]
+links: [sl-cyen]
 created: 2026-03-21T08:00:47Z
 type: bug
 priority: 2

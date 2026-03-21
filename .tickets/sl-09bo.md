@@ -2,7 +2,7 @@
 id: sl-09bo
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T08:00:03Z
 type: bug
 priority: 2
