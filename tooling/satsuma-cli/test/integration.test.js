@@ -71,6 +71,14 @@ describe("satsuma summary", () => {
     const { code } = await run("summary", "/nonexistent/path");
     assert.notEqual(code, 0);
   });
+
+  it("uses correct pluralization for singular counts", async () => {
+    const { stdout, code } = await run("summary", EXAMPLES);
+    assert.equal(code, 0);
+    // Should not have "[1 fields]" or "[1 arrows]"
+    assert.ok(!stdout.includes("[1 fields]"), "should use singular 'field' for count 1");
+    assert.ok(!stdout.includes("[1 arrows]"), "should use singular 'arrow' for count 1");
+  });
 });
 
 // ---------------------------------------------------------------------------
