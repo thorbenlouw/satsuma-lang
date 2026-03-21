@@ -193,6 +193,15 @@ function findField(fields: FieldDecl[], fieldName: string): FieldDecl | null {
   return null;
 }
 
+function getBlockLabelName(block: SyntaxNode): string | null {
+  const label = block.namedChildren.find((c) => c.type === "block_label");
+  if (!label) return null;
+  const inner = label.namedChildren[0];
+  if (!inner) return null;
+  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
+  return inner.text;
+}
+
 function findFieldDecls(bodyNode: SyntaxNode, fieldName: string, acc: SyntaxNode[] = []): SyntaxNode[] {
   for (const child of bodyNode.namedChildren) {
     if (child.type === "field_decl" && getFieldDeclName(child) === fieldName) {
@@ -200,6 +209,10 @@ function findFieldDecls(bodyNode: SyntaxNode, fieldName: string, acc: SyntaxNode
       continue;
     }
     if (child.type === "record_block" || child.type === "list_block") {
+      if (getBlockLabelName(child) === fieldName) {
+        acc.push(child);
+        continue;
+      }
       const nestedBody = child.namedChildren.find((c) => c.type === "schema_body");
       if (nestedBody) findFieldDecls(nestedBody, fieldName, acc);
     }

@@ -521,6 +521,20 @@ describe("satsuma find", () => {
     const schemaLevel = data.filter((m) => m.field === "(schema)");
     assert.ok(schemaLevel.length > 0, "expected schema-level format matches");
   });
+
+  it("--tag note finds fields with note metadata (sl-amyh)", async () => {
+    const { stdout, code } = await run("find", "--tag", "note", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /note/);
+  });
+
+  it("--tag note --json returns note matches (sl-amyh)", async () => {
+    const { stdout, code } = await run("find", "--tag", "note", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0, "should find fields with note metadata");
+    assert.ok(data.some((m) => m.tag === "note"), "tag should be 'note'");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1086,6 +1100,21 @@ describe("satsuma meta", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "measure"));
+  });
+
+  it("extracts metadata from record/list blocks (sl-giss)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("meta", "commerce_order.Order", XML);
+    assert.equal(code, 0);
+    assert.match(stdout, /xpath/, "record block should show xpath metadata");
+  });
+
+  it("extracts metadata from nested list blocks (sl-giss)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("meta", "commerce_order.Discounts", "--json", XML);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "xpath"), "list block should have xpath metadata");
   });
 });
 
