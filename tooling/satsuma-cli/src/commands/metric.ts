@@ -90,6 +90,11 @@ function extractMetaEntries(metaNode: SyntaxNode | undefined): MetaEntry[] {
       }
     } else if (c.type === "tag_token") {
       entries.push({ key: c.text, value: null });
+    } else if (c.type === "slice_body") {
+      const sliceNames = c.namedChildren
+        .filter((x) => x.type === "identifier")
+        .map((x) => x.text);
+      entries.push({ key: "slice", value: `{${sliceNames.join(", ")}}` });
     }
   }
   return entries;
@@ -138,6 +143,7 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
         displayName: entry.displayName,
         sources: entry.sources,
         grain: entry.grain,
+        ...(entry.slices.length > 0 ? { slices: entry.slices } : {}),
         fields: entry.fields,
         ...(note != null ? { note } : {}),
         metadata: meta,

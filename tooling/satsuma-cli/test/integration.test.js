@@ -257,6 +257,22 @@ describe("satsuma metric", () => {
     assert.ok(typeof data.note === "string", "note should be a string");
     assert.match(data.note, /subscription/i, "note should contain subscription text");
   });
+
+  it("--json includes slices for metrics with slice metadata (sl-se2f)", async () => {
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.slices), "slices should be an array");
+    assert.ok(data.slices.length > 0, "should have slice entries");
+    assert.ok(data.slices.includes("customer_segment"), "should include customer_segment slice");
+  });
+
+  it("text output includes slice in metadata (sl-se2f)", async () => {
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /slice/, "should show slice metadata");
+    assert.match(stdout, /customer_segment/, "should show slice dimension");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1035,6 +1051,18 @@ describe("satsuma match-fields", () => {
     const data = JSON.parse(stdout);
     assert.deepStrictEqual(data.matched, [], "matched should be empty with --unmatched-only");
     assert.ok(data.sourceOnly.length > 0 || data.targetOnly.length > 0, "should have some unmatched");
+  });
+
+  it("normalizes spaces in backtick-quoted field names (sl-u2qa)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "backtick-match.stm");
+    const { stdout, code } = await run(
+      "match-fields", "--source", "backtick_src", "--target", "backtick_tgt",
+      "--json", F,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const spaceMatch = data.matched.find((m) => m.source.includes("Spaces") || m.target.includes("spaces"));
+    assert.ok(spaceMatch, "backtick field with spaces should match snake_case equivalent");
   });
 
   it("exits 1 for unknown schema", async () => {

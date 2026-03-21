@@ -1,0 +1,9 @@
+schema backtick_src {
+  `Field With Spaces` VARCHAR
+  normal_field INT
+}
+
+schema backtick_tgt {
+  field_with_spaces VARCHAR
+  normal_field INT
+}
