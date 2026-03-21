@@ -140,7 +140,8 @@ function printDefault(entry: MetricRecord, metricNode: SyntaxNode | null, compac
   const meta = extractMetaEntries(metaNode);
   const display = entry.displayName ? ` "${entry.displayName}"` : "";
   const metaStr = formatMeta(meta);
-  console.log(`metric ${entry.name}${display}${metaStr} {`);
+  const nameStr = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
+  console.log(`metric ${nameStr}${display}${metaStr} {`);
 
   // Fields from metric_body
   const body = metricNode?.namedChildren.find((c) => c.type === "metric_body");

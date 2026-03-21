@@ -1,6 +1,6 @@
 ---
 id: sl-c2zf
-status: open
+status: closed
 deps: []
 links: [sl-4m85]
 created: 2026-03-21T07:59:35Z

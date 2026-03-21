@@ -101,8 +101,7 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
       const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
       const inner = nameNode?.namedChildren[0];
-      let fname = inner?.text ?? "";
-      if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
+      const fname = inner?.text ?? "";
       const metaText = meta ? ` ${meta.text}` : "";
       lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typeNode?.text ?? ""}${metaText}` });
     } else if (c.type === "record_block" || c.type === "list_block") {
@@ -167,7 +166,8 @@ function printFieldsOnly(entry: SchemaRecord): void {
 
 function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compact: boolean | undefined): void {
   const note = entry.note && !compact ? `  (note "${entry.note}")` : "";
-  console.log(`schema ${entry.name}${note} {`);
+  const nameStr = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
+  console.log(`schema ${nameStr}${note} {`);
 
   if (schemaNode) {
     const body = schemaNode.namedChildren.find((c) => c.type === "schema_body");
