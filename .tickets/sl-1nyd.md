@@ -1,6 +1,6 @@
 ---
 id: sl-1nyd
-status: open
+status: closed
 deps: []
 links: [sl-eoco]
 created: 2026-03-21T07:59:13Z
