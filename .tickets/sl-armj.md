@@ -1,6 +1,6 @@
 ---
 id: sl-armj
-status: open
+status: closed
 deps: [sl-cdvp]
 links: [sl-rbvk, sl-pq65, sl-s8xn, sl-5pa2, sl-shwl, sl-ari1, sl-0x23, sl-x8yp, sl-09bo, sl-i1b8, sl-xifk, sl-se2f, sl-tkex]
 created: 2026-03-21T21:53:02Z
