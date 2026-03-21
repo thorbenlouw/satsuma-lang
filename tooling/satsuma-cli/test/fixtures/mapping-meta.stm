@@ -16,5 +16,5 @@ mapping 'metadata test' (
   source { src_table }
   target { tgt_table }
   id -> id
-  val -> result
+  val -> result (note "Arrow-level note", required)
 }

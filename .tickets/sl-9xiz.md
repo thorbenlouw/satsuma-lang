@@ -1,6 +1,6 @@
 ---
 id: sl-9xiz
-status: open
+status: closed
 deps: []
 links: [sl-btgr]
 created: 2026-03-21T08:00:09Z

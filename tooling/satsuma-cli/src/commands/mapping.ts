@@ -82,6 +82,7 @@ interface ArrowInfo {
   src: string | null;
   tgt: string;
   hasBody: boolean;
+  metaNode: SyntaxNode | undefined;
   node: SyntaxNode;
 }
 
@@ -94,15 +95,18 @@ function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
       const src = c.namedChildren.find((x) => x.type === "src_path");
       const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
       const hasBody = c.namedChildren.some((x) => x.type === "pipe_chain");
-      arrows.push({ kind: "map", src: pathText(src), tgt: pathText(tgt), hasBody, node: c });
+      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      arrows.push({ kind: "map", src: pathText(src), tgt: pathText(tgt), hasBody, metaNode: meta, node: c });
     } else if (c.type === "computed_arrow") {
       const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
       const hasBody = c.namedChildren.some((x) => x.type === "pipe_chain");
-      arrows.push({ kind: "computed", src: null, tgt: pathText(tgt), hasBody, node: c });
+      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      arrows.push({ kind: "computed", src: null, tgt: pathText(tgt), hasBody, metaNode: meta, node: c });
     } else if (c.type === "nested_arrow") {
       const src = c.namedChildren.find((x) => x.type === "src_path");
       const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-      arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true, node: c });
+      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true, metaNode: meta, node: c });
     }
   }
   return arrows;
@@ -114,12 +118,12 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
   const metadata = extractMetadata(metaNode);
-  const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody }) => ({
-    kind,
-    src,
-    tgt,
-    hasTransform: hasBody,
-  }));
+  const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody, metaNode: arrowMeta }) => {
+    const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform: hasBody };
+    const arrowMetadata = extractMetadata(arrowMeta);
+    if (arrowMetadata.length > 0) arrowObj.metadata = arrowMetadata;
+    return arrowObj;
+  });
   console.log(
     JSON.stringify(
       {
@@ -177,21 +181,25 @@ function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, comp
         const src = c.namedChildren.find((x) => x.type === "src_path");
         const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
         const pipeChain = c.namedChildren.find((x) => x.type === "pipe_chain");
+        const arrowMeta = c.namedChildren.find((x) => x.type === "metadata_block");
         const srcStr = pathText(src);
         const tgtStr = pathText(tgt);
+        const metaSuffix = arrowMeta && !compact ? ` ${arrowMeta.text}` : "";
         if (compact || !pipeChain) {
-          console.log(`  ${srcStr} -> ${tgtStr}`);
+          console.log(`  ${srcStr} -> ${tgtStr}${metaSuffix}`);
         } else {
-          console.log(`  ${srcStr} -> ${tgtStr} { ${pipeChain.text} }`);
+          console.log(`  ${srcStr} -> ${tgtStr}${metaSuffix} { ${pipeChain.text} }`);
         }
       } else if (c.type === "computed_arrow") {
         const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
         const pipeChain = c.namedChildren.find((x) => x.type === "pipe_chain");
+        const arrowMeta = c.namedChildren.find((x) => x.type === "metadata_block");
         const tgtStr = pathText(tgt);
+        const metaSuffix = arrowMeta && !compact ? ` ${arrowMeta.text}` : "";
         if (compact || !pipeChain) {
-          console.log(`  -> ${tgtStr}`);
+          console.log(`  -> ${tgtStr}${metaSuffix}`);
         } else {
-          console.log(`  -> ${tgtStr} { ${pipeChain.text} }`);
+          console.log(`  -> ${tgtStr}${metaSuffix} { ${pipeChain.text} }`);
         }
       }
     }
