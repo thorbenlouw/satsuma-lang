@@ -2,7 +2,7 @@
 id: sl-icqz
 status: open
 deps: []
-links: []
+links: [sl-7i7j]
 created: 2026-03-21T08:00:19Z
 type: bug
 priority: 2

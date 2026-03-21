@@ -2,7 +2,7 @@
 id: sl-6ino
 status: open
 deps: []
-links: []
+links: [sl-wvn8]
 created: 2026-03-21T08:06:32Z
 type: bug
 priority: 2

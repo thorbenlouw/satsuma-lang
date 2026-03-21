@@ -1,8 +1,8 @@
 ---
 id: sl-zqqu
 status: open
-deps: []
-links: []
+deps: [sl-ck20, sl-1ugo]
+links: [sl-jt7q, sl-cyen]
 created: 2026-03-21T08:01:04Z
 type: bug
 priority: 2

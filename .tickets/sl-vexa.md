@@ -2,7 +2,7 @@
 id: sl-vexa
 status: open
 deps: []
-links: []
+links: [sl-m4l5]
 created: 2026-03-21T07:59:14Z
 type: bug
 priority: 2

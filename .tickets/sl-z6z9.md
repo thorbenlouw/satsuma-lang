@@ -1,8 +1,8 @@
 ---
 id: sl-z6z9
 status: open
-deps: []
-links: []
+deps: [sl-idbf]
+links: [sl-42ev]
 created: 2026-03-21T07:59:05Z
 type: bug
 priority: 2

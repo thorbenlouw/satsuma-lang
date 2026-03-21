@@ -2,7 +2,7 @@
 id: sl-w6yu
 status: open
 deps: []
-links: []
+links: [sl-7i7j]
 created: 2026-03-21T07:59:06Z
 type: bug
 priority: 2

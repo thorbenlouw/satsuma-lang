@@ -2,7 +2,7 @@
 id: sl-izap
 status: open
 deps: []
-links: []
+links: [sl-mkuw]
 created: 2026-03-21T08:00:35Z
 type: bug
 priority: 2

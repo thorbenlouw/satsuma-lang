@@ -1,8 +1,8 @@
 ---
 id: sl-i1b8
 status: open
-deps: []
-links: []
+deps: [sl-rbvk]
+links: [sl-armj]
 created: 2026-03-21T07:58:25Z
 type: bug
 priority: 2

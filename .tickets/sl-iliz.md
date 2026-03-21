@@ -2,7 +2,7 @@
 id: sl-iliz
 status: open
 deps: []
-links: []
+links: [sl-6hot]
 created: 2026-03-21T07:58:02Z
 type: bug
 priority: 2

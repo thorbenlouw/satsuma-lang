@@ -1,8 +1,8 @@
 ---
 id: sl-z57o
 status: open
-deps: []
-links: []
+deps: [sl-3dd2]
+links: [sl-wvn8]
 created: 2026-03-21T08:00:58Z
 type: bug
 priority: 2

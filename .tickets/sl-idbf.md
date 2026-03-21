@@ -2,7 +2,7 @@
 id: sl-idbf
 status: open
 deps: []
-links: []
+links: [sl-42ev, sl-7i7j]
 created: 2026-03-21T07:58:43Z
 type: bug
 priority: 2

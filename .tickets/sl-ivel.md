@@ -2,7 +2,7 @@
 id: sl-ivel
 status: open
 deps: []
-links: []
+links: [sl-0ycs]
 created: 2026-03-21T08:01:17Z
 type: bug
 priority: 2

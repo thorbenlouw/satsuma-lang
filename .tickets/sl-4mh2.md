@@ -1,8 +1,8 @@
 ---
 id: sl-4mh2
 status: open
-deps: []
-links: []
+deps: [sl-1ugo]
+links: [sl-jt7q]
 created: 2026-03-21T08:01:53Z
 type: bug
 priority: 2

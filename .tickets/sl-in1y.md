@@ -2,7 +2,7 @@
 id: sl-in1y
 status: open
 deps: []
-links: []
+links: [sl-btgr]
 created: 2026-03-21T07:59:14Z
 type: bug
 priority: 2

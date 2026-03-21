@@ -2,7 +2,7 @@
 id: sl-vojd
 status: open
 deps: []
-links: []
+links: [sl-x11k]
 created: 2026-03-21T08:00:42Z
 type: bug
 priority: 2

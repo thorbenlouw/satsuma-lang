@@ -2,7 +2,7 @@
 id: sl-t5k4
 status: open
 deps: []
-links: []
+links: [sl-7i7j]
 created: 2026-03-21T07:58:58Z
 type: bug
 priority: 2

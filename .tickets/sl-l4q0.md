@@ -2,7 +2,7 @@
 id: sl-l4q0
 status: open
 deps: []
-links: []
+links: [sl-4m85]
 created: 2026-03-21T08:04:59Z
 type: bug
 priority: 2

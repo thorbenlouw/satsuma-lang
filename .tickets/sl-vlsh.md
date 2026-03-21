@@ -1,8 +1,8 @@
 ---
 id: sl-vlsh
 status: open
-deps: []
-links: []
+deps: [sl-z6z9]
+links: [sl-42ev]
 created: 2026-03-21T08:01:26Z
 type: bug
 priority: 2

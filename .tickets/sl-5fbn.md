@@ -2,7 +2,7 @@
 id: sl-5fbn
 status: open
 deps: []
-links: []
+links: [sl-m4l5]
 created: 2026-03-21T08:00:04Z
 type: bug
 priority: 2

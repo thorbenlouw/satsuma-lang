@@ -2,7 +2,7 @@
 id: sl-c7yn
 status: open
 deps: []
-links: []
+links: [sl-xh3b]
 created: 2026-03-21T07:58:49Z
 type: bug
 priority: 2

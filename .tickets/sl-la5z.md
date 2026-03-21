@@ -2,7 +2,7 @@
 id: sl-la5z
 status: open
 deps: []
-links: []
+links: [sl-0ycs]
 created: 2026-03-21T08:05:56Z
 type: bug
 priority: 2

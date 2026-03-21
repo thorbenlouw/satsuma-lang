@@ -2,7 +2,7 @@
 id: sl-eglw
 status: open
 deps: []
-links: []
+links: [sl-xh3b]
 created: 2026-03-21T08:00:37Z
 type: bug
 priority: 2

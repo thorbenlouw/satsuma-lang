@@ -2,7 +2,7 @@
 id: sl-pq65
 status: open
 deps: []
-links: []
+links: [sl-armj]
 created: 2026-03-21T07:59:23Z
 type: bug
 priority: 2

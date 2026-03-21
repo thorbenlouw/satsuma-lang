@@ -2,7 +2,7 @@
 id: sl-l83d
 status: open
 deps: []
-links: []
+links: [sl-x11k]
 created: 2026-03-21T08:01:58Z
 type: bug
 priority: 2

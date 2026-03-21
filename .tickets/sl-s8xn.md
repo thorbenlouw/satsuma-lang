@@ -2,7 +2,7 @@
 id: sl-s8xn
 status: open
 deps: []
-links: []
+links: [sl-armj, sl-jt7q]
 created: 2026-03-21T07:59:28Z
 type: bug
 priority: 2

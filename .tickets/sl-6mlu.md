@@ -2,7 +2,7 @@
 id: sl-6mlu
 status: open
 deps: []
-links: []
+links: [sl-m02g]
 created: 2026-03-21T08:02:22Z
 type: bug
 priority: 2

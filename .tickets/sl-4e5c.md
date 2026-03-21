@@ -1,8 +1,8 @@
 ---
 id: sl-4e5c
 status: open
-deps: []
-links: []
+deps: [sl-wjb9]
+links: [sl-z4ya]
 created: 2026-03-21T08:04:49Z
 type: bug
 priority: 2

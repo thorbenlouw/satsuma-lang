@@ -1,8 +1,8 @@
 ---
 id: sl-vw49
 status: open
-deps: []
-links: []
+deps: [sl-6ino]
+links: [sl-wvn8]
 created: 2026-03-21T08:04:56Z
 type: bug
 priority: 2

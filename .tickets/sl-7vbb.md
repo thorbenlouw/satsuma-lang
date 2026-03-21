@@ -1,8 +1,8 @@
 ---
 id: sl-7vbb
 status: open
-deps: []
-links: []
+deps: [sl-313n]
+links: [sl-7i7j]
 created: 2026-03-21T07:59:10Z
 type: bug
 priority: 2

@@ -2,7 +2,7 @@
 id: sl-z3eg
 status: open
 deps: []
-links: []
+links: [sl-m02g]
 created: 2026-03-21T08:03:55Z
 type: bug
 priority: 2

@@ -2,7 +2,7 @@
 id: sl-w4hv
 status: open
 deps: []
-links: []
+links: [sl-6hot]
 created: 2026-03-21T08:03:08Z
 type: bug
 priority: 2

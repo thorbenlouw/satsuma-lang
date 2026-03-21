@@ -1,8 +1,8 @@
 ---
 id: sl-qx8n
 status: open
-deps: []
-links: []
+deps: [sl-cdvp]
+links: [sl-xh3b]
 created: 2026-03-21T07:58:21Z
 type: bug
 priority: 2

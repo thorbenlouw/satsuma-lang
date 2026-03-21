@@ -2,7 +2,7 @@
 id: sl-yibt
 status: open
 deps: []
-links: []
+links: [sl-42ev]
 created: 2026-03-21T08:06:25Z
 type: bug
 priority: 2

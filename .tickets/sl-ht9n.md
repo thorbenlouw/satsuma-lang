@@ -2,7 +2,7 @@
 id: sl-ht9n
 status: open
 deps: []
-links: []
+links: [sl-0ycs]
 created: 2026-03-21T08:00:10Z
 type: bug
 priority: 2

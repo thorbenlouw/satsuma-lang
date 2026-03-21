@@ -2,7 +2,7 @@
 id: sl-mdlr
 status: open
 deps: []
-links: []
+links: [sl-eoco]
 created: 2026-03-21T07:59:24Z
 type: bug
 priority: 2

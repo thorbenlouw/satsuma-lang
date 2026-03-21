@@ -2,7 +2,7 @@
 id: sl-5erh
 status: open
 deps: []
-links: []
+links: [sl-m02g]
 created: 2026-03-21T08:00:49Z
 type: bug
 priority: 2

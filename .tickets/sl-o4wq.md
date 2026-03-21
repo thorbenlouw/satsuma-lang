@@ -1,8 +1,8 @@
 ---
 id: sl-o4wq
 status: open
-deps: []
-links: []
+deps: [sl-ck20]
+links: [sl-cyen]
 created: 2026-03-21T08:00:54Z
 type: bug
 priority: 2

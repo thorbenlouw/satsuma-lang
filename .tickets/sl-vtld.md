@@ -1,8 +1,8 @@
 ---
 id: sl-vtld
 status: open
-deps: []
-links: []
+deps: [sl-z57o]
+links: [sl-mkuw]
 created: 2026-03-21T08:00:21Z
 type: bug
 priority: 2

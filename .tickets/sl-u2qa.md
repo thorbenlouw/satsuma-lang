@@ -2,7 +2,7 @@
 id: sl-u2qa
 status: open
 deps: []
-links: []
+links: [sl-xh3b]
 created: 2026-03-21T07:59:20Z
 type: bug
 priority: 2
