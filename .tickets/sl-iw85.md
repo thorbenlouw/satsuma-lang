@@ -1,6 +1,6 @@
 ---
 id: sl-iw85
-status: open
+status: closed
 deps: []
 links: [sl-mkuw]
 created: 2026-03-21T08:00:01Z

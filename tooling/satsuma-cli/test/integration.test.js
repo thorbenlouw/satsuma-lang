@@ -630,6 +630,29 @@ describe("satsuma where-used", () => {
     const data = JSON.parse(stdout);
     assert.ok(data.error, "should have error field");
   });
+
+  it("detects import references (sl-izap)", async () => {
+    const { stdout, code } = await run("where-used", "address fields", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /Imported in/);
+    assert.match(stdout, /db-to-db\.stm/);
+  });
+
+  it("detects ref metadata references (sl-7yoa)", async () => {
+    const { stdout, code } = await run("where-used", "dim_customer", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const refMetaRefs = data.refs.filter((r) => r.kind === "ref_metadata");
+    assert.ok(refMetaRefs.length > 0, "should find ref metadata references");
+    assert.ok(refMetaRefs.some((r) => r.name.includes("customer_id")), "should reference customer_id field");
+  });
+
+  it("detects transform spread references (sl-iw85)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "transform-spread.stm");
+    const { stdout, code } = await run("where-used", "cleanup", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /transform_call|Invoked/);
+  });
 });
 
 // ---------------------------------------------------------------------------
