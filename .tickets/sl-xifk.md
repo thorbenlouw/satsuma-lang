@@ -1,6 +1,6 @@
 ---
 id: sl-xifk
-status: open
+status: closed
 deps: []
 links: [sl-armj]
 created: 2026-03-21T07:58:32Z

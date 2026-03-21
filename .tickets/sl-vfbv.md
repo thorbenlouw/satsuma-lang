@@ -1,6 +1,6 @@
 ---
 id: sl-vfbv
-status: open
+status: closed
 deps: []
 links: [sl-m4l5]
 created: 2026-03-21T08:01:23Z

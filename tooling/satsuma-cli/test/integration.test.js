@@ -198,6 +198,15 @@ describe("satsuma schema", () => {
     assert.ok(data[0].name);
     assert.ok(data[0].type);
   });
+
+  it("--compact strips triple-quoted field notes (sl-vfbv)", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("schema", "legacy_sqlserver", "--compact", DB);
+    assert.equal(code, 0);
+    assert.match(stdout, /PHONE_NBR/);
+    assert.doesNotMatch(stdout, /"""/,  "triple-quoted note should be stripped in compact mode");
+    assert.doesNotMatch(stdout, /No consistent format/, "note content should be stripped");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -239,6 +248,14 @@ describe("satsuma metric", () => {
     assert.doesNotMatch(stdout, /\/\/ regular metric/);
     assert.doesNotMatch(stdout, /\/\/!/);
     assert.doesNotMatch(stdout, /\/\/\?/);
+  });
+
+  it("--json includes note field for metrics with note blocks (sl-xifk)", async () => {
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(typeof data.note === "string", "note should be a string");
+    assert.match(data.note, /subscription/i, "note should contain subscription text");
   });
 });
 
