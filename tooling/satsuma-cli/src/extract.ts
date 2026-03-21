@@ -7,6 +7,7 @@
  */
 
 import { classifyTransform, classifyArrow } from "./classify.js";
+import { extractMetadata } from "./meta-extract.js";
 import type { Classification, FieldDecl, PipeStep, SyntaxNode } from "./types.js";
 
 // ── CST helpers ──────────────────────────────────────────────────────────────
@@ -72,7 +73,10 @@ function extractDirectFields(bodyNode: SyntaxNode): FieldDecl[] {
     const inner = nameNode?.namedChildren[0];
     let name = inner?.text ?? "";
     if (inner?.type === "backtick_name") name = name.slice(1, -1);
-    return { name, type: typeNode?.text ?? "" };
+    const meta = extractMetadata(child(fd, "metadata_block"));
+    const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
+    if (meta.length > 0) decl.metadata = meta;
+    return decl;
   });
 }
 
@@ -98,17 +102,23 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
       const inner = nameNode?.namedChildren[0];
       let name = inner?.text ?? "";
       if (inner?.type === "backtick_name") name = name.slice(1, -1);
-      fields.push({ name, type: typeNode?.text ?? "" });
+      const meta = extractMetadata(child(c, "metadata_block"));
+      const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
+      if (meta.length > 0) decl.metadata = meta;
+      fields.push(decl);
     } else if (c.type === "record_block" || c.type === "list_block") {
       const name = labelText(c);
       const innerBody = child(c, "schema_body");
       const nested = innerBody ? extractFieldTree(innerBody) : { fields: [], hasSpreads: false, spreads: [] };
-      fields.push({
+      const blockMeta = extractMetadata(child(c, "metadata_block"));
+      const decl: FieldDecl = {
         name: name!,
         type: c.type === "list_block" ? "list" : "record",
         isList: c.type === "list_block",
         children: nested.fields,
-      });
+      };
+      if (blockMeta.length > 0) decl.metadata = blockMeta;
+      fields.push(decl);
       if (nested.hasSpreads) hasSpreads = true;
       spreads.push(...nested.spreads);
     } else if (c.type === "fragment_spread") {

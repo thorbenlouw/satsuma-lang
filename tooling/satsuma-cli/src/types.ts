@@ -32,6 +32,7 @@ export interface FieldDecl {
   type: string;
   children?: FieldDecl[];
   isList?: boolean;
+  metadata?: import("./meta-extract.js").MetaEntry[];
 }
 
 export interface SchemaRecord {
