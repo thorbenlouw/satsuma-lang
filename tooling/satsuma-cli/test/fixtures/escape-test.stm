@@ -1,0 +1,3 @@
+schema data {
+  name VARCHAR (note "Contains \"quoted\" text")
+}
