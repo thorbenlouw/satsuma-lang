@@ -67,7 +67,14 @@ export function register(program: Command): void {
       const result = matchFields(srcFields, tgtFields);
 
       if (opts.json) {
-        console.log(JSON.stringify(result, null, 2));
+        const filtered = { ...result };
+        if (opts.matchedOnly) {
+          filtered.sourceOnly = [];
+          filtered.targetOnly = [];
+        } else if (opts.unmatchedOnly) {
+          filtered.matched = [];
+        }
+        console.log(JSON.stringify(filtered, null, 2));
         return;
       }
 

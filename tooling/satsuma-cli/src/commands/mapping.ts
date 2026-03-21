@@ -135,6 +135,7 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
     JSON.stringify(
       {
         name: entry.name,
+        ...(entry.namespace ? { namespace: entry.namespace } : {}),
         sources: entry.sources,
         targets: entry.targets,
         arrowCount: entry.arrowCount,

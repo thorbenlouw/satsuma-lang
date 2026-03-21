@@ -1,6 +1,6 @@
 ---
 id: sl-vexa
-status: open
+status: closed
 deps: []
 links: [sl-m4l5]
 created: 2026-03-21T07:59:14Z
