@@ -1,0 +1,22 @@
+transform cleanup {
+  trim | lower
+}
+
+schema src {
+  id INT
+  name VARCHAR
+}
+
+schema tgt {
+  id INT
+  name VARCHAR
+}
+
+mapping test_mapping {
+  source { src }
+  target { tgt }
+
+  id -> id
+  name -> name { ...cleanup }
+  name -> name { ...nonexistent_xform }
+}

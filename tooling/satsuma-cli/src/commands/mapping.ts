@@ -16,6 +16,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { extractMetadata } from "../meta-extract.js";
+import { classifyTransform } from "../classify.js";
 import type { SyntaxNode, MappingRecord } from "../types.js";
 
 export function register(program: Command): void {
@@ -119,9 +120,11 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
   const metadata = extractMetadata(metaNode);
   const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody, metaNode: arrowMeta, node: arrowNode }) => {
-    const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform: hasBody };
+    const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
+    const pipeSteps = pipeChain ? [...pipeChain.namedChildren].filter((x) => x.type === "pipe_step") : [];
+    const classification = classifyTransform(pipeSteps.length > 0 ? pipeSteps : null);
+    const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform: hasBody, classification };
     if (hasBody) {
-      const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
       if (pipeChain) arrowObj.transform = pipeChain.text;
     }
     const arrowMetadata = extractMetadata(arrowMeta);
