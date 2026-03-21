@@ -148,27 +148,19 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
   }
 
   // Check metric source references
-  const anyMetricSourceResolvable = [...index.metrics.values()].some((m) =>
-    (m.sources ?? []).some((s) => {
-      const currentNs = m.namespace ?? null;
-      return resolveEntityRef(s, currentNs, index.schemas) != null;
-    }),
-  );
-  if (anyMetricSourceResolvable) {
-    for (const [name, metric] of index.metrics) {
-      const currentNs = metric.namespace ?? null;
-      for (const src of (metric.sources ?? [])) {
-        if (!resolveEntityRef(src, currentNs, index.schemas)) {
-          diagnostics.push({
-            file: metric.file,
-            line: metric.row + 1,
-            column: 1,
-            severity: "warning",
-            rule: "undefined-ref",
-            message: `Metric '${name}' references undefined source '${src}'`,
-            fixable: false,
-          });
-        }
+  for (const [name, metric] of index.metrics) {
+    const currentNs = metric.namespace ?? null;
+    for (const src of (metric.sources ?? [])) {
+      if (!resolveEntityRef(src, currentNs, index.schemas)) {
+        diagnostics.push({
+          file: metric.file,
+          line: metric.row + 1,
+          column: 1,
+          severity: "warning",
+          rule: "undefined-ref",
+          message: `Metric '${name}' references undefined source '${src}'`,
+          fixable: false,
+        });
       }
     }
   }
