@@ -1,6 +1,6 @@
 ---
 id: sl-l83d
-status: open
+status: closed
 deps: []
 links: [sl-x11k]
 created: 2026-03-21T08:01:58Z

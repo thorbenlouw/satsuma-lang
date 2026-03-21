@@ -55,14 +55,15 @@ export function register(program: Command): void {
         refs = refs.filter((r) => !r.resolved);
       }
 
+      if (opts.json) {
+        console.log(JSON.stringify(refs, null, 2));
+        if (refs.length === 0) process.exit(1);
+        return;
+      }
+
       if (refs.length === 0) {
         console.log("No NL backtick references found.");
         process.exit(1);
-      }
-
-      if (opts.json) {
-        console.log(JSON.stringify(refs, null, 2));
-        return;
       }
 
       printDefault(refs);

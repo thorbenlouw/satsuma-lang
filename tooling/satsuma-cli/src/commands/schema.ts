@@ -46,13 +46,23 @@ export function register(program: Command): void {
         const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
         // Check for ambiguous unqualified name
         const ambiguous = !name.includes("::") && keys.filter((k) => k.endsWith(`::${name}`));
+        let errorMsg: string;
         if (ambiguous && ambiguous.length > 1) {
-          console.error(`Schema '${name}' is ambiguous. Found in: ${ambiguous.join(", ")}`);
+          errorMsg = `Schema '${name}' is ambiguous. Found in: ${ambiguous.join(", ")}`;
         } else if (close) {
-          console.error(`Schema '${name}' not found. Did you mean '${close}'?`);
+          errorMsg = `Schema '${name}' not found. Did you mean '${close}'?`;
         } else {
-          console.error(`Schema '${name}' not found.`);
-          if (keys.length > 0) console.error(`Available: ${keys.join(", ")}`);
+          errorMsg = `Schema '${name}' not found.`;
+        }
+        if (opts.json) {
+          const errorObj: Record<string, unknown> = { error: errorMsg };
+          if (keys.length > 0) errorObj.available = keys;
+          console.log(JSON.stringify(errorObj, null, 2));
+        } else {
+          console.error(errorMsg);
+          if (keys.length > 0 && !(ambiguous && ambiguous.length > 1) && !close) {
+            console.error(`Available: ${keys.join(", ")}`);
+          }
         }
         process.exit(1);
       }

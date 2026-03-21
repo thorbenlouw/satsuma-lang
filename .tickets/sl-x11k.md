@@ -1,6 +1,6 @@
 ---
 id: sl-x11k
-status: open
+status: closed
 deps: []
 links: [sl-l83d, sl-i47e, sl-vojd, sl-rks7]
 created: 2026-03-21T21:53:00Z
