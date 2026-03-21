@@ -1,6 +1,6 @@
 ---
 id: sl-ari1
-status: open
+status: closed
 deps: []
 links: [sl-armj]
 created: 2026-03-21T08:00:18Z

@@ -118,8 +118,12 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
   const metadata = extractMetadata(metaNode);
-  const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody, metaNode: arrowMeta }) => {
+  const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody, metaNode: arrowMeta, node: arrowNode }) => {
     const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform: hasBody };
+    if (hasBody) {
+      const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
+      if (pipeChain) arrowObj.transform = pipeChain.text;
+    }
     const arrowMetadata = extractMetadata(arrowMeta);
     if (arrowMetadata.length > 0) arrowObj.metadata = arrowMetadata;
     return arrowObj;
