@@ -828,6 +828,15 @@ describe("satsuma validate", () => {
     assert.equal(code, 2, "duplicate-definition is severity error, should exit 2");
     assert.match(stdout, /duplicate/i);
   });
+
+  it("catches metric source referencing nonexistent schema (sl-313n)", async () => {
+    const BAD = resolve(import.meta.dirname, "fixtures", "metric-bad-source.stm");
+    const { stdout, code } = await run("validate", BAD);
+    assert.equal(code, 0, "warnings-only should exit 0");
+    assert.match(stdout, /undefined-ref/);
+    assert.match(stdout, /nonexistent_schema/);
+    assert.match(stdout, /1 warning/);
+  });
 });
 
 // ---------------------------------------------------------------------------

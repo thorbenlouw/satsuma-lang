@@ -295,7 +295,7 @@ describe("Bug 3: metric source extraction", () => {
     assert.deepEqual(metrics[0].sources, ["fact_subscriptions", "dim_customer"]);
   });
 
-  it("does not warn for metric sources when no metric source resolves to a known schema", () => {
+  it("warns when metric source references nonexistent schema (sl-313n)", () => {
     const index = makeIndex({
       schemas: [{ name: "some_schema", fields: [] }],
       metrics: [{ name: "mrr", sources: ["external_table"], fields: [] }],
@@ -303,7 +303,8 @@ describe("Bug 3: metric source extraction", () => {
 
     const warnings = collectSemanticWarnings(index);
     const metricWarnings = warnings.filter((w) => w.rule === "undefined-ref" && w.message.includes("Metric"));
-    assert.equal(metricWarnings.length, 0, "Should not warn for purely external metric sources");
+    assert.equal(metricWarnings.length, 1, "Should warn for undefined metric source");
+    assert.match(metricWarnings[0].message, /external_table/);
   });
 });
 
