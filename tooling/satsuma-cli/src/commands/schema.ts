@@ -141,6 +141,7 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
   const allFields = [...entry.fields, ...spreadFields];
   const out: Record<string, unknown> = {
     name: entry.name,
+    ...(entry.namespace ? { namespace: entry.namespace } : {}),
     note: entry.note,
     file: entry.file,
     row: entry.row,
@@ -166,7 +167,8 @@ function printFieldsOnly(entry: SchemaRecord): void {
 
 function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compact: boolean | undefined): void {
   const note = entry.note && !compact ? `  (note "${entry.note}")` : "";
-  const nameStr = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
+  const baseName = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
+  const nameStr = entry.namespace ? `${entry.namespace}::${baseName}` : baseName;
   console.log(`schema ${nameStr}${note} {`);
 
   if (schemaNode) {

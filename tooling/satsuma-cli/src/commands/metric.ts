@@ -121,6 +121,7 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
     JSON.stringify(
       {
         name: entry.name,
+        ...(entry.namespace ? { namespace: entry.namespace } : {}),
         displayName: entry.displayName,
         sources: entry.sources,
         grain: entry.grain,
@@ -140,7 +141,8 @@ function printDefault(entry: MetricRecord, metricNode: SyntaxNode | null, compac
   const meta = extractMetaEntries(metaNode);
   const display = entry.displayName ? ` "${entry.displayName}"` : "";
   const metaStr = formatMeta(meta);
-  const nameStr = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
+  const baseName = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
+  const nameStr = entry.namespace ? `${entry.namespace}::${baseName}` : baseName;
   console.log(`metric ${nameStr}${display}${metaStr} {`);
 
   // Fields from metric_body
