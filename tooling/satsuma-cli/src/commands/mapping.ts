@@ -15,6 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
+import { extractMetadata } from "../meta-extract.js";
 import type { SyntaxNode, MappingRecord } from "../types.js";
 
 export function register(program: Command): void {
@@ -111,6 +112,8 @@ function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
 
 function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
+  const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
+  const metadata = extractMetadata(metaNode);
   const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody }) => ({
     kind,
     src,
@@ -124,6 +127,7 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
         sources: entry.sources,
         targets: entry.targets,
         arrowCount: entry.arrowCount,
+        ...(metadata.length > 0 ? { metadata } : {}),
         arrows,
         file: entry.file,
         row: entry.row,
@@ -149,7 +153,9 @@ function printArrowsOnly(entry: MappingRecord, mappingNode: SyntaxNode | null): 
 
 function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, compact: boolean | undefined): void {
   const nameStr = entry.name ? ` '${entry.name}'` : "";
-  console.log(`mapping${nameStr} {`);
+  const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
+  const metaText = metaNode && !compact ? ` ${metaNode.text}` : "";
+  console.log(`mapping${nameStr}${metaText} {`);
 
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   if (body) {

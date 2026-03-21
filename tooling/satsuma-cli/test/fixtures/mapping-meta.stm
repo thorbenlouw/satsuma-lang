@@ -1,0 +1,20 @@
+schema src_table {
+  id INT
+  val VARCHAR
+}
+
+schema tgt_table {
+  id INT
+  result VARCHAR
+}
+
+mapping 'metadata test' (
+  note "This mapping has block-level metadata",
+  scd type2,
+  priority high
+) {
+  source { src_table }
+  target { tgt_table }
+  id -> id
+  val -> result
+}

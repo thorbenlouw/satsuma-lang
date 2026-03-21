@@ -203,6 +203,34 @@ describe("satsuma mapping", () => {
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
+
+  it("text output includes mapping-level metadata block (sl-0x23)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /note "This mapping has block-level metadata"/);
+    assert.match(stdout, /scd type2/);
+    assert.match(stdout, /priority high/);
+  });
+
+  it("--compact omits mapping-level metadata (sl-0x23)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", "--compact", FIXTURE);
+    assert.equal(code, 0);
+    assert.doesNotMatch(stdout, /note "This mapping/);
+    assert.doesNotMatch(stdout, /scd type2/);
+  });
+
+  it("--json includes metadata array for mapping with metadata (sl-0x23)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", "--json", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.metadata));
+    assert.ok(data.metadata.length > 0);
+    assert.ok(data.metadata.some((m) => m.kind === "note"));
+    assert.ok(data.metadata.some((m) => m.kind === "kv" && m.key === "scd"));
+  });
 });
 
 // ---------------------------------------------------------------------------
