@@ -75,6 +75,11 @@ describe("classifyTransform", () => {
     const steps = [n("pipe_step", [])];
     assert.equal(classifyTransform(steps), "none");
   });
+
+  it("returns 'structural' for arithmetic_step", () => {
+    const steps = [n("pipe_step", [n("arithmetic_step", [n("number_literal", [], "100")])])];
+    assert.equal(classifyTransform(steps), "structural");
+  });
 });
 
 // ── classifyArrow ────────────────────────────────────────────────────────────

@@ -52,7 +52,7 @@ export function register(program: Command): void {
       const index = buildIndex(parsed);
 
       if (opts.json) {
-        printJson(index);
+        printJson(index, files.length);
       } else if (opts.compact) {
         printCompact(index);
       } else {
@@ -63,7 +63,7 @@ export function register(program: Command): void {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(index: WorkspaceIndex): void {
+function printJson(index: WorkspaceIndex, fileCount: number): void {
   /** Format a display name with namespace prefix when applicable. */
   const displayName = (entity: { namespace?: string; name: string | null }): string => {
     if (entity.namespace) return `${entity.namespace}::${entity.name}`;
@@ -106,6 +106,7 @@ function printJson(index: WorkspaceIndex): void {
       file: t.file,
       row: t.row,
     })),
+    fileCount,
     warningCount: index.warnings.length,
     questionCount: index.questions.length,
     totalErrors: index.totalErrors,

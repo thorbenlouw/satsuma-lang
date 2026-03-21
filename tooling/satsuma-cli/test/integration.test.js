@@ -67,6 +67,14 @@ describe("satsuma summary", () => {
     assert.ok(data.metrics.length > 0);
   });
 
+  it("--json includes fileCount", async () => {
+    const { stdout, code } = await run("summary", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(typeof data.fileCount === "number", "should have fileCount");
+    assert.ok(data.fileCount > 0);
+  });
+
   it("exits non-zero for nonexistent path", async () => {
     const { code } = await run("summary", "/nonexistent/path");
     assert.notEqual(code, 0);

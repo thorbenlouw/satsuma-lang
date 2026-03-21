@@ -8,7 +8,7 @@
 import type { Classification, SyntaxNode } from "./types.js";
 
 /** Node types that indicate structural (deterministic) transform steps. */
-const STRUCTURAL_TYPES = new Set(["token_call", "map_literal", "fragment_spread"]);
+const STRUCTURAL_TYPES = new Set(["token_call", "map_literal", "fragment_spread", "arithmetic_step"]);
 
 /** Node types that indicate NL (natural language) transform steps. */
 const NL_TYPES = new Set(["nl_string", "multiline_string"]);

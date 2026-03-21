@@ -262,6 +262,12 @@ describe("satsuma graph --no-nl", () => {
     assert.ok(nlEdge, "should still have NL-classified edges");
     assert.ok(!("nl_text" in nlEdge), "should not have nl_text");
   });
+
+  it("empties unresolved_nl section", async () => {
+    const { stdout } = await run("graph", "--json", "--no-nl", EXAMPLES);
+    const data = JSON.parse(stdout);
+    assert.deepEqual(data.unresolved_nl, [], "unresolved_nl should be empty with --no-nl");
+  });
 });
 
 // ---------------------------------------------------------------------------
