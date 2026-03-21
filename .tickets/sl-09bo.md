@@ -1,6 +1,6 @@
 ---
 id: sl-09bo
-status: open
+status: closed
 deps: []
 links: [sl-armj]
 created: 2026-03-21T08:00:03Z

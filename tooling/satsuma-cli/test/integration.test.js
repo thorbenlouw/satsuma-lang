@@ -967,6 +967,20 @@ describe("satsuma schema (namespaces)", () => {
     assert.ok(Array.isArray(data.fields));
     assert.ok(data.fields.length >= 3);
   });
+
+  it("--json includes namespace field for namespaced schema (sl-5pa2)", async () => {
+    const { stdout, code } = await run("schema", "pos::stores", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.namespace, "pos");
+    assert.equal(data.name, "stores");
+  });
+
+  it("text output includes namespace prefix for namespaced schema (sl-5pa2)", async () => {
+    const { stdout, code } = await run("schema", "pos::stores", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /schema pos::stores/);
+  });
 });
 
 describe("satsuma validate (namespaces)", () => {
@@ -1253,6 +1267,20 @@ describe("satsuma metric (namespace bugs)", () => {
     const grainMeta = data.metadata.find((m) => m.key === "grain");
     assert.ok(grainMeta);
     assert.equal(grainMeta.value, "daily");
+  });
+
+  it("--json includes namespace field for namespaced metric (sl-09bo)", async () => {
+    const { stdout, code } = await run("metric", "analytics::daily_sales", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.namespace, "analytics");
+    assert.equal(data.name, "daily_sales");
+  });
+
+  it("text output includes namespace prefix for namespaced metric (sl-09bo)", async () => {
+    const { stdout, code } = await run("metric", "analytics::daily_sales", NS_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /metric analytics::daily_sales/);
   });
 });
 
