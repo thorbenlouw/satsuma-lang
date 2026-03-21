@@ -231,6 +231,32 @@ describe("satsuma mapping", () => {
     assert.ok(data.metadata.some((m) => m.kind === "note"));
     assert.ok(data.metadata.some((m) => m.kind === "kv" && m.key === "scd"));
   });
+
+  it("text output includes arrow-level metadata (sl-9xiz)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /result \(note "Arrow-level note", required\)/);
+  });
+
+  it("--json includes arrow metadata (sl-9xiz)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", "--json", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const arrowWithMeta = data.arrows.find((a) => a.metadata);
+    assert.ok(arrowWithMeta, "At least one arrow should have metadata");
+    assert.ok(arrowWithMeta.metadata.some((m) => m.kind === "note"));
+    assert.ok(arrowWithMeta.metadata.some((m) => m.kind === "tag" && m.tag === "required"));
+  });
+
+  it("--compact omits arrow metadata (sl-9xiz)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", "--compact", FIXTURE);
+    assert.equal(code, 0);
+    assert.doesNotMatch(stdout, /Arrow-level note/);
+    assert.doesNotMatch(stdout, /required/);
+  });
 });
 
 // ---------------------------------------------------------------------------
