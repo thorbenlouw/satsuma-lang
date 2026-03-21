@@ -9,10 +9,10 @@ import type { FieldDecl, FieldMatch, MatchResult } from "./types.js";
 
 /**
  * Normalize a field name for comparison.
- * Lowercase, strip underscores and hyphens.
+ * Lowercase, strip underscores, hyphens, and spaces.
  */
 export function normalizeName(name: string): string {
-  return name.toLowerCase().replace(/[_-]/g, "");
+  return name.toLowerCase().replace(/[_\- ]/g, "");
 }
 
 /**
