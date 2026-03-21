@@ -1012,6 +1012,31 @@ describe("satsuma match-fields", () => {
     assert.ok(Array.isArray(data.targetOnly));
   });
 
+  it("--json --matched-only filters out unmatched fields (sl-vexa)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "match-fields-test.stm");
+    const { stdout, code } = await run(
+      "match-fields", "--source", "src_match", "--target", "tgt_match",
+      "--matched-only", "--json", F,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.matched.length > 0, "should have matched fields");
+    assert.deepStrictEqual(data.sourceOnly, [], "sourceOnly should be empty with --matched-only");
+    assert.deepStrictEqual(data.targetOnly, [], "targetOnly should be empty with --matched-only");
+  });
+
+  it("--json --unmatched-only filters out matched fields (sl-vexa)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "match-fields-test.stm");
+    const { stdout, code } = await run(
+      "match-fields", "--source", "src_match", "--target", "tgt_match",
+      "--unmatched-only", "--json", F,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.deepStrictEqual(data.matched, [], "matched should be empty with --unmatched-only");
+    assert.ok(data.sourceOnly.length > 0 || data.targetOnly.length > 0, "should have some unmatched");
+  });
+
   it("exits 1 for unknown schema", async () => {
     const { stderr, code } = await run(
       "match-fields", "--source", "nonexistent", "--target", "postgres_db", DB,
@@ -1410,6 +1435,13 @@ describe("satsuma mapping (namespaces)", () => {
     const data = JSON.parse(stdout);
     assert.ok(data.name);
     assert.ok(data.sources.includes("pos::stores") || data.sources.some((s) => s.includes("stores")));
+  });
+
+  it("--json includes namespace field for namespaced mappings (sl-x8yp)", async () => {
+    const { stdout, code } = await run("mapping", "load hub_store", "--json", NS_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.namespace, "namespace should be included in JSON");
   });
 });
 

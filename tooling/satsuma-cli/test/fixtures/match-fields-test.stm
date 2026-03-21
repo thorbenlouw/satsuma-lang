@@ -1,0 +1,12 @@
+schema src_match {
+  id INT
+  name VARCHAR
+  email VARCHAR
+  phone VARCHAR
+}
+
+schema tgt_match {
+  id INT
+  name VARCHAR
+  address VARCHAR
+}
