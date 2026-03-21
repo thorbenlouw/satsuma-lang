@@ -257,6 +257,19 @@ describe("satsuma mapping", () => {
     assert.doesNotMatch(stdout, /Arrow-level note/);
     assert.doesNotMatch(stdout, /required/);
   });
+
+  it("--json includes transform body text on arrows (sl-ari1)", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const withTransform = data.arrows.filter((a) => a.hasTransform);
+    assert.ok(withTransform.length > 0, "should have arrows with transforms");
+    for (const a of withTransform) {
+      assert.ok(typeof a.transform === "string", `arrow ${a.src} -> ${a.tgt} should have transform text`);
+      assert.ok(a.transform.length > 0);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
