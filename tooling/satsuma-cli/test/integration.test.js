@@ -720,6 +720,20 @@ describe("satsuma meta", () => {
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
+
+  it("extracts metric field metadata (sl-eglw)", async () => {
+    const { stdout, code } = await run("meta", "order_revenue.gross_revenue", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /type: DECIMAL/);
+    assert.match(stdout, /measure/);
+  });
+
+  it("extracts metric field metadata as JSON (sl-eglw)", async () => {
+    const { stdout, code } = await run("meta", "order_revenue.gross_revenue", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "measure"));
+  });
 });
 
 // ---------------------------------------------------------------------------

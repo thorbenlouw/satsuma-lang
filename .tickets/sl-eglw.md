@@ -1,6 +1,6 @@
 ---
 id: sl-eglw
-status: open
+status: closed
 deps: []
 links: [sl-xh3b]
 created: 2026-03-21T08:00:37Z
