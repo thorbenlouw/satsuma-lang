@@ -52,7 +52,7 @@ export function register(program: Command): void {
       const index = buildIndex(parsed);
 
       if (opts.json) {
-        printJson(index, files.length);
+        printJson(index, files.length, opts.compact);
       } else if (opts.compact) {
         printCompact(index);
       } else {
@@ -63,49 +63,39 @@ export function register(program: Command): void {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(index: WorkspaceIndex, fileCount: number): void {
+function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean): void {
   /** Format a display name with namespace prefix when applicable. */
   const displayName = (entity: { namespace?: string; name: string | null }): string => {
     if (entity.namespace) return `${entity.namespace}::${entity.name}`;
     return entity.name ?? "";
   };
 
-  const out = {
-    schemas: [...index.schemas.values()].map((s) => ({
-      name: displayName(s),
-      note: s.note,
-      fieldCount: s.fields.length,
-      file: s.file,
-      row: s.row,
-    })),
-    metrics: [...index.metrics.values()].map((m) => ({
-      name: displayName(m),
-      displayName: m.displayName,
-      fieldCount: m.fields.length,
-      grain: m.grain,
-      sources: m.sources,
-      file: m.file,
-      row: m.row,
-    })),
-    mappings: [...index.mappings.values()].map((m) => ({
-      name: displayName(m),
-      sources: m.sources,
-      targets: m.targets,
-      arrowCount: m.arrowCount,
-      file: m.file,
-      row: m.row,
-    })),
-    fragments: [...index.fragments.values()].map((f) => ({
-      name: displayName(f),
-      fieldCount: f.fields.length,
-      file: f.file,
-      row: f.row,
-    })),
-    transforms: [...index.transforms.values()].map((t) => ({
-      name: displayName(t),
-      file: t.file,
-      row: t.row,
-    })),
+  const out: Record<string, unknown> = {
+    schemas: [...index.schemas.values()].map((s) => {
+      const obj: Record<string, unknown> = { name: displayName(s), fieldCount: s.fields.length };
+      if (!compact) { obj.note = s.note; obj.file = s.file; obj.row = s.row; }
+      return obj;
+    }),
+    metrics: [...index.metrics.values()].map((m) => {
+      const obj: Record<string, unknown> = { name: displayName(m), fieldCount: m.fields.length };
+      if (!compact) { obj.displayName = m.displayName; obj.grain = m.grain; obj.sources = m.sources; obj.file = m.file; obj.row = m.row; }
+      return obj;
+    }),
+    mappings: [...index.mappings.values()].map((m) => {
+      const obj: Record<string, unknown> = { name: displayName(m), arrowCount: m.arrowCount };
+      if (!compact) { obj.sources = m.sources; obj.targets = m.targets; obj.file = m.file; obj.row = m.row; }
+      return obj;
+    }),
+    fragments: [...index.fragments.values()].map((f) => {
+      const obj: Record<string, unknown> = { name: displayName(f), fieldCount: f.fields.length };
+      if (!compact) { obj.file = f.file; obj.row = f.row; }
+      return obj;
+    }),
+    transforms: [...index.transforms.values()].map((t) => {
+      const obj: Record<string, unknown> = { name: displayName(t) };
+      if (!compact) { obj.file = t.file; obj.row = t.row; }
+      return obj;
+    }),
     fileCount,
     warningCount: index.warnings.length,
     questionCount: index.questions.length,

@@ -87,6 +87,19 @@ describe("satsuma summary", () => {
     assert.ok(!stdout.includes("[1 fields]"), "should use singular 'field' for count 1");
     assert.ok(!stdout.includes("[1 arrows]"), "should use singular 'arrow' for count 1");
   });
+
+  it("--json --compact strips notes and file/row from output (sl-86n4)", async () => {
+    const { stdout, code } = await run("summary", "--json", "--compact", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.schemas.length > 0);
+    // Compact should not have note, file, or row
+    for (const s of data.schemas) {
+      assert.ok(!("note" in s), "compact JSON should omit note");
+      assert.ok(!("file" in s), "compact JSON should omit file");
+      assert.ok(!("row" in s), "compact JSON should omit row");
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -165,6 +178,25 @@ describe("satsuma schema", () => {
     assert.doesNotMatch(stdout, /\/\/ regular comment/);
     assert.doesNotMatch(stdout, /\/\/!/);
     assert.doesNotMatch(stdout, /\/\/\?/);
+  });
+
+  it("--json --compact omits note field (sl-5fbn)", async () => {
+    const { stdout, code } = await run("schema", "country_codes", "--json", "--compact", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(!("note" in data), "compact JSON should omit note");
+    assert.ok(data.name);
+    assert.ok(Array.isArray(data.fields));
+  });
+
+  it("--json --fields-only returns just the fields array (sl-5fbn)", async () => {
+    const { stdout, code } = await run("schema", "country_codes", "--json", "--fields-only", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data), "should be a plain array of fields");
+    assert.ok(data.length > 0);
+    assert.ok(data[0].name);
+    assert.ok(data[0].type);
   });
 });
 

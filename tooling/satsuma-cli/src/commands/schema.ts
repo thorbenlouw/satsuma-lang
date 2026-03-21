@@ -75,7 +75,7 @@ export function register(program: Command): void {
         : null;
 
       if (opts.json) {
-        printJson(entry, schemaNode, index);
+        printJson(entry, schemaNode, index, opts);
       } else if (opts.fieldsOnly) {
         printFieldsOnly(entry);
       } else {
@@ -138,17 +138,28 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: WorkspaceIndex): void {
+function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: WorkspaceIndex, opts: { compact?: boolean; fieldsOnly?: boolean }): void {
   const spreadFields = expandEntityFields(entry, entry.namespace ?? null, index);
   const allFields = [...entry.fields, ...spreadFields];
+
+  // --json --fields-only: return just the fields array
+  if (opts.fieldsOnly) {
+    console.log(JSON.stringify(allFields, null, 2));
+    return;
+  }
+
   const out: Record<string, unknown> = {
     name: entry.name,
     ...(entry.namespace ? { namespace: entry.namespace } : {}),
-    note: entry.note,
     file: entry.file,
     row: entry.row,
     fields: allFields,
   };
+
+  // --json --compact: omit note
+  if (!opts.compact) {
+    out.note = entry.note;
+  }
 
   // Enrich with nested structure if CST is available
   if (schemaNode) {
