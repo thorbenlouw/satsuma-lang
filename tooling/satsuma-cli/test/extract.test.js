@@ -114,6 +114,84 @@ describe("extractSchemas", () => {
   });
 });
 
+// ── FieldDecl metadata enrichment (sl-cdvp) ──────────────────────────────────
+
+describe("FieldDecl metadata enrichment", () => {
+  it("extracts pk tag from field metadata", () => {
+    const metaBlock = n("metadata_block", [n("tag_token", [], "pk")]);
+    const fd = n("field_decl", [fieldName("id"), typeExpr("INT"), metaBlock]);
+    const body = n("schema_body", [fd]);
+    const block = n("schema_block", [blockLabel("test"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    assert.equal(result[0].fields[0].metadata.length, 1);
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "tag", tag: "pk" });
+  });
+
+  it("extracts ref key-value from field metadata", () => {
+    const kvKey = n("kv_key", [], "ref");
+    const kvVal = n("dotted_name", [], "dim_customer.customer_id");
+    const kvPair = n("key_value_pair", [kvKey, kvVal]);
+    const metaBlock = n("metadata_block", [kvPair]);
+    const fd = n("field_decl", [fieldName("customer_id"), typeExpr("STRING(36)"), metaBlock]);
+    const body = n("schema_body", [fd]);
+    const block = n("schema_block", [blockLabel("test"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    assert.equal(result[0].fields[0].metadata.length, 1);
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "kv", key: "ref", value: "dim_customer.customer_id" });
+  });
+
+  it("extracts enum metadata from field", () => {
+    const enumBody = n("enum_body", [ident("monthly"), ident("quarterly"), ident("annual")]);
+    const metaBlock = n("metadata_block", [enumBody]);
+    const fd = n("field_decl", [fieldName("period"), typeExpr("STRING(10)"), metaBlock]);
+    const body = n("schema_body", [fd]);
+    const block = n("schema_block", [blockLabel("test"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    assert.equal(result[0].fields[0].metadata.length, 1);
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "enum", values: ["monthly", "quarterly", "annual"] });
+  });
+
+  it("omits metadata when field has no metadata_block", () => {
+    const fd = n("field_decl", [fieldName("name"), typeExpr("VARCHAR(100)")]);
+    const body = n("schema_body", [fd]);
+    const block = n("schema_block", [blockLabel("test"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    assert.equal(result[0].fields[0].metadata, undefined);
+  });
+
+  it("extracts metadata from record_block children", () => {
+    const metaBlock = n("metadata_block", [n("tag_token", [], "required")]);
+    const innerFd = n("field_decl", [fieldName("street"), typeExpr("VARCHAR(200)"), metaBlock]);
+    const innerBody = n("schema_body", [innerFd]);
+    const recBlock = n("record_block", [blockLabel("address"), innerBody]);
+    const body = n("schema_body", [recBlock]);
+    const block = n("schema_block", [blockLabel("test"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    const rec = result[0].fields[0];
+    assert.equal(rec.name, "address");
+    assert.equal(rec.children[0].metadata.length, 1);
+    assert.deepEqual(rec.children[0].metadata[0], { kind: "tag", tag: "required" });
+  });
+
+  it("extracts metadata on record_block itself", () => {
+    const blockMeta = n("metadata_block", [n("tag_token", [], "required")]);
+    const innerBody = n("schema_body", [n("field_decl", [fieldName("id"), typeExpr("INT")])]);
+    const recBlock = n("record_block", [blockLabel("address"), blockMeta, innerBody]);
+    const body = n("schema_body", [recBlock]);
+    const block = n("schema_block", [blockLabel("test"), body]);
+    const root = n("source_file", [block]);
+    const result = extractSchemas(root);
+    const rec = result[0].fields[0];
+    assert.equal(rec.metadata.length, 1);
+    assert.deepEqual(rec.metadata[0], { kind: "tag", tag: "required" });
+  });
+});
+
 // ── extractFragments ──────────────────────────────────────────────────────────
 
 describe("extractFragments", () => {
