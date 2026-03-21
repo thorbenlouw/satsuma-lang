@@ -127,6 +127,10 @@ function printCompact(index: WorkspaceIndex): void {
   section("transforms", [...index.transforms.keys()]);
 }
 
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n !== 1 ? "s" : ""}`;
+}
+
 function printDefault(index: WorkspaceIndex, fileCount: number): void {
   const schemas = [...index.schemas.values()];
   const metrics = [...index.metrics.values()];
@@ -150,7 +154,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
     console.log(`Schemas (${schemas.length}):`);
     for (const s of schemas) {
       const note = s.note ? `  — ${s.note}` : "";
-      console.log(`  ${displayName(s)}  [${s.fields.length} fields]${note}`);
+      console.log(`  ${displayName(s)}  [${plural(s.fields.length, "field")}]${note}`);
     }
     console.log();
   }
@@ -160,7 +164,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
     for (const m of metrics) {
       const display = m.displayName ? ` "${m.displayName}"` : "";
       const grain = m.grain ? `  grain=${m.grain}` : "";
-      console.log(`  ${displayName(m)}${display}  [${m.fields.length} fields]${grain}`);
+      console.log(`  ${displayName(m)}${display}  [${plural(m.fields.length, "field")}]${grain}`);
     }
     console.log();
   }
@@ -171,7 +175,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
       const name = m.name ? displayName(m) : "(anonymous)";
       const src = m.sources.join(", ") || "?";
       const tgt = m.targets.join(", ") || "?";
-      console.log(`  ${name}  ${src} → ${tgt}  [${m.arrowCount} arrows]`);
+      console.log(`  ${name}  ${src} → ${tgt}  [${plural(m.arrowCount, "arrow")}]`);
     }
     console.log();
   }
@@ -179,7 +183,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
   if (fragments.length > 0) {
     console.log(`Fragments (${fragments.length}):`);
     for (const f of fragments) {
-      console.log(`  ${displayName(f)}  [${f.fields.length} fields]`);
+      console.log(`  ${displayName(f)}  [${plural(f.fields.length, "field")}]`);
     }
     console.log();
   }

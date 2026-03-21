@@ -1,6 +1,6 @@
 ---
 id: sl-e6su
-status: open
+status: closed
 deps: []
 links: [sl-xh3b]
 created: 2026-03-21T08:01:33Z
