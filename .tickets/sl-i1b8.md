@@ -1,6 +1,6 @@
 ---
 id: sl-i1b8
-status: open
+status: closed
 deps: [sl-rbvk]
 links: [sl-armj]
 created: 2026-03-21T07:58:25Z

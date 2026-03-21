@@ -189,6 +189,24 @@ describe("satsuma schema", () => {
     assert.ok(Array.isArray(data.fields));
   });
 
+  it("--json fields include metadata (pk, ref, enum) (sl-rbvk)", async () => {
+    const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const idField = data.fields.find((f) => f.name === "Id");
+    assert.ok(idField.metadata, "Id field should have metadata");
+    assert.deepEqual(idField.metadata[0], { kind: "tag", tag: "pk" });
+    const accField = data.fields.find((f) => f.name === "AccountId");
+    assert.ok(accField.metadata, "AccountId field should have metadata");
+    assert.equal(accField.metadata[0].kind, "kv");
+    assert.equal(accField.metadata[0].key, "ref");
+    const stageField = data.fields.find((f) => f.name === "StageName");
+    assert.ok(stageField.metadata, "StageName field should have metadata");
+    const enumEntry = stageField.metadata.find((m) => m.kind === "enum");
+    assert.ok(enumEntry, "StageName should have enum metadata");
+    assert.ok(enumEntry.values.length > 0, "enum should have values");
+  });
+
   it("--json --fields-only returns just the fields array (sl-5fbn)", async () => {
     const { stdout, code } = await run("schema", "country_codes", "--json", "--fields-only", EXAMPLES);
     assert.equal(code, 0);
@@ -223,6 +241,27 @@ describe("satsuma schema", () => {
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.metadata), "should have metadata array");
     assert.ok(data.metadata.some((m) => m.key === "format"), "should include format entry");
+  });
+
+  it("text output preserves record/list block-level metadata (sl-s8xn)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("schema", "commerce_order", XML);
+    assert.equal(code, 0);
+    assert.match(stdout, /record Order \(xpath/, "record block should show xpath metadata");
+    assert.match(stdout, /list Discounts \(xpath/, "list block should show xpath metadata");
+    assert.match(stdout, /list LineItems \(xpath/, "list block should show xpath metadata");
+  });
+
+  it("--json includes metadata on nested record/list fields (sl-s8xn)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("schema", "commerce_order", "--json", XML);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const order = data.fields.find((f) => f.name === "Order");
+    assert.ok(order.metadata, "Order record should have metadata");
+    assert.equal(order.metadata[0].key, "xpath");
+    const discounts = order.children.find((f) => f.name === "Discounts");
+    assert.ok(discounts.metadata, "Discounts list should have metadata");
   });
 });
 
@@ -289,6 +328,17 @@ describe("satsuma metric", () => {
     assert.equal(code, 0);
     assert.match(stdout, /slice/, "should show slice metadata");
     assert.match(stdout, /customer_segment/, "should show slice dimension");
+  });
+
+  it("--json fields include measure metadata (sl-i1b8)", async () => {
+    const { stdout, code } = await run("metric", "order_revenue", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const gross = data.fields.find((f) => f.name === "gross_revenue");
+    assert.ok(gross.metadata, "gross_revenue should have metadata");
+    assert.equal(gross.metadata[0].kind, "kv");
+    assert.equal(gross.metadata[0].key, "measure");
+    assert.equal(gross.metadata[0].value, "additive");
   });
 });
 

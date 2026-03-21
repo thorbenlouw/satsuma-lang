@@ -1,6 +1,6 @@
 ---
 id: sl-rbvk
-status: open
+status: closed
 deps: []
 links: [sl-armj]
 created: 2026-03-21T07:59:17Z

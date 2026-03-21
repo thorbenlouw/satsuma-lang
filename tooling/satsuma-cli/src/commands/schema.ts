@@ -111,7 +111,9 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
       const inner = lbl?.namedChildren[0];
       let lname = inner?.text ?? "";
       if (inner?.type === "quoted_name") lname = lname.slice(1, -1);
-      lines.push({ indent, text: `${pad}${kind} ${lname} {` });
+      const blockMeta = c.namedChildren.find((x) => x.type === "metadata_block");
+      const blockMetaText = blockMeta ? ` ${blockMeta.text}` : "";
+      lines.push({ indent, text: `${pad}${kind} ${lname}${blockMetaText} {` });
       const nested = c.namedChildren.find((x) => x.type === "schema_body");
       if (nested) lines.push(...collectFields(nested, indent + 1));
       lines.push({ indent, text: `${pad}}` });
