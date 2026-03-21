@@ -1,0 +1,5 @@
+import { some_schema } from "nonexistent_file.stm"
+
+schema local_schema {
+  id INT
+}

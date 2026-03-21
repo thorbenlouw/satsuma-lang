@@ -523,6 +523,18 @@ describe("satsuma lineage", () => {
     assert.equal(code, 1);
     assert.match(stderr, /cannot specify both/i);
   });
+
+  it("--depth --json edges only reference nodes in the nodes array (sl-iliz)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
+    const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--json", F);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const nodeNames = new Set(data.nodes.map((n) => n.name));
+    for (const edge of data.edges) {
+      assert.ok(nodeNames.has(edge.src), `edge src '${edge.src}' should be in nodes`);
+      assert.ok(nodeNames.has(edge.tgt), `edge tgt '${edge.tgt}' should be in nodes`);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1210,6 +1222,14 @@ describe("satsuma validate", () => {
     assert.match(stdout, /nonexistent_xform/);
     assert.doesNotMatch(stdout, /cleanup/, "known transform 'cleanup' should not be flagged");
     assert.match(stdout, /1 warning/);
+  });
+
+  it("includes missing import file in diagnostics (sl-bhpv)", async () => {
+    const BAD = resolve(import.meta.dirname, "fixtures", "missing-import.stm");
+    const { stdout, code } = await run("validate", BAD, "--json");
+    assert.equal(code, 0, "missing import is a warning, not an error");
+    const data = JSON.parse(stdout);
+    assert.ok(data.some((d) => d.rule === "missing-import"), "should have missing-import diagnostic");
   });
 });
 

@@ -129,6 +129,9 @@ function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag
 
   dfs(start, 0);
 
+  // Ensure all edge-referenced nodes appear in the nodes list
+  for (const { tgt } of dagEdges) visitedNodes.add(tgt);
+
   return {
     nodes: [...visitedNodes].map((n) => ({ name: n, ...graph.nodes.get(n) })),
     edges: dagEdges,
@@ -164,6 +167,9 @@ function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag 
   }
 
   dfs(target, 0);
+
+  // Ensure all edge-referenced nodes appear in the nodes list
+  for (const { src } of dagEdges) visitedNodes.add(src);
 
   return {
     nodes: [...visitedNodes].map((n) => ({ name: n, ...graph.nodes.get(n) })),

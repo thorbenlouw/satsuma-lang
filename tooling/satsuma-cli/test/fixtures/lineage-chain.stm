@@ -1,0 +1,23 @@
+schema source_a {
+  id INT
+}
+
+schema intermediate_b {
+  id INT
+}
+
+schema final_c {
+  id INT
+}
+
+mapping 'a to b' {
+  source { source_a }
+  target { intermediate_b }
+  id -> id
+}
+
+mapping 'b to c' {
+  source { intermediate_b }
+  target { final_c }
+  id -> id
+}
