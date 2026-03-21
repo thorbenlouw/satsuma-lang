@@ -57,7 +57,7 @@ export function register(program: Command): void {
 
       if (refs.length === 0) {
         console.log("No NL backtick references found.");
-        return;
+        process.exit(1);
       }
 
       if (opts.json) {

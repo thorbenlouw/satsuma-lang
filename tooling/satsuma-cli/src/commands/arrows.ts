@@ -113,7 +113,7 @@ export function register(program: Command): void {
 
       if (arrows.length === 0) {
         console.log(`No arrows found for '${fieldRef}'.`);
-        process.exit(0);
+        process.exit(1);
       }
 
       if (opts.json) {

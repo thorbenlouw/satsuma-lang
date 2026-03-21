@@ -70,12 +70,13 @@ export function register(program: Command): void {
 
       if (opts.json) {
         console.log(JSON.stringify({ name, refs }, null, 2));
+        if (refs.length === 0) process.exit(1);
         return;
       }
 
       if (refs.length === 0) {
         console.log(`No references to '${name}' found.`);
-        return;
+        process.exit(1);
       }
 
       printDefault(name, refs);

@@ -53,6 +53,11 @@ export function register(program: Command): void {
         process.exit(1);
       }
 
+      if (opts.from && opts.to) {
+        console.error("Cannot specify both --from and --to. Use one at a time.");
+        process.exit(1);
+      }
+
       const root = pathArg ?? ".";
       let files: string[];
       try {

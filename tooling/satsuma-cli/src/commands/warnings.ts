@@ -42,12 +42,13 @@ export function register(program: Command): void {
 
       if (opts.json) {
         console.log(JSON.stringify({ kind, count: items.length, items }, null, 2));
+        if (items.length === 0) process.exit(1);
         return;
       }
 
       if (items.length === 0) {
         console.log(`No ${kind} comments found.`);
-        return;
+        process.exit(1);
       }
 
       // Group by file

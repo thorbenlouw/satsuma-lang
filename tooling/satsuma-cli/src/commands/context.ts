@@ -89,7 +89,7 @@ export function register(program: Command): void {
 
       if (emitted.length === 0) {
         console.log("No relevant blocks found.");
-        return;
+        process.exit(1);
       }
 
       console.log(`// Context for: ${query}  (${used} tokens, ${emitted.length} blocks)`);

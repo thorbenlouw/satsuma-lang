@@ -1,6 +1,6 @@
 ---
 id: sl-u0ev
-status: open
+status: closed
 deps: []
 links: [sl-0ycs]
 created: 2026-03-21T07:58:54Z
