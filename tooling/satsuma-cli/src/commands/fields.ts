@@ -15,7 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, FieldDecl, ParsedFile, SyntaxNode } from "../types.js";
+import type { WorkspaceIndex, FieldDecl, ParsedFile, SyntaxNode, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
 
 interface FieldWithTags extends FieldDecl {
   tags?: string[];
@@ -23,8 +23,8 @@ interface FieldWithTags extends FieldDecl {
 
 export function register(program: Command): void {
   program
-    .command("fields <schema> [path]")
-    .description("List fields in a schema with types")
+    .command("fields <name> [path]")
+    .description("List fields in a schema, fragment, or metric")
     .option("--with-meta", "include metadata tags")
     .option("--unmapped-by <mapping>", "only unmapped fields relative to a mapping")
     .option("--json", "structured JSON output")
@@ -41,10 +41,22 @@ export function register(program: Command): void {
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      const resolved = resolveIndexKey(schemaName, index.schemas);
+      // Search schemas first, then fragments, then metrics
+      type ResolvedEntity = { key: string; entry: SchemaRecord | FragmentRecord | MetricRecord };
+      let resolved: ResolvedEntity | null = resolveIndexKey(schemaName, index.schemas);
+      let entityKind = "schema";
       if (!resolved) {
-        console.error(`Schema '${schemaName}' not found.`);
-        const close = [...index.schemas.keys()].find(
+        resolved = resolveIndexKey(schemaName, index.fragments);
+        entityKind = "fragment";
+      }
+      if (!resolved) {
+        resolved = resolveIndexKey(schemaName, index.metrics);
+        entityKind = "metric";
+      }
+      if (!resolved) {
+        const allKeys = [...index.schemas.keys(), ...index.fragments.keys(), ...index.metrics.keys()];
+        console.error(`'${schemaName}' not found in schemas, fragments, or metrics.`);
+        const close = allKeys.find(
           (k) => k.toLowerCase() === schemaName.toLowerCase(),
         );
         if (close) console.error(`Did you mean '${close}'?`);
@@ -52,16 +64,18 @@ export function register(program: Command): void {
       }
       const resolvedSchemaName = resolved.key;
 
-      const schema = resolved.entry;
-      let fields: FieldWithTags[] = schema.fields.map((f) => ({ ...f }));
+      const entity = resolved.entry;
+      let fields: FieldWithTags[] = entity.fields.map((f) => ({ ...f }));
 
-      // Expand fragment spreads — inline fields from spread fragments
-      const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
-      fields = [...fields, ...spreadFields];
+      // Expand fragment spreads — inline fields from spread fragments (schemas and fragments only)
+      if (entityKind !== "metric") {
+        const spreadFields = expandEntityFields(entity as SchemaRecord | FragmentRecord, entity.namespace ?? null, index);
+        fields = [...fields, ...spreadFields];
+      }
 
       // Enrich with metadata if requested
       if (opts.withMeta) {
-        enrichFieldMeta(schema.name, fields, parsedFiles);
+        enrichFieldMeta(entity.name, fields, parsedFiles);
       }
 
       // Filter to unmapped fields
@@ -91,7 +105,7 @@ export function register(program: Command): void {
             `All fields in '${schemaName}' are mapped by '${opts.unmappedBy}'.`,
           );
         } else {
-          console.log(`Schema '${schemaName}' has no fields.`);
+          console.log(`${entityKind.charAt(0).toUpperCase() + entityKind.slice(1)} '${schemaName}' has no fields.`);
         }
         return;
       }
