@@ -54,6 +54,11 @@ export function register(program: Command): void {
 
       const tag = opts.tag.toLowerCase();
       const scope = opts.in ?? "all";
+      const validScopes = ["all", "schema", "metric", "fragment"];
+      if (!validScopes.includes(scope)) {
+        console.error(`Invalid scope '${scope}'. Valid scopes: ${validScopes.join(", ")}`);
+        process.exit(1);
+      }
       const matches = searchTag(index, parsedFiles, tag, scope);
 
       if (opts.json) {

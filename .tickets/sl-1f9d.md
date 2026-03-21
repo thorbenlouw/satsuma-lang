@@ -1,6 +1,6 @@
 ---
 id: sl-1f9d
-status: open
+status: closed
 deps: []
 links: [sl-xh3b]
 created: 2026-03-21T07:59:46Z
