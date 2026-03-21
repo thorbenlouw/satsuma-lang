@@ -148,6 +148,24 @@ describe("satsuma schema", () => {
     assert.equal(code, 0);
     assert.match(stdout, /`field-with-dashes`/);
   });
+
+  it("text output includes comments from schema body (sl-i956)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "comments-test.stm");
+    const { stdout, code } = await run("schema", "comment_test", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /\/\/ regular comment/);
+    assert.match(stdout, /\/\/! warning: data quality issue/);
+    assert.match(stdout, /\/\/\? should we rename this\?/);
+  });
+
+  it("--compact strips comments from schema output (sl-i956)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "comments-test.stm");
+    const { stdout, code } = await run("schema", "comment_test", "--compact", F);
+    assert.equal(code, 0);
+    assert.doesNotMatch(stdout, /\/\/ regular comment/);
+    assert.doesNotMatch(stdout, /\/\/!/);
+    assert.doesNotMatch(stdout, /\/\/\?/);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -171,6 +189,24 @@ describe("satsuma metric", () => {
     const { code, stderr } = await run("metric", "no_such_metric_xyz", EXAMPLES);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
+  });
+
+  it("text output includes comments from metric body (sl-c1he)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "comments-test.stm");
+    const { stdout, code } = await run("metric", "comment_metric", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /\/\/ regular metric comment/);
+    assert.match(stdout, /\/\/! warning: aggregation/);
+    assert.match(stdout, /\/\/\? consider using SUM/);
+  });
+
+  it("--compact strips comments from metric output (sl-c1he)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "comments-test.stm");
+    const { stdout, code } = await run("metric", "comment_metric", "--compact", F);
+    assert.equal(code, 0);
+    assert.doesNotMatch(stdout, /\/\/ regular metric/);
+    assert.doesNotMatch(stdout, /\/\/!/);
+    assert.doesNotMatch(stdout, /\/\/\?/);
   });
 });
 
