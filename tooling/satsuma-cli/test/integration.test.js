@@ -736,6 +736,23 @@ describe("satsuma fields", () => {
     assert.match(stdout, /gross_revenue/);
     assert.match(stdout, /net_revenue/);
   });
+
+  it("text output shows nested record/list children with indentation (sl-1ugo)", async () => {
+    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs.stm");
+    const { stdout, code } = await run("fields", "mfcs_purchase_order", SAP);
+    assert.equal(code, 0);
+    assert.match(stdout, /items\s+list/);
+    // Children should be indented more than parent
+    const lines = stdout.split("\n");
+    const itemsLine = lines.findIndex((l) => l.includes("items"));
+    assert.ok(itemsLine >= 0);
+    const childLine = lines.find((l, i) => i > itemsLine && l.includes("item"));
+    assert.ok(childLine, "should have child 'item' field after 'items'");
+    // Child should be more indented
+    const parentIndent = lines[itemsLine].match(/^\s*/)[0].length;
+    const childIndent = childLine.match(/^\s*/)[0].length;
+    assert.ok(childIndent > parentIndent, `child indent ${childIndent} should be > parent indent ${parentIndent}`);
+  });
 });
 
 // ---------------------------------------------------------------------------
