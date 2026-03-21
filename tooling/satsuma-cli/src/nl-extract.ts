@@ -77,7 +77,10 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         c.type === "schema_block" ||
         c.type === "mapping_block" ||
         c.type === "metric_block" ||
-        c.type === "fragment_block"
+        c.type === "fragment_block" ||
+        c.type === "transform_block" ||
+        c.type === "record_block" ||
+        c.type === "list_block"
       ) {
         newParent = getBlockName(c);
       } else if (c.type === "field_decl") {

@@ -1,6 +1,6 @@
 ---
 id: sl-3nrg
-status: open
+status: closed
 deps: []
 links: [sl-jt7q]
 created: 2026-03-21T08:03:28Z

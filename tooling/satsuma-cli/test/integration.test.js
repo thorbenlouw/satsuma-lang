@@ -805,6 +805,26 @@ describe("satsuma nl", () => {
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
+
+  it("transform_block NL items have transform name as parent (sl-6ino)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nl-parent-test.stm");
+    const { stdout, code } = await run("nl", "all", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const transformItems = data.filter((d) => d.parent === "nl transform");
+    assert.ok(transformItems.length >= 2, "should have transform-parented items");
+  });
+
+  it("record/list block notes use block name as parent (sl-3nrg)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nl-parent-test.stm");
+    const { stdout, code } = await run("nl", "all", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const addressItems = data.filter((d) => d.parent === "address");
+    assert.ok(addressItems.length >= 1, "address block items should have parent 'address'");
+    const contactItems = data.filter((d) => d.parent === "contacts");
+    assert.ok(contactItems.length >= 1, "contacts block items should have parent 'contacts'");
+  });
 });
 
 // ---------------------------------------------------------------------------
