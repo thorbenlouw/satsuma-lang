@@ -134,6 +134,20 @@ describe("satsuma schema", () => {
     assert.ok(data.error, "should have error field");
     assert.match(data.error, /not found/i);
   });
+
+  it("preserves single quotes on quoted schema names in text output", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "quoted-names.stm");
+    const { stdout, code } = await run("schema", "My Complex Schema", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /schema 'My Complex Schema'/);
+  });
+
+  it("preserves backticks on backtick-quoted field identifiers in text output", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "quoted-names.stm");
+    const { stdout, code } = await run("schema", "My Complex Schema", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /`field-with-dashes`/);
+  });
 });
 
 // ---------------------------------------------------------------------------

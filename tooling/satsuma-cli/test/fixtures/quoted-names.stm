@@ -1,0 +1,8 @@
+schema 'My Complex Schema' {
+  `field-with-dashes` VARCHAR
+  normal_field INT
+}
+
+metric 'multi word metric' (source 'My Complex Schema') {
+  total DECIMAL
+}
