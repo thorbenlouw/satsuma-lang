@@ -41,7 +41,13 @@ export function register(program: Command): void {
       const kind = opts.questions ? "question" : "warning";
 
       if (opts.json) {
-        console.log(JSON.stringify({ kind, count: items.length, items }, null, 2));
+        const jsonItems = items.map((item) => ({
+          text: item.text,
+          row: item.row,
+          file: item.file,
+          ...(item.parent ? { block: item.parent, blockType: item.parentType } : {}),
+        }));
+        console.log(JSON.stringify({ kind, count: jsonItems.length, items: jsonItems }, null, 2));
         if (items.length === 0) process.exit(1);
         return;
       }

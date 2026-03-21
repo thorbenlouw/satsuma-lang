@@ -1,6 +1,6 @@
 ---
 id: sl-mdlr
-status: open
+status: closed
 deps: []
 links: [sl-eoco]
 created: 2026-03-21T07:59:24Z

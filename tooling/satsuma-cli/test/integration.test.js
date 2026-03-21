@@ -569,6 +569,16 @@ describe("satsuma warnings", () => {
     const { code } = await run("warnings", resolve(import.meta.dirname, "fixtures", "lint-clean.stm"));
     assert.equal(code, 1, "should exit 1 when no warnings found");
   });
+
+  it("--json includes block context (sl-c7yn)", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("warnings", "--json", DB);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const withBlock = data.items.filter((i) => i.block);
+    assert.ok(withBlock.length > 0, "at least one warning should have block context");
+    assert.ok(withBlock[0].blockType, "should have blockType");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -619,6 +629,13 @@ describe("satsuma context", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.some((d) => d.name === "raw_orders"), "should match raw_orders via //! comment");
+  });
+
+  it("searches metadata tags/values for query matches (sl-mdlr)", async () => {
+    const { stdout, code } = await run("context", "pii", EXAMPLES, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0, "should find blocks with pii metadata");
   });
 });
 

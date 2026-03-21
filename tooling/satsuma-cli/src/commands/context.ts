@@ -24,7 +24,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { extractBacktickRefs } from "../nl-ref-extract.js";
 import { extractNLContent } from "../nl-extract.js";
-import type { WorkspaceIndex, ParsedFile } from "../types.js";
+import type { WorkspaceIndex, ParsedFile, SyntaxNode } from "../types.js";
 
 interface ScoredCandidate {
   name: string;
@@ -137,6 +137,12 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
     }
   }
 
+  // Collect metadata text (tags, kv pairs) grouped by parent block name
+  const metaByParent = new Map<string, string[]>();
+  for (const { tree } of parsedFiles) {
+    collectMetadataText(tree.rootNode, null, metaByParent);
+  }
+
   const scoreEntry = (name: string, type: string, entry: { note?: string | null; fields?: Array<{ name: string; type: string }>; sources?: string[]; targets?: string[]; file: string; row: number }) => {
     let score = 0;
     score += scoreText(name, terms) * 10;
@@ -158,6 +164,11 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
     const nlTexts = nlByParent.get(name) ?? nlByParent.get(bareName) ?? [];
     for (const text of nlTexts) {
       score += scoreText(text, terms) * 2;
+    }
+    // Score metadata tags/values attributed to this block
+    const metaTexts = metaByParent.get(name) ?? metaByParent.get(bareName) ?? [];
+    for (const text of metaTexts) {
+      score += scoreText(text, terms);
     }
     if (score > 0) {
       results.push({ name, type, score, file: entry.file, row: entry.row });
@@ -251,4 +262,41 @@ function renderBlock(index: WorkspaceIndex, candidate: ScoredCandidate, compact?
   }
 
   return lines.join("\n");
+}
+
+// ── Metadata collection ──────────────────────────────────────────────────────
+
+const BLOCK_TYPES = new Set([
+  "schema_block", "mapping_block", "metric_block",
+  "fragment_block", "transform_block",
+]);
+
+function getBlockName(node: SyntaxNode): string | null {
+  const label = node.namedChildren.find((c) => c.type === "block_label");
+  if (!label) return null;
+  const inner = label.namedChildren[0];
+  if (!inner) return label.text;
+  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
+  if (inner.type === "qualified_name") {
+    const ids = inner.namedChildren.filter((c) => c.type === "identifier");
+    return ids.map((id) => id.text).join("::");
+  }
+  return inner.text;
+}
+
+/**
+ * Walk the CST and collect metadata_block text grouped by parent block name.
+ */
+function collectMetadataText(node: SyntaxNode, parent: string | null, result: Map<string, string[]>): void {
+  for (const c of node.namedChildren) {
+    let newParent = parent;
+    if (BLOCK_TYPES.has(c.type)) {
+      newParent = getBlockName(c);
+    }
+    if (c.type === "metadata_block" && newParent) {
+      if (!result.has(newParent)) result.set(newParent, []);
+      result.get(newParent)!.push(c.text);
+    }
+    collectMetadataText(c, newParent, result);
+  }
 }

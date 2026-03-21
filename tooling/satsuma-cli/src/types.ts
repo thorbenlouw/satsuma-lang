@@ -11,6 +11,7 @@ export interface SyntaxNode {
   type: string;
   text: string;
   namedChildren: SyntaxNode[];
+  parent: SyntaxNode | null;
   startPosition: { row: number; column: number };
   isMissing: boolean;
 }
@@ -107,12 +108,16 @@ export interface WarningRecord {
   text: string;
   file: string;
   row: number;
+  parent: string | null;
+  parentType: string | null;
 }
 
 export interface QuestionRecord {
   text: string;
   file: string;
   row: number;
+  parent: string | null;
+  parentType: string | null;
 }
 
 export interface NLRefData {
