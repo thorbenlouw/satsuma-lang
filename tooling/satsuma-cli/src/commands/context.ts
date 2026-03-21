@@ -23,7 +23,8 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { extractBacktickRefs } from "../nl-ref-extract.js";
-import type { WorkspaceIndex } from "../types.js";
+import { extractNLContent } from "../nl-extract.js";
+import type { WorkspaceIndex, ParsedFile } from "../types.js";
 
 interface ScoredCandidate {
   name: string;
@@ -54,7 +55,7 @@ export function register(program: Command): void {
       const index = buildIndex(parsedFiles);
 
       const terms = tokenize(query);
-      const candidates = scoreAll(index, terms);
+      const candidates = scoreAll(index, terms, parsedFiles);
       candidates.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 
       if (opts.json) {
@@ -122,8 +123,19 @@ function scoreText(text: string, terms: string[]): number {
  * Score all blocks in the index against terms.
  * Returns [{name, type, score, file, row}]
  */
-function scoreAll(index: WorkspaceIndex, terms: string[]): ScoredCandidate[] {
+function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFile[]): ScoredCandidate[] {
   const results: ScoredCandidate[] = [];
+
+  // Collect NL content (comments, notes) grouped by parent block name
+  const nlByParent = new Map<string, string[]>();
+  for (const { tree } of parsedFiles) {
+    const items = extractNLContent(tree.rootNode);
+    for (const item of items) {
+      if (!item.parent) continue;
+      if (!nlByParent.has(item.parent)) nlByParent.set(item.parent, []);
+      nlByParent.get(item.parent)!.push(item.text);
+    }
+  }
 
   const scoreEntry = (name: string, type: string, entry: { note?: string | null; fields?: Array<{ name: string; type: string }>; sources?: string[]; targets?: string[]; file: string; row: number }) => {
     let score = 0;
@@ -140,6 +152,12 @@ function scoreAll(index: WorkspaceIndex, terms: string[]): ScoredCandidate[] {
     }
     if (entry.targets) {
       for (const t of entry.targets) score += scoreText(t, terms);
+    }
+    // Score NL content (comments, notes) attributed to this block
+    const bareName = name.includes("::") ? name.slice(name.indexOf("::") + 2) : name;
+    const nlTexts = nlByParent.get(name) ?? nlByParent.get(bareName) ?? [];
+    for (const text of nlTexts) {
+      score += scoreText(text, terms) * 2;
     }
     if (score > 0) {
       results.push({ name, type, score, file: entry.file, row: entry.row });

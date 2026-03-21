@@ -556,6 +556,22 @@ describe("satsuma context", () => {
     assert.equal(code, 1, "should exit 1 when no results found");
     assert.match(stdout, /no relevant/i);
   });
+
+  it("searches comment text for query matches (sl-8zij)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "context-comments.stm");
+    const { stdout, code } = await run("context", "phone", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.some((d) => d.name === "crm_customers"), "should match crm_customers via //? comment");
+  });
+
+  it("searches warning comments for query matches (sl-8zij)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "context-comments.stm");
+    const { stdout, code } = await run("context", "conversion", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.some((d) => d.name === "raw_orders"), "should match raw_orders via //! comment");
+  });
 });
 
 // ---------------------------------------------------------------------------
