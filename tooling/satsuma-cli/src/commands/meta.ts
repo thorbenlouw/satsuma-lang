@@ -120,27 +120,41 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
 
 function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {
   const dot = fieldRef.indexOf(".");
-  const schemaName = fieldRef.slice(0, dot);
+  const entityName = fieldRef.slice(0, dot);
   const fieldName = fieldRef.slice(dot + 1);
 
-  const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
-  if (!resolvedSchema) {
-    console.error(`Schema '${schemaName}' not found.`);
+  // Search schemas, then fragments, then metrics
+  type ResolvedEntity = { key: string; entry: { fields: FieldDecl[]; file: string; namespace?: string } };
+  let resolved: ResolvedEntity | null = resolveIndexKey(entityName, index.schemas);
+  let blockType = "schema_block";
+  let bodyType = "schema_body";
+  if (!resolved) {
+    resolved = resolveIndexKey(entityName, index.fragments);
+    blockType = "fragment_block";
+    bodyType = "schema_body";
+  }
+  if (!resolved) {
+    resolved = resolveIndexKey(entityName, index.metrics);
+    blockType = "metric_block";
+    bodyType = "metric_body";
+  }
+  if (!resolved) {
+    console.error(`'${entityName}' not found in schemas, fragments, or metrics.`);
     process.exit(1);
   }
 
-  const schema = resolvedSchema.entry;
-  const field = findField(schema.fields, fieldName);
+  const entity = resolved.entry;
+  const field = findField(entity.fields, fieldName);
   if (!field) {
     console.error(
-      `Field '${fieldName}' not found in schema '${schemaName}'.`,
+      `Field '${fieldName}' not found in '${entityName}'.`,
     );
     process.exit(1);
   }
 
-  const parsed = parsedFiles.find((p) => p.filePath === schema.file);
-  const schemaNode = parsed ? findBlockNode(parsed.tree.rootNode, "schema_block", resolvedSchema.key) : null;
-  const body = schemaNode?.namedChildren.find((c) => c.type === "schema_body");
+  const parsed = parsedFiles.find((p) => p.filePath === entity.file);
+  const entityNode = parsed ? findBlockNode(parsed.tree.rootNode, blockType, resolved.key) : null;
+  const body = entityNode?.namedChildren.find((c) => c.type === bodyType);
   if (body) {
     for (const fieldDecl of findFieldDecls(body, fieldName)) {
       const metaNode = fieldDecl.namedChildren.find(
