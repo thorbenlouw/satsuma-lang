@@ -175,8 +175,14 @@ function findTagInMeta(metaNode: SyntaxNode, tag: string): string | null {
       const key = c.namedChildren.find((x) => x.type === "kv_key");
       if (key && key.text.toLowerCase() === tag) return key.text;
     }
+    // note_tag — matches --tag note
+    if (c.type === "note_tag" && tag === "note") {
+      return "note";
+    }
     // enum_body or slice_body — check identifiers inside
     if (c.type === "enum_body" || c.type === "slice_body") {
+      if (c.type === "enum_body" && tag === "enum") return "enum";
+      if (c.type === "slice_body" && tag === "slice") return "slice";
       for (const id of c.namedChildren) {
         if (id.type === "identifier" && id.text.toLowerCase() === tag) return id.text;
       }
