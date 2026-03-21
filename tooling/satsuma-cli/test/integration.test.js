@@ -1053,6 +1053,14 @@ describe("satsuma validate", () => {
     assert.match(stdout, /nonexistent_schema/);
     assert.match(stdout, /1 warning/);
   });
+
+  it("catches undefined fragment spread references (sl-idbf)", async () => {
+    const BAD = resolve(import.meta.dirname, "fixtures", "undefined-spread.stm");
+    const { stdout, code } = await run("validate", BAD);
+    assert.equal(code, 0, "warnings-only should exit 0");
+    assert.match(stdout, /undefined-ref/);
+    assert.match(stdout, /nonexistent_fragment/);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,4 @@
+schema test_schema {
+  id INT
+  ...nonexistent_fragment
+}
