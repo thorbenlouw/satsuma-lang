@@ -1,6 +1,6 @@
 ---
 id: sl-c7yn
-status: open
+status: closed
 deps: []
 links: [sl-xh3b]
 created: 2026-03-21T07:58:49Z

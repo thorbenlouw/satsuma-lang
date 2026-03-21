@@ -408,34 +408,67 @@ export function extractTransforms(rootNode: SyntaxNode): ExtractedTransform[] {
   }));
 }
 
+const BLOCK_TYPES = new Set([
+  "schema_block", "mapping_block", "metric_block",
+  "fragment_block", "transform_block",
+]);
+
+function findParentBlock(node: SyntaxNode): { name: string | null; blockType: string | null } {
+  let current = node.parent;
+  while (current) {
+    if (BLOCK_TYPES.has(current.type)) {
+      const label = child(current, "block_label");
+      const name = label ? labelText(current) : null;
+      const blockType = current.type.replace(/_block$/, "");
+      return { name, blockType };
+    }
+    current = current.parent;
+  }
+  return { name: null, blockType: null };
+}
+
 interface ExtractedWarning {
   text: string;
   row: number;
+  parent: string | null;
+  parentType: string | null;
 }
 
 /**
  * Extract all warning comments (//! ...).
  */
 export function extractWarnings(rootNode: SyntaxNode): ExtractedWarning[] {
-  return allDescendants(rootNode, "warning_comment").map((node) => ({
-    text: node.text.replace(/^\/\/!\s*/, ""),
-    row: node.startPosition.row,
-  }));
+  return allDescendants(rootNode, "warning_comment").map((node) => {
+    const { name, blockType } = findParentBlock(node);
+    return {
+      text: node.text.replace(/^\/\/!\s*/, ""),
+      row: node.startPosition.row,
+      parent: name,
+      parentType: blockType,
+    };
+  });
 }
 
 interface ExtractedQuestion {
   text: string;
   row: number;
+  parent: string | null;
+  parentType: string | null;
 }
 
 /**
  * Extract all question comments (//? ...).
  */
 export function extractQuestions(rootNode: SyntaxNode): ExtractedQuestion[] {
-  return allDescendants(rootNode, "question_comment").map((node) => ({
-    text: node.text.replace(/^\/\/\?\s*/, ""),
-    row: node.startPosition.row,
-  }));
+  return allDescendants(rootNode, "question_comment").map((node) => {
+    const { name, blockType } = findParentBlock(node);
+    return {
+      text: node.text.replace(/^\/\/\?\s*/, ""),
+      row: node.startPosition.row,
+      parent: name,
+      parentType: blockType,
+    };
+  });
 }
 
 export interface ExtractedImport {
