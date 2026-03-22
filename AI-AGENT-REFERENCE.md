@@ -75,66 +75,23 @@ COMMENT          = ("//" | "//!" | "//?") TEXT_TO_EOL ;
 ( ) = metadata      { } = structural content      " " = natural language
 
 ## Schema blocks
-schema <n> (<metadata>) {
+schema <name> (<metadata>) {
   field_name    TYPE           (tags)       // info
   field_name    TYPE           (tags)       //! warning
   field_name    TYPE           (tags)       //? todo
   record nested_obj {
     child       TYPE
   }
-  list repeated_items {       // use when the list has named subfields
+  list repeated_items {
     item        TYPE
   }
-  scalar_array  TYPE[]        // scalar array shorthand — no subfields
-  fixed_array   TYPE[5]       // fixed-length scalar array
+  list scalar_tags (note "element type STRING") {}  // scalar list — no subfields
   ...fragment_name
 }
 
 Metadata tokens (in parens):  pk, required, unique, indexed, pii, encrypt,
   encrypt AES-256-GCM, default val, enum {a, b, c}, format email,
   ref table.field, note "...", xpath "...", namespace prefix "uri", filter COND
-
-Governance metadata (same ( ) syntax, open-ended vocabulary):
-  classification "RESTRICTED"   // data sensitivity level
-  retention "7y"                 // how long data may be kept
-  gdpr "data-subject"            // regulatory scope flag
-  mask "last4"                   // redaction policy for non-prod
-  access "finance-only"          // access tier
-  lineage "source-of-record"     // provenance signal for lineage tooling
-  // Combine freely: (pii, classification "CONFIDENTIAL", retention "10y")
-  // Apply at schema level for defaults; override per field as needed.
-  // Query any tag: satsuma find --tag classification
-
-## Filter and flatten
-
-// 1. Filtered list — predicate travels with the schema, excluded before mapping runs
-list line_items (filter item_status != "cancelled") {
-  sku       STRING  (required)
-  quantity  INT
-}
-
-// 2. Flatten — each array element becomes its own output row
-mapping 'order lines' (flatten `Order.LineItems[]`) {
-  source { `commerce_order` }
-  target { `order_lines_parquet` }
-  Order.OrderId              -> order_id
-  Order.LineItems[].SKU      -> sku    { trim | uppercase }
-  Order.LineItems[].Quantity -> quantity
-}
-// Flattened path goes in the mapping metadata parens: (flatten `schema.field[]`)
-
-// 3. Multi-source filtered join — join + row-filter together in source { }
-mapping 'enriched orders' {
-  source {
-    `orders`
-    `customers`
-    "Join on orders.customer_id = customers.id
-     WHERE orders.status = 'completed' AND customers.region = 'EMEA'"
-  }
-  target { `emea_order_fact` }
-}
-// For 3+ sources list all schemas then write one NL string for the full join graph.
-// Keep the filter predicate in the same NL string as the join condition.
 
 ## Mapping blocks
 mapping <name> (<metadata>) {

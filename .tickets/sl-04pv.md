@@ -1,6 +1,6 @@
 ---
 id: sl-04pv
-status: done
+status: open
 deps: []
 links: [sl-80jy]
 created: 2026-03-20T18:41:21Z

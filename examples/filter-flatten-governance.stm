@@ -6,8 +6,8 @@ note {
 
   Demonstrates three language idioms in one integrated example:
 
-  1. **Scalar array fields** — arrays with no subfields written as `TYPE[]`
-     or `TYPE[n]` directly on a field line rather than an empty `list` block.
+  1. **Scalar list fields** — lists with no subfields written as empty
+     `list` blocks with the element type in metadata.
   2. **Filter and flatten** — filtering repeated elements at schema definition
      time and flattening nested lists into flat output rows in a mapping.
   3. **Governance metadata** — using `classification`, `retention`, and
@@ -51,10 +51,9 @@ schema order_events (
     currency      CHAR(3)       (required, default "GBP")
   }
 
-  // Scalar arrays: a list of plain strings and a list of plain decimals.
-  // No subfields — written as TYPE[] on the field line, not as empty list blocks.
-  promo_codes     STRING[]      (note "Applied promotion codes, may be empty")
-  tag_ids         INT[]         (classification "INTERNAL")
+  // Scalar lists: no subfields, so the element type lives in metadata.
+  list promo_codes (note "Applied promotion codes, may be empty; element type STRING") {}
+  list tag_ids    (classification "INTERNAL", note "element type INT") {}
 
   // Filtered list: only include line items that are not cancelled.
   // Items with status = 'cancelled' are excluded before any mapping runs.
@@ -84,10 +83,10 @@ schema customer_profiles (
   last_name         STRING(100)   (pii)
   acquisition_channel STRING(50)
   region            STRING(50)
-  // Scalar arrays used here for preference lists — no subfields needed
-  consent_flags     STRING[]      (classification "RESTRICTED", retention "7y",
-                                   note "e.g. ['email_marketing', 'sms', 'third_party']")
-  opt_out_channels  STRING[]      (classification "RESTRICTED")
+  // Scalar lists used here for preference lists — no subfields needed
+  list consent_flags  (classification "RESTRICTED", retention "7y",
+                       note "e.g. ['email_marketing', 'sms', 'third_party']; element type STRING") {}
+  list opt_out_channels (classification "RESTRICTED", note "element type STRING") {}
 }
 
 
@@ -110,7 +109,7 @@ schema completed_orders_parquet (
   tax               DECIMAL(12,2)
   discount          DECIMAL(12,2)
   total             DECIMAL(12,2) (required)
-  promo_codes       STRING[]      (note "Passed through from source unchanged")
+  list promo_codes  (note "Passed through from source unchanged; element type STRING") {}
   active_line_count INT           (required)
   ingest_timestamp  TIMESTAMPTZ   (required)
 }

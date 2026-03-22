@@ -1,6 +1,6 @@
 ---
 id: sl-5kux
-status: done
+status: open
 deps: []
 links: []
 created: 2026-03-20T18:41:46Z
