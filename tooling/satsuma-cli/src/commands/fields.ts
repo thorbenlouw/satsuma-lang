@@ -91,7 +91,7 @@ export function register(program: Command): void {
         }
 
         const mappedFields = getMappedFieldNames(resolvedMapping.key, resolvedSchemaName, index);
-        fields = fields.filter((f) => !mappedFields.has(f.name));
+        fields = filterUnmappedFields(fields, mappedFields, "");
       }
 
       if (opts.json) {
@@ -135,11 +135,40 @@ function getMappedFieldNames(mappingName: string, schemaName: string, index: Wor
       // Match arrow by bare mapping name and namespace
       const arrowQualified = arrow.namespace ? `${arrow.namespace}::${arrow.mapping}` : arrow.mapping;
       if (arrowQualified !== mappingName && arrow.mapping !== bareMappingName) continue;
-      if (isSource && arrow.source) mapped.add(arrow.source.replace(/\[\]$/, ""));
-      if (isTarget && arrow.target) mapped.add(arrow.target.replace(/\[\]$/, ""));
+      if (isSource && arrow.source) mapped.add(normalizePath(arrow.source));
+      if (isTarget && arrow.target) mapped.add(normalizePath(arrow.target));
     }
   }
   return mapped;
+}
+
+/** Strip all [] brackets from a path to normalize for comparison. */
+function normalizePath(p: string): string {
+  return p.replace(/\[\]/g, "");
+}
+
+/**
+ * Filter fields to only unmapped ones, recursing into record/list children.
+ * A record/list is excluded entirely if all children are mapped; if some
+ * children are mapped, the record is kept with only unmapped children.
+ */
+function filterUnmappedFields(fields: FieldWithTags[], mapped: Set<string>, prefix: string): FieldWithTags[] {
+  const result: FieldWithTags[] = [];
+  for (const f of fields) {
+    const path = prefix ? `${prefix}.${f.name}` : f.name;
+    if (mapped.has(f.name) || mapped.has(path)) continue;
+    if (f.children && f.children.length > 0) {
+      // Recurse: filter children, keeping only unmapped ones
+      const unmappedChildren = filterUnmappedFields(f.children as FieldWithTags[], mapped, path);
+      if (unmappedChildren.length > 0) {
+        result.push({ ...f, children: unmappedChildren });
+      }
+      // If all children are mapped (none left), skip the record entirely
+    } else {
+      result.push(f);
+    }
+  }
+  return result;
 }
 
 /**

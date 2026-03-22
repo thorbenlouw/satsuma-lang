@@ -1,6 +1,6 @@
 ---
 id: sl-4mh2
-status: open
+status: closed
 deps: [sl-1ugo]
 links: [sl-jt7q]
 created: 2026-03-21T08:01:53Z

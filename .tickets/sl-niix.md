@@ -1,6 +1,6 @@
 ---
 id: sl-niix
-status: open
+status: closed
 deps: []
 links: [sl-0o1x, sl-z157, sl-td9l]
 created: 2026-03-21T21:53:23Z

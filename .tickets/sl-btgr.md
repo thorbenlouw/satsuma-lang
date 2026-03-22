@@ -1,6 +1,6 @@
 ---
 id: sl-btgr
-status: open
+status: closed
 deps: []
 links: [sl-9xiz, sl-6ctd, sl-in1y, sl-531q]
 created: 2026-03-21T21:53:18Z
