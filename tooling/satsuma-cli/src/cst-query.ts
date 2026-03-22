@@ -27,6 +27,13 @@ export function getBlockName(node: SyntaxNode): string | null {
 }
 
 export function findBlockNode(rootNode: SyntaxNode, nodeType: string, qualifiedName: string): SyntaxNode | null {
+  // Handle anonymous blocks keyed by <anon>@file:row
+  const anonMatch = qualifiedName.match(/^<anon>@.*:(\d+)$/);
+  if (anonMatch) {
+    const targetRow = parseInt(anonMatch[1]!, 10); // keys use 0-based row from startPosition
+    return findBlockByRow(rootNode, nodeType, targetRow);
+  }
+
   const { namespace, localName } = splitQualifiedName(qualifiedName);
 
   for (const c of rootNode.namedChildren) {
@@ -43,6 +50,18 @@ export function findBlockNode(rootNode: SyntaxNode, nodeType: string, qualifiedN
     if (c.type === nodeType && getBlockName(c) === localName) return c;
   }
 
+  return null;
+}
+
+function findBlockByRow(rootNode: SyntaxNode, nodeType: string, targetRow: number): SyntaxNode | null {
+  for (const c of rootNode.namedChildren) {
+    if (c.type === nodeType && c.startPosition.row === targetRow) return c;
+    if (c.type === "namespace_block") {
+      for (const inner of c.namedChildren) {
+        if (inner.type === nodeType && inner.startPosition.row === targetRow) return inner;
+      }
+    }
+  }
   return null;
 }
 

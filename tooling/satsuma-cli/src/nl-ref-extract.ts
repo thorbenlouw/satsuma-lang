@@ -192,6 +192,8 @@ function walkMappings(node: SyntaxNode, namespace: string | null, results: Omit<
       walkMappings(c, nsName?.text ?? null, results);
     } else if (c.type === "mapping_block") {
       extractMappingNLRefs(c, namespace, results);
+    } else if (c.type === "transform_block") {
+      extractTransformNLRefs(c, namespace, results);
     }
   }
 }
@@ -206,6 +208,37 @@ function extractMappingNLRefs(mappingNode: SyntaxNode, namespace: string | null,
   if (!body) return;
 
   walkArrowsForNL(body, mappingName ?? "", namespace, null, results);
+}
+
+function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | null, results: Omit<NLRefData, "file">[]): void {
+  const lbl = transformNode.namedChildren.find((c) => c.type === "block_label");
+  const inner = lbl?.namedChildren[0];
+  let transformName = inner?.text ?? "";
+  if (inner?.type === "quoted_name") transformName = transformName.slice(1, -1);
+
+  const pipeChain = transformNode.namedChildren.find((c) => c.type === "pipe_chain");
+  if (!pipeChain) return;
+
+  for (const step of pipeChain.namedChildren) {
+    if (step.type === "pipe_step") {
+      const innerNode = step.namedChildren[0];
+      if (innerNode && (innerNode.type === "nl_string" || innerNode.type === "multiline_string")) {
+        const text = innerNode.type === "multiline_string"
+          ? innerNode.text.slice(3, -3).trim()
+          : innerNode.text.slice(1, -1);
+        if (text.includes("`")) {
+          results.push({
+            text,
+            mapping: `transform:${transformName}`,
+            namespace,
+            targetField: null,
+            line: innerNode.startPosition.row,
+            column: innerNode.startPosition.column,
+          });
+        }
+      }
+    }
+  }
 }
 
 function walkArrowsForNL(

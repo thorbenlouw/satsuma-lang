@@ -27,6 +27,8 @@ interface Match {
   block: string;
   field: string;
   tag: string;
+  fieldType?: string;
+  metadata?: string[];
   file: string;
   line: number;
 }
@@ -132,6 +134,7 @@ function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName:
   for (const c of bodyNode.namedChildren) {
     if (c.type === "field_decl") {
       const nameNode = c.namedChildren.find((x) => x.type === "field_name");
+      const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
       const inner = nameNode?.namedChildren[0];
       let fname = inner?.text ?? "";
@@ -140,11 +143,14 @@ function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName:
       if (meta) {
         const matched = findTagInMeta(meta, tag);
         if (matched) {
+          const allTags = collectAllTags(meta);
           acc.push({
             blockType,
             block: blockName,
             field: fname,
             tag: matched,
+            fieldType: typeNode?.text,
+            metadata: allTags.length > 0 ? allTags : undefined,
             file,
             line: c.startPosition.row + 1,
           });
@@ -191,6 +197,21 @@ function findTagInMeta(metaNode: SyntaxNode, tag: string): string | null {
   return null;
 }
 
+function collectAllTags(metaNode: SyntaxNode): string[] {
+  const tags: string[] = [];
+  for (const c of metaNode.namedChildren) {
+    if (c.type === "tag_token") tags.push(c.text);
+    else if (c.type === "key_value_pair") {
+      const key = c.namedChildren.find((x) => x.type === "kv_key");
+      const val = c.namedChildren.find((x) => x.type !== "kv_key");
+      tags.push(val ? `${key?.text} ${val.text}` : (key?.text ?? ""));
+    } else if (c.type === "note_tag") tags.push("note");
+    else if (c.type === "enum_body") tags.push("enum {...}");
+    else if (c.type === "slice_body") tags.push("slice {...}");
+  }
+  return tags;
+}
+
 // ── Default formatter ─────────────────────────────────────────────────────────
 
 function printDefault(matches: Match[]): void {
@@ -210,7 +231,8 @@ function printDefault(matches: Match[]): void {
   for (const { blockType, block, file, fields } of byBlock.values()) {
     console.log(`${blockType} ${block}  (${file})`);
     for (const f of fields) {
-      console.log(`  ${f.field.padEnd(24)}[${f.tag}]  line ${f.line}`);
+      const typeStr = f.fieldType ? `  ${f.fieldType}` : "";
+      console.log(`  ${f.field.padEnd(24)}${typeStr.padEnd(16)}[${f.tag}]  line ${f.line}`);
     }
     console.log();
   }

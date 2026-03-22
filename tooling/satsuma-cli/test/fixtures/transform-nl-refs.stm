@@ -1,0 +1,25 @@
+schema data_in {
+  first_name  VARCHAR
+  last_name   VARCHAR
+  region_code VARCHAR
+}
+
+schema data_out {
+  full_name    VARCHAR
+  region_name  VARCHAR
+}
+
+transform build_fullname {
+  "Concatenate `first_name` and `last_name` with a space"
+}
+
+transform region_lookup {
+  "Map `region_code` to full region name using standard mapping"
+}
+
+mapping 'transform block test' {
+  source { `data_in` }
+  target { `data_out` }
+  -> full_name { ...build_fullname }
+  region_code -> region_name { ...region_lookup }
+}
