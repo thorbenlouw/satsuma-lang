@@ -644,6 +644,7 @@ interface ExtractedArrow {
   classification: Classification;
   derived: boolean;
   line: number;
+  metadata?: import("./meta-extract.js").MetaEntry[];
 }
 
 /**
@@ -724,7 +725,11 @@ function extractSingleArrow(
     ? pipeSteps.map((s) => s.namedChildren[0]?.text ?? s.text).join(" | ")
     : "";
 
-  return {
+  // Extract arrow-level metadata if present
+  const metaNode = child(arrow, "metadata_block");
+  const metadata = metaNode ? extractMetadata(metaNode) : undefined;
+
+  const record: ExtractedArrow = {
     mapping: mappingName,
     namespace,
     source,
@@ -735,6 +740,12 @@ function extractSingleArrow(
     derived,
     line: arrow.startPosition.row,
   };
+
+  if (metadata && metadata.length > 0) {
+    record.metadata = metadata;
+  }
+
+  return record;
 }
 
 /**

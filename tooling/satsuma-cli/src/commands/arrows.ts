@@ -139,7 +139,7 @@ export function register(program: Command): void {
             targetSchema = targetSchemas[0] ?? resolvedSchema.key;
           }
 
-          return {
+          const result: Record<string, unknown> = {
             mapping: qMapping,
             source: a.source ? `${sourceSchema}.${a.source}` : null,
             target: a.target ? `${targetSchema}.${a.target}` : null,
@@ -150,6 +150,10 @@ export function register(program: Command): void {
             file: a.file,
             line: a.line + 1,
           };
+          if (a.metadata && a.metadata.length > 0) {
+            result.metadata = a.metadata;
+          }
+          return result;
         });
         console.log(JSON.stringify(jsonArrows, null, 2));
         return;

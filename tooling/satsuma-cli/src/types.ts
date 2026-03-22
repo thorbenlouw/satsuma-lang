@@ -111,6 +111,7 @@ export interface ArrowRecord {
   derived: boolean;
   line: number;
   file: string;
+  metadata?: import("./meta-extract.js").MetaEntry[];
 }
 
 export interface WarningRecord {
