@@ -45,13 +45,37 @@ export function register(program: Command): void {
         // Collect parse errors and extract data while tree is still valid
         parseErrors.push(...collectParseErrors(parsed.tree.rootNode, parsed.filePath));
 
-        // Check for missing import files
+        // Check for missing import files and undefined import names
         const imports = extractImports(parsed.tree.rootNode);
         for (const imp of imports) {
           if (!imp.path) continue;
           const resolved = resolve(dirname(parsed.filePath), imp.path);
           try {
             statSync(resolved);
+            // File exists — check that each imported name is defined in the target
+            const targetParsed = parseFile(resolved);
+            const targetData = extractFileData(targetParsed);
+            const targetNames = new Set<string>();
+            const allEntities = [...targetData.mappings, ...targetData.schemas, ...targetData.fragments, ...targetData.transforms];
+            for (const entity of allEntities) {
+              if (entity.name) {
+                targetNames.add(entity.name);
+                if (entity.namespace) targetNames.add(`${entity.namespace}::${entity.name}`);
+              }
+            }
+            for (const name of imp.names) {
+              if (!targetNames.has(name)) {
+                parseErrors.push({
+                  file: parsed.filePath,
+                  line: imp.row + 1,
+                  column: 1,
+                  severity: "warning",
+                  rule: "undefined-import",
+                  message: `Import name '${name}' not found in "${imp.path}"`,
+                  fixable: false,
+                });
+              }
+            }
           } catch {
             parseErrors.push({
               file: parsed.filePath,

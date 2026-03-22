@@ -1,6 +1,6 @@
 ---
 id: sl-ezpm
-status: open
+status: closed
 deps: [sl-wjb9]
 links: [sl-z4ya]
 created: 2026-03-21T08:03:42Z
@@ -32,3 +32,9 @@ The child arrows inside nested blocks are counted in `arrowCount` but not includ
 - examples/sap-po-to-mfcs.stm
 - examples/cobol-to-avro.stm
 
+
+## Notes
+
+**2026-03-22T00:30:50Z**
+
+Fixed by nested arrow children support in prior commit (sl-wjb9)
