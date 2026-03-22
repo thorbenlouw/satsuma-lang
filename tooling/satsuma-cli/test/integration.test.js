@@ -1537,6 +1537,13 @@ describe("satsuma validate", () => {
     assert.match(stdout, /no issues/i);
   });
 
+  it("suppresses field-not-in-schema for convention fields (stm-1hsk)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "convention-fields.stm");
+    const { stdout, code } = await run("validate", F);
+    assert.equal(code, 0, `Convention fields should not trigger warnings:\n${stdout}`);
+    assert.match(stdout, /no issues/i);
+  });
+
   it("--errors-only keeps semantic errors (not just parse errors)", async () => {
     const DUP = resolve(import.meta.dirname, "fixtures", "ns-duplicate.stm");
     const { stdout, code } = await run("validate", "--errors-only", DUP);

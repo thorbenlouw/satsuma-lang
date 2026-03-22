@@ -1,6 +1,6 @@
 ---
 id: sl-z4ya
-status: open
+status: closed
 deps: []
 links: [sl-wjb9, sl-ezpm, sl-9gvb, sl-4e5c, sl-ij5p, sl-531q]
 created: 2026-03-21T21:53:11Z

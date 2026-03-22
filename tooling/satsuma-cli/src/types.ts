@@ -44,6 +44,7 @@ export interface SchemaRecord {
   file: string;
   row: number;
   namespace?: string;
+  blockMetadata?: import("./meta-extract.js").MetaEntry[];
 }
 
 export interface MetricRecord {
