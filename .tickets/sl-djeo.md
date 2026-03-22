@@ -1,6 +1,6 @@
 ---
 id: sl-djeo
-status: open
+status: closed
 deps: []
 links: [sl-wvn8]
 created: 2026-03-21T08:02:12Z
@@ -34,3 +34,9 @@ The bug is in the extraction phase (nl-ref-extract.ts extractMappingNLRefs/walkA
 
 Reproducing fixture: /tmp/satsuma-test-nl-refs/multiline-nl.stm
 
+
+## Notes
+
+**2026-03-22T01:01:27Z**
+
+Fixed line number computation in resolveAllNLRefs to count newlines before the backtick offset and adjust the line accordingly. Column is also corrected for refs on subsequent lines. Added integration test. All 589 tests pass.

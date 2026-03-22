@@ -407,6 +407,18 @@ export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
       const classification = classifyRef(ref);
       const resolution = resolveRef(ref, mappingContext, index);
 
+      // Compute actual line/column for refs in multiline strings
+      const textBefore = item.text.slice(0, offset);
+      const newlines = (textBefore.match(/\n/g) ?? []).length;
+      const line = item.line + newlines;
+      let column: number;
+      if (newlines > 0) {
+        const lastNl = textBefore.lastIndexOf("\n");
+        column = offset - lastNl; // 1-based column from start of line
+      } else {
+        column = item.column + 1 + offset;
+      }
+
       results.push({
         ref,
         classification,
@@ -416,8 +428,8 @@ export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
         namespace: item.namespace,
         targetField: item.targetField,
         file: item.file,
-        line: item.line,
-        column: item.column + 1 + offset,
+        line,
+        column,
       });
     }
   }
