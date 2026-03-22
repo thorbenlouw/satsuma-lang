@@ -9,33 +9,9 @@
 ;
 ; Update this file whenever grammar.js `conflicts` array is changed.
 
-4
+1
 
-; ── Conflict 1: key_value_pair vs tag_token ───────────────────────────────────
-; Context: _metadata_entry inside metadata_block ( )
-;
-; After an identifier in metadata position, 1 token of lookahead is insufficient
-; to decide between:
-;   tag_token:      identifier alone     e.g.  (pii)
-;   key_value_pair: identifier + value   e.g.  (format email)
-;
-; Resolution: GLR explores both paths.
-;   Next `,` or `)` → tag_token wins.
-;   Next identifier / string / backtick → key_value_pair wins.
-
-; ── Conflict 2: map_arrow vs nested_arrow ────────────────────────────────────
-; Context: _arrow_decl inside mapping_body
-;
-; After src_path -> tgt_path (metadata)?, both rules can continue:
-;   map_arrow:    optional { pipe_chain }
-;   nested_arrow: required { arrow_decl* }
-;
-; Resolution: GLR explores both paths.
-;   No `{`  → map_arrow (no transform body).
-;   `{` then pipe_step (string, token_call, `map`) → map_arrow transform body.
-;   `{` then `->` or path token → nested_arrow body.
-
-; ── Conflict 3: _spread_words (self) ──────────────────────────────────────────
+; ── Conflict 1: _spread_words (self) ──────────────────────────────────────────
 ; Context: spread_label inside schema_body or fragment body
 ;
 ; In `...audit columns`, after the first identifier the parser cannot tell
@@ -45,13 +21,3 @@
 ; Resolution: GLR explores both continuations.
 ;   prec.dynamic(-1) on _spread_words favours the shorter match so that
 ;   a following field_decl is not swallowed into the spread.
-
-; ── Conflict 4: field_decl vs _spread_words ───────────────────────────────────
-; Context: schema_body or fragment body
-;
-; After `...identifier`, the next identifier could continue a multi-word
-; spread label (e.g. `...audit columns`) or begin a new field_decl.
-;
-; Resolution: GLR explores both paths.
-;   prec.dynamic(-1) on _spread_words ensures field_decl wins when it
-;   produces a valid parse (i.e. identifier followed by type_expr).
