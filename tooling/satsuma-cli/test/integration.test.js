@@ -1964,6 +1964,37 @@ describe("satsuma nl-refs", () => {
     const countryCd = refs.find((r) => r.ref === "COUNTRY_CD");
     assert.ok(countryCd, "should find COUNTRY_CD backtick ref");
   });
+
+  it("extracts backtick refs from standalone transform blocks", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "transform-nl-refs.stm");
+    const { stdout, code } = await run("nl-refs", "--json", fixture);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    assert.equal(refs.length, 3, "should find 3 backtick refs");
+    const refNames = refs.map((r) => r.ref).sort();
+    assert.deepStrictEqual(refNames, ["first_name", "last_name", "region_code"]);
+  });
+
+  it("shows transform name in mapping field for transform refs", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "transform-nl-refs.stm");
+    const { stdout, code } = await run("nl-refs", "--json", fixture);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    const firstName = refs.find((r) => r.ref === "first_name");
+    assert.equal(firstName.mapping, "transform:build_fullname");
+    const regionCode = refs.find((r) => r.ref === "region_code");
+    assert.equal(regionCode.mapping, "transform:region_lookup");
+  });
+
+  it("displays transform refs in text output", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "transform-nl-refs.stm");
+    const { stdout, code } = await run("nl-refs", fixture);
+    assert.equal(code, 0);
+    assert.match(stdout, /transform:build_fullname/);
+    assert.match(stdout, /first_name/);
+    assert.match(stdout, /last_name/);
+    assert.match(stdout, /region_code/);
+  });
 });
 
 // ---------------------------------------------------------------------------

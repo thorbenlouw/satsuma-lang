@@ -1,6 +1,6 @@
 ---
 id: sl-3dd2
-status: open
+status: closed
 deps: []
 links: [sl-wvn8]
 created: 2026-03-21T08:01:05Z

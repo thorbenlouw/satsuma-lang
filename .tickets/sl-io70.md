@@ -1,6 +1,6 @@
 ---
 id: sl-io70
-status: open
+status: closed
 deps: [sl-cdvp]
 links: [sl-xh3b]
 created: 2026-03-21T07:58:42Z
