@@ -234,7 +234,7 @@ function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | n
       const innerNode = step.namedChildren[0];
       if (innerNode && (innerNode.type === "nl_string" || innerNode.type === "multiline_string")) {
         const text = innerNode.type === "multiline_string"
-          ? innerNode.text.slice(3, -3).trim()
+          ? innerNode.text.slice(3, -3)
           : innerNode.text.slice(1, -1);
         if (text.includes("`")) {
           results.push({
@@ -260,7 +260,7 @@ function extractStandaloneNoteRefs(
   for (const inner of noteNode.namedChildren) {
     if (inner.type === "nl_string" || inner.type === "multiline_string") {
       const text = inner.type === "multiline_string"
-        ? inner.text.slice(3, -3).trim()
+        ? inner.text.slice(3, -3)
         : inner.text.slice(1, -1);
       if (text.includes("`")) {
         results.push({
@@ -312,7 +312,7 @@ function walkArrowsForNL(
       for (const inner of c.namedChildren) {
         if (inner.type === "nl_string" || inner.type === "multiline_string") {
           const text = inner.type === "multiline_string"
-            ? inner.text.slice(3, -3).trim()
+            ? inner.text.slice(3, -3)
             : inner.text.slice(1, -1);
           if (text.includes("`")) {
             results.push({
@@ -339,7 +339,7 @@ function walkArrowsForNL(
             const innerNode = step.namedChildren[0];
             if (innerNode && (innerNode.type === "nl_string" || innerNode.type === "multiline_string")) {
               const text = innerNode.type === "multiline_string"
-                ? innerNode.text.slice(3, -3).trim()
+                ? innerNode.text.slice(3, -3)
                 : innerNode.text.slice(1, -1);
               if (text.includes("`")) {
                 results.push({

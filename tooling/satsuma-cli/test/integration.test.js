@@ -145,6 +145,13 @@ describe("satsuma schema", () => {
     assert.ok(Array.isArray(data.fields));
   });
 
+  it("--json row is 1-indexed (sl-2usp)", async () => {
+    const { stdout, code } = await run("schema", "country_codes", "--json", EXAMPLES);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.row, 4, "country_codes starts on line 4 (1-indexed)");
+  });
+
   it("exits 1 for unknown schema", async () => {
     const { code, stderr } = await run("schema", "no_such_schema_xyz", EXAMPLES);
     assert.equal(code, 1);
@@ -2398,12 +2405,12 @@ describe("satsuma nl-refs", () => {
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
     assert.equal(refs.length, 4, "should find 4 backtick refs");
-    // First two refs are on the first line of the multiline string (line 14, 0-indexed)
-    assert.equal(refs[0].line, 14, "first ref should be on line 14");
-    assert.equal(refs[1].line, 14, "second ref should be on line 14");
-    // Last two refs are on the third line of the multiline string (line 16, 0-indexed)
-    assert.equal(refs[2].line, 16, "third ref should be on line 16");
-    assert.equal(refs[3].line, 16, "fourth ref should be on line 16");
+    // First two refs are on the first line of the multiline string (line 15, 1-indexed)
+    assert.equal(refs[0].line, 15, "first ref should be on line 15");
+    assert.equal(refs[1].line, 15, "second ref should be on line 15");
+    // Last two refs are on the third line of the multiline string (line 17, 1-indexed)
+    assert.equal(refs[2].line, 17, "third ref should be on line 17");
+    assert.equal(refs[3].line, 17, "fourth ref should be on line 17");
   });
 });
 

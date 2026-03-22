@@ -158,7 +158,7 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
     name: entry.name,
     ...(entry.namespace ? { namespace: entry.namespace } : {}),
     file: entry.file,
-    row: entry.row,
+    row: entry.row + 1,
     fields: allFields,
   };
 

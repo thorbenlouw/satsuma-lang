@@ -1,6 +1,6 @@
 ---
 id: sl-2usp
-status: open
+status: closed
 deps: []
 links: [sl-udpf]
 created: 2026-03-22T07:45:03Z
@@ -35,3 +35,12 @@ Actual: "row": 3
 
 Verified across multiple files — the row value is always exactly 1 less than the actual file line number. The sl-m02g fix may have missed the schema command, or the schema command reads the row from a different code path than the one that was fixed.
 
+
+## Notes
+
+**2026-03-22T09:39:35Z**
+
+**2026-03-22T12:00:00Z**
+
+Cause: Schema command outputs tree-sitter's 0-indexed `startPosition.row` directly without converting to 1-indexed.
+Fix: Added `+ 1` to `row: entry.row` in `schema.ts` JSON output.
