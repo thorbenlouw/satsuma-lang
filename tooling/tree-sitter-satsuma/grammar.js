@@ -152,14 +152,10 @@ module.exports = grammar({
       ),
 
     mapping_body: ($) =>
-      seq(
-        repeat($.note_block),
-        $.source_block,
-        $.target_block,
-        repeat($._mapping_body_item),
-      ),
+      repeat1($._mapping_body_item),
 
-    _mapping_body_item: ($) => choice($.note_block, $._arrow_decl),
+    _mapping_body_item: ($) =>
+      choice($.note_block, $.source_block, $.target_block, $._arrow_decl),
 
     // source { ref1, ref2 } or source { ref1 ref2 } or source { "join ..." }
     source_block: ($) =>

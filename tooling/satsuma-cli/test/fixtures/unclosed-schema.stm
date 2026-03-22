@@ -1,0 +1,9 @@
+// Valid schema followed by unclosed schema at EOF.
+
+schema good_one {
+  id UUID
+  name VARCHAR
+}
+
+schema broken_one {
+  customer_id UUID

@@ -1,6 +1,6 @@
 ---
 id: sl-icqz
-status: open
+status: closed
 deps: []
 links: [sl-7i7j]
 created: 2026-03-21T08:00:19Z
@@ -34,3 +34,8 @@ Also tested without a label (derived-arrow.stm) - same result.
 **2026-03-22T02:09:28Z**
 
 Blocked: requires tree-sitter grammar changes. C++ compiler is unavailable in sandbox.
+
+**2026-03-22T07:17:34Z**
+
+Cause: mapping_body grammar rule required both source_block and target_block, but the spec makes them optional.
+Fix: Changed mapping_body from seq(source, target, items) to repeat1(choice(note, source, target, arrow)). Added corpus tests for target-only, source-only, and arrows-only mappings.

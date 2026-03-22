@@ -1,0 +1,11 @@
+// Target-only mapping with derived arrows (no source block).
+// Per the spec, source and target sub-blocks are optional.
+
+schema computed_target {
+  id UUID
+}
+
+mapping 'computed values' {
+  target { computed_target }
+  -> id { uuid_v4() }
+}
