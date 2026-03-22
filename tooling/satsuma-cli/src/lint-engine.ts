@@ -146,11 +146,14 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
       const sm = trimmed.match(sourceLineRe);
       if (sm) {
         const existing = sm[1]!.trim();
-        // Check both qualified and unqualified forms
-        const existingRefs = existing.split(/\s*,\s*/);
+        // Check both qualified and unqualified forms (with or without backticks)
+        const existingRefs = existing.split(/\s*,\s*/).map((r) => r.replace(/^`|`$/g, ""));
         if (existingRefs.includes(schemaRef) || existingRefs.includes(insertRef)) return source;
+        // Use backtick wrapping if existing entries use backticks, or always for spec compliance
+        const useBackticks = existing.includes("`");
+        const wrappedRef = useBackticks ? `\`${insertRef}\`` : insertRef;
         const indent = lines[i]!.match(/^(\s*)/)![1];
-        const newRefs = existing ? `${existing}, ${insertRef}` : insertRef;
+        const newRefs = existing ? `${existing}, ${wrappedRef}` : wrappedRef;
         lines[i] = `${indent}source { ${newRefs} }`;
         return lines.join("\n");
       }
