@@ -1,23 +1,33 @@
 schema source_a {
-  id INT
+  id INTEGER
 }
 
 schema intermediate_b {
-  id INT
+  id INTEGER
 }
 
-schema final_c {
-  id INT
+schema intermediate_c {
+  id INTEGER
 }
 
-mapping 'a to b' {
+schema target_d {
+  id INTEGER
+}
+
+mapping 'a_to_b' {
   source { source_a }
   target { intermediate_b }
   id -> id
 }
 
-mapping 'b to c' {
+mapping 'b_to_c' {
   source { intermediate_b }
-  target { final_c }
+  target { intermediate_c }
+  id -> id
+}
+
+mapping 'c_to_d' {
+  source { intermediate_c }
+  target { target_d }
   id -> id
 }
