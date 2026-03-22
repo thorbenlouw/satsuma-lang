@@ -253,4 +253,4 @@ The agent expresses the enum mapping structurally using `map { }` and preserves 
 
 ---
 
-**Next:** [Lesson 04 — Reuse, Imports, and Multi-File Thinking](04-mappings.md) — how fragments, imports, and shared definitions make large workspaces manageable.
+**Next:** [Lesson 04 — Reuse, Imports, and Multi-File Thinking](04-reuse-and-imports.md) — how fragments, imports, and shared definitions make large workspaces manageable.

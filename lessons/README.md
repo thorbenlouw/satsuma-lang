@@ -56,13 +56,13 @@ By the end, the learner sees Satsuma less as "a language to master" and more as 
 
 ### [Lesson 01 — What Satsuma Is Really For](01-what-is-satsuma.md)
 
-Introduces Satsuma as the replacement for spreadsheet and wiki mapping specs, and establishes the hybrid model from the updated docs: deterministic structure plus bounded natural language, with the CLI extracting facts and the agent doing the reasoning. The learner’s first task is not to write a perfect file from scratch, but to understand what kinds of questions can be answered structurally and what kinds require judgment.
+Introduces Satsuma as the replacement for spreadsheet and wiki mapping specs, and establishes the hybrid model from the updated docs: deterministic structure plus bounded natural language, with the CLI extracting facts and the agent doing the reasoning. The learner’s first task is not to write a perfect file from scratch, but to understand what kinds of questions can be answered structurally and what kinds require judgment. Also covers how to set up AI agents (GitHub Copilot, Claude Code, Claude in a browser, etc.) to work with Satsuma using `satsuma --intro-for-agents`.
 
-**Covers:** project vision, why Satsuma exists, the parser-backed + agent-backed split, the three-delimiter rule (`( )`, `{ }`, `" "`), comments vs notes, a first minimal schema + mapping example, what humans own vs what agents own.
+**Covers:** project vision, why Satsuma exists, the parser-backed + agent-backed split, the three-delimiter rule (`( )`, `{ }`, `" "`), comments vs notes, a first minimal schema + mapping example, what humans own vs what agents own, setting up AI agents with `satsuma --intro-for-agents`.
 
 ---
 
-### [Lesson 02 — Reading Satsuma with an Agent](02-schemas.md)
+### [Lesson 02 — Reading Satsuma with an Agent](02-reading-satsuma.md)
 
 Teaches learners how to approach an unfamiliar Satsuma file without becoming syntax archaeologists. The emphasis is on quickly identifying schemas, fields, metadata, notes, and nested structures, then asking the agent to explain the file in business terms while preserving the exact structure. This is where learners first see that reading Satsuma is a collaboration problem, not a memorization problem.
 
@@ -70,17 +70,17 @@ Teaches learners how to approach an unfamiliar Satsuma file without becoming syn
 
 ---
 
-### [Lesson 03 — Writing Schemas from Imperfect Inputs](03-fragments-and-imports.md)
+### [Lesson 03 — Writing Schemas from Imperfect Inputs](03-writing-schemas.md)
 
 Shows how a human can provide spreadsheets, API docs, sample payloads, or database extracts and have the agent draft valid schema blocks. The lesson teaches what information the agent needs, how to review field names/types/metadata, and when to preserve ambiguity as a note instead of forcing false precision.
 
-It explicitly includes the Lite Excel-import workflow from [features/04-excel-to-stm-skill/excel-to-stm-prompt.md](/Users/thorben/dev/personal/satsuma-lang/features/04-excel-to-stm-skill/excel-to-stm-prompt.md): survey the workbook, identify tab roles and column roles, generate Satsuma, then self-critique for coverage, types, and transform fidelity before the human approves the result.
+It explicitly includes the Lite Excel-import workflow from [features/04-excel-to-stm-skill/excel-to-stm-prompt.md](../features/04-excel-to-stm-skill/excel-to-stm-prompt.md): survey the workbook, identify tab roles and column roles, generate Satsuma, then self-critique for coverage, types, and transform fidelity before the human approves the result.
 
 **Covers:** drafting `schema` blocks from source materials, using metadata like `pk`, `required`, `pii`, `enum`, `format`, capturing caveats in `note`, choosing when to use quoted NL instead of invented pseudo-logic, review prompts for correcting agent-generated schemas, Excel-to-Satsuma with the workbook-survey -> column-role-detection -> generation -> self-critique approach.
 
 ---
 
-### [Lesson 04 — Reuse, Imports, and Multi-File Thinking](04-mappings.md)
+### [Lesson 04 — Reuse, Imports, and Multi-File Thinking](04-reuse-and-imports.md)
 
 Moves from isolated files to real workspaces. Learners see how fragments, imports, and shared definitions reduce duplication and make large mapping inventories manageable. The agent’s role here is to help identify reusable structures and keep cross-file references consistent.
 
@@ -88,7 +88,7 @@ Moves from isolated files to real workspaces. Learners see how fragments, import
 
 ---
 
-### [Lesson 05 — Mapping Blocks: Declaring Flow, Not Writing Code](05-transforms.md)
+### [Lesson 05 — Mapping Blocks: Declaring Flow, Not Writing Code](05-mappings.md)
 
 Introduces mapping blocks as the heart of the language. The learner focuses on expressing the business relationship between source and target, while the agent helps generate arrows, detect omissions, and keep the syntax well-formed. This lesson reinforces that a mapping is a specification artifact, not implementation code.
 
@@ -96,7 +96,7 @@ Introduces mapping blocks as the heart of the language. The learner focuses on e
 
 ---
 
-### [Lesson 06 — Natural Language Transforms and Agent Reasoning](06-nested-and-array-mappings.md)
+### [Lesson 06 — Natural Language Transforms and Agent Reasoning](06-nl-transforms.md)
 
 This is the most important conceptual lesson. It teaches why natural-language transforms are not a weakness in Satsuma but a deliberate design choice. Learners practice giving the agent business-rule prose, asking it to turn that intent into well-placed Satsuma NL blocks or structural pipelines where appropriate, and reviewing whether the result preserves meaning. The lesson also covers how agents should reason about NL blocks surfaced by the CLI.
 
@@ -104,7 +104,7 @@ This is the most important conceptual lesson. It teaches why natural-language tr
 
 ---
 
-### [Lesson 07 — Nested Data, Arrays, and Complex Shapes](07-metrics.md)
+### [Lesson 07 — Nested Data, Arrays, and Complex Shapes](07-nested-mappings.md)
 
 Extends the mapping model to real nested payloads and repeated structures. The learner focuses on the conceptual shape of the data, while the agent helps produce correct path expressions and nested arrow blocks. The lesson positions complexity as something the agent should shoulder mechanically, while the human validates that the shape matches reality.
 
@@ -112,7 +112,7 @@ Extends the mapping model to real nested payloads and repeated structures. The l
 
 ---
 
-### [Lesson 08 — The Satsuma CLI as the Agent’s Toolkit](08-ai-agents.md)
+### [Lesson 08 — The Satsuma CLI as the Agent’s Toolkit](08-satsuma-cli.md)
 
 Reframes the CLI correctly based on the current docs: not as a user-facing Swiss army knife for natural-language querying, but as a deterministic extraction layer the agent composes into workflows. The learner sees how to use `summary`, `schema`, `mapping`, `fields`, `arrows`, `meta`, `nl`, `lineage`, `graph`, `validate`, `lint`, and `diff` to avoid loading whole files into context. The key idea is that the CLI gives exact slices; the agent supplies the analysis.
 
@@ -120,7 +120,7 @@ Reframes the CLI correctly based on the current docs: not as a user-facing Swiss
 
 ---
 
-### [Lesson 09 — Human-Agent Workflows for Navigation, Impact, and Review](09-satsuma-cli.md)
+### [Lesson 09 — Human-Agent Workflows for Navigation, Impact, and Review](09-agent-workflows.md)
 
 Builds complete workflows out of the CLI primitives. Instead of teaching commands one by one in isolation, this lesson teaches what a human asks for and how the agent should respond: trace downstream impact of a source field, check whether target fields are unmapped, find PII propagation, review a structural diff, or locate all open warnings. The learner practices steering the workflow and judging the result.
 
@@ -212,14 +212,14 @@ By the end of this curriculum, a learner should be able to say:
 lessons/
 ├── README.md                          ← this file (lesson plan index)
 ├── 01-what-is-satsuma.md
-├── 02-schemas.md
-├── 03-fragments-and-imports.md
-├── 04-mappings.md
-├── 05-transforms.md
-├── 06-nested-and-array-mappings.md
-├── 07-metrics.md
-├── 08-ai-agents.md
-├── 09-satsuma-cli.md
+├── 02-reading-satsuma.md
+├── 03-writing-schemas.md
+├── 04-reuse-and-imports.md
+├── 05-mappings.md
+├── 06-nl-transforms.md
+├── 07-nested-mappings.md
+├── 08-satsuma-cli.md
+├── 09-agent-workflows.md
 ├── 10-real-world-workflows.md
 ├── 11-ba-playbook.md
 ├── 12-data-engineer-playbook.md

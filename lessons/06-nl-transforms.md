@@ -202,4 +202,4 @@ The ambiguity is now tracked and discoverable.
 
 ---
 
-**Next:** [Lesson 07 — Nested Data, Arrays, and Complex Shapes](07-metrics.md) — extending the mapping model to real nested payloads and repeated structures.
+**Next:** [Lesson 07 — Nested Data, Arrays, and Complex Shapes](07-nested-mappings.md) — extending the mapping model to real nested payloads and repeated structures.

@@ -227,4 +227,4 @@ Now, if the address format changes (say, `postal_code` needs to be `STRING(30)` 
 
 ---
 
-**Next:** [Lesson 05 — Mapping Blocks: Declaring Flow, Not Writing Code](05-transforms.md) — the heart of Satsuma: expressing how data moves from source to target.
+**Next:** [Lesson 05 — Mapping Blocks: Declaring Flow, Not Writing Code](05-mappings.md) — the heart of Satsuma: expressing how data moves from source to target.
