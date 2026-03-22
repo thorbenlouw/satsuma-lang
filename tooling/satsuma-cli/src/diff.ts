@@ -5,6 +5,7 @@
  */
 
 import type {
+  ArrowRecord,
   BlockDelta,
   Delta,
   FieldDecl,
@@ -23,14 +24,42 @@ import type {
  * Compute a structural delta between two WorkspaceIndex instances.
  */
 export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta {
+  // Collect arrows per mapping for detailed comparison
+  const arrowsA = collectArrowsByMapping(indexA);
+  const arrowsB = collectArrowsByMapping(indexB);
+
   return {
     schemas: diffBlockMap(indexA.schemas, indexB.schemas, diffSchema),
-    mappings: diffBlockMap(indexA.mappings, indexB.mappings, diffMapping),
+    mappings: diffBlockMap(indexA.mappings, indexB.mappings, (a, b) => {
+      const mappingKey = [...indexA.mappings.entries()].find(([, v]) => v === a)?.[0] ?? "";
+      return diffMapping(a, b, arrowsA.get(mappingKey) ?? [], arrowsB.get(mappingKey) ?? []);
+    }),
     metrics: diffBlockMap(indexA.metrics, indexB.metrics, diffMetric),
     fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
     transforms: diffBlockMap(indexA.transforms, indexB.transforms, () => []),
     notes: diffNotes(indexA.notes ?? [], indexB.notes ?? []),
   };
+}
+
+/**
+ * Collect arrow records grouped by mapping key.
+ */
+function collectArrowsByMapping(index: WorkspaceIndex): Map<string, ArrowRecord[]> {
+  const byMapping = new Map<string, ArrowRecord[]>();
+  const seen = new Set<string>();
+
+  for (const [, records] of index.fieldArrows) {
+    for (const r of records) {
+      const dedupKey = `${r.file}:${r.line}:${r.source}:${r.target}`;
+      if (seen.has(dedupKey)) continue;
+      seen.add(dedupKey);
+      const key = r.namespace ? `${r.namespace}::${r.mapping}` : (r.mapping ?? "");
+      if (!byMapping.has(key)) byMapping.set(key, []);
+      byMapping.get(key)!.push(r);
+    }
+  }
+
+  return byMapping;
 }
 
 function diffBlockMap<T, C>(
@@ -108,7 +137,7 @@ function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""):
   return changes;
 }
 
-function diffMapping(a: MappingRecord, b: MappingRecord): MappingChange[] {
+function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[], arrowsB: ArrowRecord[]): MappingChange[] {
   const changes: MappingChange[] = [];
 
   if (a.arrowCount !== b.arrowCount) {
@@ -130,6 +159,34 @@ function diffMapping(a: MappingRecord, b: MappingRecord): MappingChange[] {
   const bTargets = JSON.stringify(b.targets);
   if (aTargets !== bTargets) {
     changes.push({ kind: "targets-changed", from: a.targets, to: b.targets });
+  }
+
+  // Compare individual arrows by source→target key
+  const arrowKey = (r: ArrowRecord) => `${r.source ?? ""}→${r.target ?? ""}`;
+  const aByKey = new Map<string, ArrowRecord>();
+  const bByKey = new Map<string, ArrowRecord>();
+  for (const r of arrowsA) aByKey.set(arrowKey(r), r);
+  for (const r of arrowsB) bByKey.set(arrowKey(r), r);
+
+  for (const [key, ar] of aByKey) {
+    if (!bByKey.has(key)) {
+      changes.push({ kind: "arrow-removed", arrow: key });
+    } else {
+      const br = bByKey.get(key)!;
+      if (ar.transform_raw !== br.transform_raw) {
+        changes.push({
+          kind: "arrow-transform-changed",
+          arrow: key,
+          from: ar.transform_raw || "(none)",
+          to: br.transform_raw || "(none)",
+        });
+      }
+    }
+  }
+  for (const key of bByKey.keys()) {
+    if (!aByKey.has(key)) {
+      changes.push({ kind: "arrow-added", arrow: key });
+    }
   }
 
   return changes;

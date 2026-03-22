@@ -1,6 +1,6 @@
 ---
 id: sl-o4wq
-status: open
+status: closed
 deps: [sl-ck20]
 links: [sl-cyen]
 created: 2026-03-21T08:00:54Z
@@ -30,3 +30,9 @@ Root cause: diffMapping() in tooling/satsuma-cli/src/diff.ts line 82-107 only co
 Reproduction files:
   /tmp/satsuma-test-diff/a_base.stm vs /tmp/satsuma-test-diff/b_changed_transform.stm
 
+
+## Notes
+
+**2026-03-22T01:39:04Z**
+
+Fixed by comparing individual arrows by source→target key. Detects arrow additions, removals, and transform changes. Extended MappingChange type, updated diff display. Added 2 integration tests.

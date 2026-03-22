@@ -224,9 +224,10 @@ export interface SchemaChange {
 }
 
 export interface MappingChange {
-  kind: "arrow-count-changed" | "sources-changed" | "targets-changed";
+  kind: "arrow-count-changed" | "sources-changed" | "targets-changed" | "arrow-added" | "arrow-removed" | "arrow-transform-changed";
   from?: unknown;
   to?: unknown;
+  arrow?: string;
 }
 
 export interface BlockDelta<C> {

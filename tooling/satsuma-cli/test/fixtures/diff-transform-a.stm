@@ -1,0 +1,17 @@
+schema src {
+  name STRING
+  age  INTEGER
+}
+
+schema tgt {
+  display_name STRING
+  age          INTEGER
+}
+
+mapping 'copy data' {
+  source { src }
+  target { tgt }
+
+  name -> display_name { trim | title_case }
+  age -> age
+}
