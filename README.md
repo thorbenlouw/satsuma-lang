@@ -159,6 +159,32 @@ For richer examples, see [examples/db-to-db.stm](examples/db-to-db.stm),
 [examples/edi-to-json.stm](examples/edi-to-json.stm),
 and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
 
+## Learn Satsuma
+
+The **[Lessons](lessons/README.md)** are the fastest way to get productive with
+Satsuma and an AI agent. 10 core lessons build the mental model progressively,
+and 4 role-specific playbooks adapt it to how you actually work:
+
+| Lessons | What you learn |
+|---|---|
+| [01 — What Satsuma Is Really For](lessons/01-what-is-satsuma.md) | The hybrid model, three delimiters, setting up your AI agent |
+| [02 — Reading Satsuma with an Agent](lessons/02-reading-satsuma.md) | Schemas, metadata, nested structures, asking the agent to explain |
+| [03 — Writing Schemas from Imperfect Inputs](lessons/03-writing-schemas.md) | Drafting from DDL, JSON, Excel; preserving ambiguity |
+| [04 — Reuse, Imports, and Multi-File Thinking](lessons/04-reuse-and-imports.md) | Fragments, imports, workspace organization |
+| [05 — Mapping Blocks](lessons/05-mappings.md) | Arrows, transforms, value maps, multi-source mappings |
+| [06 — Natural Language Transforms](lessons/06-nl-transforms.md) | When to formalize vs. keep it natural, backtick references |
+| [07 — Nested Data, Arrays, and Complex Shapes](lessons/07-nested-mappings.md) | Dotted paths, array notation, nested arrow blocks |
+| [08 — The Satsuma CLI](lessons/08-satsuma-cli.md) | 16 commands as the agent's deterministic toolkit |
+| [09 — Human-Agent Workflows](lessons/09-agent-workflows.md) | Impact analysis, coverage checks, PII audits, change review |
+| [10 — End-to-End Delivery](lessons/10-real-world-workflows.md) | The full delivery loop from gathering to versioned source of truth |
+
+**Playbooks:** [Business Analyst](lessons/11-ba-playbook.md) ·
+[Data Engineer](lessons/12-data-engineer-playbook.md) ·
+[Governance & Audit](lessons/13-governance-playbook.md) ·
+[Integration Engineer](lessons/14-integration-engineer-playbook.md)
+
+Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#suggested-reading-paths) based on your role.
+
 ## Repository Guide
 
 - [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md): authoritative language specification
