@@ -26,3 +26,10 @@ Also tested with a file containing both a valid spread (`...audit_fields`) and a
 
 **Reproducer:** /tmp/satsuma-test-validate/undefined-fragment-ref.stm and /tmp/satsuma-test-validate/only-fragment.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Validator didn't check whether spread fragment names existed.
+Fix: Add check in collectSemanticWarnings for undefined fragment spreads with guard for schemas without spreads (commit d290d99).

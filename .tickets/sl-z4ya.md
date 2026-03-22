@@ -13,3 +13,10 @@ tags: [cli, arrows, nested]
 
 Nested/array arrow blocks are broken or invisible in mapping, arrows, and graph commands.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Nested arrow children were missing from output, had corrupted paths, and inconsistent counts.
+Fix: Systematic fixes to mapping extraction, arrow indexing, and graph edge generation for nested structures (closed in commit 816fab5).

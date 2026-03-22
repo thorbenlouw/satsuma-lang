@@ -17,3 +17,10 @@ Data Vault convention fields (record_source, hub_customer_hk, load_date etc.) ar
 
 stm validate on datavault examples produces 0 false-positive warnings for convention-inferred fields. True-positive warnings for genuinely missing fields are still reported.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Data Vault convention fields (record_source, hub_customer_hk, load_date) are inferred by metadata tokens but validator flagged them as missing (~25 false positives).
+Fix: Added getConventionFields() to infer expected fields from schema metadata tokens (hub, link, satellite, dimension, fact) and suppress false-positive warnings (commit 816fab5).

@@ -31,3 +31,10 @@ This pattern is consistent across all test files. Confirmed with /tmp/satsuma-te
 
 Reproducing fixture: /tmp/satsuma-test-nl-refs/basic-refs.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Column calculation didn't account for the opening quote character.
+Fix: Adjust column offset to include opening quote (commit d5ca228).

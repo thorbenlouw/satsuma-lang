@@ -35,3 +35,10 @@ Note: Tickets sl-cthr and sl-u0ev report the same pattern for 'warnings' and 'co
 
 Reproducer file: /tmp/satsuma-test-arrows/all-arrows.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Arrows command returned 0 on empty results.
+Fix: Exit 1 when no arrows found (commit 781dc99).

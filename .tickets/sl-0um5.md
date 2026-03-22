@@ -22,3 +22,10 @@ Without quotes, 'multi word metric' appears as three bare tokens which is not va
 
 Test file: /tmp/satsuma-test-metric/quoted_names.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Metric text renderer didn't wrap names containing spaces in quotes.
+Fix: Metric text output now wraps multi-word names in single quotes (commit b4269bb).

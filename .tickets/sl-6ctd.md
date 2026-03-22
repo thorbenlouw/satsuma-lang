@@ -46,3 +46,10 @@ Real examples use it (sap-po-to-mfcs.stm line 148, edi-to-json.stm line 139).
 
 Fixture: /tmp/satsuma-test-meta/arrow-meta.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: ArrowRecord didn't include metadata from map_arrow/computed_arrow CST nodes.
+Fix: Extract metadata_block from arrow CST nodes into ArrowRecord; arrows --json now surfaces per-arrow tags and notes (commit 889feae).

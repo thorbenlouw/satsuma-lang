@@ -40,3 +40,10 @@ All block-level metadata is dropped. In JSON output, the nested children objects
 
 **Reproducer:** `examples/xml-to-parquet.stm`, schema `commerce_order`.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Schema output didn't render metadata from record/list block nodes.
+Fix: Include block-level metadata (xpath, etc.) in schema text and JSON output (commit 51d92a5).

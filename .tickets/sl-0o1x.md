@@ -37,3 +37,10 @@ Affected files:
 
 Test fixtures: /tmp/satsuma-test-lint/hidden-source-bare-schema.stm, /tmp/satsuma-test-lint/hidden-source-named.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: nl-ref-extract used mapping name as key, so anonymous mappings (null name) couldn't be resolved by lint rules.
+Fix: Use `<anon>@file:row` key for anonymous mappings so lint rules can resolve them (commit 219d5cc).

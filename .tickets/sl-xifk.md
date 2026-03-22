@@ -24,3 +24,10 @@ Every metric with a note block is affected:
 
 Test file: /tmp/satsuma-test-metric/basic.stm (revenue metric has a note block)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Metric JSON serialization didn't extract note_block content.
+Fix: Extract note from note_block in metric body and include in JSON output (commit 87afeac).

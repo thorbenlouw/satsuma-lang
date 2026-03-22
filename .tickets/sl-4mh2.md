@@ -42,3 +42,10 @@ The mapped child `name` is included in the output, making it appear unmapped.
 
 **Reproducing fixture:** /tmp/satsuma-test-fields/nested_mapping.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: --unmapped-by treated entire record as mapped/unmapped without checking children.
+Fix: Recurse into record/list children and exclude individually mapped leaf fields; normalize arrow paths by stripping [] brackets (commit cf955f7).

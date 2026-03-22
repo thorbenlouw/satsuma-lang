@@ -24,3 +24,10 @@ valid-basic.stm defines schemas 'source_sys' and 'target_sys', not 'totally_fake
 
 **Reproducer:** /tmp/satsuma-test-validate/import-test/
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Validator didn't check that imported names exist in target files.
+Fix: Add undefined-import validation rule (commit 219d5cc).

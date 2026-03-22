@@ -19,3 +19,10 @@ When a record or list block has a note (inline or comment), satsuma nl attribute
 - Root cause: nl-extract.ts walkNL() only sets newParent for schema_block, mapping_block, metric_block, fragment_block, and field_decl. It does not handle record_block or list_block, so their NL content inherits the enclosing schema as parent.
 - Reproducer: /tmp/satsuma-test-nl/record-list-notes.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: NL extraction used the enclosing schema as parent for all nested blocks.
+Fix: record_block and list_block NL items now use their block name as parent (commit 46fa9df).

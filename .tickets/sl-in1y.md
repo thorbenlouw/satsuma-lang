@@ -37,3 +37,10 @@ When arithmetic is mixed with other steps, e.g. { round(0) | to_number }, the cl
 
 Reproducer file: /tmp/satsuma-test-arrows/all-arrows.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: classify.ts didn't recognize arithmetic_step as structural.
+Fix: arithmetic_step now classified as structural (commit 01f8bf3).

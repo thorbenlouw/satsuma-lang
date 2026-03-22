@@ -37,3 +37,10 @@ The same pattern exists in other commands (sl-cthr for warnings, sl-fs3a for arr
 
 **Reproduction file:** /tmp/satsuma-test-where-used/no-refs.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: where-used returned 0 even when name had no references.
+Fix: Exit 1 when no references found (commit 781dc99).

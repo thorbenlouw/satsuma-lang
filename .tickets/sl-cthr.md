@@ -38,3 +38,10 @@ For comparison, `satsuma find --tag nonexistent examples/` correctly exits with 
 
 **Repro file:** /tmp/satsuma-test-warnings/no-warnings.stm (a file with only regular // comments)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Warnings command returned 0 when no warning/question comments found.
+Fix: Exit 1 when no results found (commit 781dc99).

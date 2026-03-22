@@ -32,3 +32,10 @@ The code in where-used.ts only searches for `pipe_step > token_call` nodes (func
 
 **Reproduction file:** /tmp/satsuma-test-where-used/basic.stm (lines 46-47: `{ ...clean_name }` and `{ ...normalize_email }`)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: where-used didn't scan for transform spreads in arrow pipe chains.
+Fix: Detect transform spread references (...name) as transform_call references (commit d8aa1ac).

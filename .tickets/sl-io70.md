@@ -47,3 +47,10 @@ Missing type and full metadata reduces the value of find results — consumers m
 
 **Test fixture:** /tmp/satsuma-test-find/diverse-tags.stm (line 6: `email STRING (pii, format email, required)`)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Find result rendering didn't include type or metadata tags.
+Fix: Include field type and full metadata tags in search results (commit 39017e8).

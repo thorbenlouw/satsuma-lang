@@ -13,3 +13,10 @@ tags: [cli, consistency]
 
 0-indexed vs 1-indexed line numbers across commands. Need to standardize on 1-indexed for all output.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: find, nl, graph, and nl-refs used 0-indexed row from tree-sitter.
+Fix: Standardized on 1-indexed line numbers across all JSON output (commit d5ca228).

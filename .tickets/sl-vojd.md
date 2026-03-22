@@ -31,3 +31,10 @@ The bug is in tooling/satsuma-cli/src/commands/nl-refs.ts lines 58-61: the empty
 
 Reproducing fixture: /tmp/satsuma-test-nl-refs/no-refs.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: No-results path output plain text instead of JSON.
+Fix: Output empty JSON array when --json and no refs found (commit e2ee56a).

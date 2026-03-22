@@ -32,3 +32,10 @@ Root cause: meta.ts line 122-124 splits on the first dot only, treating everythi
 
 Fixture: /tmp/satsuma-test-meta/all-metadata.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Meta command only supported schema.field two-token paths.
+Fix: Support nested field paths like schema.record.field for disambiguating same-named fields in nested blocks (commit af902d5).

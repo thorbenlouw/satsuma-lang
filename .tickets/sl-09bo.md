@@ -27,3 +27,10 @@ Test commands:
   satsuma metric 'analytics::pipeline_value' examples/ --json
   satsuma metric 'reporting::budget_health' examples/ --json
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Metric JSON serialization didn't include the namespace field for namespace-qualified metrics.
+Fix: Added namespace field to metric JSON and text output (commit 4932929).

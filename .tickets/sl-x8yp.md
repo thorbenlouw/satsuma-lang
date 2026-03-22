@@ -34,3 +34,10 @@ Note: bare name lookup also works (`satsuma mapping 'build dim_contact'` finds i
 
 **Test:** Run against examples/ns-platform.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Mapping JSON serialization didn't include namespace.
+Fix: Added namespace field to mapping JSON output (commit eb4c842).

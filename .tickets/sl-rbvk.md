@@ -34,3 +34,10 @@ Fields affected: all metadata tokens are lost — pk, required, unique, indexed,
 
 **Reproducer file:** Any schema with metadata, e.g. `examples/common.stm` (country_codes has pk on alpha2) or `examples/sfdc_to_snowflake.stm` (sfdc_opportunity has pk, required, ref, enum, default).
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Schema JSON fields array didn't include FieldDecl metadata.
+Fix: Include metadata from FieldDecl enrichment in JSON field output (commit 51d92a5).

@@ -173,6 +173,15 @@ Expected workflow:
 - Capture dependencies explicitly so ready work can be derived from the graph.
 - Include clear acceptance criteria on every implementation task.
 - Represent testing work inside the acceptance criteria or as dependent tasks when large enough to stand alone.
+- **Before closing a ticket**, add a timestamped `## Notes` entry describing the root cause and the fix applied. Use the format:
+  ```
+  ## Notes
+
+  **<ISO-8601 timestamp>**
+
+  Cause: <1-2 sentences describing root cause>
+  Fix: <1-2 sentences describing what was changed> (commit <short-sha>)
+  ```
 - Worktree and server sync is handled manually outside the agent workflow.
 
 ## Agent Workflow

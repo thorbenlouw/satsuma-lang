@@ -13,3 +13,10 @@ tags: [cli, exit-codes]
 
 Commands returning exit code 0 for no-results instead of documented exit code 1.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Seven commands returned exit 0 for no-results instead of the documented exit 1.
+Fix: Standardized exit codes across warnings, context, arrows, where-used, nl-refs, graph, and lineage commands (commit 781dc99).

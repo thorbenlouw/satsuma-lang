@@ -31,3 +31,10 @@ Root cause: printDefault() in metric.ts iterates body.namedChildren and only han
 
 Test file: /tmp/satsuma-test-metric/basic.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Metric text renderer filtered out comment nodes.
+Fix: Include comments from metric bodies in text output; --compact strips them (commit f1b0022).

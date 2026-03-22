@@ -19,3 +19,10 @@ When extracting NL content from standalone transform blocks, the parent field is
 - Root cause: nl-extract.ts walkNL() sets newParent for schema_block, mapping_block, metric_block, and fragment_block, but does not handle transform_block.
 - Reproducer: /tmp/satsuma-test-nl/comprehensive.stm (contains transform 'nl transform' and transform 'mixed transform')
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: NL extraction didn't set parent for transform_block items.
+Fix: transform_block NL items now use the transform name as parent (commit 46fa9df).

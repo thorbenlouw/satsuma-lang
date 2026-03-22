@@ -20,3 +20,10 @@ satsuma nl --json reports line numbers as 0-indexed (tree-sitter row), while sat
 - Additionally, nl uses the field name 'line' while warnings/find use 'row'. The naming is inconsistent across commands (though both nl and arrows use 'line').
 - Reproducer file: /tmp/satsuma-test-nl/comprehensive.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: NLItem.line was 0-indexed (from tree-sitter row).
+Fix: Made NLItem.line 1-indexed at extraction source (commit d5ca228).

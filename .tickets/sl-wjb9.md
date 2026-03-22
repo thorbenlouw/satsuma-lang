@@ -32,3 +32,10 @@ Also reproducible with `satsuma mapping 'cobol customer to avro event' examples/
 - examples/cobol-to-avro.stm (lines 155-169)
 - /tmp/satsuma-test-mapping/edge-cases.stm (nested arrays mapping)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Mapping output only collected top-level arrows, not children in nested blocks.
+Fix: Recursively collect and display child arrows in nested blocks (commit 6664125).

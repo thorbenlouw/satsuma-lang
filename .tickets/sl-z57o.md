@@ -34,3 +34,10 @@ The note block refs on line 19 (\`src_accounts\`, \`tgt_accounts\`, \`balance\`)
 
 Reproducing fixture: /tmp/satsuma-test-nl-refs/mapping-note-refs.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: nl-ref-extract didn't walk note blocks inside mapping bodies.
+Fix: Added note block traversal to nl-ref extraction within mappings (commit 6664125).

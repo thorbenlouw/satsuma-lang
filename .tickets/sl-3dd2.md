@@ -37,3 +37,10 @@ This means that any mapping using reusable transform blocks has its NL refs invi
 
 Reproducing fixture: /tmp/satsuma-test-nl-refs/transform-block-refs.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: nl-ref-extract only walked schema/mapping/metric bodies, not standalone transform blocks.
+Fix: Added transform block traversal to nl-ref extraction (commit 39017e8).

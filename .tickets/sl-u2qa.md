@@ -26,3 +26,10 @@ Root cause: normalize.ts line 15: return name.toLowerCase().replace(/[_-]/g, '')
 
 Reproducer: /tmp/satsuma-test-match-fields/backtick-fields.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Normalization stripped underscores and hyphens but not spaces.
+Fix: Also strip spaces during normalization for consistent backtick-quoted field matching (commit 5f16d27).

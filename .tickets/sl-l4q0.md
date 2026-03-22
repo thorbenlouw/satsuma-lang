@@ -31,3 +31,10 @@ For comparison, the `arrows` command strips backticks:
 
 **Test file:** /tmp/satsuma-test-mapping/edge-cases.stm (mixed transforms mapping)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Mapping JSON serialization didn't strip backtick delimiters from field names.
+Fix: Strip backticks from field names in JSON src/tgt values (commit 602f79d).

@@ -33,3 +33,10 @@ Exit code is correctly 1, but the output format doesn't match the --json contrac
 
 **Reproducer:** `satsuma schema nonexistent examples/ --json`
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Error path returned plain text regardless of --json flag.
+Fix: Return JSON error object when --json is set (commit e2ee56a).

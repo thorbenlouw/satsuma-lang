@@ -37,3 +37,10 @@ What actually happened:
 
 Reproducer: /tmp/satsuma-test-graph/single.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Graph used tree-sitter's 0-indexed row.
+Fix: Renamed row to line and made 1-indexed in nodes, edges, warnings, and unresolved_nl (commit d5ca228).

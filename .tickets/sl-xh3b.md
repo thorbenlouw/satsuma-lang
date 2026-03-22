@@ -13,3 +13,10 @@ tags: [cli, misc]
 
 Assorted bugs: graph --no-nl, warnings JSON context, pluralization, find scope, match-fields normalization, fields for fragments/metrics.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Twelve miscellaneous bugs across find, fields, graph, meta, match-fields, summary, and warnings commands.
+Fix: Individually addressed across multiple commits (closed in commit 816fab5).

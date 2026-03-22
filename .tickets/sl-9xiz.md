@@ -35,3 +35,10 @@ In JSON output, arrow objects have no metadata field at all.
 - examples/edi-to-json.stm (line 139)
 - /tmp/satsuma-test-mapping/edge-cases.stm (mixed transforms mapping)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Mapping command didn't render arrow-level metadata.
+Fix: Arrow metadata (note, required tags) now appears in both text and JSON; --compact strips it (commit 47b7ed0).

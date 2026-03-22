@@ -35,3 +35,10 @@ The `ref` metadata is a structural cross-reference between schemas and is import
 
 **Reproduction file:** /tmp/satsuma-test-where-used/ref-metadata.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: where-used only searched spreads and arrow entries, not metadata.
+Fix: Detect ref metadata (ref schema.field) as ref_metadata references (commit d8aa1ac).

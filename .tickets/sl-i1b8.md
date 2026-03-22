@@ -28,3 +28,10 @@ Examples affected:
 
 Test file: /tmp/satsuma-test-metric/basic.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Metric JSON fields array didn't include FieldDecl metadata.
+Fix: Include metadata from FieldDecl enrichment in metric JSON field output (commit 51d92a5).

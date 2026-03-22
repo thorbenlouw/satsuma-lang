@@ -31,3 +31,10 @@ Reproduces with all metrics that have slice metadata, including:
 
 Test file: /tmp/satsuma-test-metric/basic.stm (revenue metric with slice {region, product})
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Metric output didn't extract or display slice metadata from slice_body CST nodes.
+Fix: Extract slice metadata and include in both text and JSON output (slices array) (commit 5f16d27).

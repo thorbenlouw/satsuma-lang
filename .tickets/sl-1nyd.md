@@ -27,3 +27,10 @@ satsuma context "exchange rates" /tmp/satsuma-test-context/ --json
 
 **Repro files:** /tmp/satsuma-test-context/orders.stm (has NL transforms with 'surrogate key' and 'exchange rates')
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Context scoring didn't include NL content from transform blocks.
+Fix: Verified that extractNLContent integration already searches transform strings; closed as working (commit a749c4c).

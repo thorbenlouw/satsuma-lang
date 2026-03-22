@@ -30,3 +30,10 @@ Parse errors (parse-error rule) DO survive --errors-only. Only semantic errors a
 
 **Reproducer:** /tmp/satsuma-test-validate/duplicate-schemas.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: --errors-only filtered by severity, accidentally suppressing semantic errors which were classified as warnings.
+Fix: --errors-only now keeps semantic errors (e.g. duplicate-definition), only suppresses warnings (commit e2ee56a).

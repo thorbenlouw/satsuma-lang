@@ -48,3 +48,10 @@ For file-level comments (not inside any block), the context could be null or 'fi
 
 **Repro file:** /tmp/satsuma-test-warnings/basic-warnings.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: extractWarnings/extractQuestions didn't track parent block context.
+Fix: Added parent tracking via CST parent traversal; JSON now includes block and blockType fields (commit 6c5e6f9).

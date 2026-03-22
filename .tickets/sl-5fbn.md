@@ -31,3 +31,10 @@ For `--fields-only`, the text output correctly strips the schema wrapper and fie
 
 **Reproducer:** Any schema with a note, e.g. `examples/common.stm`, schema `country_codes`.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: JSON serialization path ignored --compact and --fields-only flags.
+Fix: --compact omits note field from JSON; --fields-only returns just the fields array (commit 387d8be).
