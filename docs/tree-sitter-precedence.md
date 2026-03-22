@@ -35,7 +35,7 @@ exist inside mapping-entry transform contexts.
 In mapping positions:
 
 - parse `source_path` / `target_path` before falling back to generic identifiers
-- treat `[]` as part of path-segment parsing, not a later semantic rewrite
+- parse dotted paths as segments separated by `.`, without array brackets
 
 This avoids reparsing field paths in the AST layer.
 
@@ -44,7 +44,7 @@ This avoids reparsing field paths in the AST layer.
 Within schema and fragment bodies:
 
 - prefer group parsing when an identifier is followed by `{`
-- prefer array-group parsing when `[]` is followed by `{`
+- prefer `each`/`flatten` block parsing when followed by `->` and `{`
 - otherwise parse as field declarations
 
 ### Transform clauses over broad expressions

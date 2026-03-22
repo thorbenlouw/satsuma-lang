@@ -33,10 +33,10 @@ HL7 v2 is one of the formats where the gap between specification and reality is 
 
 ### Guidelines
 
-- Use `segment` on `record` blocks to map each HL7 segment to a structural unit
+- Use `segment` on name-first `record` blocks to map each HL7 segment to a structural unit
 - Use `field` and `component` together for composite fields like patient name
 - Document feed-specific deviations prominently — HL7 feeds are notorious for non-conformance
-- Use `list` for repeating segments (e.g., multiple OBX observation segments in an ORU message)
+- Use `list_of record` for repeating segments (e.g., multiple OBX observation segments in an ORU message)
 
 ## How Natural Language Helps
 
@@ -53,14 +53,14 @@ HL7 v2 is one of the formats where the gap between specification and reality is 
 schema hl7_patient (format hl7, message_type "ADT^A08", version "2.5.1",
   note "Patient demographics from ADT update message"
 ) {
-  record MSH (segment MSH, note "Message header — controls routing and versioning") {
+  MSH record (segment MSH, note "Message header — controls routing and versioning") {
     sending_app     STRING  (field 3)
     sending_facility STRING (field 4)
     message_type    STRING  (field 9, note "ADT^A08 for patient update")
     version_id      STRING  (field 12)
   }
 
-  record PID (segment PID, note "Patient identification segment") {
+  PID record (segment PID, note "Patient identification segment") {
     patient_id      STRING  (field 3, component 1,
       note "CX data type — component 1 is the ID number, component 5 is the ID type"
     )
@@ -85,7 +85,7 @@ schema hl7_patient (format hl7, message_type "ADT^A08", version "2.5.1",
     phone_home      STRING  (field 13, pii)
   }
 
-  list OBX (segment OBX, note "Observation segments — repeats per result") {
+  OBX list_of record (segment OBX, note "Observation segments — repeats per result") {
     value_type      STRING  (field 2, note "NM=numeric, ST=string, CE=coded entry")
     observation_id  STRING  (field 3, component 1)
     observation_text STRING (field 3, component 2)
@@ -100,5 +100,5 @@ schema hl7_patient (format hl7, message_type "ADT^A08", version "2.5.1",
 
 - **Segment-as-record.** Each HL7 segment maps to a `record` block, keeping the familiar structure.
 - **Component addressing for composite fields.** PID-5 (patient name) is decomposed into components rather than left as a single string.
-- **Repeating segments as lists.** OBX segments repeat per observation result — `list` captures this naturally.
+- **Repeating segments as lists.** OBX segments repeat per observation result — `list_of record` captures this naturally.
 - **Feed variance documented.** Notes flag where real-world feeds deviate from the standard (date formats, sex codes, ID types).

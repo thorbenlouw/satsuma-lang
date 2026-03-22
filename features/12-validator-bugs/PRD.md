@@ -25,7 +25,7 @@ The `field-not-in-schema` check in `src/validate.js` (lines 116-117) compares ar
 Examples of valid paths that produce false warnings:
 - `BeginningOfMessage.DOCNUM` — `DOCNUM` is inside `record BeginningOfMessage` in `edi_desadv`
 - `Order.Customer.CustomerId` — `CustomerId` is inside `record Customer` inside `record Order` in `commerce_order`
-- `CartLines[].unit_price` — `unit_price` is inside `list CartLines` in `commerce_event_pb`
+- `CartLines.unit_price` — `unit_price` is inside `CartLines list_of record` in `commerce_event_pb`
 - `.REFNUM`, `.ITEMNO` — relative paths inside nested arrow blocks
 
 **Root cause:** `extractDirectFields()` in `src/extract.js` only collects fields at the immediate body level. The validator builds `srcNames`/`tgtNames` from this flat list.

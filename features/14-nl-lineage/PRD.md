@@ -65,8 +65,8 @@ PHONE_NBR -> phone
 ```stm
 => gross_revenue
   : nl("For each line, multiply unit price by quantity and sum across the order",
-       Order.LineItems[].unit_price,
-       Order.LineItems[].quantity)
+       Order.LineItems.unit_price,
+       Order.LineItems.quantity)
 ```
 
 ### Cross-source dependency
@@ -118,7 +118,7 @@ The prompt may mention fields that are omitted, aliased, or described indirectly
 
 - sibling fields
 - dotted paths
-- array paths such as `LineItems[].sku`
+- nested paths such as `LineItems.sku`
 - cross-source qualified paths where Satsuma already permits them
 
 ### 5. Stable structured representation

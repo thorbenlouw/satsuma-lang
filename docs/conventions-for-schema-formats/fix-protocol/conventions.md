@@ -31,7 +31,7 @@ FIX (Financial Information eXchange) is the dominant protocol for electronic tra
 
 - Always include `tag` on every field — FIX engineers think in tag numbers
 - Use human-readable field names (e.g., `MSG_TYPE` not `TAG35`) with the tag in metadata
-- Use `list` for repeating groups, with `count_tag` identifying the count field
+- Use `list_of record` for repeating groups, with `count_tag` identifying the count field
 - Document venue-specific tag interpretations in `note`
 - Field ordering within a repeating group is significant — document it if non-obvious
 
@@ -70,7 +70,7 @@ schema fix_new_order (format fix, fix_version "4.4",
     note "UTC timestamp: YYYYMMDD-HH:MM:SS.sss"
   )
 
-  list PARTIES (count_tag 453,
+  PARTIES list_of record (count_tag 453,
     note """
     Repeating group of party identifications.
     Each repetition contains PartyID, PartyIDSource, PartyRole in order.
@@ -91,6 +91,6 @@ schema fix_new_order (format fix, fix_version "4.4",
 ### Key patterns
 
 - **Tag numbers as canonical identifiers.** Every field carries `tag N`, matching FIX documentation and wire traces.
-- **Repeating groups as lists.** `count_tag 453` makes the implicit grouping mechanism explicit; the `note` documents field ordering within the group.
+- **Repeating groups as lists.** `count_tag 453` on a `list_of record` makes the implicit grouping mechanism explicit; the `note` documents field ordering within the group.
 - **Conditional presence.** Price is documented as conditionally required based on order type — this cannot be expressed structurally, so it lives in a `note`.
 - **Enum codes with meaning.** FIX uses numeric codes for everything; `note` provides the human-readable mapping alongside the `enum`.

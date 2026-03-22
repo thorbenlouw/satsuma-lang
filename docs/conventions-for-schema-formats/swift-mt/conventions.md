@@ -32,7 +32,7 @@ SWIFT MT is being gradually replaced by ISO 20022 XML, but remains in widespread
 ### Guidelines
 
 - Use `tag` on every field in the text block — this is how SWIFT engineers identify fields
-- Use `record` for composite tags that contain multiple semantic values (e.g., `:32A:` → date + currency + amount)
+- Use name-first `record` blocks for composite tags that contain multiple semantic values (e.g., `:32A:` → date + currency + amount)
 - Document sub-field parsing in `note` — the positional rules within a tag are rarely obvious
 - Represent the block structure explicitly when the full message envelope matters
 
@@ -51,13 +51,13 @@ SWIFT MT is being gradually replaced by ISO 20022 XML, but remains in widespread
 schema swift_mt103 (format swift_mt, message_type "103",
   note "Single customer credit transfer — core payment fields"
 ) {
-  record BASIC_HEADER (block 1) {
+  BASIC_HEADER record (block 1) {
     app_id          STRING  (note "F = FIN, A = GPA")
     service_id      STRING  (note "01 = FIN/GPA, 21 = ACK/NAK")
     sender_bic      STRING  (length 12, required)
   }
 
-  record APPLICATION_HEADER (block 2) {
+  APPLICATION_HEADER record (block 2) {
     io_indicator    STRING  (note "I = input (sent), O = output (received)")
     message_type    STRING  (note "103")
     receiver_bic    STRING  (length 12, required)
@@ -69,7 +69,7 @@ schema swift_mt103 (format swift_mt, message_type "103",
     note "Sender's reference — up to 16 characters, uniquely identifies the transaction"
   )
 
-  record VALUE_DATE_AMOUNT (tag "32A", block 4, status mandatory,
+  VALUE_DATE_AMOUNT record (tag "32A", block 4, status mandatory,
     note """
     Composite field containing three values on a single line:
     - 6 digits: value date (YYMMDD)
@@ -83,7 +83,7 @@ schema swift_mt103 (format swift_mt, message_type "103",
     amount          DECIMAL (note "Comma-separated decimal in source")
   }
 
-  record ORDERING_CUSTOMER (tag "50K", block 4, status mandatory,
+  ORDERING_CUSTOMER record (tag "50K", block 4, status mandatory,
     note """
     Multi-line field:
     - Line 1: account number (prefixed with `/`)
@@ -98,7 +98,7 @@ schema swift_mt103 (format swift_mt, message_type "103",
     note "Account-with institution — BIC of the beneficiary's bank"
   )
 
-  record BENEFICIARY (tag "59", block 4, status mandatory,
+  BENEFICIARY record (tag "59", block 4, status mandatory,
     note """
     Multi-line field:
     - Line 1: account number (prefixed with `/`, optional)
@@ -123,6 +123,6 @@ schema swift_mt103 (format swift_mt, message_type "103",
 ### Key patterns
 
 - **Block structure preserved.** `block 1`, `block 2`, `block 4` make the message envelope explicit.
-- **Composite tags as records.** Tag `:32A:` is a single wire field but contains three semantic values — `record` makes the decomposition explicit.
+- **Composite tags as records.** Tag `:32A:` is a single wire field but contains three semantic values — a name-first `record` block makes the decomposition explicit.
 - **Multi-line field conventions.** Tags like `:50K:` and `:59:` have line-based sub-structures documented in `note` descriptions.
 - **Familiar identifiers.** `tag "32A"` is immediately recognisable to anyone who works with SWIFT messages.

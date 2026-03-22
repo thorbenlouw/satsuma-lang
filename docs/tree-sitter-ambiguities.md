@@ -35,7 +35,7 @@ Resolution direction:
 Examples:
 
 ```stm
-items[] -> rows[] {
+each items -> rows {
   .sku -> .sku
 }
 

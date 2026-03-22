@@ -34,7 +34,7 @@ The irony is that ISO 20022 schemas are technically precise — the XSD is autho
 ### Guidelines
 
 - Use `xpath` relative to the message root — ISO 20022 paths are long enough without repeating the envelope
-- Use `record` generously to mirror the XML nesting — but only for groups that carry distinct semantic meaning
+- Use name-first `record` blocks generously to mirror the XML nesting — but only for groups that carry distinct semantic meaning
 - Collapse trivially nested wrappers into flatter structures with notes explaining what was elided
 - Include `code_set` references so readers can look up valid values without digging through the XSD
 
@@ -73,7 +73,7 @@ schema iso20022_credit_transfer (
   significant subset for typical SWIFT gpi payments.
   """
 ) {
-  record GROUP_HEADER (xpath "GrpHdr") {
+  GROUP_HEADER record (xpath "GrpHdr") {
     message_id       STRING       (xpath "MsgId", required)
     creation_dt      STRING       (xpath "CreDtTm", required,
       iso20022_type "ISODateTime"
@@ -85,7 +85,7 @@ schema iso20022_credit_transfer (
     )
   }
 
-  list TRANSACTIONS (xpath "CdtTrfTxInf",
+  TRANSACTIONS list_of record (xpath "CdtTrfTxInf",
     note "One entry per payment instruction within the message"
   ) {
     end_to_end_id    STRING       (xpath "PmtId/EndToEndId", required)
@@ -104,9 +104,9 @@ schema iso20022_credit_transfer (
       note "DEBT=debtor pays, CRED=creditor pays, SHAR=shared, SLEV=service level"
     )
 
-    record DEBTOR (xpath "Dbtr") {
+    DEBTOR record (xpath "Dbtr") {
       name           STRING       (xpath "Nm")
-      record address (xpath "PstlAdr") {
+      address record (xpath "PstlAdr") {
         country      STRING       (xpath "Ctry")
         address_lines STRING      (xpath "AdrLine",
           note "Up to 7 lines of 70 characters each"
@@ -117,9 +117,9 @@ schema iso20022_credit_transfer (
     DEBTOR_ACCOUNT   STRING       (xpath "DbtrAcct/Id/IBAN")
     DEBTOR_AGENT_BIC STRING       (xpath "DbtrAgt/FinInstnId/BICFI", required)
 
-    record CREDITOR (xpath "Cdtr") {
+    CREDITOR record (xpath "Cdtr") {
       name           STRING       (xpath "Nm", required)
-      record address (xpath "PstlAdr") {
+      address record (xpath "PstlAdr") {
         country      STRING       (xpath "Ctry")
       }
     }

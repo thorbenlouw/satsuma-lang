@@ -259,7 +259,7 @@ def create_healthcare_hl7_to_fhir():
          "Trim, title case. If multiple given names separated by space, split into array elements.",
          "", ""),
         ("PID-5", "XPN.3 (Middle Name)", "Patient.name[0].given[1]", "string", "0..1",
-         "Trim, title case. Append to given[] array.", "", ""),
+         "Trim, title case. Append to given array.", "", ""),
         ("PID-5", "XPN.5 (Prefix)", "Patient.name[0].prefix[0]", "string", "0..1",
          "Direct copy", "Only if present", ""),
         ("PID-5", "XPN.7 (Name Type Code)", "Patient.name[0].use", "code", "0..1",

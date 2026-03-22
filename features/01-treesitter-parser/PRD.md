@@ -78,11 +78,12 @@ The grammar must model the constructs already present in the spec and examples:
 - block headers with optional descriptions and annotations
 - nested object groups and array groups
 - tag lists including `enum: { ... }`
-- path syntax including dotted paths and `[]`
+- path syntax including dotted paths
 - map entry variants:
   - direct source-to-target
   - computed `=> target`
-  - nested map `src[] -> tgt[] { ... }`
+  - `each src -> tgt { ... }` iteration blocks
+  - `flatten src -> tgt { ... }` flatten blocks
 - transform expressions:
   - literal
   - pipe chain

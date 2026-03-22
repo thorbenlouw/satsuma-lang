@@ -33,7 +33,7 @@ The repo already has an EDIFACT example (`examples/edi-to-json.stm`). X12 conven
 
 ### Guidelines
 
-- Use `loop` on `record` or `list` blocks to make the hierarchical grouping explicit
+- Use `loop` on `record` or `list_of record` blocks to make the hierarchical grouping explicit
 - Always include `qualifier` when the same segment type appears in multiple roles (e.g., `NM1` for billing provider vs subscriber)
 - Reference element positions by number, matching the implementation guide notation (e.g., `NM1-09` → `element 9`)
 - Document payer-specific deviations in `note` metadata — these are common and consequential
@@ -54,7 +54,7 @@ schema x12_837_claim (format x12, transaction 837,
   version "005010X222A1",
   note "HIPAA 837P professional claim — simplified for convention reference"
 ) {
-  record BILLING_PROVIDER (loop "2010AA", segment NM1, qualifier "85") {
+  BILLING_PROVIDER record (loop "2010AA", segment NM1, qualifier "85") {
     entity_type     STRING  (element 1, note "1=person, 2=organisation")
     last_name       STRING  (element 3)
     first_name      STRING  (element 4)
@@ -62,19 +62,19 @@ schema x12_837_claim (format x12, transaction 837,
     npi             STRING  (element 9)
   }
 
-  record SUBSCRIBER (loop "2010BA", segment NM1, qualifier "IL") {
+  SUBSCRIBER record (loop "2010BA", segment NM1, qualifier "IL") {
     last_name       STRING  (element 3)
     first_name      STRING  (element 4)
     member_id       STRING  (element 9)
   }
 
-  record SUBSCRIBER_DEMO (loop "2010BA", segment DMG) {
+  SUBSCRIBER_DEMO record (loop "2010BA", segment DMG) {
     date_of_birth   STRING  (element 2, note "Format: CCYYMMDD")
     gender          STRING  (element 3, enum {M, F, U})
   }
 
-  list CLAIM_LINES (loop "2400") {
-    record SERVICE (segment SV1) {
+  CLAIM_LINES list_of record (loop "2400") {
+    SERVICE record (segment SV1) {
       procedure_code  STRING (element 1, component 2,
         note "HCPCS or CPT code from the composite element"
       )
@@ -83,7 +83,7 @@ schema x12_837_claim (format x12, transaction 837,
       units           DECIMAL(6,2) (element 4)
     }
 
-    record SERVICE_DATE (segment DTP, qualifier "472") {
+    SERVICE_DATE record (segment DTP, qualifier "472") {
       date_format     STRING (element 2, note "D8=CCYYMMDD, RD8=range")
       service_date    STRING (element 3)
     }
@@ -94,6 +94,6 @@ schema x12_837_claim (format x12, transaction 837,
 ### Key patterns
 
 - **Qualifier-scoped records.** `NM1` appears multiple times; `qualifier "85"` and `qualifier "IL"` disambiguate without renaming the segment.
-- **Loop IDs as structural grouping.** `loop "2010AA"` on a `record` maps directly to the implementation guide's hierarchy.
+- **Loop IDs as structural grouping.** `loop "2010AA"` on a record block maps directly to the implementation guide's hierarchy.
 - **Composite elements.** `element 1, component 2` addresses sub-element positions within composite fields like procedure codes.
 - **Implementation guide notes.** `note` on fields documents expectations that differ from the base X12 standard.

@@ -4,7 +4,7 @@ note { "HL7 ADT A01/A08 → FHIR R4 Patient resource, 1:1 patient identity mappi
 // --- Shared Fragments ---
 
 fragment Address {
-  list line { value STRING }
+  line list_of record { value STRING }
   city       STRING
   state      STRING
   postalCode STRING
@@ -14,8 +14,8 @@ fragment Address {
 
 fragment HumanName {
   family     STRING
-  list given { value STRING }
-  list prefix { value STRING }
+  given list_of record { value STRING }
+  prefix list_of record { value STRING }
   use        CODE   (enum {official, maiden, anonymous, nickname, pseudonym})
 }
 
@@ -51,24 +51,24 @@ schema hl7_adt (note "HL7 v2.x ADT Message — PID and PD1 segments") {
 // --- Target Schema ---
 
 schema fhir_patient (note "FHIR R4 Patient Resource") {
-  list identifier {
+  identifier list_of record {
     value   STRING  (required)
     system  URI     (required)
   }
-  list name {
+  name list_of record {
     ...HumanName
   }
   birthDate  DATE
   gender     CODE  (enum {male, female, other, unknown})
-  list address {
+  address list_of record {
     ...Address
   }
-  list telecom {
+  telecom list_of record {
     value   STRING
     use     CODE
     system  CODE
   }
-  record meta {
+  meta record {
     lastUpdated  INSTANT  (required)
   }
 }
@@ -101,7 +101,7 @@ mapping 'hl7 adt to fhir patient' {
 
   // --- Name ---
   PID_5_1 -> name[0].family                { trim | title_case }
-  PID_5_2 -> name[0].given[0].value        { "Trim, title case, split on spaces into multiple given[] entries" }
+  PID_5_2 -> name[0].given[0].value        { "Trim, title case, split on spaces into multiple given entries" }
   PID_5_3 -> name[0].given[1].value        { trim | title_case }
   PID_5_5 -> name[0].prefix[0].value
   PID_5_7 -> name[0].use {

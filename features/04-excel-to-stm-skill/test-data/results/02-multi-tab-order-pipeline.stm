@@ -75,7 +75,7 @@ schema order_service (note "Order Service Microservice") {
   sales_channel    STRING         (required)
   internal_notes   TEXT
 
-  list items {
+  items list_of record {
     line_number        INTEGER        (required)
     product_sku        STRING         (required)
     product_name       STRING
@@ -120,25 +120,27 @@ mapping 'order header' {
   NOTES        -> internal_notes  { truncate(2000) | escape_html }
 }
 
-mapping 'order lines' (note "Each oms_line row maps to one items[] entry on its parent order") {
+mapping 'order lines' (note "Each oms_line row maps to one items entry on its parent order") {
   source { `oms_line` }
   target { `order_service` }
 
   // Joined to parent order via ORDER_ID — handled by the pipeline orchestrator
-  LINE_NO      -> items[].line_number
-  PRODUCT_CODE -> items[].product_sku        { uppercase | trim }
-  PRODUCT_DESC -> items[].product_name       { trim }
-  QTY          -> items[].quantity
-  UNIT_PRICE   -> items[].unit_price
-  LINE_TOTAL   -> items[].line_total         { "Recalculate as QTY * UNIT_PRICE to correct source rounding errors" }
-  LINE_STATUS  -> items[].status             {
-    map {
-      OP: "open"    IP: "processing"  SH: "shipped"
-      DL: "delivered"  CN: "cancelled"  RT: "returned"
-      HD: "on_hold"    BO: "backordered"  PF: "partial"
-      XX: "unknown"
+  each items -> items {
+    LINE_NO      -> .line_number
+    PRODUCT_CODE -> .product_sku        { uppercase | trim }
+    PRODUCT_DESC -> .product_name       { trim }
+    QTY          -> .quantity
+    UNIT_PRICE   -> .unit_price
+    LINE_TOTAL   -> .line_total         { "Recalculate as QTY * UNIT_PRICE to correct source rounding errors" }
+    LINE_STATUS  -> .status             {
+      map {
+        OP: "open"    IP: "processing"  SH: "shipped"
+        DL: "delivered"  CN: "cancelled"  RT: "returned"
+        HD: "on_hold"    BO: "backordered"  PF: "partial"
+        XX: "unknown"
+      }
     }
+    WAREHOUSE    -> .fulfillment_center { trim }
+    TAX_RATE     -> .tax_rate
   }
-  WAREHOUSE    -> items[].fulfillment_center { trim }
-  TAX_RATE     -> items[].tax_rate
 }

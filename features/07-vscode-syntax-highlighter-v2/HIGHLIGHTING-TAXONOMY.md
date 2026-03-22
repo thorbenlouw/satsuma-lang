@@ -56,7 +56,7 @@ Appear in `()` metadata blocks introducing key-value or key-block pairs.
 | `xpath` | `(xpath "ord:OrderId")` | `support.other.satsuma` |
 | `namespace` | `(namespace ord "http://...")` | `support.other.satsuma` |
 | `filter` | `(filter QUAL == "ON")` | `support.other.satsuma` |
-| `flatten` | `(flatten \`Order.LineItems[]\`)` | `support.other.satsuma` |
+| `flatten` | `flatten Order.LineItems -> target { }` | `keyword.other.satsuma` |
 | `note` | `(note "Short description")` | `support.other.satsuma` |
 
 **Design note:** `note` appears both as a reserved keyword (`note { }` block) and a vocabulary token (`(note "...")` in metadata). Inside `()`, it is scoped as `support.other.satsuma`. At block level, it is scoped as `keyword.other.satsuma`. TextMate can handle this because the two contexts use different grammar rules.
@@ -92,7 +92,7 @@ Appear in `{}` arrow bodies as pipeline steps separated by `|`. Scoped as `suppo
 | `max_length` | `{ max_length(30) }` | `support.function.satsuma` |
 | `assume_utc` | `{ assume_utc }` | `support.function.satsuma` |
 | `join` | `{ join }` | `support.function.satsuma` |
-| `flatten` | `{ flatten }` | `support.function.satsuma` |
+| `each` | `each src -> tgt { }` | `keyword.other.satsuma` |
 
 **Grammar strategy:** Match known pipeline tokens by name, but also match any `\w+` followed by `(` as `entity.name.function.satsuma` to catch unknown pipeline functions gracefully.
 
@@ -128,10 +128,9 @@ Appear in `()` metadata or as identifiers in specialized contexts. Scoped as `su
 | `...` | Spread/expand fragment or transform | `keyword.operator.spread.satsuma` |
 | `:` | Key-value separator in `map {}` entries | `punctuation.separator.key-value.satsuma` |
 | `.` | Field accessor / path separator (e.g., `Order.Customer.Email`) | _not separately scoped_ — part of the identifier |
-| `[]` | Array indicator on paths (e.g., `LineItems[]`) | `punctuation.definition.array.satsuma` |
 | `<` `<=` `>` `>=` | Comparison operators in conditional `map {}` entries | `keyword.operator.comparison.satsuma` |
 
-**Design note:** The `.` accessor is not separately scoped because dotted paths should read as a single identifier. Scoping each `.` separately would fragment the path visually. The `[]` brackets are scoped because they indicate structural semantics (repeated element).
+**Design note:** The `.` accessor is not separately scoped because dotted paths should read as a single identifier. Scoping each `.` separately would fragment the path visually.
 
 ---
 
@@ -293,9 +292,9 @@ See [Section 8.3](#83-backtick-identifiers) — scoped as `entity.name.tag.satsu
 
 ### 11.3 Dotted Paths
 
-`Order.Customer.Email`, `Order.LineItems[].SKU`
+`Order.Customer.Email`, `Order.LineItems.SKU`
 
-Scoped as a single `variable.other.field.satsuma` span. The `.` separators and `[]` indicators are part of the token. This avoids visual fragmentation of field paths.
+Scoped as a single `variable.other.field.satsuma` span. The `.` separators are part of the token. This avoids visual fragmentation of field paths.
 
 ---
 
@@ -380,7 +379,6 @@ Quick reference sorted by scope name.
 | `meta.block.transform.satsuma` | Transform block |
 | `meta.import.satsuma` | Import statement |
 | `meta.metadata.satsuma` | Metadata `()` blocks |
-| `punctuation.definition.array.satsuma` | `[]` array indicators |
 | `punctuation.definition.identifier.begin.satsuma` | Opening `` ` `` |
 | `punctuation.definition.identifier.end.satsuma` | Closing `` ` `` |
 | `punctuation.definition.parameters.satsuma` | `()` around type parameters |

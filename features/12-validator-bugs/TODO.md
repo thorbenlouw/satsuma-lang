@@ -6,10 +6,10 @@
 
 - [ ] Extend `extractDirectFields()` (or add `extractFieldTree()`) in `src/extract.js` to build a nested field structure that includes fields inside `record` and `list` children, preserving the dotted path (e.g., `Order.Customer.CustomerId`)
 - [ ] Update `collectSemanticWarnings()` in `src/validate.js` to resolve dotted arrow paths against the nested field tree instead of flat top-level names
-- [ ] Handle bracketed array notation in paths (e.g., `CartLines[].unit_price` should match `CartLines` list containing `unit_price`)
+- [ ] Handle dotted paths through lists (e.g., `CartLines.unit_price` should match `CartLines` list containing `unit_price`)
 - [ ] Handle relative paths (`.REFNUM`, `.ITEMNO`) — either skip validation for relative paths inside nested arrow blocks or resolve them against the parent context
 - [ ] Add test: arrow `Order.OrderId` against schema with `record Order { OrderId STRING }` produces no warning
-- [ ] Add test: arrow `CartLines[].unit_price` against schema with `list CartLines { unit_price DECIMAL }` produces no warning
+- [ ] Add test: arrow `CartLines.unit_price` against schema with `CartLines list_of record { unit_price DECIMAL }` produces no warning
 - [ ] Add test: arrow `NonExistent.field` against schema without that record still produces a warning
 - [ ] Verify `satsuma validate examples/xml-to-parquet.stm` produces 0 false positives
 - [ ] Verify `satsuma validate examples/edi-to-json.stm` produces 0 false positives
