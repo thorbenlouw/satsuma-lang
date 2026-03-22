@@ -1,0 +1,27 @@
+schema crm_accounts {
+  id           INTEGER
+  signup_date  DATE
+}
+
+schema erp_customers {
+  id           INTEGER
+  first_order  DATE
+}
+
+schema web_profiles {
+  id           INTEGER
+  first_visit  DATE
+}
+
+schema dim_customer {
+  id          INTEGER
+  signup_date DATE
+}
+
+mapping 'build dim_customer' {
+  source { crm_accounts, erp_customers }
+  target { dim_customer }
+
+  id -> id
+  -> signup_date { "Earliest date from `crm_accounts` or `web_profiles`" }
+}

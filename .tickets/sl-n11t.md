@@ -1,6 +1,6 @@
 ---
 id: sl-n11t
-status: open
+status: closed
 deps: []
 links: [sl-6hot]
 created: 2026-03-21T08:03:18Z
@@ -40,3 +40,9 @@ What actually happened:
 
 Reproducer: /tmp/satsuma-test-graph/complex/mappings.stm
 
+
+## Notes
+
+**2026-03-22T01:32:34Z**
+
+Fixed by removing NL backtick reference promotion in buildSchemaEdges. schema_edges now only reflects declared source/target blocks. Added 2 integration tests.
