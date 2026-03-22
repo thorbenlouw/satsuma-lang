@@ -86,7 +86,9 @@ Comments run to end of line. There are no block comments.
 
 These keywords introduce structural blocks and cannot be used as bare identifiers:
 
-`schema` `fragment` `mapping` `transform` `metric` `source` `target` `map` `record` `list` `note` `import`
+`schema` `fragment` `mapping` `transform` `metric` `source` `target` `map` `record` `list_of` `each` `flatten` `note` `import`
+
+`each` and `flatten` are only valid inside mapping bodies. `record` and `list_of` are type keywords used in field declarations.
 
 ### 2.7 Vocabulary Tokens
 
@@ -94,7 +96,7 @@ These are **not reserved** — they are context-dependent tokens interpreted by 
 
 - **Constraints:** `pk`, `required`, `unique`, `indexed`, `pii`, `encrypt`
 - **Types/formats:** `enum`, `default`, `format`, `ref`
-- **Operations:** `filter`, `join`, `flatten`, `coalesce`, `trim`, `lowercase`, `uppercase`, `round`
+- **Operations:** `filter`, `join`, `coalesce`, `trim`, `lowercase`, `uppercase`, `round`
 - **Domain:** `xpath`, `namespace`, `datavault`, `scd`, `hub`, `satellite`
 
 New vocabulary tokens can be introduced at any time without language changes.
@@ -147,18 +149,28 @@ A field is declared as:
 - **Type** — a vocabulary token (interpreted by the LLM, not formally validated). Common types: `STRING`, `VARCHAR(n)`, `INT`, `DECIMAL(p,s)`, `BOOLEAN`, `DATE`, `TIMESTAMPTZ`, `UUID`, `JSON`, `TEXT`.
 - **Metadata** — optional `( )` block with flags and key-value pairs.
 
-### 3.3 Nested Structures: `record` and `list`
+### 3.3 Nested Structures: `record` and `list_of`
 
-Use `record` for a single nested structure and `list` for a repeated nested structure. Like `schema` and `fragment`, the keyword comes before the name:
+Use `record` for a single nested structure and `list_of record` for a repeated nested structure. The unified field declaration pattern is:
+
+```
+NAME [TYPE] [(metadata)] [{body}]
+```
+
+Where TYPE can be:
+- A scalar type: `STRING`, `DECIMAL(12,2)`, etc.
+- `record` — single nested structure
+- `list_of record` — list of structured elements
+- `list_of TYPE` — scalar list (list of primitives)
 
 ```
 schema order {
   order_id     STRING (pk)
-  record customer {
+  customer record {
     id           STRING
     email        STRING (pii)
   }
-  list line_items {
+  line_items list_of record {
     sku          STRING (required)
     quantity     INT
     unit_price   DECIMAL(12,2)
@@ -166,19 +178,19 @@ schema order {
 }
 ```
 
-`record` and `list` can be nested to any depth. Metadata goes in `( )` between name and `{ }`.
+`record` and `list_of record` can be nested to any depth. Metadata goes in `( )` between the type (or name) and `{ }`.
 
-**Scalar lists** — When a list has no subfields (e.g. a list of plain strings or integers), use an empty `list` block and put the element type in metadata:
+**Scalar lists** — When a list contains primitives rather than structures, use `list_of TYPE` with no braces:
 
 ```
 schema order {
   order_id     STRING (pk)
-  list promo_codes (note "element type STRING") {}
-  list tag_ids     (classification "INTERNAL", note "element type INT") {}
+  promo_codes  list_of STRING
+  tag_ids      list_of INT (classification "INTERNAL")
 }
 ```
 
-This keeps the `list` keyword as the single way to express repeated data — no special syntax needed for the scalar case.
+This keeps `list_of` as the single way to express repeated data. Scalar lists need no braces because there are no subfields to declare.
 
 ### 3.4 Notes
 
@@ -226,7 +238,7 @@ Format details go in `( )` on the schema or field:
 
 ```
 schema commerce_order (format xml, namespace ord "http://example.com/commerce/order/v2", namespace com "http://example.com/common/v1") {
-  record Order (xpath "/ord:OrderMessage/ord:Order") {
+  Order record (xpath "/ord:OrderMessage/ord:Order") {
     OrderId    STRING (xpath "ord:OrderId")
     Channel    STRING (xpath "ord:Channel")
   }
@@ -385,25 +397,25 @@ StageName -> pipeline_stage {
 
 ### 4.4 Nested Mappings
 
-When source and target have nested/repeated structures, nest the arrows:
+When source and target have nested/repeated structures, use `each` blocks to iterate lists and nest the arrows:
 
 ```
-POReferences[] -> ShipmentHeader.asnDetails[] (
+each POReferences -> ShipmentHeader.asnDetails (
   note "Each PO reference generates one asnDetails entry.
         Line items and quantities correlated by position."
 ) {
   .REFNUM -> .orderNo { split("/") | first | to_number }
 
-  LineItems[] -> .items[] {
+  each LineItems -> .items {
     .ITEMNO -> .item { trim | "Resolve via MFCS supplier item cross-reference" }
-    Quantities[].QUANTITY -> .unitQuantity {
+    Quantities.QUANTITY -> .unitQuantity {
       "Divide by 10000 (4 implied decimals), multiply by PO pack size from MFCS"
     }
   }
 }
 ```
 
-The `.` prefix indicates a field relative to the current nesting context. `[]` indicates a repeated element.
+The `.` prefix indicates a field relative to the current nesting context. The `each` keyword introduces an iteration over a source list, producing elements in the target list.
 
 ### 4.5 Fallback Sources
 
@@ -418,18 +430,24 @@ LAST_MOD_DATE -> updated_at {
 
 ### 4.6 Flattening
 
-Use `flatten` as a vocabulary token in the mapping declaration:
+Use a `flatten` block inside a mapping to lift each element of a source list into its own output row:
 
 ```
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping 'order lines' {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
+  flatten Order.LineItems -> order_lines_parquet {
+    .LineNumber -> line_number
+    .SKU -> sku { trim | uppercase }
+  }
+
   Order.OrderId -> order_id
-  Order.LineItems[].SKU -> sku { trim | uppercase }
   // ...
 }
 ```
+
+The `flatten` block iterates the source list and produces one target row per element. Fields outside the `flatten` block (like `Order.OrderId`) are repeated on every output row. Fields inside the block use `.` prefix to reference the current list element.
 
 ### 4.7 Multi-Source Joins
 
@@ -929,39 +947,39 @@ schema edi_desadv (
   format fixed-length,
   note "EDI 856 Despatch Advice — Fixed Length Format"
 ) {
-  record BeginningOfMessage {
+  BeginningOfMessage record {
     DOCNUM      CHAR(35)                          // despatch advice number
     MESSGFUN    CHAR(3)                           // message function: 9 = Original
   }
 
-  record DateTime {
+  DateTime record {
     DATEQUAL    CHAR(3)                           // qualifier: 137 = document date/time
     DATETIME    CHAR(35)                          // date/time value
     DATEFMT     CHAR(3)                           // format: 102=CCYYMMDD, 203=CCYYMMDDHHMM
   }
 
-  list ShipmentRefs (filter SHPRFQUAL == "SRN") {
+  ShipmentRefs list_of record (filter SHPRFQUAL == "SRN") {
     SHPRFQUAL   CHAR(3)
     SHIPREF     CHAR(70)                          // shipment reference number
   }
 
-  list POReferences (filter REFQUAL == "ON") {
+  POReferences list_of record (filter REFQUAL == "ON") {
     REFQUAL     CHAR(3)
     REFNUM      CHAR(35)                          // PO Number + "/" + Dissection No
   }
 
-  record NameAddress {
+  NameAddress record {
     PARTYQUAL   CHAR(3)                           // BY=Buyer, SU=Supplier
     PARTYID     CHAR(35)                          // 13-digit ANA number
   }
 
-  list LineItems {
+  LineItems list_of record {
     LINENUM     NUMBER(6)
     ITEMNO      CHAR(35)                          // product identifier
     ITEMTYPE    CHAR(3)                           // EN=EAN, UP=UPC12
   }
 
-  list Quantities (filter QUANTQUAL == "12") {    // only despatch quantities
+  Quantities list_of record (filter QUANTQUAL == "12") {    // only despatch quantities
     QUANTQUAL   CHAR(3)
     QUANTITY    NUMBER(15)                         //! 4 implied decimal places
   }
@@ -971,7 +989,7 @@ schema edi_desadv (
 // --- Target ---
 
 schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
-  record ShipmentHeader {
+  ShipmentHeader record {
     toLocation            NUMBER(10)
     asnNo                 STRING(30)   (required)
     shipDate              DATE         (required)
@@ -982,11 +1000,11 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
     supplier              NUMBER(10)   (required)
     shipPayMethod         STRING(2)
 
-    list asnDetails {
+    asnDetails list_of record {
       orderNo             NUMBER(12)   (required)
       notAfterDate        DATE
 
-      list containers (
+      containers list_of record (
         note """
         ## DATA GAP
         This entire array is **required** by the MFCS schema but has
@@ -996,13 +1014,13 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
       ) {
         containerId       STRING(30)   (required)     //! no source mapping
         finalLocation     NUMBER(10)   (required)     //! no source mapping
-        list items {
+        items list_of record {
           item            STRING(25)
           unitQuantity    NUMBER(12,4)                 //! no source mapping
         }
       }
 
-      list items {
+      items list_of record {
         item              STRING(25)
         unitQuantity      NUMBER(12,4)  (required)
         vpn               STRING(30)
@@ -1029,33 +1047,33 @@ mapping 'edi to mfcs' {
 
   -> ShipmentHeader.asnType { "0" }    // default: ASN Shipment
 
-  POReferences[].REFNUM -> ShipmentHeader.toLocation {
+  POReferences.REFNUM -> ShipmentHeader.toLocation {
     "Extract PO number from REFNUM (digits before '/').
      Look up the PO in MFCS to determine the delivery location."
   }
 
-  POReferences[].REFNUM -> ShipmentHeader.supplier {
+  POReferences.REFNUM -> ShipmentHeader.supplier {
     split("/") | first | to_number
     | "Validate supplier exists in MFCS PO table."
   }
 
-  ShipmentRefs[].SHIPREF -> ShipmentHeader.comments { prepend("Shipment reference number: ") }
+  ShipmentRefs.SHIPREF -> ShipmentHeader.comments { prepend("Shipment reference number: ") }
 
   // --- Detail lines grouped by PO ---
-  POReferences[] -> ShipmentHeader.asnDetails[] (
+  each POReferences -> ShipmentHeader.asnDetails (
     note "Each PO reference generates one asnDetails entry.
           Line items and quantities are correlated by position."
   ) {
     .REFNUM -> .orderNo { split("/") | first | to_number }
 
-    LineItems[] -> .items[] {
+    each LineItems -> .items {
       .ITEMNO -> .item {
         trim
         | "Retrieve MFCS item number using the supplier's traded code
            from the MFCS supplier item cross-reference."
       }
 
-      Quantities[].QUANTITY -> .unitQuantity {
+      Quantities.QUANTITY -> .unitQuantity {
         "Divide by 10000 to account for 4 implied decimal places.
          Then multiply by PO pack size from MFCS (Action A-504).
          Pack size retrieved from MFCS PO line matching this item."
@@ -1063,8 +1081,8 @@ mapping 'edi to mfcs' {
     }
   }
 
-  //! DATA GAP: containers[] required but no source data
-  -> ShipmentHeader.asnDetails[].containers {
+  //! DATA GAP: containers required but no source data
+  -> ShipmentHeader.asnDetails.containers {
     "Required by MFCS schema but no source data available in EDI 856.
      Options under discussion:
      1. Populate with a single placeholder container per order
@@ -1104,37 +1122,37 @@ schema commerce_order (
   namespace com "http://example.com/common/v1",
   note "Canonical commerce order message"
 ) {
-  record Order (xpath "/ord:OrderMessage/ord:Order") {
+  Order record (xpath "/ord:OrderMessage/ord:Order") {
     OrderId           STRING       (xpath "ord:OrderId")
     Channel           STRING       (xpath "ord:Channel")
     OrderTimestamp    STRING       (xpath "ord:OrderTimestamp")
     CurrencyCode      STRING       (xpath "ord:Currency/com:Code")
 
-    record Customer {
+    Customer record {
       CustomerId      STRING       (xpath "ord:CustomerId")
       Email           STRING       (xpath "ord:Email")
       LoyaltyTier     STRING       (xpath "ord:LoyaltyTier")
     }
 
-    record ShippingAddress {
+    ShippingAddress record {
       CountryCode     STRING       (xpath "ord:CountryCode")
       RegionCode      STRING       (xpath "ord:RegionCode")
       PostalCode      STRING       (xpath "ord:PostalCode")
     }
 
-    record Totals {
+    Totals record {
       SubtotalAmount  DECIMAL(12,2)  (xpath "ord:SubtotalAmount")
       TaxAmount       DECIMAL(12,2)  (xpath "ord:TaxAmount")
       TotalAmount     DECIMAL(12,2)  (xpath "ord:TotalAmount")
     }
 
-    list Discounts (xpath "ord:Discounts/ord:Discount") {
+    Discounts list_of record (xpath "ord:Discounts/ord:Discount") {
       DiscountCode    STRING       (xpath "ord:Code")
       DiscountAmount  DECIMAL(12,2) (xpath "ord:Amount")
       DiscountType    STRING       (xpath "ord:Type")
     }
 
-    list LineItems (xpath "ord:LineItems/ord:LineItem") {
+    LineItems list_of record (xpath "ord:LineItems/ord:LineItem") {
       LineNumber      INT32        (xpath "ord:LineNumber")
       SKU             STRING       (xpath "ord:SKU")
       FulfillmentType STRING       (xpath "ord:FulfillmentType")
@@ -1217,17 +1235,17 @@ mapping 'order headers' {
   Order.Totals.TotalAmount -> total_amount
 
   -> discount_codes {
-    "Collect DiscountCode values from Order.Discounts[] preserving source order.
-     Emit as a JSON array string. If no discounts, emit []."
+    "Collect DiscountCode values from Order.Discounts preserving source order.
+     Emit as a JSON array string. If no discounts, emit empty array."
   }
 
   -> discount_total {
-    "Sum DiscountAmount across Order.Discounts[] for the current order.
+    "Sum DiscountAmount across Order.Discounts for the current order.
      If no discounts, emit 0.00."
   }
 
   -> line_count {
-    "Count Order.LineItems[] elements for the current order."
+    "Count Order.LineItems elements for the current order."
   }
 
   -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
@@ -1236,20 +1254,22 @@ mapping 'order headers' {
 
 // --- Mapping: Order Lines (flattened) ---
 
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping 'order lines' {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
-  Order.OrderId -> order_id
-  Order.LineItems[].LineNumber -> line_number
-  Order.LineItems[].SKU -> sku { trim | uppercase }
-  Order.LineItems[].FulfillmentType -> fulfillment_type { trim | lowercase }
-  Order.LineItems[].Quantity -> quantity
-  Order.LineItems[].UnitPrice -> unit_price
-  Order.LineItems[].ExtendedAmount -> extended_amount
-  Order.LineItems[].TaxAmount -> line_tax_amount
-  Order.LineItems[].IsGift -> is_gift
+  flatten Order.LineItems -> order_lines_parquet {
+    .LineNumber -> line_number
+    .SKU -> sku { trim | uppercase }
+    .FulfillmentType -> fulfillment_type { trim | lowercase }
+    .Quantity -> quantity
+    .UnitPrice -> unit_price
+    .ExtendedAmount -> extended_amount
+    .TaxAmount -> line_tax_amount
+    .IsGift -> is_gift
+  }
 
+  Order.OrderId -> order_id
   Order.CurrencyCode -> currency_code { trim | uppercase }
   Order.Channel -> order_channel { trim | lowercase }
   Order.Customer.CustomerId -> customer_id
@@ -1378,7 +1398,7 @@ mapping 'opportunity ingestion' {
 | `[pk, required]` bracket tags | `(pk, required)` parentheses | `()` = metadata, `[]` freed |
 | `@xpath(...)`, `@format(...)` annotations | `(xpath ..., format ...)` in metadata | Unified in `()` |
 | `table`, `message`, `source`, `target` keywords | Single `schema` keyword | Simpler — role is contextual |
-| `STRUCT { }` / `ARRAY { }` | `record Name { }` / `list Name { }` | Keyword-first, less nerdy |
+| `STRUCT { }` / `ARRAY { }` | `Name record { }` / `Name list_of record { }` | Unified field syntax: `NAME TYPE (meta) {body}` |
 | `nl("...")` function | Bare `"..."` in `{ }` | NL is first-class |
 | `: transform` after arrow | `{ transform }` after arrow | Consistent — `{}` holds content |
 | `when/else` clauses | `map { }` with conditions or NL | Simpler, more flexible |
