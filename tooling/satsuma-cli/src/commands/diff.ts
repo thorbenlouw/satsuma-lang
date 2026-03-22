@@ -154,6 +154,8 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
         console.log(`      ~ sources: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
       } else if (c.kind === "targets-changed") {
         console.log(`      ~ targets: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
+      } else if (c.kind === "metadata-changed") {
+        console.log(`      ~ ${c.field} metadata: ${String(c.from)} -> ${String(c.to)}`);
       }
     }
   }
