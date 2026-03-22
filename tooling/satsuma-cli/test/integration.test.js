@@ -1177,6 +1177,16 @@ describe("satsuma nl", () => {
     assert.ok(contactItems.length >= 1, "contacts block items should have parent 'contacts'");
   });
 
+  it("returns NL from both schema and mapping when names collide (sl-vw49)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "ambiguous-scope.stm");
+    const { stdout, code } = await run("nl", "customers", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.some((d) => d.kind === "note"), "should include schema note");
+    assert.ok(data.some((d) => d.kind === "transform"), "should include mapping transform");
+    assert.ok(data.length >= 2, "should have at least 2 NL items from both blocks");
+  });
+
   it("unescapes escape sequences in NL strings (sl-j014)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "escape-test.stm");
     const { stdout, code } = await run("nl", "all", F, "--json");

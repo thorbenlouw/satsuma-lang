@@ -98,22 +98,24 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: W
     process.exit(1);
   }
 
-  const resolvedKey = (schemaResolved ?? mappingResolved ?? metricResolved)!.key;
-  const resolvedEntry = (schemaResolved ?? mappingResolved ?? metricResolved)!.entry;
-  const blockType = schemaResolved
-    ? "schema_block"
-    : mappingResolved
-      ? "mapping_block"
-      : "metric_block";
-
+  // Collect NL content from ALL matching blocks (schema, mapping, metric)
+  // to handle ambiguous names where a schema and mapping share a name
   const items: NLItemWithFile[] = [];
-  const parsed = parsedFiles.find((p) => p.filePath === resolvedEntry.file);
-  const node = parsed ? findBlockNode(parsed.tree.rootNode, blockType, resolvedKey) : null;
-  if (node) {
-    for (const item of extractNLContent(node, blockName)) {
-      items.push({ ...item, file: resolvedEntry.file });
+  const matches: Array<{ key: string; entry: { file: string }; blockType: string }> = [];
+  if (schemaResolved) matches.push({ key: schemaResolved.key, entry: schemaResolved.entry, blockType: "schema_block" });
+  if (mappingResolved) matches.push({ key: mappingResolved.key, entry: mappingResolved.entry, blockType: "mapping_block" });
+  if (metricResolved) matches.push({ key: metricResolved.key, entry: metricResolved.entry, blockType: "metric_block" });
+
+  for (const { key, entry, blockType } of matches) {
+    const parsed = parsedFiles.find((p) => p.filePath === entry.file);
+    const node = parsed ? findBlockNode(parsed.tree.rootNode, blockType, key) : null;
+    if (node) {
+      for (const item of extractNLContent(node, blockName)) {
+        items.push({ ...item, file: entry.file });
+      }
     }
   }
+
   return items;
 }
 
