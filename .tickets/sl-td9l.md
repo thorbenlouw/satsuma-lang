@@ -1,6 +1,6 @@
 ---
 id: sl-td9l
-status: open
+status: closed
 deps: []
 links: [sl-niix]
 created: 2026-03-21T08:02:25Z
@@ -24,3 +24,9 @@ Expected: `source { \`accounts\`, \`contacts\` }`
 
 Test fixture: /tmp/satsuma-test-lint/namespace-lint.stm
 
+
+## Notes
+
+**2026-03-22T01:04:48Z**
+
+Fixed makeAddSourceFix to strip namespace prefix when inserting source refs inside same namespace block. Also fixed description message. Added integration test. All 590 tests pass.
