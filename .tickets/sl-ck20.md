@@ -1,6 +1,6 @@
 ---
 id: sl-ck20
-status: open
+status: closed
 deps: []
 links: [sl-cyen]
 created: 2026-03-21T08:00:37Z
@@ -31,3 +31,9 @@ Reproduction files:
 
 Root cause: diffIndex() in tooling/satsuma-cli/src/diff.ts line 21-26 only compares indexA.schemas and indexA.mappings. The Delta interface (types.ts line 223-226) only has schemas and mappings fields. WorkspaceIndex has metrics, fragments, and transforms maps that are never compared.
 
+
+## Notes
+
+**2026-03-22T00:43:31Z**
+
+Extended Delta type with metrics, fragments, transforms. Updated diffIndex with diffMetric, diffFragment, diffFieldList. Updated all display modes (default, --stat, --names-only, --json). Added diff-a/diff-b fixtures and 3 integration tests. Fixed unit test makeIndex helper. All 578 tests pass.

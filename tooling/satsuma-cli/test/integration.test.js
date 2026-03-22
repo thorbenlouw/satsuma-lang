@@ -1502,6 +1502,51 @@ describe("satsuma diff", () => {
     assert.equal(code, 0);
     assert.ok(stdout.trim().length > 0);
   });
+
+  it("diffs metrics, fragments, and transforms", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    // Metrics
+    assert.match(stdout, /Metrics:/);
+    assert.match(stdout, /\+ churn_rate/);
+    assert.match(stdout, /~ monthly_revenue/);
+    // Fragments
+    assert.match(stdout, /Fragments:/);
+    assert.match(stdout, /~ audit columns/);
+    assert.match(stdout, /\+ field deleted_at/);
+    // Transforms
+    assert.match(stdout, /Transforms:/);
+    assert.match(stdout, /\+ hash_key/);
+  });
+
+  it("--json includes metrics, fragments, transforms sections", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.metrics, "delta should have metrics section");
+    assert.ok(data.fragments, "delta should have fragments section");
+    assert.ok(data.transforms, "delta should have transforms section");
+    assert.deepStrictEqual(data.metrics.added, ["churn_rate"]);
+    assert.equal(data.metrics.changed.length, 1);
+    assert.equal(data.metrics.changed[0].name, "monthly_revenue");
+    assert.deepStrictEqual(data.transforms.added, ["hash_key"]);
+    assert.equal(data.fragments.changed.length, 1);
+  });
+
+  it("--stat includes metrics, fragments, transforms counts", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-b.stm");
+    const { stdout, code } = await run("diff", "--stat", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /metrics added/);
+    assert.match(stdout, /metrics changed/);
+    assert.match(stdout, /fragments changed/);
+    assert.match(stdout, /transforms added/);
+  });
 });
 
 // ---------------------------------------------------------------------------

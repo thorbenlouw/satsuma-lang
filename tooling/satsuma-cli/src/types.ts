@@ -229,6 +229,9 @@ export interface BlockDelta<C> {
 export interface Delta {
   schemas: BlockDelta<SchemaChange>;
   mappings: BlockDelta<MappingChange>;
+  metrics: BlockDelta<SchemaChange>;
+  fragments: BlockDelta<SchemaChange>;
+  transforms: BlockDelta<never>;
 }
 
 // ── Field match types ───────────────────────────────────────────────────────

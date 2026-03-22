@@ -42,13 +42,14 @@ export function register(program: Command): void {
         return;
       }
 
+      const sectionHasChanges = (s: { added: unknown[]; removed: unknown[]; changed: unknown[] }) =>
+        s.added.length > 0 || s.removed.length > 0 || s.changed.length > 0;
       const hasChanges =
-        delta.schemas.added.length > 0 ||
-        delta.schemas.removed.length > 0 ||
-        delta.schemas.changed.length > 0 ||
-        delta.mappings.added.length > 0 ||
-        delta.mappings.removed.length > 0 ||
-        delta.mappings.changed.length > 0;
+        sectionHasChanges(delta.schemas) ||
+        sectionHasChanges(delta.mappings) ||
+        sectionHasChanges(delta.metrics) ||
+        sectionHasChanges(delta.fragments) ||
+        sectionHasChanges(delta.transforms);
 
       if (!hasChanges) {
         console.log("No structural differences.");
@@ -70,31 +71,30 @@ export function register(program: Command): void {
 }
 
 function printStat(delta: Delta): void {
-  const counts: Record<string, number> = {
-    "schemas added": delta.schemas.added.length,
-    "schemas removed": delta.schemas.removed.length,
-    "schemas changed": delta.schemas.changed.length,
-    "mappings added": delta.mappings.added.length,
-    "mappings removed": delta.mappings.removed.length,
-    "mappings changed": delta.mappings.changed.length,
-  };
-  for (const [label, count] of Object.entries(counts)) {
-    if (count > 0) console.log(`  ${count} ${label}`);
+  function statSection(label: string, section: { added: unknown[]; removed: unknown[]; changed: unknown[] }): void {
+    if (section.added.length > 0) console.log(`  ${section.added.length} ${label} added`);
+    if (section.removed.length > 0) console.log(`  ${section.removed.length} ${label} removed`);
+    if (section.changed.length > 0) console.log(`  ${section.changed.length} ${label} changed`);
   }
+  statSection("schemas", delta.schemas);
+  statSection("mappings", delta.mappings);
+  statSection("metrics", delta.metrics);
+  statSection("fragments", delta.fragments);
+  statSection("transforms", delta.transforms);
 }
 
 function printNamesOnly(delta: Delta): void {
   const names = new Set<string>();
-  for (const n of [
-    ...delta.schemas.added,
-    ...delta.schemas.removed,
-    ...delta.schemas.changed.map((c) => c.name),
-    ...delta.mappings.added,
-    ...delta.mappings.removed,
-    ...delta.mappings.changed.map((c) => c.name),
-  ]) {
-    names.add(n);
+  function collectNames(section: { added: string[]; removed: string[]; changed: Array<{ name: string }> }): void {
+    for (const n of section.added) names.add(n);
+    for (const n of section.removed) names.add(n);
+    for (const c of section.changed) names.add(c.name);
   }
+  collectNames(delta.schemas);
+  collectNames(delta.mappings);
+  collectNames(delta.metrics);
+  collectNames(delta.fragments);
+  collectNames(delta.transforms);
   for (const n of [...names].sort()) {
     console.log(n);
   }
@@ -103,6 +103,9 @@ function printNamesOnly(delta: Delta): void {
 function printDefault(delta: Delta): void {
   printSection("Schemas", delta.schemas);
   printSection("Mappings", delta.mappings);
+  printSection("Metrics", delta.metrics);
+  printSection("Fragments", delta.fragments);
+  printSection("Transforms", delta.transforms);
 }
 
 function printSection(label: string, section: BlockDelta<SchemaChange | MappingChange>): void {
