@@ -1,6 +1,6 @@
 ---
 id: sl-80jy
-status: open
+status: closed
 deps: []
 links: [sl-04pv]
 created: 2026-03-20T18:41:29Z
@@ -18,3 +18,9 @@ The unresolved-nl-ref lint rule fires on backtick references like `hidden.code` 
 1. `schema.field` backtick references where both schema and field exist do not trigger unresolved-nl-ref.
 2. Truly unresolved references (nonexistent schema or field) still trigger the rule.
 
+
+## Notes
+
+**2026-03-22T22:02:26Z**
+
+Bug already fixed — regression tests in bug-purge.test.js all pass. Verified 2026-03-22.

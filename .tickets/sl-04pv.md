@@ -1,6 +1,6 @@
 ---
 id: sl-04pv
-status: open
+status: closed
 deps: []
 links: [sl-80jy]
 created: 2026-03-20T18:41:21Z
@@ -18,3 +18,9 @@ The 'hidden-source-in-nl' lint rule (documented as fixable) never triggers. Test
 1. A mapping NL body referencing a schema not in its source/target list triggers hidden-source-in-nl.
 2. The dotted form (e.g., `hidden.code`) where both schema and field exist does NOT trigger unresolved-nl-ref.
 
+
+## Notes
+
+**2026-03-22T22:02:26Z**
+
+Bug already fixed — regression tests in bug-purge.test.js all pass. Verified 2026-03-22.

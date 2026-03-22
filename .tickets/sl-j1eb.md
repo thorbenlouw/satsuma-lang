@@ -1,6 +1,6 @@
 ---
 id: sl-j1eb
-status: open
+status: closed
 deps: []
 links: [sl-bl5e, sl-n464]
 created: 2026-03-20T18:41:06Z
@@ -18,3 +18,9 @@ In graph --json output, arrows from multi-source mappings (e.g., 'customer 360' 
 1. 'satsuma graph examples/ --json' has no edges with doubled schema prefix.
 2. Multi-source mapping arrows produce 'schema.field' format, not 'schema.schema.field'.
 
+
+## Notes
+
+**2026-03-22T22:02:26Z**
+
+Bug already fixed — regression tests in bug-purge.test.js all pass. Verified 2026-03-22.

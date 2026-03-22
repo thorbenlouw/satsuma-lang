@@ -1,6 +1,6 @@
 ---
 id: sl-j8uk
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T18:42:25Z
@@ -18,3 +18,9 @@ SATSUMA-CLI.md documents exit code 2 for 'Parse error or filesystem error'. Pars
 1. Filesystem errors (ENOENT, EACCES, etc.) exit with code 2.
 2. 'Not found' results (e.g., schema not found) continue to exit with code 1.
 
+
+## Notes
+
+**2026-03-22T22:02:26Z**
+
+Bug already fixed — regression tests in bug-purge.test.js all pass. Verified 2026-03-22.

@@ -103,8 +103,13 @@ Derived arrows (no source field) are flagged separately. The first four classifi
 | Flag | Purpose |
 |---|---|
 | `--json` | Structured JSON output — the primary agent interface |
-| `--compact` | Minimal output, omitting notes and NL strings (summary, schema, metric, mapping, find, lineage, context, graph) |
 | `--help` | What the command does and what it does not do |
+
+### Per-command flags
+
+| Flag | Available on | Purpose |
+|---|---|---|
+| `--compact` | `summary`, `schema`, `metric`, `mapping`, `find`, `lineage`, `context`, `graph` | Minimal output, omitting notes, NL strings, and transform bodies |
 
 ## Exit Codes
 

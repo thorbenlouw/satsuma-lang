@@ -1,6 +1,6 @@
 ---
 id: sl-5kux
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T18:41:46Z
@@ -18,3 +18,9 @@ The 'Common Flags' table in SATSUMA-CLI.md lists --compact as available on all c
 1. SATSUMA-CLI.md common flags table accurately reflects which commands support --compact.
 2. Alternatively, --compact is implemented on all relevant extraction commands.
 
+## Notes
+
+**2026-03-22T00:00:00Z**
+
+Cause: `--compact` was listed in the "Common Flags" table implying it applies to all commands, but only 8 of 16+ commands support it.
+Fix: Moved `--compact` out of the Common Flags table into a new "Per-command flags" subsection that explicitly lists the 8 commands that support it.
