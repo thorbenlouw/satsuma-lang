@@ -17,7 +17,7 @@ function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = [])
 }
 function ident(t) { return n("identifier", [], t); }
 function quoted(t) { return n("quoted_name", [], `'${t}'`); }
-function blockLabel(name) {
+function _blockLabel(name) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
 }

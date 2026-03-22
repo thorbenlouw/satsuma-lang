@@ -23,12 +23,12 @@ OWNER_TYPES = {
     "schema_block",
     "fragment_block",
     "field_decl",
-    "record_block",
-    "list_block",
     "mapping_block",
     "map_entry",
     "computed_arrow",
     "nested_arrow",
+    "each_block",
+    "flatten_block",
     "map_arrow",
     "metric_block",
 }
@@ -221,9 +221,10 @@ def summarize_schema_member(node: Node, source: SourceText) -> dict[str, t.Any]:
         item["type"] = clean_scalar(node_text(type_node, source)) if type_node else None
         meta_node = _find_child_by_type(node, "metadata_block")
         item["has_metadata"] = meta_node is not None
-    elif node.type in ("record_block", "list_block"):
-        label_node = _find_child_by_type(node, "block_label")
-        item["name"] = clean_scalar(node_text(label_node, source)) if label_node else None
+    # field_decl with schema_body child = nested record/list_of record
+    body_node = _find_child_by_type(node, "schema_body")
+    if body_node is not None:
+        item["nested"] = True
     return item
 
 
@@ -260,12 +261,12 @@ def summarize_tree(source: SourceText, root: Node) -> dict[str, t.Any]:
         "schema_members": [
             summarize_schema_member(node, source)
             for node in nodes
-            if node.type in {"field_decl", "record_block", "list_block"}
+            if node.type == "field_decl"
         ],
         "map_items": [
             summarize_map_item(node, source)
             for node in nodes
-            if node.type in {"map_arrow", "computed_arrow", "nested_arrow"}
+            if node.type in {"map_arrow", "computed_arrow", "nested_arrow", "each_block", "flatten_block"}
         ],
         "paths": [
             {

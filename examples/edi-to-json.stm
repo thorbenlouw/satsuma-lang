@@ -142,7 +142,7 @@ mapping 'edi to mfcs' {
   ) {
     .REFNUM -> .orderNo { split("/") | first | to_number }
 
-    each LineItems -> .items {
+    LineItems -> .items {
       .ITEMNO -> .item {
         trim
         | "Retrieve MFCS item number using the supplier's traded code
