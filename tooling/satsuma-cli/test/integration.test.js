@@ -2192,6 +2192,20 @@ describe("satsuma nl-refs", () => {
     const refNames = noteRefs.map((r) => r.ref).sort();
     assert.deepStrictEqual(refNames, ["balance", "src_accounts", "tgt_accounts"]);
   });
+
+  it("reports correct line numbers for refs in multiline strings (sl-djeo)", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "multiline-nl.stm");
+    const { stdout, code } = await run("nl-refs", "--json", fixture);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    assert.equal(refs.length, 4, "should find 4 backtick refs");
+    // First two refs are on the first line of the multiline string (line 14, 0-indexed)
+    assert.equal(refs[0].line, 14, "first ref should be on line 14");
+    assert.equal(refs[1].line, 14, "second ref should be on line 14");
+    // Last two refs are on the third line of the multiline string (line 16, 0-indexed)
+    assert.equal(refs[2].line, 16, "third ref should be on line 16");
+    assert.equal(refs[3].line, 16, "fourth ref should be on line 16");
+  });
 });
 
 // ---------------------------------------------------------------------------

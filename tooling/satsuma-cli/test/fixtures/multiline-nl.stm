@@ -1,0 +1,19 @@
+schema src_data {
+  first_name  STRING
+  last_name   STRING
+}
+
+schema tgt_data {
+  full_name  STRING
+}
+
+mapping 'name merge' {
+  source { src_data }
+  target { tgt_data }
+
+  first_name, last_name -> full_name {
+    """Concatenate `first_name` and `last_name`
+    with proper capitalization.
+    Handle NULL `first_name` by using `last_name` only."""
+  }
+}
