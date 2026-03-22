@@ -1,6 +1,6 @@
 ---
 id: sl-zqqu
-status: open
+status: closed
 deps: [sl-ck20, sl-1ugo]
 links: [sl-jt7q, sl-cyen]
 created: 2026-03-21T08:01:04Z
@@ -55,3 +55,9 @@ Reproduction files:
   /tmp/satsuma-test-diff/a_nested.stm vs /tmp/satsuma-test-diff/b_nested_field_added.stm
   /tmp/satsuma-test-diff/a_nested.stm vs /tmp/satsuma-test-diff/b_nested_block_added.stm
 
+
+## Notes
+
+**2026-03-22T00:54:23Z**
+
+Made diffFieldList recursive with a prefix parameter to detect nested field additions/removals in record/list blocks. Added 2 integration tests. All 586 tests pass.
