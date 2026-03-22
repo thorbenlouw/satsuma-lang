@@ -1,6 +1,6 @@
 ---
 id: sl-w4hv
-status: open
+status: closed
 deps: []
 links: [sl-6hot]
 created: 2026-03-21T08:03:08Z
@@ -40,3 +40,9 @@ Also confirmed with examples/ns-platform.stm — the mapping mart::build fact_de
 
 Reproducer: /tmp/satsuma-test-graph/derived-only.stm
 
+
+## Notes
+
+**2026-03-22T01:11:45Z**
+
+Added fallback for derived-only mappings in --schema-only mode: when a mapping has no field edges, generate schema-level edges from declared source/target lists. Added integration test. All 593 tests pass.

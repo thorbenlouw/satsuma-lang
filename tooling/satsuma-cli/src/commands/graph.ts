@@ -273,6 +273,30 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
         }
       }
     }
+    // For mappings with no field edges (e.g. derived-only), add schema-level
+    // edges from the declared source/target lists.
+    const mappingsWithEdges = new Set(fieldEdges.map((e) => e.mapping));
+    for (const [, mapping] of index.mappings) {
+      if (nsFilter && mapping.namespace !== nsFilter) continue;
+      const mappingName = mapping.name ?? "";
+      if (mappingName && mappingsWithEdges.has(mappingName)) continue;
+      for (const src of mapping.sources) {
+        for (const tgt of mapping.targets) {
+          const key = `${src}->${tgt}:${mappingName}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            fieldEdges.push({
+              from: src,
+              to: tgt,
+              mapping: mappingName,
+              classification: "none",
+              file: mapping.file,
+              line: mapping.row + 1,
+            });
+          }
+        }
+      }
+    }
   } else {
     fieldEdges = result.edges;
   }
