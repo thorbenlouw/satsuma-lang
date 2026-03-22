@@ -1,13 +1,13 @@
 ================================================================================
-Simple each block
+Flatten block
 ================================================================================
 
 mapping {
-  source { orders }
-  target { fact_orders }
-  each line_items -> order_lines {
-    sku      -> product_code
-    quantity -> qty
+  source { commerce_order }
+  target { order_line_facts_parquet }
+  flatten Order.LineItems -> order_line_facts_parquet {
+    .SKU -> sku
+    .Quantity -> quantity
   }
 }
 
@@ -22,38 +22,38 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (each_block
+      (flatten_block
         (src_path
           (field_path
+            (identifier)
             (identifier)))
         (tgt_path
           (field_path
             (identifier)))
         (map_arrow
           (src_path
-            (field_path
+            (relative_field_path
               (identifier)))
           (tgt_path
             (field_path
               (identifier))))
         (map_arrow
           (src_path
-            (field_path
+            (relative_field_path
               (identifier)))
           (tgt_path
             (field_path
               (identifier))))))))
 
 ================================================================================
-Each block with transforms inside
+Flatten block with metadata
 ================================================================================
 
 mapping {
   source { orders }
-  target { fact_orders }
-  each line_items -> lines {
-    sku       -> product_code { trim | uppercase }
-    unit_cost -> amount       { round(2) }
+  target { flat_lines }
+  flatten items -> flat_lines (note "Explode line items into rows") {
+    .sku -> product_code
   }
 }
 
@@ -68,111 +68,7 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (each_block
-        (src_path
-          (field_path
-            (identifier)))
-        (tgt_path
-          (field_path
-            (identifier)))
-        (map_arrow
-          (src_path
-            (field_path
-              (identifier)))
-          (tgt_path
-            (field_path
-              (identifier)))
-          (pipe_chain
-            (pipe_step
-              (token_call
-                (identifier)))
-            (pipe_step
-              (token_call
-                (identifier)))))
-        (map_arrow
-          (src_path
-            (field_path
-              (identifier)))
-          (tgt_path
-            (field_path
-              (identifier)))
-          (pipe_chain
-            (pipe_step
-              (token_call
-                (identifier)
-                (number_literal)))))))))
-
-================================================================================
-Each block with computed arrow inside
-================================================================================
-
-mapping {
-  source { orders }
-  target { fact_orders }
-  each items -> lines {
-    sku   -> sku
-    -> line_key { uuid_v4 }
-  }
-}
-
---------------------------------------------------------------------------------
-
-(source_file
-  (mapping_block
-    (mapping_body
-      (source_block
-        (source_ref
-          (identifier)))
-      (target_block
-        (source_ref
-          (identifier)))
-      (each_block
-        (src_path
-          (field_path
-            (identifier)))
-        (tgt_path
-          (field_path
-            (identifier)))
-        (map_arrow
-          (src_path
-            (field_path
-              (identifier)))
-          (tgt_path
-            (field_path
-              (identifier))))
-        (computed_arrow
-          (tgt_path
-            (field_path
-              (identifier)))
-          (pipe_chain
-            (pipe_step
-              (token_call
-                (identifier)))))))))
-
-================================================================================
-Each block with metadata
-================================================================================
-
-mapping {
-  source { orders }
-  target { fact_orders }
-  each line_items -> order_lines (required) {
-    sku -> product_code
-  }
-}
-
---------------------------------------------------------------------------------
-
-(source_file
-  (mapping_block
-    (mapping_body
-      (source_block
-        (source_ref
-          (identifier)))
-      (target_block
-        (source_ref
-          (identifier)))
-      (each_block
+      (flatten_block
         (src_path
           (field_path
             (identifier)))
@@ -180,90 +76,24 @@ mapping {
           (field_path
             (identifier)))
         (metadata_block
-          (tag_token
-            (identifier)))
+          (note_tag
+            (nl_string)))
         (map_arrow
           (src_path
-            (field_path
+            (relative_field_path
               (identifier)))
           (tgt_path
             (field_path
               (identifier))))))))
 
 ================================================================================
-Bare relative arrows in each block (no transform bodies)
-================================================================================
-
-mapping {
-  source { `src` }
-  target { `tgt` }
-  each Items -> items {
-    .A -> .x
-    .B -> .y
-    .C -> .z { trim }
-  }
-}
-
---------------------------------------------------------------------------------
-
-(source_file
-  (mapping_block
-    (mapping_body
-      (source_block
-        (source_ref
-          (backtick_name)))
-      (target_block
-        (source_ref
-          (backtick_name)))
-      (each_block
-        (src_path
-          (field_path
-            (identifier)))
-        (tgt_path
-          (field_path
-            (identifier)))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier)))
-          (pipe_chain
-            (pipe_step
-              (token_call
-                (identifier)))))))))
-
-================================================================================
-Many bare relative arrows in each block
+Empty flatten block
 ================================================================================
 
 mapping {
   source { orders }
-  target { fact }
-  each Items -> items {
-    .EBELP -> .referenceLine
-    .MATNR -> .item
-    .MENGE -> .orderedQty
-    .NETPR -> .unitCost
-    .MEINS -> .uom
-    .EINDT -> .needByDate
-    .TXZ01 -> .description
-  }
+  target { flat_lines }
+  flatten items -> flat_lines {}
 }
 
 --------------------------------------------------------------------------------
@@ -277,88 +107,175 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (each_block
-        (src_path
-          (field_path
-            (identifier)))
-        (tgt_path
-          (field_path
-            (identifier)))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))
-        (map_arrow
-          (src_path
-            (relative_field_path
-              (identifier)))
-          (tgt_path
-            (relative_field_path
-              (identifier))))))))
-
-================================================================================
-Empty each block body
-================================================================================
-
-mapping {
-  source { orders }
-  target { fact_orders }
-  each items -> lines {}
-}
-
---------------------------------------------------------------------------------
-
-(source_file
-  (mapping_block
-    (mapping_body
-      (source_block
-        (source_ref
-          (identifier)))
-      (target_block
-        (source_ref
-          (identifier)))
-      (each_block
+      (flatten_block
         (src_path
           (field_path
             (identifier)))
         (tgt_path
           (field_path
             (identifier)))))))
+
+================================================================================
+Multiple each/flatten blocks in one mapping
+================================================================================
+
+mapping {
+  source { commerce_order }
+  target { warehouse }
+  order_id -> order_key
+  each LineItems -> line_items {
+    .SKU -> sku
+    .Qty -> quantity
+  }
+  flatten Shipments -> shipment_rows {
+    .TrackingNo -> tracking_number
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier))))
+      (each_block
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier)))))
+      (flatten_block
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))))))
+
+================================================================================
+Each block with nested arrow inside
+================================================================================
+
+mapping {
+  source { orders }
+  target { target }
+  each Items -> items {
+    .sku -> .product_code
+    .discounts -> .discount_lines {
+      .code -> .discount_code
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (each_block
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (nested_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (map_arrow
+            (src_path
+              (relative_field_path
+                (identifier)))
+            (tgt_path
+              (relative_field_path
+                (identifier)))))))))
+
+================================================================================
+Each block with dotted source path
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  each Order.Items -> items {
+    .SKU -> .sku
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (each_block
+        (src_path
+          (field_path
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))))))

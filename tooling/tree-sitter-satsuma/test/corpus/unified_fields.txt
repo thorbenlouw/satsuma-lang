@@ -1,0 +1,292 @@
+================================================================================
+Record field with metadata
+================================================================================
+
+schema order {
+  customer record (note "embedded customer info") {
+    id    UUID (pk)
+    email STRING (pii)
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (metadata_block
+          (note_tag
+            (nl_string)))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier)))))))))
+
+================================================================================
+Record field with empty body
+================================================================================
+
+schema order {
+  customer record {}
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))))))
+
+================================================================================
+list_of record field with filter metadata
+================================================================================
+
+schema order {
+  line_items list_of record (filter item_status != "cancelled") {
+    sku       STRING (required)
+    quantity  INT
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (kv_comparison
+              (identifier)
+              (nl_string))))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)))))))
+
+================================================================================
+list_of record field with empty body
+================================================================================
+
+schema order {
+  line_items list_of record {}
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))))))
+
+================================================================================
+Scalar list (list_of STRING)
+================================================================================
+
+schema order {
+  promo_codes list_of STRING (note "Applied promotion codes, may be empty")
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (note_tag
+            (nl_string)))))))
+
+================================================================================
+Scalar list (list_of INT)
+================================================================================
+
+schema sensor {
+  readings list_of INT
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Scalar list with parameterized type
+================================================================================
+
+schema pricing {
+  amounts list_of DECIMAL(12,2) (required)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token
+            (identifier)))))))
+
+================================================================================
+Nested list_of record inside record
+================================================================================
+
+schema order {
+  customer record {
+    id UUID (pk)
+    addresses list_of record {
+      street STRING
+      city   STRING
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))))
+          (field_decl
+            (field_name
+              (identifier))
+            (schema_body
+              (field_decl
+                (field_name
+                  (identifier))
+                (type_expr))
+              (field_decl
+                (field_name
+                  (identifier))
+                (type_expr)))))))))
+
+================================================================================
+Mixed scalar fields, record, and list_of in one schema
+================================================================================
+
+schema order {
+  order_id STRING (pk)
+  total    DECIMAL(12,2)
+  customer record {
+    name  STRING
+    email STRING (pii)
+  }
+  tags list_of STRING
+  line_items list_of record {
+    sku STRING
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_token
+            (identifier))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr))
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)
+            (metadata_block
+              (tag_token
+                (identifier))))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))
+      (field_decl
+        (field_name
+          (identifier))
+        (schema_body
+          (field_decl
+            (field_name
+              (identifier))
+            (type_expr)))))))

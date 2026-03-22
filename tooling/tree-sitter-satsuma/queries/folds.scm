@@ -14,9 +14,9 @@
 ; Structural note blocks
 (note_block) @fold
 
-; Nested blocks within schema bodies
-(record_block) @fold
-(list_block) @fold
+; each/flatten blocks within mapping bodies
+(each_block) @fold
+(flatten_block) @fold
 
 ; Metadata blocks ( ) — useful for multi-line metadata
 (metadata_block) @fold
