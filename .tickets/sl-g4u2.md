@@ -33,3 +33,10 @@ The workspace summary shows metrics have field counts (e.g. `order_revenue [5 fi
 
 **Reproducing fixture:** /tmp/satsuma-test-fields/metrics.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Fields command only searched schemas.
+Fix: Extended fields to search metrics when name not found in schemas (commit 23e43f0).

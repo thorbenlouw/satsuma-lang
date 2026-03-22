@@ -26,3 +26,10 @@ The text output says 'Satsuma Workspace — 17 files' but the JSON has no way to
 
 Repro path: any directory, e.g. satsuma summary examples/ --json
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Summary JSON serialization didn't include file count.
+Fix: Add fileCount to summary --json output (commit 01f8bf3).

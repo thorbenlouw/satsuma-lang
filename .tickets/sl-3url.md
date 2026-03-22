@@ -45,3 +45,10 @@ Reproducers:
   /tmp/satsuma-test-lineage/multi-target.stm
   /tmp/satsuma-test-lineage/multi-target-v2.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Extract only parsed the first target in target blocks; backticks weren't stripped from mapping names.
+Fix: Handle multiple targets via ERROR node recovery and strip backticks (commit 56f17ed).

@@ -32,3 +32,10 @@ What actually happened:
 
 Reproducer: satsuma graph examples/ --json --no-nl
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: --no-nl filtered NL edges but left unresolved_nl populated.
+Fix: --no-nl now empties the unresolved_nl section (commit 01f8bf3).

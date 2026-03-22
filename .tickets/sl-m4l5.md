@@ -13,3 +13,10 @@ tags: [cli, flags]
 
 Filter and compact flags silently ignored when --json output is used.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: --compact, --fields-only, --matched-only, --unmatched-only flags were ignored by JSON output paths.
+Fix: Applied filter flags to JSON output across schema, summary, and match-fields commands (closed in commit cf955f7).

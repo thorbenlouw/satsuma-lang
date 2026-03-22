@@ -33,3 +33,10 @@ The help text documents valid scopes as `schema|metric|fragment|all`, so the com
 
 **Test fixture:** /tmp/satsuma-test-find/diverse-tags.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Find command treated unrecognized --in scope as a filter that matched nothing, silently returning no results.
+Fix: Validate --in scope and emit an error for invalid values (commit 602f79d).

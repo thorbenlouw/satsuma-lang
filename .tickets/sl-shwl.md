@@ -28,3 +28,10 @@ The text output of `mapping` also does not show classification markers on arrows
 
 **Test file:** /tmp/satsuma-test-mapping/basic.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Mapping JSON arrow objects didn't include classification.
+Fix: Added classification field (structural/nl/mixed/none) using classifyTransform from classify.ts (commit b79e255).

@@ -38,3 +38,10 @@ The same issue exists in text output: `schema stores (note "POS store reference 
 
 **Reproducer:** `examples/namespaces.stm`, schema `pos::stores` or any namespace-qualified schema.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Schema JSON serialization didn't include the namespace field.
+Fix: Added namespace field to schema JSON output (commit 4932929).

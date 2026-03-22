@@ -13,3 +13,10 @@ tags: [cli, lint]
 
 NL-based lint rules skip anonymous mappings, --fix produces invalid output.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Lint rules had issues with anonymous mappings, backtick wrapping, and namespace-local names.
+Fix: Fixed anonymous mapping resolution, backtick wrapping in --fix, and namespace-local name generation (closed in commit cf955f7).

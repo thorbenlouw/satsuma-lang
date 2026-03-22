@@ -28,3 +28,10 @@ Root cause: In match-fields.ts, the opts.json check at line 69 returns early bef
 
 Reproducer: /tmp/satsuma-test-match-fields/large-schema.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: --json output path returned early before applying filter logic.
+Fix: Apply filter logic before JSON serialization (commit eb4c842).

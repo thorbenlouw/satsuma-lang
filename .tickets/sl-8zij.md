@@ -27,3 +27,10 @@ satsuma context "conversion" /tmp/satsuma-test-context/ --json
 
 **Repro files:** /tmp/satsuma-test-context/customers.stm (has //? comment about phone numbers), /tmp/satsuma-test-context/orders.stm (has //! comment about currency conversion)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Context scoring only searched NL content, not comment text.
+Fix: Include //! and //? comment content when scoring blocks for relevance (commit 6366edd).

@@ -35,3 +35,10 @@ No `tags` array on any nested child field. Top-level fields like `order_id (pk)`
 
 **Reproducing fixture:** /tmp/satsuma-test-fields/nested.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: --with-meta used CST-only top-level scan, missing nested fields.
+Fix: Use FieldDecl.metadata instead for nested child field tags (commit af902d5).

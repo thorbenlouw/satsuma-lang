@@ -48,3 +48,10 @@ The file has `email` on line 6 (1-indexed). Text says line 6 (correct). JSON say
 
 **Test fixture:** /tmp/satsuma-test-find/diverse-tags.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: JSON used tree-sitter's 0-indexed row.
+Fix: Renamed `row` to `line` and made it 1-indexed (commit d5ca228).

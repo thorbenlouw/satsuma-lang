@@ -33,3 +33,10 @@ This is likely because `note` has a special CST node type (`note_entry` with a s
 
 **Test fixture:** /tmp/satsuma-test-find/diverse-tags.stm (line 12: `notes_field STRING (note "This has a note")`)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: findTagInMeta didn't match note_tag CST nodes.
+Fix: findTagInMeta now matches note_tag nodes for --tag note, and enum_body/slice_body for --tag enum/slice (commit 5259f0a).

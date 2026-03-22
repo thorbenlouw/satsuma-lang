@@ -13,3 +13,10 @@ tags: [cli, nl]
 
 NL-related commands miss content in certain locations (transforms, concatenated strings, escape sequences).
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: NL extraction had issues with parent attribution, concatenation, escape sequences, scope resolution, and transform/note block coverage.
+Fix: Systematic fixes across nl-extract.ts and nl-ref-extract.ts (closed in commit cf955f7).

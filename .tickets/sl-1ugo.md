@@ -47,3 +47,10 @@ The JSON output correctly includes nested children. This makes the text output l
 
 **Reproducing fixture:** /tmp/satsuma-test-fields/nested.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Fields text renderer only listed top-level fields, not children of record/list blocks.
+Fix: Recursively render children with indentation matching nesting level (commit 9db2c7f).

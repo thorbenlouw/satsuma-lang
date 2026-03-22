@@ -25,3 +25,10 @@ alongside a valid ref (ref customers.id) where 'customers' exists. Ran:
 
 **Reproducer:** /tmp/satsuma-test-validate/ref-check.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Validator didn't inspect ref metadata values for schema references.
+Fix: Add warning when (ref schema.field) metadata references a nonexistent schema (commit af902d5).

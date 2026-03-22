@@ -36,3 +36,10 @@ Root cause: meta.ts line 126 — `extractFieldMeta` calls `resolveIndexKey(schem
 
 Fixture: /tmp/satsuma-test-meta/all-metadata.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Meta command field scope only searched schemas.
+Fix: Meta command now searches metrics and fragments in addition to schemas (commit 6e0a9ac).

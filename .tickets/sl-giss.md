@@ -39,3 +39,10 @@ Root cause: `findFieldDecls` in meta.ts (line 182-194) only matches `field_decl`
 
 Fixture: /tmp/satsuma-test-meta/all-metadata.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: findFieldDecls didn't match record_block/list_block by label name.
+Fix: Match record_block/list_block by label name so querying schema.record returns the block's metadata (commit 5259f0a).

@@ -13,3 +13,10 @@ tags: [cli, json-output]
 
 Commands outputting plain text errors when --json is used instead of structured JSON.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Multiple commands returned plain text errors when --json was set.
+Fix: Return JSON error objects across schema, where-used, nl-refs, and validate commands (commit e2ee56a).

@@ -39,3 +39,10 @@ In contrast, simple `(note "text")` metadata IS correctly stripped by --compact 
 
 **Reproducer:** `examples/db-to-db.stm`, schema `legacy_sqlserver`, field `PHONE_NBR`.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Compact regex used .* which doesn't match newlines in triple-quoted strings.
+Fix: Use [\s\S]*? regex to match across newlines (commit 87afeac).

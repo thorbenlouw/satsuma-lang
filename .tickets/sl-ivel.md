@@ -27,3 +27,10 @@ The bug is in tooling/satsuma-cli/src/commands/nl-refs.ts lines 58-61 — the em
 
 Reproducing fixture: /tmp/satsuma-test-nl-refs/no-refs.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: nl-refs returned 0 on empty results.
+Fix: Exit 1 when no backtick refs found (commit 781dc99).

@@ -36,3 +36,10 @@ No relevant blocks found.
 
 **Repro files:** /tmp/satsuma-test-context/customers.stm, /tmp/satsuma-test-context/orders.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Context returned 0 when no relevant blocks found.
+Fix: Exit 1 when no results found (commit 781dc99).

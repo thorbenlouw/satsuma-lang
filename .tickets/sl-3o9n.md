@@ -33,3 +33,10 @@ Note: The help text says "List fields in a schema" so this may be by design, but
 
 **Reproducing fixture:** /tmp/satsuma-test-fields/fragments.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Fields command only searched schemas, not fragments or metrics.
+Fix: Extended fields command to search fragments and metrics when name not found in schemas (commit 23e43f0).

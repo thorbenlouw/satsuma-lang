@@ -35,3 +35,10 @@ The '1 file' header is correctly singular, so the pluralization logic exists for
 
 Repro: satsuma summary examples/
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Summary text always used plural form regardless of count.
+Fix: Use singular form when count is 1 (commit 839d2bb).

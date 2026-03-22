@@ -30,3 +30,10 @@ And --depth 2:
 
 Reproducer: /tmp/satsuma-test-lineage/chain.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: DFS traversal added edges but didn't ensure all endpoints appeared in nodes array.
+Fix: Ensure all edge endpoints appear in the nodes array without breaking multi-hop traversal (commit 076a756).

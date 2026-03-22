@@ -19,3 +19,10 @@ When a note block contains multiple concatenated nl_string nodes (e.g. note { "l
 - Root cause: nl-extract.ts uses .find() on namedChildren which returns only the first matching nl_string node. Should use .filter() and concatenate all nl_string children.
 - Reproducer: satsuma nl cart_abandonment_rate examples/metrics.stm --json
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: nl-extract used .find() on namedChildren, getting only the first nl_string.
+Fix: Use .filter() to concatenate all nl_string/multiline_string nodes in note blocks (commit a749c4c).

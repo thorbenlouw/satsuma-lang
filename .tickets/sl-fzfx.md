@@ -29,3 +29,10 @@ What actually happened:
 
 Reproducer: examples/multi-source-hub.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Lineage accepted both --from and --to without error, silently ignoring --to.
+Fix: Emit error when both --from and --to are specified (commit 781dc99).

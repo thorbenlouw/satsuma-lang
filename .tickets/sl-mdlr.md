@@ -27,3 +27,10 @@ satsuma context "enum" /tmp/satsuma-test-context/ --json
 
 **Repro files:** /tmp/satsuma-test-context/customers.stm (has pii and enum metadata), /tmp/satsuma-test-context/orders.stm (has enum metadata)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Context scoring didn't include metadata text.
+Fix: Walk CST to collect metadata text per parent block and include in relevance scoring (commit 6c5e6f9).

@@ -35,3 +35,10 @@ Similarly for `alpha` in /tmp/satsuma-test-where-used/cross-ref.stm which import
 
 **Reproduction files:** /Users/thorben/dev/personal/satsuma-lang/examples/sfdc_to_snowflake.stm, /tmp/satsuma-test-where-used/cross-ref.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: where-used didn't scan import declarations.
+Fix: Surface import declarations as import references (commit d8aa1ac).

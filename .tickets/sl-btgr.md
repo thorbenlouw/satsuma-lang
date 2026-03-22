@@ -13,3 +13,10 @@ tags: [cli, arrows, meta]
 
 Arrow-level metadata not shown/queryable, arithmetic transforms misclassified.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Arrow-level and mapping-level metadata were not exposed in CLI output.
+Fix: Systematically surfaced metadata at arrow, mapping, and field levels across text and JSON output (commit cf955f7).

@@ -34,3 +34,10 @@ What actually happened:
 
 Reproducer: /tmp/satsuma-test-graph/malformed.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Graph returned 0 even with parse errors.
+Fix: Exit 2 when workspace has parse errors (commit 781dc99).

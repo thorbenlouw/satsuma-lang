@@ -28,3 +28,10 @@ The warning is printed to stderr outside the diagnostics system, so it is invisi
 
 **Reproducer:** /tmp/satsuma-test-validate/missing-import-file.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Validator didn't check whether import target files exist on disk.
+Fix: Emit missing-import warning when an import target file does not exist (commit 076a756).

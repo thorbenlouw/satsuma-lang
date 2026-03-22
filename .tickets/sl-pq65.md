@@ -32,3 +32,10 @@ The `format xml` and both `namespace` entries are dropped. The JSON output simil
 
 **Reproducer:** `examples/xml-to-parquet.stm`, schema `commerce_order`.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Schema output only rendered note metadata, not format/namespace/other tags.
+Fix: Use extractMetadata for JSON and CST metadata_block text for display of all schema-level metadata (commit 12a7571).

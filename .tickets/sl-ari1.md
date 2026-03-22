@@ -32,3 +32,10 @@ This means the JSON output loses all transform information. Agents processing th
 
 **Test file:** /tmp/satsuma-test-mapping/basic.stm
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Arrow JSON serialization didn't include transform text.
+Fix: Arrows with transforms now include a 'transform' field containing the pipe_chain text (commit bd37aa4).

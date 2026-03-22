@@ -13,3 +13,10 @@ tags: [cli, nested, extraction]
 
 Commands fail to handle nested record/list blocks properly in extraction, display, and analysis.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Nested record/list children were missing from fields, meta, schema, diff, and unmapped output.
+Fix: Systematic fixes across extract, fields, meta, schema, diff, and arrows commands to handle nested structures (closed in commit dce4de0).

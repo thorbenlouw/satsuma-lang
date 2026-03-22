@@ -33,3 +33,10 @@ The error is written to stderr via console.error and process.exit(1) before the 
 
 **Reproduction:** Run `satsuma where-used nonexistent /tmp/satsuma-test-where-used/ --json` and observe plain text output.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Error path returned plain text regardless of --json flag.
+Fix: Return JSON error object when --json flag is set (commit e2ee56a).

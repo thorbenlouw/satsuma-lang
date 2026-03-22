@@ -32,3 +32,10 @@ The quotes are stripped, making the output not round-trippable as valid Satsuma.
 
 **Reproducer:** `/tmp/satsuma-test-schema/quoted-label.stm`
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Text output stripped quote delimiters during rendering.
+Fix: Schema text output now wraps multi-word names in single quotes (commit b4269bb).

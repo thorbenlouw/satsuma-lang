@@ -13,3 +13,10 @@ tags: [cli, json-output]
 
 JSON output across multiple commands omits important fields like metadata, namespace, classification, transform bodies.
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: Multiple commands omitted metadata, namespace, classification, and other fields from JSON output.
+Fix: Systematic enrichment of JSON output across schema, metric, mapping, and summary commands (commit 51d92a5).

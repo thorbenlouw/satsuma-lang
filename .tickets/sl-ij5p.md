@@ -48,3 +48,10 @@ Shows `// 2 arrows` comment instead of the actual arrows.
 
 **Test file:** /tmp/satsuma-test-mapping/basic.stm (line 49)
 
+
+## Notes
+
+**2026-03-22T02:00:00Z**
+
+Cause: CST query couldn't resolve anonymous mappings by name.
+Fix: Resolve anonymous mappings by row position using `<anon>@file:row` key (commit 39017e8).
