@@ -1,8 +1,8 @@
 # Lesson 08 — The Satsuma CLI as the Agent's Toolkit
 
-## The CLI Is Not for You — It's for the Agent
+## The CLI Is Primarily for the Agent
 
-The Satsuma CLI (`satsuma`) is designed as a **deterministic extraction layer** that the agent composes into workflows. You rarely run CLI commands directly. Instead, you ask the agent a question, and it decides which CLI commands to run, combines their output, and gives you a human-readable answer.
+The Satsuma CLI (`satsuma`) is designed as a **deterministic extraction layer** that the agent composes into workflows. In day-to-day work, the agent often runs the commands for you. But humans should still know a small core set directly so they can verify outputs, debug problems, and build trust in the tooling.
 
 The key principle: **the CLI gives exact slices; the agent supplies the analysis.**
 
@@ -20,9 +20,9 @@ This keeps the agent's context focused and its answers precise.
 
 ---
 
-## The 16 Commands
+## The CLI Commands
 
-The CLI has 16 commands organized into four groups:
+The CLI command surface is organized into four groups:
 
 ### Workspace Extractors
 
@@ -62,7 +62,7 @@ The `graph` command exports the full workspace structure as a graph. Flags contr
 - `--json` — machine-readable JSON
 - `--compact` — reduced output for smaller context windows
 - `--schema-only` — skip field-level detail
-- `--namespace` — include namespace information
+- `--namespace <ns>` — filter to a namespace
 - `--no-nl` — exclude natural-language content
 
 ### Structural Analysis
@@ -87,7 +87,7 @@ These two commands serve different purposes:
 If `validate` reports errors, the file is broken. Fix these first.
 
 **`lint`** checks conventions:
-- `hidden-source-in-nl` — a backtick reference in NL that doesn't match a declared field
+- `hidden-source-in-nl` — NL text references a schema not declared in the mapping's source/target list
 - `unresolved-nl-ref` — a backtick identifier in NL that can't be resolved
 - `duplicate-definition` — two definitions with the same name
 
@@ -118,6 +118,20 @@ This classification helps the agent decide how to handle each arrow: structural 
 
 ---
 
+## The Five Commands Humans Should Know
+
+Even in an agent-first workflow, learners should be comfortable running these directly:
+
+- `satsuma summary <path>` — what is in the workspace?
+- `satsuma schema <name>` — what does one schema look like?
+- `satsuma mapping <name>` — what does one mapping say?
+- `satsuma validate <path>` — is the workspace structurally valid?
+- `satsuma lint <path>` — what conventions or NL-reference issues need review?
+
+If you can use those five commands, you can sanity-check most agent output.
+
+---
+
 ## Output Formats for Agent Workflows
 
 Most CLI commands support `--json` and `--compact` flags:
@@ -145,9 +159,9 @@ For more complex questions, the agent chains commands:
 3. `satsuma nl` — check NL transforms that reference `CUST_ID` via backticks
 
 **"Are there any unmapped target fields?":**
-1. `satsuma fields <target_schema>` — list all target fields
-2. `satsuma arrows` for each field — check which have incoming arrows
-3. Report any fields with no source
+1. `satsuma fields <target_schema> --unmapped-by '<mapping>'` — list target fields not covered by a specific mapping
+2. Repeat for other mappings that target the same schema if needed
+3. Report any fields that remain uncovered
 
 ---
 
@@ -194,10 +208,33 @@ Each step gives you exact, parseable information. The agent combines it into a n
 
 ---
 
+## Hands-On Check
+
+Do one direct, non-agent walkthrough on the repo corpus:
+
+```bash
+satsuma summary examples/
+satsuma schema country_codes
+satsuma mapping 'customer migration'
+satsuma validate examples/
+satsuma lint examples/
+```
+
+What you should get out of this:
+
+- `summary` gives you the inventory
+- `schema` and `mapping` give you exact slices
+- `validate` tells you whether the workspace is structurally sound
+- `lint` tells you where conventions or NL references need human review
+
+Once that feels normal, handing the CLI to an agent becomes much safer.
+
+---
+
 ## Key Takeaways
 
-1. The CLI is a deterministic extraction layer for the agent — you ask questions, the agent runs commands.
-2. 16 commands cover workspace exploration, structural extraction, graph export, and analysis.
+1. The CLI is a deterministic extraction layer for the agent, but humans should know a small core command set directly.
+2. The command surface covers workspace exploration, structural extraction, graph export, and analysis.
 3. `validate` checks correctness (parse errors, broken references). `lint` checks conventions.
 4. Transform classification (`[structural]`, `[nl]`, `[mixed]`, `[none]`, `[nl-derived]`) tells the agent how to handle each arrow.
 5. `--json` and `--compact` flags make CLI output efficient for agent workflows.

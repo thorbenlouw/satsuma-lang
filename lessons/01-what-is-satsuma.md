@@ -149,6 +149,28 @@ In each lesson, we progressively build out the Satsuma specification for this mi
 
 ---
 
+## A Minimal Manual Baseline
+
+Before you bring in an agent, it is worth proving to yourself that Satsuma is inspectable and trustworthy with direct tools.
+
+Take a small example file and do three things:
+
+```bash
+satsuma summary examples/
+satsuma schema country_codes
+satsuma validate examples/
+```
+
+What you should notice:
+
+1. `summary` tells you what blocks exist.
+2. `schema` retrieves one exact structural slice without loading every file.
+3. `validate` checks whether the workspace is structurally well-formed.
+
+That is enough to ground the rest of the course. The agent becomes an accelerator after you understand this baseline.
+
+---
+
 ## Setting Up Your AI Agent
 
 Before you start working with Satsuma, you need to teach your AI agent about the language and the CLI. Satsuma ships with a built-in command that outputs everything an agent needs — the grammar, a cheat sheet, CLI command reference, and workflow guidance:
@@ -194,7 +216,7 @@ After receiving the intro, your agent will know:
 
 - The full Satsuma grammar (what's valid syntax)
 - The three-delimiter model (`( )`, `{ }`, `" "`)
-- All 16 CLI commands and when to use each one
+- The CLI command surface and when to use each command
 - Transform vocabulary (trim, lowercase, map, etc.)
 - How to compose CLI commands into workflows (impact analysis, coverage checks, PII audits)
 - Common mistakes to avoid
@@ -209,8 +231,8 @@ You don't need to explain Satsuma to the agent yourself — the intro covers eve
 1. Satsuma is a parseable, versionable replacement for mapping spreadsheets — not a programming language.
 2. Three delimiters (`( )`, `{ }`, `" "`) handle metadata, structure, and natural language respectively.
 3. The parser and CLI extract structural facts exactly. The agent interprets natural language and drafts valid Satsuma. The human owns meaning and decisions.
-4. You do not need to memorize the full language to start working with it. Understanding the hybrid model is enough to begin.
-5. Run `satsuma --intro-for-agents` to generate the reference your AI agent needs — then drop it into your agent's instructions file, system prompt, or conversation.
+4. You do not need to memorize the full language to start working with it. Understanding the hybrid model and a few core CLI commands is enough to begin.
+5. Run `satsuma --intro-for-agents` after you have that baseline, then drop it into your agent's instructions file, system prompt, or conversation.
 
 ---
 
