@@ -32,3 +32,9 @@ The tree-sitter parser likely recovers from the missing brace gracefully (treati
 
 **Reproducer:** /tmp/satsuma-test-validate/partial-parse.stm and /tmp/satsuma-test-validate/multiple-errors.stm
 
+
+## Notes
+
+**2026-03-22T02:09:28Z**
+
+Blocked: requires tree-sitter grammar changes. C++ compiler is unavailable in sandbox.

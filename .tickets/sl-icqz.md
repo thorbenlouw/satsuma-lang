@@ -28,3 +28,9 @@ Also tested without a label (derived-arrow.stm) - same result.
 
 **Reproducer:** /tmp/satsuma-test-validate/target-only-mapping.stm and /tmp/satsuma-test-validate/derived-arrow.stm
 
+
+## Notes
+
+**2026-03-22T02:09:28Z**
+
+Blocked: requires tree-sitter grammar changes. C++ compiler is unavailable in sandbox.
