@@ -44,12 +44,14 @@ export function register(program: Command): void {
 
       const sectionHasChanges = (s: { added: unknown[]; removed: unknown[]; changed: unknown[] }) =>
         s.added.length > 0 || s.removed.length > 0 || s.changed.length > 0;
+      const notesChanged = delta.notes.added.length > 0 || delta.notes.removed.length > 0;
       const hasChanges =
         sectionHasChanges(delta.schemas) ||
         sectionHasChanges(delta.mappings) ||
         sectionHasChanges(delta.metrics) ||
         sectionHasChanges(delta.fragments) ||
-        sectionHasChanges(delta.transforms);
+        sectionHasChanges(delta.transforms) ||
+        notesChanged;
 
       if (!hasChanges) {
         console.log("No structural differences.");
@@ -81,6 +83,8 @@ function printStat(delta: Delta): void {
   statSection("metrics", delta.metrics);
   statSection("fragments", delta.fragments);
   statSection("transforms", delta.transforms);
+  if (delta.notes.added.length > 0) console.log(`  ${delta.notes.added.length} notes added`);
+  if (delta.notes.removed.length > 0) console.log(`  ${delta.notes.removed.length} notes removed`);
 }
 
 function printNamesOnly(delta: Delta): void {
@@ -106,6 +110,21 @@ function printDefault(delta: Delta): void {
   printSection("Metrics", delta.metrics);
   printSection("Fragments", delta.fragments);
   printSection("Transforms", delta.transforms);
+  printNotes(delta);
+}
+
+function printNotes(delta: Delta): void {
+  if (delta.notes.added.length === 0 && delta.notes.removed.length === 0) return;
+  console.log("Notes:");
+  for (const text of delta.notes.added) {
+    const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
+    console.log(`  + ${JSON.stringify(preview)}`);
+  }
+  for (const text of delta.notes.removed) {
+    const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
+    console.log(`  - ${JSON.stringify(preview)}`);
+  }
+  console.log();
 }
 
 function printSection(label: string, section: BlockDelta<SchemaChange | MappingChange>): void {

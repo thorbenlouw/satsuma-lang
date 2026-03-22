@@ -12,6 +12,8 @@ import type {
   MappingChange,
   MappingRecord,
   MetricRecord,
+  NoteDelta,
+  NoteRecord,
   SchemaChange,
   SchemaRecord,
   WorkspaceIndex,
@@ -27,6 +29,7 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
     metrics: diffBlockMap(indexA.metrics, indexB.metrics, diffMetric),
     fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
     transforms: diffBlockMap(indexA.transforms, indexB.transforms, () => []),
+    notes: diffNotes(indexA.notes ?? [], indexB.notes ?? []),
   };
 }
 
@@ -113,4 +116,20 @@ function diffMapping(a: MappingRecord, b: MappingRecord): MappingChange[] {
   }
 
   return changes;
+}
+
+function diffNotes(notesA: NoteRecord[], notesB: NoteRecord[]): NoteDelta {
+  const textsA = new Set(notesA.map((n) => n.text));
+  const textsB = new Set(notesB.map((n) => n.text));
+  const added: string[] = [];
+  const removed: string[] = [];
+
+  for (const t of textsB) {
+    if (!textsA.has(t)) added.push(t);
+  }
+  for (const t of textsA) {
+    if (!textsB.has(t)) removed.push(t);
+  }
+
+  return { added, removed };
 }
