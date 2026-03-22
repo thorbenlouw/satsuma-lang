@@ -9,8 +9,11 @@ import { describe, it, beforeEach, afterEach } from "node:test";
 
 // ── Mock CST helpers ──────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0) {
-  return { type, text, startPosition: { row, column: 0 }, namedChildren };
+function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
+  const children = [];
+  children.push(...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
+  children.push(...namedChildren.map(c => ({ ...c, isNamed: true })));
+  return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
 }
 function ident(t) { return n("identifier", [], t); }
 function quoted(t) { return n("quoted_name", [], `'${t}'`); }
@@ -32,29 +35,37 @@ function fieldDecl(name, type, meta = null) {
 
 // ── Inline collectFields re-implementation (mirrors schema.js logic) ──────────
 
+function isList(fd) {
+  if (!fd.children) return false;
+  return fd.children.some((c) => !c.isNamed && c.text === "list_of");
+}
+
 function collectFields(bodyNode, indent = 0) {
   const lines = [];
   for (const c of bodyNode.namedChildren) {
     const pad = "  ".repeat(indent);
     if (c.type === "field_decl") {
       const nameNode = c.namedChildren.find((x) => x.type === "field_name");
-      const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
-      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
-      const inner = nameNode?.namedChildren[0];
-      let fname = inner?.text ?? "";
-      if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
-      const metaText = meta ? ` ${meta.text}` : "";
-      lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typeNode?.text ?? ""}${metaText}` });
-    } else if (c.type === "record_block" || c.type === "list_block") {
-      const kind = c.type === "record_block" ? "record" : "list";
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let lname = inner?.text ?? "";
-      if (inner?.type === "quoted_name") lname = lname.slice(1, -1);
-      lines.push({ indent, text: `${pad}${kind} ${lname} {` });
       const nested = c.namedChildren.find((x) => x.type === "schema_body");
-      if (nested) lines.push(...collectFields(nested, indent + 1));
-      lines.push({ indent, text: `${pad}}` });
+      if (nested) {
+        // Nested structure: field_decl with schema_body child (unified syntax)
+        const inner = nameNode?.namedChildren[0];
+        let fname = inner?.text ?? "";
+        if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
+        const kind = isList(c) ? "list_of record" : "record";
+        lines.push({ indent, text: `${pad}${fname} ${kind} {` });
+        lines.push(...collectFields(nested, indent + 1));
+        lines.push({ indent, text: `${pad}}` });
+      } else {
+        // Scalar field
+        const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
+        const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+        const inner = nameNode?.namedChildren[0];
+        let fname = inner?.text ?? "";
+        if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
+        const metaText = meta ? ` ${meta.text}` : "";
+        lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typeNode?.text ?? ""}${metaText}` });
+      }
     } else if (c.type === "fragment_spread") {
       const lbl = c.namedChildren.find((x) => x.type === "spread_label");
       let sname = "";
@@ -97,24 +108,24 @@ describe("collectFields", () => {
     assert.ok(lines[0].text.includes("(pk)"));
   });
 
-  it("renders nested record_block with indent", () => {
+  it("renders nested record field_decl with indent", () => {
     const innerBody = n("schema_body", [fieldDecl("street", "STRING(200)")]);
-    const recBlock = n("record_block", [blockLabel("address"), innerBody]);
-    const body = n("schema_body", [recBlock]);
+    const recordField = n("field_decl", [fieldName("address"), innerBody], "", 0, ["record"]);
+    const body = n("schema_body", [recordField]);
 
     const lines = collectFields(body, 1);
-    assert.equal(lines[0].text, "  record address {");
+    assert.equal(lines[0].text, "  address record {");
     assert.ok(lines[1].text.startsWith("    street"));
     assert.equal(lines[2].text, "  }");
   });
 
-  it("renders nested list_block", () => {
+  it("renders nested list_of record field_decl", () => {
     const innerBody = n("schema_body", [fieldDecl("item", "STRING(50)")]);
-    const listBlock = n("list_block", [blockLabel("tags"), innerBody]);
-    const body = n("schema_body", [listBlock]);
+    const listField = n("field_decl", [fieldName("tags"), innerBody], "", 0, ["list_of", "record"]);
+    const body = n("schema_body", [listField]);
 
     const lines = collectFields(body, 0);
-    assert.equal(lines[0].text, "list tags {");
+    assert.equal(lines[0].text, "tags list_of record {");
     assert.ok(lines[1].text.startsWith("  item"));
     assert.equal(lines[2].text, "}");
   });

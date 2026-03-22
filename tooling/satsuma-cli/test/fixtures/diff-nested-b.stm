@@ -1,11 +1,11 @@
 schema order {
   id       INTEGER
-  record address {
+  address record {
     street   STRING
     city     STRING
     zip      STRING
   }
-  list items {
+  items list_of record {
     sku      STRING
     qty      INTEGER
     price    DECIMAL

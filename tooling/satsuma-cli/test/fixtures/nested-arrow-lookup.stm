@@ -1,5 +1,5 @@
 schema src_sys {
-  record addr {
+  addr record {
     street STRING
     city STRING
   }
@@ -7,7 +7,7 @@ schema src_sys {
 }
 
 schema tgt_sys {
-  record address {
+  address record {
     street_line STRING
     city STRING
   }

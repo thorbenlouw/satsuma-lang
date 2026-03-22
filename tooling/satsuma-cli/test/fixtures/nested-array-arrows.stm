@@ -1,6 +1,6 @@
 schema order_api {
   order_id    STRING
-  line_items  list {
+  line_items  list_of record {
     sku    STRING
     qty    INTEGER
     price  DECIMAL
@@ -9,7 +9,7 @@ schema order_api {
 
 schema order_flat {
   order_id      STRING
-  items  list {
+  items  list_of record {
     product_code  STRING
     quantity      INTEGER
     unit_price    DECIMAL
@@ -21,7 +21,7 @@ mapping 'flatten orders' {
   target { order_flat }
 
   order_id -> order_id
-  line_items[] -> items[] {
+  each line_items -> items {
     .sku -> .product_code { trim | uppercase }
     .qty -> .quantity
     .price -> .unit_price { round(2) }
