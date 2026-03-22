@@ -1,0 +1,12 @@
+schema customers (note "Schema-level note for customers") {
+  id    INTEGER
+  name  STRING
+}
+
+mapping 'customers' {
+  source { customers }
+  target { customers }
+
+  id -> id
+  -> name { "Look up the customer name from CRM" }
+}

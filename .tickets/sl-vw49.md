@@ -1,6 +1,6 @@
 ---
 id: sl-vw49
-status: open
+status: closed
 deps: [sl-6ino]
 links: [sl-wvn8]
 created: 2026-03-21T08:04:56Z
@@ -21,3 +21,9 @@ When a schema and a mapping have the same name, satsuma nl <name> only returns N
 - Root cause: extractFromBlock() in nl.ts checks schemas first via resolveIndexKey, and if found, short-circuits without checking mappings or metrics with the same name.
 - Reproducer: /tmp/satsuma-test-nl/ambiguous-scope.stm
 
+
+## Notes
+
+**2026-03-22T01:42:59Z**
+
+Fixed by collecting NL content from ALL matching blocks (schema, mapping, metric) instead of short-circuiting on the first match. Added 1 integration test.
