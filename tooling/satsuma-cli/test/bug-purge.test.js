@@ -8,6 +8,8 @@
  * sl-04pv: hidden-source-in-nl fires on bare and dotted-field refs
  * sl-80jy: unresolved-nl-ref no false positive on valid dotted-field refs
  * sl-j8uk: Filesystem errors exit code 2
+ * sc-1ar0: mapping includes flatten/each block arrows
+ * sc-8g9a: validate no false-positive field-not-in-schema on flatten targets
  */
 
 import { execFile } from "node:child_process";
@@ -338,5 +340,47 @@ describe("sl-j8uk: filesystem errors exit code 2", () => {
   it("not-found schema still exits 1", async () => {
     const { code } = await run("schema", "nonexistent_schema_name", EXAMPLES);
     assert.equal(code, 1);
+  });
+});
+
+// ── sc-1ar0: mapping includes flatten/each arrows ─────────────────────────
+
+describe("sc-1ar0: mapping includes flatten/each block arrows", () => {
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+
+  it("--json arrows array includes flatten block with children", async () => {
+    const { stdout, code } = await run("mapping", "order line facts", FFG, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const flattenArrow = data.arrows.find((a) => a.kind === "flatten");
+    assert.ok(flattenArrow, "should have a flatten arrow");
+    assert.ok(flattenArrow.children.length > 0, "flatten should have child arrows");
+  });
+
+  it("--arrows-only shows flatten child arrows", async () => {
+    const { stdout, code } = await run("mapping", "order line facts", FFG, "--arrows-only");
+    assert.equal(code, 0);
+    assert.match(stdout, /line_items\s+-> order_line_facts_parquet/);
+    assert.match(stdout, /\.line_number\s+-> line_number/);
+  });
+
+  it("text output shows flatten block", async () => {
+    const { stdout, code } = await run("mapping", "order line facts", FFG);
+    assert.equal(code, 0);
+    assert.match(stdout, /flatten line_items -> order_line_facts_parquet/);
+    assert.match(stdout, /\.sku -> sku/);
+  });
+});
+
+// ── sc-8g9a: validate no false-positive on flatten targets ────────────────
+
+describe("sc-8g9a: validate no false-positive field-not-in-schema on flatten", () => {
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+
+  it("does not emit field-not-in-schema for flatten inner arrows", async () => {
+    const { stdout, stderr } = await run("validate", FFG);
+    const output = stdout + stderr;
+    const fieldNotInSchema = output.split("\n").filter((l) => l.includes("field-not-in-schema"));
+    assert.equal(fieldNotInSchema.length, 0, `unexpected field-not-in-schema warnings:\n${fieldNotInSchema.join("\n")}`);
   });
 });

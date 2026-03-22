@@ -1,6 +1,6 @@
 ---
 id: sc-8g9a
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T21:30:09Z
@@ -24,3 +24,9 @@ Actual:
 
 The validator appears to prepend the schema name to the field name (creating order_line_facts_parquet.line_number) and then fails to match it (the schema declares just line_number). This fires on the canonical example file.
 
+
+## Notes
+
+**2026-03-22T22:11:20Z**
+
+Cause: resolveFieldPath() required multi-schema mapping (length>1) to strip schema qualifier, and never matched schema-name container targets. Fix: removed length>1 guard, added schema-name-equals-target check.

@@ -110,6 +110,13 @@ function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
       const children = collectArrows(c);
       arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true, metaNode: meta, node: c, children: children.length > 0 ? children : undefined });
+    } else if (c.type === "flatten_block" || c.type === "each_block") {
+      const blockKind = c.type === "flatten_block" ? "flatten" : "each";
+      const src = c.namedChildren.find((x) => x.type === "src_path");
+      const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
+      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      const children = collectArrows(c);
+      arrows.push({ kind: blockKind, src: pathText(src), tgt: pathText(tgt), hasBody: true, metaNode: meta, node: c, children: children.length > 0 ? children : undefined });
     }
   }
   return arrows;
@@ -206,6 +213,23 @@ function printArrowNode(c: SyntaxNode, compact: boolean | undefined, indent: str
   }
 }
 
+function printBlockNode(c: SyntaxNode, compact: boolean | undefined, indent: string): void {
+  const keyword = c.type === "flatten_block" ? "flatten" : "each";
+  const src = c.namedChildren.find((x) => x.type === "src_path");
+  const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
+  const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+  const srcStr = pathText(src);
+  const tgtStr = pathText(tgt);
+  const metaSuffix = meta && !compact ? ` ${meta.text}` : "";
+  console.log(`${indent}${keyword} ${srcStr} -> ${tgtStr}${metaSuffix} {`);
+  for (const child of c.namedChildren) {
+    if (child.type === "map_arrow" || child.type === "computed_arrow" || child.type === "nested_arrow") {
+      printArrowNode(child, compact, indent + "  ");
+    }
+  }
+  console.log(`${indent}}`);
+}
+
 function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, compact: boolean | undefined): void {
   const nameStr = entry.name ? ` '${entry.name}'` : "";
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
@@ -228,10 +252,10 @@ function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, comp
       }
       if (c.type === "source_block" || c.type === "target_block") continue;
 
-      if (c.type === "map_arrow" || c.type === "nested_arrow") {
+      if (c.type === "map_arrow" || c.type === "nested_arrow" || c.type === "computed_arrow") {
         printArrowNode(c, compact, "  ");
-      } else if (c.type === "computed_arrow") {
-        printArrowNode(c, compact, "  ");
+      } else if (c.type === "flatten_block" || c.type === "each_block") {
+        printBlockNode(c, compact, "  ");
       }
     }
   } else {

@@ -503,18 +503,18 @@ function checkFieldRefMetadata(
 function resolveFieldPath(path: string, schemaNames: string[], index: WorkspaceIndex, fieldPaths: Set<string>): boolean {
   if (path.startsWith(".")) return true;
   if (fieldPaths.has(path)) return true;
+  // Container arrow targets (flatten/each) may equal the schema name itself
+  if (schemaNames.includes(path)) return true;
 
-  if (schemaNames.length > 1) {
-    const dotIdx = path.indexOf(".");
-    if (dotIdx > 0) {
-      const qualifier = path.slice(0, dotIdx);
-      if (schemaNames.includes(qualifier)) {
-        const rest = path.slice(dotIdx + 1);
-        const schemaFields = index.schemas.get(qualifier)?.fields ?? [];
-        const qualPaths = new Set<string>();
-        collectFieldPaths(schemaFields, "", qualPaths);
-        if (qualPaths.has(rest)) return true;
-      }
+  const dotIdx = path.indexOf(".");
+  if (dotIdx > 0) {
+    const qualifier = path.slice(0, dotIdx);
+    if (schemaNames.includes(qualifier)) {
+      const rest = path.slice(dotIdx + 1);
+      const schemaFields = index.schemas.get(qualifier)?.fields ?? [];
+      const qualPaths = new Set<string>();
+      collectFieldPaths(schemaFields, "", qualPaths);
+      if (qualPaths.has(rest)) return true;
     }
   }
 
