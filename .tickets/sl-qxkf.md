@@ -1,6 +1,6 @@
 ---
 id: sl-qxkf
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T07:43:49Z

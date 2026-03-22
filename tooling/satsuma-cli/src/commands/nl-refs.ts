@@ -56,7 +56,8 @@ export function register(program: Command): void {
       }
 
       if (opts.json) {
-        console.log(JSON.stringify(refs, null, 2));
+        const out = refs.map((r) => ({ ...r, line: r.line + 1 }));
+        console.log(JSON.stringify(out, null, 2));
         if (refs.length === 0) process.exit(1);
         return;
       }
