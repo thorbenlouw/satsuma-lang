@@ -1,0 +1,17 @@
+schema src_main {
+  id    INTEGER
+  name  STRING
+}
+
+schema hidden_lookup {
+  code  STRING
+}
+
+mapping 'data load' {
+  source { `src_main` }
+  target { `output` }
+
+  id -> id {
+    "Look up `hidden_lookup` code for enrichment"
+  }
+}

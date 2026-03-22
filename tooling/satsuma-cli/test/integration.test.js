@@ -2426,6 +2426,18 @@ describe("satsuma lint --fix", () => {
     assert.match(content, /source \{ source::finance_gl, source::hr_employees \}/);
   });
 
+  it("wraps added source ref in backticks when existing entries use backticks (sl-z157)", async () => {
+    const src = resolve(import.meta.dirname, "fixtures", "lint-backtick-fix.stm");
+    const file = src.replace("lint-backtick-fix.stm", "lint-backtick-fix-copy.stm");
+    copyFileSync(src, file);
+    const { stdout, code } = await run("lint", "--fix", file);
+    assert.equal(code, 0);
+    assert.match(stdout, /Fixed:/);
+    const content = readFileSync(file, "utf8");
+    assert.match(content, /source \{ `src_main`, `hidden_lookup` \}/);
+    unlinkSync(file);
+  });
+
   it("uses namespace-local name when fixing inside namespace block (sl-td9l)", async () => {
     const src = resolve(import.meta.dirname, "fixtures", "lint-ns-fix.stm");
     const file = src.replace("lint-ns-fix.stm", "lint-ns-fix-copy.stm");
