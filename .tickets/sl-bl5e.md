@@ -1,6 +1,6 @@
 ---
 id: sl-bl5e
-status: open
+status: closed
 deps: []
 links: [sl-n464, sl-j1eb]
 created: 2026-03-20T18:41:12Z
@@ -18,3 +18,9 @@ In graph --json output, arrows referencing nested record or list fields produce 
 1. 'satsuma graph examples/ --json' has no edges with '..' in from or to fields.
 2. Nested field paths include the intermediate record/list name (e.g., 'schema.record.field').
 
+
+## Notes
+
+**2026-03-22T22:02:26Z**
+
+Bug already fixed — regression tests in bug-purge.test.js all pass. Verified 2026-03-22.

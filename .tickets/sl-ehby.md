@@ -1,6 +1,6 @@
 ---
 id: sl-ehby
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-20T18:41:38Z
@@ -19,3 +19,9 @@ Ticket sg-95gr was marked done but SATSUMA-CLI.md still shows examples like 'sat
 2. Documented workflow examples use the correct invocation form.
 3. AI-AGENT-REFERENCE.md examples are also consistent.
 
+
+## Notes
+
+**2026-03-22T22:04:06Z**
+
+Bug already fixed. SATSUMA-CLI.md and AI-AGENT-REFERENCE.md all use correct single-token scope form. The two-token form only remains in historical features/10-stm-cli-enhancements/PRD.md which is a design doc, not user-facing documentation.
