@@ -26,10 +26,9 @@ metadata         = meta_entry {"," meta_entry} ;
 meta_entry       = IDENT [value] | IDENT "{" enum_items "}" | "note" (STRING | TRIPLESTRING) ;
 enum_items       = value {"," value} ;
 
-schema_body      = { field | record_block | list_block | spread | COMMENT } ;
-field            = (IDENT | BACKTICK_IDENT) TYPE ["(" metadata ")"] ;
-record_block     = "record" label ["(" metadata ")"] "{" schema_body "}" ;
-list_block       = "list" label ["(" metadata ")"] "{" schema_body "}" ;
+schema_body      = { field_decl | spread | COMMENT } ;
+field_decl       = (IDENT | BACKTICK_IDENT) [type_expr] ["(" metadata ")"] ["{" schema_body "}"] ;
+type_expr        = TYPE ["(" params ")"] | "record" | "list_of" TYPE ["(" params ")"] | "list_of" "record" ;
 spread           = "..." name ;
 
 transform        = "transform" label "{" transform_body "}" ;
@@ -42,20 +41,22 @@ metric_entry     = "source" (IDENT | "{" name_list "}") | "grain" IDENT
 metric_body      = { field | note_block | COMMENT } ;
 
 mapping          = "mapping" [label] ["(" metadata ")"] "{" mapping_body "}" ;
-mapping_body     = { note_block | source_decl | target_decl | arrow | nested_arrow | COMMENT } ;
+mapping_body     = { note_block | source_decl | target_decl | arrow | nested_arrow | each_block | flatten_block | COMMENT } ;
 source_decl      = "source" "{" ref_list "}" ;
 target_decl      = "target" "{" ref_list "}" ;
 ref_list         = { BACKTICK_IDENT | STRING } ;
 
 arrow            = [field_path] "->" field_path ["(" metadata ")"] ["{" transform_body "}"] ;
 nested_arrow     = field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
+each_block       = "each" field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
+flatten_block    = "flatten" field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
 
 pipe_step        = IDENT ["(" params ")"] | ARITH NUMBER | "map" "{" map_entries "}" | STRING ;
 map_entries      = { map_key ":" value } ;
 map_key          = value | "<" NUMBER | "default" | "_" | "null" ;
 
 field_path       = segment {"." segment} ;
-segment          = (IDENT | BACKTICK_IDENT) ["[]"] ;
+segment          = IDENT | BACKTICK_IDENT ;
 
 IDENT            = LETTER {LETTER | DIGIT | "_" | "-"} ;
 BACKTICK_IDENT   = "`" {ANY} "`" ;
@@ -79,19 +80,22 @@ schema <name> (<metadata>) {
   field_name    TYPE           (tags)       // info
   field_name    TYPE           (tags)       //! warning
   field_name    TYPE           (tags)       //? todo
-  record nested_obj {
+  nested_obj record {
     child       TYPE
   }
-  list repeated_items {
+  repeated_items list_of record {
     item        TYPE
   }
-  list scalar_tags (note "element type STRING") {}  // scalar list — no subfields
+  scalar_tags list_of STRING (note "tag values")    // scalar list — no subfields
   ...fragment_name
 }
 
 Metadata tokens (in parens):  pk, required, unique, indexed, pii, encrypt,
   encrypt AES-256-GCM, default val, enum {a, b, c}, format email,
   ref table.field, note "...", xpath "...", namespace prefix "uri", filter COND
+
+Reserved keywords: schema, fragment, mapping, transform, metric, note,
+  source, target, import, from, record, list_of, each, flatten
 
 ## Mapping blocks
 mapping <name> (<metadata>) {
@@ -121,7 +125,12 @@ mapping <name> (<metadata>) {
     "natural language transform description"
 
   Array mapping:
-  src_arr[] -> tgt_arr[] {
+  each src_arr -> tgt_arr {
+    .child -> .child { transform }
+  }
+
+  Flattening a list:
+  flatten src.list_field -> flat_target {
     .child -> .child { transform }
   }
 }
@@ -295,9 +304,11 @@ When reporting results to humans, be transparent about which parts of your analy
 | Using `nl("...")` function | Use bare `"..."` strings in `{ }` — NL is first-class |
 | Using `note '''...'''` triple single-quotes | Use `(note "...")` or `note { """...""" }` |
 | Using `=> target` for computed fields | Use `-> target` with no left side |
-| Using `STRUCT { }` / `ARRAY { }` for nesting | Use `record Name { }` / `list Name { }` |
+| Using `STRUCT { }` / `ARRAY { }` for nesting | Use `Name record { }` / `Name list_of record { }` |
 | Using `when/else` conditionals | Use `map { }` with conditions or NL strings |
-| Forgetting to declare arrays with `list` | Use `list Name { }` for repeated structures |
+| Forgetting to declare arrays with `list_of` | Use `Name list_of record { }` for repeated structures, `Name list_of TYPE` for scalar lists |
+| Using `[]` in mapping paths | Use `each src -> tgt { }` for iteration, dot paths for field access |
+| Using `(flatten \`list\`)` metadata on mappings | Use `flatten src.list -> tgt { }` block syntax inside mapping body |
 | Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
 | Using `schema` for a business metric | Use `metric` — it signals a terminal node to lineage tooling |
 | Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
