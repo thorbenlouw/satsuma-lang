@@ -158,7 +158,7 @@ describe("Bug 1: nested field path resolution", () => {
     assert.equal(fieldWarnings.length, 0, "Nested dotted paths should resolve without warnings");
   });
 
-  it("validates list bracket paths against nested field tree", () => {
+  it("validates list dotted paths against nested field tree", () => {
     const index = makeIndex({
       schemas: [{
         name: "src_schema",
@@ -174,13 +174,13 @@ describe("Bug 1: nested field path resolution", () => {
       }],
       mappings: [{ name: "m1", sources: ["src_schema"], targets: ["tgt_schema"] }],
       fieldArrows: [
-        { mapping: "m1", source: "CartLines[].unit_price", target: "price", file: "test.stm", line: 10 },
+        { mapping: "m1", source: "CartLines.unit_price", target: "price", file: "test.stm", line: 10 },
       ],
     });
 
     const warnings = collectSemanticWarnings(index);
     const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
-    assert.equal(fieldWarnings.length, 0, "List bracket paths should resolve without warnings");
+    assert.equal(fieldWarnings.length, 0, "List dotted paths should resolve without warnings");
   });
 
   it("accepts relative paths (.REFNUM) without warning", () => {

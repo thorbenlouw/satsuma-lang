@@ -2,12 +2,12 @@ schema nested_test {
   id INT
   //! schema-level warning
 
-  record address (note "Address record note") {
+  address record (note "Address record note") {
     street VARCHAR
     //! address warning
   }
 
-  list contacts {
+  contacts list_of record {
     name VARCHAR
     //? contacts question
   }

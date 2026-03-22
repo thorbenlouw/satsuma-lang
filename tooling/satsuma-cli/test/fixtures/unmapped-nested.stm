@@ -1,5 +1,5 @@
 schema nested_tgt {
-  record details {
+  details record {
     name STRING(200)
     email STRING(255)
   }
