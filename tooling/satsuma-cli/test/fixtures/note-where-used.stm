@@ -1,0 +1,28 @@
+schema product {
+  id    INTEGER
+  name  STRING
+}
+
+schema orders {
+  id          INTEGER
+  product_id  INTEGER
+}
+
+note {
+  "The `product` schema is the canonical source of truth for all product data."
+}
+
+metric order_count (
+  source orders,
+  grain daily
+) {
+  value  INTEGER
+
+  note {
+    "Count of `orders` placed per day. See `product` for product details."
+  }
+}
+
+orders -> report {
+  id -> id
+}

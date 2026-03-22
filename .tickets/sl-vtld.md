@@ -1,6 +1,6 @@
 ---
 id: sl-vtld
-status: open
+status: closed
 deps: [sl-z57o]
 links: [sl-mkuw]
 created: 2026-03-21T08:00:21Z
@@ -40,3 +40,9 @@ The root cause is that `resolveAllNLRefs()` only extracts NL from mapping transf
 
 **Reproduction files:** /tmp/satsuma-test-where-used/multi-ref-types.stm, /tmp/satsuma-test-where-used/nl-refs.stm
 
+
+## Notes
+
+**2026-03-22T00:46:39Z**
+
+Added extractStandaloneNoteRefs and extractBlockNoteRefs to nl-ref-extract.ts to capture NL backtick refs in standalone note blocks and note blocks inside schemas/metrics/fragments. Updated where-used label from 'Referenced in NL transform bodies' to 'Referenced in NL text'. Added test fixture and 3 integration tests. All 581 tests pass.

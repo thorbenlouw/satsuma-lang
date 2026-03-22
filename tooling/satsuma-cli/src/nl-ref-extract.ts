@@ -194,6 +194,10 @@ function walkMappings(node: SyntaxNode, namespace: string | null, results: Omit<
       extractMappingNLRefs(c, namespace, results);
     } else if (c.type === "transform_block") {
       extractTransformNLRefs(c, namespace, results);
+    } else if (c.type === "note_block") {
+      extractStandaloneNoteRefs(c, namespace, null, results);
+    } else if (c.type === "schema_block" || c.type === "metric_block" || c.type === "fragment_block") {
+      extractBlockNoteRefs(c, namespace, results);
     }
   }
 }
@@ -241,6 +245,55 @@ function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | n
             line: innerNode.startPosition.row,
             column: innerNode.startPosition.column,
           });
+        }
+      }
+    }
+  }
+}
+
+function extractStandaloneNoteRefs(
+  noteNode: SyntaxNode,
+  namespace: string | null,
+  parentLabel: string | null,
+  results: Omit<NLRefData, "file">[],
+): void {
+  for (const inner of noteNode.namedChildren) {
+    if (inner.type === "nl_string" || inner.type === "multiline_string") {
+      const text = inner.type === "multiline_string"
+        ? inner.text.slice(3, -3).trim()
+        : inner.text.slice(1, -1);
+      if (text.includes("`")) {
+        results.push({
+          text,
+          mapping: parentLabel ? `note:${parentLabel}` : "note:",
+          namespace,
+          targetField: null,
+          line: inner.startPosition.row,
+          column: inner.startPosition.column,
+        });
+      }
+    }
+  }
+}
+
+function extractBlockNoteRefs(
+  blockNode: SyntaxNode,
+  namespace: string | null,
+  results: Omit<NLRefData, "file">[],
+): void {
+  const lbl = blockNode.namedChildren.find((c) => c.type === "block_label");
+  const inner = lbl?.namedChildren[0];
+  let blockName = inner?.text ?? "";
+  if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
+
+  const bodyTypes = ["schema_body", "metric_body"];
+  for (const child of blockNode.namedChildren) {
+    if (child.type === "note_block") {
+      extractStandaloneNoteRefs(child, namespace, blockName, results);
+    } else if (bodyTypes.includes(child.type)) {
+      for (const bodyChild of child.namedChildren) {
+        if (bodyChild.type === "note_block") {
+          extractStandaloneNoteRefs(bodyChild, namespace, blockName, results);
         }
       }
     }
