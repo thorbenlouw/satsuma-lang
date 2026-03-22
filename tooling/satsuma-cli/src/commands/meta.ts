@@ -17,6 +17,7 @@ import { extractMetadata } from "../meta-extract.js";
 import type { MetaEntry } from "../meta-extract.js";
 import { findBlockNode } from "../cst-query.js";
 import type { SyntaxNode, WorkspaceIndex, ParsedFile, FieldDecl } from "../types.js";
+import { expandEntityFields } from "../spread-expand.js";
 
 interface MetaResult {
   scope: string;
@@ -148,12 +149,46 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   }
 
   const entity = resolved.entry;
-  const field = findFieldByPath(entity.fields, pathSegments);
+  let field = findFieldByPath(entity.fields, pathSegments);
+  let fromFragment: string | null = null;
+
+  // If field not found directly, try expanded spread fields
+  if (!field && blockType === "schema_block") {
+    const expanded = expandEntityFields(entity as Parameters<typeof expandEntityFields>[0], entity.namespace ?? null, index);
+    const expandedField = expanded.find((f) => f.name === pathSegments[0]);
+    if (expandedField) {
+      field = expandedField;
+      fromFragment = expandedField.fromFragment ?? null;
+    }
+  }
+
   if (!field) {
     console.error(
       `Field '${fieldPath}' not found in '${entityName}'.`,
     );
     process.exit(1);
+  }
+
+  // If the field came from a fragment spread, look up metadata from the fragment's CST
+  if (fromFragment) {
+    const fragment = index.fragments.get(fromFragment);
+    if (fragment) {
+      const fragParsed = parsedFiles.find((p) => p.filePath === fragment.file);
+      if (fragParsed) {
+        const fragNode = findBlockNode(fragParsed.tree.rootNode, "fragment_block", fromFragment);
+        const fragBody = fragNode?.namedChildren.find((c) => c.type === "schema_body");
+        if (fragBody) {
+          for (const fieldDecl of findFieldDecls(fragBody, fieldName)) {
+            const metaNode = fieldDecl.namedChildren.find(
+              (c) => c.type === "metadata_block",
+            );
+            const entries = extractMetadata(metaNode);
+            return { scope: fieldRef, type: field.type ?? null, entries };
+          }
+        }
+      }
+    }
+    return { scope: fieldRef, type: field.type ?? null, entries: [] };
   }
 
   const parsed = parsedFiles.find((p) => p.filePath === entity.file);

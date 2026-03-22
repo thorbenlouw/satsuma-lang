@@ -1,0 +1,10 @@
+fragment tagged_fragment {
+  created_at TIMESTAMPTZ (required, note "Creation timestamp")
+  updated_at TIMESTAMPTZ
+}
+
+schema uses_fragment {
+  id    INT (pk)
+  name  STRING
+  ...tagged_fragment
+}
