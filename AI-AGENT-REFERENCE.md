@@ -216,6 +216,7 @@ Every arrow the CLI returns carries a classification from CST node types:
 | `[nl]` | NL string — extracted verbatim | Read it, interpret intent, judge correctness |
 | `[mixed]` | Both pipeline steps and NL | Review the NL portion |
 | `[none]` | Bare `src -> tgt`, no transform | None |
+| `[nl-derived]` | Implicit arrow from NL backtick ref | Synthetic — verify the referenced field exists |
 
 ### How you compose workflows
 

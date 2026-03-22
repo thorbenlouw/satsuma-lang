@@ -94,8 +94,9 @@ Every arrow the CLI returns carries a classification derived from CST node types
 | `nl` | Transform is a natural-language string — extracted verbatim for agent interpretation |
 | `mixed` | Both pipeline steps and NL strings |
 | `none` | No transform body (bare `src -> tgt`) |
+| `nl-derived` | Implicit arrow inferred from a backtick NL reference — not declared in any mapping |
 
-Derived arrows (no source field) are flagged separately. This classification is a mechanical CST check — no string content is examined.
+Derived arrows (no source field) are flagged separately. The first four classifications are mechanical CST checks — no string content is examined. `nl-derived` arrows are synthetic: they are created when a NL backtick reference (e.g., `` `schema.field` ``) resolves to a known field, and they carry `derived: true` with `transform_raw: "(NL ref)"`.
 
 ## Common Flags
 
