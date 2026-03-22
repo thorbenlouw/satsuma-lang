@@ -216,11 +216,12 @@ function schemaHasField(fields: FieldDecl[], fieldName: string): boolean {
 
 function findFieldDecls(bodyNode: SyntaxNode, fieldName: string, acc: SyntaxNode[] = []): SyntaxNode[] {
   for (const child of bodyNode.namedChildren) {
-    if (child.type === "field_decl" && getFieldDeclName(child) === fieldName) {
-      acc.push(child);
-      continue;
-    }
-    if (child.type === "record_block" || child.type === "list_block") {
+    if (child.type === "field_decl") {
+      if (getFieldDeclName(child) === fieldName) {
+        acc.push(child);
+        continue;
+      }
+      // Recurse into nested record/list_of fields
       const nestedBody = child.namedChildren.find((c) => c.type === "schema_body");
       if (nestedBody) findFieldDecls(nestedBody, fieldName, acc);
     }

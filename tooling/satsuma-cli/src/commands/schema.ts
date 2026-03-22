@@ -92,7 +92,15 @@ interface CollectedLine {
   text: string;
 }
 
-/** Collect fields from schema_body, recursing into record_block / list_block. */
+/** Check if a field_decl has a "list_of" anonymous keyword child. */
+function fieldHasListOf(fd: SyntaxNode): boolean {
+  if (fd.children) {
+    return fd.children.some((c) => !c.isNamed && c.text === "list_of");
+  }
+  return false;
+}
+
+/** Collect fields from schema_body, recursing into nested record/list_of fields. */
 function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[] {
   const lines: CollectedLine[] = [];
   for (const c of bodyNode.namedChildren) {
@@ -101,22 +109,26 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
       const nameNode = c.namedChildren.find((x) => x.type === "field_name");
       const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      const nested = c.namedChildren.find((x) => x.type === "schema_body");
       const inner = nameNode?.namedChildren[0];
       const fname = inner?.text ?? "";
-      const metaText = meta ? ` ${meta.text}` : "";
-      lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typeNode?.text ?? ""}${metaText}` });
-    } else if (c.type === "record_block" || c.type === "list_block") {
-      const kind = c.type === "record_block" ? "record" : "list";
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let lname = inner?.text ?? "";
-      if (inner?.type === "quoted_name") lname = lname.slice(1, -1);
-      const blockMeta = c.namedChildren.find((x) => x.type === "metadata_block");
-      const blockMetaText = blockMeta ? ` ${blockMeta.text}` : "";
-      lines.push({ indent, text: `${pad}${kind} ${lname}${blockMetaText} {` });
-      const nested = c.namedChildren.find((x) => x.type === "schema_body");
-      if (nested) lines.push(...collectFields(nested, indent + 1));
-      lines.push({ indent, text: `${pad}}` });
+
+      if (nested) {
+        // Nested structure: record or list_of record
+        const isList = fieldHasListOf(c);
+        const kind = isList ? "list_of record" : "record";
+        const blockMeta = meta;
+        const blockMetaText = blockMeta ? ` ${blockMeta.text}` : "";
+        lines.push({ indent, text: `${pad}${fname} ${kind}${blockMetaText} {` });
+        lines.push(...collectFields(nested, indent + 1));
+        lines.push({ indent, text: `${pad}}` });
+      } else {
+        // Scalar field (may be list_of scalar)
+        const isList = fieldHasListOf(c);
+        const typePrefix = isList ? "list_of " : "";
+        const metaText = meta ? ` ${meta.text}` : "";
+        lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typePrefix}${typeNode?.text ?? ""}${metaText}` });
+      }
     } else if (c.type === "fragment_spread") {
       const lbl = c.namedChildren.find((x) => x.type === "spread_label");
       let sname = "";

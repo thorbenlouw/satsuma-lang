@@ -232,7 +232,8 @@ function walkForSpreads(bodyNode: SyntaxNode, fragmentName: string, blockName: s
       if (sname === fragmentName) {
         results.push({ block: blockName, row: c.startPosition.row });
       }
-    } else if (c.type === "record_block" || c.type === "list_block") {
+    } else if (c.type === "field_decl") {
+      // Recurse into nested record/list_of fields for spreads
       const nested = c.namedChildren.find((x) => x.type === "schema_body");
       if (nested) walkForSpreads(nested, fragmentName, blockName, results);
     }
