@@ -1,11 +1,11 @@
 ================================================================================
-Path with intermediate repeated segment
+Path with intermediate dotted segment
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  Order.LineItems[].SKU -> sku
+  Order.LineItems.SKU -> sku
 }
 
 --------------------------------------------------------------------------------
@@ -30,13 +30,13 @@ mapping {
             (identifier)))))))
 
 ================================================================================
-Path with repeated segment at start
+Dotted path at start
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  CartLines[].unit_price -> gross_merchandise_value
+  CartLines.unit_price -> gross_merchandise_value
 }
 
 --------------------------------------------------------------------------------
@@ -60,13 +60,13 @@ mapping {
             (identifier)))))))
 
 ================================================================================
-Computed arrow with repeated path in target
+Computed arrow with dotted path in target
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  -> ShipmentHeader.asnDetails[].containers { "No source data available." }
+  -> ShipmentHeader.asnDetails.containers { "No source data available." }
 }
 
 --------------------------------------------------------------------------------
@@ -91,10 +91,10 @@ mapping {
             (nl_string)))))))
 
 ================================================================================
-Mapping-level flatten metadata
+Mapping-level flatten metadata (legacy)
 ================================================================================
 
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping 'order lines' (flatten `Order.LineItems`) {
   source { commerce_order }
   target { order_lines }
 }

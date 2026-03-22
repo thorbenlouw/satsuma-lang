@@ -1,11 +1,11 @@
 ================================================================================
-Relative-to-relative arrow inside nested block
+Relative-to-relative arrow inside each block
 ================================================================================
 
 mapping {
   source { orders }
   target { fact_orders }
-  items[] -> lines[] {
+  each items -> lines {
     .sku -> .product_code
   }
 }
@@ -21,7 +21,7 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (nested_arrow
+      (each_block
         (src_path
           (field_path
             (identifier)))
@@ -43,7 +43,7 @@ Relative-to-relative arrow with transform
 mapping {
   source { src }
   target { tgt }
-  items[] -> lines[] {
+  each items -> lines {
     .line_no -> .ref_line { to_number }
   }
 }
@@ -59,7 +59,7 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (nested_arrow
+      (each_block
         (src_path
           (field_path
             (identifier)))
@@ -159,13 +159,13 @@ mapping {
             (nl_string)))))))
 
 ================================================================================
-Nested arrow with note metadata
+Each block with note metadata
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  items[] -> lines[] (
+  each items -> lines (
     note "One target line per source item."
   ) {
     .sku -> .product_code
@@ -183,7 +183,7 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (nested_arrow
+      (each_block
         (src_path
           (field_path
             (identifier)))
@@ -202,13 +202,13 @@ mapping {
               (identifier))))))))
 
 ================================================================================
-Nested arrow with mixed relative arrow types
+Each block with mixed relative arrow types
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  Items[] -> items[] {
+  each Items -> items {
     .line_no -> .ref { to_number }
     .code -> .item {
       trim | uppercase | "Resolve code to item."
@@ -232,7 +232,7 @@ mapping {
       (target_block
         (source_ref
           (identifier)))
-      (nested_arrow
+      (each_block
         (src_path
           (field_path
             (identifier)))
@@ -352,13 +352,13 @@ mapping {
                   (nl_string))))))))))
 
 ================================================================================
-Array-dotted source path to simple target
+Dotted source path to simple target
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  Items[].EINDT -> notBeforeDate {
+  Items.EINDT -> notBeforeDate {
     "Take the earliest date across all lines."
   }
 }
@@ -387,7 +387,7 @@ mapping {
             (nl_string)))))))
 
 ================================================================================
-Schema with list block and field-level note metadata
+Schema with list_of record field and field-level note metadata
 ================================================================================
 
 schema purchase_order (
@@ -398,7 +398,7 @@ schema purchase_order (
   doc_type STRING(4)  (required, enum {NB, UB})
   currency STRING(3)  (required)
 
-  list Items {
+  Items list_of record {
     line_no  STRING(5)     (required, note "Line number")
     quantity NUMBER(13,3)  (required)
     price    NUMBER(13,4)  (required)
@@ -448,8 +448,8 @@ schema purchase_order (
         (metadata_block
           (tag_token
             (identifier))))
-      (list_block
-        (block_label
+      (field_decl
+        (field_name
           (identifier))
         (schema_body
           (field_decl

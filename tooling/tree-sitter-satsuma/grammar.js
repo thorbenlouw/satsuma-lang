@@ -2,23 +2,27 @@
 // @ts-check
 
 /**
- * Satsuma v2 Grammar — Phase 7: Namespace blocks
+ * Satsuma v2 Grammar — Phase 8: Unified field syntax
  *
- * Adds flat namespace blocks for scoped definitions:
- *   namespace <name> (<metadata>)? { <definitions> }
+ * Replaces keyword-first record/list blocks with name-first unified fields:
+ *   NAME record (metadata)? { schema_body }
+ *   NAME list_of record (metadata)? { schema_body }
+ *   NAME list_of TYPE (metadata)?
  *
- * Namespace blocks cannot nest. All named entity types (schemas, metrics,
- * mappings, fragments, transforms) can appear inside a namespace.
+ * Adds each/flatten blocks in mapping bodies:
+ *   each src -> tgt (metadata)? { arrow_decl* }
+ *   flatten src -> tgt (metadata)? { arrow_decl* }
  *
- * Import names support namespace-qualified form: ns::identifier.
- *
- * Fragment spreads support namespace-qualified form: ...ns::fragment_name.
+ * Removes [] from all field paths — iteration context is established by
+ * each/flatten blocks or is implicit from the schema structure.
  *
  * GLR conflicts declared:
  *   - map_arrow vs nested_arrow (both start with src_path -> tgt_path)
  *   - namespaced_path vs field_path (both start with identifier; :: vs .)
  *   - namespace_block vs field_path/namespaced_path (identifier followed by
  *     :: or { could be a namespace block or a path — resolved by context)
+ *   - field_decl ambiguity: identifier can start a field_decl (name) or a
+ *     type_expr / spread — resolved by GLR + prec
  */
 
 module.exports = grammar({
@@ -34,16 +38,11 @@ module.exports = grammar({
   word: ($) => $.identifier,
 
   conflicts: ($) => [
-    // Metadata: key_value_pair vs tag_token (initial identifier is ambiguous).
-    [$.key_value_pair, $.tag_token],
-    // Arrow body: map_arrow vs nested_arrow share the same prefix.
-    [$.map_arrow, $.nested_arrow],
     // Multi-word spread: after "...identifier", the next identifier could
     // continue the spread label or start a new field_decl.  GLR explores
     // both; prec.dynamic(-1) on _spread_words ensures field_decl wins
     // when it produces a valid parse.
     [$._spread_words],
-    [$.field_decl, $._spread_words],
   ],
 
   rules: {
@@ -139,7 +138,7 @@ module.exports = grammar({
         "}",
       ),
 
-    // ── Mapping block (Phase 6) ───────────────────────────────────────────
+    // ── Mapping block ───────────────────────────────────────────────────
 
     mapping_block: ($) =>
       seq(
@@ -155,7 +154,14 @@ module.exports = grammar({
       repeat1($._mapping_body_item),
 
     _mapping_body_item: ($) =>
-      choice($.note_block, $.source_block, $.target_block, $._arrow_decl),
+      choice(
+        $.note_block,
+        $.source_block,
+        $.target_block,
+        $.each_block,
+        $.flatten_block,
+        $._arrow_decl,
+      ),
 
     // source { ref1, ref2 } or source { ref1 ref2 } or source { "join ..." }
     source_block: ($) =>
@@ -180,6 +186,34 @@ module.exports = grammar({
         "target",
         "{",
         $._source_entry,
+        "}",
+      ),
+
+    // ── each/flatten blocks ─────────────────────────────────────────────
+    // each src_path -> tgt_path (metadata)? { arrow_decl* }
+    // flatten src_path -> tgt_path (metadata)? { arrow_decl* }
+
+    each_block: ($) =>
+      seq(
+        "each",
+        $.src_path,
+        "->",
+        $.tgt_path,
+        optional($.metadata_block),
+        "{",
+        repeat($._arrow_decl),
+        "}",
+      ),
+
+    flatten_block: ($) =>
+      seq(
+        "flatten",
+        $.src_path,
+        "->",
+        $.tgt_path,
+        optional($.metadata_block),
+        "{",
+        repeat($._arrow_decl),
         "}",
       ),
 
@@ -213,8 +247,6 @@ module.exports = grammar({
     _schema_body_item: ($) =>
       choice(
         $.field_decl,
-        $.record_block,
-        $.list_block,
         $.fragment_spread,
         $.note_block,
       ),
@@ -225,11 +257,59 @@ module.exports = grammar({
 
     _metric_body_item: ($) => choice($.field_decl, $.note_block),
 
-    // ── Field declaration ─────────────────────────────────────────────────
+    // ── Field declaration (unified syntax) ──────────────────────────────
+    // All fields follow: NAME [TYPE] [(metadata)] [{schema_body}]
+    //
+    // TYPE can be:
+    //   - a scalar type: STRING, DECIMAL(12,2), etc. (type_expr token)
+    //   - record: single nested structure
+    //   - list_of record: list of structured elements
+    //   - list_of TYPE: scalar list (list_of STRING, list_of INT, etc.)
 
     field_decl: ($) =>
+      choice(
+        // NAME record (metadata)? { schema_body }
+        $._record_field,
+        // NAME list_of record (metadata)? { schema_body }
+        $._list_of_record_field,
+        // NAME list_of TYPE (metadata)?
+        $._list_of_scalar_field,
+        // NAME TYPE (metadata)?  — original scalar field
+        $._scalar_field,
+      ),
+
+    _scalar_field: ($) =>
       seq(
         $.field_name,
+        $.type_expr,
+        optional($.metadata_block),
+      ),
+
+    _record_field: ($) =>
+      seq(
+        $.field_name,
+        "record",
+        optional($.metadata_block),
+        "{",
+        optional($.schema_body),
+        "}",
+      ),
+
+    _list_of_record_field: ($) =>
+      seq(
+        $.field_name,
+        "list_of",
+        "record",
+        optional($.metadata_block),
+        "{",
+        optional($.schema_body),
+        "}",
+      ),
+
+    _list_of_scalar_field: ($) =>
+      seq(
+        $.field_name,
+        "list_of",
         $.type_expr,
         optional($.metadata_block),
       ),
@@ -242,28 +322,6 @@ module.exports = grammar({
           /[a-zA-Z_][a-zA-Z0-9_-]*/,
           optional(seq("(", /[^)]*/, ")")),
         ),
-      ),
-
-    // ── Nested record and list blocks ─────────────────────────────────────
-
-    record_block: ($) =>
-      seq(
-        "record",
-        $.block_label,
-        optional($.metadata_block),
-        "{",
-        optional($.schema_body),
-        "}",
-      ),
-
-    list_block: ($) =>
-      seq(
-        "list",
-        $.block_label,
-        optional($.metadata_block),
-        "{",
-        optional($.schema_body),
-        "}",
       ),
 
     // ── Fragment spread ───────────────────────────────────────────────────
@@ -329,6 +387,7 @@ module.exports = grammar({
 
     // ── Arrow paths ───────────────────────────────────────────────────────
     // src_path and tgt_path are named wrapper nodes.
+    // [] is removed from all paths — iteration is expressed via each/flatten.
 
     src_path: ($) => $._path_expr,
     tgt_path: ($) => $._path_expr,
@@ -341,7 +400,7 @@ module.exports = grammar({
         $.field_path,
       ),
 
-    // ns::identifier or ns::identifier.field... ([] on any segment)
+    // ns::identifier or ns::identifier.field...
     // token.immediate(".") ensures continuation dots must be adjacent (no
     // newlines) so multi-line bare arrows are not merged into one path.
     namespaced_path: ($) =>
@@ -352,15 +411,14 @@ module.exports = grammar({
         repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
-    // `BacktickRef` or `BacktickRef`.field... ([] on any segment)
+    // `BacktickRef` or `BacktickRef`.field...
     backtick_path: ($) =>
       prec.right(seq(
         $.backtick_name,
-        optional("[]"),
         repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
-    // .field or .field.nested... ([] on any segment)
+    // .field or .field.nested...
     relative_field_path: ($) =>
       prec.right(seq(
         ".",
@@ -368,15 +426,14 @@ module.exports = grammar({
         repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
-    // field or field.nested... ([] on any segment)
+    // field or field.nested...
     field_path: ($) =>
       prec.right(seq(
         $.identifier,
-        optional("[]"),
         repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
-    _path_seg: ($) => seq(choice($.identifier, $.backtick_name), optional("[]")),
+    _path_seg: ($) => choice($.identifier, $.backtick_name),
 
     // ── Pipe chain (transform, arrow bodies) ─────────────────────────────
 

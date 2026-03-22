@@ -219,7 +219,7 @@ Filter comparison value
 ================================================================================
 
 schema edi_shipment {
-  list ShipmentRefs (filter SHPRFQUAL == "SRN") {
+  ShipmentRefs list_of record (filter SHPRFQUAL == "SRN") {
     SHIPREF CHAR(70)
   }
 }
@@ -231,8 +231,8 @@ schema edi_shipment {
     (block_label
       (identifier))
     (schema_body
-      (list_block
-        (block_label
+      (field_decl
+        (field_name
           (identifier))
         (metadata_block
           (key_value_pair

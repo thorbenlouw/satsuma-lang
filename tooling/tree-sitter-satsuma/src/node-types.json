@@ -100,6 +100,41 @@
     }
   },
   {
+    "type": "each_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "computed_arrow",
+          "named": true
+        },
+        {
+          "type": "map_arrow",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "nested_arrow",
+          "named": true
+        },
+        {
+          "type": "src_path",
+          "named": true
+        },
+        {
+          "type": "tgt_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "enum_body",
     "named": true,
     "fields": {},
@@ -132,6 +167,10 @@
         },
         {
           "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "schema_body",
           "named": true
         },
         {
@@ -174,6 +213,41 @@
         },
         {
           "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "flatten_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "computed_arrow",
+          "named": true
+        },
+        {
+          "type": "map_arrow",
+          "named": true
+        },
+        {
+          "type": "metadata_block",
+          "named": true
+        },
+        {
+          "type": "nested_arrow",
+          "named": true
+        },
+        {
+          "type": "src_path",
+          "named": true
+        },
+        {
+          "type": "tgt_path",
           "named": true
         }
       ]
@@ -425,29 +499,6 @@
     }
   },
   {
-    "type": "list_block",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "block_label",
-          "named": true
-        },
-        {
-          "type": "metadata_block",
-          "named": true
-        },
-        {
-          "type": "schema_body",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "map_arrow",
     "named": true,
     "fields": {},
@@ -583,6 +634,14 @@
       "types": [
         {
           "type": "computed_arrow",
+          "named": true
+        },
+        {
+          "type": "each_block",
+          "named": true
+        },
+        {
+          "type": "flatten_block",
           "named": true
         },
         {
@@ -893,29 +952,6 @@
     }
   },
   {
-    "type": "record_block",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "block_label",
-          "named": true
-        },
-        {
-          "type": "metadata_block",
-          "named": true
-        },
-        {
-          "type": "schema_body",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "relative_field_path",
     "named": true,
     "fields": {},
@@ -974,15 +1010,7 @@
           "named": true
         },
         {
-          "type": "list_block",
-          "named": true
-        },
-        {
           "type": "note_block",
-          "named": true
-        },
-        {
-          "type": "record_block",
           "named": true
         }
       ]
@@ -1279,10 +1307,6 @@
     "named": false
   },
   {
-    "type": "[]",
-    "named": false
-  },
-  {
     "type": "_",
     "named": false
   },
@@ -1300,11 +1324,19 @@
     "named": false
   },
   {
+    "type": "each",
+    "named": false
+  },
+  {
     "type": "enum",
     "named": false
   },
   {
     "type": "false",
+    "named": false
+  },
+  {
+    "type": "flatten",
     "named": false
   },
   {
@@ -1324,7 +1356,7 @@
     "named": false
   },
   {
-    "type": "list",
+    "type": "list_of",
     "named": false
   },
   {

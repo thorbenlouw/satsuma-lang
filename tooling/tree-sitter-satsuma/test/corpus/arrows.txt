@@ -267,13 +267,13 @@ mapping {
             (identifier)))))))
 
 ================================================================================
-Array path (nested arrow src/tgt)
+Dotted path arrow (no brackets)
 ================================================================================
 
 mapping {
   source { orders }
   target { fact_orders }
-  line_items[] -> order_lines[]
+  line_items -> order_lines
 }
 
 --------------------------------------------------------------------------------

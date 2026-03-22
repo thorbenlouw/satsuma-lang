@@ -350,12 +350,12 @@ schema customers {
             (identifier)))))))
 
 ================================================================================
-Nested record block
+Nested record field
 ================================================================================
 
 schema order {
   order_id STRING (pk)
-  record customer {
+  customer record {
     id    STRING
     email STRING (pii)
   }
@@ -375,8 +375,8 @@ schema order {
         (metadata_block
           (tag_token
             (identifier))))
-      (record_block
-        (block_label
+      (field_decl
+        (field_name
           (identifier))
         (schema_body
           (field_decl
@@ -392,12 +392,12 @@ schema order {
                 (identifier)))))))))
 
 ================================================================================
-Nested list block
+Nested list_of record field
 ================================================================================
 
 schema order {
   order_id STRING (pk)
-  list line_items {
+  line_items list_of record {
     sku          STRING   (required)
     quantity     INT
     unit_price   DECIMAL(12,2)
@@ -418,8 +418,8 @@ schema order {
         (metadata_block
           (tag_token
             (identifier))))
-      (list_block
-        (block_label
+      (field_decl
+        (field_name
           (identifier))
         (schema_body
           (field_decl
@@ -444,9 +444,9 @@ Three-level nesting
 
 schema shipment {
   id STRING (pk)
-  record package {
+  package record {
     weight DECIMAL(8,3)
-    list contents {
+    contents list_of record {
       sku      STRING
       quantity INT
     }
@@ -467,16 +467,16 @@ schema shipment {
         (metadata_block
           (tag_token
             (identifier))))
-      (record_block
-        (block_label
+      (field_decl
+        (field_name
           (identifier))
         (schema_body
           (field_decl
             (field_name
               (identifier))
             (type_expr))
-          (list_block
-            (block_label
+          (field_decl
+            (field_name
               (identifier))
             (schema_body
               (field_decl
