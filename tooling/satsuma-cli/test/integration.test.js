@@ -1229,6 +1229,33 @@ describe("satsuma meta", () => {
     assert.equal(d1.type, d2.type, "both TaxAmount fields should have same type");
     assert.ok(d1.entries.length > 0 && d2.entries.length > 0, "both should have metadata");
   });
+
+  it("finds fields from fragment spreads", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-meta.stm");
+    const { stdout, code } = await run("meta", "uses_fragment.created_at", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /TIMESTAMPTZ/);
+    assert.match(stdout, /required/);
+    assert.match(stdout, /Creation timestamp/);
+  });
+
+  it("finds spread fields with --json", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-meta.stm");
+    const { stdout, code } = await run("meta", "uses_fragment.created_at", "--json", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.type, "TIMESTAMPTZ");
+    assert.ok(data.entries.some((e) => e.kind === "tag" && e.tag === "required"));
+    assert.ok(data.entries.some((e) => e.kind === "note" && e.text === "Creation timestamp"));
+  });
+
+  it("still finds direct fields on schemas with spreads", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-meta.stm");
+    const { stdout, code } = await run("meta", "uses_fragment.id", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /INT/);
+    assert.match(stdout, /pk/);
+  });
 });
 
 // ---------------------------------------------------------------------------
