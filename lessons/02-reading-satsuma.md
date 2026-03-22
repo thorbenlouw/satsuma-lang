@@ -255,4 +255,4 @@ These are the kinds of questions you should be able to answer by scanning, not s
 
 ---
 
-**Next:** [Lesson 03 — Writing Schemas from Imperfect Inputs](03-fragments-and-imports.md) — how to turn spreadsheets, API docs, and sample payloads into valid Satsuma schemas.
+**Next:** [Lesson 03 — Writing Schemas from Imperfect Inputs](03-writing-schemas.md) — how to turn spreadsheets, API docs, and sample payloads into valid Satsuma schemas.

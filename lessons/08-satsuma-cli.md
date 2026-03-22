@@ -205,4 +205,4 @@ Each step gives you exact, parseable information. The agent combines it into a n
 
 ---
 
-**Next:** [Lesson 09 — Human-Agent Workflows for Navigation, Impact, and Review](09-satsuma-cli.md) — complete workflows built from CLI primitives.
+**Next:** [Lesson 09 — Human-Agent Workflows for Navigation, Impact, and Review](09-agent-workflows.md) — complete workflows built from CLI primitives.

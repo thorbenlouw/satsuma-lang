@@ -307,4 +307,4 @@ Every arrow tells a story: where the data comes from, where it goes, and what ha
 
 ---
 
-**Next:** [Lesson 06 — Natural Language Transforms and Agent Reasoning](06-nested-and-array-mappings.md) — why natural-language transforms are a feature, not a limitation.
+**Next:** [Lesson 06 — Natural Language Transforms and Agent Reasoning](06-nl-transforms.md) — why natural-language transforms are a feature, not a limitation.
