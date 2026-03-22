@@ -334,7 +334,10 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
     if (record.source) {
       const bareSource = record.source.replace(/^\./, "");
       for (const schema of sourceSchemas) {
-        addToIndex(`${schema}.${bareSource}`, record);
+        // Don't double-prefix if source already starts with schema name
+        if (!bareSource.startsWith(schema + ".") && bareSource !== schema) {
+          addToIndex(`${schema}.${bareSource}`, record);
+        }
       }
       addToIndex(record.source, record);
       if (bareSource !== record.source) addToIndex(bareSource, record);
@@ -347,7 +350,10 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
     if (record.target) {
       const bareTarget = record.target.replace(/^\./, "");
       for (const schema of targetSchemas) {
-        addToIndex(`${schema}.${bareTarget}`, record);
+        // Don't double-prefix if target already starts with schema name
+        if (!bareTarget.startsWith(schema + ".") && bareTarget !== schema) {
+          addToIndex(`${schema}.${bareTarget}`, record);
+        }
       }
       addToIndex(record.target, record);
       if (bareTarget !== record.target) addToIndex(bareTarget, record);

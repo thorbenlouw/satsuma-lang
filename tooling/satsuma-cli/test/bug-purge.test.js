@@ -10,6 +10,9 @@
  * sl-j8uk: Filesystem errors exit code 2
  * sc-1ar0: mapping includes flatten/each block arrows
  * sc-8g9a: validate no false-positive field-not-in-schema on flatten targets
+ * sc-7zt0: arrows --json no doubled schema name on flatten targets
+ * sc-a051: fields text shows list_of for scalar list fields
+ * sc-q9c4: find --json includes fieldType for list_of record fields
  */
 
 import { execFile } from "node:child_process";
@@ -382,5 +385,59 @@ describe("sc-8g9a: validate no false-positive field-not-in-schema on flatten", (
     const output = stdout + stderr;
     const fieldNotInSchema = output.split("\n").filter((l) => l.includes("field-not-in-schema"));
     assert.equal(fieldNotInSchema.length, 0, `unexpected field-not-in-schema warnings:\n${fieldNotInSchema.join("\n")}`);
+  });
+});
+
+// ── sc-7zt0: arrows --json no doubled schema on flatten targets ───────────
+
+describe("sc-7zt0: arrows --json no doubled schema name on flatten targets", () => {
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+
+  it("flatten child arrow target has single schema prefix", async () => {
+    const { stdout, code } = await run("arrows", "order_events.line_items.sku", FFG, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0);
+    for (const a of data) {
+      if (a.target) {
+        const parts = a.target.split(".");
+        if (parts.length >= 3) {
+          assert.notEqual(parts[0], parts[1], `Doubled schema in target: ${a.target}`);
+        }
+      }
+    }
+  });
+});
+
+// ── sc-a051: fields text shows list_of ────────────────────────────────────
+
+describe("sc-a051: fields text shows list_of for scalar list fields", () => {
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+
+  it("promo_codes shows list_of STRING", async () => {
+    const { stdout, code } = await run("fields", "order_events", FFG);
+    assert.equal(code, 0);
+    assert.match(stdout, /promo_codes\s+list_of STRING/);
+  });
+
+  it("line_items shows list_of record", async () => {
+    const { stdout } = await run("fields", "order_events", FFG);
+    assert.match(stdout, /line_items\s+list_of record/);
+  });
+});
+
+// ── sc-q9c4: find --json includes fieldType for list_of record ────────────
+
+describe("sc-q9c4: find --json includes fieldType for list_of record fields", () => {
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+
+  it("list_of record field has fieldType in JSON", async () => {
+    const { stdout, code } = await run("find", "--tag", "filter", FFG, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const lineItems = data.find((r) => r.field === "line_items");
+    assert.ok(lineItems, "should find line_items");
+    assert.ok(lineItems.fieldType, "should have fieldType");
+    assert.match(lineItems.fieldType, /list_of/);
   });
 });

@@ -1,6 +1,6 @@
 ---
 id: sc-7zt0
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T21:30:50Z
@@ -27,3 +27,9 @@ The flatten block target schema name is prepended on top of an already schema-qu
 
 Note: Related to sl-bl5e (double-dot paths for nested arrows) but the mechanism is different — this is schema name duplication from flatten target resolution.
 
+
+## Notes
+
+**2026-03-22T22:18:21Z**
+
+Cause: arrows --json always prefixed schema name to target, even when already schema-qualified (flatten). Fix: qualifyPath helper skips prefix if path already starts with schema name.

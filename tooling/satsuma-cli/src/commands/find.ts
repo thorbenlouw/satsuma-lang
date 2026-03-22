@@ -154,12 +154,19 @@ function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName:
         const matched = findTagInMeta(meta, tag);
         if (matched) {
           const allTags = collectAllTags(meta);
+          const isListOf = c.text.trimStart().replace(/^`[^`]*`\s*/, "").replace(/^\S+\s*/, "").startsWith("list_of");
+          let fieldType: string | undefined;
+          if (isListOf) {
+            fieldType = typeNode ? `list_of ${typeNode.text}` : "list_of record";
+          } else {
+            fieldType = typeNode?.text;
+          }
           acc.push({
             blockType,
             block: blockName,
             field: fname,
             tag: matched,
-            fieldType: typeNode?.text,
+            fieldType,
             metadata: allTags.length > 0 ? allTags : undefined,
             file,
             line: c.startPosition.row + 1,
