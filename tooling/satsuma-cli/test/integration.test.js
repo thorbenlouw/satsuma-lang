@@ -659,6 +659,26 @@ describe("satsuma lineage", () => {
     }
   });
 
+  it("--to --depth truncates upstream paths instead of dropping them (sl-lmcp)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
+    const { stdout, code } = await run("lineage", "--to", "target_d", "--depth", "3", F);
+    assert.equal(code, 0);
+    // Should show partial upstream chain (3 hops back from target_d)
+    assert.match(stdout, /intermediate_b/);
+    assert.match(stdout, /target_d/);
+  });
+
+  it("--to --depth --json includes truncated upstream nodes (sl-lmcp)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
+    const { stdout, code } = await run("lineage", "--to", "target_d", "--depth", "3", "--json", F);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.nodes.length > 1, "should have upstream nodes");
+    assert.ok(data.nodes.length < 7, "should be truncated, not full chain");
+    const names = data.nodes.map((n) => n.name);
+    assert.ok(names.includes("target_d"), "should include target");
+  });
+
   it("--depth --json edges only reference nodes in the nodes array (sl-iliz)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
     const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--json", F);

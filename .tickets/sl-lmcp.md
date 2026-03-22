@@ -1,6 +1,6 @@
 ---
 id: sl-lmcp
-status: open
+status: closed
 deps: [sl-iliz]
 links: [sl-6hot]
 created: 2026-03-21T07:58:47Z
@@ -31,3 +31,9 @@ Comparison with --from behavior:
 
 Reproducer: /tmp/satsuma-test-lineage/chain.stm
 
+
+## Notes
+
+**2026-03-22T01:35:11Z**
+
+Already fixed by prior changes (sl-iliz). Added 2 regression tests verifying --to --depth truncates upstream paths correctly.
