@@ -1,6 +1,6 @@
 ---
 id: stm-7rz4
-status: open
+status: closed
 deps: []
 links: [stm-eq1n, stm-zy83, stm-r5qn, stm-1hsk, stm-9607, stm-bym9, stm-gde5, sg-yl8q]
 created: 2026-03-19T07:17:40Z
