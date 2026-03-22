@@ -35,7 +35,7 @@ DICOM (Digital Imaging and Communications in Medicine) is the standard for medic
 
 - Always include `dicom_tag` and `vr` on every field — these are the canonical identifiers in DICOM
 - Use the standard DICOM tag name as the field name (e.g., `PATIENT_NAME`, `STUDY_DATE`)
-- Use `list` with `vr SQ` for sequence tags — these are DICOM's nesting mechanism
+- Use `list_of record` with `vr SQ` for sequence tags — these are DICOM's nesting mechanism
 - Document private tags with `private_creator` so the vendor can be identified
 - Mark PII fields (`pii`) — DICOM headers contain extensive patient information
 
@@ -77,7 +77,7 @@ schema dicom_ct_study (format dicom, modality "CT",
 
   // --- Series-level (nested) ---
 
-  list SERIES (dicom_tag "0020,000E", vr SQ,
+  SERIES list_of record (dicom_tag "0020,000E", vr SQ,
     note "One entry per imaging series within the study"
   ) {
     SERIES_INSTANCE_UID STRING (dicom_tag "0020,000E", vr UI, required)
@@ -104,6 +104,6 @@ schema dicom_ct_study (format dicom, modality "CT",
 
 - **Standard tag notation.** `dicom_tag "0010,0010"` matches DICOM documentation and viewer tools exactly.
 - **VR as a type system.** `vr PN`, `vr DA`, `vr SQ` encode DICOM's value representation — richer than a simple type annotation.
-- **Sequences as lists.** DICOM `SQ` tags map naturally to `list` blocks.
+- **Sequences as lists.** DICOM `SQ` tags map naturally to `list_of record` blocks.
 - **Private tags with provenance.** `private` + `private_creator` makes vendor-specific tags traceable rather than opaque.
 - **PII marking.** Patient group tags are marked `pii` for de-identification workflows.

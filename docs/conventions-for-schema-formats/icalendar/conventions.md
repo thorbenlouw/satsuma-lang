@@ -33,7 +33,7 @@ iCalendar is a good "bridge" example: familiar enough that most readers have enc
 ### Guidelines
 
 - Use `property` on every field — iCalendar properties are the canonical identifiers
-- Use `record` for nested components (VALARM inside VEVENT, VTIMEZONE inside VCALENDAR)
+- Use name-first `record` blocks for nested components (VALARM inside VEVENT, VTIMEZONE inside VCALENDAR)
 - Document RRULE interpretation in `note` — recurrence rules are compact and easy to misread
 - Note timezone handling explicitly — it is the most common source of bugs in calendar interop
 
@@ -100,7 +100,7 @@ schema icalendar_event (format icalendar, component VEVENT,
     """
   )
 
-  list EXDATE (property EXDATE,
+  EXDATE list_of record (property EXDATE,
     note "Exception dates — specific occurrences removed from a recurrence set"
   ) {
     date             STRING (value_type DATE-TIME)
@@ -110,7 +110,7 @@ schema icalendar_event (format icalendar, component VEVENT,
     note "mailto: URI of the event organiser — e.g., mailto:jane@example.com"
   )
 
-  list ATTENDEES (property ATTENDEE) {
+  ATTENDEES list_of record (property ATTENDEE) {
     address          STRING (note "mailto: URI of the attendee")
     role             STRING (param ROLE, enum {CHAIR, REQ-PARTICIPANT, OPT-PARTICIPANT})
     partstat         STRING (param PARTSTAT,
@@ -119,7 +119,7 @@ schema icalendar_event (format icalendar, component VEVENT,
     rsvp             STRING (param RSVP, enum {TRUE, FALSE})
   }
 
-  record ALARM (component VALARM,
+  ALARM record (component VALARM,
     note "Nested alarm component — triggers a reminder before the event"
   ) {
     action           STRING (property ACTION, enum {DISPLAY, AUDIO, EMAIL})
@@ -138,5 +138,5 @@ schema icalendar_event (format icalendar, component VEVENT,
 - **Property names as identifiers.** `property DTSTART`, `property RRULE` match the RFC directly.
 - **Parameters as metadata.** Attendee properties carry inline parameters (ROLE, PARTSTAT) expressed as `param` tokens.
 - **RRULE documented via NL.** The recurrence rule DSL is explained with concrete examples in a `note` rather than decomposed into separate fields.
-- **Nested components as records.** VALARM inside VEVENT maps to a `record` block.
+- **Nested components as records.** VALARM inside VEVENT maps to a name-first `record` block.
 - **Variant representations acknowledged.** DTSTART documents all three possible forms (TZID, UTC, floating) and the all-day DATE alternative.

@@ -36,7 +36,7 @@ The decoded logical structure is often straightforward; the difficulty is in doc
 
 - Use `asn1_tag` on every field — tag numbers are the canonical wire-format identifiers
 - Include `encoding` at schema level so the decoding context is always clear
-- Use `record` for SEQUENCE and `list` for SEQUENCE OF
+- Use name-first `record` for SEQUENCE and `list_of record` for SEQUENCE OF
 - Document CHOICE resolution in `note` — the rules for determining which variant is present often depend on context or accompanying fields
 
 ## How Natural Language Helps
@@ -55,15 +55,15 @@ schema telecom_cdr (format asn1, encoding ber,
   module "TAP3-12",
   note "Transferred Account Procedure v3 — call detail record"
 ) {
-  record CALL_EVENT (asn1_tag 0) {
-    record MOBILE_ORIGINATED (asn1_tag 0, choice,
+  CALL_EVENT record (asn1_tag 0) {
+    MOBILE_ORIGINATED record (asn1_tag 0, choice,
       note "Present when the call was originated by the recorded subscriber"
     ) {
       IMSI           STRING  (asn1_tag 0, required)
       MSISDN         STRING  (asn1_tag 1)
       CALLED_NUMBER  STRING  (asn1_tag 2)
 
-      record CALL_DURATION (asn1_tag 3) {
+      CALL_DURATION record (asn1_tag 3) {
         DURATION     INTEGER (asn1_tag 0, note "Duration in seconds")
       }
 
@@ -77,14 +77,14 @@ schema telecom_cdr (format asn1, encoding ber,
       )
     }
 
-    record MOBILE_TERMINATED (asn1_tag 1, choice,
+    MOBILE_TERMINATED record (asn1_tag 1, choice,
       note "Present when the call was terminated at the recorded subscriber"
     ) {
       IMSI           STRING  (asn1_tag 0, required)
       MSISDN         STRING  (asn1_tag 1)
       CALLING_NUMBER STRING  (asn1_tag 2)
 
-      record CALL_DURATION (asn1_tag 3) {
+      CALL_DURATION record (asn1_tag 3) {
         DURATION     INTEGER (asn1_tag 0)
       }
     }

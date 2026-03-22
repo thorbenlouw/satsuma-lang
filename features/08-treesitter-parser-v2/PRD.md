@@ -130,7 +130,8 @@ mapping <name>? (<metadata>)? {
 arrow_decl ::=
     map_arrow          // src_path -> tgt_path (<metadata>)? transform_body?
   | computed_arrow     // -> tgt_path (<metadata>)? transform_body?
-  | nested_arrow       // src_path[] -> tgt_path[] (<metadata>)? { arrow_decl* }
+  | each_block         // each src_path -> tgt_path (<metadata>)? { arrow_decl* }
+  | flatten_block      // flatten src_path -> tgt_path (<metadata>)? { arrow_decl* }
 ```
 
 **Transform body:** `{ pipe_chain }` where:
@@ -148,7 +149,7 @@ pipe_step ::=
 Map entries: `map_key ":" map_value` where key is a token, string, number, comparison operator + value, `null`, `default`, or `_`.
 
 **Structural detail required for arrows:**
-- Source path: dotted path, relative path (`.field`), array path (`items[]`), or backtick path.
+- Source path: dotted path, relative path (`.field`), or backtick path.
 - Target path: same.
 - Arrow metadata: `(note "...")`, `(pk)`, `(required)` etc. — same tag grammar.
 - Nested arrows recurse.

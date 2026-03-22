@@ -8,7 +8,7 @@
 
 ## 1. Problem Statement
 
-The existing VS Code syntax highlighter (feature 03) targets Satsuma v1 syntax. Satsuma v2 introduces significant language changes — a unified `schema` keyword, `()` metadata instead of `[]` tags, `record`/`list` for nesting, `map {}` blocks, `"""` triple-quoted strings, `transform` blocks, and the removal of `@annotation` syntax. The current TextMate grammar does not cover these constructs and will mis-highlight v2 files.
+The existing VS Code syntax highlighter (feature 03) targets Satsuma v1 syntax. Satsuma v2 introduces significant language changes — a unified `schema` keyword, `()` metadata instead of `[]` tags, `record`/`list_of record` for nesting, `map {}` blocks, `"""` triple-quoted strings, `transform` blocks, and the removal of `@annotation` syntax. The current TextMate grammar does not cover these constructs and will mis-highlight v2 files.
 
 We need a v2-aligned TextMate grammar that replaces the v1 grammar and correctly highlights all constructs defined in `Satsuma-V2-SPEC.md`.
 
@@ -79,7 +79,6 @@ Vocabulary tokens are open-ended — the grammar should highlight known tokens b
 | `...` | `keyword.operator.spread.satsuma` |
 | `:` | `punctuation.separator.key-value.satsuma` |
 | `.` | `punctuation.separator.accessor.satsuma` |
-| `[]` | `punctuation.definition.array.satsuma` |
 
 ### 5.4 Comments
 
@@ -113,7 +112,7 @@ Vocabulary tokens are open-ended — the grammar should highlight known tokens b
 
 ### 6.1 Language Registration
 
-Same as feature 03 — `.stm` files, language id `satsuma`, line comment `//`, bracket pairs `{}`, `[]`, `()`.
+Same as feature 03 — `.stm` files, language id `satsuma`, line comment `//`, bracket pairs `{}`, `()`.
 
 ### 6.2 TextMate Grammar Coverage
 

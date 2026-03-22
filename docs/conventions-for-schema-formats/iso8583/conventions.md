@@ -95,7 +95,7 @@ schema iso8583_auth_request (format iso8583, version "1987",
     note "ISO 4217 numeric currency code"
   )
 
-  record ADDITIONAL_DATA (de 48, length_type lllvar,
+  ADDITIONAL_DATA record (de 48, length_type lllvar,
     note "Network-specific: contains TLV sub-elements on Visa, fixed structure on Mastercard"
   ) {
     //? Structure varies by network — document per-network sub-fields as needed

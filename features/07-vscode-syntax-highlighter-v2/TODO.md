@@ -54,8 +54,10 @@
 - [ ] `fragment` — declaration keyword
 - [ ] `mapping` — declaration keyword with optional `(metadata)` and `{body}`
 - [ ] `transform` — declaration keyword
-- [ ] `record` — nested structure keyword (inside schema/record/list)
-- [ ] `list` — nested structure keyword
+- [ ] `record` — nested structure keyword (name-first: `NAME record { }`)
+- [ ] `list_of` — list type keyword (name-first: `NAME list_of record { }`)
+- [ ] `each` — iteration block keyword (in mapping bodies)
+- [ ] `flatten` — flatten block keyword (in mapping bodies)
 - [ ] `map` — value mapping keyword (inside mapping arrows)
 - [ ] `note` — note keyword (both `note {}` blocks and `note "..."` in metadata)
 - [ ] `import` / `from` — import statement keywords
@@ -74,14 +76,14 @@
 - [ ] `|` pipe operator
 - [ ] `...` spread operator (before identifier/quoted name)
 - [ ] `:` key-value separator (in map blocks)
-- [ ] `[]` array indicator
+- [ ] `each` and `flatten` block keywords
 
 ### 2e: Add vocabulary token patterns
 
 - [ ] Constraint tokens in `()`: `pk`, `required`, `unique`, `indexed`, `pii`, `encrypt`
 - [ ] Format tokens in `()`: `enum`, `default`, `format`, `ref`, `xpath`, `namespace`, `filter`, `note`
 - [ ] Pipeline tokens in `{}`: `trim`, `lowercase`, `uppercase`, `coalesce`, `round`, `split`, `first`, `last`, `to_utc`, `to_iso8601`, `parse`, `null_if_empty`, `null_if_invalid`, `validate_email`, `now_utc`, `title_case`, `escape_html`, `truncate`, `to_number`, `prepend`, `max_length`
-- [ ] Domain tokens: `datavault`, `hub`, `satellite`, `scd`, `hashkey`, `flatten`
+- [ ] Domain tokens: `datavault`, `hub`, `satellite`, `scd`, `hashkey`
 
 ### 2f: Add type name patterns
 
@@ -100,7 +102,7 @@
 - [ ] Arrow with transform body: `source -> target { ... }`
 - [ ] Computed field: `-> target { ... }`
 - [ ] Dotted paths: `Order.Customer.Email`
-- [ ] Array paths: `LineItems[].SKU`
+- [ ] Nested paths: `LineItems.SKU`
 - [ ] Relative paths: `.REFNUM`
 - [ ] Arrow metadata: `source -> target (note "...") { ... }`
 
@@ -144,7 +146,7 @@
 - [ ] All three comment forms have distinct scopes
 - [ ] Operators (`->`, `|`, `...`) highlighted
 - [ ] `map {}` blocks render correctly
-- [ ] `record`/`list` nesting works at any depth
+- [ ] `record`/`list_of record` nesting works at any depth
 - [ ] `import {} from ""` highlighted
 - [ ] `note { """...""" }` blocks work
 - [ ] Vocabulary tokens highlighted in context

@@ -40,7 +40,7 @@ These conventions apply across all formats:
 
 1. **Preserve the original vocabulary.** Use metadata tokens that mirror the format's own terminology (`pic`, `segment`, `tag`, `block`). Engineers familiar with the format should recognise them immediately.
 
-2. **Separate physical layout from logical meaning.** Tokens like `offset`, `length`, and `encoding` describe the physical representation. The `record`/`list` structure and field names describe the logical model. Keep both.
+2. **Separate physical layout from logical meaning.** Tokens like `offset`, `length`, and `encoding` describe the physical representation. The `record`/`list_of record` structure and field names describe the logical model. Keep both.
 
 3. **Use natural language for interpretation rules.** Conditional logic (which REDEFINES variant to use, how to resolve a qualifier, when a field is populated) belongs in `" "` descriptions within mappings, not forced into metadata.
 

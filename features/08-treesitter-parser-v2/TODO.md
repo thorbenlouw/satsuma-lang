@@ -83,10 +83,10 @@ The `( )` metadata block is shared by schemas, fields, mappings, arrows, and met
 - [ ] Arrow declarations:
   - [ ] `map_arrow` — `src_path -> tgt_path (<metadata>)? transform_body?`
   - [ ] `computed_arrow` — `-> tgt_path (<metadata>)? transform_body?`
-  - [ ] `nested_arrow` — `src_path[] -> tgt_path[] (<metadata>)? { arrow_decl* }`
+  - [ ] `each_block` — `each src_path -> tgt_path (<metadata>)? { arrow_decl* }`
+  - [ ] `flatten_block` — `flatten src_path -> tgt_path (<metadata>)? { arrow_decl* }`
 - [ ] Path types (shared `path` production):
   - [ ] Dotted path: `a.b.c`
-  - [ ] Array path: `items[]`, `Order.LineItems[]`
   - [ ] Relative path: `.field`, `.nested.field`
   - [ ] Backtick path: `` `Lead_Source__c` ``
   - [ ] Namespaced path: `schema.field` (not to be confused with dotted nested path — both are dotted; caller context distinguishes)

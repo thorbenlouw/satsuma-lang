@@ -29,7 +29,7 @@
 ## Phase 2: Schema and fragment bodies
 
 - [ ] Parse integration fields and tag arrays like `tags [a, b, c]`
-- [ ] Parse field declarations with optional `[]`
+- [ ] Parse field declarations
 - [ ] Parse type expressions with optional parameter lists
 - [ ] Parse tag lists and enum value sets
 - [ ] Parse field annotations
@@ -42,13 +42,13 @@
 
 - [ ] Parse mapping headers with optional `source -> target`
 - [ ] Parse mapping options:
-  - [ ] `flatten: path[]`
+  - [ ] `flatten` block
   - [ ] `group_by: path`
   - [ ] `when: condition`
   - [ ] custom options if the spec allows them
 - [ ] Parse direct map entries `src -> tgt`
 - [ ] Parse computed entries `=> tgt`
-- [ ] Parse nested maps `src[] -> tgt[] { ... }`
+- [ ] Parse `each` blocks: `each src -> tgt { ... }`
 - [ ] Parse inline map-entry note blocks
 - [ ] Parse transform heads after `:`
 - [ ] Parse pipeline continuation lines starting with `|`
@@ -61,7 +61,7 @@
 
 - [ ] Parse dotted paths
 - [ ] Parse relative paths with leading `.`
-- [ ] Parse array segments like `items[]`
+- [ ] Parse `each` and `flatten` block paths
 - [ ] Parse backtick path segments
 - [ ] Define minimal expression support needed by:
   - [ ] annotation params

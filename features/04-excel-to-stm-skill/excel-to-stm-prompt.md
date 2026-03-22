@@ -46,7 +46,7 @@ map_entries      = { map_key ":" value } ;
 map_key          = value | "<" NUMBER | "default" | "_" | "null" ;
 
 field_path       = segment {"." segment} ;
-segment          = (IDENT | BACKTICK_IDENT) ["[]"] ;
+segment          = (IDENT | BACKTICK_IDENT) ;
 
 IDENT            = LETTER {LETTER | DIGIT | "_" | "-"} ;
 BACKTICK_IDENT   = "`" {ANY} "`" ;
@@ -68,10 +68,10 @@ schema <name> (<metadata>) {
   field_name    TYPE           (tags)       // info
   field_name    TYPE           (tags)       //! warning
   field_name    TYPE           (tags)       //? todo
-  record nested_obj {
+  nested_obj record {
     child       TYPE
   }
-  list repeated_items {
+  repeated_items list_of record {
     item        TYPE
   }
   ...fragment_name
@@ -107,7 +107,7 @@ mapping <name> (<metadata>) {
     "natural language transform description"
 
   Array mapping:
-  src_arr[] -> tgt_arr[] {
+  each src_arr -> tgt_arr {
     .child -> .child { transform }
   }
 }

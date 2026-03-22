@@ -17,8 +17,8 @@
 - [ ] Add corpus test for multi-word transform spreads
 - [ ] Add corpus test for a leading `note {}` before `source` and `target` in mappings
 - [ ] Add corpus test for annotated `source` entries
-- [ ] Add corpus test for mapping metadata such as `flatten ...` and aggregation metadata
-- [ ] Add corpus test for mid-path repeated segments like `Order.LineItems[].SKU`
+- [ ] Add corpus test for `flatten` block and aggregation metadata
+- [ ] Add corpus test for nested dotted paths like `Order.LineItems.SKU`
 - [ ] Add corpus test for arithmetic pipeline steps
 - [ ] Add corpus test for dotted token-call arguments
 - [ ] Add corpus test for metric metadata with `source {a, b}`
@@ -47,18 +47,17 @@
 - [ ] Allow `note_block` before `source_block` and `target_block` inside `mapping_body`
 - [ ] Support annotated source entries with optional metadata
 - [ ] Support richer mapping metadata values such as:
-  - [ ] `flatten` with a backtick path
   - [ ] `group_by`
   - [ ] `on_error`
   - [ ] `error_threshold`
 
 ## Phase 5: Extend path grammar
 
-- [ ] Support `[]` on intermediate path segments, not just on the final segment
-- [ ] Verify mixed paths:
-  - [ ] `Order.LineItems[].SKU`
-  - [ ] `CartLines[].unit_price`
-  - [ ] `ShipmentHeader.asnDetails[].containers`
+- [ ] Verify nested dotted paths:
+  - [ ] `Order.LineItems.SKU`
+  - [ ] `CartLines.unit_price`
+  - [ ] `ShipmentHeader.asnDetails.containers`
+- [ ] Add `each_block` and `flatten_block` rules in mapping bodies
 
 ## Phase 6: Extend pipeline grammar
 

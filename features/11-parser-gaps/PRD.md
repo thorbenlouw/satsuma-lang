@@ -88,7 +88,7 @@ schema xml_order (
 ```
 
 ```stm
-list ShipmentRefs (filter SHPRFQUAL == "SRN") {
+ShipmentRefs list_of record (filter SHPRFQUAL == "SRN") {
   SHIPREF CHAR(70)
 }
 ```
@@ -204,15 +204,19 @@ Spec status: example-backed, but not yet clearly specified in prose. This likely
 
 Mapping metadata currently fails on vocabulary items that are valid in examples:
 
-- `flatten \`Order.LineItems[]\`` in `examples/xml-to-parquet.stm`
+- `flatten Order.LineItems -> target { }` block syntax (replaces old mapping-level metadata annotation)
 - `group_by session_id, on_error log, error_threshold 0.02` in `examples/protobuf-to-parquet.stm`
 
 Representative corpus tests:
 
 ```stm
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping 'order lines' {
   source { `commerce_order` }
   target { `order_lines_parquet` }
+
+  flatten Order.LineItems -> order_lines {
+    .SKU -> .sku
+  }
 }
 ```
 
@@ -223,28 +227,32 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
 }
 ```
 
-Spec status: `flatten` is spec-backed; the aggregation-oriented metadata is example-backed and should be preserved.
+Spec status: `flatten` is now a block-level keyword (not mapping metadata); the aggregation-oriented metadata is example-backed and should be preserved.
 
-### 7. Repeated path segments in the middle of a path
+### 7. Nested paths through list elements
 
-The current path grammar only accepts an optional `[]` suffix at the very end of the path. Several examples require repeated segments before later path segments.
+Paths through list elements no longer use `[]`. Instead, dotted paths traverse lists naturally, and the iteration context is established by enclosing `each` or `flatten` blocks.
 
-Observed examples:
+Observed patterns:
 
-- `Order.LineItems[].SKU`
-- `Order.LineItems[].LineNumber`
-- `CartLines[].unit_price`
-- `ShipmentHeader.asnDetails[].containers`
+- `Order.LineItems.SKU`
+- `Order.LineItems.LineNumber`
+- `CartLines.unit_price`
+- `ShipmentHeader.asnDetails.containers`
 
 Representative corpus tests:
 
 ```stm
-Order.LineItems[].SKU -> sku
-CartLines[].unit_price -> gross_merchandise_value
--> ShipmentHeader.asnDetails[].containers { "No source data available." }
+each Order.LineItems -> line_items {
+  .SKU -> .sku
+}
+flatten CartLines -> cart_lines {
+  .unit_price -> .gross_merchandise_value
+}
+-> ShipmentHeader.asnDetails.containers { "No source data available." }
 ```
 
-Spec status: strongly example-backed and required for real nested mappings.
+Spec status: `each` and `flatten` blocks replace `[]` iteration syntax.
 
 ### 8. Arithmetic pipeline steps
 

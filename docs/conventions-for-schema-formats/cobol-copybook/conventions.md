@@ -65,12 +65,12 @@ schema cobol_customer (format copybook, encoding ebcdic,
   CUST_ID        INTEGER    (pic "9(10)", offset 1, length 10, required)
   CUST_TYPE      STRING     (pic "X(1)", offset 11, enum {R, B})
 
-  record NAME (offset 12, length 40) {
+  NAME record (offset 12, length 40) {
     FIRST_NAME   STRING     (pic "X(20)", offset 12)
     LAST_NAME    STRING     (pic "X(20)", offset 32)
   }
 
-  record ADDRESS (offset 52, length 57) {
+  ADDRESS record (offset 52, length 57) {
     STREET       STRING     (pic "X(30)", offset 52)
     CITY         STRING     (pic "X(20)", offset 82)
     STATE        STRING     (pic "X(2)", offset 102)
@@ -111,12 +111,12 @@ schema cobol_transaction (format copybook, encoding ebcdic,
   RECORD_TYPE   STRING     (pic "X(1)", offset 1)
   ACCOUNT_ID    INTEGER    (pic "9(10)", offset 2)
 
-  record DATA_BLOCK (offset 12, length 11) {
+  DATA_BLOCK record (offset 12, length 11) {
     AMOUNT      DECIMAL(9,2) (pic "S9(7)V99", encoding comp-3, offset 12, length 5)
     CURRENCY    STRING       (pic "X(3)", offset 17)
   }
 
-  record CARD_PAYMENT (redefines DATA_BLOCK, offset 12,
+  CARD_PAYMENT record (redefines DATA_BLOCK, offset 12,
     note "Interpreted when RECORD_TYPE = 'P'"
   ) {
     CARD_NUMBER STRING     (pic "X(16)", offset 12)
@@ -125,7 +125,7 @@ schema cobol_transaction (format copybook, encoding ebcdic,
 
   ITEM_COUNT    INTEGER    (pic "9(2)", offset 34)
 
-  list LINE_ITEMS (occurs 10, depends_on ITEM_COUNT,
+  LINE_ITEMS list_of record (occurs 10, depends_on ITEM_COUNT,
     note "Only the first ITEM_COUNT entries are populated"
   ) {
     ITEM_CODE   STRING     (pic "X(10)")

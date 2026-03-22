@@ -196,11 +196,11 @@ Example for a conditional `map { }`:
 | 5c | | | | | | | < 10,000 = "gold" | | |
 | 5d | | | | | | | default = "platinum" | | |
 
-Example for a nested array mapping (`LineItems[] -> .items[] { ... }`):
+Example for a nested array mapping (`each LineItems -> items { ... }`):
 
 | # | Source | Source Type | → | Target | Target Type | Req | Transform | Tags | Notes |
 |---|--------|-----------|---|--------|-----------|-----|-----------|------|-------|
-| 8 | LineItems[] | | → | .items[] | | | Nested mapping — see detail | | |
+| 8 | each LineItems | | → | items | | | Nested mapping — see detail | | |
 | 8a | .SKU | STRING | → | .sku | STRING | | uppercase | | |
 | 8b | .Quantity | INT | → | .quantity | INT | | | | |
 
@@ -742,7 +742,7 @@ python -m satsuma_to_excel customer-migration.stm -o output.xlsx
 
 Deeply nested `record`/`list` structures (3+ levels), multi-source joins, and complex natural-language transforms don't map cleanly to rows and columns.
 
-**Mitigation**: The row grouping pattern handles 1–2 levels of nesting well. For deeper nesting, flatten to dot-path notation (e.g., `Order.LineItems[].SKU`) with an explanatory note. For multi-source joins, include the source schema prefix in the source column. Accept that some constructs are better read in the `.stm` file and add a note: "See .stm file for full detail."
+**Mitigation**: The row grouping pattern handles 1–2 levels of nesting well. For deeper nesting, flatten to dot-path notation (e.g., `Order.LineItems.SKU`) with an explanatory note. For multi-source joins, include the source schema prefix in the source column. Accept that some constructs are better read in the `.stm` file and add a note: "See .stm file for full detail."
 
 ### Transform translation fidelity
 

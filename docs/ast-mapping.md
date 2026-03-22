@@ -12,7 +12,7 @@ that layer from CST nodes without reparsing raw text.
 - Preserve source order for all declarations and block members.
 - Use explicit node names for syntax that downstream tools care about.
 - Keep comments and notes structurally recoverable.
-- Preserve path segment boundaries, array markers, and relative prefixes.
+- Preserve path segment boundaries and relative prefixes.
 - Separate syntax-preserving nodes from semantic grouping done later in the AST.
 
 ## Canonical CST Node Inventory
@@ -125,7 +125,7 @@ CST:
 - each segment preserves:
   - raw token text
   - whether it was quoted
-  - whether it is an array segment (`[]`)
+  - whether it is an array segment (via enclosing `each` or `flatten` block)
 - relative paths preserve an explicit leading-relative marker on the path node
 - namespace-qualified paths have an `ns_qualifier` child before the first segment
 
@@ -137,8 +137,8 @@ Recommended AST representation for a plain path:
   "role": "source",
   "isRelative": true,
   "segments": [
-    { "name": "items", "quoted": false, "isArray": true },
-    { "name": "sku", "quoted": false, "isArray": false }
+    { "name": "items", "quoted": false },
+    { "name": "sku", "quoted": false }
   ]
 }
 ```
@@ -152,8 +152,8 @@ Recommended AST representation for a namespace-qualified path (`crm::orders.orde
   "namespace": "crm",
   "isRelative": false,
   "segments": [
-    { "name": "orders", "quoted": false, "isArray": false },
-    { "name": "order_id", "quoted": false, "isArray": false }
+    { "name": "orders", "quoted": false },
+    { "name": "order_id", "quoted": false }
   ]
 }
 ```

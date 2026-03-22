@@ -37,7 +37,7 @@ MARC21 is unlike any other format in this collection. It is not a data interchan
 
 - Use `tag` on every field — MARC cataloguers think in tag numbers
 - Use human-readable names alongside tags (e.g., `TITLE_PROPER` with `tag "245"`)
-- Use `record` for variable fields with subfield breakdowns
+- Use name-first `record` blocks for variable fields with subfield breakdowns
 - Use positional metadata for fixed-length control fields (tags 001-009, especially 008)
 - Document indicator meanings in `note` — they are rarely self-explanatory
 
@@ -62,7 +62,7 @@ schema marc21_bibliographic (format marc21, record_type bibliographic,
     note "Unique record identifier assigned by the cataloguing agency"
   )
 
-  record FIXED_DATA (tag "008",
+  FIXED_DATA record (tag "008",
     note """
     40-character fixed-length data field. Each character position
     has a defined meaning. Common positions for books:
@@ -86,12 +86,12 @@ schema marc21_bibliographic (format marc21, record_type bibliographic,
 
   // --- Variable fields ---
 
-  list ISBN (tag "020", repeatable) {
+  ISBN list_of record (tag "020", repeatable) {
     isbn             STRING  (subfield a)
     qualifying_info  STRING  (subfield q, note "e.g., hardback, paperback")
   }
 
-  record TITLE (tag "245",
+  TITLE record (tag "245",
     note """
     Title statement. Indicator meanings:
     - ind1: 0=no added entry, 1=added entry
@@ -106,7 +106,7 @@ schema marc21_bibliographic (format marc21, record_type bibliographic,
     )
   }
 
-  record PUBLICATION (tag "264", ind2 "1",
+  PUBLICATION record (tag "264", ind2 "1",
     note "Production, publication, distribution — ind2=1 means publication"
   ) {
     place            STRING  (subfield a)
@@ -114,12 +114,12 @@ schema marc21_bibliographic (format marc21, record_type bibliographic,
     date             STRING  (subfield c)
   }
 
-  record PHYSICAL_DESC (tag "300") {
+  PHYSICAL_DESC record (tag "300") {
     extent           STRING  (subfield a, note "e.g., 'xi, 342 pages'")
     dimensions       STRING  (subfield c, note "e.g., '24 cm'")
   }
 
-  list SUBJECTS (tag "650", repeatable, ind2 "0",
+  SUBJECTS list_of record (tag "650", repeatable, ind2 "0",
     note "Subject headings — ind2=0 means Library of Congress Subject Headings (LCSH)"
   ) {
     topical_term     STRING  (subfield a)
@@ -127,7 +127,7 @@ schema marc21_bibliographic (format marc21, record_type bibliographic,
     geographic_subdiv STRING (subfield z)
   }
 
-  list ADDED_AUTHORS (tag "700", repeatable) {
+  ADDED_AUTHORS list_of record (tag "700", repeatable) {
     name             STRING  (subfield a)
     relator          STRING  (subfield e,
       note "Relationship to the work — e.g., 'editor', 'translator', 'illustrator'"
@@ -141,5 +141,5 @@ schema marc21_bibliographic (format marc21, record_type bibliographic,
 - **Tag numbers as primary identifiers.** `tag "245"` is immediately recognisable to any cataloguer, with human-readable field names for everyone else.
 - **Positional decoding for control fields.** Tag 008 uses `positions` metadata to decode a fixed-length string character by character.
 - **Indicator semantics via metadata and notes.** `ind2 "1"` on the publication field, with `note` explaining what the indicator means.
-- **Repeatable fields as lists.** ISBN, subjects, and added authors can repeat — `list` with `repeatable` captures this.
+- **Repeatable fields as lists.** ISBN, subjects, and added authors can repeat — `list_of record` with `repeatable` captures this.
 - **Domain vocabulary preserved.** Terms like "non-filing characters", "relator", and "topical term" are MARC terminology that cataloguers expect.
