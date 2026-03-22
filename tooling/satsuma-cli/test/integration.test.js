@@ -930,14 +930,15 @@ describe("satsuma arrows", () => {
 
   it("indexes nested child arrows without leading dot in key (sl-9gvb)", async () => {
     // Verify that nested arrow relative paths (.PHONE_TYPE) get indexed
-    // with bare names (PHONE_TYPE) in addition to dotted (.PHONE_TYPE)
+    // with bare names (PHONE_TYPE), parent-prefixed, and schema-qualified paths
     const { parseFile } = await import("../dist/parser.js");
     const { buildIndex } = await import("../dist/index-builder.js");
     const p = parseFile(resolve(EXAMPLES, "cobol-to-avro.stm"));
     const index = buildIndex([p]);
-    // The bare name (without leading dot) should be in the index
+    // The bare leaf name should be in the index
     assert.ok(index.fieldArrows.has("PHONE_TYPE"), "should index bare PHONE_TYPE");
-    assert.ok(index.fieldArrows.has("cobol_customer_master.PHONE_TYPE"), "should index schema-qualified PHONE_TYPE");
+    // The fully qualified path (schema.parent[].field) should be in the index
+    assert.ok(index.fieldArrows.has("cobol_customer_master.PHONE_NUMBERS[].PHONE_TYPE"), "should index fully qualified PHONE_TYPE");
   });
 });
 
@@ -2797,6 +2798,35 @@ describe("satsuma graph --json — fragment spread expansion (sl-t6lt)", () => {
     const graph = JSON.parse(stdout);
     const spreadEdges = graph.schema_edges.filter((e) => e.role === "fragment_spread");
     assert.ok(spreadEdges.length > 0, "should have fragment_spread edges");
+  });
+});
+
+describe("satsuma graph: nested array arrow edges (sl-4e5c)", () => {
+  const FIXTURE = resolve(__dirname, "fixtures/nested-array-arrows.stm");
+
+  it("child arrows have parent path prefix", async () => {
+    const { stdout } = await run("graph", FIXTURE, "--json");
+    const data = JSON.parse(stdout);
+    const skuEdge = data.edges.find((e) => e.to && e.to.includes("product_code"));
+    assert.ok(skuEdge, "should have product_code edge");
+    assert.equal(skuEdge.from, "order_api.line_items[].sku");
+    assert.equal(skuEdge.to, "order_flat.items[].product_code");
+  });
+
+  it("no corrupted newlines in edge paths", async () => {
+    const { stdout } = await run("graph", FIXTURE, "--json");
+    const data = JSON.parse(stdout);
+    for (const e of data.edges) {
+      if (e.from) assert.ok(!e.from.includes("\n"), `from path should not contain newline: ${e.from}`);
+      if (e.to) assert.ok(!e.to.includes("\n"), `to path should not contain newline: ${e.to}`);
+    }
+  });
+
+  it("parent array edge exists", async () => {
+    const { stdout } = await run("graph", FIXTURE, "--json");
+    const data = JSON.parse(stdout);
+    const parentEdge = data.edges.find((e) => e.from === "order_api.line_items[]" && e.to === "order_flat.items[]");
+    assert.ok(parentEdge, "should have parent array edge");
   });
 });
 

@@ -1,0 +1,29 @@
+schema order_api {
+  order_id    STRING
+  line_items  list {
+    sku    STRING
+    qty    INTEGER
+    price  DECIMAL
+  }
+}
+
+schema order_flat {
+  order_id      STRING
+  items  list {
+    product_code  STRING
+    quantity      INTEGER
+    unit_price    DECIMAL
+  }
+}
+
+mapping 'flatten orders' {
+  source { order_api }
+  target { order_flat }
+
+  order_id -> order_id
+  line_items[] -> items[] {
+    .sku -> .product_code { trim | uppercase }
+    .qty -> .quantity
+    .price -> .unit_price { round(2) }
+  }
+}

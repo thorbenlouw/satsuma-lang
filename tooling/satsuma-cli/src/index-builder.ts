@@ -338,6 +338,11 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
       }
       addToIndex(record.source, record);
       if (bareSource !== record.source) addToIndex(bareSource, record);
+      // Index leaf field name for nested paths (e.g., PHONES[].PHONE_TYPE → PHONE_TYPE)
+      const srcLastDot = bareSource.lastIndexOf(".");
+      if (srcLastDot > 0) {
+        addToIndex(bareSource.slice(srcLastDot + 1), record);
+      }
     }
     if (record.target) {
       const bareTarget = record.target.replace(/^\./, "");
@@ -346,6 +351,11 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
       }
       addToIndex(record.target, record);
       if (bareTarget !== record.target) addToIndex(bareTarget, record);
+      // Index leaf field name for nested paths
+      const tgtLastDot = bareTarget.lastIndexOf(".");
+      if (tgtLastDot > 0) {
+        addToIndex(bareTarget.slice(tgtLastDot + 1), record);
+      }
     }
   }
 

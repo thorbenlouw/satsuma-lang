@@ -657,39 +657,97 @@ export function extractArrowRecords(rootNode: SyntaxNode): ExtractedArrow[] {
     const body = child(mappingNode, "mapping_body");
     if (!body) continue;
 
-    const mapArrows = allDescendants(body, "map_arrow");
-    const computedArrows = allDescendants(body, "computed_arrow");
-    const nestedArrows = allDescendants(body, "nested_arrow");
+    // Collect only direct (non-nested) arrows from the mapping body
+    const directArrows = body.namedChildren.filter(
+      (c) => c.type === "map_arrow" || c.type === "computed_arrow",
+    );
+    const nestedArrows = body.namedChildren.filter(
+      (c) => c.type === "nested_arrow",
+    );
 
-    for (const arrow of [...mapArrows, ...computedArrows, ...nestedArrows]) {
-      const srcNode = child(arrow, "src_path");
-      const tgtNode = child(arrow, "tgt_path");
-      const pipeChain = child(arrow, "pipe_chain");
-      const pipeSteps = pipeChain ? children(pipeChain, "pipe_step") : [];
+    for (const arrow of directArrows) {
+      records.push(extractSingleArrow(arrow, mappingName, namespace, null, null));
+    }
 
-      const source = pathText(srcNode);
-      const target = pathText(tgtNode);
-      const classification = classifyTransform(pipeSteps);
-      const derived = classifyArrow(arrow);
-      const steps = decomposePipeSteps(pipeSteps);
+    // For nested_arrow blocks, extract the parent arrow and child arrows with parent prefix
+    for (const nested of nestedArrows) {
+      const parentSrc = pathText(child(nested, "src_path"));
+      const parentTgt = pathText(child(nested, "tgt_path"));
 
-      const transformRaw = pipeSteps.length > 0
-        ? pipeSteps.map((s) => s.namedChildren[0]?.text ?? s.text).join(" | ")
-        : "";
+      // Emit the parent (container) arrow
+      records.push(extractSingleArrow(nested, mappingName, namespace, null, null));
 
-      records.push({
-        mapping: mappingName,
-        namespace,
-        source,
-        target,
-        transform_raw: transformRaw,
-        steps,
-        classification,
-        derived,
-        line: arrow.startPosition.row,
-      });
+      // Emit child arrows with parent path prefix
+      for (const childArrow of nested.namedChildren) {
+        if (childArrow.type === "map_arrow" || childArrow.type === "computed_arrow") {
+          records.push(extractSingleArrow(childArrow, mappingName, namespace, parentSrc, parentTgt));
+        }
+      }
     }
   }
 
   return records;
+}
+
+/**
+ * Extract a single arrow record, optionally prefixing source/target with parent paths.
+ */
+function extractSingleArrow(
+  arrow: SyntaxNode,
+  mappingName: string | null,
+  namespace: string | null,
+  parentSrc: string | null,
+  parentTgt: string | null,
+): ExtractedArrow {
+  const srcNode = child(arrow, "src_path");
+  const tgtNode = child(arrow, "tgt_path");
+  const pipeChain = child(arrow, "pipe_chain");
+  const pipeSteps = pipeChain ? children(pipeChain, "pipe_step") : [];
+
+  let source = cleanPathText(pathText(srcNode));
+  let target = cleanPathText(pathText(tgtNode));
+  const classification = classifyTransform(pipeSteps);
+  const derived = classifyArrow(arrow);
+  const steps = decomposePipeSteps(pipeSteps);
+
+  // Prefix with parent path for nested child arrows
+  if (parentSrc && source) {
+    const cleanSrc = source.replace(/^\./, "");
+    source = `${parentSrc}.${cleanSrc}`;
+  }
+  if (parentTgt && target) {
+    const cleanTgt = target.replace(/^\./, "");
+    target = `${parentTgt}.${cleanTgt}`;
+  }
+
+  const transformRaw = pipeSteps.length > 0
+    ? pipeSteps.map((s) => s.namedChildren[0]?.text ?? s.text).join(" | ")
+    : "";
+
+  return {
+    mapping: mappingName,
+    namespace,
+    source,
+    target,
+    transform_raw: transformRaw,
+    steps,
+    classification,
+    derived,
+    line: arrow.startPosition.row,
+  };
+}
+
+/**
+ * Clean path text: strip leading dots (relative paths) and newlines
+ * (parser artifact from multiline relative_field_path).
+ */
+function cleanPathText(text: string | null): string | null {
+  if (!text) return null;
+  // Handle parser artifact: multiline relative_field_path merges multiple lines
+  // e.g. ".quantity\n    .price" — take only the first path segment
+  const nlIdx = text.indexOf("\n");
+  if (nlIdx !== -1) {
+    text = text.slice(0, nlIdx).trim();
+  }
+  return text;
 }
