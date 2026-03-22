@@ -45,8 +45,8 @@
     },
 
     "namespaced-path": {
-      "comment": "Namespace-qualified dotted path: ns::schema.field[]",
-      "match": "([A-Za-z_][\\w]*)(::)([A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+      "comment": "Namespace-qualified dotted path: ns::schema.field",
+      "match": "([A-Za-z_][\\w]*)(::)([A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)",
       "captures": {
         "1": { "name": "entity.name.namespace.satsuma" },
         "2": { "name": "punctuation.separator.namespace.satsuma" },
@@ -263,7 +263,7 @@
         },
         {
           "comment": "bare block name after keyword",
-          "match": "(?<=(?:schema|fragment|mapping|transform|record|list|metric|namespace)\\s)([A-Za-z_][\\w]*)",
+          "match": "(?<=(?:schema|fragment|mapping|transform|metric|namespace)\\s)([A-Za-z_][\\w]*)",
           "captures": {
             "1": { "name": "entity.name.type.satsuma" }
           }
@@ -345,7 +345,7 @@
     },
 
     "schema-body": {
-      "comment": "Body of schema/fragment/record/list — contains fields, nested structures, spread",
+      "comment": "Body of schema/fragment — contains unified field declarations, spreads",
       "begin": "(\\{)",
       "end": "(\\})",
       "beginCaptures": {
@@ -358,36 +358,16 @@
         { "include": "#comment" },
         { "include": "#note-block" },
         {
-          "comment": "record nested structure keyword",
-          "begin": "\\b(record)\\b",
-          "end": "(?<=\\})",
-          "beginCaptures": {
+          "comment": "Unified field type keywords: record, list_of",
+          "match": "\\b(record|list_of)\\b",
+          "captures": {
             "1": { "name": "keyword.other.satsuma" }
-          },
-          "patterns": [
-            { "include": "#comment" },
-            { "include": "#block-label" },
-            { "include": "#metadata-parens" },
-            { "include": "#schema-body" }
-          ]
-        },
-        {
-          "comment": "list nested structure keyword",
-          "begin": "\\b(list)\\b",
-          "end": "(?<=\\})",
-          "beginCaptures": {
-            "1": { "name": "keyword.other.satsuma" }
-          },
-          "patterns": [
-            { "include": "#comment" },
-            { "include": "#block-label" },
-            { "include": "#metadata-parens" },
-            { "include": "#schema-body" }
-          ]
+          }
         },
         { "include": "#spread" },
         { "include": "#field-declaration" },
         { "include": "#metadata-parens" },
+        { "include": "#schema-body" },
         { "include": "#backtick-identifier" },
         { "include": "#type-name" },
         { "include": "#number" },
@@ -451,6 +431,13 @@
             { "include": "#identifier-plain" }
           ]
         },
+        {
+          "comment": "each/flatten iteration keywords",
+          "match": "\\b(each|flatten)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.satsuma" }
+          }
+        },
         { "include": "#arrow-with-body" },
         { "include": "#map-entry" },
         { "include": "#map-value-block" },
@@ -460,7 +447,6 @@
         { "include": "#string-triple-double" },
         { "include": "#string-double" },
         { "include": "#backtick-identifier" },
-        { "include": "#array-indicator" },
         { "include": "#operator-arrow" },
         { "include": "#operator-pipe" },
         { "include": "#pipeline-tokens" },
@@ -481,7 +467,7 @@
       "patterns": [
         {
           "comment": "direct mapping with namespace-qualified source: ns::path -> target",
-          "match": "([A-Za-z_][\\w]*)(::)(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+          "match": "([A-Za-z_][\\w]*)(::)(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)",
           "captures": {
             "1": { "name": "entity.name.namespace.satsuma" },
             "2": { "name": "punctuation.separator.namespace.satsuma" },
@@ -494,7 +480,7 @@
         },
         {
           "comment": "direct mapping: source -> target with dotted/array paths",
-          "match": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+          "match": "(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)",
           "captures": {
             "1": { "name": "variable.other.field.satsuma" },
             "2": { "name": "keyword.operator.arrow.satsuma" },
@@ -505,7 +491,7 @@
         },
         {
           "comment": "computed mapping: -> target (no left side)",
-          "match": "(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)",
+          "match": "(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)",
           "captures": {
             "1": { "name": "keyword.operator.arrow.satsuma" },
             "2": { "name": "entity.name.namespace.satsuma" },
@@ -521,7 +507,7 @@
       "patterns": [
         {
           "comment": "ns::source -> target { ... } (namespace-qualified source)",
-          "begin": "([A-Za-z_][\\w]*)(::)(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\(|\\{)",
+          "begin": "([A-Za-z_][\\w]*)(::)(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(?=\\(|\\{)",
           "end": "(?<=\\})",
           "beginCaptures": {
             "1": { "name": "entity.name.namespace.satsuma" },
@@ -540,7 +526,7 @@
         },
         {
           "comment": "source -> target { ... }",
-          "begin": "(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\(|\\{)",
+          "begin": "(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(?=\\(|\\{)",
           "end": "(?<=\\})",
           "beginCaptures": {
             "1": { "name": "variable.other.field.satsuma" },
@@ -557,7 +543,7 @@
         },
         {
           "comment": "-> target { ... } (computed)",
-          "begin": "(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)*)\\s*(?=\\{)",
+          "begin": "(->)\\s*(?:([A-Za-z_][\\w]*)(::))?(\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*)\\s*(?=\\{)",
           "end": "(?<=\\})",
           "beginCaptures": {
             "1": { "name": "keyword.operator.arrow.satsuma" },
@@ -657,7 +643,7 @@
 
     "pipeline-tokens": {
       "comment": "Known pipeline operation tokens in arrow bodies",
-      "match": "\\b(trim|lowercase|uppercase|coalesce|round|split|first|last|to_utc|to_iso8601|parse|null_if_empty|null_if_invalid|validate_email|now_utc|title_case|escape_html|truncate|to_number|prepend|max_length|assume_utc|join|flatten|dedup)\\b",
+      "match": "\\b(trim|lowercase|uppercase|coalesce|round|split|first|last|to_utc|to_iso8601|parse|null_if_empty|null_if_invalid|validate_email|now_utc|title_case|escape_html|truncate|to_number|prepend|max_length|assume_utc|join|dedup)\\b",
       "captures": {
         "1": { "name": "support.function.satsuma" }
       }
@@ -784,14 +770,9 @@
       "match": "\\|"
     },
 
-    "array-indicator": {
-      "name": "punctuation.definition.array.satsuma",
-      "match": "\\[\\]"
-    },
-
     "dotted-path": {
       "comment": "Dotted path: a.b.c — scoped uniformly",
-      "match": "\\.?[A-Za-z_][\\w]*(?:\\[\\])?(?:\\.[A-Za-z_][\\w]*(?:\\[\\])?)+",
+      "match": "\\.?[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)+",
       "name": "variable.other.field.satsuma"
     },
 
@@ -859,7 +840,6 @@
         { "include": "#constant-other-reference" },
         { "include": "#operator-arrow" },
         { "include": "#operator-pipe" },
-        { "include": "#array-indicator" },
         { "include": "#punctuation-comma" },
         { "include": "#namespaced-path" },
         { "include": "#qualified-name" },
