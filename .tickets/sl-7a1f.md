@@ -1,6 +1,6 @@
 ---
 id: sl-7a1f
-status: open
+status: closed
 deps: []
 links: [sl-7i7j]
 created: 2026-03-21T07:58:38Z
@@ -26,3 +26,9 @@ The field 'email' is being checked against 'my_source' which is from a completel
 
 **Reproducer:** /tmp/satsuma-test-validate/crosscheck/
 
+
+## Notes
+
+**2026-03-22T00:37:19Z**
+
+Added file-level filtering for anonymous mapping arrow validation to prevent cross-file false positives. Original reproducer may have been using anonymous mappings.
