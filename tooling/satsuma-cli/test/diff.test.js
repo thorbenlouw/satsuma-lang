@@ -107,6 +107,34 @@ describe("diffIndex", () => {
     assert.equal(delta.metrics.changed[0].changes[0].kind, "slices-changed");
   });
 
+  it("detects mapping note additions", () => {
+    const a = makeIndex(
+      {},
+      { m1: { sources: ["a"], targets: ["b"], arrowCount: 1 } },
+      { notes: [] },
+    );
+    const b = makeIndex(
+      {},
+      { m1: { sources: ["a"], targets: ["b"], arrowCount: 1 } },
+      { notes: [{ text: "Added note.", parent: "m1", file: "x.stm", row: 5, namespace: null }] },
+    );
+    const delta = diffIndex(a, b);
+    assert.equal(delta.mappings.changed.length, 1);
+    const noteChanges = delta.mappings.changed[0].changes.filter((c) => c.kind === "note-added");
+    assert.equal(noteChanges.length, 1);
+  });
+
+  it("mapping notes do not appear as top-level note changes", () => {
+    const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 1 } }, { notes: [] });
+    const b = makeIndex(
+      {},
+      { m1: { sources: ["a"], targets: ["b"], arrowCount: 1 } },
+      { notes: [{ text: "Block note.", parent: "m1", file: "x.stm", row: 5, namespace: null }] },
+    );
+    const delta = diffIndex(a, b);
+    assert.equal(delta.notes.added.length, 0, "block-owned notes should not appear in top-level notes");
+  });
+
   it("detects arrow count changes in mappings", () => {
     const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 5 } });
     const b = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 8 } });
