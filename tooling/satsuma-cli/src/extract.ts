@@ -164,6 +164,14 @@ function qualifiedNameText(node: SyntaxNode | null): string | null {
  */
 function sourceRefNameNs(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
+  // Handle ERROR nodes from error-recovery (e.g., multi-target blocks)
+  if (node.type === "ERROR") {
+    for (const c of node.namedChildren) {
+      const result = sourceRefNameNs(c);
+      if (result) return result;
+    }
+    return null;
+  }
   if (node.type !== "source_ref") return entryText(node);
   for (const c of node.namedChildren) {
     if (c.type === "qualified_name") return qualifiedNameText(c);
@@ -354,8 +362,10 @@ export function extractMappings(rootNode: SyntaxNode): ExtractedMapping[] {
         }
       }
       if (tgtBlock) {
-        const t = sourceRefNameNs(tgtBlock.namedChildren[0]);
-        if (t) targets.push(t);
+        for (const c of tgtBlock.namedChildren) {
+          const t = sourceRefNameNs(c);
+          if (t) targets.push(t);
+        }
       }
 
       arrowCount =

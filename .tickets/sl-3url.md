@@ -1,6 +1,6 @@
 ---
 id: sl-3url
-status: open
+status: closed
 deps: []
 links: [sl-6hot]
 created: 2026-03-21T08:01:31Z

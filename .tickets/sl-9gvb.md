@@ -1,6 +1,6 @@
 ---
 id: sl-9gvb
-status: open
+status: in_progress
 deps: [sl-wjb9]
 links: [sl-z4ya]
 created: 2026-03-21T07:59:43Z
@@ -47,3 +47,9 @@ Note: source_sys.address partially works — it shows the parent arrow but witho
 
 Reproducer file: /tmp/satsuma-test-arrows/all-arrows.stm
 
+
+## Notes
+
+**2026-03-22T00:29:39Z**
+
+Partially fixed: field arrow index now strips leading dots from relative paths. Full fix (arrows command validating nested fields and bracket stripping) deferred.

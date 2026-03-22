@@ -610,6 +610,20 @@ describe("satsuma lineage", () => {
     assert.match(stderr, /cannot specify both/i);
   });
 
+  it("multi-target mapping shows all targets without backticks (sl-3url)", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "multi-target.stm");
+    const { stdout, code } = await run("lineage", "--from", "mt_source", "--json", fixture);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.nodes.map((n) => n.name);
+    assert.ok(names.includes("mt_target_1"), "should include mt_target_1 without backticks");
+    assert.ok(names.includes("mt_target_2"), "should include mt_target_2");
+    // Ensure no backticks in names
+    for (const name of names) {
+      assert.doesNotMatch(name, /`/, `name '${name}' should not contain backticks`);
+    }
+  });
+
   it("--depth --json edges only reference nodes in the nodes array (sl-iliz)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
     const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--json", F);
@@ -866,6 +880,29 @@ describe("satsuma arrows", () => {
     const { stderr, code } = await run("arrows", "legacy_sqlserver.NONEXISTENT", DB);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
+  });
+
+  it("--json source field uses actual source schema, not lookup schema (sl-531q)", async () => {
+    const SFDC = resolve(EXAMPLES, "sfdc_to_snowflake.stm");
+    const { stdout, code } = await run("arrows", "snowflake_opps.opp_key", "--json", SFDC);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const arrow = data.find((a) => a.source);
+    assert.ok(arrow, "should have arrow with source");
+    assert.match(arrow.source, /sfdc_opportunity\./, "source should reference sfdc_opportunity, not snowflake_opps");
+    assert.doesNotMatch(arrow.source, /snowflake_opps\.Id/, "source should not use lookup schema");
+  });
+
+  it("indexes nested child arrows without leading dot in key (sl-9gvb)", async () => {
+    // Verify that nested arrow relative paths (.PHONE_TYPE) get indexed
+    // with bare names (PHONE_TYPE) in addition to dotted (.PHONE_TYPE)
+    const { parseFile } = await import("../dist/parser.js");
+    const { buildIndex } = await import("../dist/index-builder.js");
+    const p = parseFile(resolve(EXAMPLES, "cobol-to-avro.stm"));
+    const index = buildIndex([p]);
+    // The bare name (without leading dot) should be in the index
+    assert.ok(index.fieldArrows.has("PHONE_TYPE"), "should index bare PHONE_TYPE");
+    assert.ok(index.fieldArrows.has("cobol_customer_master.PHONE_TYPE"), "should index schema-qualified PHONE_TYPE");
   });
 });
 

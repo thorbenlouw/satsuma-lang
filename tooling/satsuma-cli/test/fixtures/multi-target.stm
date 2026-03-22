@@ -1,0 +1,23 @@
+schema mt_source {
+  id    INT
+  name  VARCHAR
+  code  VARCHAR
+}
+
+schema mt_target_1 {
+  id    INT
+  name  VARCHAR
+}
+
+schema mt_target_2 {
+  id    INT
+  code  VARCHAR
+}
+
+mapping 'multi target' {
+  source { `mt_source` }
+  target { `mt_target_1`, `mt_target_2` }
+  id -> id
+  name -> name
+  code -> code
+}

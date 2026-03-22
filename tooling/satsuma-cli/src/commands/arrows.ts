@@ -119,12 +119,30 @@ export function register(program: Command): void {
       if (opts.json) {
         const jsonArrows = arrows.map((a) => {
           const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : a.mapping;
+          const mapping = index.mappings.get(qMapping ?? "");
+          const sourceSchemas = mapping?.sources ?? [];
+          const targetSchemas = mapping?.targets ?? [];
+
+          // Determine which schema the source field belongs to
+          let sourceSchema: string;
+          if (sourceSchemas.includes(resolvedSchema.key)) {
+            sourceSchema = resolvedSchema.key;
+          } else {
+            sourceSchema = sourceSchemas[0] ?? resolvedSchema.key;
+          }
+
+          // Determine which schema the target field belongs to
+          let targetSchema: string;
+          if (targetSchemas.includes(resolvedSchema.key)) {
+            targetSchema = resolvedSchema.key;
+          } else {
+            targetSchema = targetSchemas[0] ?? resolvedSchema.key;
+          }
+
           return {
             mapping: qMapping,
-            source: a.source ? `${resolvedSchema.key}.${a.source}` : null,
-            target: a.target
-              ? `${resolveTargetSchema(qMapping, index)}.${a.target}`
-              : null,
+            source: a.source ? `${sourceSchema}.${a.source}` : null,
+            target: a.target ? `${targetSchema}.${a.target}` : null,
             classification: a.classification,
             transform_raw: a.transform_raw,
             steps: a.steps,
@@ -158,14 +176,6 @@ function findFieldArrows(fieldKey: string, index: WorkspaceIndex): ArrowRecord[]
     }
   }
   return results;
-}
-
-/**
- * Resolve the target schema name for a mapping by looking at its target list.
- */
-function resolveTargetSchema(mappingName: string | null, index: WorkspaceIndex): string {
-  const mapping = index.mappings.get(mappingName ?? "");
-  return mapping?.targets[0] ?? "?";
 }
 
 function printDefault(fieldRef: string, arrows: ArrowRecord[], _index: WorkspaceIndex): void {
