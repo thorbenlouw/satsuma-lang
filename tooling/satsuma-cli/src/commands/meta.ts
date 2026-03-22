@@ -253,8 +253,8 @@ function navigateToNestedBody(body: SyntaxNode, intermediateSegments: string[]):
   for (const seg of intermediateSegments) {
     let found = false;
     for (const c of current.namedChildren) {
-      if (c.type === "record_block" || c.type === "list_block") {
-        if (getBlockLabelName(c) === seg) {
+      if (c.type === "field_decl") {
+        if (getFieldDeclName(c) === seg) {
           const nested = c.namedChildren.find((x) => x.type === "schema_body");
           if (nested) {
             current = nested;
@@ -269,26 +269,15 @@ function navigateToNestedBody(body: SyntaxNode, intermediateSegments: string[]):
   return current;
 }
 
-function getBlockLabelName(block: SyntaxNode): string | null {
-  const label = block.namedChildren.find((c) => c.type === "block_label");
-  if (!label) return null;
-  const inner = label.namedChildren[0];
-  if (!inner) return null;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
-  return inner.text;
-}
 
 function findFieldDecls(bodyNode: SyntaxNode, fieldName: string, acc: SyntaxNode[] = []): SyntaxNode[] {
   for (const child of bodyNode.namedChildren) {
-    if (child.type === "field_decl" && getFieldDeclName(child) === fieldName) {
-      acc.push(child);
-      continue;
-    }
-    if (child.type === "record_block" || child.type === "list_block") {
-      if (getBlockLabelName(child) === fieldName) {
+    if (child.type === "field_decl") {
+      if (getFieldDeclName(child) === fieldName) {
         acc.push(child);
         continue;
       }
+      // Recurse into nested record/list_of fields
       const nestedBody = child.namedChildren.find((c) => c.type === "schema_body");
       if (nestedBody) findFieldDecls(nestedBody, fieldName, acc);
     }

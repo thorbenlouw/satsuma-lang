@@ -145,6 +145,7 @@ function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName:
       const nameNode = c.namedChildren.find((x) => x.type === "field_name");
       const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      const nested = c.namedChildren.find((x) => x.type === "schema_body");
       const inner = nameNode?.namedChildren[0];
       let fname = inner?.text ?? "";
       if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
@@ -165,14 +166,11 @@ function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName:
           });
         }
       }
-    } else if (c.type === "record_block" || c.type === "list_block") {
-      const nested = c.namedChildren.find((x) => x.type === "schema_body");
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
-      const inner = lbl?.namedChildren[0];
-      let lname = inner?.text ?? "";
-      if (inner?.type === "quoted_name") lname = lname.slice(1, -1);
-      const nestedName = `${blockName}.${lname}`;
-      if (nested) collectFieldMatches(nested, blockType, nestedName, file, tag, acc);
+      // Recurse into nested record/list_of fields
+      if (nested) {
+        const nestedName = `${blockName}.${fname}`;
+        collectFieldMatches(nested, blockType, nestedName, file, tag, acc);
+      }
     }
   }
 }

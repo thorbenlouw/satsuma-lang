@@ -258,9 +258,9 @@ describe("extractArrowRecords against real examples", () => {
     const { tree } = parseFile(resolve(EXAMPLES, "sap-po-to-mfcs.stm"));
     const records = extractArrowRecords(tree.rootNode);
 
-    // Find child arrows of the Items[] -> items[] nested block
+    // Find child arrows of the each Items -> items block
     const childArrows = records.filter(
-      (r) => r.source && r.source.startsWith("Items[]."),
+      (r) => r.source && r.source.startsWith("Items."),
     );
     assert.ok(childArrows.length >= 7, `expected >=7 child arrows, got ${childArrows.length}`);
 
@@ -272,9 +272,9 @@ describe("extractArrowRecords against real examples", () => {
     }
 
     // Specifically check the last arrow (.TXZ01 -> .description) which was previously broken
-    const txz01 = childArrows.find((r) => r.source === "Items[].TXZ01");
-    assert.ok(txz01, "should find Items[].TXZ01 arrow");
-    assert.equal(txz01.target, "items[].description");
+    const txz01 = childArrows.find((r) => r.source === "Items.TXZ01");
+    assert.ok(txz01, "should find Items.TXZ01 arrow");
+    assert.equal(txz01.target, "items.description");
     assert.equal(txz01.derived, false);
   });
 

@@ -46,14 +46,8 @@ export function collectFieldPaths(fields: FieldDecl[], prefix: string, paths: Se
   for (const f of fields) {
     const fullPath = prefix + f.name;
     paths.add(fullPath);
-    if (f.isList) {
-      paths.add(prefix + f.name + "[]");
-    }
     if (f.children && f.children.length > 0) {
       collectFieldPaths(f.children, fullPath + ".", paths);
-      if (f.isList) {
-        collectFieldPaths(f.children, fullPath + "[].", paths);
-      }
     }
   }
 }
