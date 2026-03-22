@@ -239,6 +239,7 @@ interface ExtractedSchema {
   hasSpreads: boolean;
   spreads: string[];
   row: number;
+  blockMetadata?: import("./meta-extract.js").MetaEntry[];
 }
 
 /**
@@ -254,7 +255,8 @@ export function extractSchemas(rootNode: SyntaxNode): ExtractedSchema[] {
       : null;
     const body = child(node, "schema_body");
     const fieldTree = body ? extractFieldTree(body) : { fields: [], hasSpreads: false, spreads: [] };
-    return {
+    const blockMeta = meta ? extractMetadata(meta) : [];
+    const result: ExtractedSchema = {
       name,
       namespace,
       note: noteStr,
@@ -263,6 +265,8 @@ export function extractSchemas(rootNode: SyntaxNode): ExtractedSchema[] {
       spreads: fieldTree.spreads,
       row: node.startPosition.row,
     };
+    if (blockMeta.length > 0) result.blockMetadata = blockMeta;
+    return result;
   });
 }
 

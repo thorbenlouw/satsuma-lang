@@ -1,0 +1,30 @@
+schema pos_source {
+  customer_id VARCHAR(50)
+  store_id VARCHAR(20)
+}
+
+schema hub_customer (hub, business_key customer_id) {
+  customer_id VARCHAR(50) (required)
+}
+
+schema sat_customer_details (satellite, parent hub_customer) {
+  first_name VARCHAR(100)
+  email VARCHAR(255)
+}
+
+mapping 'pos to hub' {
+  source { `pos_source` }
+  target { `hub_customer` }
+
+  customer_id -> customer_id
+  -> record_source { "POS" }
+  -> load_date { now() }
+}
+
+mapping 'pos to sat' {
+  source { `pos_source` }
+  target { `sat_customer_details` }
+
+  customer_id -> hub_customer_hk { md5(customer_id) }
+  -> record_source { "POS" }
+}

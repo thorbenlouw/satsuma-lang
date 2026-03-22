@@ -14,7 +14,74 @@ import {
 } from "./nl-ref-extract.js";
 import { resolveScopedEntityRef } from "./index-builder.js";
 import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
-import type { ArrowRecord, LintDiagnostic, SyntaxNode, WorkspaceIndex } from "./types.js";
+import type { ArrowRecord, LintDiagnostic, SchemaRecord, SyntaxNode, WorkspaceIndex } from "./types.js";
+import type { MetaEntry } from "./meta-extract.js";
+
+/**
+ * Compute convention-inferred field names for a schema based on its metadata tokens.
+ * Data Vault: hub → {name}_hk, load_date, record_source
+ *             link → {name}_hk, load_date, record_source, {parent}_hk
+ *             satellite → {parent}_hk, load_date, load_end_date, hash_diff, record_source
+ * Kimball:    dimension+scd2 → surrogate_key, valid_from, valid_to, is_current, row_hash
+ *             fact → etl_batch_id, loaded_at
+ */
+function getConventionFields(schema: SchemaRecord): Set<string> {
+  const fields = new Set<string>();
+  const meta = schema.blockMetadata ?? [];
+  const tags = new Set(meta.filter((m): m is MetaEntry & { kind: "tag" } => m.kind === "tag").map((m) => m.tag));
+  const kvs = meta.filter((m): m is MetaEntry & { kind: "kv" } => m.kind === "kv");
+
+  if (tags.has("hub")) {
+    fields.add(`${schema.name}_hk`);
+    fields.add("load_date");
+    fields.add("record_source");
+  }
+  if (tags.has("link")) {
+    fields.add(`${schema.name}_hk`);
+    fields.add("load_date");
+    fields.add("record_source");
+    // Add hash keys for linked hubs
+    for (const kv of kvs) {
+      if (kv.key === "link_hubs") {
+        for (const hub of kv.value.split(",").map((h: string) => h.trim())) {
+          fields.add(`${hub}_hk`);
+        }
+      }
+    }
+  }
+  if (tags.has("satellite")) {
+    fields.add("load_date");
+    fields.add("load_end_date");
+    fields.add("hash_diff");
+    fields.add("record_source");
+    // Add parent hub/link hash key
+    for (const kv of kvs) {
+      if (kv.key === "parent") {
+        fields.add(`${kv.value}_hk`);
+      }
+    }
+  }
+  if (tags.has("dimension")) {
+    const hasScd2 = kvs.some((kv) => kv.key === "scd" && (kv.value === "2" || kv.value === "6"));
+    if (hasScd2) {
+      fields.add("surrogate_key");
+      fields.add("valid_from");
+      fields.add("valid_to");
+      fields.add("is_current");
+      fields.add("row_hash");
+    }
+    const hasScd6 = kvs.some((kv) => kv.key === "scd" && kv.value === "6");
+    if (hasScd6) {
+      // current_{field} overlays — can't enumerate without knowing tracked fields
+    }
+  }
+  if (tags.has("fact")) {
+    fields.add("etl_batch_id");
+    fields.add("loaded_at");
+  }
+
+  return fields;
+}
 
 /**
  * Collect all ERROR and MISSING nodes from a CST.
@@ -287,6 +354,35 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
       const tgtHasUnresolved = resolvedTgtKey
         ? expandSpreads([resolvedTgtKey], currentNs, index, tgtFieldPaths, diagnostics as never[])
         : false;
+
+      // Add convention-inferred fields (Data Vault / Kimball) so they don't trigger false positives
+      for (const k of resolvedSrcKeys) {
+        const sch = index.schemas.get(k);
+        if (sch) {
+          for (const f of getConventionFields(sch)) {
+            srcFieldPaths.add(f);
+          }
+        }
+      }
+      // Also add convention fields with schema-name prefix for multi-source cross-schema references
+      for (let i = 0; i < mapping.sources.length; i++) {
+        const resolvedKey = resolveEntityRef(mapping.sources[i]!, currentNs, index.schemas);
+        if (!resolvedKey) continue;
+        const sch = index.schemas.get(resolvedKey);
+        if (sch) {
+          for (const f of getConventionFields(sch)) {
+            srcFieldPaths.add(`${mapping.sources[i]}.${f}`);
+          }
+        }
+      }
+      if (resolvedTgtKey) {
+        const sch = index.schemas.get(resolvedTgtKey);
+        if (sch) {
+          for (const f of getConventionFields(sch)) {
+            tgtFieldPaths.add(f);
+          }
+        }
+      }
 
       for (const arrow of uniqueArrows) {
         if (arrow.mapping !== mapping.name || (arrow.namespace ?? null) !== currentNs) continue;
