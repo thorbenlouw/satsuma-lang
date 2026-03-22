@@ -17,7 +17,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, ArrowRecord } from "../types.js";
+import type { WorkspaceIndex, ArrowRecord, FieldDecl } from "../types.js";
 
 export function register(program: Command): void {
   program
@@ -61,25 +61,47 @@ export function register(program: Command): void {
         process.exit(1);
       }
 
-      // Validate field exists in schema (including fragment spread fields)
+      // Validate field exists in schema (including fragment spread fields and nested children)
       const schema = resolvedSchema.entry;
       const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
       const allFields = [...schema.fields, ...spreadFields];
-      const fieldExists = allFields.some((f) => f.name === fieldName);
+      const fieldExists = findFieldByPath(allFields, fieldName) ||
+        collectAllFieldNames(allFields).includes(fieldName);
       if (!fieldExists) {
         console.error(
           `Field '${fieldName}' not found in schema '${schemaName}'.`,
         );
-        const close = allFields.find(
-          (f) => f.name.toLowerCase() === fieldName.toLowerCase(),
+        // Suggest close matches from top-level and nested fields
+        const allNames = collectAllFieldNames(allFields);
+        const close = allNames.find(
+          (n) => n.toLowerCase() === fieldName.toLowerCase(),
         );
-        if (close) console.error(`Did you mean '${close.name}'?`);
+        if (close) console.error(`Did you mean '${close}'?`);
         process.exit(1);
       }
 
       // Find matching arrows using schema-qualified key
+      // Try full dotted path, bare field name, and leaf name for nested fields
       const qualifiedField = `${resolvedSchema.key}.${fieldName}`;
       let arrows = findFieldArrows(qualifiedField, index);
+
+      // Also search by bare field name (handles nested child fields indexed by leaf name)
+      // Only include arrows from mappings involving the resolved schema
+      const leafName = fieldName.includes(".") ? fieldName.split(".").pop()! : fieldName;
+      const seen = new Set(arrows.map((a) => `${a.mapping}:${a.namespace}:${a.source}:${a.target}:${a.line}`));
+      for (const altKey of [fieldName, leafName]) {
+        for (const a of findFieldArrows(altKey, index)) {
+          const dedupKey = `${a.mapping}:${a.namespace}:${a.source}:${a.target}:${a.line}`;
+          if (seen.has(dedupKey)) continue;
+          // Verify this arrow's mapping involves the queried schema
+          const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+          const mapping = index.mappings.get(qMapping);
+          if (mapping && (mapping.sources.includes(resolvedSchema.key) || mapping.targets.includes(resolvedSchema.key))) {
+            seen.add(dedupKey);
+            arrows.push(a);
+          }
+        }
+      }
 
       // Add NL-derived arrows for this field
       const nlRefs = resolveAllNLRefs(index);
@@ -104,11 +126,11 @@ export function register(program: Command): void {
         }
       }
 
-      // Apply direction filters
+      // Apply direction filters — match against both full path and leaf name
       if (opts.asSource) {
-        arrows = arrows.filter((a) => a.source === fieldName);
+        arrows = arrows.filter((a) => a.source === fieldName || a.source === leafName);
       } else if (opts.asTarget) {
-        arrows = arrows.filter((a) => a.target === fieldName);
+        arrows = arrows.filter((a) => a.target === fieldName || a.target === leafName);
       }
 
       if (arrows.length === 0) {
@@ -180,6 +202,35 @@ function findFieldArrows(fieldKey: string, index: WorkspaceIndex): ArrowRecord[]
     }
   }
   return results;
+}
+
+/**
+ * Check if a field exists at a given path, supporting dotted notation
+ * for nested record/list children (e.g. "address.street").
+ */
+function findFieldByPath(fields: FieldDecl[], path: string): boolean {
+  const segments = path.split(".");
+  let current = fields;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const field = current.find((f) => f.name === seg);
+    if (!field) return false;
+    if (i < segments.length - 1) {
+      if (!field.children || field.children.length === 0) return false;
+      current = field.children;
+    }
+  }
+  return true;
+}
+
+/** Collect all field names including nested children (bare names only). */
+function collectAllFieldNames(fields: FieldDecl[]): string[] {
+  const names: string[] = [];
+  for (const f of fields) {
+    names.push(f.name);
+    if (f.children) names.push(...collectAllFieldNames(f.children));
+  }
+  return names;
 }
 
 function printDefault(fieldRef: string, arrows: ArrowRecord[], _index: WorkspaceIndex): void {

@@ -1,6 +1,6 @@
 ---
 id: sl-cyen
-status: open
+status: closed
 deps: [sl-jt7q, sl-armj, sl-cdvp]
 links: [sl-ck20, sl-6gta, sl-o4wq, sl-h13n, sl-18hw, sl-zqqu]
 created: 2026-03-21T21:53:20Z

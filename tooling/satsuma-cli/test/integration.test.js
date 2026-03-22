@@ -966,6 +966,23 @@ describe("satsuma arrows", () => {
     assert.ok(data[0].metadata.some((m) => m.kind === "tag" && m.tag === "pii"));
   });
 
+  it("finds arrows for nested child by dotted path (sl-9gvb)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nested-arrow-lookup.stm");
+    const { stdout, code } = await run("arrows", "src_sys.addr.street", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0, "should find arrows for addr.street");
+    assert.ok(data[0].source.includes("street"), "source should contain street");
+  });
+
+  it("finds arrows for nested child by bare leaf name (sl-9gvb)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nested-arrow-lookup.stm");
+    const { stdout, code } = await run("arrows", "src_sys.street", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0, "should find arrows for bare field name street");
+  });
+
   it("indexes nested child arrows without leading dot in key (sl-9gvb)", async () => {
     // Verify that nested arrow relative paths (.PHONE_TYPE) get indexed
     // with bare names (PHONE_TYPE), parent-prefixed, and schema-qualified paths
