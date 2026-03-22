@@ -948,6 +948,24 @@ describe("satsuma arrows", () => {
     assert.doesNotMatch(arrow.source, /snowflake_opps\.Id/, "source should not use lookup schema");
   });
 
+  it("--json includes arrow-level metadata (sl-6ctd)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "arrow-meta.stm");
+    const { stdout, code } = await run("arrows", "tgt.name", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data[0].metadata, "should have metadata on arrow");
+    assert.ok(data[0].metadata.some((m) => m.kind === "note" && m.text === "Arrow metadata note"));
+  });
+
+  it("--json includes tag metadata on arrows (sl-6ctd)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "arrow-meta.stm");
+    const { stdout, code } = await run("arrows", "tgt.email", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data[0].metadata, "should have metadata");
+    assert.ok(data[0].metadata.some((m) => m.kind === "tag" && m.tag === "pii"));
+  });
+
   it("indexes nested child arrows without leading dot in key (sl-9gvb)", async () => {
     // Verify that nested arrow relative paths (.PHONE_TYPE) get indexed
     // with bare names (PHONE_TYPE), parent-prefixed, and schema-qualified paths

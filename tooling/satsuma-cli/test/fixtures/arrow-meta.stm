@@ -1,0 +1,17 @@
+schema src {
+  name  STRING
+  email STRING
+}
+
+schema tgt {
+  name  STRING
+  email STRING
+}
+
+mapping 'arrow test' {
+  source { src }
+  target { tgt }
+
+  name -> name (note "Arrow metadata note") { trim }
+  email -> email (pii) { lowercase }
+}
