@@ -8,8 +8,10 @@ import type {
   BlockDelta,
   Delta,
   FieldDecl,
+  FragmentRecord,
   MappingChange,
   MappingRecord,
+  MetricRecord,
   SchemaChange,
   SchemaRecord,
   WorkspaceIndex,
@@ -22,6 +24,9 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
   return {
     schemas: diffBlockMap(indexA.schemas, indexB.schemas, diffSchema),
     mappings: diffBlockMap(indexA.mappings, indexB.mappings, diffMapping),
+    metrics: diffBlockMap(indexA.metrics, indexB.metrics, diffMetric),
+    fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
+    transforms: diffBlockMap(indexA.transforms, indexB.transforms, () => []),
   };
 }
 
@@ -54,28 +59,32 @@ function diffBlockMap<T, C>(
 }
 
 function diffSchema(a: SchemaRecord, b: SchemaRecord): SchemaChange[] {
+  return diffFieldList(a.fields, b.fields);
+}
+
+function diffMetric(a: MetricRecord, b: MetricRecord): SchemaChange[] {
+  return diffFieldList(a.fields, b.fields);
+}
+
+function diffFragment(a: FragmentRecord, b: FragmentRecord): SchemaChange[] {
+  return diffFieldList(a.fields, b.fields);
+}
+
+function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[]): SchemaChange[] {
   const changes: SchemaChange[] = [];
-  const aFields = new Map<string, FieldDecl>(a.fields.map((f) => [f.name, f]));
-  const bFields = new Map<string, FieldDecl>(b.fields.map((f) => [f.name, f]));
+  const aMap = new Map<string, FieldDecl>(aFields.map((f) => [f.name, f]));
+  const bMap = new Map<string, FieldDecl>(bFields.map((f) => [f.name, f]));
 
-  for (const [name, field] of aFields) {
-    if (!bFields.has(name)) {
+  for (const [name, field] of aMap) {
+    if (!bMap.has(name)) {
       changes.push({ kind: "field-removed", field: name });
-    } else if (field.type !== bFields.get(name)!.type) {
-      changes.push({
-        kind: "type-changed",
-        field: name,
-        from: field.type,
-        to: bFields.get(name)!.type,
-      });
+    } else if (field.type !== bMap.get(name)!.type) {
+      changes.push({ kind: "type-changed", field: name, from: field.type, to: bMap.get(name)!.type });
     }
   }
-  for (const name of bFields.keys()) {
-    if (!aFields.has(name)) {
-      changes.push({ kind: "field-added", field: name });
-    }
+  for (const name of bMap.keys()) {
+    if (!aMap.has(name)) changes.push({ kind: "field-added", field: name });
   }
-
   return changes;
 }
 

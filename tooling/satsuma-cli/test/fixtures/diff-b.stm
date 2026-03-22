@@ -1,0 +1,42 @@
+schema Customer {
+  id       INTEGER
+  name     STRING
+  phone    STRING
+}
+
+schema NewSchema {
+  code  STRING
+}
+
+fragment 'audit columns' {
+  created_at  TIMESTAMP
+  updated_at  TIMESTAMP
+  deleted_at  TIMESTAMP
+}
+
+metric monthly_revenue (
+  source Customer,
+  grain monthly
+) {
+  value  DECIMAL
+  count  INTEGER
+}
+
+metric churn_rate (
+  source Customer,
+  grain monthly
+) {
+  value  DECIMAL
+}
+
+transform trim_and_lower {
+  | trim | lower
+}
+
+transform hash_key {
+  | md5
+}
+
+Customer -> Target {
+  id -> id
+}
