@@ -1,6 +1,6 @@
 ---
 id: sl-z9us
-status: open
+status: closed
 deps: []
 links: [sl-42ev]
 created: 2026-03-21T08:01:37Z
@@ -37,3 +37,9 @@ Same issue in text output: fragment spread fields show no metadata parenthetical
 
 **Reproducing fixture:** /tmp/satsuma-test-fields/fragments.stm
 
+
+## Notes
+
+**2026-03-22T01:21:20Z**
+
+Already fixed by prior expandEntityFields integration. Added 2 regression tests to prevent regressions.

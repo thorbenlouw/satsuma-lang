@@ -2703,6 +2703,29 @@ describe("satsuma fields — fragment spread expansion (sl-3aff)", () => {
   });
 });
 
+describe("satsuma fields --with-meta on fragment spreads (sl-z9us)", () => {
+  const FIXTURE = resolve(__dirname, "fixtures/spread-fields-meta.stm");
+
+  it("--with-meta shows tags on fragment spread fields", async () => {
+    const { stdout, code } = await run("fields", "with_spreads", FIXTURE, "--with-meta");
+    assert.equal(code, 0);
+    assert.match(stdout, /created_at.*required/);
+    assert.match(stdout, /email.*pii/);
+  });
+
+  it("--with-meta --json includes tags on fragment spread fields", async () => {
+    const { stdout, code } = await run("fields", "with_spreads", FIXTURE, "--with-meta", "--json");
+    assert.equal(code, 0);
+    const fields = JSON.parse(stdout);
+    const email = fields.find((f) => f.name === "email");
+    assert.ok(email, "should find email field from fragment spread");
+    assert.deepEqual(email.tags, ["pii"]);
+    const created = fields.find((f) => f.name === "created_at");
+    assert.ok(created, "should find created_at from fragment spread");
+    assert.deepEqual(created.tags, ["required"]);
+  });
+});
+
 describe("satsuma arrows — fragment spread expansion (sl-h1b0)", () => {
   it("finds arrows targeting fields from fragment spreads", async () => {
     const { stdout, code } = await run("arrows", "tgt_customers.created_at", SPREAD_FIXTURE);

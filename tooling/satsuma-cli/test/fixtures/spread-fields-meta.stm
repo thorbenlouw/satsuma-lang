@@ -1,0 +1,14 @@
+fragment audit_cols {
+  created_at TIMESTAMPTZ (required)
+  created_by VARCHAR     (required)
+}
+
+fragment contact_info {
+  email STRING (pii)
+}
+
+schema with_spreads {
+  id   INT (pk)
+  ...audit_cols
+  ...contact_info
+}
