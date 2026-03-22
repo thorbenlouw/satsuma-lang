@@ -1,6 +1,6 @@
 ---
 id: sl-vlsh
-status: open
+status: closed
 deps: [sl-z6z9]
 links: [sl-42ev]
 created: 2026-03-21T08:01:26Z
@@ -37,3 +37,9 @@ Commands:
   satsuma summary /tmp/satsuma-test-summary/imports-dir/
   satsuma fields local_schema /tmp/satsuma-test-summary/imports-dir/
 
+
+## Notes
+
+**2026-03-22T01:23:39Z**
+
+Fixed by using expandEntityFields to count spread fields in summary. Added 2 integration tests.
