@@ -37,10 +37,10 @@ fragment 'sfdc opportunity standard' {
 fragment 'sfdc account standard' {
   Type            PICKLIST
   ParentId        ID             (ref `Account.Id`)
-  record BillingAddress {
+  BillingAddress record {
     ...sfdc address
   }
-  record ShippingAddress {
+  ShippingAddress record {
     ...sfdc address
   }
   Phone           PHONE

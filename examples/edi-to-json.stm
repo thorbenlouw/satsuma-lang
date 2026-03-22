@@ -23,39 +23,39 @@ schema edi_desadv (
   format fixed-length,
   note "EDI 856 Despatch Advice — Fixed Length Format"
 ) {
-  record BeginningOfMessage {
+  BeginningOfMessage record {
     DOCNUM      CHAR(35)                          // despatch advice number
     MESSGFUN    CHAR(3)                           // message function: 9 = Original
   }
 
-  record DateTime {
+  DateTime record {
     DATEQUAL    CHAR(3)                           // qualifier: 137 = document date/time
     DATETIME    CHAR(35)                          // date/time value
     DATEFMT     CHAR(3)                           // format: 102=CCYYMMDD, 203=CCYYMMDDHHMM
   }
 
-  list ShipmentRefs (filter SHPRFQUAL == "SRN") {
+  ShipmentRefs list_of record (filter SHPRFQUAL == "SRN") {
     SHPRFQUAL   CHAR(3)
     SHIPREF     CHAR(70)                          // shipment reference number
   }
 
-  list POReferences (filter REFQUAL == "ON") {
+  POReferences list_of record (filter REFQUAL == "ON") {
     REFQUAL     CHAR(3)
     REFNUM      CHAR(35)                          // PO Number + "/" + Dissection No
   }
 
-  record NameAddress {
+  NameAddress record {
     PARTYQUAL   CHAR(3)                           // BY=Buyer, SU=Supplier
     PARTYID     CHAR(35)                          // 13-digit ANA number
   }
 
-  list LineItems {
+  LineItems list_of record {
     LINENUM     NUMBER(6)
     ITEMNO      CHAR(35)                          // product identifier
     ITEMTYPE    CHAR(3)                           // EN=EAN, UP=UPC12
   }
 
-  list Quantities (filter QUANTQUAL == "12") {    // only despatch quantities
+  Quantities list_of record (filter QUANTQUAL == "12") {    // only despatch quantities
     QUANTQUAL   CHAR(3)
     QUANTITY    NUMBER(15)                         //! 4 implied decimal places
   }
@@ -65,7 +65,7 @@ schema edi_desadv (
 // --- Target ---
 
 schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
-  record ShipmentHeader {
+  ShipmentHeader record {
     toLocation            NUMBER(10)
     asnNo                 STRING(30)   (required)
     shipDate              DATE         (required)
@@ -76,11 +76,11 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
     supplier              NUMBER(10)   (required)
     shipPayMethod         STRING(2)
 
-    list asnDetails {
+    asnDetails list_of record {
       orderNo             NUMBER(12)   (required)
       notAfterDate        DATE
 
-      list containers (
+      containers list_of record (
         note """
         ## DATA GAP
         This entire array is **required** by the MFCS schema but has
@@ -90,13 +90,13 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
       ) {
         containerId       STRING(30)   (required)     //! no source mapping
         finalLocation     NUMBER(10)   (required)     //! no source mapping
-        list items {
+        items list_of record {
           item            STRING(25)
           unitQuantity    NUMBER(12,4)                 //! no source mapping
         }
       }
 
-      list items {
+      items list_of record {
         item              STRING(25)
         unitQuantity      NUMBER(12,4)  (required)
         vpn               STRING(30)
@@ -123,33 +123,33 @@ mapping 'edi to mfcs' {
 
   -> ShipmentHeader.asnType { "0" }    // default: ASN Shipment
 
-  POReferences[].REFNUM -> ShipmentHeader.toLocation {
+  POReferences.REFNUM -> ShipmentHeader.toLocation {
     "Extract PO number from `REFNUM` (digits before '/').
      Look up the PO in MFCS to determine the delivery location."
   }
 
-  POReferences[].REFNUM -> ShipmentHeader.supplier {
+  POReferences.REFNUM -> ShipmentHeader.supplier {
     split("/") | first | to_number
     | "Validate supplier exists in MFCS PO table."
   }
 
-  ShipmentRefs[].SHIPREF -> ShipmentHeader.comments { prepend("Shipment reference number: ") }
+  ShipmentRefs.SHIPREF -> ShipmentHeader.comments { prepend("Shipment reference number: ") }
 
   // --- Detail lines grouped by PO ---
-  POReferences[] -> ShipmentHeader.asnDetails[] (
+  each POReferences -> ShipmentHeader.asnDetails (
     note "Each PO reference generates one asnDetails entry.
           Line items and quantities are correlated by position."
   ) {
     .REFNUM -> .orderNo { split("/") | first | to_number }
 
-    LineItems[] -> .items[] {
+    each LineItems -> .items {
       .ITEMNO -> .item {
         trim
         | "Retrieve MFCS item number using the supplier's traded code
            from the MFCS supplier item cross-reference."
       }
 
-      Quantities[].QUANTITY -> .unitQuantity {
+      Quantities.QUANTITY -> .unitQuantity {
         "Divide by 10000 to account for 4 implied decimal places.
          Then multiply by PO pack size from MFCS (Action A-504).
          Pack size retrieved from MFCS PO line matching this item."
@@ -157,8 +157,8 @@ mapping 'edi to mfcs' {
     }
   }
 
-  //! DATA GAP: containers[] required but no source data
-  -> ShipmentHeader.asnDetails[].containers {
+  //! DATA GAP: containers required but no source data
+  -> ShipmentHeader.asnDetails.containers {
     "Required by MFCS schema but no source data available in EDI 856.
      Options under discussion:
      1. Populate with a single placeholder container per order
