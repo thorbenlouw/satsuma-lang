@@ -33,13 +33,13 @@ schema commerce_event_pb (
   country_code     STRING      (tag 7)
   currency_code    STRING      (tag 8)
 
-  record Context (tag 9) {
+  Context record (tag 9) {
     device_type    STRING      (tag 1)
     app_version    STRING      (tag 2)
     entry_channel  STRING      (tag 3)
   }
 
-  list CartLines (tag 10) {
+  CartLines list_of record (tag 10) {
     sku            STRING      (tag 1)
     quantity       INT32       (tag 2)
     unit_price     DECIMAL(12,2) (tag 3)
@@ -47,7 +47,7 @@ schema commerce_event_pb (
     category       STRING      (tag 5)
   }
 
-  list Attributes (tag 11) {
+  Attributes list_of record (tag 11) {
     key            STRING      (tag 1)
     value          STRING      (tag 2)
   }
@@ -120,12 +120,12 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
     map { purchase: true, _: false } | max
   }
 
-  CartLines[].unit_price -> gross_merchandise_value {
+  CartLines.unit_price -> gross_merchandise_value {
     "For each event, multiply `unit_price` by `quantity`,
      sum within the event, then sum across the session group."
   }
 
-  CartLines[].discount_amt -> total_discount_amount {
+  CartLines.discount_amt -> total_discount_amount {
     "Sum `discount_amt` across all cart line elements in all events in the group."
   }
 
@@ -134,7 +134,7 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   }
 
   -> top_category {
-    "Find the most frequent CartLines[].category across the session.
+    "Find the most frequent CartLines.category across the session.
      Break ties by highest gross merchandise value."
   }
 

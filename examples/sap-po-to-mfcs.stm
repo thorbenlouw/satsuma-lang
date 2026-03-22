@@ -44,7 +44,7 @@ schema sap_purchase_order (
   ReceivingSite  STRING(10)    (required, note "Business receiving site used for MFCS location resolution")
   HeaderText     STRING(1000)
 
-  list Items {
+  Items list_of record {
     EBELP        STRING(5)     (required, note "PO line number")
     MATNR        STRING(18)    (required, note "SAP material number")
     TXZ01        STRING(250)   (note "Short item description")
@@ -73,7 +73,7 @@ schema mfcs_purchase_order (
   notBeforeDate  DATE
   comments       STRING(1000)
 
-  list items {
+  items list_of record {
     item         STRING(25)      (required)   //! requires material-to-item cross-reference
     orderedQty   NUMBER(12,4)    (required)
     unitCost     NUMBER(12,4)
@@ -102,7 +102,7 @@ mapping 'sap po to mfcs' {
   target { `mfcs_purchase_order` }
 
   //! ASSUMPTION: header ReceivingSite is authoritative for target location
-  //? If Items[].WERKS varies by line, should this integration split one SAP PO
+  //? If Items.WERKS varies by line, should this integration split one SAP PO
   //? into multiple MFCS orders by location instead of rejecting the document?
 
   // --- Header ---
@@ -134,7 +134,7 @@ mapping 'sap po to mfcs' {
     }
   }
 
-  Items[].EINDT -> notBeforeDate {
+  Items.EINDT -> notBeforeDate {
     "Take the earliest non-null requested delivery date across all lines.
      If all line dates are null, fall back to `BEDAT`."
   }
@@ -145,7 +145,7 @@ mapping 'sap po to mfcs' {
   }
 
   // --- Lines ---
-  Items[] -> items[] (
+  each Items -> items (
     note "One MFCS target line per SAP purchase order item."
   ) {
     .EBELP -> .referenceLine { to_number }

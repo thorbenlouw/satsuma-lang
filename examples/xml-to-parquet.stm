@@ -24,37 +24,37 @@ schema commerce_order (
   namespace com "http://example.com/common/v1",
   note "Canonical commerce order message"
 ) {
-  record Order (xpath "/ord:OrderMessage/ord:Order") {
+  Order record (xpath "/ord:OrderMessage/ord:Order") {
     OrderId           STRING       (xpath "ord:OrderId")
     Channel           STRING       (xpath "ord:Channel")
     OrderTimestamp    STRING       (xpath "ord:OrderTimestamp")
     CurrencyCode      STRING       (xpath "ord:Currency/com:Code")
 
-    record Customer {
+    Customer record {
       CustomerId      STRING       (xpath "ord:CustomerId")
       Email           STRING       (xpath "ord:Email")
       LoyaltyTier     STRING       (xpath "ord:LoyaltyTier")
     }
 
-    record ShippingAddress {
+    ShippingAddress record {
       CountryCode     STRING       (xpath "ord:CountryCode")
       RegionCode      STRING       (xpath "ord:RegionCode")
       PostalCode      STRING       (xpath "ord:PostalCode")
     }
 
-    record Totals {
+    Totals record {
       SubtotalAmount  DECIMAL(12,2)  (xpath "ord:SubtotalAmount")
       TaxAmount       DECIMAL(12,2)  (xpath "ord:TaxAmount")
       TotalAmount     DECIMAL(12,2)  (xpath "ord:TotalAmount")
     }
 
-    list Discounts (xpath "ord:Discounts/ord:Discount") {
+    Discounts list_of record (xpath "ord:Discounts/ord:Discount") {
       DiscountCode    STRING       (xpath "ord:Code")
       DiscountAmount  DECIMAL(12,2) (xpath "ord:Amount")
       DiscountType    STRING       (xpath "ord:Type")
     }
 
-    list LineItems (xpath "ord:LineItems/ord:LineItem") {
+    LineItems list_of record (xpath "ord:LineItems/ord:LineItem") {
       LineNumber      INT32        (xpath "ord:LineNumber")
       SKU             STRING       (xpath "ord:SKU")
       FulfillmentType STRING       (xpath "ord:FulfillmentType")
@@ -156,19 +156,22 @@ mapping 'order headers' {
 
 // --- Mapping: Order Lines (flattened) ---
 
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping 'order lines' {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
   Order.OrderId -> order_id
-  Order.LineItems[].LineNumber -> line_number
-  Order.LineItems[].SKU -> sku { trim | uppercase }
-  Order.LineItems[].FulfillmentType -> fulfillment_type { trim | lowercase }
-  Order.LineItems[].Quantity -> quantity
-  Order.LineItems[].UnitPrice -> unit_price
-  Order.LineItems[].ExtendedAmount -> extended_amount
-  Order.LineItems[].TaxAmount -> line_tax_amount
-  Order.LineItems[].IsGift -> is_gift
+
+  flatten Order.LineItems -> order_lines_parquet {
+    .LineNumber -> line_number
+    .SKU -> sku { trim | uppercase }
+    .FulfillmentType -> fulfillment_type { trim | lowercase }
+    .Quantity -> quantity
+    .UnitPrice -> unit_price
+    .ExtendedAmount -> extended_amount
+    .TaxAmount -> line_tax_amount
+    .IsGift -> is_gift
+  }
 
   Order.CurrencyCode -> currency_code { trim | uppercase }
   Order.Channel -> order_channel { trim | lowercase }
