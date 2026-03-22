@@ -2498,6 +2498,20 @@ describe("import resolution: where-used", () => {
   });
 });
 
+describe("satsuma graph: fragment fields (sl-yibt)", () => {
+  it("fragment nodes include fields in --json output", async () => {
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const frags = data.nodes.filter((n) => n.kind === "fragment");
+    assert.ok(frags.length > 0, "should have fragment nodes");
+    for (const f of frags) {
+      assert.ok(Array.isArray(f.fields), `fragment '${f.id}' should have fields array`);
+      assert.ok(f.fields.length > 0, `fragment '${f.id}' should have non-empty fields`);
+    }
+  });
+});
+
 describe("import resolution: graph", () => {
   it("includes schema nodes for imported definitions", async () => {
     const { stdout, code } = await run("graph", "--json", IMPORT_ENTRY);
