@@ -162,6 +162,9 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
         console.log(`      - arrow ${String(c.arrow)}`);
       } else if (c.kind === "arrow-transform-changed") {
         console.log(`      ~ arrow ${String(c.arrow)}: ${String(c.from)} -> ${String(c.to)}`);
+      } else if (c.kind === "source-changed" || c.kind === "grain-changed" || c.kind === "slices-changed") {
+        const label = c.kind.replace("-changed", "");
+        console.log(`      ~ ${label}: ${String(c.from)} -> ${String(c.to)}`);
       }
     }
   }
