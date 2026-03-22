@@ -95,7 +95,26 @@ function diffSchema(a: SchemaRecord, b: SchemaRecord): SchemaChange[] {
 }
 
 function diffMetric(a: MetricRecord, b: MetricRecord): SchemaChange[] {
-  return diffFieldList(a.fields, b.fields);
+  const changes: SchemaChange[] = [];
+
+  // Compare metric header attributes
+  const aSources = JSON.stringify(a.sources);
+  const bSources = JSON.stringify(b.sources);
+  if (aSources !== bSources) {
+    changes.push({ kind: "source-changed", field: "(source)", from: a.sources.join(", ") || "(none)", to: b.sources.join(", ") || "(none)" });
+  }
+  if ((a.grain ?? "") !== (b.grain ?? "")) {
+    changes.push({ kind: "grain-changed", field: "(grain)", from: a.grain || "(none)", to: b.grain || "(none)" });
+  }
+  const aSlices = JSON.stringify(a.slices);
+  const bSlices = JSON.stringify(b.slices);
+  if (aSlices !== bSlices) {
+    changes.push({ kind: "slices-changed", field: "(slices)", from: a.slices.join(", ") || "(none)", to: b.slices.join(", ") || "(none)" });
+  }
+
+  // Compare fields
+  changes.push(...diffFieldList(a.fields, b.fields));
+  return changes;
 }
 
 function diffFragment(a: FragmentRecord, b: FragmentRecord): SchemaChange[] {

@@ -81,6 +81,32 @@ describe("diffIndex", () => {
     assert.equal(delta.schemas.changed[0].changes[0].to, "BIGINT");
   });
 
+  it("detects metric source changes", () => {
+    const a = makeIndex({}, {}, { metrics: { rev: { sources: ["fact_orders"], grain: "monthly", slices: ["region"], fields: [] } } });
+    const b = makeIndex({}, {}, { metrics: { rev: { sources: ["fact_orders", "dim_date"], grain: "monthly", slices: ["region"], fields: [] } } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.metrics.changed.length, 1);
+    assert.equal(delta.metrics.changed[0].changes[0].kind, "source-changed");
+    assert.equal(delta.metrics.changed[0].changes[0].from, "fact_orders");
+    assert.equal(delta.metrics.changed[0].changes[0].to, "fact_orders, dim_date");
+  });
+
+  it("detects metric grain changes", () => {
+    const a = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: "monthly", slices: [], fields: [] } } });
+    const b = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: "quarterly", slices: [], fields: [] } } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.metrics.changed.length, 1);
+    assert.equal(delta.metrics.changed[0].changes[0].kind, "grain-changed");
+  });
+
+  it("detects metric slices changes", () => {
+    const a = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: null, slices: ["region"], fields: [] } } });
+    const b = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: null, slices: ["region", "channel"], fields: [] } } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.metrics.changed.length, 1);
+    assert.equal(delta.metrics.changed[0].changes[0].kind, "slices-changed");
+  });
+
   it("detects arrow count changes in mappings", () => {
     const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 5 } });
     const b = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 8 } });
