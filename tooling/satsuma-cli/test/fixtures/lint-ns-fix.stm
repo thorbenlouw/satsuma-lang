@@ -1,0 +1,21 @@
+namespace crm {
+  schema accounts {
+    id    INTEGER
+    name  STRING
+  }
+
+  schema contacts {
+    id          INTEGER
+    account_id  INTEGER
+    email       STRING
+  }
+
+  mapping 'account sync' {
+    source { accounts }
+    target { hub_account }
+
+    name -> name {
+      "Copy from `contacts` email field"
+    }
+  }
+}

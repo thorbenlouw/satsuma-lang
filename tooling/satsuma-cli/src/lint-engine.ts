@@ -91,7 +91,7 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
           fix: {
             file: item.file,
             rule: "hidden-source-in-nl",
-            description: `Added '${referencedSchema}' to source list of mapping '${mappingKey}'`,
+            description: `Added '${item.namespace && referencedSchema.startsWith(`${item.namespace}::`) ? referencedSchema.slice(item.namespace.length + 2) : referencedSchema}' to source list of mapping '${mappingKey}'`,
             apply: makeAddSourceFix(mappingKey, referencedSchema),
           },
         });
@@ -107,6 +107,13 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
   const displayName = nsIdx !== -1
     ? mappingKey.slice(nsIdx + 2)
     : mappingKey;
+  const mappingNs = nsIdx !== -1 ? mappingKey.slice(0, nsIdx) : null;
+
+  // If the schema ref is in the same namespace as the mapping, use the local name
+  let insertRef = schemaRef;
+  if (mappingNs && schemaRef.startsWith(`${mappingNs}::`)) {
+    insertRef = schemaRef.slice(mappingNs.length + 2);
+  }
 
   return (source: string): string => {
     const lines = source.split("\n");
@@ -139,9 +146,11 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
       const sm = trimmed.match(sourceLineRe);
       if (sm) {
         const existing = sm[1]!.trim();
-        if (existing.split(/\s*,\s*/).includes(schemaRef)) return source;
+        // Check both qualified and unqualified forms
+        const existingRefs = existing.split(/\s*,\s*/);
+        if (existingRefs.includes(schemaRef) || existingRefs.includes(insertRef)) return source;
         const indent = lines[i]!.match(/^(\s*)/)![1];
-        const newRefs = existing ? `${existing}, ${schemaRef}` : schemaRef;
+        const newRefs = existing ? `${existing}, ${insertRef}` : insertRef;
         lines[i] = `${indent}source { ${newRefs} }`;
         return lines.join("\n");
       }

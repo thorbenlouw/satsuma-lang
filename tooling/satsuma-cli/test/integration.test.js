@@ -9,7 +9,7 @@
  */
 
 import { execFile } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
@@ -2424,6 +2424,20 @@ describe("satsuma lint --fix", () => {
     // Verify fix was applied
     const content = readFileSync(file, "utf8");
     assert.match(content, /source \{ source::finance_gl, source::hr_employees \}/);
+  });
+
+  it("uses namespace-local name when fixing inside namespace block (sl-td9l)", async () => {
+    const src = resolve(import.meta.dirname, "fixtures", "lint-ns-fix.stm");
+    const file = src.replace("lint-ns-fix.stm", "lint-ns-fix-copy.stm");
+    copyFileSync(src, file);
+    const { stdout, code } = await run("lint", "--fix", file);
+    assert.equal(code, 0);
+    assert.match(stdout, /Fixed:/);
+    const content = readFileSync(file, "utf8");
+    // Should insert "contacts" (local name), not "crm::contacts" (qualified)
+    assert.match(content, /source \{ accounts, contacts \}/);
+    assert.ok(!content.includes("crm::contacts"), "should not use namespace-qualified ref inside same namespace");
+    unlinkSync(file);
   });
 });
 
