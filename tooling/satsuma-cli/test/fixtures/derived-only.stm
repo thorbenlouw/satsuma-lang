@@ -1,0 +1,18 @@
+schema raw_data {
+  id     INTEGER
+  value  STRING
+}
+
+schema enriched_data {
+  id            INTEGER
+  amount_usd    DECIMAL
+  processed_at  TIMESTAMP
+}
+
+mapping 'enrich data' {
+  source { raw_data }
+  target { enriched_data }
+
+  -> amount_usd   { "Convert value to USD" }
+  -> processed_at { now_utc() }
+}

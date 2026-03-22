@@ -2498,6 +2498,20 @@ describe("import resolution: where-used", () => {
   });
 });
 
+describe("satsuma graph: --schema-only derived-only edges (sl-w4hv)", () => {
+  it("includes schema-level edges for mappings with only derived arrows", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "derived-only.stm");
+    const { stdout, code } = await run("graph", "--json", "--schema-only", fixture);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.edges.length > 0, "should have schema-level edges");
+    const edge = data.edges.find((e) => e.mapping === "enrich data");
+    assert.ok(edge, "should have edge for 'enrich data' mapping");
+    assert.equal(edge.from, "raw_data");
+    assert.equal(edge.to, "enriched_data");
+  });
+});
+
 describe("satsuma graph: fragment fields (sl-yibt)", () => {
   it("fragment nodes include fields in --json output", async () => {
     const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
