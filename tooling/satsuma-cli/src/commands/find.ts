@@ -20,6 +20,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
+import { resolveScopedEntityRef } from "../index-builder.js";
 import type { WorkspaceIndex, ParsedFile, SyntaxNode } from "../types.js";
 
 interface Match {
@@ -123,6 +124,14 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
   for (const [name, entry] of index.metrics) search("metric", name, entry, "metric_body");
   for (const [name, entry] of index.fragments) search("fragment", name, entry, "schema_body");
 
+  // For schemas with fragment spreads, also search spread fragment fields
+  if (scope === "all" || scope === "schema") {
+    for (const [schemaName, schema] of index.schemas) {
+      if (!schema.hasSpreads || !schema.spreads?.length) continue;
+      collectSpreadFieldMatches(schemaName, schema, index, fileMap, tag, matches);
+    }
+  }
+
   return matches;
 }
 
@@ -210,6 +219,62 @@ function collectAllTags(metaNode: SyntaxNode): string[] {
     else if (c.type === "slice_body") tags.push("slice {...}");
   }
   return tags;
+}
+
+/**
+ * For a schema with fragment spreads, search each spread fragment's CST for
+ * tagged fields and report them under the consuming schema.
+ */
+function collectSpreadFieldMatches(
+  schemaName: string,
+  schema: { spreads?: string[]; namespace?: string | null; file: string; row: number },
+  index: WorkspaceIndex,
+  fileMap: Map<string, ParsedFile>,
+  tag: string,
+  acc: Match[],
+): void {
+  const visited = new Set<string>();
+  const queue = [...(schema.spreads ?? [])];
+  const ns = schema.namespace ?? null;
+
+  // Collect already-matched field names to avoid duplicates
+  const existing = new Set(
+    acc.filter((m) => m.blockType === "schema" && m.block === schemaName).map((m) => m.field),
+  );
+
+  while (queue.length > 0) {
+    const spreadRef = queue.pop()!;
+    const resolvedKey = resolveScopedEntityRef(spreadRef, ns, index.fragments);
+    if (!resolvedKey || visited.has(resolvedKey)) continue;
+    visited.add(resolvedKey);
+
+    const fragment = index.fragments.get(resolvedKey);
+    if (!fragment) continue;
+
+    const parsed = fileMap.get(fragment.file);
+    if (!parsed) continue;
+
+    const fragNode = findBlockNode(parsed.tree.rootNode, "fragment_block", resolvedKey);
+    if (!fragNode) continue;
+
+    const body = fragNode.namedChildren.find((c) => c.type === "schema_body");
+    if (!body) continue;
+
+    // Search the fragment's body for matching fields, but report under the consuming schema
+    const fragMatches: Match[] = [];
+    collectFieldMatches(body, "schema", schemaName, fragment.file, tag, fragMatches);
+    for (const m of fragMatches) {
+      if (!existing.has(m.field)) {
+        existing.add(m.field);
+        acc.push(m);
+      }
+    }
+
+    // Recurse into transitive spreads
+    if (fragment.hasSpreads && fragment.spreads?.length) {
+      for (const s of fragment.spreads) queue.push(s);
+    }
+  }
 }
 
 // ── Default formatter ─────────────────────────────────────────────────────────
