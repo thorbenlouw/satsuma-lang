@@ -1701,6 +1701,29 @@ describe("satsuma diff", () => {
     assert.match(stdout, /notes added/);
     assert.match(stdout, /notes removed/);
   });
+
+  it("detects arrow transform changes in mappings (sl-o4wq)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-transform-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-transform-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /arrow.*name.*display_name/);
+    assert.match(stdout, /title_case.*uppercase/);
+  });
+
+  it("--json reports arrow transform changes (sl-o4wq)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-transform-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-transform-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const mapping = data.mappings.changed.find((m) => m.name === "copy data");
+    assert.ok(mapping, "should have changed mapping");
+    const transformChange = mapping.changes.find((c) => c.kind === "arrow-transform-changed");
+    assert.ok(transformChange, "should have arrow-transform-changed");
+    assert.match(String(transformChange.from), /title_case/);
+    assert.match(String(transformChange.to), /uppercase/);
+  });
 });
 
 // ---------------------------------------------------------------------------

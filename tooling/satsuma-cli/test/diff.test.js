@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { diffIndex } from "#src/diff.js";
 
-function makeIndex(schemas = {}, mappings = {}, { metrics = {}, fragments = {}, transforms = {}, notes = [] } = {}) {
+function makeIndex(schemas = {}, mappings = {}, { metrics = {}, fragments = {}, transforms = {}, notes = [], fieldArrows = {} } = {}) {
   return {
     schemas: new Map(Object.entries(schemas)),
     mappings: new Map(Object.entries(mappings)),
@@ -14,6 +14,7 @@ function makeIndex(schemas = {}, mappings = {}, { metrics = {}, fragments = {}, 
     fragments: new Map(Object.entries(fragments)),
     transforms: new Map(Object.entries(transforms)),
     notes,
+    fieldArrows: new Map(Object.entries(fieldArrows)),
   };
 }
 

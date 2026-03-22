@@ -156,6 +156,12 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
         console.log(`      ~ targets: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
       } else if (c.kind === "metadata-changed") {
         console.log(`      ~ ${c.field} metadata: ${String(c.from)} -> ${String(c.to)}`);
+      } else if (c.kind === "arrow-added") {
+        console.log(`      + arrow ${String(c.arrow)}`);
+      } else if (c.kind === "arrow-removed") {
+        console.log(`      - arrow ${String(c.arrow)}`);
+      } else if (c.kind === "arrow-transform-changed") {
+        console.log(`      ~ arrow ${String(c.arrow)}: ${String(c.from)} -> ${String(c.to)}`);
       }
     }
   }
