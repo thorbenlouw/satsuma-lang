@@ -1,6 +1,6 @@
 ---
 id: sl-4e5c
-status: open
+status: closed
 deps: [sl-wjb9]
 links: [sl-z4ya]
 created: 2026-03-21T08:04:49Z
@@ -54,3 +54,9 @@ What actually happened:
 
 Reproducer: /tmp/satsuma-test-graph/array-mapping.stm
 
+
+## Notes
+
+**2026-03-22T01:30:16Z**
+
+Fixed extraction to skip child arrows inside nested_arrow when collecting direct arrows. Child arrows now get parent path prefix. Newline corruption in paths is cleaned. Added leaf field indexing for nested paths. 3 integration tests added.
