@@ -96,7 +96,7 @@ export function register(program: Command): void {
             target: nlRef.targetField,
             transform_raw: `(NL ref)`,
             steps: [],
-            classification: "nl-derived" as ArrowRecord["classification"],
+            classification: "nl-derived",
             derived: true,
             line: nlRef.line,
             file: nlRef.file,

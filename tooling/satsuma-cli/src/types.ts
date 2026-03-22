@@ -98,7 +98,7 @@ export interface PipeStep {
   text: string;
 }
 
-export type Classification = "structural" | "nl" | "mixed" | "none";
+export type Classification = "structural" | "nl" | "mixed" | "none" | "nl-derived";
 
 export interface ArrowRecord {
   mapping: string | null;
