@@ -1,0 +1,9 @@
+schema customers {
+  id INT (pk)
+}
+
+schema orders {
+  id INT (pk)
+  customer_id INT (ref customers.id)
+  vendor_id INT (ref nonexistent_table.id)
+}

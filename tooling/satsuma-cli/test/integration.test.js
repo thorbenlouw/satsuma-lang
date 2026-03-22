@@ -950,6 +950,18 @@ describe("satsuma fields", () => {
     const childIndent = childLine.match(/^\s*/)[0].length;
     assert.ok(childIndent > parentIndent, `child indent ${childIndent} should be > parent indent ${parentIndent}`);
   });
+
+  it("--with-meta --json includes tags on nested record/list child fields (sl-gf8d)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("fields", "commerce_order", "--with-meta", "--json", XML);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const order = data.find((f) => f.name === "Order");
+    assert.ok(order.tags, "Order record should have tags from metadata");
+    // Check a nested child
+    const orderId = order.children.find((f) => f.name === "OrderId");
+    assert.ok(orderId.tags, "nested OrderId should have tags from xpath metadata");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1138,6 +1150,25 @@ describe("satsuma meta", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "xpath"), "list block should have xpath metadata");
+  });
+
+  it("supports nested field paths schema.record.field (sl-bfue)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("meta", "commerce_order.Order.OrderId", "--json", XML);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.type, "STRING");
+    assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "xpath"), "nested field should have xpath");
+  });
+
+  it("disambiguates same-named fields via nested path (sl-bfue)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout: s1 } = await run("meta", "commerce_order.Totals.TaxAmount", "--json", XML);
+    const { stdout: s2 } = await run("meta", "commerce_order.LineItems.TaxAmount", "--json", XML);
+    const d1 = JSON.parse(s1);
+    const d2 = JSON.parse(s2);
+    assert.equal(d1.type, d2.type, "both TaxAmount fields should have same type");
+    assert.ok(d1.entries.length > 0 && d2.entries.length > 0, "both should have metadata");
   });
 });
 
@@ -1332,6 +1363,17 @@ describe("satsuma validate", () => {
     assert.equal(code, 0, "missing import is a warning, not an error");
     const data = JSON.parse(stdout);
     assert.ok(data.some((d) => d.rule === "missing-import"), "should have missing-import diagnostic");
+  });
+
+  it("warns on ref metadata pointing to nonexistent schema (sl-7vbb)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "ref-check.stm");
+    const { stdout, code } = await run("validate", F, "--json");
+    assert.equal(code, 0, "ref warning is not an error");
+    const data = JSON.parse(stdout);
+    const refWarning = data.find((d) => d.rule === "undefined-ref" && d.message.includes("nonexistent_table"));
+    assert.ok(refWarning, "should warn about ref to nonexistent_table");
+    // Valid ref to customers should NOT produce a warning
+    assert.ok(!data.some((d) => d.message.includes("customers")), "valid ref should not warn");
   });
 });
 

@@ -1,6 +1,6 @@
 ---
 id: sl-bfue
-status: open
+status: closed
 deps: [sl-giss]
 links: [sl-jt7q]
 created: 2026-03-21T08:00:47Z
