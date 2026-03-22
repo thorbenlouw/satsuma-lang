@@ -87,6 +87,12 @@ function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""):
       if (field.type !== bField.type) {
         changes.push({ kind: "type-changed", field: qualName, from: field.type, to: bField.type });
       }
+      // Compare metadata
+      const aMeta = serializeMetadata(field.metadata);
+      const bMeta = serializeMetadata(bField.metadata);
+      if (aMeta !== bMeta) {
+        changes.push({ kind: "metadata-changed", field: qualName, from: aMeta || "(none)", to: bMeta || "(none)" });
+      }
       // Recurse into nested children
       if (field.children || bField.children) {
         changes.push(...diffFieldList(field.children ?? [], bField.children ?? [], qualName));
@@ -143,4 +149,16 @@ function diffNotes(notesA: NoteRecord[], notesB: NoteRecord[]): NoteDelta {
   }
 
   return { added, removed };
+}
+
+function serializeMetadata(metadata: FieldDecl["metadata"]): string {
+  if (!metadata || metadata.length === 0) return "";
+  return metadata.map((m) => {
+    if (m.kind === "tag") return m.tag;
+    if (m.kind === "kv") return `${m.key} ${m.value}`;
+    if (m.kind === "enum") return `enum {${m.values.join(", ")}}`;
+    if (m.kind === "note") return `note "${m.text}"`;
+    if (m.kind === "slice") return `slice {${m.values.join(", ")}}`;
+    return JSON.stringify(m);
+  }).join(", ");
 }

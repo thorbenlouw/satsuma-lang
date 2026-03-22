@@ -1,0 +1,5 @@
+schema Customer {
+  id       INTEGER
+  name     STRING
+  email    STRING  (pii)
+}

@@ -1548,6 +1548,26 @@ describe("satsuma diff", () => {
     assert.match(stdout, /transforms added/);
   });
 
+  it("detects field metadata changes", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-meta-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-meta-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /~ name metadata/);
+    assert.match(stdout, /~ email metadata/);
+  });
+
+  it("--json reports metadata-changed kind", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-meta-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-meta-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const changes = data.schemas.changed[0].changes;
+    assert.ok(changes.some((c) => c.kind === "metadata-changed" && c.field === "name"));
+    assert.ok(changes.some((c) => c.kind === "metadata-changed" && c.field === "email"));
+  });
+
   it("detects note block additions and removals", async () => {
     const a = resolve(import.meta.dirname, "fixtures", "diff-notes-a.stm");
     const b = resolve(import.meta.dirname, "fixtures", "diff-notes-b.stm");

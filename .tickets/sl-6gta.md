@@ -1,6 +1,6 @@
 ---
 id: sl-6gta
-status: open
+status: closed
 deps: [sl-ck20]
 links: [sl-cyen]
 created: 2026-03-21T08:00:47Z
@@ -38,3 +38,9 @@ Reproduction files:
   /tmp/satsuma-test-diff/a_base.stm vs /tmp/satsuma-test-diff/b_changed_metadata.stm
   /tmp/satsuma-test-diff/a_schema_meta.stm vs /tmp/satsuma-test-diff/b_schema_meta_changed.stm
 
+
+## Notes
+
+**2026-03-22T00:57:12Z**
+
+Added metadata-changed kind to SchemaChange. diffFieldList now compares field metadata using human-readable serialization. Added 2 integration tests. All 588 tests pass.
