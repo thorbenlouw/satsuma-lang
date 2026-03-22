@@ -1,6 +1,6 @@
 ---
 id: sc-1ar0
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T21:30:06Z
@@ -25,3 +25,9 @@ Same issue for each blocks: a mapping with only each arrows shows arrowCount: 2 
 
 This also causes fields --unmapped-by to produce false positives for flatten-mapped fields.
 
+
+## Notes
+
+**2026-03-22T22:11:20Z**
+
+Cause: collectArrows() and printDefault() only handled map_arrow, computed_arrow, nested_arrow — missing flatten_block and each_block. Fix: added flatten/each handling to collectArrows(), new printBlockNode() for text output.
