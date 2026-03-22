@@ -351,7 +351,7 @@ function printDefault(name: string, refs: Ref[]): void {
     metric: "Referenced by metrics",
     fragment_spread: "Spread into schemas/fragments",
     transform_call: "Invoked in mapping transforms",
-    nl_ref: "Referenced in NL transform bodies",
+    nl_ref: "Referenced in NL text",
     ref_metadata: "Referenced via (ref) metadata",
     import: "Imported in",
   };

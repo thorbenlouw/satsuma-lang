@@ -2145,6 +2145,32 @@ describe("satsuma where-used (NL refs)", () => {
     const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
     assert.ok(nlRefs.length > 0, "should find NL references to source::hr_employees");
   });
+
+  const NOTE_WU = resolve(import.meta.dirname, "fixtures", "note-where-used.stm");
+
+  it("finds NL backtick refs in standalone note blocks", async () => {
+    const { stdout, code } = await run("where-used", "product", "--json", NOTE_WU);
+    assert.equal(code, 0);
+    const result = JSON.parse(stdout);
+    const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
+    assert.ok(nlRefs.length >= 1, "should find NL ref in standalone note block");
+    assert.ok(nlRefs.some((r) => r.name.startsWith("note:")), "should have note: mapping key");
+  });
+
+  it("finds NL backtick refs in metric note blocks", async () => {
+    const { stdout, code } = await run("where-used", "orders", "--json", NOTE_WU);
+    assert.equal(code, 0);
+    const result = JSON.parse(stdout);
+    const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
+    assert.ok(nlRefs.length >= 1, "should find NL ref in metric note block");
+    assert.ok(nlRefs.some((r) => r.name === "note:order_count"), "should attribute to metric");
+  });
+
+  it("text output uses 'Referenced in NL text' label", async () => {
+    const { stdout, code } = await run("where-used", "product", NOTE_WU);
+    assert.equal(code, 0);
+    assert.match(stdout, /Referenced in NL text/);
+  });
 });
 
 // ---------------------------------------------------------------------------
