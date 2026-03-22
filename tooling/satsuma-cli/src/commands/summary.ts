@@ -17,7 +17,13 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
+import { expandEntityFields } from "../spread-expand.js";
 import type { WorkspaceIndex } from "../types.js";
+
+function totalFieldCount(schema: { fields: { length: number }; namespace?: string | null }, index: WorkspaceIndex): number {
+  const expanded = expandEntityFields(schema as Parameters<typeof expandEntityFields>[0], schema.namespace ?? null, index);
+  return schema.fields.length + expanded.length;
+}
 
 export function register(program: Command): void {
   program
@@ -72,7 +78,7 @@ function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean):
 
   const out: Record<string, unknown> = {
     schemas: [...index.schemas.values()].map((s) => {
-      const obj: Record<string, unknown> = { name: displayName(s), fieldCount: s.fields.length };
+      const obj: Record<string, unknown> = { name: displayName(s), fieldCount: totalFieldCount(s, index) };
       if (!compact) { obj.note = s.note; obj.file = s.file; obj.row = s.row; }
       return obj;
     }),
@@ -145,7 +151,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
     console.log(`Schemas (${schemas.length}):`);
     for (const s of schemas) {
       const note = s.note ? `  — ${s.note}` : "";
-      console.log(`  ${displayName(s)}  [${plural(s.fields.length, "field")}]${note}`);
+      console.log(`  ${displayName(s)}  [${plural(totalFieldCount(s, index), "field")}]${note}`);
     }
     console.log();
   }

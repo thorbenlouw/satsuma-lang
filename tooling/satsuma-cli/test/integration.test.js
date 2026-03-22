@@ -88,6 +88,23 @@ describe("satsuma summary", () => {
     assert.ok(!stdout.includes("[1 arrows]"), "should use singular 'arrow' for count 1");
   });
 
+  it("fieldCount includes fields from fragment spreads (sl-vlsh)", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-fields-meta.stm");
+    const { stdout, code } = await run("summary", "--json", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const schema = data.schemas.find((s) => s.name === "with_spreads");
+    assert.ok(schema, "should find with_spreads schema");
+    assert.equal(schema.fieldCount, 4, "should count 1 direct + 3 spread fields");
+  });
+
+  it("text output includes spread fields in count (sl-vlsh)", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-fields-meta.stm");
+    const { stdout, code } = await run("summary", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /with_spreads.*4 fields/);
+  });
+
   it("--json --compact strips notes and file/row from output (sl-86n4)", async () => {
     const { stdout, code } = await run("summary", "--json", "--compact", EXAMPLES);
     assert.equal(code, 0);
