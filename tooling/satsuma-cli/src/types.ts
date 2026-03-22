@@ -10,6 +10,8 @@
 export interface SyntaxNode {
   type: string;
   text: string;
+  isNamed: boolean;
+  children: SyntaxNode[];
   namedChildren: SyntaxNode[];
   childCount: number;
   child(index: number): SyntaxNode | null;

@@ -87,8 +87,34 @@ interface FieldTree {
 }
 
 /**
- * Extract the full field tree from a schema_body node, including nested
- * record_block and list_block children.
+ * Check whether a field_decl contains a "list_of" keyword token.
+ * In the unified syntax, "list_of" is an anonymous child node.
+ * Falls back to text matching if the `children` array is not available
+ * (e.g., in mock CST objects used by tests).
+ */
+function hasListOfKeyword(fd: SyntaxNode): boolean {
+  if (fd.children) {
+    for (const c of fd.children) {
+      if (!c.isNamed && c.text === "list_of") return true;
+    }
+    return false;
+  }
+  // Fallback: check if the field_decl text contains "list_of" after the field name
+  const nameNode = child(fd, "field_name");
+  const nameEnd = nameNode ? nameNode.text.length : 0;
+  return fd.text.slice(nameEnd).trimStart().startsWith("list_of");
+}
+
+/**
+ * Extract the full field tree from a schema_body node.
+ *
+ * In unified field syntax, all declarations are field_decl nodes:
+ * - scalar field: field_name type_expr metadata?
+ * - record field: field_name "record" metadata? { schema_body }
+ * - list_of record: field_name "list_of" "record" metadata? { schema_body }
+ * - list_of scalar: field_name "list_of" type_expr metadata?
+ *
+ * Record/list_of record fields have a schema_body child.
  */
 function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
   const fields: FieldDecl[] = [];
@@ -99,28 +125,34 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
     if (c.type === "field_decl") {
       const nameNode = child(c, "field_name");
       const typeNode = child(c, "type_expr");
+      const innerBody = child(c, "schema_body");
       const inner = nameNode?.namedChildren[0];
       let name = inner?.text ?? "";
       if (inner?.type === "backtick_name") name = name.slice(1, -1);
       const meta = extractMetadata(child(c, "metadata_block"));
-      const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
-      if (meta.length > 0) decl.metadata = meta;
-      fields.push(decl);
-    } else if (c.type === "record_block" || c.type === "list_block") {
-      const name = labelText(c);
-      const innerBody = child(c, "schema_body");
-      const nested = innerBody ? extractFieldTree(innerBody) : { fields: [], hasSpreads: false, spreads: [] };
-      const blockMeta = extractMetadata(child(c, "metadata_block"));
-      const decl: FieldDecl = {
-        name: name!,
-        type: c.type === "list_block" ? "list" : "record",
-        isList: c.type === "list_block",
-        children: nested.fields,
-      };
-      if (blockMeta.length > 0) decl.metadata = blockMeta;
-      fields.push(decl);
-      if (nested.hasSpreads) hasSpreads = true;
-      spreads.push(...nested.spreads);
+
+      if (innerBody) {
+        // Nested structure: record or list_of record
+        const isList = hasListOfKeyword(c);
+        const nested = extractFieldTree(innerBody);
+        const decl: FieldDecl = {
+          name,
+          type: isList ? "list" : "record",
+          isList,
+          children: nested.fields,
+        };
+        if (meta.length > 0) decl.metadata = meta;
+        fields.push(decl);
+        if (nested.hasSpreads) hasSpreads = true;
+        spreads.push(...nested.spreads);
+      } else {
+        // Scalar field or list_of scalar
+        const isList = hasListOfKeyword(c);
+        const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
+        if (isList) decl.isList = true;
+        if (meta.length > 0) decl.metadata = meta;
+        fields.push(decl);
+      }
     } else if (c.type === "fragment_spread") {
       hasSpreads = true;
       const label = child(c, "spread_label");
@@ -375,7 +407,9 @@ export function extractMappings(rootNode: SyntaxNode): ExtractedMapping[] {
       arrowCount =
         allDescendants(body, "map_arrow").length +
         allDescendants(body, "computed_arrow").length +
-        allDescendants(body, "nested_arrow").length;
+        allDescendants(body, "nested_arrow").length +
+        allDescendants(body, "each_block").length +
+        allDescendants(body, "flatten_block").length;
     }
 
     // Qualify unqualified targets with their enclosing namespace
@@ -669,6 +703,12 @@ export function extractArrowRecords(rootNode: SyntaxNode): ExtractedArrow[] {
     const nestedArrows = body.namedChildren.filter(
       (c) => c.type === "nested_arrow",
     );
+    const eachBlocks = body.namedChildren.filter(
+      (c) => c.type === "each_block",
+    );
+    const flattenBlocks = body.namedChildren.filter(
+      (c) => c.type === "flatten_block",
+    );
 
     for (const arrow of directArrows) {
       records.push(extractSingleArrow(arrow, mappingName, namespace, null, null));
@@ -685,6 +725,22 @@ export function extractArrowRecords(rootNode: SyntaxNode): ExtractedArrow[] {
       // Emit child arrows with parent path prefix
       for (const childArrow of nested.namedChildren) {
         if (childArrow.type === "map_arrow" || childArrow.type === "computed_arrow") {
+          records.push(extractSingleArrow(childArrow, mappingName, namespace, parentSrc, parentTgt));
+        }
+      }
+    }
+
+    // For each_block and flatten_block, treat like nested arrows with parent prefix
+    for (const block of [...eachBlocks, ...flattenBlocks]) {
+      const parentSrc = pathText(child(block, "src_path"));
+      const parentTgt = pathText(child(block, "tgt_path"));
+
+      // Emit the container arrow for the each/flatten block itself
+      records.push(extractSingleArrow(block, mappingName, namespace, null, null));
+
+      // Emit child arrows with parent path prefix
+      for (const childArrow of block.namedChildren) {
+        if (childArrow.type === "map_arrow" || childArrow.type === "computed_arrow" || childArrow.type === "nested_arrow") {
           records.push(extractSingleArrow(childArrow, mappingName, namespace, parentSrc, parentTgt));
         }
       }

@@ -23,8 +23,12 @@ import {
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
 /** Build a mock CST node. */
-function n(type, namedChildren = [], text = "", row = 0) {
-  return { type, text, startPosition: { row, column: 0 }, namedChildren };
+function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
+  const children = [];
+  // Interleave anonymous and named children (anonymous first for keyword position)
+  children.push(...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
+  children.push(...namedChildren.map(c => ({ ...c, isNamed: true })));
+  return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
 }
 
 /** Convenience: build an identifier node. */
@@ -61,6 +65,22 @@ function fieldName(name) {
 /** Convenience: build a field_decl node. */
 function fieldDecl(name, type, row = 0) {
   return n("field_decl", [fieldName(name), typeExpr(type)], "", row);
+}
+
+/** Build a record field_decl: name record (metadata)? { schema_body } */
+function recordFieldDecl(name, bodyChildren = [], metaNode = null) {
+  const named = [fieldName(name)];
+  if (metaNode) named.push(metaNode);
+  if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
+  return n("field_decl", named, "", 0, ["record"]);
+}
+
+/** Build a list_of record field_decl: name list_of record (metadata)? { schema_body } */
+function listOfRecordFieldDecl(name, bodyChildren = [], metaNode = null) {
+  const named = [fieldName(name)];
+  if (metaNode) named.push(metaNode);
+  if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
+  return n("field_decl", named, "", 0, ["list_of", "record"]);
 }
 
 // ── extractSchemas ────────────────────────────────────────────────────────────
@@ -163,12 +183,11 @@ describe("FieldDecl metadata enrichment", () => {
     assert.equal(result[0].fields[0].metadata, undefined);
   });
 
-  it("extracts metadata from record_block children", () => {
+  it("extracts metadata from record field children", () => {
     const metaBlock = n("metadata_block", [n("tag_token", [], "required")]);
     const innerFd = n("field_decl", [fieldName("street"), typeExpr("VARCHAR(200)"), metaBlock]);
-    const innerBody = n("schema_body", [innerFd]);
-    const recBlock = n("record_block", [blockLabel("address"), innerBody]);
-    const body = n("schema_body", [recBlock]);
+    const recField = recordFieldDecl("address", [innerFd]);
+    const body = n("schema_body", [recField]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
     const result = extractSchemas(root);
@@ -178,11 +197,11 @@ describe("FieldDecl metadata enrichment", () => {
     assert.deepEqual(rec.children[0].metadata[0], { kind: "tag", tag: "required" });
   });
 
-  it("extracts metadata on record_block itself", () => {
+  it("extracts metadata on record field itself", () => {
     const blockMeta = n("metadata_block", [n("tag_token", [], "required")]);
-    const innerBody = n("schema_body", [n("field_decl", [fieldName("id"), typeExpr("INT")])]);
-    const recBlock = n("record_block", [blockLabel("address"), blockMeta, innerBody]);
-    const body = n("schema_body", [recBlock]);
+    const innerFd = n("field_decl", [fieldName("id"), typeExpr("INT")]);
+    const recField = recordFieldDecl("address", [innerFd], blockMeta);
+    const body = n("schema_body", [recField]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
     const result = extractSchemas(root);

@@ -17,8 +17,11 @@ import { extractSchemas, extractMetrics } from "#src/extract.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0) {
-  return { type, text, startPosition: { row, column: 0 }, namedChildren };
+function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
+  const children = [];
+  children.push(...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
+  children.push(...namedChildren.map(c => ({ ...c, isNamed: true })));
+  return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
 }
 
 function ident(text, row = 0) {
@@ -97,8 +100,9 @@ describe("Bug 1: nested field path resolution", () => {
       fieldDecl("DOCNUM", "CHAR(35)"),
       fieldDecl("MESSGFUN", "CHAR(3)"),
     ]);
-    const record = n("record_block", [blockLabel("BeginningOfMessage"), innerBody]);
-    const outerBody = n("schema_body", [record, fieldDecl("top_field", "INT")]);
+    // Unified syntax: field_decl with "record" keyword as anonymous child
+    const recordField = n("field_decl", [fieldName("BeginningOfMessage"), innerBody], "", 0, ["record"]);
+    const outerBody = n("schema_body", [recordField, fieldDecl("top_field", "INT")]);
     const block = n("schema_block", [blockLabel("my_schema"), outerBody]);
     const root = n("source_file", [block]);
 
@@ -113,8 +117,9 @@ describe("Bug 1: nested field path resolution", () => {
 
   it("extracts nested list fields with isList flag", () => {
     const innerBody = n("schema_body", [fieldDecl("unit_price", "DECIMAL")]);
-    const list = n("list_block", [blockLabel("CartLines"), innerBody]);
-    const outerBody = n("schema_body", [list]);
+    // Unified syntax: field_decl with "list_of" and "record" keywords
+    const listField = n("field_decl", [fieldName("CartLines"), innerBody], "", 0, ["list_of", "record"]);
+    const outerBody = n("schema_body", [listField]);
     const block = n("schema_block", [blockLabel("my_schema"), outerBody]);
     const root = n("source_file", [block]);
 

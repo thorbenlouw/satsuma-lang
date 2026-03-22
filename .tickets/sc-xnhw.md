@@ -1,6 +1,6 @@
 ---
 id: sc-xnhw
-status: in_progress
+status: closed
 deps: [sc-291j]
 links: []
 created: 2026-03-22T20:17:39Z
@@ -18,3 +18,12 @@ Convert all record/list blocks to name-first syntax. Replace [] paths with dot-o
 
 All .stm files parse with zero errors under new grammar. No record/list keyword-first blocks remain. No [] in field paths.
 
+
+## Notes
+
+**2026-03-22T20:36:10Z**
+
+**2026-03-22T21:40:00Z**
+
+Cause: Example .stm files used old keyword-first record/list syntax and [] path notation.
+Fix: Migrated all 7 affected files to unified name-first syntax. record->NAME record, list->NAME list_of record, []->.dot, nested arrows->each blocks, flatten annotations->flatten blocks. All 17 example files parse cleanly. (commit f1bcabb)
