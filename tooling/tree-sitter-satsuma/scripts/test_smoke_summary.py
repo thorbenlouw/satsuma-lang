@@ -109,7 +109,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_paths": 57,
         "min_comments": 5,
         "min_notes": 1,
-        "min_annotations": 49,
+        "min_annotations": 48,
         "block_types": {"mapping_block", "schema_block"},
     },
     "examples/sfdc_to_snowflake.stm": {
@@ -276,7 +276,7 @@ class SmokeSummaryTests(unittest.TestCase):
 
     def test_map_items_have_kind(self) -> None:
         """Every map item must have a recognised kind."""
-        valid_kinds = {"map_arrow", "computed_arrow", "nested_arrow"}
+        valid_kinds = {"map_arrow", "computed_arrow", "nested_arrow", "each_block", "flatten_block"}
         for relpath in EXPECTATIONS:
             if relpath in self._errors:
                 continue

@@ -76,7 +76,7 @@ function recordFieldDecl(name, bodyChildren = [], metaNode = null) {
 }
 
 /** Build a list_of record field_decl: name list_of record (metadata)? { schema_body } */
-function listOfRecordFieldDecl(name, bodyChildren = [], metaNode = null) {
+function _listOfRecordFieldDecl(name, bodyChildren = [], metaNode = null) {
   const named = [fieldName(name)];
   if (metaNode) named.push(metaNode);
   if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
