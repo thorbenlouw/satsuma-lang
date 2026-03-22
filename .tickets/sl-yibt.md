@@ -1,6 +1,6 @@
 ---
 id: sl-yibt
-status: open
+status: closed
 deps: []
 links: [sl-42ev]
 created: 2026-03-21T08:06:25Z
@@ -40,3 +40,9 @@ What actually happened:
 
 Reproducer: satsuma graph examples/ --json | python3 -c "import json,sys; [print(n['id'], n.get('fields',[])) for n in json.load(sys.stdin)['nodes'] if n['kind']=='fragment']"
 
+
+## Notes
+
+**2026-03-22T01:09:34Z**
+
+Added fields array to fragment nodes in graph --json output. Added integration test. All 592 tests pass.

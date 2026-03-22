@@ -197,13 +197,20 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
   for (const [id, fragment] of index.fragments) {
     if (nsFilter && fragment.namespace !== nsFilter) continue;
     includedNodeIds.add(id);
-    nodes.push({
+    const fragNode: Record<string, unknown> = {
       id,
       kind: "fragment",
       namespace: fragment.namespace ?? null,
       file: fragment.file,
       line: fragment.row + 1,
-    });
+    };
+    if (!schemaOnly) {
+      fragNode.fields = fragment.fields.map((f) => ({
+        name: f.name,
+        type: f.type ?? null,
+      }));
+    }
+    nodes.push(fragNode);
   }
 
   for (const [id, transform] of index.transforms) {
