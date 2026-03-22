@@ -112,7 +112,10 @@ export function register(program: Command): void {
         printDefault(graph);
       }
 
-      if (index.totalErrors > 0) process.exit(2);
+      if (index.totalErrors > 0) {
+        await new Promise<void>((r) => process.stdout.write("", () => r()));
+        process.exit(2);
+      }
     });
 }
 
