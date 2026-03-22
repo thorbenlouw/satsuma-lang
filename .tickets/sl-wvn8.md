@@ -1,6 +1,6 @@
 ---
 id: sl-wvn8
-status: open
+status: closed
 deps: []
 links: [sl-gu24, sl-j014, sl-6ino, sl-vw49, sl-3dd2, sl-z57o, sl-djeo]
 created: 2026-03-21T21:53:14Z

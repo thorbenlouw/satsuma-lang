@@ -1047,6 +1047,33 @@ describe("satsuma fields", () => {
     assert.ok(!names.includes("items"), `"items" should not be reported as unmapped, got: ${names}`);
   });
 
+  it("--unmapped-by filters mapped children from record blocks (sl-4mh2)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "unmapped-nested.stm");
+    const { stdout, code } = await run(
+      "fields", "nested_tgt", "--unmapped-by", "partial_map", "--json", F,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const details = data.find((f) => f.name === "details");
+    assert.ok(details, "record 'details' should still appear (has unmapped child)");
+    const childNames = details.children.map((c) => c.name);
+    assert.ok(!childNames.includes("name"), "mapped child 'name' should be filtered out");
+    assert.ok(childNames.includes("email"), "unmapped child 'email' should remain");
+  });
+
+  it("--unmapped-by excludes record when all children mapped (sl-4mh2)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "unmapped-nested.stm");
+    const { stdout, code } = await run(
+      "fields", "nested_tgt", "--unmapped-by", "full_map", "--json", F,
+    );
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.map((f) => f.name);
+    assert.ok(!names.includes("details"), "fully-mapped record 'details' should be excluded");
+    assert.ok(!names.includes("status"), "mapped leaf 'status' should be excluded");
+    assert.deepEqual(data, []);
+  });
+
   it("exits 1 for unknown schema", async () => {
     const { stderr, code } = await run("fields", "nonexistent", DB);
     assert.equal(code, 1);
