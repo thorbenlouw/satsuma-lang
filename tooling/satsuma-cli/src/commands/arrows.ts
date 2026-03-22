@@ -161,10 +161,16 @@ export function register(program: Command): void {
             targetSchema = targetSchemas[0] ?? resolvedSchema.key;
           }
 
+          const qualifyPath = (path: string | null, schema: string): string | null => {
+            if (!path) return null;
+            if (path.startsWith(schema + ".") || path === schema) return path;
+            return `${schema}.${path}`;
+          };
+
           const result: Record<string, unknown> = {
             mapping: qMapping,
-            source: a.source ? `${sourceSchema}.${a.source}` : null,
-            target: a.target ? `${targetSchema}.${a.target}` : null,
+            source: qualifyPath(a.source, sourceSchema),
+            target: qualifyPath(a.target, targetSchema),
             classification: a.classification,
             transform_raw: a.transform_raw,
             steps: a.steps,

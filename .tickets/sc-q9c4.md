@@ -1,6 +1,6 @@
 ---
 id: sc-q9c4
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T21:30:25Z
@@ -18,3 +18,9 @@ Repro:
 Expected: line_items entry includes fieldType (e.g. 'list_of record' or 'list').
 Actual: No fieldType key at all for line_items and discount_lines entries. Text output also shows empty type column for these fields.
 
+
+## Notes
+
+**2026-03-22T22:18:21Z**
+
+Cause: collectFieldMatches used typeNode?.text which misses list_of prefix and is undefined for list_of record. Fix: detect list_of from node text, compose full type string.

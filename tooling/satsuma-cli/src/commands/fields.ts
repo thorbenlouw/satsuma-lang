@@ -201,11 +201,16 @@ function printDefault(_schemaName: string, fields: FieldWithTags[], opts: { with
 
 function printFieldTree(fields: FieldWithTags[], opts: { withMeta?: boolean }, indent: number): void {
   const maxName = Math.max(...fields.map((f) => f.name.length), 4);
-  const maxType = Math.max(...fields.map((f) => f.type.length), 4);
+  const displayType = (f: FieldWithTags): string => {
+    if (!f.isList) return f.type;
+    const inner = f.children && f.children.length > 0 ? "record" : f.type;
+    return `list_of ${inner}`;
+  };
+  const maxType = Math.max(...fields.map((f) => displayType(f).length), 4);
   const pad = "  ".repeat(indent);
 
   for (const f of fields) {
-    let line = `${pad}${f.name.padEnd(maxName)}  ${f.type.padEnd(maxType)}`;
+    let line = `${pad}${f.name.padEnd(maxName)}  ${displayType(f).padEnd(maxType)}`;
     if (opts.withMeta && f.tags) {
       line += `  (${f.tags.join(", ")})`;
     }
