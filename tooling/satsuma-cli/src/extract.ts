@@ -516,7 +516,8 @@ export function extractNotes(rootNode: SyntaxNode): ExtractedNote[] {
       } else if (
         c.type === "schema_block" ||
         c.type === "metric_block" ||
-        c.type === "fragment_block"
+        c.type === "fragment_block" ||
+        c.type === "mapping_block"
       ) {
         const parentName = labelText(c);
         collectNotesInBlock(c, parentName, namespace, results);
@@ -544,7 +545,7 @@ function collectNotesInBlock(
       });
     }
     // Also search in body nodes
-    if (c.type === "schema_body" || c.type === "metric_body") {
+    if (c.type === "schema_body" || c.type === "metric_body" || c.type === "mapping_body") {
       for (const inner of c.namedChildren) {
         if (inner.type === "note_block") {
           results.push({

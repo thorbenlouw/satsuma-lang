@@ -20,6 +20,15 @@ import type {
   WorkspaceIndex,
 } from "./types.js";
 
+/** Collect note texts for a given parent name from an index's notes. */
+function noteTextsForParent(index: WorkspaceIndex, parentName: string): Set<string> {
+  const texts = new Set<string>();
+  for (const note of index.notes ?? []) {
+    if (note.parent === parentName) texts.add(note.text);
+  }
+  return texts;
+}
+
 /**
  * Compute a structural delta between two WorkspaceIndex instances.
  */
@@ -32,7 +41,9 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
     schemas: diffBlockMap(indexA.schemas, indexB.schemas, diffSchema),
     mappings: diffBlockMap(indexA.mappings, indexB.mappings, (a, b) => {
       const mappingKey = [...indexA.mappings.entries()].find(([, v]) => v === a)?.[0] ?? "";
-      return diffMapping(a, b, arrowsA.get(mappingKey) ?? [], arrowsB.get(mappingKey) ?? []);
+      const notesA = noteTextsForParent(indexA, mappingKey);
+      const notesB = noteTextsForParent(indexB, mappingKey);
+      return diffMapping(a, b, arrowsA.get(mappingKey) ?? [], arrowsB.get(mappingKey) ?? [], notesA, notesB);
     }),
     metrics: diffBlockMap(indexA.metrics, indexB.metrics, diffMetric),
     fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
@@ -156,7 +167,7 @@ function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""):
   return changes;
 }
 
-function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[], arrowsB: ArrowRecord[]): MappingChange[] {
+function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[], arrowsB: ArrowRecord[], notesA: Set<string>, notesB: Set<string>): MappingChange[] {
   const changes: MappingChange[] = [];
 
   if (a.arrowCount !== b.arrowCount) {
@@ -208,12 +219,27 @@ function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[],
     }
   }
 
+  // Compare notes inside the mapping
+  for (const text of notesB) {
+    if (!notesA.has(text)) {
+      const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
+      changes.push({ kind: "note-added", from: preview });
+    }
+  }
+  for (const text of notesA) {
+    if (!notesB.has(text)) {
+      const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
+      changes.push({ kind: "note-removed", from: preview });
+    }
+  }
+
   return changes;
 }
 
 function diffNotes(notesA: NoteRecord[], notesB: NoteRecord[]): NoteDelta {
-  const textsA = new Set(notesA.map((n) => n.text));
-  const textsB = new Set(notesB.map((n) => n.text));
+  // Only compare top-level notes (no parent); block-owned notes are compared by their block diff
+  const textsA = new Set(notesA.filter((n) => n.parent === null).map((n) => n.text));
+  const textsB = new Set(notesB.filter((n) => n.parent === null).map((n) => n.text));
   const added: string[] = [];
   const removed: string[] = [];
 

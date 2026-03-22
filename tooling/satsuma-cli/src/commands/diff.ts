@@ -165,6 +165,10 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
       } else if (c.kind === "source-changed" || c.kind === "grain-changed" || c.kind === "slices-changed") {
         const label = c.kind.replace("-changed", "");
         console.log(`      ~ ${label}: ${String(c.from)} -> ${String(c.to)}`);
+      } else if (c.kind === "note-added") {
+        console.log(`      + note ${JSON.stringify(String(c.from))}`);
+      } else if (c.kind === "note-removed") {
+        console.log(`      - note ${JSON.stringify(String(c.from))}`);
       }
     }
   }
