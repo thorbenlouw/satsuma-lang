@@ -330,7 +330,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
  * Build schema-level edges from the directed graph.
  * Each edge has: from, to, role (source/target/metric_source).
  */
-function buildSchemaEdges(index: WorkspaceIndex, schemaGraph: FullGraph, includedNodeIds: Set<string>, nsFilter: string | null): SchemaEdge[] {
+function buildSchemaEdges(index: WorkspaceIndex, _schemaGraph: FullGraph, includedNodeIds: Set<string>, nsFilter: string | null): SchemaEdge[] {
   const edges: SchemaEdge[] = [];
 
   for (const [mappingName, mapping] of index.mappings) {
@@ -357,25 +357,6 @@ function buildSchemaEdges(index: WorkspaceIndex, schemaGraph: FullGraph, include
     for (const src of srcSchemas) {
       if (!nsFilter || includedNodeIds.has(src) || includedNodeIds.has(metricName)) {
         edges.push({ from: src, to: metricName, role: "metric_source" });
-      }
-    }
-  }
-
-  // NL backtick schema refs (matching lineage.js behavior via schemaGraph)
-  // These are already captured in the schemaGraph edges — find any that aren't
-  // already covered by mapping source/target declarations
-  const declaredEdges = new Set(edges.map((e) => `${e.from}->${e.to}`));
-  for (const [src, targets] of schemaGraph.edges) {
-    for (const tgt of targets) {
-      const key = `${src}->${tgt}`;
-      if (!declaredEdges.has(key)) {
-        const srcNode = schemaGraph.nodes.get(src);
-        const tgtNode = schemaGraph.nodes.get(tgt);
-        if (srcNode?.type === "schema" && tgtNode?.type === "mapping") {
-          if (!nsFilter || includedNodeIds.has(src) || includedNodeIds.has(tgt)) {
-            edges.push({ from: src, to: tgt, role: "source" });
-          }
-        }
       }
     }
   }

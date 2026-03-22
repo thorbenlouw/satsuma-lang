@@ -2575,6 +2575,27 @@ describe("satsuma graph: --schema-only derived-only edges (sl-w4hv)", () => {
   });
 });
 
+describe("satsuma graph: schema_edges excludes NL-referenced schemas (sl-n11t)", () => {
+  const FIXTURE = resolve(__dirname, "fixtures/hidden-source-graph.stm");
+
+  it("does not promote NL-referenced schemas to source edges", async () => {
+    const { stdout, code } = await run("graph", FIXTURE, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const sourceEdges = data.schema_edges.filter((e) => e.role === "source");
+    const sourceNames = sourceEdges.map((e) => e.from);
+    assert.ok(sourceNames.includes("crm_accounts"), "should have declared source");
+    assert.ok(sourceNames.includes("erp_customers"), "should have declared source");
+    assert.ok(!sourceNames.includes("web_profiles"), "should NOT include NL-referenced schema");
+  });
+
+  it("compact output does not show NL-referenced schemas", async () => {
+    const { stdout, code } = await run("graph", FIXTURE, "--compact");
+    assert.equal(code, 0);
+    assert.ok(!stdout.includes("web_profiles"), "should not show NL-referenced schema in compact");
+  });
+});
+
 describe("satsuma graph: fragment fields (sl-yibt)", () => {
   it("fragment nodes include fields in --json output", async () => {
     const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
