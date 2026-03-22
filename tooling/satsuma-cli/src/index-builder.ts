@@ -16,6 +16,7 @@ import {
   extractArrowRecords,
   extractNamespaces,
   extractImports,
+  extractNotes,
 } from "./extract.js";
 import { extractNLRefData } from "./nl-ref-extract.js";
 import type {
@@ -25,6 +26,7 @@ import type {
   MappingRecord,
   MetricRecord,
   NLRefData,
+  NoteRecord,
   ParsedFile,
   QuestionRecord,
   ReferenceGraph,
@@ -48,6 +50,7 @@ interface FileData {
   namespaces: ReturnType<typeof extractNamespaces>;
   imports: ReturnType<typeof extractImports>;
   nlRefData: ReturnType<typeof extractNLRefData>;
+  notes: ReturnType<typeof extractNotes>;
 }
 
 /**
@@ -73,6 +76,7 @@ export function extractFileData({ filePath, tree, errorCount }: ParsedFile): Fil
     namespaces: extractNamespaces(root),
     imports: extractImports(root),
     nlRefData: extractNLRefData(root),
+    notes: extractNotes(root),
   };
 }
 
@@ -108,6 +112,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
   const questions: QuestionRecord[] = [];
   const allArrowRecords: ArrowRecord[] = [];
   const allNLRefData: NLRefData[] = [];
+  const allNotes: NoteRecord[] = [];
   let totalErrors = 0;
 
   // Track all named definitions per namespace for cross-kind duplicate detection.
@@ -237,6 +242,11 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
         allNLRefData.push({ ...nr, mapping, file: filePath } as NLRefData);
       }
     }
+    if (fileData.notes) {
+      for (const n of fileData.notes) {
+        allNotes.push({ ...n, file: filePath });
+      }
+    }
   }
 
   // Build a set of known namespace names for reference resolution.
@@ -272,6 +282,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     mappings,
     fragments,
     transforms,
+    notes: allNotes,
     warnings,
     questions,
     fieldArrows,

@@ -1,0 +1,12 @@
+schema Customer {
+  id    INTEGER
+  name  STRING
+}
+
+note {
+  "This is the UPDATED integration context."
+}
+
+note {
+  "This is a brand new note."
+}

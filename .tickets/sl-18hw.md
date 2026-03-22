@@ -1,6 +1,6 @@
 ---
 id: sl-18hw
-status: open
+status: closed
 deps: [sl-ck20]
 links: [sl-cyen]
 created: 2026-03-21T08:01:14Z
@@ -36,3 +36,9 @@ Reproduction files:
   /tmp/satsuma-test-diff/a_notes.stm vs /tmp/satsuma-test-diff/b_notes_changed.stm
   /tmp/satsuma-test-diff/a_notes.stm vs /tmp/satsuma-test-diff/b_notes_added.stm
 
+
+## Notes
+
+**2026-03-22T00:52:35Z**
+
+Added NoteRecord type, extractNotes function, note diffing via set comparison. Notes are now extracted into WorkspaceIndex and compared by diff. All output modes (default, --stat, --json) show note additions/removals. Added 3 integration tests. All 584 tests pass.

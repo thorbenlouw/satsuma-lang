@@ -447,6 +447,92 @@ function findParentBlock(node: SyntaxNode): { name: string | null; blockType: st
   return { name: null, blockType: null };
 }
 
+export interface ExtractedNote {
+  text: string;
+  row: number;
+  parent: string | null;
+  namespace: string | null;
+}
+
+/**
+ * Extract all note_block nodes from the CST.
+ */
+export function extractNotes(rootNode: SyntaxNode): ExtractedNote[] {
+  const results: ExtractedNote[] = [];
+
+  function walkForNotes(node: SyntaxNode, namespace: string | null): void {
+    for (const c of node.namedChildren) {
+      if (c.type === "namespace_block") {
+        const nsName = child(c, "identifier");
+        walkForNotes(c, nsName?.text ?? null);
+        continue;
+      }
+      if (c.type === "note_block") {
+        // Top-level note
+        results.push({
+          text: extractNoteText(c),
+          row: c.startPosition.row,
+          parent: null,
+          namespace,
+        });
+      } else if (
+        c.type === "schema_block" ||
+        c.type === "metric_block" ||
+        c.type === "fragment_block"
+      ) {
+        const parentName = labelText(c);
+        collectNotesInBlock(c, parentName, namespace, results);
+      }
+    }
+  }
+
+  walkForNotes(rootNode, null);
+  return results;
+}
+
+function collectNotesInBlock(
+  blockNode: SyntaxNode,
+  parentName: string | null,
+  namespace: string | null,
+  results: ExtractedNote[],
+): void {
+  for (const c of blockNode.namedChildren) {
+    if (c.type === "note_block") {
+      results.push({
+        text: extractNoteText(c),
+        row: c.startPosition.row,
+        parent: parentName,
+        namespace,
+      });
+    }
+    // Also search in body nodes
+    if (c.type === "schema_body" || c.type === "metric_body") {
+      for (const inner of c.namedChildren) {
+        if (inner.type === "note_block") {
+          results.push({
+            text: extractNoteText(inner),
+            row: inner.startPosition.row,
+            parent: parentName,
+            namespace,
+          });
+        }
+      }
+    }
+  }
+}
+
+function extractNoteText(noteNode: SyntaxNode): string {
+  const parts: string[] = [];
+  for (const c of noteNode.namedChildren) {
+    if (c.type === "nl_string") {
+      parts.push(c.text.slice(1, -1));
+    } else if (c.type === "multiline_string") {
+      parts.push(c.text.slice(3, -3).trim());
+    }
+  }
+  return parts.join("\n");
+}
+
 interface ExtractedWarning {
   text: string;
   row: number;

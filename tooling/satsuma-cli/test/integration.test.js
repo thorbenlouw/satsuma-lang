@@ -1547,6 +1547,36 @@ describe("satsuma diff", () => {
     assert.match(stdout, /fragments changed/);
     assert.match(stdout, /transforms added/);
   });
+
+  it("detects note block additions and removals", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-notes-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-notes-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /Notes:/);
+    assert.match(stdout, /\+ "This is the UPDATED/);
+    assert.match(stdout, /- "This is the original/);
+  });
+
+  it("--json includes notes delta", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-notes-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-notes-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.notes, "delta should have notes section");
+    assert.equal(data.notes.added.length, 2);
+    assert.equal(data.notes.removed.length, 1);
+  });
+
+  it("--stat includes note counts", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-notes-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-notes-b.stm");
+    const { stdout, code } = await run("diff", "--stat", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /notes added/);
+    assert.match(stdout, /notes removed/);
+  });
 });
 
 // ---------------------------------------------------------------------------

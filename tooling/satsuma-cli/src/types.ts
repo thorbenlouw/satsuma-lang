@@ -85,6 +85,14 @@ export interface TransformRecord {
   namespace?: string;
 }
 
+export interface NoteRecord {
+  text: string;
+  parent: string | null; // null for top-level notes; schema/metric/fragment name otherwise
+  file: string;
+  row: number;
+  namespace: string | null;
+}
+
 export interface PipeStep {
   type: string;
   text: string;
@@ -158,6 +166,7 @@ export interface WorkspaceIndex {
   mappings: Map<string, MappingRecord>;
   fragments: Map<string, FragmentRecord>;
   transforms: Map<string, TransformRecord>;
+  notes: NoteRecord[];
   warnings: WarningRecord[];
   questions: QuestionRecord[];
   fieldArrows: Map<string, ArrowRecord[]>;
@@ -226,12 +235,18 @@ export interface BlockDelta<C> {
   changed: Array<{ name: string; changes: C[] }>;
 }
 
+export interface NoteDelta {
+  added: string[];
+  removed: string[];
+}
+
 export interface Delta {
   schemas: BlockDelta<SchemaChange>;
   mappings: BlockDelta<MappingChange>;
   metrics: BlockDelta<SchemaChange>;
   fragments: BlockDelta<SchemaChange>;
   transforms: BlockDelta<never>;
+  notes: NoteDelta;
 }
 
 // ── Field match types ───────────────────────────────────────────────────────
