@@ -15,7 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, FieldDecl, ParsedFile, SyntaxNode, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
+import type { WorkspaceIndex, FieldDecl, ParsedFile, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
 
 interface FieldWithTags extends FieldDecl {
   tags?: string[];
@@ -143,72 +143,27 @@ function getMappedFieldNames(mappingName: string, schemaName: string, index: Wor
 }
 
 /**
- * Enrich field objects with metadata tags from the CST.
+ * Enrich field objects with metadata tags from the FieldDecl metadata array.
+ * Recurses into children for record/list blocks.
  */
-function enrichFieldMeta(schemaName: string, fields: FieldWithTags[], parsedFiles: ParsedFile[]): void {
-  for (const { tree } of parsedFiles) {
-    const root = tree.rootNode;
-    const schemaNodes = findAllSchemaNodes(root, schemaName);
-    for (const schemaNode of schemaNodes) {
-      const body = schemaNode.namedChildren.find(
-        (c) => c.type === "schema_body",
-      );
-      if (!body) continue;
-
-      for (const fieldDecl of body.namedChildren.filter(
-        (c) => c.type === "field_decl",
-      )) {
-        const nameNode = fieldDecl.namedChildren.find(
-          (c) => c.type === "field_name",
-        );
-        const fieldInner = nameNode?.namedChildren[0];
-        let fieldName = fieldInner?.text ?? "";
-        if (fieldInner?.type === "backtick_name")
-          fieldName = fieldName.slice(1, -1);
-
-        const field = fields.find((f) => f.name === fieldName);
-        if (!field) continue;
-
-        const meta = fieldDecl.namedChildren.find(
-          (c) => c.type === "metadata_block",
-        );
-        if (!meta) continue;
-
+function enrichFieldMeta(_schemaName: string, fields: FieldWithTags[], _parsedFiles: ParsedFile[]): void {
+  function enrich(fieldList: FieldWithTags[]): void {
+    for (const field of fieldList) {
+      if (field.metadata && field.metadata.length > 0) {
         const tags: string[] = [];
-        for (const entry of meta.namedChildren) {
-          if (entry.type === "tag_token") {
-            tags.push(entry.text);
-          }
+        for (const m of field.metadata) {
+          if (m.kind === "tag") tags.push(m.tag);
+          else if (m.kind === "kv") tags.push(`${m.key} ${m.value}`);
+          else if (m.kind === "enum") tags.push(`enum {${m.values.join(", ")}}`);
+          else if (m.kind === "note") tags.push(`note "${m.text}"`);
+          else if (m.kind === "slice") tags.push(`slice {${m.values.join(", ")}}`);
         }
         if (tags.length > 0) field.tags = tags;
       }
+      if (field.children) enrich(field.children as FieldWithTags[]);
     }
   }
-}
-
-/** Find all schema_block nodes with the given name, including inside namespace_blocks. */
-function findAllSchemaNodes(rootNode: SyntaxNode, name: string): SyntaxNode[] {
-  const results: SyntaxNode[] = [];
-  for (const c of rootNode.namedChildren) {
-    if (c.type === "schema_block" && matchBlockLabel(c, name)) {
-      results.push(c);
-    } else if (c.type === "namespace_block") {
-      for (const inner of c.namedChildren) {
-        if (inner.type === "schema_block" && matchBlockLabel(inner, name)) {
-          results.push(inner);
-        }
-      }
-    }
-  }
-  return results;
-}
-
-function matchBlockLabel(node: SyntaxNode, name: string): boolean {
-  const lbl = node.namedChildren.find((c) => c.type === "block_label");
-  const inner = lbl?.namedChildren[0];
-  let n = inner?.text ?? "";
-  if (inner?.type === "quoted_name") n = n.slice(1, -1);
-  return n === name;
+  enrich(fields);
 }
 
 function printDefault(_schemaName: string, fields: FieldWithTags[], opts: { withMeta?: boolean }): void {

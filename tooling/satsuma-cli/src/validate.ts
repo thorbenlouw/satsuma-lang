@@ -357,7 +357,49 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
     }
   }
 
+  // Check ref metadata targets exist
+  for (const [schemaName, schema] of index.schemas) {
+    checkFieldRefMetadata(schema.fields, schemaName, schema.file, schema.row, schema.namespace ?? null, index, diagnostics);
+  }
+  for (const [fragName, frag] of index.fragments) {
+    checkFieldRefMetadata(frag.fields, fragName, frag.file, frag.row, frag.namespace ?? null, index, diagnostics);
+  }
+
   return diagnostics;
+}
+
+function checkFieldRefMetadata(
+  fields: import("./types.js").FieldDecl[],
+  entityName: string,
+  file: string,
+  row: number,
+  currentNs: string | null,
+  index: WorkspaceIndex,
+  diagnostics: LintDiagnostic[],
+): void {
+  for (const field of fields) {
+    if (field.metadata) {
+      for (const m of field.metadata) {
+        if (m.kind === "kv" && m.key === "ref") {
+          const refTarget = m.value.split(".")[0]!;
+          if (!resolveEntityRef(refTarget, currentNs, index.schemas)) {
+            diagnostics.push({
+              file,
+              line: row + 1,
+              column: 1,
+              severity: "warning",
+              rule: "undefined-ref",
+              message: `Field '${field.name}' in '${entityName}' references undefined schema '${refTarget}' via (ref ${m.value})`,
+              fixable: false,
+            });
+          }
+        }
+      }
+    }
+    if (field.children) {
+      checkFieldRefMetadata(field.children, entityName, file, row, currentNs, index, diagnostics);
+    }
+  }
 }
 
 function resolveFieldPath(path: string, schemaNames: string[], index: WorkspaceIndex, fieldPaths: Set<string>): boolean {

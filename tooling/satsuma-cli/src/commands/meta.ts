@@ -121,7 +121,11 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
 function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {
   const dot = fieldRef.indexOf(".");
   const entityName = fieldRef.slice(0, dot);
-  const fieldName = fieldRef.slice(dot + 1);
+  const fieldPath = fieldRef.slice(dot + 1);
+  // Support nested paths like schema.record.field by using the last segment as field name
+  // and intermediate segments to navigate into record/list blocks
+  const pathSegments = fieldPath.split(".");
+  const fieldName = pathSegments[pathSegments.length - 1]!;
 
   // Search schemas, then fragments, then metrics
   type ResolvedEntity = { key: string; entry: { fields: FieldDecl[]; file: string; namespace?: string } };
@@ -144,10 +148,10 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   }
 
   const entity = resolved.entry;
-  const field = findField(entity.fields, fieldName);
+  const field = findFieldByPath(entity.fields, pathSegments);
   if (!field) {
     console.error(
-      `Field '${fieldName}' not found in '${entityName}'.`,
+      `Field '${fieldPath}' not found in '${entityName}'.`,
     );
     process.exit(1);
   }
@@ -156,17 +160,20 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   const entityNode = parsed ? findBlockNode(parsed.tree.rootNode, blockType, resolved.key) : null;
   const body = entityNode?.namedChildren.find((c) => c.type === bodyType);
   if (body) {
-    for (const fieldDecl of findFieldDecls(body, fieldName)) {
-      const metaNode = fieldDecl.namedChildren.find(
-        (c) => c.type === "metadata_block",
-      );
-      const entries = extractMetadata(metaNode);
-      return {
-          scope: fieldRef,
-          type: field?.type ?? null,
-          entries,
-        };
-      }
+    const targetBody = navigateToNestedBody(body, pathSegments.slice(0, -1));
+    if (targetBody) {
+      for (const fieldDecl of findFieldDecls(targetBody, fieldName)) {
+        const metaNode = fieldDecl.namedChildren.find(
+          (c) => c.type === "metadata_block",
+        );
+        const entries = extractMetadata(metaNode);
+        return {
+            scope: fieldRef,
+            type: field?.type ?? null,
+            entries,
+          };
+        }
+    }
   }
 
   return { scope: fieldRef, type: field.type, entries: [] };
@@ -191,6 +198,40 @@ function findField(fields: FieldDecl[], fieldName: string): FieldDecl | null {
     }
   }
   return null;
+}
+
+function findFieldByPath(fields: FieldDecl[], segments: string[]): FieldDecl | null {
+  if (segments.length === 0) return null;
+  if (segments.length === 1) return findField(fields, segments[0]!);
+  // Navigate into nested record/list by matching intermediate segments
+  for (const field of fields) {
+    if (field.name === segments[0] && field.children) {
+      return findFieldByPath(field.children, segments.slice(1));
+    }
+  }
+  // Fallback: flat search for the last segment
+  return findField(fields, segments[segments.length - 1]!);
+}
+
+function navigateToNestedBody(body: SyntaxNode, intermediateSegments: string[]): SyntaxNode {
+  let current = body;
+  for (const seg of intermediateSegments) {
+    let found = false;
+    for (const c of current.namedChildren) {
+      if (c.type === "record_block" || c.type === "list_block") {
+        if (getBlockLabelName(c) === seg) {
+          const nested = c.namedChildren.find((x) => x.type === "schema_body");
+          if (nested) {
+            current = nested;
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+    if (!found) break;
+  }
+  return current;
 }
 
 function getBlockLabelName(block: SyntaxNode): string | null {
