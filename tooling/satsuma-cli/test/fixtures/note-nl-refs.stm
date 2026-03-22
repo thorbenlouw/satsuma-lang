@@ -1,0 +1,14 @@
+schema src_accounts {
+  balance  DECIMAL
+}
+
+schema tgt_accounts {
+  balance_usd  DECIMAL
+}
+
+mapping 'account sync' {
+  source { `src_accounts` }
+  target { `tgt_accounts` }
+  note { "This mapping converts `src_accounts` into `tgt_accounts`. Pay attention to `balance` precision." }
+  balance -> balance_usd { "Convert `balance` to USD" }
+}

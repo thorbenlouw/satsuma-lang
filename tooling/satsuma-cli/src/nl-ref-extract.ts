@@ -249,6 +249,26 @@ function walkArrowsForNL(
   results: Omit<NLRefData, "file">[],
 ): void {
   for (const c of node.namedChildren) {
+    if (c.type === "note_block") {
+      for (const inner of c.namedChildren) {
+        if (inner.type === "nl_string" || inner.type === "multiline_string") {
+          const text = inner.type === "multiline_string"
+            ? inner.text.slice(3, -3).trim()
+            : inner.text.slice(1, -1);
+          if (text.includes("`")) {
+            results.push({
+              text,
+              mapping: mappingName,
+              namespace,
+              targetField: null,
+              line: inner.startPosition.row,
+              column: inner.startPosition.column,
+            });
+          }
+        }
+      }
+      continue;
+    }
     if (c.type === "map_arrow" || c.type === "computed_arrow" || c.type === "nested_arrow") {
       const tgtNode = c.namedChildren.find((x) => x.type === "tgt_path");
       const tgt = extractPathText(tgtNode) ?? targetField;

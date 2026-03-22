@@ -453,6 +453,28 @@ describe("satsuma mapping", () => {
     // Should have at least one structural and one non-none classification
     assert.ok(data.arrows.some((a) => a.classification === "structural"), "expected at least one structural arrow");
   });
+
+  it("--json includes children for nested arrows (sl-wjb9)", async () => {
+    const COBOL = resolve(EXAMPLES, "cobol-to-avro.stm");
+    const { stdout, code } = await run("mapping", "cobol customer to avro event", "--json", COBOL);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const nested = data.arrows.find((a) => a.kind === "nested");
+    assert.ok(nested, "should have a nested arrow");
+    assert.ok(nested.children, "nested arrow should have children");
+    assert.equal(nested.children.length, 2, "should have 2 child arrows");
+    assert.equal(nested.children[0].src, ".PHONE_TYPE");
+    assert.equal(nested.children[1].src, ".PHONE_NUM");
+  });
+
+  it("text output shows child arrows inside nested blocks (sl-wjb9)", async () => {
+    const COBOL = resolve(EXAMPLES, "cobol-to-avro.stm");
+    const { stdout, code } = await run("mapping", "cobol customer to avro event", COBOL);
+    assert.equal(code, 0);
+    assert.match(stdout, /PHONE_NUMBERS\[\] -> contact_info\.phones\[\]/);
+    assert.match(stdout, /\.PHONE_TYPE -> \.type/);
+    assert.match(stdout, /\.PHONE_NUM -> \.number/);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1994,6 +2016,18 @@ describe("satsuma nl-refs", () => {
     assert.match(stdout, /first_name/);
     assert.match(stdout, /last_name/);
     assert.match(stdout, /region_code/);
+  });
+
+  it("extracts backtick refs from note blocks inside mappings (sl-z57o)", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "note-nl-refs.stm");
+    const { stdout, code } = await run("nl-refs", "--json", fixture);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    assert.equal(refs.length, 4, "should find 4 backtick refs (3 from note + 1 from arrow)");
+    const noteRefs = refs.filter((r) => r.targetField === null);
+    assert.equal(noteRefs.length, 3, "3 refs should come from the note block (no targetField)");
+    const refNames = noteRefs.map((r) => r.ref).sort();
+    assert.deepStrictEqual(refNames, ["balance", "src_accounts", "tgt_accounts"]);
   });
 });
 
