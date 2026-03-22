@@ -317,16 +317,20 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
     const targetSchemas = mapping?.targets ?? [];
 
     if (record.source) {
+      const bareSource = record.source.replace(/^\./, "");
       for (const schema of sourceSchemas) {
-        addToIndex(`${schema}.${record.source}`, record);
+        addToIndex(`${schema}.${bareSource}`, record);
       }
       addToIndex(record.source, record);
+      if (bareSource !== record.source) addToIndex(bareSource, record);
     }
     if (record.target) {
+      const bareTarget = record.target.replace(/^\./, "");
       for (const schema of targetSchemas) {
-        addToIndex(`${schema}.${record.target}`, record);
+        addToIndex(`${schema}.${bareTarget}`, record);
       }
       addToIndex(record.target, record);
+      if (bareTarget !== record.target) addToIndex(bareTarget, record);
     }
   }
 
