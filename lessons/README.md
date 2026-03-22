@@ -4,6 +4,8 @@ A practical learning path for people who need to get data-mapping work done with
 
 The 10 core lessons build the mental model, language basics, and parser-backed workflows. The 4 playbooks then adapt that model to specific roles.
 
+This curriculum is agent-friendly, but it is not agent-dependent. The first pass through the material should leave a learner able to open a `.stm` file, identify the main blocks, run a few core `satsuma` commands, and tell the difference between exact structural facts and interpreted natural-language intent.
+
 ---
 
 ## The Core Learning Model
@@ -34,6 +36,34 @@ The playbook extensions are role-specific and can be read after the core path, o
 
 ---
 
+## Before You Begin
+
+You do not need to configure an AI agent before you can start learning Satsuma.
+
+The minimum baseline is:
+
+- read one small `.stm` file directly
+- run `satsuma summary`, `satsuma schema <name>`, and `satsuma validate`
+- compare the raw file with the CLI output
+- notice which parts are exact structure and which parts are natural-language intent
+
+After that baseline is clear, the agent becomes much more useful because you can verify what it is doing.
+
+---
+
+## Scope Notes
+
+The core path focuses on schemas, mappings, transforms, nesting, and CLI-backed review workflows.
+
+Some repo examples also use more advanced surfaces:
+
+- **metrics**: important for analytics-oriented work, but not required to understand the core mapping model on day 1
+- **namespaces**: used in exploratory and platform-style examples; if you encounter `crm::customers`-style references early, treat them as an advanced extension and use the core mental model first
+
+If you are new to Satsuma, do not start with the namespace-heavy examples.
+
+---
+
 ## Running Scenario
 
 The core lessons use a single running scenario: **Acme Corp migrating customer and order data from a legacy CRM into a modern analytics platform**.
@@ -56,7 +86,7 @@ By the end, the learner sees Satsuma less as "a language to master" and more as 
 
 ### [Lesson 01 — What Satsuma Is Really For](01-what-is-satsuma.md)
 
-Introduces Satsuma as the replacement for spreadsheet and wiki mapping specs, and establishes the hybrid model from the updated docs: deterministic structure plus bounded natural language, with the CLI extracting facts and the agent doing the reasoning. The learner’s first task is not to write a perfect file from scratch, but to understand what kinds of questions can be answered structurally and what kinds require judgment. Also covers how to set up AI agents (GitHub Copilot, Claude Code, Claude in a browser, etc.) to work with Satsuma using `satsuma --intro-for-agents`.
+Introduces Satsuma as the replacement for spreadsheet and wiki mapping specs, and establishes the hybrid model from the updated docs: deterministic structure plus bounded natural language, with the CLI extracting facts and the agent doing the reasoning. The learner’s first task is not to write a perfect file from scratch, but to understand what kinds of questions can be answered structurally and what kinds require judgment. It also introduces a minimal manual baseline before moving into agent setup.
 
 **Covers:** project vision, why Satsuma exists, the parser-backed + agent-backed split, the three-delimiter rule (`( )`, `{ }`, `" "`), comments vs notes, a first minimal schema + mapping example, what humans own vs what agents own, setting up AI agents with `satsuma --intro-for-agents`.
 
@@ -114,7 +144,7 @@ Extends the mapping model to real nested payloads and repeated structures. The l
 
 ### [Lesson 08 — The Satsuma CLI as the Agent’s Toolkit](08-satsuma-cli.md)
 
-Reframes the CLI correctly based on the current docs: not as a user-facing Swiss army knife for natural-language querying, but as a deterministic extraction layer the agent composes into workflows. The learner sees how to use `summary`, `schema`, `mapping`, `fields`, `arrows`, `meta`, `nl`, `lineage`, `graph`, `validate`, `lint`, and `diff` to avoid loading whole files into context. The key idea is that the CLI gives exact slices; the agent supplies the analysis.
+Reframes the CLI correctly based on the current docs: not as a natural-language query engine, but as a deterministic extraction layer the agent composes into workflows. The learner also sees the small set of commands a human should know directly for trust and debugging: `summary`, `schema`, `validate`, `lint`, and `mapping`. The key idea is that the CLI gives exact slices; the agent supplies the analysis.
 
 **Covers:** the CLI design principle, workspace extractors, structural primitives, graph export, `validate` vs `lint`, transform classification (`structural`, `nl`, `mixed`, `none`, `nl-derived`), when to use CLI output instead of raw file reading, `--json` and `--compact` for agent workflows.
 
@@ -183,6 +213,7 @@ For engineers working across APIs, files, XML, events, and heterogeneous enterpr
 
 | Your goal | Start here | Then |
 |---|---|---|
+| Build a basic manual baseline before using an agent | Lessons 1 -> 2 -> 8 | Then continue sequentially |
 | Understand the overall operating model | Lessons 1 -> 2 -> 5 -> 8 | Continue sequentially |
 | Read an existing Satsuma workspace with confidence | Lessons 1 -> 2 -> 4 -> 8 -> 9 | Then your role playbook |
 | Draft new specs with an agent from messy source material | Lessons 1 -> 3 -> 5 -> 6 -> 10 | Then your role playbook |

@@ -83,6 +83,8 @@ CREATED_DATE -> created_at { ...to utc date }
 
 Named transforms are useful when the same transformation applies to multiple fields across different mappings — email normalization, date parsing, phone formatting.
 
+In this lesson, the spread form (`{ ...clean email }`) is treated as the canonical style because it matches the current spec. You may also encounter exploratory examples in this repo that invoke a named transform directly, such as `{ normalize_email }`. If you are writing new introductory material or teaching the basics, prefer one style consistently and call out the other explicitly when it appears.
+
 ---
 
 ## Imports: Sharing Across Files
@@ -224,6 +226,18 @@ Now, if the address format changes (say, `postal_code` needs to be `STRING(30)` 
 4. **Definition names must be unique** across the entire workspace, even across types.
 5. A **platform entry point** file imports key definitions for platform-wide lineage traversal.
 6. The agent helps identify reuse opportunities, maintain cross-file consistency, and navigate the workspace.
+
+---
+
+## Hands-On Check
+
+Use the corpus files that actually ship with the repo:
+
+1. Open `examples/common.stm` and identify the reusable fragments.
+2. Open `examples/ns-platform.stm` and look for where shared definitions are reused.
+3. Notice that the file also contains namespace-qualified references. Treat those as an advanced extension on top of the same core ideas: named definitions, imports, reuse, and lineage.
+
+The goal here is not to master namespaces yet. The goal is to recognize reuse patterns in real files.
 
 ---
 

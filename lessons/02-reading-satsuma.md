@@ -150,7 +150,7 @@ note {
 }
 ```
 
-Triple-quoted strings (`"""..."""`) allow multi-line Markdown content. Single-quoted strings (`"..."`) are for shorter inline text.
+Triple-quoted strings (`"""..."""`) allow multi-line Markdown content. Double-quoted strings (`"..."`) are for shorter inline text.
 
 ---
 
@@ -252,6 +252,19 @@ These are the kinds of questions you should be able to answer by scanning, not s
 3. `fragment` defines reusable field groups, spread with `...`.
 4. Notes carry natural language — inline with `(note "...")` or as block `note { """...""" }`.
 5. Reading a Satsuma file is a collaboration: scan the structure, spot the flags, then ask the agent to explain the rest.
+
+---
+
+## Hands-On Check
+
+Use a real corpus file instead of an invented snippet:
+
+1. Open `examples/common.stm` directly.
+2. Identify the three top-level schemas and two fragments by eye.
+3. Run `satsuma summary examples/` and confirm the structural picture.
+4. Ask yourself which facts came from the parser exactly and which explanations would require interpretation.
+
+This is the reading pattern you want throughout the rest of the course.
 
 ---
 

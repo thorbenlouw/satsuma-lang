@@ -90,7 +90,7 @@ PHONE_NBR -> phone {
 }
 ```
 
-Here, the NL describes the extraction logic, and `warn_if_invalid` adds a deterministic error-handling step at the end. The pipeline flows top-to-bottom: the NL logic executes first, then `warn_if_invalid` checks the result.
+Here, the NL describes the extraction logic, and `warn_if_invalid` adds a deterministic error-handling step at the end. Read the transform top-to-bottom: the prose states the intended logic, then the structural step states an exact post-processing or validation action.
 
 Another example:
 
@@ -195,7 +195,7 @@ The ambiguity is now tracked and discoverable.
 ## Key Takeaways
 
 1. Natural language in transforms is a deliberate design choice — it handles complexity that pseudo-code would make worse.
-2. Transforms are classified as `[structural]`, `[nl]`, `[mixed]`, `[none]`, or `[nl-derived]` by the CLI.
+2. Transforms are classified as `[structural]`, `[nl]`, `[mixed]`, or `[none]` by syntax, and the CLI may also surface synthetic `[nl-derived]` lineage edges from backtick references in NL.
 3. Backtick references inside NL (`` `field_name` ``) create traceable lineage connections.
 4. The CLI extracts NL verbatim. The agent interprets it. The human approves the interpretation.
 5. Formalize when you can. Keep it natural when formalization would obscure meaning or force false precision.
