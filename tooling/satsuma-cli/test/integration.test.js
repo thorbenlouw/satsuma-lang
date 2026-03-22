@@ -1424,6 +1424,16 @@ describe("satsuma validate", () => {
     assert.ok(data.some((d) => d.rule === "missing-import"), "should have missing-import diagnostic");
   });
 
+  it("warns on undefined import name (sl-t5k4)", async () => {
+    const dir = resolve(import.meta.dirname, "fixtures", "import-validate");
+    const { stdout, code } = await run("validate", dir, "--json");
+    assert.equal(code, 0, "undefined import is a warning, not an error");
+    const data = JSON.parse(stdout);
+    const undefinedImport = data.find((d) => d.rule === "undefined-import");
+    assert.ok(undefinedImport, "should have undefined-import diagnostic");
+    assert.match(undefinedImport.message, /totally_fake_name/);
+  });
+
   it("warns on ref metadata pointing to nonexistent schema (sl-7vbb)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "ref-check.stm");
     const { stdout, code } = await run("validate", F, "--json");
@@ -2165,6 +2175,16 @@ describe("satsuma lint", () => {
     );
     // Should only show unresolved-nl-ref, not hidden-source-in-nl
     assert.ok(!stdout.includes("hidden-source-in-nl"));
+  });
+
+  it("fires lint rules on anonymous mappings (sl-0o1x)", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "anon-lint.stm");
+    const { stdout, code } = await run("lint", "--json", fixture);
+    assert.equal(code, 2, "should find findings");
+    const data = JSON.parse(stdout);
+    const finding = data.findings.find((f) => f.rule === "hidden-source-in-nl");
+    assert.ok(finding, "should fire hidden-source-in-nl on anonymous mapping");
+    assert.match(finding.message, /hidden_lookup/);
   });
 });
 

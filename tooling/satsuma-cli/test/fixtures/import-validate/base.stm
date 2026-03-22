@@ -1,0 +1,3 @@
+schema source_sys {
+  id  INT
+}

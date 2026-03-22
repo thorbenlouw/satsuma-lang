@@ -230,7 +230,11 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     }
     if (fileData.nlRefData) {
       for (const nr of fileData.nlRefData) {
-        allNLRefData.push({ ...nr, file: filePath } as NLRefData);
+        // Fill in file path for anonymous mapping placeholders
+        const mapping = nr.mapping?.startsWith("<anon>@:")
+          ? nr.mapping.replace("<anon>@:", `<anon>@${filePath}:`)
+          : nr.mapping;
+        allNLRefData.push({ ...nr, mapping, file: filePath } as NLRefData);
       }
     }
   }

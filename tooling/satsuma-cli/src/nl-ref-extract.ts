@@ -204,10 +204,16 @@ function extractMappingNLRefs(mappingNode: SyntaxNode, namespace: string | null,
   let mappingName = inner?.text ?? null;
   if (inner?.type === "quoted_name") mappingName = mappingName!.slice(1, -1);
 
+  // For anonymous mappings, use row-based key that will match <anon>@file:row
+  // The file portion will be filled in later by index-builder
+  if (!mappingName) {
+    mappingName = `<anon>@:${mappingNode.startPosition.row}`;
+  }
+
   const body = mappingNode.namedChildren.find((c) => c.type === "mapping_body");
   if (!body) return;
 
-  walkArrowsForNL(body, mappingName ?? "", namespace, null, results);
+  walkArrowsForNL(body, mappingName, namespace, null, results);
 }
 
 function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | null, results: Omit<NLRefData, "file">[]): void {
