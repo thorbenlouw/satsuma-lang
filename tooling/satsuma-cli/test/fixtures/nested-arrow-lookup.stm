@@ -1,0 +1,26 @@
+schema src_sys {
+  record addr {
+    street STRING
+    city STRING
+  }
+  name STRING
+}
+
+schema tgt_sys {
+  record address {
+    street_line STRING
+    city STRING
+  }
+  full_name STRING
+}
+
+mapping 'addr_map' {
+  source { `src_sys` }
+  target { `tgt_sys` }
+
+  name -> full_name
+  addr -> address {
+    .street -> .street_line { trim }
+    .city -> .city
+  }
+}

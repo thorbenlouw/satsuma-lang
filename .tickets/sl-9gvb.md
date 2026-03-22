@@ -1,6 +1,6 @@
 ---
 id: sl-9gvb
-status: in_progress
+status: closed
 deps: [sl-wjb9]
 links: [sl-z4ya]
 created: 2026-03-21T07:59:43Z

@@ -1,6 +1,6 @@
 ---
 id: sl-jt7q
-status: open
+status: closed
 deps: [sl-cdvp]
 links: [sl-1ugo, sl-gf8d, sl-giss, sl-bfue, sl-3nrg, sl-s8xn, sl-zqqu, sl-4mh2]
 created: 2026-03-21T21:53:07Z
