@@ -1,6 +1,6 @@
 ---
 id: sl-6dt1
-status: open
+status: closed
 deps: [sl-9uh0]
 links: []
 created: 2026-03-22T07:44:29Z
@@ -34,3 +34,12 @@ Only the last nested arrow in the block is affected. All preceding siblings are 
 
 Likely related to the nested arrow bare children contamination bug (see sibling ticket) — the last arrow's source is consumed by the preceding arrow's target text.
 
+
+## Notes
+
+**2026-03-22T08:10:29Z**
+
+**2026-03-22T08:18:00Z**
+
+Cause: Downstream effect of sl-9uh0 — the grammar's relative_field_path rule consumed dots across newlines, causing the last bare arrow's source to be merged into the preceding arrow's target text. This made the last arrow appear as derived with from:null.
+Fix: Grammar fix in grammar.js — use token.immediate(".") for path continuation dots so paths cannot span lines. (Same commit as sl-9uh0 fix)

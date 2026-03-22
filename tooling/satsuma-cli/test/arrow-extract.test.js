@@ -254,6 +254,30 @@ describe("extractArrowRecords against real examples", () => {
     assert.equal(derivedArrow.derived, true);
   });
 
+  it("extracts nested bare arrows without target contamination (sl-9uh0)", () => {
+    const { tree } = parseFile(resolve(EXAMPLES, "sap-po-to-mfcs.stm"));
+    const records = extractArrowRecords(tree.rootNode);
+
+    // Find child arrows of the Items[] -> items[] nested block
+    const childArrows = records.filter(
+      (r) => r.source && r.source.startsWith("Items[]."),
+    );
+    assert.ok(childArrows.length >= 7, `expected >=7 child arrows, got ${childArrows.length}`);
+
+    // Each child arrow should have a clean source (no newlines, no target contamination)
+    for (const a of childArrows) {
+      assert.ok(!a.source.includes("\n"), `source should not contain newline: ${a.source}`);
+      assert.ok(!a.target.includes("\n"), `target should not contain newline: ${a.target}`);
+      assert.equal(a.derived, false, `${a.source} should not be derived`);
+    }
+
+    // Specifically check the last arrow (.TXZ01 -> .description) which was previously broken
+    const txz01 = childArrows.find((r) => r.source === "Items[].TXZ01");
+    assert.ok(txz01, "should find Items[].TXZ01 arrow");
+    assert.equal(txz01.target, "items[].description");
+    assert.equal(txz01.derived, false);
+  });
+
   it("extracts arrows from multi-source-hub.stm", () => {
     const { tree } = parseFile(resolve(EXAMPLES, "multi-source-hub.stm"));
     const records = extractArrowRecords(tree.rootNode);
