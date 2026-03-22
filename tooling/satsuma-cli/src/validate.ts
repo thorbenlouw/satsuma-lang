@@ -114,8 +114,8 @@ function walkErrors(node: SyntaxNode, file: string, diagnostics: LintDiagnostic[
       fixable: false,
     });
   }
-  for (const c of node.namedChildren) {
-    walkErrors(c, file, diagnostics);
+  for (let i = 0; i < node.childCount; i++) {
+    walkErrors(node.child(i)!, file, diagnostics);
   }
 }
 

@@ -263,3 +263,75 @@ mapping {
         (tgt_path
           (field_path
             (identifier)))))))
+
+================================================================================
+Target-only mapping (no source block)
+================================================================================
+
+mapping 'computed values' {
+  target { `computed_target` }
+  -> id { uuid_v4() }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (mapping_body
+      (target_block
+        (source_ref
+          (backtick_name)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier))))))))
+
+================================================================================
+Source-only mapping (no target block)
+================================================================================
+
+mapping 'source audit' {
+  source { `raw_events` }
+  note { "Audit log, no target needed" }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (block_label
+      (quoted_name))
+    (mapping_body
+      (source_block
+        (source_ref
+          (backtick_name)))
+      (note_block
+        (nl_string)))))
+
+================================================================================
+Arrows-only mapping (no source or target)
+================================================================================
+
+mapping {
+  -> id { uuid_v4() }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (token_call
+              (identifier))))))))

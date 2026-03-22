@@ -1606,6 +1606,20 @@ describe("satsuma validate", () => {
     // Valid ref to customers should NOT produce a warning
     assert.ok(!data.some((d) => d.message.includes("customers")), "valid ref should not warn");
   });
+
+  it("target-only mapping parses without errors (sl-icqz)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "target-only-mapping.stm");
+    const { stdout, code } = await run("validate", F);
+    assert.equal(code, 0, `Target-only mapping should parse cleanly:\n${stdout}`);
+    assert.match(stdout, /no issues/i);
+  });
+
+  it("unclosed schema at EOF reports missing-node error (sl-w6yu)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "unclosed-schema.stm");
+    const { stdout, code } = await run("validate", F);
+    assert.equal(code, 2, "should exit with code 2 for parse errors");
+    assert.match(stdout, /missing/i, "should report the missing closing brace");
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -11,6 +11,8 @@ export interface SyntaxNode {
   type: string;
   text: string;
   namedChildren: SyntaxNode[];
+  childCount: number;
+  child(index: number): SyntaxNode | null;
   parent: SyntaxNode | null;
   startPosition: { row: number; column: number };
   isMissing: boolean;

@@ -1,6 +1,6 @@
 ---
 id: sl-w6yu
-status: open
+status: closed
 deps: []
 links: [sl-7i7j]
 created: 2026-03-21T07:59:06Z
@@ -38,3 +38,8 @@ The tree-sitter parser likely recovers from the missing brace gracefully (treati
 **2026-03-22T02:09:28Z**
 
 Blocked: requires tree-sitter grammar changes. C++ compiler is unavailable in sandbox.
+
+**2026-03-22T07:17:34Z**
+
+Cause: walkErrors only iterated namedChildren, but MISSING nodes (like missing closing brace) are unnamed children in the tree-sitter CST.
+Fix: Changed walkErrors to iterate all children via node.childCount/node.child(i). Added childCount and child() to SyntaxNode interface.
