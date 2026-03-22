@@ -1,0 +1,214 @@
+// Satsuma v2 — Filter, Flatten, and Governance Metadata
+
+note {
+  """
+  # Filter, Flatten, and Governance Metadata
+
+  Demonstrates three language idioms in one integrated example:
+
+  1. **Scalar array fields** — arrays with no subfields written as `TYPE[]`
+     or `TYPE[n]` directly on a field line rather than an empty `list` block.
+  2. **Filter and flatten** — filtering repeated elements at schema definition
+     time and flattening nested lists into flat output rows in a mapping.
+  3. **Governance metadata** — using `classification`, `retention`, and
+     other arbitrary concern tokens alongside `pii` and `encrypt` to annotate
+     fields with data governance policy.
+
+  ## Scenario
+  A retail analytics pipeline that ingests enriched order events from a
+  streaming platform, joins to a customer profile store for demographic
+  context, and lands two curated outputs:
+  - `completed_orders_parquet` — one row per completed order header
+  - `order_line_facts_parquet` — one row per line item (flattened)
+
+  Only completed orders are relevant; pending and failed events are excluded
+  at the source schema level using `filter`.
+  """
+}
+
+
+// --- Sources ---
+
+schema order_events (
+  note "Enriched order events from the streaming platform (Kafka → S3)",
+  classification "INTERNAL"
+) {
+  event_id        UUID          (pk, required)
+  event_time      TIMESTAMPTZ   (required)
+  order_status    STRING(20)    (enum {completed, pending, failed, refunded}, required)
+
+  record customer {
+    customer_id   UUID          (required)
+    email         STRING(255)   (pii, classification "RESTRICTED", retention "3y")
+    tier          STRING(20)    (enum {standard, silver, gold, platinum})
+  }
+
+  record order_totals {
+    subtotal      DECIMAL(12,2)
+    tax           DECIMAL(12,2)
+    discount      DECIMAL(12,2)
+    total         DECIMAL(12,2) (required)
+    currency      CHAR(3)       (required, default "GBP")
+  }
+
+  // Scalar arrays: a list of plain strings and a list of plain decimals.
+  // No subfields — written as TYPE[] on the field line, not as empty list blocks.
+  promo_codes     STRING[]      (note "Applied promotion codes, may be empty")
+  tag_ids         INT[]         (classification "INTERNAL")
+
+  // Filtered list: only include line items that are not cancelled.
+  // Items with status = 'cancelled' are excluded before any mapping runs.
+  list line_items (filter item_status != "cancelled") {
+    line_number   INT           (required)
+    sku           STRING(30)    (required)
+    item_status   STRING(20)    (enum {active, cancelled, backordered})
+    quantity      INT           (required)
+    unit_price    DECIMAL(12,2) (required)
+    tax_amount    DECIMAL(12,2)
+    list discount_lines (filter discount_type != "internal") {
+      discount_code   STRING(30)
+      discount_type   STRING(20) (enum {promo, loyalty, internal, staff})
+      discount_amount DECIMAL(12,2)
+    }
+  }
+}
+
+schema customer_profiles (
+  note "Customer master — CRM system of record",
+  classification "RESTRICTED",
+  retention "7y"
+) {
+  customer_id       UUID          (pk, required)
+  email             STRING(255)   (pii, classification "RESTRICTED", retention "3y")
+  first_name        STRING(100)   (pii)
+  last_name         STRING(100)   (pii)
+  acquisition_channel STRING(50)
+  region            STRING(50)
+  // Scalar arrays used here for preference lists — no subfields needed
+  consent_flags     STRING[]      (classification "RESTRICTED", retention "7y",
+                                   note "e.g. ['email_marketing', 'sms', 'third_party']")
+  opt_out_channels  STRING[]      (classification "RESTRICTED")
+}
+
+
+// --- Targets ---
+
+schema completed_orders_parquet (
+  format parquet,
+  classification "INTERNAL",
+  note "Curated completed-orders fact table — one row per order"
+) {
+  order_id          UUID          (pk, required)
+  event_time_utc    TIMESTAMPTZ   (required)
+  customer_id       UUID          (indexed)
+  customer_email    STRING(255)   (pii, classification "RESTRICTED", retention "3y")
+  tier              STRING(20)
+  acquisition_channel STRING(50)
+  region            STRING(50)
+  currency          CHAR(3)       (required)
+  subtotal          DECIMAL(12,2)
+  tax               DECIMAL(12,2)
+  discount          DECIMAL(12,2)
+  total             DECIMAL(12,2) (required)
+  promo_codes       STRING[]      (note "Passed through from source unchanged")
+  active_line_count INT           (required)
+  ingest_timestamp  TIMESTAMPTZ   (required)
+}
+
+schema order_line_facts_parquet (
+  format parquet,
+  classification "INTERNAL",
+  retention "5y",
+  note "Curated order line facts — one row per non-cancelled line item"
+) {
+  order_id          UUID          (required)
+  customer_id       UUID
+  line_number       INT           (required)
+  sku               STRING(30)    (required)
+  quantity          INT           (required)
+  unit_price        DECIMAL(12,2) (required)
+  tax_amount        DECIMAL(12,2)
+  line_total        DECIMAL(12,2) (required)
+  currency          CHAR(3)       (required)
+  promo_code_count  INT
+  ingest_timestamp  TIMESTAMPTZ   (required)
+}
+
+
+// --- Mapping 1: Order headers — multi-source filtered join ---
+
+mapping 'completed orders' {
+  note {
+    """
+    Joins order events to customer profiles for demographic enrichment.
+    Only completed orders are included — the join condition also acts as a
+    row filter. Pending, failed, and refunded events are excluded.
+    """
+  }
+
+  source {
+    `order_events`
+    `customer_profiles`
+    "Join on order_events.customer.customer_id = customer_profiles.customer_id
+     WHERE order_events.order_status = 'completed'"
+  }
+  target { `completed_orders_parquet` }
+
+  event_id                       -> order_id
+  event_time                     -> event_time_utc
+  customer.customer_id           -> customer_id
+  customer.email                 -> customer_email { trim | lowercase | validate_email | null_if_invalid }
+  customer.tier                  -> tier { trim | lowercase | null_if_empty }
+  customer_profiles.acquisition_channel -> acquisition_channel { trim | null_if_empty }
+  customer_profiles.region       -> region { trim | uppercase | null_if_empty }
+  order_totals.currency          -> currency { trim | uppercase }
+  order_totals.subtotal          -> subtotal { coalesce(0) }
+  order_totals.tax               -> tax { coalesce(0) }
+  order_totals.discount          -> discount { coalesce(0) }
+  order_totals.total             -> total
+
+  // Scalar array passed through as-is — no iteration or subfield mapping needed
+  promo_codes                    -> promo_codes
+
+  -> active_line_count {
+    "Count elements in line_items[] (already filtered to exclude cancelled items at source)"
+  }
+
+  -> ingest_timestamp { now_utc() }
+}
+
+
+// --- Mapping 2: Order lines — flatten nested list ---
+
+// flatten lifts each element of line_items[] into its own output row,
+// so downstream field arrows reference the flattened element directly.
+mapping 'order line facts' (flatten `line_items[]`) {
+  note {
+    "Produces one output row per non-cancelled line item. The filter on
+     line_items (item_status != 'cancelled') at the schema level means
+     cancelled lines are already excluded before this mapping runs."
+  }
+
+  source { `order_events` }
+  target { `order_line_facts_parquet` }
+
+  event_id                       -> order_id
+  customer.customer_id           -> customer_id
+  line_items[].line_number       -> line_number
+  line_items[].sku               -> sku { trim | uppercase }
+  line_items[].quantity          -> quantity
+  line_items[].unit_price        -> unit_price
+  line_items[].tax_amount        -> tax_amount { coalesce(0) }
+  order_totals.currency          -> currency { trim | uppercase }
+
+  -> line_total {
+    "Multiply line_items[].unit_price by line_items[].quantity, then add line_items[].tax_amount"
+  }
+
+  -> promo_code_count {
+    "Count distinct values in line_items[].discount_lines[].discount_code
+     where discount_type = 'promo'"
+  }
+
+  -> ingest_timestamp { now_utc() }
+}

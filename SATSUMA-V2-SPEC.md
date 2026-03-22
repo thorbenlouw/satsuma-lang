@@ -168,6 +168,30 @@ schema order {
 
 `record` and `list` can be nested to any depth. Metadata goes in `( )` between name and `{ }`.
 
+#### Scalar array shorthand
+
+When a list contains only scalar values and would otherwise have an empty body (no subfields to declare), write the array type directly on a field line using `[]` notation instead of a `list` block:
+
+```
+schema order_event {
+  order_id     UUID       (pk)
+  promo_codes  STRING[]   (note "Applied promotion codes")   // unbounded scalar array
+  tag_ids      INT[]                                         // unbounded array of ints
+  top_skus     STRING[5]                                     // fixed-length array (max 5)
+  scores       DECIMAL(5,2)[]                                // array of decimals
+}
+```
+
+This is equivalent to:
+
+```
+list promo_codes {
+  // no subfields
+}
+```
+
+but is more compact and signals clearly that the list carries no structure beyond the element type. Use `list Name { }` when the repeated element has named subfields; use `TYPE[]` (or `TYPE[n]`) when it does not.
+
 ### 3.4 Notes
 
 Notes are persistent documentation — they travel with the spec (exported to docs, Excel, etc.), unlike `//` comments which are stripped by tooling.
@@ -435,6 +459,36 @@ mapping 'opportunity enrichment' {
 }
 ```
 
+Add row-level filters directly in the join description. This is the idiomatic way to express a filtered multi-source join — keep both the join predicate and the filter condition together in one NL string so intent is clear in one place:
+
+```
+mapping 'active customer orders' {
+  source {
+    `orders`
+    `customers`
+    "Join on orders.customer_id = customers.id
+     WHERE orders.status = 'completed' AND customers.region = 'EMEA'"
+  }
+  target { `emea_order_fact` }
+  // ...
+}
+```
+
+For three or more sources, list all schemas and write a single NL string describing the full join graph:
+
+```
+mapping 'enriched shipment' {
+  source {
+    `shipments`
+    `orders`
+    `products`
+    "Join shipments.order_id = orders.id, then orders.sku = products.sku.
+     Include only shipments where shipment_status IN ('dispatched', 'delivered')."
+  }
+  target { `shipment_fact` }
+  // ...
+}
+
 ### 4.8 Note Blocks
 
 Use `note { }` at file top level or inside mapping blocks for contextual documentation:
@@ -638,6 +692,33 @@ Vocabulary tokens are **not keywords** — they are interpreted by the LLM based
 | `namespace` | XML namespace declaration | `(namespace ord "http://...")` |
 | `filter` | Row-level filter condition | `(filter QUAL == "ON")` |
 | `note` | Persistent documentation | `(note "Converted at daily spot rate")` |
+
+#### Governance metadata: beyond `pii`
+
+`pii` is one vocabulary token in an open-ended set of governance concerns. Fields and schemas can carry additional concern tokens using the same `key value` syntax in `( )`. These are not reserved — the LLM and downstream tooling interpret them. Common patterns:
+
+| Concern | Token + example | Meaning |
+|---------|----------------|---------|
+| Data classification | `classification "RESTRICTED"` | Sensitivity level per your organisation's scheme |
+| Retention policy | `retention "7y"` | How long the data must or may be kept |
+| Regulatory scope | `gdpr` or `gdpr "data-subject"` | Flags a field as in-scope for a regulation |
+| Lineage marker | `lineage "source-of-record"` | Signals authoritative provenance to lineage tooling |
+| Masking policy | `mask "last4"` | How to redact the value in non-prod environments |
+| Access tier | `access "finance-only"` | Who may read the field |
+
+These tokens can be combined with `pii` and with each other:
+
+```
+schema customer_profiles (classification "RESTRICTED", retention "7y") {
+  email   STRING(255)  (pii, classification "RESTRICTED", retention "3y",
+                        note "Soft-delete only — retained for audit trail")
+  tax_id  STRING(20)   (pii, encrypt AES-256-GCM, gdpr "data-subject",
+                        retention "10y", classification "CONFIDENTIAL")
+  region  STRING(50)   (access "analytics-only")
+}
+```
+
+Schema-level governance tokens set a default posture for the block and can be overridden per field. Use `satsuma find --tag classification` (or any tag name) to audit governance metadata across a workspace.
 
 ### 7.2 Pipeline Tokens (used in `{ }`)
 
