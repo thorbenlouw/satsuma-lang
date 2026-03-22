@@ -1,6 +1,6 @@
 ---
 id: sl-z6z9
-status: open
+status: closed
 deps: [sl-idbf]
 links: [sl-42ev]
 created: 2026-03-21T07:59:05Z
@@ -51,3 +51,9 @@ This means a PII audit (`satsuma find --tag pii`) could miss tagged fields that 
 
 **Test fixture:** /tmp/satsuma-test-find/diverse-tags.stm
 
+
+## Notes
+
+**2026-03-22T01:19:16Z**
+
+Fixed by resolving fragment spreads in searchTag and searching fragment CST bodies for matching tagged fields, reporting them under the consuming schema. Added 2 integration tests.

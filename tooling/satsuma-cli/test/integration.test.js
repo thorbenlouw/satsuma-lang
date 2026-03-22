@@ -557,6 +557,24 @@ describe("satsuma find", () => {
     assert.ok(data.length > 0, "should find fields with note metadata");
     assert.ok(data.some((m) => m.tag === "note"), "tag should be 'note'");
   });
+
+  it("finds tagged fields from fragment spreads in consuming schema (sl-z6z9)", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-meta.stm");
+    const { stdout, code } = await run("find", "--tag", "required", "--in", "schema", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /uses_fragment/);
+    assert.match(stdout, /created_at/);
+  });
+
+  it("finds spread fields in --json output (sl-z6z9)", async () => {
+    const FIXTURE = resolve(__dirname, "fixtures/spread-meta.stm");
+    const { stdout, code } = await run("find", "--tag", "required", "--json", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const schemaMatch = data.find((m) => m.blockType === "schema" && m.block === "uses_fragment");
+    assert.ok(schemaMatch, "expected uses_fragment match from spread");
+    assert.equal(schemaMatch.field, "created_at");
+  });
 });
 
 // ---------------------------------------------------------------------------
