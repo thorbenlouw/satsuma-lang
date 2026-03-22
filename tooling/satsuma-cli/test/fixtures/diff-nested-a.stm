@@ -1,0 +1,11 @@
+schema order {
+  id       INTEGER
+  record address {
+    street   STRING
+    city     STRING
+  }
+  list items {
+    sku      STRING
+    qty      INTEGER
+  }
+}

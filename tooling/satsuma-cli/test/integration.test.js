@@ -1569,6 +1569,27 @@ describe("satsuma diff", () => {
     assert.equal(data.notes.removed.length, 1);
   });
 
+  it("detects nested record/list field changes", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-nested-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-nested-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /\+ field address\.zip/);
+    assert.match(stdout, /\+ field items\.price/);
+  });
+
+  it("--json reports nested field changes with dotted paths", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-nested-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-nested-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const changes = data.schemas.changed[0].changes;
+    const fields = changes.map((c) => c.field);
+    assert.ok(fields.includes("address.zip"), "should include address.zip");
+    assert.ok(fields.includes("items.price"), "should include items.price");
+  });
+
   it("--stat includes note counts", async () => {
     const a = resolve(import.meta.dirname, "fixtures", "diff-notes-a.stm");
     const b = resolve(import.meta.dirname, "fixtures", "diff-notes-b.stm");

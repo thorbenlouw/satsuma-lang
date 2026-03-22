@@ -73,20 +73,31 @@ function diffFragment(a: FragmentRecord, b: FragmentRecord): SchemaChange[] {
   return diffFieldList(a.fields, b.fields);
 }
 
-function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[]): SchemaChange[] {
+function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""): SchemaChange[] {
   const changes: SchemaChange[] = [];
   const aMap = new Map<string, FieldDecl>(aFields.map((f) => [f.name, f]));
   const bMap = new Map<string, FieldDecl>(bFields.map((f) => [f.name, f]));
 
   for (const [name, field] of aMap) {
+    const qualName = prefix ? `${prefix}.${name}` : name;
     if (!bMap.has(name)) {
-      changes.push({ kind: "field-removed", field: name });
-    } else if (field.type !== bMap.get(name)!.type) {
-      changes.push({ kind: "type-changed", field: name, from: field.type, to: bMap.get(name)!.type });
+      changes.push({ kind: "field-removed", field: qualName });
+    } else {
+      const bField = bMap.get(name)!;
+      if (field.type !== bField.type) {
+        changes.push({ kind: "type-changed", field: qualName, from: field.type, to: bField.type });
+      }
+      // Recurse into nested children
+      if (field.children || bField.children) {
+        changes.push(...diffFieldList(field.children ?? [], bField.children ?? [], qualName));
+      }
     }
   }
-  for (const name of bMap.keys()) {
-    if (!aMap.has(name)) changes.push({ kind: "field-added", field: name });
+  for (const [name] of bMap) {
+    if (!aMap.has(name)) {
+      const qualName = prefix ? `${prefix}.${name}` : name;
+      changes.push({ kind: "field-added", field: qualName });
+    }
   }
   return changes;
 }
