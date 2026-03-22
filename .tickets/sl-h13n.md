@@ -1,6 +1,6 @@
 ---
 id: sl-h13n
-status: open
+status: closed
 deps: [sl-ck20]
 links: [sl-cyen]
 created: 2026-03-21T08:01:25Z
@@ -38,3 +38,9 @@ Reproduction files:
   /tmp/satsuma-test-diff/a_base.stm vs /tmp/satsuma-test-diff/b_added_arrow.stm
   /tmp/satsuma-test-diff/a_base.stm vs /tmp/satsuma-test-diff/b_removed_arrow.stm
 
+
+## Notes
+
+**2026-03-22T01:39:55Z**
+
+Fixed by sl-o4wq: diff now reports individual arrow additions, removals, and transform changes alongside the count delta.
