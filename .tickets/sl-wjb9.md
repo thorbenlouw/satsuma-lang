@@ -1,6 +1,6 @@
 ---
 id: sl-wjb9
-status: open
+status: closed
 deps: []
 links: [sl-z4ya]
 created: 2026-03-21T07:59:45Z

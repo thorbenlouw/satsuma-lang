@@ -1,6 +1,6 @@
 ---
 id: sl-qx8n
-status: open
+status: closed
 deps: [sl-cdvp]
 links: [sl-xh3b]
 created: 2026-03-21T07:58:21Z
@@ -33,3 +33,9 @@ This is likely because `enum` has a special CST node type (enum block with brace
 
 **Test fixture:** /tmp/satsuma-test-find/diverse-tags.stm (line 8: `status STRING (enum {active, inactive, suspended})`)
 
+
+## Notes
+
+**2026-03-22T00:14:47Z**
+
+Fixed in prior commit - findTagInMeta already handles enum_body and slice_body

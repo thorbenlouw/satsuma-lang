@@ -85,6 +85,7 @@ interface ArrowInfo {
   hasBody: boolean;
   metaNode: SyntaxNode | undefined;
   node: SyntaxNode;
+  children?: ArrowInfo[];
 }
 
 /** Collect arrows from mapping_body as {kind, src, tgt, hasBody} objects. */
@@ -107,7 +108,8 @@ function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
       const src = c.namedChildren.find((x) => x.type === "src_path");
       const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
-      arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true, metaNode: meta, node: c });
+      const children = collectArrows(c);
+      arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true, metaNode: meta, node: c, children: children.length > 0 ? children : undefined });
     }
   }
   return arrows;
@@ -119,7 +121,8 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
   const metadata = extractMetadata(metaNode);
-  const arrows = collectArrows(body ?? undefined).map(({ kind, src, tgt, hasBody, metaNode: arrowMeta, node: arrowNode }) => {
+  function arrowToJson(info: ArrowInfo): Record<string, unknown> {
+    const { kind, src, tgt, hasBody, metaNode: arrowMeta, node: arrowNode, children } = info;
     const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
     const pipeSteps = pipeChain ? [...pipeChain.namedChildren].filter((x) => x.type === "pipe_step") : [];
     const classification = classifyTransform(pipeSteps.length > 0 ? pipeSteps : null);
@@ -129,8 +132,12 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
     }
     const arrowMetadata = extractMetadata(arrowMeta);
     if (arrowMetadata.length > 0) arrowObj.metadata = arrowMetadata;
+    if (children && children.length > 0) {
+      arrowObj.children = children.map(arrowToJson);
+    }
     return arrowObj;
-  });
+  }
+  const arrows = collectArrows(body ?? undefined).map(arrowToJson);
   console.log(
     JSON.stringify(
       {
@@ -153,13 +160,49 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
 function printArrowsOnly(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   if (body) {
-    for (const { src, tgt } of collectArrows(body)) {
-      const srcStr = src ?? "(computed)";
-      console.log(`${srcStr.padEnd(30)} -> ${tgt}`);
+    function printArrowsFlat(arrows: ArrowInfo[], prefix: string): void {
+      for (const { src, tgt, children } of arrows) {
+        const srcStr = src ? prefix + src : "(computed)";
+        console.log(`${srcStr.padEnd(30)} -> ${prefix}${tgt}`);
+        if (children) printArrowsFlat(children, prefix);
+      }
     }
+    printArrowsFlat(collectArrows(body), "");
   } else {
     // Fallback
     console.log(`${entry.sources.join(", ")} -> ${entry.targets.join(", ")}`);
+  }
+}
+
+function printArrowNode(c: SyntaxNode, compact: boolean | undefined, indent: string): void {
+  const src = c.namedChildren.find((x) => x.type === "src_path");
+  const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
+  const pipeChain = c.namedChildren.find((x) => x.type === "pipe_chain");
+  const arrowMeta = c.namedChildren.find((x) => x.type === "metadata_block");
+  const srcStr = src ? pathText(src) : null;
+  const tgtStr = pathText(tgt);
+  const metaSuffix = arrowMeta && !compact ? ` ${arrowMeta.text}` : "";
+  const srcPart = srcStr ? `${srcStr} -> ` : "-> ";
+
+  // Check if this is a nested arrow with children
+  const childArrows = c.namedChildren.filter((x) => x.type === "map_arrow" || x.type === "computed_arrow" || x.type === "nested_arrow");
+
+  if (childArrows.length > 0) {
+    if (compact || !pipeChain) {
+      console.log(`${indent}${srcPart}${tgtStr}${metaSuffix} {`);
+    } else {
+      console.log(`${indent}${srcPart}${tgtStr}${metaSuffix} {`);
+    }
+    for (const child of childArrows) {
+      printArrowNode(child, compact, indent + "  ");
+    }
+    console.log(`${indent}}`);
+  } else {
+    if (compact || !pipeChain) {
+      console.log(`${indent}${srcPart}${tgtStr}${metaSuffix}`);
+    } else {
+      console.log(`${indent}${srcPart}${tgtStr}${metaSuffix} { ${pipeChain.text} }`);
+    }
   }
 }
 
@@ -186,29 +229,9 @@ function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, comp
       if (c.type === "source_block" || c.type === "target_block") continue;
 
       if (c.type === "map_arrow" || c.type === "nested_arrow") {
-        const src = c.namedChildren.find((x) => x.type === "src_path");
-        const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-        const pipeChain = c.namedChildren.find((x) => x.type === "pipe_chain");
-        const arrowMeta = c.namedChildren.find((x) => x.type === "metadata_block");
-        const srcStr = pathText(src);
-        const tgtStr = pathText(tgt);
-        const metaSuffix = arrowMeta && !compact ? ` ${arrowMeta.text}` : "";
-        if (compact || !pipeChain) {
-          console.log(`  ${srcStr} -> ${tgtStr}${metaSuffix}`);
-        } else {
-          console.log(`  ${srcStr} -> ${tgtStr}${metaSuffix} { ${pipeChain.text} }`);
-        }
+        printArrowNode(c, compact, "  ");
       } else if (c.type === "computed_arrow") {
-        const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-        const pipeChain = c.namedChildren.find((x) => x.type === "pipe_chain");
-        const arrowMeta = c.namedChildren.find((x) => x.type === "metadata_block");
-        const tgtStr = pathText(tgt);
-        const metaSuffix = arrowMeta && !compact ? ` ${arrowMeta.text}` : "";
-        if (compact || !pipeChain) {
-          console.log(`  -> ${tgtStr}${metaSuffix}`);
-        } else {
-          console.log(`  -> ${tgtStr}${metaSuffix} { ${pipeChain.text} }`);
-        }
+        printArrowNode(c, compact, "  ");
       }
     }
   } else {

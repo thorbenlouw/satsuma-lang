@@ -1,6 +1,6 @@
 ---
 id: sl-z57o
-status: open
+status: closed
 deps: [sl-3dd2]
 links: [sl-wvn8]
 created: 2026-03-21T08:00:58Z
