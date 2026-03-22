@@ -1,6 +1,6 @@
 ---
 id: sl-9uh0
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T07:44:22Z
@@ -55,3 +55,12 @@ examples/sap-po-to-mfcs.stm: `.EINDT -> .needByDate` gets target contaminated wi
 
 High — data integrity issue. Arrow source/target attribution is wrong in nested blocks, causing incorrect lineage and graph edges.
 
+
+## Notes
+
+**2026-03-22T08:13:10Z**
+
+**2026-03-22T08:25:00Z**
+
+Cause: The tree-sitter grammar's relative_field_path (and other path rules) used `repeat(seq(".", _path_seg))` for multi-segment paths. Since newlines are in the grammar's `extras`, the continuation dot could match across line boundaries, causing `.A -> .x\n    .B -> .y` to parse `.x\n    .B` as a single multi-segment target path.
+Fix: Changed all path continuation dots to `token.immediate(".")` in grammar.js so the dot must immediately follow the previous path segment with no whitespace/newlines. Also updated cleanPathText comment in extract.ts. Added 2 corpus tests and 2 CLI tests.

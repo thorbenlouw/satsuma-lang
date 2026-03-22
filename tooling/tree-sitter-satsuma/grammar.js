@@ -342,12 +342,14 @@ module.exports = grammar({
       ),
 
     // ns::identifier or ns::identifier.field... ([] on any segment)
+    // token.immediate(".") ensures continuation dots must be adjacent (no
+    // newlines) so multi-line bare arrows are not merged into one path.
     namespaced_path: ($) =>
       prec.right(seq(
         $.identifier,
         "::",
         $._path_seg,
-        repeat(seq(".", $._path_seg)),
+        repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
     // `BacktickRef` or `BacktickRef`.field... ([] on any segment)
@@ -355,7 +357,7 @@ module.exports = grammar({
       prec.right(seq(
         $.backtick_name,
         optional("[]"),
-        repeat(seq(".", $._path_seg)),
+        repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
     // .field or .field.nested... ([] on any segment)
@@ -363,7 +365,7 @@ module.exports = grammar({
       prec.right(seq(
         ".",
         $._path_seg,
-        repeat(seq(".", $._path_seg)),
+        repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
     // field or field.nested... ([] on any segment)
@@ -371,7 +373,7 @@ module.exports = grammar({
       prec.right(seq(
         $.identifier,
         optional("[]"),
-        repeat(seq(".", $._path_seg)),
+        repeat(seq(token.immediate("."), $._path_seg)),
       )),
 
     _path_seg: ($) => seq(choice($.identifier, $.backtick_name), optional("[]")),

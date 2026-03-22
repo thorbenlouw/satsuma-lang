@@ -191,6 +191,150 @@ mapping {
               (identifier))))))))
 
 ================================================================================
+Bare relative arrows in nested block (no transform bodies)
+================================================================================
+
+mapping {
+  source { `src` }
+  target { `tgt` }
+  Items[] -> items[] {
+    .A -> .x
+    .B -> .y
+    .C -> .z { trim }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (backtick_name)))
+      (target_block
+        (source_ref
+          (backtick_name)))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (token_call
+                (identifier)))))))))
+
+================================================================================
+Many bare relative arrows in nested block
+================================================================================
+
+mapping {
+  source { orders }
+  target { fact }
+  Items[] -> items[] {
+    .EBELP -> .referenceLine
+    .MATNR -> .item
+    .MENGE -> .orderedQty
+    .NETPR -> .unitCost
+    .MEINS -> .uom
+    .EINDT -> .needByDate
+    .TXZ01 -> .description
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (nested_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))
+        (map_arrow
+          (src_path
+            (relative_field_path
+              (identifier)))
+          (tgt_path
+            (relative_field_path
+              (identifier))))))))
+
+================================================================================
 Empty nested arrow body
 ================================================================================
 

@@ -753,13 +753,12 @@ function extractSingleArrow(
 }
 
 /**
- * Clean path text: strip leading dots (relative paths) and newlines
- * (parser artifact from multiline relative_field_path).
+ * Clean path text: defensive newline stripping.  The grammar now uses
+ * token.immediate(".") so paths should never span lines, but we keep
+ * this as a safety net for malformed input or error-recovery parses.
  */
 function cleanPathText(text: string | null): string | null {
   if (!text) return null;
-  // Handle parser artifact: multiline relative_field_path merges multiple lines
-  // e.g. ".quantity\n    .price" — take only the first path segment
   const nlIdx = text.indexOf("\n");
   if (nlIdx !== -1) {
     text = text.slice(0, nlIdx).trim();

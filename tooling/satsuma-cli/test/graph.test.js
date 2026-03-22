@@ -365,4 +365,28 @@ describe("satsuma graph (slices)", () => {
     const metric = data.nodes.find((n) => n.kind === "metric" && n.slices.length === 0);
     assert.ok(metric, "should have a metric with empty slices");
   });
+
+  it("nested arrow children have correct from/to (sl-6dt1, sl-9uh0)", async () => {
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "sap-po-to-mfcs.stm"));
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+
+    // Find nested child edges (Items[].* -> items[].*)
+    const childEdges = data.edges.filter(
+      (e) => e.from && e.from.includes("Items[].") && e.to && e.to.includes("items[]."),
+    );
+    assert.ok(childEdges.length >= 7, `expected >=7 nested child edges, got ${childEdges.length}`);
+
+    // No edge should have from:null (the sl-6dt1 bug)
+    for (const e of childEdges) {
+      assert.ok(e.from !== null, `edge to ${e.to} should have non-null from`);
+      assert.ok(!e.from.includes("\n"), `edge from should not contain newline: ${e.from}`);
+      assert.ok(!e.to.includes("\n"), `edge to should not contain newline: ${e.to}`);
+    }
+
+    // Specifically check .TXZ01 -> .description (the last nested arrow, previously broken)
+    const txz = childEdges.find((e) => e.from.endsWith(".TXZ01"));
+    assert.ok(txz, "should find TXZ01 edge");
+    assert.ok(txz.to.endsWith(".description"), `TXZ01 target should be .description, got ${txz.to}`);
+  });
 });
