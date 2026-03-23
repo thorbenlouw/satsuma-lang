@@ -204,6 +204,23 @@ describe("satsuma schema", () => {
     assert.doesNotMatch(stdout, /\/\/\?/);
   });
 
+  it("includes comments before first and after last field (sl-a0wf)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "comment-edges.stm");
+    const { stdout, code } = await run("schema", "comment_edges", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /comment before first field/);
+    assert.match(stdout, /comment after last field/);
+  });
+
+  it("--json includes edge comments in fieldLines (sl-a0wf)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "comment-edges.stm");
+    const { stdout, code } = await run("schema", "comment_edges", "--json", F);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.fieldLines.some((l) => l.includes("comment before first field")));
+    assert.ok(data.fieldLines.some((l) => l.includes("comment after last field")));
+  });
+
   it("--json --compact strips comments from fieldLines (sl-xtpd)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "schema-compact-comment.stm");
     const { stdout, code } = await run("schema", "comment_test", "--json", "--compact", F);
