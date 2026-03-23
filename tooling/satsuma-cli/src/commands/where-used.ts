@@ -286,14 +286,8 @@ function walkForTransformCalls(node: SyntaxNode, transformName: string, mappingN
           results.push({ mapping: mappingName, row: c.startPosition.row });
         }
       }
-    }
-    // Also check for fragment_spread directly in arrow bodies
-    if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "spread_label");
-      const spreadName = getSpreadName(lbl);
-      if (spreadName === transformName) {
-        results.push({ mapping: mappingName, row: c.startPosition.row });
-      }
+      // Don't recurse into pipe_step — already checked its children above
+      continue;
     }
     walkForTransformCalls(c, transformName, mappingName, results);
   }
