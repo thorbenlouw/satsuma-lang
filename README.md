@@ -268,6 +268,20 @@ If you are contributing tooling, start here:
 - Python 3.12+
 - C toolchain (Xcode Command Line Tools on macOS, `build-essential` on Linux)
 
+### Setup
+
+Install all dependencies (root + all sub-packages) in one step:
+
+```bash
+npm run install:all
+```
+
+To start fresh, clean all `node_modules` directories and reinstall:
+
+```bash
+npm run reinstall
+```
+
 ### Tree-sitter parser
 
 ```bash

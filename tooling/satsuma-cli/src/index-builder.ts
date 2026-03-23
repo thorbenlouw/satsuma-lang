@@ -22,6 +22,7 @@ import { extractNLRefData } from "./nl-ref-extract.js";
 import type {
   ArrowRecord,
   DuplicateRecord,
+  FieldDecl,
   FragmentRecord,
   MappingRecord,
   MetricRecord,
@@ -35,6 +36,26 @@ import type {
   WarningRecord,
   WorkspaceIndex,
 } from "./types.js";
+
+/**
+ * Recursively merge `incoming` fields into `existing`, adding new fields and
+ * merging children of fields that share the same name.
+ */
+function mergeFields(existing: FieldDecl[], incoming: FieldDecl[]): void {
+  const byName = new Map<string, FieldDecl>();
+  for (const f of existing) byName.set(f.name, f);
+  for (const f of incoming) {
+    const prev = byName.get(f.name);
+    if (!prev) {
+      existing.push(f);
+      byName.set(f.name, f);
+    } else if (f.children?.length) {
+      // Recursively merge children when both sides are records
+      if (!prev.children) prev.children = [];
+      mergeFields(prev.children, f.children);
+    }
+  }
+}
 
 interface FileData {
   filePath: string;
@@ -185,10 +206,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
       checkDuplicate("schema", s.name, s.namespace, filePath, s.row);
       const existing = schemas.get(key);
       if (existing) {
-        const existingNames = new Set(existing.fields.map((f) => f.name));
-        for (const f of s.fields) {
-          if (!existingNames.has(f.name)) existing.fields.push(f);
-        }
+        mergeFields(existing.fields, s.fields);
         existing.hasSpreads = existing.hasSpreads || s.hasSpreads;
         if (s.spreads?.length) {
           const existingSpreads = new Set(existing.spreads ?? []);

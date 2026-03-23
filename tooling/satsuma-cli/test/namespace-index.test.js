@@ -613,4 +613,102 @@ describe("schema field merging across files", () => {
     const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Merged schema fields should resolve across files");
   });
+
+  it("merged schema recursively merges nested record children across files", () => {
+    // File A declares a record field "address" with child "street"
+    const data1 = makeFileData({
+      filePath: "file-a.stm",
+      schemas: [
+        {
+          name: "customer",
+          namespace: null,
+          fields: [
+            { name: "id", type: "INT" },
+            {
+              name: "address",
+              type: "record",
+              children: [{ name: "street", type: "VARCHAR(200)" }],
+            },
+          ],
+          row: 1,
+        },
+        {
+          name: "hub_customer",
+          namespace: null,
+          fields: [
+            { name: "id", type: "INT" },
+            { name: "address_street", type: "VARCHAR(200)" },
+            { name: "address_city", type: "VARCHAR(100)" },
+          ],
+          row: 20,
+        },
+      ],
+      mappings: [{
+        name: "customer to hub_customer",
+        namespace: null,
+        sources: ["customer"],
+        targets: ["hub_customer"],
+        arrowCount: 2,
+        row: 30,
+      }],
+      arrowRecords: [
+        {
+          mapping: "customer to hub_customer",
+          namespace: null,
+          source: "address.street",
+          target: "address_street",
+          row: 35,
+        },
+      ],
+    });
+
+    // File B declares the same "customer" schema with "address" having child "city"
+    const data2 = makeFileData({
+      filePath: "file-b.stm",
+      schemas: [{
+        name: "customer",
+        namespace: null,
+        fields: [
+          {
+            name: "address",
+            type: "record",
+            children: [{ name: "city", type: "VARCHAR(100)" }],
+          },
+        ],
+        row: 1,
+      }],
+      mappings: [{
+        name: "customer to hub_customer_b",
+        namespace: null,
+        sources: ["customer"],
+        targets: ["hub_customer"],
+        arrowCount: 1,
+        row: 10,
+      }],
+      arrowRecords: [{
+        mapping: "customer to hub_customer_b",
+        namespace: null,
+        source: "address.city",
+        target: "address_city",
+        row: 15,
+      }],
+    });
+
+    const index = buildIndex([data1, data2]);
+
+    // Verify the merged schema has both children under "address"
+    const schema = index.schemas.get("customer");
+    assert.ok(schema, "Merged schema should exist");
+    const addressField = schema.fields.find((f) => f.name === "address");
+    assert.ok(addressField, "address field should exist");
+    assert.ok(addressField.children, "address should have children");
+    const childNames = addressField.children.map((c) => c.name);
+    assert.ok(childNames.includes("street"), "address should have street child");
+    assert.ok(childNames.includes("city"), "address should have city child from second file");
+
+    // Verify no false field-not-in-schema warnings
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "Nested record children should merge without false warnings");
+  });
 });
