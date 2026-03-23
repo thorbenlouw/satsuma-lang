@@ -127,6 +127,10 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
   const query = getHighlightsQuery();
   const captures = query.captures(tree.rootNode);
 
+  // Pre-scan: identify nl_string/multiline_string nodes that contain backtick refs.
+  // These need split tokenisation instead of a single string token.
+  const nlRefNodes = collectNlRefNodes(tree.rootNode);
+
   // Sort captures by position (row, then column) — tree-sitter captures
   // should already be ordered, but ensure it for the delta encoding.
   captures.sort((a: { node: SyntaxNode }, b: { node: SyntaxNode }) => {
@@ -149,6 +153,12 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
     if (seen.has(key)) continue;
     seen.add(key);
 
+    // For NL strings with backtick refs, emit split tokens instead of one big string.
+    if (nlRefNodes.has(nodeId(node))) {
+      emitSplitStringTokens(node, builder);
+      continue;
+    }
+
     // Semantic tokens are single-line in the LSP protocol.
     // For multi-line nodes (like multiline strings), emit one token per line.
     const startRow = node.startPosition.row;
@@ -166,9 +176,7 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
         );
       }
     } else {
-      // Multi-line token: emit first line from start to end-of-line,
-      // and last line from 0 to end column.  We skip interior lines
-      // for simplicity — they'll fall back to TextMate scoping.
+      // Multi-line token: emit one token per source line.
       const sourceLines = node.text.split("\n");
       for (let i = 0; i < sourceLines.length; i++) {
         const line = startRow + i;
@@ -181,11 +189,6 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
     }
   }
 
-  // Emit extra tokens for backtick references inside NL strings.
-  // The grammar treats nl_string and multiline_string as atomic tokens,
-  // so we scan their text for `…` patterns and emit variable tokens.
-  emitNlRefTokens(tree.rootNode, builder, seen);
-
   return builder.build();
 }
 
@@ -193,74 +196,111 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
 
 const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
 
+/** Unique identity for a CST node (by position). */
+function nodeId(node: SyntaxNode): string {
+  return `${node.startPosition.row}:${node.startPosition.column}:${node.endPosition.row}:${node.endPosition.column}`;
+}
+
 /**
- * Walk all nl_string and multiline_string nodes and emit semantic tokens
- * for backtick-quoted references within them.
+ * Pre-scan the tree and return the set of nodeId()s for nl_string and
+ * multiline_string nodes that contain at least one backtick reference.
  */
-function emitNlRefTokens(
-  root: SyntaxNode,
-  builder: SemanticTokensBuilder,
-  seen: Set<string>,
-): void {
+function collectNlRefNodes(root: SyntaxNode): Set<string> {
+  const result = new Set<string>();
   const cursor = root.walk();
   let reachedRoot = false;
 
   do {
     const node = cursor.currentNode;
     if (node.type === "nl_string" || node.type === "multiline_string") {
-      const text = node.text;
-      const startRow = node.startPosition.row;
-      const startCol = node.startPosition.column;
-
-      // Build a line offset map for multi-line strings
-      const lineOffsets: number[] = [0];
-      for (let i = 0; i < text.length; i++) {
-        if (text[i] === "\n") lineOffsets.push(i + 1);
-      }
-
       BACKTICK_REF_RE.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
-        const offset = match.index;
-        // Find which line this offset falls on
-        let lineIdx = 0;
-        for (let l = lineOffsets.length - 1; l >= 0; l--) {
-          if (offset >= lineOffsets[l]!) {
-            lineIdx = l;
-            break;
-          }
-        }
-
-        const row = startRow + lineIdx;
-        const col =
-          lineIdx === 0
-            ? startCol + offset
-            : offset - lineOffsets[lineIdx]!;
-        const length = match[0].length;
-
-        const key = `${row}:${col}:${row}:${col + length}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          builder.push(
-            row,
-            col,
-            length,
-            3,  // variable
-            0,
-          );
-        }
+      if (BACKTICK_REF_RE.test(node.text)) {
+        result.add(nodeId(node));
       }
     }
-
-    // Depth-first traversal
     if (cursor.gotoFirstChild()) continue;
     if (cursor.gotoNextSibling()) continue;
     while (true) {
-      if (!cursor.gotoParent()) {
-        reachedRoot = true;
-        break;
-      }
+      if (!cursor.gotoParent()) { reachedRoot = true; break; }
       if (cursor.gotoNextSibling()) break;
     }
   } while (!reachedRoot);
+
+  return result;
+}
+
+/** Segment type for split string tokenisation. */
+interface Segment {
+  offset: number;    // byte offset within node text
+  length: number;
+  isRef: boolean;    // true = backtick ref (variable), false = string
+}
+
+/**
+ * For an nl_string or multiline_string that contains backtick refs,
+ * emit interleaved string and variable tokens instead of one big string token.
+ */
+function emitSplitStringTokens(
+  node: SyntaxNode,
+  builder: SemanticTokensBuilder,
+): void {
+  const text = node.text;
+  const startRow = node.startPosition.row;
+  const startCol = node.startPosition.column;
+
+  // Build line offset map for position calculation
+  const lineOffsets: number[] = [0];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\n") lineOffsets.push(i + 1);
+  }
+
+  // Build segments: alternating string and ref parts
+  const segments: Segment[] = [];
+  let lastEnd = 0;
+
+  BACKTICK_REF_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
+    // String part before this ref
+    if (match.index > lastEnd) {
+      segments.push({ offset: lastEnd, length: match.index - lastEnd, isRef: false });
+    }
+    // The backtick ref itself
+    segments.push({ offset: match.index, length: match[0].length, isRef: true });
+    lastEnd = match.index + match[0].length;
+  }
+  // Trailing string part
+  if (lastEnd < text.length) {
+    segments.push({ offset: lastEnd, length: text.length - lastEnd, isRef: false });
+  }
+
+  // Emit each segment, splitting across lines as needed
+  for (const seg of segments) {
+    const typeIndex = seg.isRef ? 3 : 5;  // variable or string
+    const segText = text.slice(seg.offset, seg.offset + seg.length);
+    const segLines = segText.split("\n");
+
+    // Find starting line for this segment
+    let segLineIdx = 0;
+    for (let l = lineOffsets.length - 1; l >= 0; l--) {
+      if (seg.offset >= lineOffsets[l]!) { segLineIdx = l; break; }
+    }
+
+    for (let i = 0; i < segLines.length; i++) {
+      const row = startRow + segLineIdx + i;
+      let col: number;
+      if (segLineIdx + i === 0) {
+        // First line of the node — offset relative to node start column
+        col = startCol + (i === 0 ? seg.offset : 0);
+      } else {
+        // Subsequent lines — offset from start of that line
+        const lineStartOffset = lineOffsets[segLineIdx + i]!;
+        col = (i === 0 ? seg.offset : lineStartOffset) - lineStartOffset;
+      }
+      const len = segLines[i]!.length;
+      if (len > 0) {
+        builder.push(row, col, len, typeIndex, 0);
+      }
+    }
+  }
 }
