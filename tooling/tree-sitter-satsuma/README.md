@@ -44,7 +44,7 @@ test/
     nested_arrows.txt    Nested arrow bodies
     recovery.txt         Error-recovery cases
 scripts/
-  smoke-test.js          Parses .stm files, emits JSON summary (Node.js)
+  smoke-check.js          Parses .stm files, emits JSON summary (Node.js)
 docs/
   cst-reference.md       Complete CST node type reference
 CONFLICTS.expected       Documented expected grammar conflicts (count = 3)
@@ -73,7 +73,7 @@ npm test
 # equivalent: tree-sitter test
 
 # Smoke-test against examples/
-node scripts/smoke-test.js ../../examples/
+node scripts/smoke-check.js ../../examples/
 ```
 
 ## Grammar Generation

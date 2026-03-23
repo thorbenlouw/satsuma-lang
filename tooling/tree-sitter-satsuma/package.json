@@ -10,7 +10,7 @@
     "build": "../../scripts/tree-sitter-local.sh generate && node-gyp build",
     "test": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test",
     "test:wasm": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test --wasm",
-    "smoke": "node scripts/smoke-test.js"
+    "smoke": "node scripts/smoke-check.js"
   },
   "dependencies": {
     "node-addon-api": "^8.3.0",

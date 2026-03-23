@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * smoke-test.js — Satsuma v2 parser smoke test
+ * smoke-check.js — Satsuma v2 parser smoke test
  *
  * Usage:
- *   node scripts/smoke-test.js <file.stm>
- *   node scripts/smoke-test.js examples/
+ *   node scripts/smoke-check.js <file.stm>
+ *   node scripts/smoke-check.js examples/
  *
  * Parses one or more .stm files with the tree-sitter-satsuma v2 grammar and emits
  * a JSON summary of the constructs found. Exits with code 1 if any parse errors
@@ -114,7 +114,7 @@ const args = process.argv.slice(2);
 
 if (args.length === 0) {
   console.error(
-    "Usage: node scripts/smoke-test.js <file.stm | directory> [...]",
+    "Usage: node scripts/smoke-check.js <file.stm | directory> [...]",
   );
   process.exit(1);
 }
