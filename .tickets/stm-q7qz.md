@@ -1,6 +1,6 @@
 ---
 id: stm-q7qz
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-03-19T07:19:41Z
