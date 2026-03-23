@@ -1,5 +1,5 @@
-import * as path from "path";
-import { ExtensionContext } from "vscode";
+import { join } from "path";
+import { ExtensionContext, workspace } from "vscode";
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -11,7 +11,7 @@ let client: LanguageClient | undefined;
 
 export function activate(context: ExtensionContext): void {
   const serverModule = context.asAbsolutePath(
-    path.join("server", "dist", "server.js"),
+    join("server", "dist", "server.js"),
   );
 
   const serverOptions: ServerOptions = {
@@ -23,8 +23,14 @@ export function activate(context: ExtensionContext): void {
     },
   };
 
+  const config = workspace.getConfiguration("satsuma");
+  const cliPath = config.get<string>("cliPath") || "satsuma";
+
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "satsuma" }],
+    initializationOptions: {
+      cliPath,
+    },
   };
 
   client = new LanguageClient(

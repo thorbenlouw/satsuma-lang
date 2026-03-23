@@ -28,7 +28,17 @@
         "scopeName": "source.satsuma",
         "path": "./syntaxes/satsuma.tmLanguage.json"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Satsuma",
+      "properties": {
+        "satsuma.cliPath": {
+          "type": "string",
+          "default": "satsuma",
+          "description": "Path to the satsuma CLI executable used for validation diagnostics."
+        }
+      }
+    }
   },
   "scripts": {
     "build": "node esbuild.js",

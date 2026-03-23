@@ -1,6 +1,6 @@
 ---
 id: sl-2e4z
-status: open
+status: done
 deps: []
 links: []
 created: 2026-03-23T09:55:40Z
@@ -17,6 +17,17 @@ Node.js LSP server using vscode-languageserver + tree-sitter. File-level feature
 
 
 ## Notes
+
+**2026-03-23T15:00:00Z**
+
+All Phase 1 features complete. Third commit adds semantic diagnostics:
+- ✅ Semantic diagnostics — `satsuma validate --json` runs on save, results merged with parse diagnostics
+- New `validate-diagnostics.ts` module: shells out to CLI, parses JSON output, maps to LSP Diagnostics
+- Server wires `onDidSave` → `runValidate` → merged diagnostics (parse + validate)
+- Extension passes configurable `satsuma.cliPath` to server via initializationOptions
+- `satsuma.cliPath` setting added to package.json contributes.configuration
+- 6 new tests (62 total LSP tests passing)
+- Graceful fallback: if CLI not found, parse diagnostics still work
 
 **2026-03-23T13:00:00Z**
 
