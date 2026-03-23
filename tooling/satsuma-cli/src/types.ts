@@ -17,6 +17,7 @@ export interface SyntaxNode {
   child(index: number): SyntaxNode | null;
   parent: SyntaxNode | null;
   startPosition: { row: number; column: number };
+  endPosition: { row: number; column: number };
   isMissing: boolean;
 }
 

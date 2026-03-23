@@ -100,6 +100,28 @@ function fieldHasListOf(fd: SyntaxNode): boolean {
   return false;
 }
 
+/** Collect edge comments (before first field / after last field) from a block node. */
+function collectEdgeComments(blockNode: SyntaxNode, position: "before" | "after", bodyNode: SyntaxNode): CollectedLine[] {
+  const lines: CollectedLine[] = [];
+  const commentTypes = new Set(["comment", "warning_comment", "question_comment"]);
+  for (const c of blockNode.children) {
+    if (position === "before") {
+      // Comments between { and body start
+      if (c.startPosition.row >= bodyNode.startPosition.row) break;
+      if (commentTypes.has(c.type)) {
+        lines.push({ indent: 0, text: `  ${c.text}` });
+      }
+    } else {
+      // Comments between body end and }
+      if (c.startPosition.row <= bodyNode.endPosition.row) continue;
+      if (commentTypes.has(c.type)) {
+        lines.push({ indent: 0, text: `  ${c.text}` });
+      }
+    }
+  }
+  return lines;
+}
+
 /** Collect fields from schema_body, recursing into nested record/list_of fields. */
 function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[] {
   const lines: CollectedLine[] = [];
@@ -184,7 +206,11 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
   if (schemaNode) {
     const body = schemaNode.namedChildren.find((c) => c.type === "schema_body");
     if (body) {
-      let fieldLines = collectFields(body).map((l) => l.text.trim());
+      let fieldLines = [
+        ...collectEdgeComments(schemaNode, "before", body),
+        ...collectFields(body),
+        ...collectEdgeComments(schemaNode, "after", body),
+      ].map((l) => l.text.trim());
       if (opts.compact) {
         fieldLines = fieldLines.filter((l) => !l.startsWith("//"));
       }
@@ -211,7 +237,12 @@ function printDefault(entry: SchemaRecord, schemaNode: SyntaxNode | null, compac
   if (schemaNode) {
     const body = schemaNode.namedChildren.find((c) => c.type === "schema_body");
     if (body) {
-      for (const { text } of collectFields(body, 1)) {
+      const allLines = [
+        ...collectEdgeComments(schemaNode, "before", body),
+        ...collectFields(body, 1),
+        ...collectEdgeComments(schemaNode, "after", body),
+      ];
+      for (const { text } of allLines) {
         if (compact) {
           // Strip comments and inline note text in compact mode
           if (text.trimStart().startsWith("//")) continue;

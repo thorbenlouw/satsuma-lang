@@ -1,0 +1,6 @@
+schema comment_edges {
+  // comment before first field
+  id     INTEGER  (pk)
+  name   STRING
+  // comment after last field
+}
