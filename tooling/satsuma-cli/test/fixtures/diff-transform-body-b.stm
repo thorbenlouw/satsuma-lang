@@ -1,0 +1,3 @@
+transform 'clean address' {
+  trim | lowercase | replace("  ", " ") | capitalize
+}

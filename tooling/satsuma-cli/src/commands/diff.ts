@@ -14,7 +14,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { diffIndex } from "../diff.js";
-import type { Delta, BlockDelta, SchemaChange, MappingChange } from "../types.js";
+import type { Delta, BlockDelta, SchemaChange, MappingChange, TransformChange } from "../types.js";
 
 export function register(program: Command): void {
   program
@@ -127,7 +127,7 @@ function printNotes(delta: Delta): void {
   console.log();
 }
 
-function printSection(label: string, section: BlockDelta<SchemaChange | MappingChange>): void {
+function printSection(label: string, section: BlockDelta<SchemaChange | MappingChange | TransformChange>): void {
   const total =
     section.added.length + section.removed.length + section.changed.length;
   if (total === 0) return;
@@ -165,10 +165,14 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
       } else if (c.kind === "source-changed" || c.kind === "grain-changed" || c.kind === "slices-changed") {
         const label = c.kind.replace("-changed", "");
         console.log(`      ~ ${label}: ${String(c.from)} -> ${String(c.to)}`);
+      } else if (c.kind === "note-changed") {
+        console.log(`      ~ note: ${String(c.from)} -> ${String(c.to)}`);
       } else if (c.kind === "note-added") {
         console.log(`      + note ${JSON.stringify(String(c.from))}`);
       } else if (c.kind === "note-removed") {
         console.log(`      - note ${JSON.stringify(String(c.from))}`);
+      } else if (c.kind === "body-changed") {
+        console.log(`      ~ body: ${String(c.from)} -> ${String(c.to)}`);
       }
     }
   }

@@ -135,6 +135,49 @@ describe("diffIndex", () => {
     assert.equal(delta.notes.added.length, 0, "block-owned notes should not appear in top-level notes");
   });
 
+  it("detects schema-level note text changes (sl-4gio)", () => {
+    const a = makeIndex({ foo: { note: "Raw source data", fields: [{ name: "id", type: "INT" }] } });
+    const b = makeIndex({ foo: { note: "Updated description", fields: [{ name: "id", type: "INT" }] } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 1);
+    assert.equal(delta.schemas.changed[0].changes[0].kind, "note-changed");
+    assert.equal(delta.schemas.changed[0].changes[0].from, "Raw source data");
+    assert.equal(delta.schemas.changed[0].changes[0].to, "Updated description");
+  });
+
+  it("detects schema note added from null (sl-4gio)", () => {
+    const a = makeIndex({ foo: { note: null, fields: [] } });
+    const b = makeIndex({ foo: { note: "New note", fields: [] } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 1);
+    assert.equal(delta.schemas.changed[0].changes[0].kind, "note-changed");
+  });
+
+  it("identical schema notes produce no change", () => {
+    const a = makeIndex({ foo: { note: "Same note", fields: [] } });
+    const b = makeIndex({ foo: { note: "Same note", fields: [] } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 0);
+  });
+
+  it("detects transform body text changes (sl-7ow3)", () => {
+    const a = makeIndex({}, {}, { transforms: { "clean address": { body: "trim | lowercase" } } });
+    const b = makeIndex({}, {}, { transforms: { "clean address": { body: "trim | lowercase | capitalize" } } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.transforms.changed.length, 1);
+    assert.equal(delta.transforms.changed[0].name, "clean address");
+    assert.equal(delta.transforms.changed[0].changes[0].kind, "body-changed");
+    assert.equal(delta.transforms.changed[0].changes[0].from, "trim | lowercase");
+    assert.equal(delta.transforms.changed[0].changes[0].to, "trim | lowercase | capitalize");
+  });
+
+  it("identical transform bodies produce no change", () => {
+    const a = makeIndex({}, {}, { transforms: { "clean": { body: "trim" } } });
+    const b = makeIndex({}, {}, { transforms: { "clean": { body: "trim" } } });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.transforms.changed.length, 0);
+  });
+
   it("detects arrow count changes in mappings", () => {
     const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 5 } });
     const b = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 8 } });

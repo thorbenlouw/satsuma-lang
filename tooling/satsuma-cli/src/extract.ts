@@ -451,6 +451,7 @@ export function extractFragments(rootNode: SyntaxNode): ExtractedFragment[] {
 
 interface ExtractedTransform {
   name: string | null;
+  body: string | null;
   namespace: string | null;
   row: number;
 }
@@ -459,11 +460,15 @@ interface ExtractedTransform {
  * Extract all transform_block definitions.
  */
 export function extractTransforms(rootNode: SyntaxNode): ExtractedTransform[] {
-  return collectFromNamespaces(rootNode, "transform_block").map(({ node, namespace }) => ({
-    name: labelText(node),
-    namespace,
-    row: node.startPosition.row,
-  }));
+  return collectFromNamespaces(rootNode, "transform_block").map(({ node, namespace }) => {
+    const pipeChain = child(node, "pipe_chain");
+    return {
+      name: labelText(node),
+      body: pipeChain ? pipeChain.text : null,
+      namespace,
+      row: node.startPosition.row,
+    };
+  });
 }
 
 const BLOCK_TYPES = new Set([

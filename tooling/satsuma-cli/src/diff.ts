@@ -17,6 +17,8 @@ import type {
   NoteRecord,
   SchemaChange,
   SchemaRecord,
+  TransformChange,
+  TransformRecord,
   WorkspaceIndex,
 } from "./types.js";
 
@@ -47,7 +49,7 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
     }),
     metrics: diffBlockMap(indexA.metrics, indexB.metrics, diffMetric),
     fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
-    transforms: diffBlockMap(indexA.transforms, indexB.transforms, () => []),
+    transforms: diffBlockMap(indexA.transforms, indexB.transforms, diffTransform),
     notes: diffNotes(indexA.notes ?? [], indexB.notes ?? []),
   };
 }
@@ -102,7 +104,16 @@ function diffBlockMap<T, C>(
 }
 
 function diffSchema(a: SchemaRecord, b: SchemaRecord): SchemaChange[] {
-  return diffFieldList(a.fields, b.fields);
+  const changes: SchemaChange[] = [];
+
+  // Compare schema-level note text
+  if ((a.note ?? "") !== (b.note ?? "")) {
+    changes.push({ kind: "note-changed", field: "(note)", from: a.note || "(none)", to: b.note || "(none)" });
+  }
+
+  // Compare fields
+  changes.push(...diffFieldList(a.fields, b.fields));
+  return changes;
 }
 
 function diffMetric(a: MetricRecord, b: MetricRecord): SchemaChange[] {
@@ -130,6 +141,14 @@ function diffMetric(a: MetricRecord, b: MetricRecord): SchemaChange[] {
 
 function diffFragment(a: FragmentRecord, b: FragmentRecord): SchemaChange[] {
   return diffFieldList(a.fields, b.fields);
+}
+
+function diffTransform(a: TransformRecord, b: TransformRecord): TransformChange[] {
+  const changes: TransformChange[] = [];
+  if ((a.body ?? "") !== (b.body ?? "")) {
+    changes.push({ kind: "body-changed", from: a.body || "(empty)", to: b.body || "(empty)" });
+  }
+  return changes;
 }
 
 function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""): SchemaChange[] {
