@@ -4,9 +4,13 @@ import {
   TextDocuments,
   TextDocumentSyncKind,
   InitializeResult,
+  FileChangeType,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { Tree } from "tree-sitter";
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath, pathToFileURL } from "url";
 import { getParser } from "./parser-utils";
 import { computeDiagnostics } from "./diagnostics";
 import { computeDocumentSymbols } from "./symbols";
@@ -14,6 +18,15 @@ import { computeFoldingRanges } from "./folding";
 import { computeSemanticTokens, semanticTokensLegend } from "./semantic-tokens";
 import { computeHover } from "./hover";
 import { runValidate } from "./validate-diagnostics";
+import {
+  WorkspaceIndex,
+  createWorkspaceIndex,
+  indexFile,
+  removeFile,
+} from "./workspace-index";
+import { computeDefinition } from "./definition";
+import { computeReferences } from "./references";
+import { computeCompletions } from "./completion";
 
 // ---------- Connection setup ----------
 
@@ -26,8 +39,14 @@ const trees = new Map<string, Tree>();
 // Per-document validate diagnostics cache (keyed by URI)
 const validateDiagCache = new Map<string, import("vscode-languageserver").Diagnostic[]>();
 
+// Workspace index for cross-file navigation
+const wsIndex: WorkspaceIndex = createWorkspaceIndex();
+
 // CLI path resolved at initialization
 let cliPath = "satsuma";
+
+// Workspace folders for file scanning
+let workspaceFolders: string[] = [];
 
 // ---------- Initialisation ----------
 
@@ -36,6 +55,13 @@ connection.onInitialize((params): InitializeResult => {
   const initOptions = params.initializationOptions;
   if (initOptions?.cliPath && typeof initOptions.cliPath === "string") {
     cliPath = initOptions.cliPath;
+  }
+
+  // Capture workspace folders
+  if (params.workspaceFolders) {
+    workspaceFolders = params.workspaceFolders.map((f) => fileURLToPath(f.uri));
+  } else if (params.rootUri) {
+    workspaceFolders = [fileURLToPath(params.rootUri)];
   }
 
   return {
@@ -52,8 +78,21 @@ connection.onInitialize((params): InitializeResult => {
         full: true,
       },
       hoverProvider: true,
+      definitionProvider: true,
+      referencesProvider: true,
+      completionProvider: {
+        triggerCharacters: ["|", ".", ":", "{"],
+        resolveProvider: false,
+      },
     },
   };
+});
+
+// Index workspace files after initialization
+connection.onInitialized(() => {
+  for (const folder of workspaceFolders) {
+    indexWorkspaceFolder(folder);
+  }
 });
 
 // ---------- Document lifecycle ----------
@@ -62,6 +101,9 @@ documents.onDidChangeContent((change) => {
   const tree = parseDocument(change.document);
   trees.set(change.document.uri, tree);
 
+  // Update workspace index for the open document
+  indexFile(wsIndex, change.document.uri, tree);
+
   // Recompute parse diagnostics and merge with cached validate diagnostics
   sendMergedDiagnostics(change.document.uri, tree);
 });
@@ -69,36 +111,66 @@ documents.onDidChangeContent((change) => {
 documents.onDidClose((event) => {
   trees.delete(event.document.uri);
   validateDiagCache.delete(event.document.uri);
-  // Clear diagnostics for closed documents
+  // Keep the file in the index (it's still on disk) — just clear the tree cache
   connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] });
 });
 
 // Run satsuma validate on save
 documents.onDidSave(async (event) => {
+  // Re-index from the saved content
+  const tree = trees.get(event.document.uri);
+  if (tree) {
+    indexFile(wsIndex, event.document.uri, tree);
+  }
+
   try {
     const diagsByUri = await runValidate(event.document.uri, cliPath);
 
     // Update cache: clear stale entries for files no longer reporting
-    // Only clear for the saved file — other files keep their cached diagnostics
     validateDiagCache.delete(event.document.uri);
 
     for (const [uri, diags] of diagsByUri) {
       validateDiagCache.set(uri, diags);
 
       // For the currently open document, merge with parse diagnostics
-      const tree = trees.get(uri);
-      if (tree) {
-        sendMergedDiagnostics(uri, tree);
+      const openTree = trees.get(uri);
+      if (openTree) {
+        sendMergedDiagnostics(uri, openTree);
       }
     }
 
     // If saved file had validate diagnostics before but now has none, refresh
-    const tree = trees.get(event.document.uri);
-    if (tree && !diagsByUri.has(event.document.uri)) {
-      sendMergedDiagnostics(event.document.uri, tree);
+    const savedTree = trees.get(event.document.uri);
+    if (savedTree && !diagsByUri.has(event.document.uri)) {
+      sendMergedDiagnostics(event.document.uri, savedTree);
     }
   } catch {
     // CLI not available or errored — parse diagnostics still work
+  }
+});
+
+// Watch for .stm file changes outside the editor
+connection.onDidChangeWatchedFiles((params) => {
+  const parser = getParser();
+  for (const change of params.changes) {
+    if (!change.uri.endsWith(".stm")) continue;
+
+    if (change.type === FileChangeType.Deleted) {
+      removeFile(wsIndex, change.uri);
+    } else {
+      // Created or changed — re-index from disk
+      // Skip if the file is open in the editor (onDidChangeContent handles it)
+      if (trees.has(change.uri)) continue;
+
+      try {
+        const fsPath = fileURLToPath(change.uri);
+        const content = fs.readFileSync(fsPath, "utf-8");
+        const tree = parser.parse(content);
+        indexFile(wsIndex, change.uri, tree);
+      } catch {
+        // File unreadable — skip
+      }
+    }
   }
 });
 
@@ -128,6 +200,43 @@ connection.onHover((params) => {
   return computeHover(tree, params.position.line, params.position.character);
 });
 
+connection.onDefinition((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return null;
+  return computeDefinition(
+    tree,
+    params.position.line,
+    params.position.character,
+    params.textDocument.uri,
+    wsIndex,
+  );
+});
+
+connection.onReferences((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return [];
+  return computeReferences(
+    tree,
+    params.position.line,
+    params.position.character,
+    params.textDocument.uri,
+    wsIndex,
+    params.context.includeDeclaration,
+  );
+});
+
+connection.onCompletion((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return [];
+  return computeCompletions(
+    tree,
+    params.position.line,
+    params.position.character,
+    params.textDocument.uri,
+    wsIndex,
+  );
+});
+
 // ---------- Helpers ----------
 
 function parseDocument(doc: TextDocument): Tree {
@@ -143,6 +252,43 @@ function sendMergedDiagnostics(uri: string, tree: Tree): void {
     uri,
     diagnostics: [...parseDiags, ...validateDiags],
   });
+}
+
+/** Recursively find all .stm files in a directory and index them. */
+function indexWorkspaceFolder(folderPath: string): void {
+  const parser = getParser();
+  const stmFiles = findStmFiles(folderPath);
+
+  for (const filePath of stmFiles) {
+    try {
+      const content = fs.readFileSync(filePath, "utf-8");
+      const tree = parser.parse(content);
+      const uri = pathToFileURL(filePath).toString();
+      indexFile(wsIndex, uri, tree);
+    } catch {
+      // Unreadable file — skip
+    }
+  }
+}
+
+/** Recursively find .stm files, skipping hidden dirs and node_modules. */
+function findStmFiles(dir: string): string[] {
+  const results: string[] = [];
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        results.push(...findStmFiles(full));
+      } else if (entry.name.endsWith(".stm")) {
+        results.push(full);
+      }
+    }
+  } catch {
+    // Unreadable directory — skip
+  }
+  return results;
 }
 
 // ---------- Start ----------
