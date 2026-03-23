@@ -952,6 +952,19 @@ describe("satsuma context", () => {
     assert.ok(data.some((d) => d.name === "raw_orders"), "should match raw_orders via //! comment");
   });
 
+  it("finds blocks containing language keywords like flatten and list_of (sc-rj24)", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout: flattenOut, code: c1 } = await run("context", "flatten", FFG, "--json");
+    assert.equal(c1, 0);
+    const flattenData = JSON.parse(flattenOut);
+    assert.ok(flattenData.length > 0, "should find blocks containing flatten");
+
+    const { stdout: listOut, code: c2 } = await run("context", "list_of", FFG, "--json");
+    assert.equal(c2, 0);
+    const listData = JSON.parse(listOut);
+    assert.ok(listData.length > 0, "should find blocks containing list_of");
+  });
+
   it("searches metadata tags/values for query matches (sl-mdlr)", async () => {
     const { stdout, code } = await run("context", "pii", EXAMPLES, "--json");
     assert.equal(code, 0);
