@@ -1,6 +1,6 @@
 ---
 id: sl-kf76
-status: open
+status: closed
 deps: [sl-ainj]
 links: []
 created: 2026-03-22T07:44:55Z

@@ -1,6 +1,6 @@
 ---
 id: sl-7ow3
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T07:44:44Z
