@@ -30,6 +30,7 @@ jobs:
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
   lint:
@@ -52,6 +53,7 @@ jobs:
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
       - run: npm run lint
@@ -79,6 +81,7 @@ jobs:
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Run CLI tests
@@ -111,6 +114,7 @@ jobs:
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Generate parser
@@ -172,6 +176,7 @@ jobs:
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Validate manifest and grammar
@@ -179,6 +184,12 @@ jobs:
 
       - name: Run fixture and golden tests
         run: npm test
+
+      - name: Build extension (client + server + webview)
+        run: npm run build
+
+      - name: Run LSP server tests
+        run: npm run test:lsp
 
       - name: Audit npm dependencies
         run: npm audit --omit=dev
