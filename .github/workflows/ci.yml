@@ -26,6 +26,7 @@ jobs:
           path: |
             node_modules
             tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
@@ -47,6 +48,7 @@ jobs:
           path: |
             node_modules
             tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
@@ -73,6 +75,7 @@ jobs:
           path: |
             node_modules
             tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
@@ -104,6 +107,7 @@ jobs:
           path: |
             node_modules
             tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
@@ -164,6 +168,7 @@ jobs:
           path: |
             node_modules
             tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/vscode-satsuma/node_modules
