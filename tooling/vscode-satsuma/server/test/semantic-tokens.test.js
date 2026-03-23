@@ -185,6 +185,15 @@ describe("computeSemanticTokens", () => {
     assert.equal(varTokens.length, 2, "should have 2 variable tokens for backtick refs");
     assert.equal(varTokens[0].length, "`src_accounts`".length);
     assert.equal(varTokens[1].length, "`tgt_accounts`".length);
+
+    // The string should be split — string parts before/between/after the refs
+    const stringTokens = tokens.filter(
+      (t) => t.type === "string" && t.line === 0 && t.col >= 7,
+    );
+    assert.ok(
+      stringTokens.length >= 2,
+      `should have string segments between refs, got ${stringTokens.length}`,
+    );
   });
 
   it("tokenizes backtick references inside multiline_string as variable", () => {
