@@ -10,7 +10,7 @@ Ship a VS Code extension that turns the existing TextMate syntax highlighter (Fe
 
 ## Problem
 
-Satsuma now has strong tooling foundations — a tree-sitter parser with 190+ corpus tests, a 16-command CLI for structural extraction, tree-sitter queries for highlights/locals/folds, and a TextMate grammar for basic syntax colouring. But the editing experience is still "coloured text in a file":
+Satsuma now has strong tooling foundations — a tree-sitter parser with 480+ corpus tests, a 16-command CLI for structural extraction (630+ tests), tree-sitter queries for highlights/locals/folds, and a TextMate grammar for basic syntax colouring. But the editing experience is still "coloured text in a file":
 
 1. **No navigation.** A user reading a mapping that references `crm_customers` has to manually search for that schema. There is no go-to-definition, no find-references, no breadcrumb trail.
 2. **No live feedback.** Validation errors and semantic warnings (`satsuma validate`) only surface when run from the terminal. Parse errors sit silently in the file.
@@ -117,7 +117,7 @@ Surface parse errors and semantic warnings inline as the user types.
 - **Semantic warnings:** Run on save (not on keystroke — too expensive for large workspaces):
   - Schema referenced in `source`/`target` but not defined in workspace
   - Fragment/transform spread referencing undefined name
-  - Duplicate block names
+  - Duplicate block names — including cross-type uniqueness violations (spec §2.8: all named definitions share a single name space, so a schema and a metric with the same name is an error)
   - Arrow source/target field not present in declared schema
   - Import path referencing a file that doesn't exist
 - **Warning/question comments:** Surface `//!` as `DiagnosticSeverity.Warning` and `//?` as `DiagnosticSeverity.Information` so they appear in the Problems panel.
@@ -137,6 +137,7 @@ Uses the `locals.scm` definition/reference captures:
 - Schema name in `source`/`target` block → schema block label
 - Fragment spread (`...name`) → fragment block label
 - Transform spread (`...name`) → transform block label
+- Namespace-qualified reference (`ns::name`) → definition within the namespace block
 - Backtick reference (`` `schema.field` ``) → field declaration
 - Import name → block label in the imported file
 - Import path → open the referenced `.stm` file
@@ -183,12 +184,17 @@ transform 'clean email'
 metric monthly_recurring_revenue
 ```
 
-- Top-level blocks → `SymbolKind.Class` (schema), `SymbolKind.Function` (mapping/transform), `SymbolKind.Constant` (metric), `SymbolKind.Interface` (fragment)
+- Top-level blocks → `SymbolKind.Class` (schema), `SymbolKind.Function` (mapping/transform), `SymbolKind.Constant` (metric), `SymbolKind.Interface` (fragment), `SymbolKind.Namespace` (namespace), `SymbolKind.File` (note)
+- Metric blocks include the optional display label (e.g. `"MRR"`) in the symbol detail when present
 - Fields → `SymbolKind.Field` as children
 - Record/list → `SymbolKind.Struct` nested under the parent schema
+- Namespace blocks contain their child definitions as nested symbols
 
 **Acceptance criteria:**
 - [ ] Outline panel shows all top-level blocks with names and kinds
+- [ ] Namespace blocks appear as containers with their child definitions nested inside
+- [ ] Note blocks appear in the outline
+- [ ] Metric symbols include the display label (e.g. `"MRR"`) as detail text when present
 - [ ] Fields appear as children of their parent schema/fragment
 - [ ] Nested record/list blocks appear as nested children
 - [ ] Breadcrumbs update as cursor moves through the file
@@ -201,9 +207,13 @@ Upgrade from TextMate regex scoping to parser-backed semantic tokens for context
 Uses `highlights.scm` captures mapped to LSP semantic token types:
 - `source`/`target` as keyword vs. field name (disambiguated by CST position)
 - `map` as keyword vs. identifier
-- `record`/`list` as keyword vs. type reference
+- `record`/`list_of` as keyword vs. type reference
+- `each`/`flatten` as context-sensitive keywords (only valid inside mapping bodies per spec §2.6)
+- `namespace` as keyword in namespace blocks
 - Block labels get definition-specific token types
+- Metric display labels (e.g. `"MRR"`) get `string` token type distinct from NL strings
 - Vocabulary tokens in metadata get `decorator` type
+- Error-handling tokens (`null_if_*`, `drop_if_*`, `warn_if_*`, `error_if_*`) get `function` type in pipelines
 - Warning comments (`//!`) and question comments (`//?`) get distinct token types
 
 **Acceptance criteria:**
@@ -231,6 +241,8 @@ Show contextual information when hovering over identifiers.
 - **Field name** (in arrow): show type, metadata tags, and parent schema
 - **Fragment name** (in spread): show field count and field names
 - **Transform name** (in spread): show the transform body summary
+- **Metric name**: show display label (if present), source schemas, grain, slice dimensions, and measure count
+- **Namespace name**: show the count and names of contained definitions
 - **Vocabulary token** (in metadata): show a brief description from a built-in token dictionary
 - **Import path**: show the file path and block count
 
@@ -238,6 +250,17 @@ Show contextual information when hovering over identifiers.
 - [ ] Hovering a schema name in a mapping shows its field summary
 - [ ] Hovering a field in an arrow shows its type and metadata
 - [ ] Hover information loads within 100ms
+
+#### 1.8 Developer Documentation
+
+Ship a README update covering how to install and use the extension locally during Phase 1 (before Marketplace publishing).
+
+**Acceptance criteria:**
+- [ ] `tooling/vscode-satsuma/README.md` documents how to build the extension (install deps, compile the LSP server)
+- [ ] Documents how to install locally via `.vsix` or the Extension Development Host (F5)
+- [ ] Documents the features available in Phase 1 (diagnostics, navigation, outline, semantic tokens, folding, hover)
+- [ ] Documents any prerequisites (Node.js version, `tree-sitter` native dependencies)
+- [ ] Documents how to run the extension's test suite
 
 ---
 
@@ -256,7 +279,7 @@ Context-aware autocompletion powered by the workspace index.
 | Arrow source path (left of `->`) | Fields from source schemas of current mapping |
 | Arrow target path (right of `->`) | Fields from target schemas of current mapping |
 | Inside `()` metadata | Vocabulary tokens (pk, required, pii, enum, format, etc.) |
-| Inside `{ }` pipeline body | Transform function names (trim, lowercase, coalesce, etc.) |
+| Inside `{ }` pipeline body | Transform function names (trim, lowercase, coalesce, etc.) and error-handling tokens (`null_if_empty`, `drop_if_invalid`, `warn_if_null`, `error_if_null`, etc. — the `<action>_if_<condition>` pattern from spec §7.2) |
 | After `import { }` | Block names from files in workspace |
 | After `from "` | `.stm` file paths relative to workspace root |
 | After `::` (namespace) | Block names within the namespace |
@@ -443,7 +466,7 @@ tooling/vscode-satsuma/
 - **Feature 07 (TextMate grammar):** COMPLETED. The extension builds on the existing `vscode-satsuma` package.
 - **Feature 08 (tree-sitter parser v2):** COMPLETED. The LSP server uses `tree-sitter-satsuma` directly.
 - **Features 09+10 (CLI):** COMPLETED. The extension shells out to `satsuma` CLI for workspace-level operations.
-- **Feature 15 (namespaces):** IN PROGRESS. Namespace-aware completions and navigation depend on namespace index support in the CLI. Phase 1 LSP features work without it; Phase 2 completions benefit from it.
+- **Feature 15 (namespaces):** Parser and CLI support for `namespace` blocks is implemented. The tree-sitter grammar includes `namespace_block` and the CLI handles namespace-qualified names. Phase 1 LSP features should handle namespace blocks in document symbols and navigation; Phase 2 completions benefit from the workspace namespace index.
 
 ---
 

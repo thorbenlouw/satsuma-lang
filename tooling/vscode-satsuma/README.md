@@ -1,27 +1,71 @@
 # VS Code Satsuma Extension
 
-Syntax highlighting for the Satsuma language.
+Language support for the Satsuma data mapping language: syntax highlighting (TextMate) plus a Language Server providing document symbols, diagnostics, and code folding.
+
+## Prerequisites
+
+- **Node.js** 20+ (native tree-sitter bindings require compilation)
+- **VS Code** 1.85+
 
 ## Installation (local development)
 
 ```bash
-# Install dev dependencies
 cd tooling/vscode-satsuma
+
+# Install client dependencies
 npm install
 
-# Load the extension in VS Code:
-# 1. Open the repo root in VS Code
-# 2. Run "Developer: Install Extension from VSIX..." OR
-# 3. Press F5 (with the Extension Development Host launch config)
+# Install and build the language server
+cd server
+npm install
+npm run build
+cd ..
+
+# Build the extension client
+npm run build
 ```
+
+### Running in VS Code
+
+1. Open the repo root in VS Code.
+2. Press **F5** to launch the Extension Development Host.
+3. Open any `.stm` file — the language server activates automatically.
+
+### Installing from `.vsix`
+
+```bash
+cd tooling/vscode-satsuma
+npx @vscode/vsce package --no-dependencies
+code --install-extension vscode-satsuma-0.3.0.vsix
+```
+
+## Features
+
+### TextMate Syntax Highlighting
+
+Regex-based syntax colouring for all Satsuma constructs. Works immediately, no build step.
+
+### Language Server (Phase 1)
+
+Parser-backed features using tree-sitter:
+
+- **Document Symbols / Outline** — schemas, mappings, fragments, transforms, metrics, namespaces, and notes appear in the Outline panel. Fields appear as children. Nested record/list structures appear as nested entries.
+- **Diagnostics** — parse errors show as red squiggles in real time. `//!` warning comments appear as warnings in the Problems panel. `//?` question comments appear as information.
+- **Code Folding** — all block types (schema, mapping, fragment, transform, metric, note, namespace, each, flatten, map literal, metadata, nested arrow) are foldable.
 
 ## Running Tests
 
 From `tooling/vscode-satsuma/`:
 
 ```bash
-# Run all tests
+# Run all tests (TextMate + LSP)
+npm run check
+
+# TextMate grammar tests only
 npm test
+
+# LSP server tests only
+npm run test:lsp
 
 # Focused fixture tests only
 npm run test:fixtures
@@ -31,62 +75,23 @@ npm run test:golden
 
 # Validate manifest + grammar JSON
 npm run validate
-
-# Run everything (validate + test)
-npm run check
 ```
 
-Tests use [`vscode-tmgrammar-test`](https://github.com/nicolo-ribaudo/vscode-tmgrammar-test),
-which runs without a VS Code instance (CI-safe) and exits non-zero on failure.
+TextMate tests use [`vscode-tmgrammar-test`](https://github.com/nicolo-ribaudo/vscode-tmgrammar-test) (CI-safe, no VS Code instance needed). LSP tests use Node's built-in test runner against the tree-sitter parser directly.
 
 ## Grammar Authoring
 
-The grammar is in `syntaxes/stm.tmLanguage.json` — plain JSON, no build step.
-This is a standard TextMate grammar. Edit it directly; reload the Extension
-Development Host to preview changes.
+The TextMate grammar is in `syntaxes/satsuma.tmLanguage.json` — plain JSON, no build step. Edit it directly; reload the Extension Development Host to preview changes.
 
 ## Known Approximation Limits
 
-The TextMate grammar handles several constructs approximately due to
-regex-only matching. See `features/07-vscode-syntax-highlighter-v2/HIGHLIGHTING-TAXONOMY.md §14`
-for the full list. Key limitations:
+The TextMate grammar handles several constructs approximately due to regex-only matching. The Language Server's semantic tokens (planned for a future phase) will resolve these:
 
-- **`source` / `target` as keywords vs. field names** (§14): Both are scoped as
-  keywords everywhere. A parser can distinguish them by block context.
-- **`map` as keyword vs. field name** (§14): `map` is highlighted as a keyword
-  everywhere. In practice field names of `map` are uncommon.
-- **`list` / `record` as keywords vs. field names** (§14): Highlighted as keywords
-  inside schema bodies — minor overlap possible for fields named `list` or `record`.
-- **Pipeline tokens as field names** (§14): `trim`, `filter`, `format` etc. could
-  be field names but are only highlighted as pipeline tokens inside `{}` arrow bodies.
-- **Vocabulary tokens as field names** (§14): Constraint/format tokens (`filter`,
-  `format`) are only matched inside `()` metadata blocks, reducing false positives.
-- **Type names vs. field names** (§14): An all-caps field like `STATUS CHAR(1)` —
-  `STATUS` is matched as a type by position (second token in declaration). Parser
-  needed for precise disambiguation.
-
-## Semantic Tokens (Future Work)
-
-Parser-backed semantic tokens are planned as a follow-on to resolve the approximation
-limits above. Candidates from the taxonomy (§14):
-
-- `source` / `target` — distinguish keyword (inside `mapping {}`) from field name (inside `schema {}`)
-- `map` — distinguish value-mapping block keyword from field identifier
-- `list` / `record` — distinguish structural keywords from field names
-- Type-position identifiers — confirm second token in declaration is a type, not a field
-
-Dependencies: tree-sitter-stm grammar stable, CST-to-AST mapping defined.
-
-## Shared Token Mapping
-
-The TextMate scopes in this extension align with the token taxonomy defined in
-`features/07-vscode-syntax-highlighter-v2/HIGHLIGHTING-TAXONOMY.md`. The full
-scope summary is in §15 of that document.
-
-New syntax patterns should produce:
-
-1. An updated example `.stm` file in `test/fixtures/`
-2. A corresponding TextMate scope fixture test
+- **`source` / `target` as keywords vs. field names** — both scoped as keywords everywhere.
+- **`map` as keyword vs. field name** — highlighted as keyword everywhere.
+- **`list` / `record` as keywords vs. field names** — highlighted as keywords inside schema bodies.
+- **Pipeline tokens as field names** — `trim`, `filter`, `format` etc. only highlighted inside `{}` arrow bodies.
+- **Vocabulary tokens as field names** — constraint/format tokens only matched inside `()` metadata blocks.
 
 ## Theme Verification
 
@@ -98,10 +103,10 @@ Before releases, verify highlighting in:
 
 Checklist:
 
-- [ ] Keywords (`schema`, `mapping`, `fragment`, `record`, `list`, `transform`, `note`) coloured distinctly from identifiers
+- [ ] Keywords coloured distinctly from identifiers
 - [ ] `import` / `from` coloured as control-flow keywords
 - [ ] Strings (double-quoted NL, triple-quoted Markdown, single-quoted labels, backtick identifiers) each coloured
 - [ ] Comments visually de-emphasised
-- [ ] Vocabulary tokens in `()` metadata (`pk`, `required`, `pii`, `enum`, `format`) distinguishable from field names
-- [ ] Pipeline function tokens (`trim`, `lowercase`, `coalesce`) highlighted inside `{}` bodies
+- [ ] Vocabulary tokens in `()` metadata distinguishable from field names
+- [ ] Pipeline function tokens highlighted inside `{}` bodies
 - [ ] `//!` and `//?` fall back gracefully in themes that don't distinguish them
