@@ -25,12 +25,9 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Build tree-sitter-satsuma native bindings
-        working-directory: tooling/tree-sitter-satsuma
-        run: npm ci
-
-      - name: Install satsuma-cli dependencies
-        run: npm ci
+      - name: Install all dependencies
+        working-directory: .
+        run: npm run ci:all
 
       - name: Bundle for distribution
         run: |

@@ -7,8 +7,56 @@ on:
     branches: [main]
 
 jobs:
+  install:
+    name: Install dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install all packages
+        run: npm run ci:all
+
+      - name: Cache workspace
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/vscode-satsuma/node_modules
+          key: workspace-${{ github.sha }}
+
+  lint:
+    name: Lint
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/vscode-satsuma/node_modules
+          key: workspace-${{ github.sha }}
+
+      - run: npm run lint
+
   satsuma-cli:
     name: Satsuma CLI
+    needs: install
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,17 +68,22 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Build tree-sitter-satsuma native bindings
-        working-directory: tooling/tree-sitter-satsuma
-        run: npm ci
-
-      - run: npm ci
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/vscode-satsuma/node_modules
+          key: workspace-${{ github.sha }}
 
       - name: Run CLI tests
         run: npm test
 
   parser:
     name: Tree-sitter parser
+    needs: install
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,7 +99,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: npm ci
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/vscode-satsuma/node_modules
+          key: workspace-${{ github.sha }}
 
       - name: Generate parser
         run: npm run generate
@@ -86,6 +147,7 @@ jobs:
 
   vscode-extension:
     name: VS Code extension
+    needs: install
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -97,7 +159,15 @@ jobs:
         with:
           node-version: "22"
 
-      - run: npm ci
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/vscode-satsuma/node_modules
+          key: workspace-${{ github.sha }}
 
       - name: Validate manifest and grammar
         run: npm run validate

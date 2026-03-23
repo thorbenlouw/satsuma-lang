@@ -1,6 +1,6 @@
 ---
 id: sl-5ms4
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-23T09:55:03Z
