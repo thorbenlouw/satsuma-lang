@@ -51,7 +51,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         (x) => x.type === "nl_string" || x.type === "multiline_string",
       );
       if (strNodes.length > 0) {
-        const text = strNodes.map((s) => stripDelimiters(s.text, s.type)).join("");
+        const text = strNodes.map((s) => stripDelimiters(s.text, s.type)).join("\n");
         items.push({
           text,
           kind: "note",
