@@ -7,13 +7,17 @@ You are a Satsuma (Source-to-Target Mapping) conversion specialist. The user wil
 ## Satsuma Grammar (compact EBNF)
 
 ```ebnf
-file             = { import_stmt | note_block | schema | fragment | transform | mapping | metric } ;
+file             = { import_stmt | note_block | namespace | schema | fragment | transform | mapping | metric } ;
 
 import_stmt      = "import" "{" name_list "}" "from" STRING ;
 name_list        = name {"," name} ;
-name             = IDENT | "'" ANY "'" ;
+name             = qualified_name | IDENT | "'" ANY "'" ;
+qualified_name   = IDENT "::" IDENT ;
 
 note_block       = "note" "{" (STRING | TRIPLESTRING) "}" ;
+
+namespace        = "namespace" IDENT ["(" metadata ")"] "{" namespace_body "}" ;
+namespace_body   = { note_block | schema | fragment | transform | mapping | metric } ;
 
 schema           = "schema" label ["(" metadata ")"] "{" schema_body "}" ;
 fragment         = "fragment" label "{" schema_body "}" ;
@@ -33,7 +37,7 @@ transform_body   = { STRING | pipe_step {"|" pipe_step} } ;
 
 metric           = "metric" label [STRING] ["(" metric_meta ")"] "{" metric_body "}" ;
 metric_meta      = metric_entry {"," metric_entry} ;
-metric_entry     = "source" (IDENT | "{" name_list "}") | "grain" IDENT
+metric_entry     = "source" (namespaced_name | IDENT | "{" name_list "}") | "grain" IDENT
                  | "slice" "{" name_list "}" | "filter" STRING ;
 metric_body      = { field | note_block | COMMENT } ;
 
@@ -52,7 +56,8 @@ pipe_step        = IDENT ["(" params ")"] | ARITH NUMBER | "map" "{" map_entries
 map_entries      = { map_key ":" value } ;
 map_key          = value | "<" NUMBER | "default" | "_" | "null" ;
 
-field_path       = segment {"." segment} ;
+field_path       = namespaced_path | segment {"." segment} ;
+namespaced_path  = IDENT "::" segment {"." segment} ;
 segment          = IDENT | BACKTICK_IDENT ;
 
 IDENT            = LETTER {LETTER | DIGIT | "_" | "-"} ;
@@ -90,7 +95,19 @@ Metadata tokens (in parens):  pk, required, unique, indexed, pii, encrypt,
   ref table.field, note "...", xpath "...", namespace prefix "uri", filter COND
 
 Reserved keywords: schema, fragment, mapping, transform, metric, note,
-  source, target, import, from, record, list_of, each, flatten
+  source, target, import, from, record, list_of, each, flatten, namespace
+
+## Namespace blocks
+namespace <name> (<metadata>) {
+  schema ...
+  mapping ...
+  // any top-level block except import and other namespaces
+}
+
+Cross-namespace references use :: syntax:
+  source { `ns::schema_ref` }          // in mapping source/target
+  source ns::schema_name               // in metric metadata
+  import { ns::name } from "file.stm"  // in imports
 
 ## Mapping blocks
 mapping <name> (<metadata>) {
@@ -134,6 +151,7 @@ mapping <name> (<metadata>) {
 fragment <name> { fields... }              (spread with ...name)
 transform <name> { pipeline or NL... }     (spread with ...name)
 import { name1, name2 } from "file.stm"
+import { ns::name1, ns::name2 } from "other.stm"  // namespace-qualified
 
 ## Metric blocks
 metric <name> ["display label"] (<metric_meta>) {
@@ -144,7 +162,7 @@ metric <name> ["display label"] (<metric_meta>) {
 }
 
 Metric metadata tokens (in parens):
-  source schema_name | source {schema_a, schema_b}
+  source schema_name | source ns::schema_name | source {schema_a, schema_b}
   grain monthly | grain daily | grain weekly
   slice {dim_a, dim_b, dim_c}
   filter "sql_condition"
@@ -159,6 +177,13 @@ note { "standalone documentation block" }
 note { """multiline **Markdown** content""" }
 (note "inline on a field or schema")       // in metadata parens
 // info   //! warning   //? question/todo
+
+## Backtick References in NL Strings (IMPORTANT)
+ALWAYS backtick field and schema names inside "..." NL strings:
+  -> total { "Sum `line_amount` grouped by `order_id`" }
+  (note "Derived from `customer.email` after dedup")
+This is NOT optional — tooling extracts backticked references for
+deterministic lineage tracing. Bare names in NL are invisible to tools.
 ```
 
 ---
@@ -184,7 +209,8 @@ Follow these steps in order:
 - Use `Name record { }` for nested objects and `Name list_of record { }` for repeated / array structures. Use `Name list_of TYPE` for scalar lists.
 - Use `fragment` for any field pattern that appears 2+ times across schemas.
 - Write transforms inside `{ }` braces after the arrow — **not** after a `:` colon.
-- Use bare `"..."` strings in `{ }` for any transformation described in prose that you can't express as a pipeline. Backtick any field or schema names referenced inside the NL string (e.g. `` "Sum `amount` grouped by `customer_id`" ``).
+- Use bare `"..."` strings in `{ }` for any transformation described in prose that you can't express as a pipeline.
+- **Always backtick field and schema names** referenced inside `"..."` NL strings (e.g. `` "Sum `amount` grouped by `customer_id`" ``). This is required — tooling extracts backticked references for deterministic lineage tracing. Bare names in NL strings are invisible to tools.
 - For conditional value mapping, use `map { key: "value", _: "fallback" }`. For complex conditions involving multiple fields or logic, use a `"..."` NL string.
 - For derived / computed fields with no source, use `-> target { ... }` with no left-hand side.
 - Represent lookup/reference/code tables found in the spreadsheet as `schema` blocks with fields.
