@@ -478,6 +478,20 @@ describe("satsuma mapping", () => {
     assert.ok(data.arrows.some((a) => a.classification === "structural"), "expected at least one structural arrow");
   });
 
+  it("--json container arrows have hasTransform:false (sl-zfi0)", async () => {
+    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs.stm");
+    const { stdout, code } = await run("mapping", "sap po to mfcs", "--json", SAP);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const containers = data.arrows.filter((a) => a.children && a.children.length > 0);
+    assert.ok(containers.length > 0, "should have container arrows");
+    for (const c of containers) {
+      if (!c.transform) {
+        assert.equal(c.hasTransform, false, `container arrow ${c.src}->${c.tgt} without pipe_chain should have hasTransform:false`);
+      }
+    }
+  });
+
   it("--json includes children for nested arrows (sl-wjb9)", async () => {
     const COBOL = resolve(EXAMPLES, "cobol-to-avro.stm");
     const { stdout, code } = await run("mapping", "cobol customer to avro event", "--json", COBOL);

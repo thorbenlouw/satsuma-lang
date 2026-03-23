@@ -133,7 +133,8 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
     const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
     const pipeSteps = pipeChain ? [...pipeChain.namedChildren].filter((x) => x.type === "pipe_step") : [];
     const classification = classifyTransform(pipeSteps.length > 0 ? pipeSteps : null);
-    const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform: hasBody, classification };
+    const hasTransform = hasBody && pipeChain != null;
+    const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform, classification };
     if (hasBody) {
       if (pipeChain) arrowObj.transform = pipeChain.text;
     }
