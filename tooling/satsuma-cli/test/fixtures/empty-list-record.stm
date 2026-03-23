@@ -1,0 +1,4 @@
+schema test {
+  items list_of record { }
+  id INT (pk)
+}

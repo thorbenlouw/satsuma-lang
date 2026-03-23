@@ -148,10 +148,23 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
       } else {
         // Scalar field or list_of scalar
         const isList = hasListOfKeyword(c);
-        const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
-        if (isList) decl.isList = true;
-        if (meta.length > 0) decl.metadata = meta;
-        fields.push(decl);
+        // Handle empty record/list_of record bodies (no schema_body when { } is empty)
+        const hasRecordKeyword = c.children?.some((ch) => !ch.isNamed && ch.text === "record");
+        if (hasRecordKeyword) {
+          const decl: FieldDecl = {
+            name,
+            type: isList ? "list" : "record",
+            isList: isList || undefined,
+            children: [],
+          };
+          if (meta.length > 0) decl.metadata = meta;
+          fields.push(decl);
+        } else {
+          const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
+          if (isList) decl.isList = true;
+          if (meta.length > 0) decl.metadata = meta;
+          fields.push(decl);
+        }
       }
     } else if (c.type === "fragment_spread") {
       hasSpreads = true;
