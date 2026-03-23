@@ -23,6 +23,8 @@ import {
   createWorkspaceIndex,
   indexFile,
   removeFile,
+  allBlockNames,
+  resolveDefinition,
 } from "./workspace-index";
 import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
@@ -275,6 +277,32 @@ connection.onCodeLens((params) => {
   if (!tree) return [];
   return computeCodeLenses(tree, params.textDocument.uri, wsIndex);
 });
+
+// ---------- Custom requests ----------
+
+/** Return all block names from the workspace index (for command QuickPicks). */
+connection.onRequest("satsuma/blockNames", () => {
+  return allBlockNames(wsIndex).map(({ name, entry }) => ({
+    name,
+    kind: entry.kind,
+    uri: entry.uri,
+  }));
+});
+
+/** Return field locations for a schema/fragment (for coverage decorations). */
+connection.onRequest(
+  "satsuma/fieldLocations",
+  (params: { name: string }) => {
+    const defs = resolveDefinition(wsIndex, params.name, null);
+    if (defs.length === 0) return [];
+    const def = defs[0]!;
+    return def.fields.map((f) => ({
+      name: f.name,
+      uri: def.uri,
+      line: f.range.start.line,
+    }));
+  },
+);
 
 // ---------- Helpers ----------
 
