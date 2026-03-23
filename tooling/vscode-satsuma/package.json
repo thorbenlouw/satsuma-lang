@@ -29,6 +29,25 @@
         "path": "./syntaxes/satsuma.tmLanguage.json"
       }
     ],
+    "commands": [
+      { "command": "satsuma.validateWorkspace", "title": "Satsuma: Validate Workspace" },
+      { "command": "satsuma.showLineage", "title": "Satsuma: Show Lineage From..." },
+      { "command": "satsuma.whereUsed", "title": "Satsuma: Where Used" },
+      { "command": "satsuma.showWarnings", "title": "Satsuma: Show Warnings" },
+      { "command": "satsuma.showSummary", "title": "Satsuma: Show Workspace Summary" },
+      { "command": "satsuma.showArrows", "title": "Satsuma: Show Arrows for Field" },
+      { "command": "satsuma.showGraph", "title": "Satsuma: Show Workspace Graph" },
+      { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Trace Field Lineage" },
+      { "command": "satsuma.showCoverage", "title": "Satsuma: Show Mapping Coverage" }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma" },
+        { "command": "satsuma.showArrows", "when": "editorLangId == satsuma" },
+        { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma" },
+        { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" }
+      ]
+    },
     "configuration": {
       "title": "Satsuma",
       "properties": {
