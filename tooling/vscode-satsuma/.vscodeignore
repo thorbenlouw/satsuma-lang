@@ -1,0 +1,16 @@
+**/.git/**
+**/node_modules/**
+**/test/**
+**/src/**
+**/*.ts
+**/*.map
+.eslintrc*
+tsconfig.json
+esbuild.js
+server/src/**
+server/test/**
+server/tsconfig.json
+server/node_modules/**
+server/dist/**
+!server/dist/server.js
+!dist/**

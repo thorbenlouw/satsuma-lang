@@ -54,8 +54,40 @@ jobs:
           name: satsuma-cli-${{ matrix.platform }}
           path: tooling/satsuma-cli/satsuma-cli-${{ matrix.platform }}.tgz
 
+  vsix:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tooling/vscode-satsuma
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install all dependencies
+        working-directory: .
+        run: npm run ci:all
+
+      - name: Build and package .vsix
+        run: |
+          # Build the LSP server (needed for the extension)
+          cd server && npx tsc && cd ..
+
+          # Build client + server + webview bundles
+          npm run build
+
+          # Package the extension
+          npx @vscode/vsce package --no-dependencies -o vscode-satsuma.vsix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode-satsuma-vsix
+          path: tooling/vscode-satsuma/vscode-satsuma.vsix
+
   release:
-    needs: build
+    needs: [build, vsix]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -75,7 +107,7 @@ jobs:
           cat > notes.md <<'EOF'
           Auto-built from the latest `main` branch.
 
-          **Install:**
+          **Install CLI:**
           ```bash
           # macOS (Apple Silicon)
           npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-darwin-arm64.tgz
@@ -83,10 +115,17 @@ jobs:
           # Linux (x64)
           npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-linux-x64.tgz
           ```
+
+          **Install VS Code Extension:**
+          Download `vscode-satsuma.vsix` and install via:
+          ```bash
+          code --install-extension vscode-satsuma.vsix
+          ```
           EOF
 
           gh release create latest \
             --title "Latest build" \
             --notes-file notes.md \
             --prerelease \
-            satsuma-cli-*.tgz
+            satsuma-cli-*.tgz \
+            vscode-satsuma.vsix
