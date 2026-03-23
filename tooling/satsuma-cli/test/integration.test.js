@@ -1387,6 +1387,14 @@ describe("satsuma meta", () => {
     assert.ok(data.entries.some((e) => e.kind === "note" && e.text === "Creation timestamp"));
   });
 
+  it("shows list_of prefix for scalar list fields (sc-5j7y)", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout, code } = await run("meta", "order_events.promo_codes", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.type, "list_of STRING");
+  });
+
   it("still finds direct fields on schemas with spreads", async () => {
     const FIXTURE = resolve(__dirname, "fixtures/spread-meta.stm");
     const { stdout, code } = await run("meta", "uses_fragment.id", FIXTURE);
