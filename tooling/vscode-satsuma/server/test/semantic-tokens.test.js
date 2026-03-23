@@ -175,6 +175,50 @@ describe("computeSemanticTokens", () => {
     );
   });
 
+  it("tokenizes backtick references inside nl_string as variable", () => {
+    const tree = parse(
+      'note { "This maps `src_accounts` to `tgt_accounts`." }',
+    );
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 2, "should have 2 variable tokens for backtick refs");
+    assert.equal(varTokens[0].length, "`src_accounts`".length);
+    assert.equal(varTokens[1].length, "`tgt_accounts`".length);
+  });
+
+  it("tokenizes backtick references inside multiline_string as variable", () => {
+    const tree = parse(
+      'note {\n  """\n  Check `balance` and `status` fields.\n  """\n}',
+    );
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 2, "should have 2 variable tokens in multiline string");
+    assert.equal(varTokens[0].length, "`balance`".length);
+    assert.equal(varTokens[1].length, "`status`".length);
+  });
+
+  it("does not emit variable tokens for strings without backtick refs", () => {
+    const tree = parse('note { "No refs here." }');
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 0, "should have no variable tokens");
+  });
+
+  it("handles backtick refs on note block with multiple nl_strings", () => {
+    const tree = parse(
+      'note {\n  "First `alpha` ref."\n  "Second `beta` ref."\n}',
+    );
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 2, "one ref per line");
+    // Check they're on different lines
+    assert.notEqual(varTokens[0].line, varTokens[1].line);
+  });
+
   it("has a valid legend with standard token types", () => {
     assert.ok(semanticTokensLegend.tokenTypes.length > 0);
     assert.ok(semanticTokensLegend.tokenModifiers.length > 0);
