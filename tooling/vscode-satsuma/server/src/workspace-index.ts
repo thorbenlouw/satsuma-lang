@@ -186,6 +186,34 @@ export function getFields(
   return [];
 }
 
+/** Count unique references to a name, optionally filtered by context. */
+export function countReferences(
+  index: WorkspaceIndex,
+  name: string,
+  contextFilter?: ReferenceEntry["context"][],
+): number {
+  const refs = index.references.get(name) ?? [];
+  if (!contextFilter) return refs.length;
+  return refs.filter((r) => contextFilter.includes(r.context)).length;
+}
+
+/** Find distinct mapping names that reference a given schema as source or target. */
+export function findMappingsUsing(
+  index: WorkspaceIndex,
+  schemaName: string,
+): string[] {
+  const refs = findReferences(index, schemaName);
+  const mappingRefs = refs.filter(
+    (r) => r.context === "source" || r.context === "target",
+  );
+  // Deduplicate by URI + parent mapping (approximate: use URI since each mapping body is in one file)
+  const seen = new Set<string>();
+  for (const ref of mappingRefs) {
+    seen.add(`${ref.uri}:${ref.range.start.line}`);
+  }
+  return [...seen];
+}
+
 // ---------- Extraction (per file) ----------
 
 const BLOCK_KINDS: Record<string, DefinitionEntry["kind"]> = {
