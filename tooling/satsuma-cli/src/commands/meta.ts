@@ -183,12 +183,12 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
               (c) => c.type === "metadata_block",
             );
             const entries = extractMetadata(metaNode);
-            return { scope: fieldRef, type: field.type ?? null, entries };
+            return { scope: fieldRef, type: displayType(field), entries };
           }
         }
       }
     }
-    return { scope: fieldRef, type: field.type ?? null, entries: [] };
+    return { scope: fieldRef, type: displayType(field), entries: [] };
   }
 
   const parsed = parsedFiles.find((p) => p.filePath === entity.file);
@@ -204,14 +204,19 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
         const entries = extractMetadata(metaNode);
         return {
             scope: fieldRef,
-            type: field?.type ?? null,
+            type: displayType(field),
             entries,
           };
         }
     }
   }
 
-  return { scope: fieldRef, type: field.type, entries: [] };
+  return { scope: fieldRef, type: displayType(field), entries: [] };
+}
+
+function displayType(field: FieldDecl): string | null {
+  if (!field.type) return null;
+  return field.isList ? `list_of ${field.type}` : field.type;
 }
 
 function getFieldDeclName(fieldDecl: SyntaxNode): string | null {
