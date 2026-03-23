@@ -32,6 +32,14 @@ export function register(program: Command): void {
     .command("where-used <name> [path]")
     .description("Find all references to a schema, fragment, or transform")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+Searches mappings (source/target refs), metrics (source refs), schemas
+(fragment spreads, ref metadata), and NL backtick references.
+
+Examples:
+  satsuma where-used hub_customer                    # who references this schema?
+  satsuma where-used audit_fields                    # where is this fragment spread?
+  satsuma where-used trim_and_lower --json           # transform refs as JSON`)
     .action(async (name: string, pathArg: string | undefined, opts: { json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

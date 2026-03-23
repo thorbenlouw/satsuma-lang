@@ -25,6 +25,15 @@ export function register(program: Command): void {
     .option("--mapping <name>", "scope to a specific mapping")
     .option("--json", "structured JSON output")
     .option("--unresolved", "show only unresolved references")
+    .addHelpText("after", `
+Backtick references are \`field_name\` or \`schema.field\` inside "..." NL
+strings. Each ref is checked against the workspace index — "resolved" means
+the referenced field or schema exists, "unresolved" means it was not found.
+
+Examples:
+  satsuma nl-refs ./workspace                        # all refs across workspace
+  satsuma nl-refs --mapping 'load hub_customer'      # refs in one mapping
+  satsuma nl-refs --unresolved --json                # broken refs as JSON`)
     .action(async (pathArg: string | undefined, opts: { mapping?: string; json?: boolean; unresolved?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

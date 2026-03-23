@@ -221,8 +221,9 @@ satsuma context "customer mapping"           # keyword-ranked block extraction (
 
 # Structural primitives — slice below block level
 satsuma arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
-satsuma nl 'demographics to mart'              # NL content in this mapping (notes, transforms)
-satsuma nl mart_customer_360.email            # NL content on this specific field
+satsuma nl 'demographics to mart'              # NL content in a mapping
+satsuma nl mart_customer_360.email            # NL content on a specific field
+satsuma nl all path/to/workspace/             # all NL across the workspace
 satsuma meta loyalty_sfdc.Email              # metadata entries (tags, type, constraints)
 satsuma fields sat_customer_demographics     # field list with types
 satsuma fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows

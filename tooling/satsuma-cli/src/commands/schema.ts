@@ -26,6 +26,14 @@ export function register(program: Command): void {
     .option("--compact", "omit notes and inline strings")
     .option("--fields-only", "one line per field")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+Names can be namespace-qualified (e.g. pos::stores). Quote names with
+spaces (e.g. 'my schema').
+
+Examples:
+  satsuma schema hub_customer                        # full schema
+  satsuma schema hub_customer --fields-only          # one field per line
+  satsuma schema pos::stores --json                  # namespace-qualified`)
     .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; fieldsOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

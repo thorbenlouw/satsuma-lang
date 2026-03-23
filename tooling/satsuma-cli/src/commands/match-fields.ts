@@ -26,6 +26,14 @@ export function register(program: Command): void {
     .option("--matched-only", "show only matched pairs")
     .option("--unmatched-only", "show only unmatched fields")
     .option("--json", "structured JSON output")
+    .addHelpText("after", `
+Both --source and --target are required. Matching is case-insensitive with
+underscores, hyphens, and spaces normalized. Names can be namespace-qualified.
+
+Examples:
+  satsuma match-fields --source crm --target warehouse
+  satsuma match-fields --source pos::stores --target hub_store --matched-only
+  satsuma match-fields --source crm --target warehouse --json`)
     .action(async (pathArg: string | undefined, opts: { source: string; target: string; matchedOnly?: boolean; unmatchedOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

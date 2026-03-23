@@ -31,6 +31,19 @@ export function register(program: Command): void {
     .description("Extract metadata for a schema, field, mapping, or metric")
     .option("--tags-only", "only output tag tokens, one per line")
     .option("--json", "structured JSON output")
+    .addHelpText("after", `
+Scope formats:
+  <block-name>     metadata on a schema, mapping, metric, or transform
+  <schema.field>   metadata on a specific field (type, tags, constraints)
+
+Names can be namespace-qualified (e.g. pos::stores).
+
+Examples:
+  satsuma meta hub_customer                  # schema-level metadata
+  satsuma meta hub_customer.email            # field-level metadata
+  satsuma meta 'load hub_store'              # mapping metadata
+  satsuma meta hub_customer --tags-only      # just tag tokens
+  satsuma meta pos::stores.STORE_ID --json   # namespace-qualified`)
     .action(async (scope: string, pathArg: string | undefined, opts: { tagsOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

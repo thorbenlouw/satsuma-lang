@@ -42,6 +42,15 @@ export function register(program: Command): void {
     .option("--in <scope>", "scope: schema|metric|fragment|all", "all")
     .option("--compact", "one match per line")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+Searches all field metadata for the given tag token or key-value key.
+Common tags: pk, required, unique, pii, encrypt, indexed, measure, ref, enum.
+
+Examples:
+  satsuma find --tag pii                     # all PII-tagged fields
+  satsuma find --tag measure --in metric     # measure fields in metrics only
+  satsuma find --tag ref --json              # all foreign key refs as JSON
+  satsuma find --tag enum --compact          # compact one-per-line output`)
     .action(async (pathArg: string | undefined, opts: { tag: string; in?: string; compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

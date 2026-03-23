@@ -25,9 +25,22 @@ interface NLItemWithFile extends NLItem {
 export function register(program: Command): void {
   program
     .command("nl <scope> [path]")
-    .description("Extract NL content from a scope (schema, mapping, field, or all)")
+    .description("Extract NL content (notes, transforms, comments) from a scope")
     .option("--kind <type>", "filter by kind: note, warning, question, transform")
     .option("--json", "structured JSON output")
+    .addHelpText("after", `
+Scope formats:
+  <block-name>     NL in a schema, mapping, metric, or transform by name
+  <schema.field>   NL on a specific field and arrows referencing it
+  all              NL across the entire workspace
+
+Examples:
+  satsuma nl 'demographics to mart'          # NL in a mapping
+  satsuma nl hub_customer                    # NL in a schema
+  satsuma nl mart_customer_360.email         # NL on a field
+  satsuma nl all ./workspace                 # all NL in a directory
+  satsuma nl all --kind warning              # only //! warnings
+  satsuma nl hub_customer --json             # structured output`)
     .action(async (scope: string, pathArg: string | undefined, opts: { kind?: string; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

@@ -23,6 +23,15 @@ export function register(program: Command): void {
     .option("--json", "structured JSON output")
     .option("--names-only", "list changed block names only")
     .option("--stat", "summary counts only")
+    .addHelpText("after", `
+Compares two Satsuma snapshots structurally (not text diff). Both <a> and
+<b> should be the same type — both files or both directories.
+
+Examples:
+  satsuma diff v1/pipeline.stm v2/pipeline.stm      # file-to-file
+  satsuma diff old/ new/ --stat                      # directory summary
+  satsuma diff old/ new/ --json                      # full structural delta
+  satsuma diff old/ new/ --names-only                # just changed block names`)
     .action(async (pathA: string, pathB: string, opts: { json?: boolean; namesOnly?: boolean; stat?: boolean }) => {
       let filesA: string[], filesB: string[];
       try {

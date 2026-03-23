@@ -79,6 +79,22 @@ export function register(program: Command): void {
     .option("--schema-only", "omit field-level edges and field arrays")
     .option("--namespace <ns>", "filter to a namespace")
     .option("--no-nl", "strip NL text from edges")
+    .addHelpText("after", `
+Output modes (pick one):
+  --json          nodes, field-level edges, schema-level edges, warnings, unresolved NL
+  --compact       flat schema-level adjacency list (minimal tokens)
+  (default)       human-readable summary
+
+Modifiers (combine with --json):
+  --schema-only   drop field arrays and field-level edges (topology only)
+  --no-nl         strip NL text from edges (smaller payload)
+  --namespace     filter to nodes within a single namespace
+
+Examples:
+  satsuma graph ./workspace --json                   # full graph
+  satsuma graph ./workspace --json --schema-only     # topology only
+  satsuma graph ./workspace --json --namespace crm   # one namespace
+  satsuma graph ./workspace --compact                # minimal output`)
     .action(async (pathArg: string | undefined, opts: GraphOpts) => {
       const root = pathArg ?? ".";
       let files: string[];

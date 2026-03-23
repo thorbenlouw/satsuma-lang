@@ -22,8 +22,15 @@ export function register(program: Command): void {
     .command("metric <name> [path]")
     .description("Show a metric definition")
     .option("--compact", "suppress note text")
-    .option("--sources", "print source names only")
+    .option("--sources", "print source schema names only (one per line)")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+Names can be namespace-qualified (e.g. analytics::daily_sales).
+
+Examples:
+  satsuma metric daily_sales                         # full metric
+  satsuma metric daily_sales --sources               # just source schemas
+  satsuma metric analytics::daily_sales --json       # namespace-qualified`)
     .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; sources?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];
