@@ -1,0 +1,3 @@
+schema source_data (note "Raw source data") {
+  id INTEGER (pk)
+}

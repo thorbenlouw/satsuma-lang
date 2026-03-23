@@ -85,6 +85,7 @@ export interface FragmentRecord {
 
 export interface TransformRecord {
   name: string;
+  body: string | null;
   file: string;
   row: number;
   namespace?: string;
@@ -223,7 +224,7 @@ export type RegisterFn = (rule: LintRule) => void;
 // ── Diff types ──────────────────────────────────────────────────────────────
 
 export interface SchemaChange {
-  kind: "field-removed" | "field-added" | "type-changed" | "metadata-changed" | "source-changed" | "grain-changed" | "slices-changed";
+  kind: "field-removed" | "field-added" | "type-changed" | "metadata-changed" | "source-changed" | "grain-changed" | "slices-changed" | "note-changed";
   field: string;
   from?: string;
   to?: string;
@@ -247,12 +248,18 @@ export interface NoteDelta {
   removed: string[];
 }
 
+export interface TransformChange {
+  kind: "body-changed";
+  from: string;
+  to: string;
+}
+
 export interface Delta {
   schemas: BlockDelta<SchemaChange>;
   mappings: BlockDelta<MappingChange>;
   metrics: BlockDelta<SchemaChange>;
   fragments: BlockDelta<SchemaChange>;
-  transforms: BlockDelta<never>;
+  transforms: BlockDelta<TransformChange>;
   notes: NoteDelta;
 }
 

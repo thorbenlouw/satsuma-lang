@@ -1827,6 +1827,53 @@ describe("satsuma diff", () => {
     assert.match(String(transformChange.from), /title_case/);
     assert.match(String(transformChange.to), /uppercase/);
   });
+
+  it("detects schema-level note text changes (sl-4gio)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-schema-note-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-schema-note-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /note/);
+    assert.match(stdout, /Raw source data/);
+    assert.match(stdout, /Updated raw source data description/);
+  });
+
+  it("--json reports schema note-changed kind (sl-4gio)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-schema-note-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-schema-note-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const schemaChange = data.schemas.changed.find((s) => s.name === "source_data");
+    assert.ok(schemaChange, "should have changed schema");
+    const noteChange = schemaChange.changes.find((c) => c.kind === "note-changed");
+    assert.ok(noteChange, "should have note-changed");
+    assert.equal(noteChange.from, "Raw source data");
+    assert.equal(noteChange.to, "Updated raw source data description");
+  });
+
+  it("detects transform body text changes (sl-7ow3)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-transform-body-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-transform-body-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /clean address/);
+    assert.match(stdout, /body/);
+  });
+
+  it("--json reports transform body-changed kind (sl-7ow3)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-transform-body-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-transform-body-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const txChange = data.transforms.changed.find((t) => t.name === "clean address");
+    assert.ok(txChange, "should have changed transform");
+    const bodyChange = txChange.changes.find((c) => c.kind === "body-changed");
+    assert.ok(bodyChange, "should have body-changed");
+    assert.match(bodyChange.from, /trim/);
+    assert.match(bodyChange.to, /capitalize/);
+  });
 });
 
 // ---------------------------------------------------------------------------
