@@ -1874,6 +1874,32 @@ describe("satsuma diff", () => {
     assert.match(bodyChange.from, /trim/);
     assert.match(bodyChange.to, /capitalize/);
   });
+
+  it("metric note change attributed under metric, not top-level (sl-kf76)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-metric-note-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-metric-note-b.stm");
+    const { stdout, code } = await run("diff", a, b);
+    assert.equal(code, 0);
+    assert.match(stdout, /Metrics:/);
+    assert.match(stdout, /daily_signups/);
+    assert.match(stdout, /note/);
+  });
+
+  it("--json metric note changes under metrics.changed, not notes (sl-kf76)", async () => {
+    const a = resolve(import.meta.dirname, "fixtures", "diff-metric-note-a.stm");
+    const b = resolve(import.meta.dirname, "fixtures", "diff-metric-note-b.stm");
+    const { stdout, code } = await run("diff", "--json", a, b);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const metricChange = data.metrics.changed.find((m) => m.name === "daily_signups");
+    assert.ok(metricChange, "should have changed metric");
+    const noteAdded = metricChange.changes.find((c) => c.kind === "note-added");
+    const noteRemoved = metricChange.changes.find((c) => c.kind === "note-removed");
+    assert.ok(noteAdded, "should have note-added");
+    assert.ok(noteRemoved, "should have note-removed");
+    assert.equal(data.notes.added.length, 0, "metric notes should not leak to top-level");
+    assert.equal(data.notes.removed.length, 0, "metric notes should not leak to top-level");
+  });
 });
 
 // ---------------------------------------------------------------------------

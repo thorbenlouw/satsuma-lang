@@ -1,0 +1,5 @@
+schema orders { id INTEGER }
+metric daily_signups (source orders) {
+  note { "Counts new signups per day, excluding bots." }
+  signups INTEGER (measure additive)
+}

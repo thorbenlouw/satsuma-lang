@@ -47,7 +47,12 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
       const notesB = noteTextsForParent(indexB, mappingKey);
       return diffMapping(a, b, arrowsA.get(mappingKey) ?? [], arrowsB.get(mappingKey) ?? [], notesA, notesB);
     }),
-    metrics: diffBlockMap(indexA.metrics, indexB.metrics, diffMetric),
+    metrics: diffBlockMap(indexA.metrics, indexB.metrics, (a, b) => {
+      const metricKey = [...indexA.metrics.entries()].find(([, v]) => v === a)?.[0] ?? "";
+      const notesA = noteTextsForParent(indexA, metricKey);
+      const notesB = noteTextsForParent(indexB, metricKey);
+      return diffMetric(a, b, notesA, notesB);
+    }),
     fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
     transforms: diffBlockMap(indexA.transforms, indexB.transforms, diffTransform),
     notes: diffNotes(indexA.notes ?? [], indexB.notes ?? []),
@@ -116,7 +121,7 @@ function diffSchema(a: SchemaRecord, b: SchemaRecord): SchemaChange[] {
   return changes;
 }
 
-function diffMetric(a: MetricRecord, b: MetricRecord): SchemaChange[] {
+function diffMetric(a: MetricRecord, b: MetricRecord, notesA: Set<string>, notesB: Set<string>): SchemaChange[] {
   const changes: SchemaChange[] = [];
 
   // Compare metric header attributes
@@ -136,6 +141,21 @@ function diffMetric(a: MetricRecord, b: MetricRecord): SchemaChange[] {
 
   // Compare fields
   changes.push(...diffFieldList(a.fields, b.fields));
+
+  // Compare notes inside the metric
+  for (const text of notesB) {
+    if (!notesA.has(text)) {
+      const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
+      changes.push({ kind: "note-added", field: "(note)", from: preview });
+    }
+  }
+  for (const text of notesA) {
+    if (!notesB.has(text)) {
+      const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
+      changes.push({ kind: "note-removed", field: "(note)", from: preview });
+    }
+  }
+
   return changes;
 }
 

@@ -224,7 +224,7 @@ export type RegisterFn = (rule: LintRule) => void;
 // ── Diff types ──────────────────────────────────────────────────────────────
 
 export interface SchemaChange {
-  kind: "field-removed" | "field-added" | "type-changed" | "metadata-changed" | "source-changed" | "grain-changed" | "slices-changed" | "note-changed";
+  kind: "field-removed" | "field-added" | "type-changed" | "metadata-changed" | "source-changed" | "grain-changed" | "slices-changed" | "note-changed" | "note-added" | "note-removed";
   field: string;
   from?: string;
   to?: string;

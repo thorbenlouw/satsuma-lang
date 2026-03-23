@@ -178,6 +178,27 @@ describe("diffIndex", () => {
     assert.equal(delta.transforms.changed.length, 0);
   });
 
+  it("detects metric note changes attributed under metric, not top-level (sl-kf76)", () => {
+    const a = makeIndex({}, {}, {
+      metrics: { rev: { sources: ["s"], grain: null, slices: [], fields: [] } },
+      notes: [{ text: "Old note.", parent: "rev", file: "x.stm", row: 3, namespace: null }],
+    });
+    const b = makeIndex({}, {}, {
+      metrics: { rev: { sources: ["s"], grain: null, slices: [], fields: [] } },
+      notes: [{ text: "New note.", parent: "rev", file: "x.stm", row: 3, namespace: null }],
+    });
+    const delta = diffIndex(a, b);
+    // Should appear under metrics, not top-level notes
+    assert.equal(delta.metrics.changed.length, 1);
+    assert.equal(delta.metrics.changed[0].name, "rev");
+    const noteAdded = delta.metrics.changed[0].changes.find((c) => c.kind === "note-added");
+    const noteRemoved = delta.metrics.changed[0].changes.find((c) => c.kind === "note-removed");
+    assert.ok(noteAdded);
+    assert.ok(noteRemoved);
+    assert.equal(delta.notes.added.length, 0, "metric notes should not leak to top-level");
+    assert.equal(delta.notes.removed.length, 0, "metric notes should not leak to top-level");
+  });
+
   it("detects arrow count changes in mappings", () => {
     const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 5 } });
     const b = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 8 } });
