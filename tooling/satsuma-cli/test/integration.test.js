@@ -778,6 +778,14 @@ describe("satsuma where-used", () => {
     assert.equal(code, 0);
     assert.match(stdout, /transform_call|Invoked/);
   });
+
+  it("no duplicate refs for transform spread syntax (sl-b1h0)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "where-used-transform-spread.stm");
+    const { stdout, code } = await run("where-used", "my_xform", "--json", F);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.refs.length, 2, "should have exactly 2 refs (spread + bare), not 3");
+  });
 });
 
 // ---------------------------------------------------------------------------

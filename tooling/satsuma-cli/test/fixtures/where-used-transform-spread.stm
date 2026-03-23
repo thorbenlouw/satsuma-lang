@@ -1,0 +1,11 @@
+schema src { field1 STRING; field2 STRING }
+schema tgt { field1 STRING; field2 STRING }
+
+transform my_xform { trim | lowercase }
+
+mapping 'test' {
+  source { `src` }
+  target { `tgt` }
+  field1 -> field1 { ...my_xform }
+  field2 -> field2 { my_xform }
+}
