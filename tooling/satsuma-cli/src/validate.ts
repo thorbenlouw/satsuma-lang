@@ -264,20 +264,27 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
         namespace: item.namespace,
       };
 
+      // Standalone notes (mapping key starts with "note:") have no mapping
+      // context, so skip both unresolved and not-in-source checks — they are
+      // free-form documentation that may reference external concepts.
+      const isNoteContext = mappingKey.startsWith("note:");
+
       for (const { ref, offset } of refs) {
         const classification = classifyRef(ref);
         const resolution = resolveRef(ref, mappingContext, index);
 
         if (!resolution.resolved) {
-          diagnostics.push({
-            file: item.file,
-            line: item.line + 1,
-            column: item.column + offset + 1,
-            severity: "warning",
-            rule: "nl-ref-unresolved",
-            message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
-            fixable: false,
-          });
+          if (!isNoteContext) {
+            diagnostics.push({
+              file: item.file,
+              line: item.line + 1,
+              column: item.column + offset + 1,
+              severity: "warning",
+              rule: "nl-ref-unresolved",
+              message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
+              fixable: false,
+            });
+          }
         } else {
           // Determine the schema name being referenced
           let referencedSchema: string | null = null;
@@ -292,7 +299,7 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
               if (lastDot > 0) referencedSchema = fieldPath.slice(0, lastDot);
             }
           }
-          if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
+          if (referencedSchema && !isNoteContext && !isSchemaInMappingSources(referencedSchema, mapping)) {
             diagnostics.push({
               file: item.file,
               line: item.line + 1,

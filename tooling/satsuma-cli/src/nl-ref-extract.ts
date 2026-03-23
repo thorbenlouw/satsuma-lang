@@ -128,6 +128,16 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
     }
   }
 
+  // When there is no mapping context (e.g. standalone notes), fall back to
+  // searching all workspace schemas for the bare field name.
+  if (allSchemaNames.length === 0) {
+    for (const [key, schema] of index.schemas) {
+      if (hasFieldWithSpreads(schema, ref, index)) {
+        return { resolved: true, resolvedTo: { kind: "field", name: `${key}.${ref}` } };
+      }
+    }
+  }
+
   // Try namespace-qualified lookup from mapping's namespace BEFORE global
   if (mappingContext.namespace) {
     const nsRef = `${mappingContext.namespace}::${ref}`;

@@ -246,6 +246,141 @@ describe("NL ref validation: fragment spread fields", () => {
   });
 });
 
+describe("NL ref validation: standalone notes (sl-xrc8)", () => {
+  it("does not warn for bare schema refs in standalone notes", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source_system", fields: [{ name: "user_id" }] },
+        { name: "target_system", fields: [{ name: "id" }] },
+      ],
+      nlRefData: [{
+        text: "Converts `source_system` records into `target_system`",
+        mapping: "note:",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 2,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Schema refs in standalone notes should not warn");
+  });
+
+  it("does not warn for bare field refs in standalone notes", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "my_schema", fields: [{ name: "user_id" }, { name: "email" }] },
+      ],
+      nlRefData: [{
+        text: "The `user_id` field is the primary key",
+        mapping: "note:",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 2,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Bare field refs in standalone notes should resolve without warnings");
+  });
+
+  it("does not warn for unresolvable refs in standalone notes", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "my_schema", fields: [{ name: "user_id" }] },
+      ],
+      nlRefData: [{
+        text: "Needs `external_config_key` to be provisioned",
+        mapping: "note:",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 2,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Unresolvable refs in standalone notes should not warn");
+  });
+
+  it("does not warn for dotted field refs in standalone notes", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source_system", fields: [{ name: "email_addr" }] },
+      ],
+      nlRefData: [{
+        text: "See `source_system.email_addr` for details",
+        mapping: "note:",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 2,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Dotted field refs in standalone notes should not warn");
+  });
+
+  it("does not warn for refs in schema-scoped notes (note:<parent>)", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "my_schema", fields: [{ name: "user_id" }] },
+      ],
+      nlRefData: [{
+        text: "The `user_id` is sequential",
+        mapping: "note:my_schema",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 2,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    assert.equal(nlWarnings.length, 0, "Refs in schema-scoped notes should not warn");
+  });
+
+  it("still warns for unresolved refs inside mapping notes", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::src", fields: [{ name: "amount" }] },
+        { name: "target::tgt", fields: [] },
+      ],
+      mappings: [{
+        name: "my_mapping",
+        sources: ["source::src"],
+        targets: ["target::tgt"],
+      }],
+      nlRefData: [{
+        text: "Check `nonexistent_field` before proceeding",
+        mapping: "my_mapping",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 10,
+        column: 6,
+      }],
+    });
+
+    const warnings = collectSemanticWarnings(index);
+    const unresolvedWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    assert.equal(unresolvedWarnings.length, 1, "Mapping notes should still warn for unresolved refs");
+  });
+});
+
 describe("NL ref validation: bare field matching", () => {
   it("does not warn for bare field that matches a source schema field", () => {
     const index = makeIndex({
