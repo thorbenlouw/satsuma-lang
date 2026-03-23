@@ -198,6 +198,7 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
 - [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation
 - [tooling/vscode-satsuma/](tooling/vscode-satsuma): VS Code syntax highlighting extension
+- [useful-prompts/](useful-prompts): self-contained system prompts for web LLMs (e.g., [Excel-to-Satsuma conversion](useful-prompts/excel-to-stm-prompt.md))
 
 ## Current Status
 
@@ -218,7 +219,7 @@ What is not complete yet:
 - cross-file import resolution in single-file validation
 - type checking
 - code generation
-- Excel-to-Satsuma and Satsuma-to-Excel conversion tooling
+- Excel-to-Satsuma and Satsuma-to-Excel conversion tooling (a [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is available now)
 
 ## Multi-File Lineage
 
