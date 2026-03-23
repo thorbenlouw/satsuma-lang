@@ -329,6 +329,16 @@ See [SATSUMA-CLI.md](SATSUMA-CLI.md) for full command reference.
 
 ### VS Code extension
 
+A pre-built `.vsix` is published on every merge to `main`. Download it from the
+[latest release](https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest)
+and install:
+
+```bash
+code --install-extension vscode-satsuma.vsix
+```
+
+To build from source or run the test suite:
+
 ```bash
 cd tooling/vscode-satsuma
 npm install
