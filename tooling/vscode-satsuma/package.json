@@ -1,14 +1,18 @@
 {
   "name": "vscode-satsuma",
   "displayName": "Satsuma Language Support",
-  "description": "VS Code syntax highlighting for the Satsuma data mapping language",
+  "description": "VS Code language support for the Satsuma data mapping language",
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "satsuma",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": ["Programming Languages"],
+  "main": "./dist/client/extension.js",
+  "activationEvents": [
+    "onLanguage:satsuma"
+  ],
   "contributes": {
     "languages": [
       {
@@ -27,15 +31,25 @@
     ]
   },
   "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "build:server": "cd server && npm run build",
     "test": "npm run test:fixtures && npm run test:golden",
     "test:fixtures": "npx vscode-tmgrammar-test -g syntaxes/satsuma.tmLanguage.json 'test/fixtures/*.stm'",
     "test:golden": "npx vscode-tmgrammar-test -g syntaxes/satsuma.tmLanguage.json 'test/golden/*.stm'",
+    "test:lsp": "cd server && npm test",
     "validate:manifest": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json OK')\"",
     "validate:grammar": "node -e \"const g=JSON.parse(require('fs').readFileSync('syntaxes/satsuma.tmLanguage.json','utf8')); if(!g.scopeName)throw new Error('missing scopeName'); console.log('grammar OK, scopeName='+g.scopeName)\"",
     "validate": "npm run validate:manifest && npm run validate:grammar",
-    "check": "npm run validate && npm test"
+    "check": "npm run validate && npm test && npm run test:lsp"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0",
     "vscode-tmgrammar-test": "^0.1.3"
   }
 }
