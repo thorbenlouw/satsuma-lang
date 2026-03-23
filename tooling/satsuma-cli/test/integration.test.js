@@ -1686,6 +1686,16 @@ describe("satsuma validate", () => {
     assert.match(stdout, /no issues/i);
   });
 
+  it("--json produces JSON for filesystem errors (sl-5q6h)", async () => {
+    const { stdout, code } = await run("validate", "/nonexistent/path.stm", "--json");
+    assert.equal(code, 2);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data));
+    assert.equal(data.length, 1);
+    assert.equal(data[0].severity, "error");
+    assert.match(data[0].message, /ENOENT|resolving path/);
+  });
+
   it("unclosed schema at EOF reports missing-node error (sl-w6yu)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "unclosed-schema.stm");
     const { stdout, code } = await run("validate", F);

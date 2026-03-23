@@ -32,7 +32,12 @@ export function register(program: Command): void {
       try {
         files = await resolveInput(root);
       } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
+        const msg = `Error resolving path: ${(err as Error).message}`;
+        if (opts.json) {
+          console.log(JSON.stringify([{ severity: "error", message: msg }], null, 2));
+        } else {
+          console.error(msg);
+        }
         process.exit(2);
       }
 
