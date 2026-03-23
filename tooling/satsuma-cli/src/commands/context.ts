@@ -139,8 +139,11 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
 
   // Collect metadata text (tags, kv pairs) grouped by parent block name
   const metaByParent = new Map<string, string[]>();
+  // Collect raw block text for full-text keyword search
+  const rawTextByBlock = new Map<string, string>();
   for (const { tree } of parsedFiles) {
     collectMetadataText(tree.rootNode, null, metaByParent);
+    collectRawBlockText(tree.rootNode, null, rawTextByBlock);
   }
 
   const scoreEntry = (name: string, type: string, entry: { note?: string | null; fields?: Array<{ name: string; type: string }>; sources?: string[]; targets?: string[]; file: string; row: number }) => {
@@ -169,6 +172,11 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
     const metaTexts = metaByParent.get(name) ?? metaByParent.get(bareName) ?? [];
     for (const text of metaTexts) {
       score += scoreText(text, terms);
+    }
+    // Score raw block text (catches language keywords like flatten, list_of, governance)
+    const rawText = rawTextByBlock.get(name) ?? rawTextByBlock.get(bareName) ?? "";
+    if (rawText) {
+      score += scoreText(rawText, terms);
     }
     if (score > 0) {
       results.push({ name, type, score, file: entry.file, row: entry.row });
@@ -282,6 +290,24 @@ function getBlockName(node: SyntaxNode): string | null {
     return ids.map((id) => id.text).join("::");
   }
   return inner.text;
+}
+
+/**
+ * Walk the CST and collect raw block text grouped by block name.
+ * Used for full-text keyword search (flatten, list_of, governance, etc.).
+ */
+function collectRawBlockText(node: SyntaxNode, _parent: string | null, result: Map<string, string>): void {
+  for (const c of node.namedChildren) {
+    if (BLOCK_TYPES.has(c.type)) {
+      const name = getBlockName(c);
+      if (name) {
+        result.set(name, c.text);
+      }
+    }
+    if (c.type === "namespace_block") {
+      collectRawBlockText(c, null, result);
+    }
+  }
 }
 
 /**
