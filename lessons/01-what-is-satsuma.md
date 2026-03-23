@@ -176,7 +176,7 @@ That is enough to ground the rest of the course. The agent becomes an accelerato
 Before you start working with Satsuma, you need to teach your AI agent about the language and the CLI. Satsuma ships with a built-in command that outputs everything an agent needs — the grammar, a cheat sheet, CLI command reference, and workflow guidance:
 
 ```bash
-satsuma --intro-for-agents
+satsuma agent-reference
 ```
 
 This prints a compact reference document (~900 tokens of grammar + ~400 tokens of cheat sheet + CLI reference) designed to fit in an agent's system prompt or context window. How you use it depends on your agent:
@@ -186,7 +186,7 @@ This prints a compact reference document (~900 tokens of grammar + ~400 tokens o
 Add the output to a project-level instructions file that Copilot reads automatically:
 
 ```bash
-satsuma --intro-for-agents > .github/copilot-instructions.md
+satsuma agent-reference > .github/copilot-instructions.md
 ```
 
 Copilot will pick this up and use it when you ask questions or request completions in `.stm` files.
@@ -197,18 +197,18 @@ Add the output to your project's `CLAUDE.md` file so Claude Code loads it automa
 
 ```bash
 echo "" >> CLAUDE.md
-satsuma --intro-for-agents >> CLAUDE.md
+satsuma agent-reference >> CLAUDE.md
 ```
 
 Alternatively, paste the output into an ongoing conversation when you need Claude Code to work with Satsuma files.
 
 ### Claude in a browser (claude.ai) or other chat agents
 
-Start a new conversation by pasting the output of `satsuma --intro-for-agents` as your first message, or include it at the top of a project prompt. The agent will then understand Satsuma syntax, the CLI commands, and how to compose workflows.
+Start a new conversation by pasting the output of `satsuma agent-reference` as your first message, or include it at the top of a project prompt. The agent will then understand Satsuma syntax, the CLI commands, and how to compose workflows.
 
 ### Any agent with a system prompt
 
-If you control the system prompt (custom GPTs, API-based agents, internal tools), insert the output of `satsuma --intro-for-agents` directly into the system prompt. It's designed to be compact enough to fit alongside your other instructions.
+If you control the system prompt (custom GPTs, API-based agents, internal tools), insert the output of `satsuma agent-reference` directly into the system prompt. It's designed to be compact enough to fit alongside your other instructions.
 
 ### What the agent learns
 
@@ -232,7 +232,7 @@ You don't need to explain Satsuma to the agent yourself — the intro covers eve
 2. Three delimiters (`( )`, `{ }`, `" "`) handle metadata, structure, and natural language respectively.
 3. The parser and CLI extract structural facts exactly. The agent interprets natural language and drafts valid Satsuma. The human owns meaning and decisions.
 4. You do not need to memorize the full language to start working with it. Understanding the hybrid model and a few core CLI commands is enough to begin.
-5. Run `satsuma --intro-for-agents` after you have that baseline, then drop it into your agent's instructions file, system prompt, or conversation.
+5. Run `satsuma agent-reference` after you have that baseline, then drop it into your agent's instructions file, system prompt, or conversation.
 
 ---
 

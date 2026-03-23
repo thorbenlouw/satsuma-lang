@@ -11,7 +11,7 @@ All tooling is parser-backed. Downstream tools should be built on the tree-sitte
 - `SATSUMA-V2-SPEC.md`: authoritative language specification (v2)
 - `PROJECT-OVERVIEW.md`: product vision, motivation, and roadmap
 - `SATSUMA-CLI.md`: CLI command reference (16 commands)
-- `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented Satsuma guidance (v2)
+- `AI-AGENT-REFERENCE.md`: compact grammar and agent-oriented Satsuma guidance (v2) — also available via `satsuma agent-reference`
 - `FUTURE-WORK.md`: deferred and speculative work items
 - `examples/`: canonical `.stm` examples and fixtures (v2 syntax)
 - `archive/v1/`: archived v1 specification and examples — for historical reference only, not for new work

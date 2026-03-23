@@ -13,7 +13,8 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "build": "tsc",
+    "prebuild": "node scripts/prebuild.js",
+    "build": "npm run prebuild && tsc",
     "dev": "tsc --watch",
     "pretest": "tsc",
     "prepare": "tsc",

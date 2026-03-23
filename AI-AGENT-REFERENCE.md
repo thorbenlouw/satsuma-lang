@@ -174,6 +174,8 @@ note { """multiline **Markdown** content""" }
 
 ## Satsuma CLI — Agent Tooling
 
+> **Tip:** This document is baked into the CLI itself. Run `satsuma agent-reference` to print it — useful for piping into an agent's instructions file or system prompt.
+
 The `satsuma` CLI is a deterministic structural extraction tool. It extracts facts from parse trees and delivers NL content verbatim. **It does not interpret natural language — that is your job.** The CLI is the toolkit. You are the runtime.
 
 Every command produces 100% correct results from structural analysis. There are no `impact`, `coverage`, `audit`, or `inventory` commands — those are workflows you compose from primitives, applying your own reasoning to the NL content the CLI surfaces.
