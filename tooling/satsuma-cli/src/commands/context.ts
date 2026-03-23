@@ -41,6 +41,16 @@ export function register(program: Command): void {
     .option("--budget <n>", "token budget", (v: string) => parseInt(v, 10), 4000)
     .option("--compact", "omit notes and transform bodies")
     .option("--json", "emit ranked JSON list")
+    .addHelpText("after", `
+Scores blocks by keyword relevance: block name (+10), field names (+5),
+notes (+2), metadata (+1). Emits highest-scoring blocks within the token
+budget (~4 chars per token). --json bypasses the budget and emits all scores.
+
+Examples:
+  satsuma context "customer mapping"                 # blocks about customers
+  satsuma context "loyalty tier" --budget 8000       # larger context window
+  satsuma context "pii email" --compact              # compact output
+  satsuma context "order" --json                     # all scores as JSON`)
     .action(async (query: string, pathArg: string | undefined, opts: { budget: number; compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

@@ -47,6 +47,16 @@ export function register(program: Command): void {
     .option("--depth <n>", "maximum recursion depth", (v: string) => parseInt(v, 10), 10)
     .option("--compact", "print names only")
     .option("--json", "emit {nodes, edges} DAG")
+    .addHelpText("after", `
+One of --from or --to is required (not both).
+  --from  traces downstream: schema → mappings → target schemas → metrics
+  --to    traces upstream: BFS path from any source back to the target
+
+Examples:
+  satsuma lineage --from hub_customer              # what does hub_customer feed?
+  satsuma lineage --to mart_customer_360           # what feeds mart_customer_360?
+  satsuma lineage --from pos::stores --depth 3     # namespace-qualified, limited depth
+  satsuma lineage --from hub_customer --json       # DAG as JSON`)
     .action(async (pathArg: string | undefined, opts: { from?: string; to?: string; depth: number; compact?: boolean; json?: boolean }) => {
       if (!opts.from && !opts.to) {
         console.error("Provide --from <name> or --to <name>.");

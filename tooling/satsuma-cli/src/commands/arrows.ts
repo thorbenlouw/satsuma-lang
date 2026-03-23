@@ -26,6 +26,16 @@ export function register(program: Command): void {
     .option("--as-source", "only arrows where the field is the source")
     .option("--as-target", "only arrows where the field is the target")
     .option("--json", "structured JSON output")
+    .addHelpText("after", `
+The field reference is <schema>.<field> — the schema name followed by a
+dot and the field name. Namespace-qualified names work (e.g. pos::stores.STORE_ID).
+
+Each arrow is classified: [structural], [nl], [mixed], [none], or [nl-derived].
+
+Examples:
+  satsuma arrows hub_customer.email                  # all arrows for this field
+  satsuma arrows hub_customer.email --as-source      # only outbound arrows
+  satsuma arrows pos::stores.STORE_ID --json         # namespace-qualified`)
     .action(async (fieldRef: string, pathArg: string | undefined, opts: { asSource?: boolean; asTarget?: boolean; json?: boolean }) => {
       const dot = fieldRef.indexOf(".");
       if (dot === -1) {

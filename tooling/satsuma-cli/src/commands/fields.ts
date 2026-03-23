@@ -28,6 +28,15 @@ export function register(program: Command): void {
     .option("--with-meta", "include metadata tags")
     .option("--unmapped-by <mapping>", "only unmapped fields relative to a mapping")
     .option("--json", "structured JSON output")
+    .addHelpText("after", `
+Looks up <name> in schemas first, then fragments, then metrics.
+Names can be namespace-qualified (e.g. pos::stores).
+
+Examples:
+  satsuma fields hub_customer                                    # list all fields
+  satsuma fields hub_customer --with-meta                        # include tags
+  satsuma fields hub_customer --unmapped-by 'load hub_customer'  # coverage gaps
+  satsuma fields pos::stores --json                              # namespace-qualified`)
     .action(async (schemaName: string, pathArg: string | undefined, opts: { withMeta?: boolean; unmappedBy?: string; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

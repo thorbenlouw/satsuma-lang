@@ -26,6 +26,14 @@ export function register(program: Command): void {
     .option("--compact", "omit transform bodies and notes")
     .option("--arrows-only", "print src → tgt table")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+Names can be namespace-qualified (e.g. warehouse::'load hub_store').
+Quote names with spaces (e.g. 'load hub_customer').
+
+Examples:
+  satsuma mapping 'load hub_customer'                # full mapping
+  satsuma mapping 'load hub_customer' --arrows-only  # just src → tgt
+  satsuma mapping 'load hub_customer' --json         # structured output`)
     .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; arrowsOnly?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];
