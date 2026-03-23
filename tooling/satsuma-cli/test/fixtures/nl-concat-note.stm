@@ -1,0 +1,13 @@
+schema src { id INTEGER }
+schema tgt { id INTEGER }
+
+mapping 'order transform' {
+  source { `src` }
+  target { `tgt` }
+  note {
+    "First part of the note."
+    "Second part of the note."
+    "Third part with more detail."
+  }
+  id -> id
+}

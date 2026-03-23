@@ -1282,6 +1282,18 @@ describe("satsuma nl", () => {
     assert.ok(transformItems.length >= 2, "should have transform-parented items");
   });
 
+  it("concatenated note strings joined with separators (sl-p0et)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nl-concat-note.stm");
+    const { stdout, code } = await run("nl", "order transform", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const note = data.find((d) => d.kind === "note");
+    assert.ok(note, "should have a note item");
+    // Words at string boundaries should not run together
+    assert.doesNotMatch(note.text, /note\.Second/, "should not run words together at boundaries");
+    assert.match(note.text, /note\.\n?.*Second/, "should have separator between concatenated strings");
+  });
+
   it("concatenated note strings are fully extracted (sl-gu24)", async () => {
     const { stdout, code } = await run("nl", "cart_abandonment_rate", resolve(EXAMPLES, "metrics.stm"), "--json");
     assert.equal(code, 0);
