@@ -181,5 +181,86 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
     }
   }
 
+  // Emit extra tokens for backtick references inside NL strings.
+  // The grammar treats nl_string and multiline_string as atomic tokens,
+  // so we scan their text for `…` patterns and emit variable tokens.
+  emitNlRefTokens(tree.rootNode, builder, seen);
+
   return builder.build();
+}
+
+// ---------- NL reference extraction ----------
+
+const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
+
+/**
+ * Walk all nl_string and multiline_string nodes and emit semantic tokens
+ * for backtick-quoted references within them.
+ */
+function emitNlRefTokens(
+  root: SyntaxNode,
+  builder: SemanticTokensBuilder,
+  seen: Set<string>,
+): void {
+  const cursor = root.walk();
+  let reachedRoot = false;
+
+  do {
+    const node = cursor.currentNode;
+    if (node.type === "nl_string" || node.type === "multiline_string") {
+      const text = node.text;
+      const startRow = node.startPosition.row;
+      const startCol = node.startPosition.column;
+
+      // Build a line offset map for multi-line strings
+      const lineOffsets: number[] = [0];
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === "\n") lineOffsets.push(i + 1);
+      }
+
+      BACKTICK_REF_RE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
+        const offset = match.index;
+        // Find which line this offset falls on
+        let lineIdx = 0;
+        for (let l = lineOffsets.length - 1; l >= 0; l--) {
+          if (offset >= lineOffsets[l]!) {
+            lineIdx = l;
+            break;
+          }
+        }
+
+        const row = startRow + lineIdx;
+        const col =
+          lineIdx === 0
+            ? startCol + offset
+            : offset - lineOffsets[lineIdx]!;
+        const length = match[0].length;
+
+        const key = `${row}:${col}:${row}:${col + length}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          builder.push(
+            row,
+            col,
+            length,
+            3,  // variable
+            0,
+          );
+        }
+      }
+    }
+
+    // Depth-first traversal
+    if (cursor.gotoFirstChild()) continue;
+    if (cursor.gotoNextSibling()) continue;
+    while (true) {
+      if (!cursor.gotoParent()) {
+        reachedRoot = true;
+        break;
+      }
+      if (cursor.gotoNextSibling()) break;
+    }
+  } while (!reachedRoot);
 }
