@@ -79,17 +79,19 @@ function extractFromAll(parsedFiles: ParsedFile[]): NLItemWithFile[] {
 }
 
 function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): NLItemWithFile[] {
-  // Check if it's a schema, mapping, or metric (resolving namespace-qualified keys)
+  // Check if it's a schema, mapping, metric, or transform (resolving namespace-qualified keys)
   const schemaResolved = resolveIndexKey(blockName, index.schemas);
   const mappingResolved = resolveIndexKey(blockName, index.mappings);
   const metricResolved = resolveIndexKey(blockName, index.metrics);
+  const transformResolved = resolveIndexKey(blockName, index.transforms);
 
-  if (!schemaResolved && !mappingResolved && !metricResolved) {
-    console.error(`'${blockName}' not found as a schema, mapping, or metric.`);
+  if (!schemaResolved && !mappingResolved && !metricResolved && !transformResolved) {
+    console.error(`'${blockName}' not found as a schema, mapping, metric, or transform.`);
     const allNames = [
       ...index.schemas.keys(),
       ...index.mappings.keys(),
       ...index.metrics.keys(),
+      ...index.transforms.keys(),
     ];
     const close = allNames.find(
       (k) => k.toLowerCase() === blockName.toLowerCase(),
@@ -98,13 +100,14 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: W
     process.exit(1);
   }
 
-  // Collect NL content from ALL matching blocks (schema, mapping, metric)
+  // Collect NL content from ALL matching blocks (schema, mapping, metric, transform)
   // to handle ambiguous names where a schema and mapping share a name
   const items: NLItemWithFile[] = [];
   const matches: Array<{ key: string; entry: { file: string }; blockType: string }> = [];
   if (schemaResolved) matches.push({ key: schemaResolved.key, entry: schemaResolved.entry, blockType: "schema_block" });
   if (mappingResolved) matches.push({ key: mappingResolved.key, entry: mappingResolved.entry, blockType: "mapping_block" });
   if (metricResolved) matches.push({ key: metricResolved.key, entry: metricResolved.entry, blockType: "metric_block" });
+  if (transformResolved) matches.push({ key: transformResolved.key, entry: transformResolved.entry, blockType: "transform_block" });
 
   for (const { key, entry, blockType } of matches) {
     const parsed = parsedFiles.find((p) => p.filePath === entry.file);

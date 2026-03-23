@@ -1337,6 +1337,15 @@ describe("satsuma nl", () => {
     assert.ok(data.length >= 2, "should have at least 2 NL items from both blocks");
   });
 
+  it("accepts standalone transform block names as scope (sl-egu3)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nl-parent-test.stm");
+    const { stdout, code } = await run("nl", "nl transform", F, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.length > 0, "should find NL content in transform block");
+    assert.ok(data.some((d) => d.parent === "nl transform"), "parent should be transform name");
+  });
+
   it("unescapes escape sequences in NL strings (sl-j014)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "escape-test.stm");
     const { stdout, code } = await run("nl", "all", F, "--json");
