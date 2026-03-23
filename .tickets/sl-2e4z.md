@@ -20,35 +20,51 @@ Node.js LSP server using vscode-languageserver + tree-sitter. File-level feature
 
 **2026-03-23T13:00:00Z**
 
-Progress: Second PR (feat/lsp-phase1). Added 2 more Phase 1 features:
-- ✅ Semantic tokens — highlights.scm captures mapped to LSP SemanticTokenTypes (keyword, type, function, property, decorator, namespace, etc.) with definition modifiers; multi-line token support; deduplication of overlapping captures
-- ✅ Hover — contextual markdown hover for all block types (schema/fragment/mapping/transform/metric/namespace/note), field declarations (type, metadata, parent), tag descriptions, fragment spread resolution (same-file), arrow paths, pipe chain functions
-- ✅ 30 new tests (12 semantic tokens + 18 hover), 56 total LSP tests passing
+Progress: Second commit on feat/lsp-phase1 (906765c). Added semantic tokens + hover. 5 of 7 Phase 1 features now complete. 56 LSP tests passing.
 
-Remaining for sl-2e4z:
-1. Semantic diagnostics — shell out to `satsuma validate --json` on save
-2. Go-to-definition — deferred to sl-t7mg
-3. Find references — deferred to sl-t7mg
-
-**2026-03-23T11:19:17Z**
-
-**2026-03-23T11:15:00Z**
-
-Progress: First PR merged (feat/lsp-phase1, PR #47). Delivered LSP server scaffold with 3 of 7 Phase 1 features:
+Completed features:
 - ✅ Document symbols (outline panel with all block types, nested fields)
 - ✅ Parse-error diagnostics (ERROR/MISSING nodes, //! warnings, //? info)
 - ✅ Code folding (all block types matching folds.scm)
-- ✅ PRD updated to align with latest SATSUMA-V2-SPEC.md
-- ✅ README updated with build/install/test docs
-- ✅ 26 unit tests passing
+- ✅ Semantic tokens (highlights.scm → LSP SemanticTokenTypes with definition modifiers, multi-line support, dedup)
+- ✅ Hover (block summaries, field type/metadata/parent, tag descriptions, spread resolution, arrow paths)
 
 Remaining for sl-2e4z:
-1. Semantic tokens — map highlights.scm to LSP semantic token types (per-file, no workspace index)
-2. Hover — field type/metadata, schema summaries, fragment/transform info (per-file)
-3. Semantic diagnostics — shell out to `satsuma validate --json` on save for workspace-level warnings (undefined schemas, duplicate names, missing imports)
-4. Go-to-definition — uses locals.scm (may be deferred to sl-t7mg)
-5. Find references — workspace-aware (may be deferred to sl-t7mg)
+1. **Semantic diagnostics** — shell out to `satsuma validate --json` on save for workspace-level warnings (undefined schemas, duplicate names, missing imports). This is the only remaining item before this ticket can close.
 
-Recommended next PR: semantic tokens + hover (both per-file, natural extension of current architecture). Semantic diagnostics as a follow-up PR since it introduces CLI subprocess integration.
+Deferred to sl-t7mg (Phase 2):
+- Go-to-definition (uses locals.scm, requires workspace index)
+- Find references (workspace-aware)
 
-Architecture: server at tooling/vscode-satsuma/server/, client at tooling/vscode-satsuma/src/extension.ts, esbuild bundles both. Tests use Node built-in test runner importing from dist/.
+## Architecture reference for next agent
+
+- **Branch**: `feat/lsp-phase1` — worktree at `.worktrees/feat/lsp-phase1/`
+- **Server source**: `tooling/vscode-satsuma/server/src/` — one file per provider:
+  - `server.ts` — connection setup, capability registration, document lifecycle, handler wiring
+  - `parser-utils.ts` — tree-sitter singleton, CST→LSP helpers (nodeRange, child, children, labelText, stringText)
+  - `diagnostics.ts` — parse-error + comment diagnostics (ERROR/MISSING nodes, //!, //?)
+  - `symbols.ts` — document symbols/outline
+  - `folding.ts` — fold ranges
+  - `semantic-tokens.ts` — runs highlights.scm query, maps captures to LSP token types (singleton Query)
+  - `hover.ts` — contextual markdown hover (walks CST ancestors to find hover target)
+- **Client**: `tooling/vscode-satsuma/src/extension.ts` — thin LSP client, starts server via IPC
+- **Build**: `npm run build` (esbuild bundles client+server), `cd server && npx tsc` (for test dist/)
+- **Tests**: `tooling/vscode-satsuma/server/test/*.test.js` — Node built-in `node:test`, import from `../dist/`, parse with tree-sitter directly (no mocking)
+- **Run tests**: `cd tooling/vscode-satsuma && npm run test:lsp` or `cd server && npm test`
+- **Full check**: `cd tooling/vscode-satsuma && npm run check` (manifest + grammar + TextMate tests + LSP tests)
+- **PRD**: `features/16-vscode-language-server/PRD.md` — see §1.1 for semantic diagnostics acceptance criteria
+
+## Implementation guidance for semantic diagnostics
+
+The PRD §1.1 specifies: run `satsuma validate --json` on save (not on keystroke) and surface results as LSP diagnostics. Key considerations:
+- Use `child_process.execFile` to run `satsuma validate --json <file>` on `documents.onDidSave`
+- Parse JSON output and map to LSP Diagnostic objects with appropriate severities
+- Workspace-level warnings: undefined schemas, duplicate names, missing imports, broken import paths
+- Debounce or cancel in-flight validate calls if the user saves rapidly
+- Handle missing `satsuma` CLI gracefully (warn once, don't spam)
+- The existing `computeDiagnostics` (parse errors) runs on every keystroke; semantic diagnostics from validate should merge with those, not replace them
+- Tests should mock/stub the CLI subprocess — don't shell out in unit tests
+
+**2026-03-23T11:15:00Z**
+
+Progress: First PR merged (feat/lsp-phase1, PR #47). Delivered LSP server scaffold with 3 of 7 Phase 1 features. 26 unit tests. Architecture established: one file per provider, esbuild bundles client+server, tests use Node built-in test runner.
