@@ -62,6 +62,9 @@ export function buildFullGraph(index: WorkspaceIndex): FullGraph {
   // NL backtick references
   if (index.nlRefData) {
     for (const item of index.nlRefData) {
+      // Skip note blocks — they are not real mappings
+      if (item.mapping.startsWith("note:")) continue;
+
       const refs = extractBacktickRefs(item.text);
       const mappingKey = item.namespace
         ? `${item.namespace}::${item.mapping}`

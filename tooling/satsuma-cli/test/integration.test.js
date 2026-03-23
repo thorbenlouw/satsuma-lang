@@ -702,6 +702,17 @@ describe("satsuma lineage", () => {
     assert.ok(names.includes("target_d"), "should include target");
   });
 
+  it("--json has no phantom note: node from NL refs (sc-nk3v)", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout, code } = await run("lineage", "--from", "order_events", FFG, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const noteNode = data.nodes.find((n) => n.name === "note:");
+    assert.equal(noteNode, undefined, "should not have phantom note: node");
+    const noteEdge = data.edges.find((e) => e.src === "note:" || e.tgt === "note:");
+    assert.equal(noteEdge, undefined, "should not have edges to/from note:");
+  });
+
   it("--depth --json edges only reference nodes in the nodes array (sl-iliz)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
     const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--json", F);
