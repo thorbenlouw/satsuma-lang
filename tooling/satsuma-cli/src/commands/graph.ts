@@ -162,7 +162,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
       node.fields = [...schema.fields, ...spreadFields].map((f) => ({
         name: f.name,
-        type: f.type ?? null,
+        type: f.isList && f.type ? `list_of ${f.type}` : (f.type ?? null),
       }));
     }
     nodes.push(node);
@@ -210,7 +210,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
     if (!schemaOnly) {
       fragNode.fields = fragment.fields.map((f) => ({
         name: f.name,
-        type: f.type ?? null,
+        type: f.isList && f.type ? `list_of ${f.type}` : (f.type ?? null),
       }));
     }
     nodes.push(fragNode);

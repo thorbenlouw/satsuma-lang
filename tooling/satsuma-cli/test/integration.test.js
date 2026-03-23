@@ -2911,6 +2911,19 @@ describe("satsuma graph: schema_edges excludes NL-referenced schemas (sl-n11t)",
   });
 });
 
+describe("satsuma graph: scalar list fields (sc-ebau)", () => {
+  it("--json shows list_of type for scalar list fields", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout, code } = await run("graph", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const allFields = data.nodes.flatMap((n) => n.fields || []);
+    const promoCodes = allFields.find((f) => f.name === "promo_codes");
+    assert.ok(promoCodes, "should have promo_codes field");
+    assert.equal(promoCodes.type, "list_of STRING", "scalar list field should show list_of type");
+  });
+});
+
 describe("satsuma graph: fragment fields (sl-yibt)", () => {
   it("fragment nodes include fields in --json output", async () => {
     const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
