@@ -27,6 +27,8 @@ import {
 import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
 import { computeCompletions } from "./completion";
+import { computeCodeLenses } from "./codelens";
+import { prepareRename, computeRename } from "./rename";
 
 // ---------- Connection setup ----------
 
@@ -83,6 +85,12 @@ connection.onInitialize((params): InitializeResult => {
       completionProvider: {
         triggerCharacters: ["|", ".", ":", "{"],
         resolveProvider: false,
+      },
+      codeLensProvider: {
+        resolveProvider: false,
+      },
+      renameProvider: {
+        prepareProvider: true,
       },
     },
   };
@@ -235,6 +243,37 @@ connection.onCompletion((params) => {
     params.textDocument.uri,
     wsIndex,
   );
+});
+
+connection.onPrepareRename((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return null;
+  return prepareRename(
+    tree,
+    params.position.line,
+    params.position.character,
+    params.textDocument.uri,
+    wsIndex,
+  );
+});
+
+connection.onRenameRequest((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return null;
+  return computeRename(
+    tree,
+    params.position.line,
+    params.position.character,
+    params.textDocument.uri,
+    wsIndex,
+    params.newName,
+  );
+});
+
+connection.onCodeLens((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return [];
+  return computeCodeLenses(tree, params.textDocument.uri, wsIndex);
 });
 
 // ---------- Helpers ----------

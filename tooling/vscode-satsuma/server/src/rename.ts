@@ -1,0 +1,134 @@
+import {
+  Range,
+  WorkspaceEdit,
+  TextEdit,
+} from "vscode-languageserver";
+import type { Tree } from "tree-sitter";
+import { nodeRange } from "./parser-utils";
+import { findNodeContext, NodeContext } from "./definition";
+import {
+  WorkspaceIndex,
+  resolveDefinition,
+  findReferences,
+} from "./workspace-index";
+
+/**
+ * Validate that the cursor is on a renameable symbol and return its range.
+ */
+export function prepareRename(
+  tree: Tree,
+  line: number,
+  character: number,
+  _uri: string,
+  _index: WorkspaceIndex,
+): { range: Range; placeholder: string } | null {
+  const node = tree.rootNode.descendantForPosition({
+    row: line,
+    column: character,
+  });
+  if (!node) return null;
+
+  const ctx = findNodeContext(node);
+  if (!ctx) return null;
+
+  // Only allow rename on these context types
+  const renameable = new Set<NodeContext["kind"]>([
+    "block_label",
+    "source_ref",
+    "target_ref",
+    "spread",
+    "import_name",
+  ]);
+
+  if (!renameable.has(ctx.kind)) return null;
+
+  return {
+    range: nodeRange(ctx.node),
+    placeholder: ctx.name,
+  };
+}
+
+/**
+ * Compute a workspace-wide rename for the symbol at the cursor position.
+ */
+export function computeRename(
+  tree: Tree,
+  line: number,
+  character: number,
+  _uri: string,
+  index: WorkspaceIndex,
+  newName: string,
+): WorkspaceEdit | null {
+  const node = tree.rootNode.descendantForPosition({
+    row: line,
+    column: character,
+  });
+  if (!node) return null;
+
+  const ctx = findNodeContext(node);
+  if (!ctx) return null;
+
+  const oldName = ctx.name;
+  if (!oldName || oldName === newName) return null;
+
+  // Check for duplicate: if newName already exists as a definition, refuse
+  const existingDefs = resolveDefinition(index, newName, ctx.namespace);
+  if (existingDefs.length > 0) {
+    // Name collision — return null (server will send error to client)
+    return null;
+  }
+
+  // Collect all edit locations
+  const changes: Record<string, TextEdit[]> = {};
+
+  // 1. Rename the definition site(s)
+  const defs = resolveDefinition(index, oldName, ctx.namespace);
+  for (const def of defs) {
+    addEdit(changes, def.uri, def.selectionRange, newName);
+  }
+
+  // 2. Rename all reference sites
+  const refs = findReferences(index, oldName);
+  for (const ref of refs) {
+    // For qualified references like "ns::oldName", only replace the name part
+    if (ref.name.includes("::") && !oldName.includes("::")) {
+      // The reference is qualified but the old name is bare — this ref
+      // might match via namespace fallback. Compute the sub-range for just
+      // the name part after "::"
+      const colonIdx = ref.name.indexOf("::");
+      const bareInRef = ref.name.slice(colonIdx + 2);
+      if (bareInRef === oldName) {
+        // Adjust range to only cover the part after "::"
+        const prefixLen = colonIdx + 2;
+        const adjusted: Range = {
+          start: {
+            line: ref.range.start.line,
+            character: ref.range.start.character + prefixLen,
+          },
+          end: ref.range.end,
+        };
+        addEdit(changes, ref.uri, adjusted, newName);
+        continue;
+      }
+    }
+    addEdit(changes, ref.uri, ref.range, newName);
+  }
+
+  if (Object.keys(changes).length === 0) return null;
+
+  return { changes };
+}
+
+// ---------- Helpers ----------
+
+function addEdit(
+  changes: Record<string, TextEdit[]>,
+  uri: string,
+  range: Range,
+  newText: string,
+): void {
+  if (!changes[uri]) {
+    changes[uri] = [];
+  }
+  changes[uri].push(TextEdit.replace(range, newText));
+}
