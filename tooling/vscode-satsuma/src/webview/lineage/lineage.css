@@ -1,0 +1,97 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--vscode-font-family, sans-serif);
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  padding: 24px;
+  overflow-x: auto;
+}
+
+#lineage {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 80px;
+  padding: 20px;
+}
+
+.field-node {
+  background: var(--vscode-editor-background, #1e1e1e);
+  border: 1.5px solid #569cd6;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.field-node:hover {
+  border-color: #4fc1ff;
+  background: #264f78;
+}
+
+.field-node .schema {
+  font-size: 10px;
+  opacity: 0.6;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.field-node .name {
+  font-weight: 600;
+}
+
+.arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 8px;
+  min-width: 60px;
+}
+
+.arrow-line {
+  width: 100%;
+  height: 2px;
+  background: #569cd6;
+  position: relative;
+}
+
+.arrow-line::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border: 5px solid transparent;
+  border-left: 6px solid #569cd6;
+}
+
+.arrow-label {
+  font-size: 10px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #333;
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arrow-label.nl {
+  background: #4e3a1e;
+  color: #ce9178;
+}
+
+.arrow-label.nl::before {
+  content: "NL ";
+  font-weight: 700;
+  font-size: 9px;
+}
+
+.empty-message {
+  opacity: 0.5;
+  font-style: italic;
+  padding: 40px;
+}

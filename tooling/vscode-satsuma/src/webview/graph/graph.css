@@ -1,0 +1,88 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--vscode-font-family, sans-serif);
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  overflow: hidden;
+}
+
+#controls {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+#controls select {
+  background: var(--vscode-dropdown-background, #3c3c3c);
+  color: var(--vscode-dropdown-foreground, #d4d4d4);
+  border: 1px solid var(--vscode-dropdown-border, #555);
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+#stats {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+#graph {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Node shapes */
+.node rect, .node circle, .node polygon {
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+
+.node text {
+  font-size: 11px;
+  fill: var(--vscode-editor-foreground, #d4d4d4);
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.node:hover rect, .node:hover circle, .node:hover polygon {
+  stroke-width: 3;
+}
+
+/* Node kind colors */
+.node-schema rect { fill: #264f78; stroke: #4fc1ff; }
+.node-mapping polygon { fill: #4e3a1e; stroke: #dcdcaa; }
+.node-metric circle { fill: #1e3a2e; stroke: #6a9955; }
+.node-fragment rect { fill: #3a1e3a; stroke: #c586c0; rx: 8; ry: 8; }
+.node-transform rect { fill: #3a2e1e; stroke: #ce9178; rx: 4; ry: 4; }
+
+/* Edge styles */
+.edge { fill: none; stroke-width: 1.5; }
+.edge-structural { stroke: #569cd6; }
+.edge-nl { stroke: #ce9178; stroke-dasharray: 6 3; }
+.edge-mixed { stroke: #dcdcaa; stroke-dasharray: 3 3; }
+.edge-none { stroke: #555; }
+
+.edge-label {
+  font-size: 9px;
+  fill: var(--vscode-editor-foreground, #d4d4d4);
+  opacity: 0.6;
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  background: var(--vscode-editorHoverWidget-background, #2d2d2d);
+  border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+  padding: 6px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 100;
+  max-width: 300px;
+}
