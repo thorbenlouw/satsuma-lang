@@ -184,7 +184,11 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
   if (schemaNode) {
     const body = schemaNode.namedChildren.find((c) => c.type === "schema_body");
     if (body) {
-      out.fieldLines = collectFields(body).map((l) => l.text.trim());
+      let fieldLines = collectFields(body).map((l) => l.text.trim());
+      if (opts.compact) {
+        fieldLines = fieldLines.filter((l) => !l.startsWith("//"));
+      }
+      out.fieldLines = fieldLines;
     }
   }
 
