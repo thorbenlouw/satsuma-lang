@@ -1,0 +1,7 @@
+schema comment_test {
+  id     INTEGER  (pk)
+  // regular comment between fields
+  //! warning between fields
+  //? question between fields
+  name   STRING
+}

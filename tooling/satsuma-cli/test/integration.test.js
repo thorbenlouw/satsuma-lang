@@ -204,6 +204,16 @@ describe("satsuma schema", () => {
     assert.doesNotMatch(stdout, /\/\/\?/);
   });
 
+  it("--json --compact strips comments from fieldLines (sl-xtpd)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "schema-compact-comment.stm");
+    const { stdout, code } = await run("schema", "comment_test", "--json", "--compact", F);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    for (const line of data.fieldLines ?? []) {
+      assert.doesNotMatch(line, /^\/\//, `fieldLines should not include comments: ${line}`);
+    }
+  });
+
   it("--json --compact omits note field (sl-5fbn)", async () => {
     const { stdout, code } = await run("schema", "country_codes", "--json", "--compact", EXAMPLES);
     assert.equal(code, 0);
