@@ -206,17 +206,18 @@ What exists today:
 
 - the Satsuma v2 language specification
 - a canonical example corpus (16 `.stm` files covering major integration patterns)
-- a tree-sitter parser (190 corpus tests, all examples parse clean)
-- a CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- a tree-sitter parser (482 corpus tests, all examples parse clean)
+- a TypeScript CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md) (637 tests)
 - a VS Code extension with TextMate grammar for v2 syntax highlighting
+- `satsuma lint` with 3 rules (hidden NL source refs, unresolved NL refs, duplicate definitions) and `--fix` support
+- namespace support for multi-team, multi-domain platform modelling
 - data modelling conventions for Kimball and Data Vault patterns with canonical examples
 - pre-built CLI release artifacts published on every merge to `main`
 
 What is not complete yet:
 
-- semantic linting beyond current `satsuma validate` checks
+- VS Code language server (go-to-definition, completions, live diagnostics)
 - formatting (`satsuma fmt`)
-- cross-file import resolution in single-file validation
 - type checking
 - code generation
 - Excel-to-Satsuma and Satsuma-to-Excel conversion tooling (a [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is available now)

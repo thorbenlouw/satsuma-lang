@@ -249,26 +249,29 @@ How we'll know Satsuma is working:
 - Formal language specification ([SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md))
 - Canonical example library covering major integration patterns (16 `.stm` files)
 - AI-oriented quick reference and compact grammar for prompts ([AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md))
-- Tree-sitter parser (190 corpus tests)
-- CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- Tree-sitter parser (482 corpus tests)
+- TypeScript CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md) (637 tests)
+- `satsuma lint` with 3 policy rules and `--fix` support
 - VS Code syntax-highlighting extension
-- Validation improvements against the example corpus
+- Namespace support for multi-team, multi-domain platform modelling
+- Unified field syntax (`Name record { }`, `Name list_of record { }`, `Name list_of TYPE`)
 - Data-modelling conventions and examples for Kimball and Data Vault patterns
+- Self-contained [Excel-to-Satsuma prompt](useful-prompts/excel-to-stm-prompt.md) for web LLMs
 
 ### What is strategically important next
 
-- **Agent workflows on top of deterministic tooling.** The immediate opportunity is not "replace the parser with AI." It is to use the parser and CLI as dependable primitives inside AI agents that draft mappings, explain lineage, review changes, and generate implementation scaffolding.
-- **Cross-file platform modelling.** Namespaces and imports are the path to workspace-scale lineage and cleaner large-platform composition. The namespace design is drafted but not yet implemented.
-- **Richer linting and semantics.** Structural validation exists today; policy linting, deeper conventions, and broader semantic checks are still maturing.
-- **Excel and code-generation loops.** Excel-to-Satsuma, Satsuma-to-Excel, and code generation remain important, but most of that work is still deferred or partial.
-- **Editor and visualization ecosystem.** Syntax highlighting exists; language-server features and visual exploration remain future work.
+- **Agent workflows on top of deterministic tooling.** The parser and CLI are dependable primitives inside AI agents that draft mappings, explain lineage, review changes, and generate implementation scaffolding.
+- **Editor intelligence.** Syntax highlighting exists; a VS Code language server (go-to-definition, completions, live diagnostics, lineage visualization) is the next major editor milestone.
+- **Expanded linting.** `satsuma lint` ships with 3 rules today. Deeper convention checks and broader semantic analysis are next.
+- **Excel and code-generation loops.** Excel-to-Satsuma, Satsuma-to-Excel, and code generation remain important. A lite conversion prompt is available; full tooling is deferred.
+- **Explicit NL lineage.** Making natural-language transform dependencies machine-readable requires a language design review.
 
 ### Near-term roadmap
 
-1. **Strengthen the parser-backed core.** Keep the spec, examples, parser, CLI, and validation behavior aligned as the language evolves.
-2. **Make agent workflows first-class.** Improve prompt/reference material and workflow patterns so agents consistently combine `satsuma` CLI output with LLM reasoning instead of scraping raw files.
-3. **Scale to platform modelling.** Implement namespaces/import-driven composition for large workspaces and cross-team lineage.
-4. **Expand downstream tooling.** Add linting, editor intelligence, visualization, and eventually generators/exporters on top of the stable parse tree model.
+1. **VS Code language server.** Go-to-definition, find-references, completions, and live diagnostics — bringing the CLI's structural precision into the editor.
+2. **Expand linting and validation.** More lint rules, convention checks, and cross-file semantic analysis.
+3. **Excel conversion tooling.** Full-featured Excel-to-Satsuma skill for Claude Code, building on the lite prompt already available.
+4. **Code generation.** Generate implementation scaffolding (Python, SQL, dbt) from Satsuma specs.
 
 ---
 
