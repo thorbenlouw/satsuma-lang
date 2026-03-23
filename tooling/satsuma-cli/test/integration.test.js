@@ -1022,6 +1022,14 @@ describe("satsuma arrows", () => {
     assert.ok(data[0].metadata.some((m) => m.kind === "tag" && m.tag === "pii"));
   });
 
+  it("text header shows correct count for nested field paths (sl-dvhm)", async () => {
+    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const { stdout, code } = await run("arrows", "commerce_order.Order.Customer.Email", XML);
+    assert.equal(code, 0);
+    assert.match(stdout, /1 arrow/, "should show correct arrow count in header");
+    assert.match(stdout, /as source/, "should show direction in header");
+  });
+
   it("finds arrows for nested child by dotted path (sl-9gvb)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "nested-arrow-lookup.stm");
     const { stdout, code } = await run("arrows", "src_sys.addr.street", F, "--json");
