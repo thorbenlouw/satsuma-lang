@@ -135,14 +135,15 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
       const inner = nameNode?.namedChildren[0];
       const fname = inner?.text ?? "";
 
-      if (nested) {
-        // Nested structure: record or list_of record
+      const hasRecordKw = c.children?.some((ch: SyntaxNode) => !ch.isNamed && ch.text === "record");
+      if (nested || hasRecordKw) {
+        // Nested structure: record or list_of record (may have empty body)
         const isList = fieldHasListOf(c);
         const kind = isList ? "list_of record" : "record";
         const blockMeta = meta;
         const blockMetaText = blockMeta ? ` ${blockMeta.text}` : "";
         lines.push({ indent, text: `${pad}${fname} ${kind}${blockMetaText} {` });
-        lines.push(...collectFields(nested, indent + 1));
+        if (nested) lines.push(...collectFields(nested, indent + 1));
         lines.push({ indent, text: `${pad}}` });
       } else {
         // Scalar field (may be list_of scalar)

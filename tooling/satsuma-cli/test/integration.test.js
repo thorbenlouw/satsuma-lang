@@ -221,6 +221,25 @@ describe("satsuma schema", () => {
     assert.ok(data.fieldLines.some((l) => l.includes("comment after last field")));
   });
 
+  it("--json shows record type for empty list_of record (sc-r9gv)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "empty-list-record.stm");
+    const { stdout, code } = await run("schema", "test", "--json", F);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const items = data.fields.find((f) => f.name === "items");
+    assert.ok(items, "should have items field");
+    assert.equal(items.type, "list", "empty list_of record should have type 'list'");
+    assert.equal(items.isList, true);
+    assert.ok(Array.isArray(items.children), "should have children array");
+  });
+
+  it("text output shows list_of record for empty body (sc-r9gv)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "empty-list-record.stm");
+    const { stdout, code } = await run("schema", "test", F);
+    assert.equal(code, 0);
+    assert.match(stdout, /items list_of record/, "should show list_of record");
+  });
+
   it("--json --compact strips comments from fieldLines (sl-xtpd)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "schema-compact-comment.stm");
     const { stdout, code } = await run("schema", "comment_test", "--json", "--compact", F);
