@@ -1,6 +1,6 @@
 # VS Code Satsuma Extension
 
-Full language support for the [Satsuma](../../SATSUMA-V2-SPEC.md) data mapping language: syntax highlighting, an LSP server with navigation and completions, and interactive workspace visualization.
+Full language support for the Satsuma data mapping language: syntax highlighting, an LSP server with navigation and completions, and interactive workspace visualization.
 
 ## Install
 
