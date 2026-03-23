@@ -1,6 +1,6 @@
 ---
 id: sl-xrc8
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-23T12:34:19Z
@@ -30,3 +30,9 @@ Reproduces on the canonical `examples/db-to-db.stm` where \`tax_encryption_key\`
 - Existing mapping-scoped NL ref validation is unchanged
 - Tests added covering standalone note ref resolution
 
+## Notes
+
+**2026-03-23T12:40:00Z**
+
+Cause: Standalone `note { }` blocks get a pseudo-mapping key `"note:"` with no entry in the workspace index, so bare field refs have no schemas to search and all resolved refs get false `not-in-source` warnings.
+Fix: (1) In `resolveRef()`, added fallback for bare refs to search all workspace schemas when sources/targets are empty. (2) In `validate.ts`, skip both `nl-ref-unresolved` and `nl-ref-not-in-source` diagnostics for note-context entries (`mappingKey.startsWith("note:")`). Added 8 new unit tests.

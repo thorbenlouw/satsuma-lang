@@ -145,6 +145,27 @@ describe("resolveRef", () => {
     assert.equal(result.resolved, false);
   });
 
+  it("resolves bare field against all workspace schemas when sources/targets are empty", () => {
+    const index = makeIndex({
+      my_schema: { fields: [{ name: "user_id" }, { name: "email" }] },
+    });
+    const context = { sources: [], targets: [] };
+    const result = resolveRef("user_id", context, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo.name, "my_schema.user_id");
+  });
+
+  it("does not fall back to all schemas when sources/targets are provided", () => {
+    const index = makeIndex({
+      other_schema: { fields: [{ name: "secret_field" }] },
+      "source::src": { fields: [{ name: "known_field" }] },
+    });
+    const context = { sources: ["source::src"], targets: [] };
+    const result = resolveRef("secret_field", context, index);
+    assert.equal(result.resolved, false, "should not search schemas outside mapping context");
+  });
+
   it("resolves nested field names", () => {
     const index = makeIndex({
       "source::orders": {
