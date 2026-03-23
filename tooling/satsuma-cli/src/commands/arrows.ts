@@ -240,9 +240,13 @@ function collectAllFieldNames(fields: FieldDecl[]): string[] {
 }
 
 function printDefault(fieldRef: string, arrows: ArrowRecord[], _index: WorkspaceIndex): void {
-  const fieldName = fieldRef.split(".").pop();
-  const asSource = arrows.filter((a) => a.source === fieldName);
-  const asTarget = arrows.filter((a) => a.target === fieldName);
+  const dot = fieldRef.indexOf(".");
+  const fieldPath = dot >= 0 ? fieldRef.slice(dot + 1) : fieldRef;
+  const leafName = fieldPath.split(".").pop();
+  const matchesField = (val: string | null) =>
+    val === fieldPath || val === leafName;
+  const asSource = arrows.filter((a) => matchesField(a.source));
+  const asTarget = arrows.filter((a) => matchesField(a.target));
 
   const parts: string[] = [];
   if (asSource.length > 0) parts.push(`${asSource.length} as source`);
