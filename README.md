@@ -1,3 +1,5 @@
+![Satsuma logo](assets/512x_satsuma_logo.png)
+
 # Satsuma
 
 [![CI](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
