@@ -6,11 +6,9 @@ Items below are speculative or aspirational and not ready to implement yet. They
 
 ## Excel-to-Satsuma Full Skill (Feature 04, Phases 1-5)
 
-The lite system prompt (`features/04-excel-to-stm-skill/excel-to-stm-prompt.md`) is authored but untested. The full skill — Python CLI tool (`excel_tool.py`), Claude Code skill prompt with survey/translate/critique phases, and end-to-end validation — is designed but not implemented.
+The lite system prompt is authored and updated to v2 syntax at `useful-prompts/excel-to-stm-prompt.md`. The full skill — Python CLI tool (`excel_tool.py`), Claude Code skill prompt with survey/translate/critique phases, and end-to-end validation — is designed but not implemented.
 
-**Why deferred:** The full skill depends on real-world testing of the lite prompt first to validate the approach. The Python tool and multi-phase skill prompt are significant implementation effort that should wait until the lite variant is proven against sample spreadsheets.
-
-**Prerequisite:** Test the lite prompt against 2-3 sample spreadsheets on web LLMs and iterate on quality.
+**Why deferred:** The full skill is significant implementation effort. The lite prompt is available for immediate use; the full tooling should follow once the approach is validated.
 
 **Source:** `features/04-excel-to-stm-skill/PRD.md` (Phases 1-5)
 
@@ -26,13 +24,13 @@ Generate Excel workbooks from Satsuma files for non-technical stakeholders. Ship
 
 ---
 
-## NL Lineage — Explicit `nl()` Dependencies (Feature 14)
+## VS Code Language Server (Feature 16)
 
-Proposed language change requiring every `nl()` transform to declare source field dependencies as explicit parameters. This is a spec-level change that affects the grammar, parser, linter, formatter, and all example files.
+A full-featured LSP-backed VS Code extension: go-to-definition, find-references, completions, live diagnostics, outline, breadcrumbs, and lineage visualization. Three phases planned (core server → navigation → advanced features).
 
-**Why deferred:** This is a language design proposal with open questions (migration period, zero-dependency `nl()`, duplicate handling). It should go through spec review before implementation work begins. The current `nl()` syntax works for existing use cases; this enhancement improves lineage completeness but is not blocking.
+**Why deferred:** Syntax highlighting is sufficient for current usage. The language server is the next major editor milestone but requires sustained implementation effort across 3 phases.
 
-**Source:** `features/14-nl-lineage/PRD.md`
+**Source:** `features/16-vscode-language-server/PRD.md`
 
 ---
 
@@ -42,6 +40,6 @@ The Feature 06 convention spec and examples are complete. Future phases include:
 - **Phase 2:** Linting rules that validate metadata token combinations (e.g., `hub` + `dimension` conflict)
 - **Phase 3:** DDL/dbt model generation from convention-annotated schemas
 
-**Why deferred:** These are tooling features that build on the convention spec. Feature 13 parser/CLI bugs are near-complete (6/8 fixed; only convention-field suppression remains in [stm-1hsk]). Once that last validator issue is resolved, the examples will validate clean and this tooling work can proceed.
+**Why deferred:** These are tooling features that build on the convention spec. Feature 13 parser bugs are resolved; one validator bug remains (duplicate schema definitions across files cause false field-not-in-schema warnings — tracked as sl-5ms4). Once that is resolved, the examples will validate clean across subdirectories and this tooling work can proceed.
 
 **Source:** `features/06-data-modelling-with-stm/PRD.md` (Non-Goals section)
