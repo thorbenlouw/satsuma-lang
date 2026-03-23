@@ -11,6 +11,8 @@ import { getParser } from "./parser-utils";
 import { computeDiagnostics } from "./diagnostics";
 import { computeDocumentSymbols } from "./symbols";
 import { computeFoldingRanges } from "./folding";
+import { computeSemanticTokens, semanticTokensLegend } from "./semantic-tokens";
+import { computeHover } from "./hover";
 
 // ---------- Connection setup ----------
 
@@ -28,6 +30,11 @@ connection.onInitialize((): InitializeResult => {
       textDocumentSync: TextDocumentSyncKind.Full,
       documentSymbolProvider: true,
       foldingRangeProvider: true,
+      semanticTokensProvider: {
+        legend: semanticTokensLegend,
+        full: true,
+      },
+      hoverProvider: true,
     },
   };
 });
@@ -63,6 +70,18 @@ connection.onFoldingRanges((params) => {
   const tree = trees.get(params.textDocument.uri);
   if (!tree) return [];
   return computeFoldingRanges(tree);
+});
+
+connection.onRequest("textDocument/semanticTokens/full", (params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return { data: [] };
+  return computeSemanticTokens(tree);
+});
+
+connection.onHover((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return null;
+  return computeHover(tree, params.position.line, params.position.character);
 });
 
 // ---------- Helpers ----------
