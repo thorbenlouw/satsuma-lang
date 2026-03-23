@@ -1,6 +1,6 @@
 ---
 id: sl-zfi0
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T07:45:39Z

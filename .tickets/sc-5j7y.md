@@ -1,6 +1,6 @@
 ---
 id: sc-5j7y
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T21:30:37Z

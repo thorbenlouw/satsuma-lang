@@ -1,6 +1,6 @@
 ---
 id: sl-uasu
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T07:43:55Z

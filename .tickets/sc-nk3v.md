@@ -1,6 +1,6 @@
 ---
 id: sc-nk3v
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-22T21:30:45Z
