@@ -221,7 +221,10 @@ function collectAllTags(metaNode: SyntaxNode): string[] {
       const key = c.namedChildren.find((x) => x.type === "kv_key");
       const val = c.namedChildren.find((x) => x.type !== "kv_key");
       tags.push(val ? `${key?.text} ${val.text}` : (key?.text ?? ""));
-    } else if (c.type === "note_tag") tags.push("note");
+    } else if (c.type === "note_tag") {
+      const strNode = c.namedChildren.find((x) => x.type === "nl_string" || x.type === "multiline_string");
+      tags.push(strNode ? `note ${strNode.text}` : "note");
+    }
     else if (c.type === "enum_body") tags.push("enum {...}");
     else if (c.type === "slice_body") tags.push("slice {...}");
   }

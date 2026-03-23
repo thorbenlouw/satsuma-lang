@@ -585,6 +585,18 @@ describe("satsuma find", () => {
     assert.ok(schemaLevel.length > 0, "expected schema-level format matches");
   });
 
+  it("--json note metadata includes text value (sc-5s57)", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const cf = data.find((m) => m.field === "consent_flags");
+    assert.ok(cf, "should find consent_flags");
+    const noteEntry = cf.metadata.find((t) => t.startsWith("note"));
+    assert.ok(noteEntry, "should have note in metadata");
+    assert.match(noteEntry, /note "/, "note should include its text value");
+  });
+
   it("--json schema-level entries include metadata array (sc-h1wv)", async () => {
     const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
     const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
