@@ -17,7 +17,7 @@
     "build": "npm run prebuild && tsc",
     "dev": "tsc --watch",
     "pretest": "tsc",
-    "prepare": "tsc",
+    "prepare": "npm run prebuild && tsc",
     "test": "node --test test/**/*.test.js"
   },
   "dependencies": {
