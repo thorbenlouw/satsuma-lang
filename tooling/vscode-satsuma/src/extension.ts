@@ -1,4 +1,5 @@
 import { join } from "path";
+import * as vscode from "vscode";
 import { ExtensionContext, window, workspace } from "vscode";
 import {
   LanguageClient,
@@ -12,6 +13,9 @@ import { registerWhereUsedCommand } from "./commands/where-used";
 import { registerWarningsCommand } from "./commands/warnings";
 import { registerSummaryCommand } from "./commands/summary";
 import { registerArrowsCommand } from "./commands/arrows";
+import { registerCoverageCommand } from "./commands/coverage";
+import { GraphPanel } from "./webview/graph/panel";
+import { LineagePanel } from "./webview/lineage/panel";
 
 let client: LanguageClient | undefined;
 
@@ -64,8 +68,35 @@ export function activate(context: ExtensionContext): void {
   registerSummaryCommand(context, cliPath, outputChannel);
   registerArrowsCommand(context, cliPath, outputChannel);
 
-  // Graph and lineage webview commands are registered in later steps
-  // (satsuma.showGraph, satsuma.traceFieldLineage, satsuma.showCoverage)
+  registerCoverageCommand(context, cliPath, client);
+
+  // Graph webview
+  context.subscriptions.push(
+    vscode.commands.registerCommand("satsuma.showGraph", () => {
+      GraphPanel.createOrShow(context.extensionUri, cliPath);
+    }),
+  );
+
+  // Lineage webview
+  context.subscriptions.push(
+    vscode.commands.registerCommand("satsuma.traceFieldLineage", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || editor.document.languageId !== "satsuma") return;
+
+      const word = editor.document.getText(
+        editor.document.getWordRangeAtPosition(editor.selection.active),
+      );
+
+      const fieldPath = await vscode.window.showInputBox({
+        prompt: "Enter field reference (schema.field)",
+        value: word?.includes(".") ? word : `${word ?? ""}.`,
+        placeHolder: "customers.email",
+      });
+      if (!fieldPath) return;
+
+      LineagePanel.createOrShow(context.extensionUri, cliPath, fieldPath);
+    }),
+  );
 }
 
 export function deactivate(): Thenable<void> | undefined {
