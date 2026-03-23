@@ -190,7 +190,7 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md): authoritative language specification
 - [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
 - [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (16 commands for structural extraction, analysis, and validation)
-- [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents
+- [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents (also available via `satsuma agent-reference`)
 - [BA-TUTORIAL.md](BA-TUTORIAL.md): practical tutorial for business analysts
 - [USE_CASES.md](USE_CASES.md): practical scenarios and personas
 - [FUTURE-WORK.md](FUTURE-WORK.md): deferred and speculative work items
@@ -300,6 +300,13 @@ satsuma summary examples/            # structural overview
 satsuma validate examples/           # structural + semantic validation
 satsuma schema customers examples/   # show a specific schema
 satsuma lineage --from legacy_sqlserver examples/   # trace data flow
+```
+
+To set up an AI agent, print the built-in reference:
+
+```bash
+satsuma agent-reference               # print grammar, cheat sheet, and CLI guide
+satsuma agent-reference > .github/copilot-instructions.md   # feed to Copilot
 ```
 
 See [SATSUMA-CLI.md](SATSUMA-CLI.md) for full command reference.

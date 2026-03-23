@@ -55,6 +55,7 @@ const commands = [
   "commands/nl-refs.js",
   "commands/graph.js",
   "commands/lint.js",
+  "commands/agent-reference.js",
 ];
 
 for (const cmd of commands) {

@@ -60,6 +60,14 @@ Full workspace topology export for one-shot reasoning.
 
 Flags: `--json` (full graph), `--compact` (schema-level adjacency list), `--schema-only` (omit field-level edges), `--namespace <ns>` (filter to namespace), `--no-nl` (strip NL text from edges).
 
+### Agent Setup
+
+| Command | Operation | Example |
+|---|---|---|
+| `agent-reference` | Print the AI Agent Reference — grammar, cheat sheet, CLI guide, and workflow patterns | `satsuma agent-reference` |
+
+Pipe the output into your agent's instructions file (e.g., `satsuma agent-reference > .github/copilot-instructions.md`) or paste it into a conversation. The content is baked into the CLI at build time from `AI-AGENT-REFERENCE.md`.
+
 ### Structural Analysis
 
 Operations that check or compare workspace structure.
