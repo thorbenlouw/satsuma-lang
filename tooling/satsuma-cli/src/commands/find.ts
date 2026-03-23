@@ -103,11 +103,13 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
     if (meta) {
       const matched = findTagInMeta(meta, tag);
       if (matched) {
+        const allTags = collectAllTags(meta);
         matches.push({
           blockType,
           block: blockName,
           field: "(schema)",
           tag: matched,
+          metadata: allTags.length > 0 ? allTags : undefined,
           file: blockEntry.file,
           line: blockNode.startPosition.row + 1,
         });
