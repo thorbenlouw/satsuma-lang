@@ -12,8 +12,14 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux-x64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
           - os: macos-latest
             platform: darwin-arm64
+          - os: macos-13
+            platform: darwin-x64
+          - os: windows-latest
+            platform: win32-x64
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -30,6 +36,7 @@ jobs:
         run: npm run ci:all
 
       - name: Bundle for distribution
+        shell: bash
         run: |
           # Replace file: symlink with actual copy (includes prebuilt native addon)
           rm -rf node_modules/tree-sitter-satsuma
@@ -72,13 +79,10 @@ jobs:
 
       - name: Build and package .vsix
         run: |
-          # Build the LSP server (needed for the extension)
-          cd server && npx tsc && cd ..
-
           # Build client + server + webview bundles
           npm run build
 
-          # Package the extension
+          # Package the extension (--allow-missing-repository for monorepo layout)
           npx @vscode/vsce package --no-dependencies -o vscode-satsuma.vsix
 
       - uses: actions/upload-artifact@v4
@@ -112,8 +116,17 @@ jobs:
           # macOS (Apple Silicon)
           npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-darwin-arm64.tgz
 
+          # macOS (Intel)
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-darwin-x64.tgz
+
           # Linux (x64)
           npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-linux-x64.tgz
+
+          # Linux (ARM64)
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-linux-arm64.tgz
+
+          # Windows (x64)
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-win32-x64.tgz
           ```
 
           **Install VS Code Extension:**
