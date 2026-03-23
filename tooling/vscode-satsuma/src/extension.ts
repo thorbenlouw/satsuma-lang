@@ -31,6 +31,9 @@ export function activate(context: ExtensionContext): void {
     initializationOptions: {
       cliPath,
     },
+    synchronize: {
+      fileEvents: workspace.createFileSystemWatcher("**/*.stm"),
+    },
   };
 
   client = new LanguageClient(
