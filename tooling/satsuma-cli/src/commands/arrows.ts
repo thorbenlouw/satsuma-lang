@@ -119,12 +119,14 @@ Examples:
         if (!nlRef.resolved || !nlRef.resolvedTo) continue;
         const resolvedTo = nlRef.resolvedTo.name;
         if (resolvedTo === qualifiedField || resolvedTo === `${resolvedSchema.key}.${fieldName}`) {
+          // Use the fully resolved path as the source so cross-schema refs
+          // are correctly attributed (sl-uk9q)
           arrows.push({
             mapping: nlRef.namespace && nlRef.mapping?.startsWith(`${nlRef.namespace}::`)
               ? nlRef.mapping.slice(nlRef.namespace.length + 2)
               : nlRef.mapping,
             namespace: nlRef.namespace,
-            source: fieldName,
+            source: resolvedTo,
             target: nlRef.targetField,
             transform_raw: `(NL ref)`,
             steps: [],

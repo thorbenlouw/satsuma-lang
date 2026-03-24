@@ -295,8 +295,23 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
           } else if (classification === "dotted-field" || classification === "namespace-qualified-field") {
             if (resolution.resolvedTo?.kind === "field") {
               const fieldPath = resolution.resolvedTo.name;
-              const lastDot = fieldPath.lastIndexOf(".");
-              if (lastDot > 0) referencedSchema = fieldPath.slice(0, lastDot);
+              // Extract the schema key from the resolved path. The schema key
+              // is the prefix that matches an entry in index.schemas.
+              let foundSchema = false;
+              const parts = fieldPath.split(".");
+              for (let i = parts.length - 1; i > 0; i--) {
+                const candidate = parts.slice(0, i).join(".");
+                if (index.schemas.has(candidate)) {
+                  referencedSchema = candidate;
+                  foundSchema = true;
+                  break;
+                }
+              }
+              // For namespace-qualified fields (ns::schema.field), try ns::schema
+              if (!foundSchema && fieldPath.includes("::")) {
+                const dotIdx = fieldPath.indexOf(".", fieldPath.indexOf("::") + 2);
+                if (dotIdx > 0) referencedSchema = fieldPath.slice(0, dotIdx);
+              }
             }
           }
           if (referencedSchema && !isNoteContext && !isSchemaInMappingSources(referencedSchema, mapping)) {
