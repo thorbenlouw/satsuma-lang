@@ -5,7 +5,15 @@ on:
     branches: [main]
 
 jobs:
+  security:
+    name: Security gate
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      security-events: write
+
   build:
+    needs: [security]
     strategy:
       fail-fast: false
       matrix:
@@ -60,6 +68,7 @@ jobs:
           path: tooling/satsuma-cli/satsuma-cli-${{ matrix.platform }}.tgz
 
   vsix:
+    needs: [security]
     runs-on: ubuntu-latest
     defaults:
       run:

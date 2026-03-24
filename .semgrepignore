@@ -1,0 +1,12 @@
+# Generated tree-sitter parser sources — not hand-written code
+tooling/tree-sitter-satsuma/src/parser.c
+tooling/tree-sitter-satsuma/src/tree_sitter/
+
+# Generated CLI parser bindings
+tooling/satsuma-cli/src/generated/
+
+# Node modules
+node_modules/
+
+# Archived specs and examples (not active code)
+archive/
