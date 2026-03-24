@@ -250,9 +250,10 @@ How we'll know Satsuma is working:
 - Canonical example library covering major integration patterns (16 `.stm` files)
 - AI-oriented quick reference and compact grammar for prompts ([AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md))
 - Tree-sitter parser (482 corpus tests)
-- TypeScript CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md) (637 tests)
+- TypeScript CLI (`satsuma`) with 17 commands for structural extraction, analysis, validation, formatting, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- `satsuma fmt` — opinionated, zero-config formatter (CLI + VS Code Format Document)
 - `satsuma lint` with 3 policy rules and `--fix` support
-- VS Code extension with LSP server (go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, diagnostics, folding, document symbols)
+- VS Code extension with LSP server (go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, diagnostics, folding, document symbols, formatting)
 - Namespace support for multi-team, multi-domain platform modelling
 - Unified field syntax (`Name record { }`, `Name list_of record { }`, `Name list_of TYPE`)
 - Data-modelling conventions and examples for Kimball and Data Vault patterns

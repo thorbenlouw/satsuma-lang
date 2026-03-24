@@ -1,6 +1,6 @@
 ---
 id: sl-z8xf
-status: open
+status: closed
 deps: [sl-pdxy]
 links: []
 created: 2026-03-24T18:30:56Z
@@ -20,3 +20,9 @@ Update SATSUMA-CLI.md with fmt command reference (flags, exit codes, usage examp
 - [ ] PROJECT-OVERVIEW.md updated if needed
 - [ ] Landing page/site mentions formatter as a tooling feature
 
+
+## Notes
+
+**2026-03-24T20:03:16Z**
+
+Cause: New feature. Fix: Updated SATSUMA-CLI.md with fmt command reference (Formatting section with all flags and exit codes). Updated AI-AGENT-REFERENCE.md with fmt in command reference and agent workflow step 10. Updated PROJECT-OVERVIEW.md with 17 commands and fmt/formatting mentions.

@@ -90,6 +90,9 @@ jobs:
       - name: Run CLI tests
         run: npm test
 
+      - name: Check example corpus formatting
+        run: node dist/index.js fmt --check ../../examples/
+
   parser:
     name: Tree-sitter parser
     needs: install

@@ -68,6 +68,19 @@ Flags: `--json` (full graph), `--compact` (schema-level adjacency list), `--sche
 
 Pipe the output into your agent's instructions file (e.g., `satsuma agent-reference > .github/copilot-instructions.md`) or paste it into a conversation. The content is baked into the CLI at build time from `AI-AGENT-REFERENCE.md`.
 
+### Formatting
+
+| Command | Operation | Example |
+|---|---|---|
+| `fmt [path]` | Format files in place (opinionated, zero-config) | `satsuma fmt examples/` |
+| `fmt --check` | Exit 1 if any file would change (for CI) | `satsuma fmt --check .` |
+| `fmt --diff` | Print unified diff without writing | `satsuma fmt --diff file.stm` |
+| `fmt --stdin` | Read from stdin, write formatted output to stdout | `cat file.stm \| satsuma fmt --stdin` |
+
+The formatter is opinionated and zero-configuration — one canonical style for all Satsuma files. It walks the tree-sitter CST to produce parser-backed, semantics-preserving output. Files with parse errors are skipped with a warning.
+
+Exit codes: `0` = success (or already formatted), `1` = files would change (`--check` mode), `2` = parse errors.
+
 ### Structural Analysis
 
 Operations that check or compare workspace structure.

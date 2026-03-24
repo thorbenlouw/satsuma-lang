@@ -236,6 +236,13 @@ satsuma graph path/ --json --namespace crm   # filter to a namespace
 satsuma graph path/ --json --no-nl           # strip NL text for smaller payload
 satsuma graph path/ --compact                # flat schema-level adjacency list
 
+# Formatting
+satsuma fmt path/to/workspace/               # format all .stm files in place
+satsuma fmt file.stm                         # format a single file
+satsuma fmt --check                          # CI mode — exit 1 if any file would change
+satsuma fmt --diff file.stm                  # print diff without writing
+cat file.stm | satsuma fmt --stdin           # pipe: read stdin, write stdout
+
 # Structural analysis
 satsuma validate                             # parse errors + semantic reference checks
 satsuma lint                                 # policy/convention checks (duplicates, NL refs)
@@ -305,9 +312,10 @@ When reporting results to humans, be transparent about which parts of your analy
 7. Add `//!` warnings for known data quality issues
 8. Add `//?` for any open questions or ambiguities
 9. Add `(note "...")` metadata for persistent field-level documentation
-10. Run `satsuma validate` to check for parse errors and semantic issues
-11. Run `satsuma lint` to check for policy/convention issues; use `--fix` to auto-correct fixable ones
-12. Run `satsuma fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
+10. Run `satsuma fmt` to apply canonical formatting
+11. Run `satsuma validate` to check for parse errors and semantic issues
+12. Run `satsuma lint` to check for policy/convention issues; use `--fix` to auto-correct fixable ones
+13. Run `satsuma fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
 
 ### When reading/interpreting Satsuma:
 
