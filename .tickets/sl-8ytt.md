@@ -1,6 +1,6 @@
 ---
 id: sl-8ytt
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-24T22:14:25Z

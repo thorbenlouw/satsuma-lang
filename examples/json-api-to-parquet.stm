@@ -1,0 +1,198 @@
+// Satsuma v2 — JSON API Order Response to Lakehouse Parquet
+
+note {
+  """
+  # JSON API to Lakehouse Parquet
+
+  Ingests order responses from the commerce REST API (v2) and lands two
+  curated Parquet datasets:
+  - `order_headers_parquet` at one row per order
+  - `order_lines_parquet` at one row per line item
+
+  The source JSON contains nested customer and shipping objects, a
+  variable-length line items array, an optional discounts array, and a
+  free-form metadata subtree preserved as a raw JSON blob.
+  """
+}
+
+
+// --- Source ---
+schema api_order_response (format json, note "Commerce REST API v2 order response") {
+  Order record (jsonpath "$.order") {
+    OrderId         STRING  (jsonpath "$.order.order_id")
+    Channel         STRING  (jsonpath "$.order.channel")
+    OrderTimestamp  STRING  (jsonpath "$.order.created_at")
+    CurrencyCode    STRING  (jsonpath "$.order.currency")
+
+    Customer record {
+      CustomerId   STRING  (jsonpath "$.order.customer.id")
+      Email        STRING  (jsonpath "$.order.customer.email")
+      LoyaltyTier  STRING  (jsonpath "$.order.customer.loyalty_tier")
+    }
+
+    ShippingAddress record {
+      CountryCode  STRING  (jsonpath "$.order.shipping.country_code")
+      RegionCode   STRING  (jsonpath "$.order.shipping.region_code")
+      PostalCode   STRING  (jsonpath "$.order.shipping.postal_code")
+    }
+
+    Totals record {
+      SubtotalAmount  DECIMAL(12,2)  (jsonpath "$.order.totals.subtotal")
+      TaxAmount       DECIMAL(12,2)  (jsonpath "$.order.totals.tax")
+      TotalAmount     DECIMAL(12,2)  (jsonpath "$.order.totals.total")
+    }
+
+    Discounts list_of record (jsonpath "$.order.discounts[*]") {
+      DiscountCode    STRING         (jsonpath ".code")
+      DiscountAmount  DECIMAL(12,2)  (jsonpath ".amount")
+      DiscountType    STRING         (jsonpath ".type")
+    }
+
+    LineItems list_of record (jsonpath "$.order.line_items[*]") {
+      LineNumber       INT32          (jsonpath ".line_number")
+      SKU              STRING         (jsonpath ".sku")
+      FulfillmentType  STRING         (jsonpath ".fulfillment_type")
+      Quantity         INT32          (jsonpath ".quantity")
+      UnitPrice        DECIMAL(12,2)  (jsonpath ".unit_price")
+      ExtendedAmount   DECIMAL(12,2)  (jsonpath ".extended_amount")
+      TaxAmount        DECIMAL(12,2)  (jsonpath ".tax_amount")
+      IsGift           BOOLEAN        (jsonpath ".is_gift")
+    }
+
+    OrderMetadata   JSON    (jsonpath "$.order.metadata", note "Preserved as raw JSON — contains variable vendor-specific fields")
+  }
+}
+
+
+// --- Targets ---
+schema order_headers_parquet (format parquet, note "Curated order header dataset") {
+  order_id             STRING         (pk)
+  order_channel        STRING         (enum {web, mobile, store, marketplace}, required)
+  order_timestamp_utc  TIMESTAMPTZ    (required)
+  customer_id          STRING
+  customer_email       STRING         (format email, pii)
+  loyalty_tier         STRING         (enum {bronze, silver, gold, platinum})
+  ship_country         STRING         (required)
+  ship_region          STRING
+  ship_postal_code     STRING
+  currency_code        STRING         (required)
+  subtotal_amount      DECIMAL(12,2)
+  tax_amount           DECIMAL(12,2)
+  total_amount         DECIMAL(12,2)  (required)
+  discount_codes       JSON
+  discount_total       DECIMAL(12,2)
+  order_metadata       JSON
+  line_count           INT32
+  ingest_date          DATE           (required)
+}
+
+
+schema order_lines_parquet (format parquet, note "Curated order line dataset") {
+  order_id          STRING         (required)
+  line_number       INT32          (required)
+  sku               STRING         (required)
+  fulfillment_type  STRING         (enum {ship, pickup, digital, service})
+  quantity          INT32          (required)
+  unit_price        DECIMAL(12,2)
+  extended_amount   DECIMAL(12,2)  (required)
+  line_tax_amount   DECIMAL(12,2)
+  is_gift           BOOLEAN
+  currency_code     STRING         (required)
+  order_channel     STRING         (required)
+  customer_id       STRING
+  ship_country      STRING
+  ingest_date       DATE           (required)
+}
+
+
+// --- Mapping: Order Headers ---
+mapping 'order headers' {
+  source { `api_order_response` }
+  target { `order_headers_parquet` }
+
+  Order.OrderId -> order_id
+  Order.Channel -> order_channel { trim | lowercase }
+
+  Order.OrderTimestamp -> order_timestamp_utc {
+    "Parse ISO-8601 timestamp from the API. The `created_at` field is
+     always UTC with a Z suffix. Output UTC timestamp."
+  }
+
+  Order.Customer.CustomerId -> customer_id
+  Order.Customer.Email -> customer_email {
+    trim
+    | lowercase
+    | validate_email
+    | null_if_invalid
+  }
+  Order.Customer.LoyaltyTier -> loyalty_tier {
+    trim
+    | lowercase
+    | null_if_empty
+  }
+
+  Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
+  Order.ShippingAddress.RegionCode -> ship_region {
+    trim
+    | uppercase
+    | null_if_empty
+  }
+  Order.ShippingAddress.PostalCode -> ship_postal_code { trim | null_if_empty }
+
+  Order.CurrencyCode -> currency_code { trim | uppercase }
+
+  Order.Totals.SubtotalAmount -> subtotal_amount
+  Order.Totals.TaxAmount -> tax_amount
+  Order.Totals.TotalAmount -> total_amount
+
+  -> discount_codes {
+    "Collect `DiscountCode` values from the order discount entries, preserving source order.
+     Emit as a JSON array string. If no discounts, emit []."
+  }
+
+  -> discount_total {
+    "Sum `DiscountAmount` across the order discount entries for the current order.
+     If no discounts, emit 0.00."
+  }
+
+  Order.OrderMetadata -> order_metadata
+
+  -> line_count {
+    "Count entries in `LineItems` for the current order."
+  }
+
+  -> ingest_date {
+    now_utc()
+    | "Truncate to UTC calendar date YYYY-MM-DD."
+  }
+}
+
+
+// --- Mapping: Order Lines (flattened) ---
+mapping 'order lines' {
+  source { `api_order_response` }
+  target { `order_lines_parquet` }
+
+  Order.OrderId -> order_id
+
+  flatten Order.LineItems -> order_lines_parquet {
+    .LineNumber -> line_number
+    .SKU -> sku { trim | uppercase }
+    .FulfillmentType -> fulfillment_type { trim | lowercase }
+    .Quantity -> quantity
+    .UnitPrice -> unit_price
+    .ExtendedAmount -> extended_amount
+    .TaxAmount -> line_tax_amount
+    .IsGift -> is_gift
+  }
+
+  Order.CurrencyCode -> currency_code { trim | uppercase }
+  Order.Channel -> order_channel { trim | lowercase }
+  Order.Customer.CustomerId -> customer_id
+  Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
+
+  -> ingest_date {
+    now_utc()
+    | "Truncate to UTC calendar date YYYY-MM-DD."
+  }
+}

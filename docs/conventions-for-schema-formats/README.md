@@ -58,5 +58,12 @@ The `examples/` directory at the repo root contains full working Satsuma files f
 - **Avro** — referenced in the spec (JSON-based, unions, schema evolution)
 - **OpenAPI** — representable using standard Satsuma metadata (`format`, `enum`, `pii`)
 - **COBOL → Avro** — `examples/cobol-to-avro.stm` (legacy-to-modern transformation bridge)
+- **JSON API** — `examples/json-api-to-parquet.stm` (nested JSON with jsonpath extraction)
 
-The conventions in this directory focus on formats that are **not** yet covered by canonical examples and where Satsuma's mixed-model approach provides the most value.
+### Formats with Convention Docs and Canonical Examples
+
+| Format | Convention Doc | Example | What it Stresses |
+|--------|---------------|---------|-----------------|
+| JSON / JSON API | [`json/`](json/) | `examples/json-api-to-parquet.stm` | Deep nesting, array iteration, relative paths, JSON blob preservation |
+
+The remaining conventions in this directory focus on formats that are **not** yet covered by canonical examples and where Satsuma's mixed-model approach provides the most value.

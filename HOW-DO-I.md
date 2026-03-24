@@ -45,35 +45,35 @@ Both example sets model the same RetailCo company. See the [comparison overview]
 ## Load Strategy
 
 **How do I declare an upsert/merge strategy on a mapping?**
-Use `(merge upsert, match_on <field>, on_match update, on_no_match insert)` on the mapping block. <!-- Guide: [docs/conventions-for-merge-strategy/](docs/conventions-for-merge-strategy/README.md) -->
+Use `(merge upsert, match_on <field>, on_match update, on_no_match insert)` on the mapping block. Guide: [Merge Strategy Conventions](docs/conventions-for-merge-strategy/README.md)
 
 **How do I declare append-only loading (event streams)?**
-Use `(merge append)` — no match logic needed. <!-- Guide: [docs/conventions-for-merge-strategy/](docs/conventions-for-merge-strategy/README.md) -->
+Use `(merge append)` — no match logic needed. Guide: [Merge Strategy Conventions](docs/conventions-for-merge-strategy/README.md)
 
 **How do I handle soft deletes?**
-Use `(merge soft_delete, match_on <field>, delete_flag <field>, delete_timestamp <field>)`. <!-- Guide: [docs/conventions-for-merge-strategy/](docs/conventions-for-merge-strategy/README.md) -->
+Use `(merge soft_delete, match_on <field>, delete_flag <field>, delete_timestamp <field>)`. Guide: [Merge Strategy Conventions](docs/conventions-for-merge-strategy/README.md)
 
 **How do I declare a full refresh / truncate-and-reload?**
-Use `(merge full_refresh)` with a `note { }` explaining why full refresh is acceptable. <!-- Guide: [docs/conventions-for-merge-strategy/](docs/conventions-for-merge-strategy/README.md) -->
+Use `(merge full_refresh)` with a `note { }` explaining why full refresh is acceptable. Guide: [Merge Strategy Conventions](docs/conventions-for-merge-strategy/README.md)
 
 ---
 
 ## Governance
 
 **How do I mark fields as PII?**
-Use `(pii)` on the field. Combine with `(classification confidential)` and `(mask <strategy>)` for full governance. <!-- Guide: [docs/conventions-for-governance/](docs/conventions-for-governance/README.md) -->
+Use `(pii)` on the field. Combine with `(classification confidential)` and `(mask <strategy>)` for full governance. Guide: [Governance Conventions](docs/conventions-for-governance/README.md)
 
 **How do I declare data ownership and stewardship?**
-Use `(owner "<team>", steward "<person>")` on the schema. <!-- Guide: [docs/conventions-for-governance/](docs/conventions-for-governance/README.md) -->
+Use `(owner "<team>", steward "<person>")` on the schema. Guide: [Governance Conventions](docs/conventions-for-governance/README.md)
 
 **How do I set retention policies?**
-Use `(retention years 7 after last_activity_date)` on the schema. <!-- Guide: [docs/conventions-for-governance/](docs/conventions-for-governance/README.md) -->
+Use `(retention years 7 after last_activity_date)` on the schema. Guide: [Governance Conventions](docs/conventions-for-governance/README.md)
 
 **How do I declare compliance requirements (GDPR, HIPAA, etc.)?**
-Use `(compliance {GDPR, CCPA, HIPAA})` on the schema. <!-- Guide: [docs/conventions-for-governance/](docs/conventions-for-governance/README.md) -->
+Use `(compliance {GDPR, CCPA, HIPAA})` on the schema. Guide: [Governance Conventions](docs/conventions-for-governance/README.md)
 
 **How do I add org-specific governance tokens?**
-Just use them — `( )` metadata accepts any vocabulary. Document your tokens in an org-specific token dictionary. <!-- Guide: [docs/conventions-for-governance/](docs/conventions-for-governance/README.md) -->
+Just use them — `( )` metadata accepts any vocabulary. Document your tokens in an org-specific token dictionary. Guide: [Governance Conventions](docs/conventions-for-governance/README.md)
 
 ---
 
@@ -83,7 +83,7 @@ Just use them — `( )` metadata accepts any vocabulary. Document your tokens in
 Use `(xpath "...")` on fields and records. See [examples/xml-to-parquet.stm](examples/xml-to-parquet.stm) for a full working example.
 
 **How do I represent JSON API responses with JSONPath?**
-Use `(format json)` on the schema and `(jsonpath "$.path")` on fields. <!-- Guide: [docs/conventions-for-schema-formats/json/](docs/conventions-for-schema-formats/json/conventions.md) -->
+Use `(format json)` on the schema and `(jsonpath "$.path")` on fields. Guide: [JSON Path Conventions](docs/conventions-for-schema-formats/json/conventions.md) | Example: [json-api-to-parquet.stm](examples/json-api-to-parquet.stm)
 
 **How do I represent COBOL copybooks?**
 Use `(format copybook, encoding ebcdic)` with `(pic, offset, length)` tokens. Guide: [docs/conventions-for-schema-formats/cobol-copybook/](docs/conventions-for-schema-formats/cobol-copybook/conventions.md)
@@ -99,10 +99,10 @@ See [examples/protobuf-to-parquet.stm](examples/protobuf-to-parquet.stm) and [ex
 ## Reports and ML Models
 
 **How do I declare a dashboard or report in Satsuma?**
-Use `schema <name> (report, source {upstream_schemas}, tool <platform>)` with a `note { }` describing the report. <!-- Guide: [docs/conventions-for-reports-and-models/](docs/conventions-for-reports-and-models/README.md) -->
+Use `schema <name> (report, source {upstream_schemas}, tool <platform>)` with a `note { }` describing the report. Guide: [Reports and Models Conventions](docs/conventions-for-reports-and-models/README.md)
 
 **How do I declare an ML model as a pipeline consumer?**
-Use `schema <name> (model, source {upstream_schemas}, registry <platform>)` with feature descriptions and output fields. <!-- Guide: [docs/conventions-for-reports-and-models/](docs/conventions-for-reports-and-models/README.md) -->
+Use `schema <name> (model, source {upstream_schemas}, registry <platform>)` with feature descriptions and output fields. Guide: [Reports and Models Conventions](docs/conventions-for-reports-and-models/README.md)
 
 **How do I trace lineage through reports and models?**
 Reports and models declare `source {schemas}` — these appear as edges in `satsuma lineage`. They are leaf nodes in the lineage graph.
@@ -164,4 +164,4 @@ Run `satsuma where-used <metric-name>` or `satsuma metric <name>` for extraction
 
 ---
 
-*Guides marked with `<!-- Guide: ... -->` comments are planned but not yet written. See [features/21-convention-docs/PRD.md](features/21-convention-docs/PRD.md) for the documentation plan.*
+*All convention guides are complete. See [features/21-convention-docs/PRD.md](features/21-convention-docs/PRD.md) for the documentation plan.*

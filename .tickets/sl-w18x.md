@@ -1,6 +1,6 @@
 ---
 id: sl-w18x
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-24T22:15:04Z

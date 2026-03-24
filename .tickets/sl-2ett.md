@@ -1,6 +1,6 @@
 ---
 id: sl-2ett
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-24T22:14:45Z

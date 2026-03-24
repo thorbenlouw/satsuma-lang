@@ -1,0 +1,215 @@
+// Satsuma v2 — Governance Metadata: Customer 360
+
+note {
+  """
+  # Customer 360 — Governance Metadata Example
+
+  Demonstrates the full range of governance metadata conventions in Satsuma:
+
+  - **Ownership and stewardship** — `owner`, `steward` on schemas
+  - **Classification tiers** — `classification` at schema and field level
+  - **PII marking** — `pii` flag on fields that identify natural persons
+  - **Encryption requirements** — `encrypt` for at-rest protection
+  - **Masking strategies** — `mask` for display-level redaction
+  - **Retention policies** — `retention` with temporal anchors
+  - **Compliance frameworks** — `compliance` listing applicable regulations
+  - **Custom tokens** — organisation-specific governance vocabulary
+
+  ## Scenario
+
+  A customer-360 platform ingests customer profiles from a CRM system and
+  financial transactions from a billing system. The curated output is a
+  unified customer view used by analytics, marketing, and compliance teams.
+
+  Each source schema carries its own governance posture. The mapping
+  demonstrates how governance annotations flow from source to target.
+  """
+}
+
+
+// --- Source: CRM Customer Profiles ---
+schema crm_customers (
+  owner "crm-data-team",
+  steward "maria.garcia@company.com",
+  classification "CONFIDENTIAL",
+  compliance {GDPR, CCPA},
+  retention "7y",
+  note "CRM system of record for customer identity. Subject to GDPR and CCPA.
+        Retention is 7 years after account closure; active accounts are exempt.
+        Retention clock starts when account_closure_date is populated."
+) {
+  customer_id           UUID         (pk, required)
+  email                 STRING(255)  (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask partial_email, retention "3y", note "Email has a 3-year retention override per GDPR Art. 17 right-to-erasure.
+          Encrypted at rest with AES-256-GCM. Masked as j***@domain.com for
+          non-privileged consumers.")
+  first_name            STRING(100)  (pii, classification "CONFIDENTIAL", mask redact)
+  last_name             STRING(100)  (pii, classification "CONFIDENTIAL", mask redact)
+  phone                 STRING(20)   (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask last_four)
+  date_of_birth         DATE         (pii, classification "RESTRICTED", mask redact, note "DOB is one of the HIPAA Safe Harbor 18 identifiers. Masked completely
+          for non-privileged consumers.")
+  loyalty_tier          STRING(20)   (enum {bronze, silver, gold, platinum})
+  acquisition_channel   STRING(50)
+  region                STRING(50)
+  account_closure_date  DATE         (note "Null while the account is active. Retention clock starts when populated.")
+
+  consent record (note "Consent state — governs downstream marketing use") {
+    email_marketing    BOOLEAN  (required, default false)
+    sms_marketing      BOOLEAN  (required, default false)
+    third_party_share  BOOLEAN  (required, default false, classification "RESTRICTED", note "Must be checked before any data sharing with external partners.")
+  }
+}
+
+
+// --- Source: Finance Transactions ---
+schema finance_transactions (
+  owner "finance-data-eng",
+  steward "alex.chen@company.com",
+  classification "CONFIDENTIAL",
+  compliance {SOX, GDPR},
+  retention "10y",
+  cost_center "CC-4420",
+  audit_level critical,
+  note "General ledger transactions. Subject to SOX Section 802 (10-year retention)
+        and GDPR (customer-linked fields). Custom tokens: cost_center maps to internal
+        cost allocation; audit_level drives SOX audit sampling rates."
+) {
+  transaction_id    UUID           (pk, required)
+  customer_id       UUID           (required, indexed)
+  transaction_date  DATE           (required)
+  amount            DECIMAL(15,2)  (required, audit_level critical)
+  currency          CHAR(3)        (required, default "USD")
+  payment_method    STRING(30)     (classification "CONFIDENTIAL", note "Payment method reveals financial behaviour — classified CONFIDENTIAL
+          even though it is not PII by itself.")
+
+  card_details record (
+    classification "RESTRICTED",
+    note "Card details are RESTRICTED as a block. Each subfield inherits this
+          classification. PCI-DSS applies in addition to SOX."
+  ) {
+    card_last_four  STRING(4)   (pii, mask last_four)
+    card_brand      STRING(20)
+    card_expiry     STRING(7)   (pii, encrypt AES-256-GCM, mask redact)
+  }
+
+  billing_address record (pii, classification "CONFIDENTIAL") {
+    street       STRING(200)  (mask redact)
+    city         STRING(100)
+    state        STRING(50)
+    postal_code  STRING(20)   (mask last_four)
+    country      CHAR(2)
+  }
+
+  gl_account        STRING(20)     (required, ref "chart_of_accounts.account_code")
+  cost_center       STRING(10)     (note "Inherited from schema-level cost_center for per-row allocation overrides")
+}
+
+
+// --- Target: Unified Customer View ---
+schema customer_360_view (
+  owner "analytics-platform",
+  steward "maria.garcia@company.com",
+  classification "CONFIDENTIAL",
+  compliance {GDPR, CCPA, SOX},
+  retention "7y",
+  note "Unified customer view combining CRM profiles and financial activity.
+        Inherits the strictest governance posture from both sources:
+        GDPR + CCPA from CRM, SOX from Finance. Retention is 7 years
+        after last activity (the shorter of the two source policies).
+        Retention clock anchored to last_activity_date."
+) {
+  customer_id            UUID           (pk, required)
+  email                  STRING(255)    (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask partial_email, retention "3y")
+  full_name              STRING(200)    (pii, classification "CONFIDENTIAL", mask redact)
+  phone                  STRING(20)     (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask last_four)
+  loyalty_tier           STRING(20)
+  region                 STRING(50)
+  acquisition_channel    STRING(50)
+  account_status         STRING(20)     (enum {active, closed}, required)
+  total_transaction_amt  DECIMAL(15,2)
+  transaction_count      INT
+  last_transaction_date  DATE
+  last_activity_date     DATE           (note "Most recent of: last login, last transaction, last profile update.
+                                              Used as the retention anchor for this schema.")
+  consent_email          BOOLEAN
+  consent_sms            BOOLEAN
+  consent_third_party    BOOLEAN        (classification "RESTRICTED")
+  ingest_timestamp       TIMESTAMPTZ    (required)
+}
+
+
+// --- Mapping: Customer 360 Assembly ---
+mapping 'customer 360 assembly' {
+  note {
+    """
+    Joins CRM customer profiles to aggregated financial transaction data to
+    produce a unified customer view.
+
+    ## Governance Flow
+
+    - **PII tokens** propagate from source to target: if a source field is `pii`,
+      the target field must also be marked `pii`.
+    - **Classification** takes the highest tier from any contributing source.
+    - **Encryption and masking** requirements carry forward unchanged.
+    - **Retention** on the target uses the shorter of the two source policies
+      unless a regulatory exception applies.
+    """
+  }
+
+  source {
+    `crm_customers`
+    `finance_transactions`
+    "Left join on crm_customers.customer_id = finance_transactions.customer_id.
+     All CRM customers appear even if they have no transactions."
+  }
+  target { `customer_360_view` }
+
+  // Direct mappings from CRM
+  crm_customers.customer_id -> customer_id
+  crm_customers.email -> email {
+    trim
+    | lowercase
+    | validate_email
+    | null_if_invalid
+  }
+
+  -> full_name {
+    "Concatenate crm_customers.first_name and crm_customers.last_name with a
+     single space separator. Trim whitespace. Null if both components are null."
+  }
+
+  crm_customers.phone -> phone { trim }
+  crm_customers.loyalty_tier -> loyalty_tier { trim | lowercase }
+  crm_customers.region -> region { trim | uppercase }
+  crm_customers.acquisition_channel -> acquisition_channel { trim }
+
+  -> account_status {
+    "If crm_customers.account_closure_date is null then 'active' else 'closed'"
+  }
+
+  // Aggregated financial data
+  -> total_transaction_amt {
+    "Sum of finance_transactions.amount where customer_id matches,
+     rounded to 2 decimal places. Null if no transactions."
+  }
+
+  -> transaction_count {
+    "Count of finance_transactions rows for this customer. Zero if no transactions."
+  }
+
+  -> last_transaction_date {
+    "Max of finance_transactions.transaction_date for this customer. Null if none."
+  }
+
+  -> last_activity_date {
+    "Greatest of: last login timestamp from CRM (if available),
+     last_transaction_date, and last profile update timestamp.
+     This field anchors the retention policy for the target schema."
+  }
+
+  // Consent pass-through
+  crm_customers.consent.email_marketing -> consent_email
+  crm_customers.consent.sms_marketing -> consent_sms
+  crm_customers.consent.third_party_share -> consent_third_party
+
+  -> ingest_timestamp { now_utc() }
+}

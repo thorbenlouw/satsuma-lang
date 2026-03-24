@@ -1,0 +1,200 @@
+// Satsuma v2 — Merge Strategy Patterns
+
+note {
+  """
+  # Retail Data Platform — Merge Strategy Patterns
+
+  Demonstrates all four merge strategies in a single coherent retail scenario:
+
+  1. **Upsert** — customer dimension loaded from CRM, matched on business key
+  2. **Append** — purchase events streamed into an immutable event log
+  3. **Soft delete** — customers flagged as deleted rather than removed
+  4. **Full refresh** — product catalog truncated and reloaded nightly
+
+  Each mapping declares its load strategy in `( )` metadata so that code
+  generators, lineage tools, and human readers all see the same intent.
+  """
+}
+
+
+// --- Source Schemas ---
+schema crm_customers (note "CRM customer master — daily extract") {
+  customer_id  VARCHAR(50)   (pk, required)
+  full_name    VARCHAR(200)  (required)
+  email        VARCHAR(255)  (pii)
+  phone        VARCHAR(20)   (pii)
+  region       VARCHAR(50)
+  updated_at   TIMESTAMPTZ
+}
+
+
+schema pos_events (note "Point-of-sale transaction stream — real-time CDC") {
+  event_id         UUID           (pk, required)
+  customer_id      VARCHAR(50)    (required)
+  store_id         VARCHAR(20)    (required)
+  sku              VARCHAR(30)    (required)
+  quantity         INTEGER        (required)
+  unit_price       DECIMAL(10,2)  (required)
+  event_timestamp  TIMESTAMPTZ    (required)
+}
+
+
+schema crm_deleted_customers (
+  note "CRM deletion feed — daily list of deactivated customers"
+) {
+  customer_id  VARCHAR(50)   (pk, required)
+  deleted_at   TIMESTAMPTZ   (required)
+  reason       VARCHAR(100)
+}
+
+
+schema product_master (
+  note "Product information management system — full catalog export"
+) {
+  sku           VARCHAR(30)    (pk, required)
+  product_name  VARCHAR(200)   (required)
+  category      VARCHAR(100)
+  subcategory   VARCHAR(100)
+  list_price    DECIMAL(10,2)  (required)
+  weight_kg     DECIMAL(6,3)
+  is_active     BOOLEAN        (default true)
+}
+
+
+// --- Target Schemas ---
+schema dim_customer (note "Customer dimension — upsert and soft delete target") {
+  customer_id  VARCHAR(50)   (pk, required)
+  full_name    VARCHAR(200)  (required)
+  email        VARCHAR(255)  (pii)
+  phone        VARCHAR(20)   (pii)
+  region       VARCHAR(50)
+  is_deleted   BOOLEAN       (default false)
+  deleted_at   TIMESTAMPTZ
+  updated_at   TIMESTAMPTZ   (required)
+}
+
+
+schema event_log (note "Immutable purchase event log — append only") {
+  event_id         UUID           (pk, required)
+  customer_id      VARCHAR(50)    (indexed)
+  store_id         VARCHAR(20)    (indexed)
+  sku              VARCHAR(30)
+  quantity         INTEGER
+  unit_price       DECIMAL(10,2)
+  line_total       DECIMAL(12,2)
+  event_timestamp  TIMESTAMPTZ    (required)
+  ingested_at      TIMESTAMPTZ    (required)
+}
+
+
+schema dim_product (note "Product dimension — full refresh nightly") {
+  sku           VARCHAR(30)    (pk, required)
+  product_name  VARCHAR(200)   (required)
+  category      VARCHAR(100)
+  subcategory   VARCHAR(100)
+  list_price    DECIMAL(10,2)
+  weight_kg     DECIMAL(6,3)
+  is_active     BOOLEAN
+  refreshed_at  TIMESTAMPTZ    (required)
+}
+
+
+// --- Mappings ---
+// Pattern 1: Upsert — insert new customers, update existing on match
+mapping 'customer upsert' (merge upsert, match_on customer_id) {
+  note {
+    "Daily upsert from CRM customer master. Existing customers are updated
+     with the latest name, email, phone, and region. New customers are
+     inserted. Rows not present in today's extract are left untouched."
+  }
+
+  source { `crm_customers` }
+  target { `dim_customer` }
+
+  customer_id -> customer_id
+  full_name -> full_name { trim | title_case }
+  email -> email { trim | lowercase | validate_email | null_if_invalid }
+  phone -> phone { trim }
+  region -> region { trim | uppercase }
+  -> updated_at { now_utc() }
+}
+
+
+// Pattern 2: Append — every event is a new row, no matching
+mapping 'purchase events' (merge append) {
+  note {
+    "Real-time append from POS transaction stream. Every event produces a
+     new row. No deduplication — the event_id primary key on the target
+     enforces uniqueness at the database level."
+  }
+
+  source { `pos_events` }
+  target { `event_log` }
+
+  event_id -> event_id
+  customer_id -> customer_id
+  store_id -> store_id
+  sku -> sku
+  quantity -> quantity
+  unit_price -> unit_price
+  -> line_total {
+    "quantity * unit_price"
+  }
+  event_timestamp -> event_timestamp
+  -> ingested_at { now_utc() }
+}
+
+
+// Pattern 3: Soft delete — flag deleted customers, preserve history
+mapping 'customer soft delete' (
+  merge soft_delete,
+  match_on customer_id,
+  delete_flag is_deleted,
+  delete_timestamp deleted_at
+) {
+  note {
+    """
+    Processes the daily CRM deletion feed. Customers that appear in
+    this feed are marked as deleted in `dim_customer` — they are never
+    physically removed.
+
+    Downstream queries should filter on `is_deleted = false` for the
+    active customer view. The `deleted_at` timestamp enables audit
+    reporting on customer churn timing.
+    """
+  }
+
+  source { `crm_deleted_customers` }
+  target { `dim_customer` }
+
+  customer_id -> customer_id
+  -> is_deleted { true }
+  -> deleted_at { now_utc() }
+}
+
+
+// Pattern 4: Full refresh — truncate and reload the product catalog
+mapping 'product catalog refresh' (merge full_refresh) {
+  note {
+    """
+    Nightly full refresh from the product information management system.
+    The entire `dim_product` table is replaced with the latest catalog.
+
+    //! **Safety rule:** If the source returns fewer than 500 products,
+    //! abort the load and alert the data engineering on-call. The catalog
+    //! should never shrink below that threshold in normal operation.
+    """
+  }
+
+  source { `product_master` }
+  target { `dim_product` }
+
+  sku -> sku
+  product_name -> product_name { trim }
+  category -> category { trim | null_if_empty }
+  subcategory -> subcategory { trim | null_if_empty }
+  list_price -> list_price
+  weight_kg -> weight_kg
+  is_active -> is_active
+  -> refreshed_at { now_utc() }
+}
