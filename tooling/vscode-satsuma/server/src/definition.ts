@@ -1,10 +1,9 @@
 import { Location } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
-import { child, labelText } from "./parser-utils";
+import { child, children, labelText } from "./parser-utils";
 import {
   WorkspaceIndex,
   resolveDefinition,
-  getFields,
   FieldInfo,
 } from "./workspace-index";
 
@@ -25,6 +24,10 @@ export function computeDefinition(
   });
   if (!node) return null;
 
+  // Check if cursor is on a backtick reference inside an NL string
+  const nlRef = tryNlRefContext(node, line, character);
+  if (nlRef) return resolveContext(nlRef, uri, index);
+
   const ctx = findNodeContext(node);
   if (!ctx) return null;
 
@@ -42,6 +45,9 @@ export interface NodeContext {
     | "import_path"
     | "block_label"
     | "field_name"
+    | "arrow_source"
+    | "arrow_target"
+    | "nl_ref"
     | "unknown";
   name: string;
   namespace: string | null;
@@ -122,6 +128,34 @@ function tryContext(node: SyntaxNode): NodeContext | null {
       return { kind: "field_name", name, namespace: ns, node };
     }
 
+    case "src_path": {
+      const pathText = extractPathFieldName(node);
+      if (!pathText) return null;
+      const mapping = findEnclosingMapping(node);
+      return {
+        kind: "arrow_source",
+        name: pathText,
+        namespace: ns,
+        node,
+        mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
+        mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
+      };
+    }
+
+    case "tgt_path": {
+      const pathText = extractPathFieldName(node);
+      if (!pathText) return null;
+      const mapping = findEnclosingMapping(node);
+      return {
+        kind: "arrow_target",
+        name: pathText,
+        namespace: ns,
+        node,
+        mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
+        mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
+      };
+    }
+
     // Handle identifiers and backtick_names that are inside source_ref, spread, etc.
     case "identifier":
     case "backtick_name":
@@ -185,9 +219,47 @@ function resolveContext(
       if (!blockName) return null;
       const ns = findEnclosingNamespace(ctx.node);
       const qualName = ns ? `${ns}::${blockName}` : blockName;
-      const fields = getFields(index, qualName, ns);
-      const fieldLoc = findFieldLocation(fields, ctx.name);
+      const defs = resolveDefinition(index, qualName, ns);
+      for (const def of defs) {
+        const loc = findFieldInDef(def, ctx.name);
+        if (loc) return loc;
+      }
+      return null;
+    }
+
+    case "arrow_source": {
+      // Look up field in source schemas of the enclosing mapping
+      const schemas = ctx.mappingSources ?? [];
+      return resolveFieldInSchemas(index, schemas, ctx.name, ctx.namespace);
+    }
+
+    case "arrow_target": {
+      // Look up field in target schemas of the enclosing mapping
+      const schemas = ctx.mappingTargets ?? [];
+      return resolveFieldInSchemas(index, schemas, ctx.name, ctx.namespace);
+    }
+
+    case "nl_ref": {
+      // Try as a block name first (schema, fragment, etc.)
+      const blockDefs = resolveDefinition(index, ctx.name, ctx.namespace);
+      if (blockDefs.length > 0) return defsToLocations(blockDefs);
+
+      // Try as a field name in the enclosing mapping's source/target schemas
+      const allSchemas = [
+        ...(ctx.mappingSources ?? []),
+        ...(ctx.mappingTargets ?? []),
+      ];
+      const fieldLoc = resolveFieldInSchemas(index, allSchemas, ctx.name, ctx.namespace);
       if (fieldLoc) return fieldLoc;
+
+      // Try as a dotted path (e.g., "schema.field")
+      if (ctx.name.includes(".")) {
+        const parts = ctx.name.split(".");
+        const schemaName = parts[0]!;
+        const fieldName = parts[parts.length - 1]!;
+        return resolveFieldInSchemas(index, [schemaName], fieldName, ctx.namespace);
+      }
+
       return null;
     }
 
@@ -206,17 +278,39 @@ function defsToLocations(
   return defs.map((d) => Location.create(d.uri, d.selectionRange));
 }
 
-function findFieldLocation(
-  fields: FieldInfo[],
-  name: string,
+function findFieldInDef(
+  def: { uri: string; fields: FieldInfo[] },
+  fieldName: string,
 ): Location | null {
+  const match = findFieldRecursive(def.fields, fieldName);
+  if (match) {
+    return Location.create(def.uri, match.range);
+  }
+  return null;
+}
+
+function findFieldRecursive(fields: FieldInfo[], name: string): FieldInfo | null {
   for (const f of fields) {
-    if (f.name === name) {
-      // FieldInfo.range points to the field_name node
-      return null; // We don't have the URI in FieldInfo — caller handles
-    }
-    const nested = findFieldLocation(f.children, name);
+    if (f.name === name) return f;
+    const nested = findFieldRecursive(f.children, name);
     if (nested) return nested;
+  }
+  return null;
+}
+
+/** Resolve a field name by searching across multiple schema definitions. */
+function resolveFieldInSchemas(
+  index: WorkspaceIndex,
+  schemaNames: string[],
+  fieldName: string,
+  namespace: string | null,
+): Location | null {
+  for (const schemaName of schemaNames) {
+    const defs = resolveDefinition(index, schemaName, namespace);
+    for (const def of defs) {
+      const loc = findFieldInDef(def, fieldName);
+      if (loc) return loc;
+    }
   }
   return null;
 }
@@ -303,4 +397,121 @@ function fieldNameTextDef(node: SyntaxNode): string | null {
   if (!inner) return node.text;
   if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text;
+}
+
+// ---------- Arrow field helpers ----------
+
+/** Find the enclosing mapping_block node. */
+function findEnclosingMapping(node: SyntaxNode): SyntaxNode | null {
+  let current: SyntaxNode | null = node.parent;
+  while (current) {
+    if (current.type === "mapping_block") return current;
+    current = current.parent;
+  }
+  return null;
+}
+
+/** Extract the first segment of a path (the field name before any dots). */
+function extractPathFieldName(pathNode: SyntaxNode): string | null {
+  // src_path / tgt_path wraps a _path_expr which can be:
+  //   field_path (identifier.identifier...), relative_field_path (.identifier...),
+  //   backtick_path, namespaced_path
+  const text = pathNode.text;
+  if (!text) return null;
+
+  // Handle backtick paths: `field name`
+  if (text.startsWith("`") && text.endsWith("`")) {
+    return text.slice(1, -1).split(".")[0] ?? null;
+  }
+
+  // Handle dotted paths: take the first segment
+  const firstSegment = text.split(".")[0]!;
+  // Handle namespaced: ns::field → take field part
+  if (firstSegment.includes("::")) {
+    return firstSegment.split("::").pop() ?? null;
+  }
+  return firstSegment;
+}
+
+/** Get schema names referenced in a mapping's source or target block. */
+function getMappingSchemaRefs(
+  mappingNode: SyntaxNode,
+  blockType: "source_block" | "target_block",
+): string[] {
+  const body = child(mappingNode, "mapping_body");
+  if (!body) return [];
+
+  const names: string[] = [];
+  for (const ch of body.namedChildren) {
+    if (ch.type === blockType) {
+      for (const ref of children(ch, "source_ref")) {
+        const name = sourceRefText(ref);
+        if (name) names.push(name);
+      }
+    }
+  }
+  return names;
+}
+
+// ---------- NL reference detection ----------
+
+const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
+
+/**
+ * Check if the cursor is on a backtick reference inside an NL string.
+ * Returns a NodeContext with kind "nl_ref" if so.
+ */
+function tryNlRefContext(
+  node: SyntaxNode,
+  line: number,
+  character: number,
+): NodeContext | null {
+  // The node itself might be the nl_string, or it might be a descendant.
+  // Walk up to find the nl_string or multiline_string node.
+  let nlNode: SyntaxNode | null = node;
+  while (nlNode) {
+    if (nlNode.type === "nl_string" || nlNode.type === "multiline_string") break;
+    nlNode = nlNode.parent;
+  }
+  if (!nlNode) return null;
+
+  const text = nlNode.text;
+  const nodeStartRow = nlNode.startPosition.row;
+  const nodeStartCol = nlNode.startPosition.column;
+
+  // Calculate cursor offset within the node text
+  let cursorOffset: number;
+  if (line === nodeStartRow) {
+    cursorOffset = character - nodeStartCol;
+  } else {
+    const lines = text.split("\n");
+    let offset = 0;
+    for (let i = 0; i < line - nodeStartRow; i++) {
+      offset += (lines[i]?.length ?? 0) + 1; // +1 for newline
+    }
+    cursorOffset = offset + character;
+  }
+
+  // Find which backtick ref (if any) the cursor is within
+  BACKTICK_REF_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
+    const refStart = match.index;
+    const refEnd = refStart + match[0].length;
+    if (cursorOffset >= refStart && cursorOffset < refEnd) {
+      const refName = match[1]!;
+      const ns = findEnclosingNamespace(nlNode);
+      const mapping = findEnclosingMapping(nlNode);
+      return {
+        kind: "nl_ref",
+        name: refName,
+        namespace: ns,
+        node: nlNode,
+        mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
+        mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
+      };
+    }
+  }
+
+  return null;
 }

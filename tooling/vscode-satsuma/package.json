@@ -53,6 +53,21 @@
         { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" }
       ]
     },
+    "semanticTokenModifiers": [
+      {
+        "id": "nlRef",
+        "description": "A backtick reference inside a natural language string"
+      }
+    ],
+    "configurationDefaults": {
+      "editor.semanticTokenColorCustomizations": {
+        "rules": {
+          "variable.nlRef:satsuma": {
+            "fontStyle": "underline"
+          }
+        }
+      }
+    },
     "configuration": {
       "title": "Satsuma",
       "properties": {
