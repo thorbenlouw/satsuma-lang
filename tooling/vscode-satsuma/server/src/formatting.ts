@@ -5,9 +5,12 @@
  * Returns a single TextEdit replacing the full document range.
  *
  * The canonical format() implementation lives in satsuma-cli/src/format.ts.
- * The esbuild bundler inlines it into server.js at build time.
- * For tsc-compiled tests, we load the CLI's compiled ESM module via
- * dynamic import (cached after first call).
+ *
+ * Resolution strategy:
+ * - **esbuild bundle**: require("satsuma-fmt") is resolved via an alias in
+ *   esbuild.js to ../satsuma-cli/src/format.ts and inlined at build time.
+ * - **tsc-compiled tests**: initFormatting() loads the CLI's compiled dist/
+ *   module via dynamic import.
  */
 
 import { TextEdit, Range, Position } from "vscode-languageserver";
@@ -17,32 +20,22 @@ type FormatFn = (tree: unknown, source: string) => string;
 
 let _formatFn: FormatFn | null = null;
 
-async function getFormatFn(): Promise<FormatFn> {
-  if (_formatFn) return _formatFn;
-  // Dynamic import works for both CJS test runner and esbuild bundler
+// In the esbuild bundle, this require is resolved at build time via the alias.
+// In tsc-compiled test output, it will fail (module not found) — that's fine,
+// tests call initFormatting() which loads via dynamic import instead.
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const _mod = require("satsuma-fmt") as { format: FormatFn };
+  _formatFn = _mod.format;
+} catch {
+  // Not in esbuild bundle context — initFormatting() will load it
+}
+
+/** Initialize the formatting module. Call in test setup to load the format function. */
+export async function initFormatting(): Promise<void> {
+  if (_formatFn) return;
   const mod = await import("../../../satsuma-cli/dist/format.js") as { format: FormatFn };
   _formatFn = mod.format;
-  return _formatFn;
-}
-
-// Synchronous accessor — only works after init() has been called
-function getFormatFnSync(): FormatFn {
-  if (!_formatFn) {
-    // Fallback: try require (works in esbuild bundle where it's inlined)
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require("../../../satsuma-cli/src/format.js") as { format: FormatFn };
-      _formatFn = mod.format;
-    } catch {
-      throw new Error("Format function not initialized — call initFormatting() first");
-    }
-  }
-  return _formatFn;
-}
-
-/** Initialize the formatting module. Call once during server startup. */
-export async function initFormatting(): Promise<void> {
-  await getFormatFn();
 }
 
 /**
@@ -51,8 +44,9 @@ export async function initFormatting(): Promise<void> {
  * would change anything, or an empty array if already formatted.
  */
 export function computeFormatting(tree: Tree, source: string): TextEdit[] {
-  const formatFn = getFormatFnSync();
-  const formatted = formatFn(tree, source);
+  if (!_formatFn) return [];
+
+  const formatted = _formatFn(tree, source);
 
   if (formatted === source) {
     return []; // Already formatted — no edits needed

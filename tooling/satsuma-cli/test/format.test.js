@@ -78,8 +78,8 @@ describe("field alignment", () => {
     const out = fmt(src);
     const lines = out.split("\n");
     // max_name = 9 ("long_name"), type_col = 11
-    assert.match(lines[1], /^  id         INT/);
-    assert.match(lines[2], /^  long_name  STRING/);
+    assert.match(lines[1], /^ {2}id {9}INT/);
+    assert.match(lines[2], /^ {2}long_name {2}STRING/);
   });
 
   it("aligns metadata column", () => {
@@ -89,7 +89,7 @@ describe("field alignment", () => {
     }`;
     const out = fmt(src);
     const lines = out.split("\n");
-    assert.match(lines[1], /^  alpha2  STRING\(2\)\s+\(pk\)/);
+    assert.match(lines[1], /^ {2}alpha2 {2}STRING\(2\)\s+\(pk\)/);
   });
 
   it("does not align multi-line record fields", () => {
@@ -160,7 +160,7 @@ schema b { y STRING }`;
     // Check 2-space minimum gap
     const line = out.split("\n").find(l => l.includes("trailing comment"));
     assert.ok(line);
-    assert.match(line, /\S  \/\/ trailing comment/);
+    assert.match(line, /\S {2}\/\/ trailing comment/);
   });
 });
 
