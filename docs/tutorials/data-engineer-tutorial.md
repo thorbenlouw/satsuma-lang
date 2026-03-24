@@ -27,11 +27,13 @@ The core loop looks like this:
 
 2. **Enrich with implementation metadata.** You add conventions the BA may not know about: merge strategies, SCD types, Data Vault tokens, grain declarations, governance flags. These are the codegen hints that make AI output accurate.
 
-3. **Feed the spec to an AI agent.** Paste or upload the `.stm` file (along with the [AI Agent Reference](../../AI-AGENT-REFERENCE.md) grammar if using a web LLM), and prompt for the specific artifact you need: a dbt model, a DLT pipeline, an Airflow DAG, a test suite.
+3. **Write or attach LLM guidance.** Satsuma's metadata tokens are flexible — you can invent your own. But that means the AI needs to know how *your organisation* interprets them. Write an `LLM-Guidelines.md` that tells the AI what to infer from each token: what columns to add, what SQL to generate, what tests to create. The existing convention guides ([Kimball](../data-modelling/kimball/LLM-Guidelines.md), [Data Vault](../data-modelling/datavault/LLM-Guidelines.md), [Merge Strategy](../conventions-for-merge-strategy/LLM-Guidelines.md), [Governance](../conventions-for-governance/LLM-Guidelines.md)) are reusable starting points — include them alongside your spec. If your organisation uses custom tokens (like `cost_center`, `audit_level`, or `data_domain`), document them in an org-specific guidelines file that you include with every prompt. This is a one-time investment that pays off across every pipeline you generate.
 
-4. **Review the output against the spec.** The spec is your acceptance criteria. Every arrow should have a corresponding implementation. Every `(required)` should have a not-null check. Every NL transform should appear as a TODO or a best-effort implementation.
+4. **Feed the spec + guidelines to an AI agent.** Paste or upload the `.stm` file, the relevant `LLM-Guidelines.md` files, and (if using a web LLM) the [AI Agent Reference](../../AI-AGENT-REFERENCE.md) grammar. Prompt for the specific artifact you need: a dbt model, a DLT pipeline, an Airflow DAG, a test suite.
 
-5. **Iterate.** Fix issues in the spec or the generated code, re-run, converge.
+5. **Review the output against the spec.** The spec is your acceptance criteria. Every arrow should have a corresponding implementation. Every `(required)` should have a not-null check. Every NL transform should appear as a TODO or a best-effort implementation.
+
+6. **Iterate.** Fix issues in the spec or the generated code, re-run, converge.
 
 The important insight is that you are not asking the AI to *invent* a pipeline from a vague description. You are asking it to *translate* a precise specification into platform-specific code. That is a fundamentally easier task for a language model, and it produces fundamentally better results.
 
@@ -100,35 +102,67 @@ schema customer_pii (
 
 Governance tokens like `pii`, `classification`, `owner`, and `compliance` map to catalog entries, column-level security policies, and lineage metadata. They travel with the spec rather than living in a separate governance tool that drifts out of sync.
 
+### Custom tokens and LLM guidance
+
+Because `( )` metadata accepts any vocabulary, you can introduce organisation-specific tokens without changing the language. But custom tokens are only useful if the AI knows what to do with them. That is the role of an `LLM-Guidelines.md` file — a document you write once and reuse across every spec, telling the AI exactly how to interpret your organisation's conventions.
+
+For example, if your company uses `(data_domain "finance")`, `(cost_center "CC-4200")`, and `(audit_level high)`, write a guidelines document that says: *"When you see `audit_level high`, generate a full CDC audit trail with before/after images. When you see `cost_center`, tag the generated resources with that cost allocation code."* Include this file alongside the Satsuma spec whenever you prompt an AI agent.
+
+The convention guides that ship with Satsuma ([Kimball](../data-modelling/kimball/LLM-Guidelines.md), [Data Vault](../data-modelling/datavault/LLM-Guidelines.md), [Merge Strategy](../conventions-for-merge-strategy/LLM-Guidelines.md), [Governance](../conventions-for-governance/LLM-Guidelines.md), [Reports & Models](../conventions-for-reports-and-models/LLM-Guidelines.md)) are ready-made examples you can use directly or adapt. The pattern is: *token dictionary* (what the tokens are) + *interpretation rules* (what the AI should generate from them) + *validation rules* (what combinations are valid).
+
 ---
 
 ## Scaffold Generation: What AI Produces from a Satsuma Spec
 
-You do not need to write detailed prompts for each platform. A well-annotated Satsuma spec contains enough information for an AI agent to generate the right scaffold. Here is what that looks like across common targets.
+You do not need to write detailed prompts for each platform. A well-annotated Satsuma spec contains enough information for an AI agent to generate the right scaffold. What you *do* need to add in the prompt is the platform-specific context that the spec deliberately does not contain: connection details, catalog names, project paths, and deployment conventions. Below is what that looks like across common targets.
 
 ### Databricks Lakehouse (Delta Live Tables)
 
 The AI reads schema definitions, arrow mappings, merge strategy tokens, and SCD metadata. It generates a DLT notebook with `@dlt.table` or `@dlt.view` decorators, `apply_changes()` calls for SCD/merge patterns, and expectation constraints derived from `(required)`, `(pk)`, and `(enum)` tokens. NL transforms become inline comments describing the logic to implement. You verify that the table names, column types, and merge keys match the spec.
 
+**Sample prompt:**
+
+> Generate a Databricks DLT pipeline from the attached Satsuma spec. Target Unity Catalog `prod_analytics.curated`. Source tables are in `raw_lake.ingest`. Use `apply_changes()` for any mapping with `(merge upsert)` or `(scd 2)`. Generate DLT expectations from `(required)`, `(pk)`, and `(enum)` tokens. Flag NL transforms as TODO comments.
+
 ### Snowflake + dbt
 
 The AI reads the same spec and generates dbt SQL models: a staging model with column renames and type casts from the arrows, an intermediate or mart model with the transform logic, and a `schema.yml` with tests. `(merge upsert)` becomes a dbt incremental model with `unique_key`. `(scd 2)` becomes a dbt snapshot configuration. You verify the ref chain, the incremental strategy, and the test coverage.
+
+**Sample prompt:**
+
+> Generate dbt models from the attached Satsuma spec. Snowflake database is `ANALYTICS`, schema `CURATED`. Source data lands in `RAW.INGEST`. Create staging models in `models/staging/`, mart models in `models/marts/`. Use incremental materialization with `unique_key` for `(merge upsert)` mappings. Generate a `schema.yml` with `not_null`, `unique`, `accepted_values`, and `relationships` tests from the metadata tokens. Use dbt snapshots for any `(scd 2)` schemas.
 
 ### Airflow DAGs
 
 The AI generates a DAG definition with task dependencies derived from the mapping's source-target relationships and any `import` chains in the spec. Each mapping becomes a task (or task group). Merge strategy tokens inform whether a task does a full refresh or an incremental load. You verify the dependency graph, schedule, and operator choices.
 
+**Sample prompt:**
+
+> Generate an Airflow DAG from the attached Satsuma spec. DAG ID: `customer_pipeline_daily`. Schedule: `0 6 * * *` UTC. Use `SnowflakeOperator` for SQL tasks. Each mapping becomes a task; derive dependencies from the source/target relationships. Full refresh mappings use `TRUNCATE + INSERT`; upsert mappings use `MERGE`. Add a Slack notification on failure to `#data-alerts`.
+
 ### Azure Data Factory / Mapping Data Flows
 
 The AI generates a Data Flow JSON or ARM template with source and sink datasets matching the Satsuma schemas, column mappings matching the arrows, and derived columns for transform pipelines. `(merge upsert)` maps to an Alter Row transformation. You verify the linked service references and the column-level mapping accuracy.
+
+**Sample prompt:**
+
+> Generate an ADF Mapping Data Flow from the attached Satsuma spec. Source linked service: `ls_azure_sql_crm`. Sink linked service: `ls_adls_curated` writing Delta format to `abfss://curated@datalake.dfs.core.windows.net/`. Use an Alter Row transformation for any `(merge upsert)` mapping. Generate derived columns for all transform pipelines.
 
 ### Azure Logic Apps
 
 For event-driven integration patterns, the AI generates a Logic App workflow definition with triggers, HTTP actions, and data transformation steps derived from the mapping arrows. Schema definitions inform the request/response schemas for connectors. You verify the connector configuration and authentication setup.
 
+**Sample prompt:**
+
+> Generate an Azure Logic App (Standard) workflow definition from the attached Satsuma spec. Trigger: HTTP webhook receiving the source schema as JSON. Use managed identity for all connector authentication. Target is an Azure SQL Database (`sql-prod-analytics.database.windows.net`, database `customer_hub`). Map each arrow to a column in the SQL insert/upsert action.
+
 ### PySpark Notebooks
 
 The AI generates a PySpark script with `DataFrame` reads matching the source schemas, column-level transformations matching the arrows (using `withColumn`, `select`, and UDFs), and a write step matching the target schema and merge strategy. NL transforms become function stubs with docstrings pulled from the spec. You verify the read/write paths, partitioning, and shuffle behavior.
+
+**Sample prompt:**
+
+> Generate a PySpark notebook from the attached Satsuma spec. Read sources from `s3://data-lake-raw/ingest/` in Parquet format. Write targets to `s3://data-lake-curated/` partitioned by `ingest_date`. Use Delta Lake merge for `(merge upsert)` mappings. Create function stubs with docstrings for each NL transform. Target Spark 3.5 / Python 3.11.
 
 ### What about other platforms?
 
@@ -144,6 +178,8 @@ Across all platforms, the workflow is the same. The AI reads:
 - **Metadata tokens** for merge strategy, SCD behavior, constraints, and governance
 - **NL transforms** for complex logic it either implements or flags as TODOs
 - **Notes** for business context that informs implementation choices
+
+Your prompt adds the platform context the spec doesn't carry: catalog/database/schema names, storage paths, linked services, authentication method, Spark version, DAG schedule. The spec tells the AI *what* to build; your prompt tells it *where* and *how* to deploy it.
 
 You verify the generated code against the spec. Every arrow should map to a transformation. Every metadata token should map to a platform feature. Every gap should be clearly marked.
 
@@ -350,11 +386,17 @@ You can use a second AI pass to verify the first:
 
 This works because the spec is the unambiguous reference. The judge model compares structured intent (the spec) against implementation (the generated code) rather than trying to infer intent from prose.
 
+You can go further by feeding the `LLM-Guidelines.md` to the judge along with the spec and generated code. This lets it verify not just that arrows were translated, but that *your organisation's conventions* were followed in the output:
+
+> Here is a Satsuma spec, our LLM-Guidelines.md, and the generated Databricks DLT notebook. Verify that: (1) every `(scd 2)` schema uses `apply_changes()` with the correct `keys` and `sequence_by` as described in the guidelines, (2) every `(merge upsert)` mapping uses the merge pattern from the guidelines, (3) every `(pii)` field has the encryption and masking treatment the guidelines specify. List any deviations.
+
+This is powerful because the guidelines document is the single source of truth for how tokens translate to platform-specific code. The judge checks the contract was honoured — not just that *something* was generated, but that the *right thing* was generated according to your standards.
+
 ### Convention adherence checking
 
-If your organization has documented Satsuma conventions (naming patterns, required metadata tokens, governance rules), you can prompt an AI agent to check a spec for compliance:
+The same LLM-as-judge pattern works on the *spec itself*. If your organisation has documented Satsuma conventions, you can prompt an AI agent to check a spec for compliance before any code is generated:
 
-> Check this Satsuma spec against our conventions: every dimension must have `(scd N)` declared, every PII field must have `(encrypt)`, every mapping must have a `(merge)` strategy. List any violations.
+> Check this Satsuma spec against our conventions: every dimension must have `(scd N)` declared, every PII field must have `(classification)` and `(encrypt)`, every mapping must have a `(merge)` strategy, every schema must have an `(owner)`. List any violations.
 
 This is lightweight governance that runs as part of your normal review process.
 
