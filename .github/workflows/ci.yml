@@ -90,6 +90,7 @@ jobs:
       - name: Run CLI tests
         run: |
           mkdir -p ../../test-results
+          npm run pretest
           node --test \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination=../../test-results/cli.xml \
@@ -218,7 +219,7 @@ jobs:
       - name: Run LSP server tests
         run: |
           mkdir -p ../../test-results
-          cd server && node --test \
+          cd server && npm run pretest && node --test \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination=../../../test-results/lsp.xml \
             test/**/*.test.js
