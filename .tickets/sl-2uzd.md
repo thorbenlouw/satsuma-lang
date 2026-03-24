@@ -1,6 +1,6 @@
 ---
 id: sl-2uzd
-status: open
+status: closed
 deps: [sl-zf33]
 links: []
 created: 2026-03-24T18:29:37Z
@@ -22,3 +22,9 @@ Implement formatting for transform_block, metric_block, note_block, and import_d
 - [ ] Single-line vs multi-line decisions apply (80 char threshold)
 - [ ] Tests for each block type
 
+
+## Notes
+
+**2026-03-24T19:08:41Z**
+
+Cause: New feature. Fix: Implemented transform_block (pipe chain body), metric_block (field alignment + nested notes), note_block (nl_string + multiline_string), import_decl, namespace_block formatting. 55 tests passing.

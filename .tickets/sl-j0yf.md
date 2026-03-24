@@ -1,6 +1,6 @@
 ---
 id: sl-j0yf
-status: open
+status: closed
 deps: [sl-zf33]
 links: []
 created: 2026-03-24T18:29:17Z
@@ -25,3 +25,9 @@ Implement formatting for schema_block and fragment_block: indentation, braces, b
 - [ ] Inline trailing comments preserve 2-space minimum gap
 - [ ] Tests for all schema/fragment formatting rules
 
+
+## Notes
+
+**2026-03-24T19:08:40Z**
+
+Cause: New feature. Fix: Implemented schema/fragment formatting in format.ts with two-pass field column alignment (name cap 24, type cap 14), multi-line record field handling, fragment spread formatting, and block trailing comment collection. 55 tests passing.
