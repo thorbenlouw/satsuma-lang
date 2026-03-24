@@ -27,6 +27,31 @@ Satsuma output with a confidence rating and flags ambiguities for human review.
 parsed or validated. Review all `//?` markers and `"..."` NL transforms before
 using the output.
 
+### [stm-to-excel-prompt.md](stm-to-excel-prompt.md)
+
+**Satsuma-to-Excel Export Specialist** — Paste this prompt alongside one or
+more `.stm` files and the LLM will produce a Python script that generates a
+professional, stakeholder-ready Excel workbook (.xlsx).
+
+The workbook includes: an Overview tab with integration metadata, an Issues tab
+consolidating all `//!` warnings and `//?` questions, mapping tabs with
+human-readable transforms, schema reference tabs with fragment expansion, and
+lookup tabs. All styled with consistent formatting, freeze panes, auto-filters,
+and print layout.
+
+**How to use:**
+
+1. Open any capable web LLM (ChatGPT, Gemini, Claude.ai).
+2. Paste or upload `stm-to-excel-prompt.md` as your system prompt or first
+   message.
+3. Paste or upload your `.stm` file(s).
+4. The LLM will generate a Python script — run it with `pip install openpyxl`
+   and `python3 generate_workbook.py`.
+5. Open the resulting `.xlsx` in Excel, Google Sheets, or LibreOffice.
+
+**Limitations:** The generated script is best-effort. Verify the output workbook
+before distributing to stakeholders.
+
 ### [security-report-prompt.md](security-report-prompt.md)
 
 **Security Report Generator** — A structured prompt for regenerating
