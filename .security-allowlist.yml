@@ -1,0 +1,21 @@
+# Security findings that have been reviewed and explicitly acknowledged.
+# Each entry must include a reason and the date it was reviewed.
+#
+# Supported keys:
+#   npm-audit:    list of npm advisory IDs (integers) to ignore
+#   semgrep:      list of Semgrep rule IDs to ignore
+#
+# Example:
+#   npm-audit:
+#     - id: 1234
+#       reason: "No impact — dev-only dependency, not in runtime bundle"
+#       reviewed: 2026-03-24
+#       expires: 2026-06-24    # optional: re-review date
+#
+#   semgrep:
+#     - id: "javascript.lang.security.some-rule"
+#       reason: "False positive — input is validated upstream"
+#       reviewed: 2026-03-24
+
+npm-audit: []
+semgrep: []

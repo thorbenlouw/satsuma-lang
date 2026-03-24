@@ -150,9 +150,6 @@ jobs:
       - name: Run smoke tests (parse all examples)
         run: python3 scripts/test_smoke_summary.py
 
-      - name: Audit npm dependencies
-        run: npm audit --omit=dev
-
   vscode-extension:
     name: VS Code extension
     needs: install
@@ -190,9 +187,6 @@ jobs:
 
       - name: Run LSP server tests
         run: npm run test:lsp
-
-      - name: Audit npm dependencies
-        run: npm audit --omit=dev
 
   secrets:
     name: Secret scanning

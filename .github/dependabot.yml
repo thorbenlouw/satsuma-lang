@@ -1,0 +1,49 @@
+version: 2
+updates:
+  # Root package (devDependencies: eslint, typescript, etc.)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels: ["dependencies"]
+
+  # satsuma-cli
+  - package-ecosystem: "npm"
+    directory: "/tooling/satsuma-cli"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels: ["dependencies"]
+
+  # tree-sitter-satsuma
+  - package-ecosystem: "npm"
+    directory: "/tooling/tree-sitter-satsuma"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels: ["dependencies"]
+
+  # vscode-satsuma (client + extension)
+  - package-ecosystem: "npm"
+    directory: "/tooling/vscode-satsuma"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels: ["dependencies"]
+
+  # vscode-satsuma LSP server (nested package)
+  - package-ecosystem: "npm"
+    directory: "/tooling/vscode-satsuma/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+
+  # GitHub Actions versions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "ci"]
