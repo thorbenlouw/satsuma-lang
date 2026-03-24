@@ -297,9 +297,11 @@ The following automated checks run on every push and pull request:
 |---|---|---|
 | **Dependency vulnerabilities** | `npm audit` (5 package dirs) | Known CVEs in npm packages |
 | **Static analysis (SAST)** | Semgrep (`--config auto`) | Code-level security issues (injection, traversal, etc.) |
+| **Semantic code analysis** | CodeQL (GitHub Advanced Security) | Deep dataflow and taint-tracking vulnerabilities |
 | **Secret scanning** | Gitleaks | Accidentally committed API keys, tokens, passwords |
 | **Parser integrity** | `tree-sitter generate` + diff | Uncommitted changes to generated parser code |
 | **Dependency updates** | Dependabot (weekly) | Outdated packages across all workspaces |
+| **SARIF integration** | `codeql-action/upload-sarif` | Semgrep results visible in GitHub Security tab |
 | **Release gate** | `security.yml` called before build | No release without passing security checks |
 
 ### Allowlist management
@@ -314,7 +316,6 @@ Acknowledged security findings are tracked in `.security-allowlist.yml` with:
 
 For full transparency, these controls are planned but not yet implemented:
 
-- **CodeQL** — GitHub's semantic code analysis (would complement Semgrep)
 - **SBOM generation** — Software Bill of Materials for supply chain transparency
   (CycloneDX or SPDX)
 - **Artifact signing** — Cryptographic signatures on release tarballs (currently
@@ -377,29 +378,25 @@ repository on 2026-03-24. Here is what I found:
 
 ### Issues and recommendations
 
-1. **No CodeQL configured yet.** Semgrep provides good coverage, but CodeQL
-   would add Microsoft's semantic analysis engine as a complementary layer.
-   *Recommendation: add `.github/workflows/codeql.yml`.*
-
-2. **No SBOM in releases.** Enterprise procurement teams increasingly require a
+1. **No SBOM in releases.** Enterprise procurement teams increasingly require a
    Software Bill of Materials. *Recommendation: generate CycloneDX SBOM during
    release and attach to GitHub release.*
 
-3. **No artifact signing.** Release tarballs and `.vsix` files rely on GitHub's
+2. **No artifact signing.** Release tarballs and `.vsix` files rely on GitHub's
    infrastructure integrity. *Recommendation: consider Sigstore/cosign for
    release artifact signing.*
 
-4. **`satsuma.cliPath` is workspace-configurable.** A malicious
+3. **`satsuma.cliPath` is workspace-configurable.** A malicious
    `.vscode/settings.json` could point to an arbitrary binary. VS Code's
    Workspace Trust mitigates this, but the extension could add a verification
    step (e.g., checking `--version` output before executing commands).
 
-5. **Pre-built release tarballs are not reproducible by default.** Users must
+4. **Pre-built release tarballs are not reproducible by default.** Users must
    trust that the CI pipeline built the same code that is in the repo.
    *Recommendation: document how to verify by building from source and
    comparing.*
 
-6. **The `.semgrepignore` excludes generated C code from SAST.** This is
+5. **The `.semgrepignore` excludes generated C code from SAST.** This is
    reasonable (the code is machine-generated), but means a compromised
    `tree-sitter-cli` could inject malicious C code that bypasses scanning.
    *Mitigation: CI already verifies that `parser.c` matches `generate` output.*
