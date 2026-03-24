@@ -10,6 +10,7 @@ tooling/tree-sitter-satsuma/scripts/__pycache__
 .worktrees/
 
 **/*.vsix
+**/*.wasm
 **/*.log
 **/*.zip
 **/*.tar.gz

@@ -1,5 +1,5 @@
 import { Location } from "vscode-languageserver";
-import type { Tree } from "tree-sitter";
+import type { Tree } from "./parser-utils";
 import { findNodeContext } from "./definition";
 import {
   WorkspaceIndex,

@@ -1,15 +1,9 @@
-const { describe, it } = require("node:test");
+const { describe, it, before } = require("node:test");
 const assert = require("node:assert/strict");
-const Parser = require("tree-sitter");
-const Satsuma = require("tree-sitter-satsuma");
+const { initTestParser, parse } = require("./helper");
 const { computeHover } = require("../dist/hover");
 
-const parser = new Parser();
-parser.setLanguage(Satsuma);
-
-function parse(source) {
-  return parser.parse(source);
-}
+before(async () => { await initTestParser(); });
 
 /** Shorthand: get the markdown hover text at a position. */
 function hover(source, line, col) {

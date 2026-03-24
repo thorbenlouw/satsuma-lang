@@ -1,5 +1,5 @@
 import { Location } from "vscode-languageserver";
-import type { SyntaxNode, Tree } from "tree-sitter";
+import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, labelText } from "./parser-utils";
 import {
   WorkspaceIndex,

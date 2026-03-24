@@ -5,6 +5,9 @@
     "ignoreDeprecations": "6.0",
     "target": "es2022",
     "types": ["node"],
+    "paths": {
+      "web-tree-sitter": ["./src/web-tree-sitter.d.ts"]
+    },
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "outDir": "dist",

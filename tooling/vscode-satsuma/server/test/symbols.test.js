@@ -1,15 +1,9 @@
-const { describe, it } = require("node:test");
+const { describe, it, before } = require("node:test");
 const assert = require("node:assert/strict");
-const Parser = require("tree-sitter");
-const Satsuma = require("tree-sitter-satsuma");
+const { initTestParser, parse } = require("./helper");
 const { computeDocumentSymbols } = require("../dist/symbols");
 
-const parser = new Parser();
-parser.setLanguage(Satsuma);
-
-function parse(source) {
-  return parser.parse(source);
-}
+before(async () => { await initTestParser(); });
 
 // SymbolKind constants from LSP spec
 const SymbolKind = {

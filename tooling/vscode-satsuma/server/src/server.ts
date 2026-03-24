@@ -7,11 +7,12 @@ import {
   FileChangeType,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import type { Tree } from "tree-sitter";
+import type { Tree } from "./parser-utils";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { getParser } from "./parser-utils";
+import { getParser, initParser } from "./parser-utils";
+import { setHighlightsSource } from "./semantic-tokens";
 import { computeDiagnostics } from "./diagnostics";
 import { computeDocumentSymbols } from "./symbols";
 import { computeFoldingRanges } from "./folding";
@@ -54,7 +55,18 @@ let workspaceFolders: string[] = [];
 
 // ---------- Initialisation ----------
 
-connection.onInitialize((params): InitializeResult => {
+connection.onInitialize(async (params): Promise<InitializeResult> => {
+  // Initialise WASM parser — the .wasm and highlights.scm live next to server.js
+  const serverDir = __dirname;
+  const wasmPath = path.join(serverDir, "tree-sitter-satsuma.wasm");
+  const highlightsPath = path.join(serverDir, "highlights.scm");
+  await initParser(wasmPath);
+  try {
+    setHighlightsSource(fs.readFileSync(highlightsPath, "utf-8"));
+  } catch {
+    // highlights.scm missing — semantic tokens will be unavailable
+  }
+
   // Accept CLI path from client initialization options
   const initOptions = params.initializationOptions;
   if (initOptions?.cliPath && typeof initOptions.cliPath === "string") {
@@ -176,7 +188,7 @@ connection.onDidChangeWatchedFiles((params) => {
         const fsPath = fileURLToPath(change.uri);
         const content = fs.readFileSync(fsPath, "utf-8");
         const tree = parser.parse(content);
-        indexFile(wsIndex, change.uri, tree);
+        if (tree) indexFile(wsIndex, change.uri, tree);
       } catch {
         // File unreadable — skip
       }
@@ -308,7 +320,9 @@ connection.onRequest(
 
 function parseDocument(doc: TextDocument): Tree {
   const parser = getParser();
-  return parser.parse(doc.getText());
+  const tree = parser.parse(doc.getText());
+  if (!tree) throw new Error("parse returned null");
+  return tree;
 }
 
 /** Send parse diagnostics merged with cached validate diagnostics. */
@@ -330,6 +344,7 @@ function indexWorkspaceFolder(folderPath: string): void {
     try {
       const content = fs.readFileSync(filePath, "utf-8");
       const tree = parser.parse(content);
+      if (!tree) continue;
       const uri = pathToFileURL(filePath).toString();
       indexFile(wsIndex, uri, tree);
     } catch {

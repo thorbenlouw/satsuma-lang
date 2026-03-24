@@ -1,5 +1,5 @@
 import { Hover, MarkupKind } from "vscode-languageserver";
-import type { SyntaxNode, Tree } from "tree-sitter";
+import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
 
 /**

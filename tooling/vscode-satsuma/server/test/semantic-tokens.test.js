@@ -1,18 +1,30 @@
-const { describe, it } = require("node:test");
+const { describe, it, before } = require("node:test");
 const assert = require("node:assert/strict");
-const Parser = require("tree-sitter");
-const Satsuma = require("tree-sitter-satsuma");
+const fs = require("fs");
+const path = require("path");
+const { initTestParser, parse } = require("./helper");
+const { initParser } = require("../dist/parser-utils");
 const {
   computeSemanticTokens,
+  setHighlightsSource,
   semanticTokensLegend,
 } = require("../dist/semantic-tokens");
 
-const parser = new Parser();
-parser.setLanguage(Satsuma);
+const WASM_PATH = path.resolve(
+  __dirname,
+  "../../../tree-sitter-satsuma/tree-sitter-satsuma.wasm",
+);
+const HIGHLIGHTS_PATH = path.resolve(
+  __dirname,
+  "../../../tree-sitter-satsuma/queries/highlights.scm",
+);
 
-function parse(source) {
-  return parser.parse(source);
-}
+before(async () => {
+  await initTestParser();
+  // Also init the server's parser-utils so getLanguage() works for Query construction
+  await initParser(WASM_PATH);
+  setHighlightsSource(fs.readFileSync(HIGHLIGHTS_PATH, "utf-8"));
+});
 
 /**
  * Decode the delta-encoded semantic tokens data into readable objects.

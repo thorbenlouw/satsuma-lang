@@ -77,7 +77,7 @@ can work side by side.
 | **Automated validation** | Parser checks completeness, type safety, referential integrity |
 | **Living documentation** | `.stm` files live in Git alongside code, versioned and reviewed |
 | **Cross-team communication** | BAs, data engineers, and architects share one format |
-| **Tool ecosystem** | Visualizers, diff tools, code generators, IDE plugins |
+| **Tool ecosystem** | Visualizers, diff tools, code generators, IDE extensions |
 | **Migration from Excel** | AI agent reads existing Excel mapping → outputs `.stm` file |
 
 ### Why the natural-language layer matters
@@ -282,5 +282,5 @@ Satsuma is an open specification. Contributions are welcome in the form of:
 - Language design feedback
 - Example mapping documents in Satsuma format
 - Parser and tooling implementations
-- IDE plugin development
+- IDE extension development
 - Documentation and tutorials

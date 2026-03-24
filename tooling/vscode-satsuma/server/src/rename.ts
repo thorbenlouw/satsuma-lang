@@ -3,7 +3,7 @@ import {
   WorkspaceEdit,
   TextEdit,
 } from "vscode-languageserver";
-import type { Tree } from "tree-sitter";
+import type { Tree } from "./parser-utils";
 import { nodeRange } from "./parser-utils";
 import { findNodeContext, NodeContext } from "./definition";
 import {

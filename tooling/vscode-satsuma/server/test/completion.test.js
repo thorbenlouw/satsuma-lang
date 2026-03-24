@@ -1,16 +1,10 @@
-const { describe, it } = require("node:test");
+const { describe, it, before } = require("node:test");
 const assert = require("node:assert/strict");
-const Parser = require("tree-sitter");
-const Satsuma = require("tree-sitter-satsuma");
+const { initTestParser, parse } = require("./helper");
 const { computeCompletions } = require("../dist/completion");
 const { createWorkspaceIndex, indexFile } = require("../dist/workspace-index");
 
-const parser = new Parser();
-parser.setLanguage(Satsuma);
-
-function parse(source) {
-  return parser.parse(source);
-}
+before(async () => { await initTestParser(); });
 
 function buildIndex(files) {
   const idx = createWorkspaceIndex();
