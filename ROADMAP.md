@@ -68,14 +68,16 @@ schema crm_database (from dbml "schemas/crm.dbml", table "customers") {
 
 ---
 
-## Convention Docs Still To Write
+## Convention Docs (Completed — Feature 21)
 
-The following are not language changes — they are convention documentation (like the existing `docs/data-modelling/` and `docs/conventions-for-schema-formats/` guides) that show DEs how to use existing metadata tokens for specific patterns. Detailed PRD: [`features/21-convention-docs/PRD.md`](features/21-convention-docs/PRD.md).
+All convention documentation has been written. See [`features/21-convention-docs/PRD.md`](features/21-convention-docs/PRD.md) for the full plan.
 
-- **Merge / upsert strategy** — conventions for `(merge upsert, match_on ..., on_match ..., on_no_match ...)` metadata on mapping blocks. Covers upsert, append, soft-delete, and full-refresh patterns. Target: `docs/conventions-for-merge-strategy/`.
-- **Governance tags** — conventions for `owner`, `steward`, `retention`, `classification`, `mask`, `compliance` and org-extensible tokens. Target: `docs/conventions-for-governance/`.
-- **jsonPath for field references** — conventions for `(jsonpath "...")` metadata paralleling existing `(xpath "...")`. Target: `docs/conventions-for-schema-formats/json/`.
-- **Reports and ML models** — conventions for using `schema` with `(report)` or `(model)` metadata tokens to declare pipeline consumers with NL descriptions and explicit source dependencies. Target: `docs/conventions-for-reports-and-models/`.
+- **Merge / upsert strategy** — [`docs/conventions-for-merge-strategy/`](docs/conventions-for-merge-strategy/README.md) with canonical example [`examples/merge-strategies.stm`](examples/merge-strategies.stm)
+- **Governance tags** — [`docs/conventions-for-governance/`](docs/conventions-for-governance/README.md) with canonical example [`examples/governance.stm`](examples/governance.stm)
+- **JSON path** — [`docs/conventions-for-schema-formats/json/`](docs/conventions-for-schema-formats/json/conventions.md) with canonical example [`examples/json-api-to-parquet.stm`](examples/json-api-to-parquet.stm)
+- **Reports and ML models** — [`docs/conventions-for-reports-and-models/`](docs/conventions-for-reports-and-models/README.md) with canonical example [`examples/reports-and-models.stm`](examples/reports-and-models.stm)
+- **Data Engineer Tutorial** — [`docs/tutorials/data-engineer-tutorial.md`](docs/tutorials/data-engineer-tutorial.md)
+- **Integration Engineer Tutorial** — [`docs/tutorials/integration-engineer-tutorial.md`](docs/tutorials/integration-engineer-tutorial.md)
 
 ---
 

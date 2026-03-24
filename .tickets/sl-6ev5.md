@@ -1,6 +1,6 @@
 ---
 id: sl-6ev5
-status: open
+status: closed
 deps: [sl-5ttm, sl-8ytt, sl-dm3p, sl-2ett, sl-m3px, sl-w18x]
 links: []
 created: 2026-03-24T22:15:11Z
