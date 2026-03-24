@@ -1,6 +1,6 @@
 ---
 id: sl-zf33
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-24T18:29:09Z
@@ -20,3 +20,10 @@ Implement format(tree, source) pure function skeleton in tooling/satsuma-cli/src
 - [ ] Pass-through mode: format(parse(src)) reproduces original source
 - [ ] Basic test file exists with round-trip test
 
+
+## Notes
+
+**2026-03-24T18:38:40Z**
+
+Cause: New feature — no prior implementation existed.
+Fix: Created format.ts with format(tree, source) pure function that walks all CST children (including anonymous tokens and comments) via collectLeaves(). Pass-through baseline reproduces original source by collecting leaf nodes and emitting inter-node gaps. Added startIndex/endIndex to SyntaxNode type. 22 tests (6 targeted + 16 corpus round-trip) all passing.
