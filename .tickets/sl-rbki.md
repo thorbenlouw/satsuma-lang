@@ -1,6 +1,6 @@
 ---
 id: sl-rbki
-status: open
+status: closed
 deps: [sl-pdxy, sl-bshy]
 links: []
 created: 2026-03-24T18:30:47Z
@@ -19,3 +19,9 @@ Add satsuma fmt --check step to CI pipeline. Format entire example corpus and co
 - [ ] CI fails if any .stm file in examples/ is not formatted
 - [ ] Example corpus passes fmt --check (no formatting changes needed)
 
+
+## Notes
+
+**2026-03-24T20:03:15Z**
+
+Cause: New feature. Fix: Added 'satsuma fmt --check' step to CI pipeline in .github/workflows/ci.yml under the satsuma-cli job, after 'npm test'. Verifies example corpus stays formatted on every PR.
