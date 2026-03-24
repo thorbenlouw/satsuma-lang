@@ -83,7 +83,7 @@
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.25.0",
-    "typescript": "^5.8.0",
+    "typescript": "^6.0.2",
     "vscode-tmgrammar-test": "^0.1.3"
   }
 }
