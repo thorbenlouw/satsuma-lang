@@ -35,8 +35,8 @@ Examples:
     .action(async (pathA: string, pathB: string, opts: { json?: boolean; namesOnly?: boolean; stat?: boolean }) => {
       let filesA: string[], filesB: string[];
       try {
-        filesA = await resolveInput(pathA);
-        filesB = await resolveInput(pathB);
+        filesA = await resolveInput(pathA, { followImports: false });
+        filesB = await resolveInput(pathB, { followImports: false });
       } catch (err: unknown) {
         console.error(`Error resolving paths: ${(err as Error).message}`);
         process.exit(2);

@@ -1,0 +1,10 @@
+// Library file with shared definitions
+fragment audit_fields {
+  created_at  TIMESTAMPTZ (required)
+  updated_at  TIMESTAMPTZ
+}
+
+schema ref_data {
+  code   STRING(10) (pk)
+  label  STRING(100)
+}

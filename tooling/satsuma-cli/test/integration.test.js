@@ -2088,6 +2088,27 @@ describe("satsuma diff", () => {
     assert.equal(data.notes.added.length, 0, "metric notes should not leak to top-level");
     assert.equal(data.notes.removed.length, 0, "metric notes should not leak to top-level");
   });
+
+  it("shows removals when file B imports from file A (sl-pzgv)", async () => {
+    const lib = resolve(import.meta.dirname, "fixtures", "diff-import-lib.stm");
+    const consumer = resolve(import.meta.dirname, "fixtures", "diff-import-consumer.stm");
+    const { stdout, code } = await run("diff", lib, consumer);
+    assert.equal(code, 0);
+    assert.match(stdout, /- ref_data/, "schema from lib not in consumer should appear as removed");
+    assert.match(stdout, /- audit_fields/, "fragment from lib not in consumer should appear as removed");
+    assert.match(stdout, /\+ orders/, "schema only in consumer should appear as added");
+  });
+
+  it("--json shows removals when file B imports from file A (sl-pzgv)", async () => {
+    const lib = resolve(import.meta.dirname, "fixtures", "diff-import-lib.stm");
+    const consumer = resolve(import.meta.dirname, "fixtures", "diff-import-consumer.stm");
+    const { stdout, code } = await run("diff", "--json", lib, consumer);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.schemas.removed.includes("ref_data"), "ref_data should be in schemas.removed");
+    assert.ok(data.schemas.added.includes("orders"), "orders should be in schemas.added");
+    assert.ok(data.fragments.removed.includes("audit_fields"), "audit_fields should be in fragments.removed");
+  });
 });
 
 // ---------------------------------------------------------------------------
