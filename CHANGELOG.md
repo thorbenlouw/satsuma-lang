@@ -1,5 +1,56 @@
 # Changelog
 
+## v0.2.0 — 2026-03-24
+
+### Formatter (`satsuma fmt`)
+
+- **Opinionated, zero-config formatter** — one canonical style for all Satsuma
+  files, analogous to `gofmt` or `black`. No settings, no overrides.
+- **CLI command:** `satsuma fmt [path]` with `--check` (CI mode, exit 1 if
+  unformatted), `--diff` (print unified diff), `--stdin` (pipe mode).
+- **VS Code Format Document** — LSP `DocumentFormattingProvider` wired to the
+  same shared `format()` function. Supports format-on-save.
+- **Parser-backed:** walks the full tree-sitter CST, preserves all comments,
+  never changes semantics.
+- **Field column alignment** with name/type/metadata columns (caps at 24/14
+  characters to prevent pathological widths).
+- **Blank line normalisation:** 2 between top-level blocks, 1 within blocks,
+  no trailing blanks, single newline at EOF.
+- **Comment handling:** all three types preserved (`//`, `//!`, `//?`), section
+  headers kept as-is, trailing inline comments with 2-space gap.
+- **CI integration:** `satsuma fmt --check examples/` step in the CI pipeline.
+- 81 formatter tests, 16/16 corpus files idempotent and structurally equivalent.
+
+### VS Code Extension
+
+- **WASM migration** — LSP server now uses web-tree-sitter (WASM) instead of
+  native bindings, eliminating platform-specific build requirements.
+- **Arrow navigation** — go-to-definition from arrow paths to source/target
+  schema fields.
+- **NL-ref navigation** — go-to-definition from backtick references inside
+  natural language strings.
+- **TODO diagnostics** — `//!` and `//?` comments surfaced in the Problems panel
+  with warning/info severity.
+- **Underlined NL refs** — backtick references inside NL strings get underline
+  styling for visual distinction.
+- Fixed WASM runtime packaging in `.vsix` artifacts.
+
+### Site
+
+- **GitHub Pages site** with brand guide, landing page, CLI reference, VS Code
+  feature tour, examples gallery, and learning resources.
+- Dynamic version templating and release notes links.
+- FAQ section and no-CLI getting-started guide.
+
+### Infrastructure
+
+- Versioned releases via manual `workflow_dispatch`.
+- Build artifacts auto-attached to tagged releases.
+- Shell injection fix in CI workflow inputs.
+- Tailwind CSS vendored locally for SRI compliance.
+
+---
+
 ## v0.1.0 — 2026-03-24
 
 First tagged release of the Satsuma language and toolchain.
