@@ -14,13 +14,13 @@ The lite system prompt is authored and updated to v2 syntax at `useful-prompts/e
 
 **Source:** `features/04-excel-to-stm-skill/PRD.md` (Phases 1-5)
 
-### Satsuma-to-Excel Export (Feature 05)
+### Satsuma-to-Excel Export — CLI Command (Feature 05, Full Variant)
 
-Generate Excel workbooks from Satsuma files for non-technical stakeholders. Ships in two tiers: lite system prompt + full CLI tool. Neither tier is started.
+The lite system prompt and deterministic skill are complete (`useful-prompts/stm-to-excel-prompt.md`, `skills/satsuma-to-excel/`). The remaining work is a standalone `satsuma-to-excel` CLI command that doesn't require the skill wrapper — a direct `satsuma-to-excel input.stm -o output.xlsx` invocation.
 
-**Why deferred:** Lower priority than parser, CLI, and data-modelling foundations. The lite prompt approach should be validated with the Excel-to-Satsuma skill first before investing in the reverse direction.
+**Why deferred:** The skill covers the primary use case. A standalone CLI command is a nice-to-have for CI/automation pipelines.
 
-**Source:** `features/05-stm-to-excel-export/PRD.md`
+**Source:** `features/05-stm-to-excel-export/PRD.md` (Variant B: Full CLI Tool)
 
 ### VS Code Language Server — Lineage Visualization (Feature 16)
 

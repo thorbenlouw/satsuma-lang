@@ -19,7 +19,7 @@ All tooling is parser-backed. Downstream tools should be built on the tree-sitte
 - `archive/features/`: completed feature specs (12 features) — for historical reference only
 - `features/`: active feature plans (5 features with open work)
 - `useful-prompts/`: self-contained system prompts for web LLMs (Excel-to-Satsuma, Satsuma-to-Excel)
-- `skills/`: Agent Skills following the [agentskills.io](https://agentskills.io) standard (Excel-to-Satsuma conversion skill)
+- `skills/`: Agent Skills following the [agentskills.io](https://agentskills.io) standard (Excel-to-Satsuma conversion skill, Satsuma-to-Excel export skill)
 - `scripts/`: utility scripts used during development
 - `tooling/tree-sitter-satsuma/`: tree-sitter grammar (482 corpus tests), generated parser artifacts, and queries
 - `tooling/satsuma-cli/`: TypeScript CLI tool for workspace extraction, validation, and structural analysis (637 tests)
