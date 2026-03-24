@@ -1802,6 +1802,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "nl_string"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "number_literal"
                 }
               ]
             },
@@ -1824,6 +1828,10 @@
                       {
                         "type": "SYMBOL",
                         "name": "nl_string"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "number_literal"
                       }
                     ]
                   }
@@ -1976,6 +1984,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "qualified_dotted_name"
+        },
+        {
+          "type": "SYMBOL",
           "name": "dotted_name"
         },
         {
@@ -1993,6 +2005,31 @@
         {
           "type": "SYMBOL",
           "name": "identifier"
+        }
+      ]
+    },
+    "qualified_dotted_name": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "qualified_name"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            ]
+          }
         }
       ]
     },

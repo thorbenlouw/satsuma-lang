@@ -516,7 +516,7 @@ module.exports = grammar({
       seq(
         "enum",
         "{",
-        commaSep1(choice($.identifier, $.nl_string)),
+        commaSep1(choice($.identifier, $.nl_string, $.number_literal)),
         optional(","),
         "}",
       ),
@@ -550,12 +550,17 @@ module.exports = grammar({
         $.kv_comparison,
         $.kv_ref_on,
         $.kv_compound,
+        $.qualified_dotted_name,
         $.dotted_name,
         $.number_literal,
         $.boolean_literal,
         $.qualified_name,
         $.identifier,
       ),
+
+    // ns::identifier.field... — namespace-qualified dotted ref path
+    qualified_dotted_name: ($) =>
+      seq($.qualified_name, repeat1(seq(".", $.identifier))),
 
     // Value forms: source {a, b}, slice {x, y} (inline braced list)
     kv_braced_list: ($) =>

@@ -118,3 +118,55 @@ schema events {
           (identifier)
           (identifier)
           (identifier))))))
+
+================================================================================
+Numeric enum values
+================================================================================
+
+schema fix_order {
+  Side STRING(1) (enum {1, 2, 5, 6})
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (enum_body
+            (number_literal)
+            (number_literal)
+            (number_literal)
+            (number_literal)))))))
+
+================================================================================
+Mixed enum values with identifiers strings and numbers
+================================================================================
+
+schema codes {
+  code VARCHAR(10) (enum {1, "two", three, 4})
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (enum_body
+            (number_literal)
+            (nl_string)
+            (identifier)
+            (number_literal)))))))
