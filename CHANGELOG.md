@@ -9,9 +9,10 @@ First tagged release of the Satsuma language and toolchain.
 - **Satsuma v2 specification** — formal grammar covering schemas, mappings,
   fragments, transforms, metrics, namespaces, imports, natural-language blocks,
   value maps, pipe chains, metadata vocabulary, and unified field syntax.
-- **16 canonical examples** demonstrating real-world patterns: database-to-database,
-  API-to-warehouse, EDI/COBOL/XML/Protobuf format conversion, multi-source joins,
-  metric definitions, namespace-based platform modelling, and governance filters.
+- **16 canonical examples** demonstrating real-world patterns: database migrations,
+  CRM-to-warehouse syncs, EDI/COBOL/XML/Protobuf format conversion, multi-source
+  joins, metric definitions, namespace-based platform modelling, and governance
+  filters.
 - **AI agent reference** — a compact (~900 token) grammar summary designed for
   LLM prompts, also available via `satsuma agent-reference`.
 
