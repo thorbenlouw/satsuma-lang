@@ -1,6 +1,6 @@
 ---
 id: sl-bshy
-status: open
+status: closed
 deps: [sl-ewv7]
 links: []
 created: 2026-03-24T18:30:38Z
@@ -20,3 +20,9 @@ Test that Format Document in VS Code produces identical output to CLI. Test form
 - [ ] Parse-error files handled gracefully (no crash, no corruption)
 - [ ] Tests passing
 
+
+## Notes
+
+**2026-03-24T19:59:17Z**
+
+Cause: New feature. Fix: Created formatting.test.js with 6 tests covering: already-formatted input (no edits), unformatted input (single TextEdit), expected output content, mapping with arrows, comment preservation, and idempotency. Uses web-tree-sitter WASM parser via helper. 148 LSP tests passing.

@@ -32,6 +32,7 @@ import { computeReferences } from "./references";
 import { computeCompletions } from "./completion";
 import { computeCodeLenses } from "./codelens";
 import { prepareRename, computeRename } from "./rename";
+import { computeFormatting, initFormatting } from "./formatting";
 
 // ---------- Connection setup ----------
 
@@ -61,6 +62,7 @@ connection.onInitialize(async (params): Promise<InitializeResult> => {
   const wasmPath = path.join(serverDir, "tree-sitter-satsuma.wasm");
   const highlightsPath = path.join(serverDir, "highlights.scm");
   await initParser(wasmPath);
+  await initFormatting();
   try {
     setHighlightsSource(fs.readFileSync(highlightsPath, "utf-8"));
   } catch {
@@ -106,6 +108,7 @@ connection.onInitialize(async (params): Promise<InitializeResult> => {
       renameProvider: {
         prepareProvider: true,
       },
+      documentFormattingProvider: true,
     },
   };
 });
@@ -288,6 +291,14 @@ connection.onCodeLens((params) => {
   const tree = trees.get(params.textDocument.uri);
   if (!tree) return [];
   return computeCodeLenses(tree, params.textDocument.uri, wsIndex);
+});
+
+connection.onDocumentFormatting((params) => {
+  const tree = trees.get(params.textDocument.uri);
+  if (!tree) return [];
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+  return computeFormatting(tree, doc.getText());
 });
 
 // ---------- Custom requests ----------
