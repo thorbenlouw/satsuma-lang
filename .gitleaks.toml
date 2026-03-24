@@ -1,0 +1,5 @@
+# Gitleaks configuration — false positive allowlist
+
+[[allowlist]]
+  description = "False positive: 'API-to-warehouse' in CHANGELOG.md"
+  commits = ["dabc9bce557ccaf38d82ab9e680b3f0df2939996"]
