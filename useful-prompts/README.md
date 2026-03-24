@@ -26,3 +26,18 @@ Satsuma output with a confidence rating and flags ambiguities for human review.
 **Limitations:** This is a best-effort conversion — the output has not been
 parsed or validated. Review all `//?` markers and `"..."` NL transforms before
 using the output.
+
+### [security-report-prompt.md](security-report-prompt.md)
+
+**Security Report Generator** — A structured prompt for regenerating
+`SECURITY-REPORT.md` at the repository root. An agent running this prompt will
+perform a fresh threat model of the Satsuma toolchain: audit dependencies,
+verify security properties in source code, review CI/CD controls, and produce
+a balanced enterprise-ready security assessment.
+
+**How to use:**
+
+1. Open a coding agent (Claude Code, Copilot, Cursor, etc.) in the repo root.
+2. Paste or reference `useful-prompts/security-report-prompt.md` as your prompt.
+3. The agent will read source files, verify claims, and generate an updated report.
+4. Review the output and commit.

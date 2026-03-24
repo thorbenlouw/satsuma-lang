@@ -370,6 +370,17 @@ Good contribution areas:
 When syntax, semantics, or supported constructs are in question, prefer the
 spec over secondary docs and call out mismatches explicitly.
 
+## Concerned About Security?
+
+Satsuma is a local-only, read-only analysis tool — it makes no network calls,
+stores no credentials, and runs no user-supplied code. The entire toolchain is
+open source and auditable. Automated security scanning (npm audit, Semgrep,
+Gitleaks, Dependabot) runs on every pull request, and releases are gated behind
+passing security checks.
+
+For a full threat model, dependency audit, and enterprise adoption guidance, see
+the **[Security Report](SECURITY-REPORT.md)**.
+
 ## Author
 
 Satsuma was created by [Thorben Louw](https://github.com/thorbenlouw) at
