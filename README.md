@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 [![Release](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/release.yml)
+[![Security](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/security.yml/badge.svg?branch=main&event=push)](https://github.com/thorbenlouw/satsuma-lang/actions/workflows/security.yml?query=branch%3Amain+event%3Apush)
 
 Satsuma is a domain-specific language for source-to-target data mapping.
 
