@@ -88,10 +88,22 @@ jobs:
           key: workspace-${{ github.sha }}
 
       - name: Run CLI tests
-        run: npm test
+        run: |
+          mkdir -p ../../test-results
+          node --test \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=junit --test-reporter-destination=../../test-results/cli.xml \
+            test/**/*.test.js
 
       - name: Check example corpus formatting
         run: node dist/index.js fmt --check ../../examples/
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-cli
+          path: test-results/cli.xml
 
   parser:
     name: Tree-sitter parser
@@ -200,113 +212,41 @@ jobs:
         run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Run LSP server tests
-        run: npm run test:lsp
-
-  test-summary:
-    name: Test summary
-    if: always()
-    needs: [lint, satsuma-cli, parser, vscode-extension]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - uses: actions/cache/restore@v5
-        with:
-          path: |
-            node_modules
-            tooling/satsuma-cli/node_modules
-            tooling/satsuma-cli/src/generated
-            tooling/tree-sitter-satsuma/node_modules
-            tooling/tree-sitter-satsuma/build
-            tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
-          key: workspace-${{ github.sha }}
-
-      - name: Run all test suites
         run: |
-          mkdir -p /tmp/test-logs
+          mkdir -p ../../test-results
+          cd server && node --test \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=junit --test-reporter-destination=../../../test-results/lsp.xml \
+            test/**/*.test.js
 
-          echo "::group::CLI tests"
-          (cd tooling/satsuma-cli && npm test 2>&1) | tee /tmp/test-logs/cli.log || true
-          echo "::endgroup::"
-
-          echo "::group::Tree-sitter corpus"
-          (cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh test 2>&1) | tee /tmp/test-logs/corpus.log || true
-          echo "::endgroup::"
-
-          echo "::group::Tree-sitter fixtures"
-          python3 tooling/tree-sitter-satsuma/scripts/test_fixtures.py 2>&1 | tee /tmp/test-logs/fixtures.log || true
-          echo "::endgroup::"
-
-          echo "::group::VS Code TextMate tests"
-          (cd tooling/vscode-satsuma && npm test 2>&1) | tee /tmp/test-logs/textmate.log || true
-          echo "::endgroup::"
-
-          echo "::group::VS Code LSP tests"
-          (cd tooling/vscode-satsuma && npm run test:lsp 2>&1) | tee /tmp/test-logs/lsp.log || true
-          echo "::endgroup::"
-
-      - name: Write test summary
-        if: always()
-        run: |
-          # Parse counts from log files
-          cli_tests=$(grep -oP '(?<=ℹ tests )\d+' /tmp/test-logs/cli.log || echo "?")
-          cli_pass=$(grep -oP '(?<=ℹ pass )\d+' /tmp/test-logs/cli.log || echo "?")
-          cli_fail=$(grep -oP '(?<=ℹ fail )\d+' /tmp/test-logs/cli.log || echo "0")
-
-          corpus_tests=$(grep -oP 'Total parses: \K\d+' /tmp/test-logs/corpus.log || echo "?")
-
-          fixture_pass=$(grep -c '^PASS' /tmp/test-logs/fixtures.log || echo "0")
-          fixture_fail=$(grep -c '^FAIL' /tmp/test-logs/fixtures.log || echo "0")
-          fixture_total=$((fixture_pass + fixture_fail))
-
-          tm_tests=$(grep -c '✓' /tmp/test-logs/textmate.log || echo "0")
-
-          lsp_tests=$(grep -oP '(?<=ℹ tests )\d+' /tmp/test-logs/lsp.log || echo "?")
-          lsp_pass=$(grep -oP '(?<=ℹ pass )\d+' /tmp/test-logs/lsp.log || echo "?")
-          lsp_fail=$(grep -oP '(?<=ℹ fail )\d+' /tmp/test-logs/lsp.log || echo "0")
-
-          cli_commands=$(cd tooling/satsuma-cli && node dist/index.js --help 2>&1 | grep -c '^\s\s[a-z]' || echo "?")
-          example_count=$(ls examples/*.stm 2>/dev/null | wc -l | tr -d ' ')
-
-          total=$((cli_tests + corpus_tests + fixture_total + tm_tests + lsp_tests))
-
-          {
-            echo "## Test Report"
-            echo ""
-            echo "| Suite | Tests | Passed | Failed |"
-            echo "|-------|------:|-------:|-------:|"
-            echo "| Satsuma CLI | $cli_tests | $cli_pass | $cli_fail |"
-            echo "| Tree-sitter corpus | $corpus_tests | $corpus_tests | 0 |"
-            echo "| Tree-sitter fixtures | $fixture_total | $fixture_pass | $fixture_fail |"
-            echo "| VS Code TextMate | $tm_tests | $tm_tests | 0 |"
-            echo "| VS Code LSP | $lsp_tests | $lsp_pass | $lsp_fail |"
-            echo "| **Total** | **$total** | | |"
-            echo ""
-            echo "### Project Stats"
-            echo ""
-            echo "| Metric | Count |"
-            echo "|--------|------:|"
-            echo "| CLI commands | $cli_commands |"
-            echo "| Canonical examples | $example_count |"
-            echo "| Parser corpus tests | $corpus_tests |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload test logs
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs
-          path: /tmp/test-logs/
-          retention-days: 7
+          name: test-results-vscode
+          path: test-results/lsp.xml
+
+  test-report:
+    name: Test report
+    if: always()
+    needs: [satsuma-cli, vscode-extension]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: test-results
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v2
+        with:
+          name: Test Results
+          path: test-results/*.xml
+          reporter: java-junit
 
   secrets:
     name: Secret scanning
