@@ -232,7 +232,7 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 
 - [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md): authoritative language specification
 - [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
-- [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (16 commands for structural extraction, analysis, and validation)
+- [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (21 commands for structural extraction, analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents (also available via `satsuma agent-reference`)
 - [docs/tutorials/](docs/tutorials/): role-based tutorials (BA, data engineer, integration engineer)
 - [USE_CASES.md](USE_CASES.md): practical scenarios and personas
@@ -251,8 +251,8 @@ What exists today:
 
 - the Satsuma v2 language specification
 - a canonical example corpus (20 `.stm` files covering major integration patterns)
-- a tree-sitter parser (482 corpus tests, all examples parse clean)
-- a TypeScript CLI (`satsuma`) with 17 commands for structural extraction, analysis, validation, formatting, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- a tree-sitter parser (245 corpus tests, all examples parse clean)
+- a TypeScript CLI (`satsuma`) with 21 commands for structural extraction, analysis, validation, formatting, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - `satsuma fmt` — opinionated, zero-config formatter (CLI + VS Code Format Document)
 - a VS Code extension with an LSP server (go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, diagnostics, folding, document symbols, formatting) and TextMate grammar
 - `satsuma lint` with 3 rules (hidden NL source refs, unresolved NL refs, duplicate definitions) and `--fix` support
@@ -353,7 +353,7 @@ python3 scripts/test_smoke_summary.py     # smoke test all examples
 ```bash
 cd tooling/satsuma-cli
 npm install
-npm test                  # 224 tests covering all 16 commands
+npm test                  # 772 tests covering all 21 commands
 npm link                  # makes `satsuma` available globally
 ```
 
