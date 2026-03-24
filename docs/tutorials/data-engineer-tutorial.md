@@ -41,7 +41,11 @@ The important insight is that you are not asking the AI to *invent* a pipeline f
 
 ## Metadata Conventions as Codegen Hints
 
-The real power for code generation comes from Satsuma's metadata conventions. These are vocabulary tokens in `( )` that an LLM interprets semantically. They are not reserved keywords, so the grammar never needs to change when you add new patterns.
+This is Satsuma's superpower: the `( )` metadata system accepts *any* vocabulary tokens. They are not reserved keywords. The grammar never changes when you add new patterns. That means **you can teach an AI agent your organisation's entire convention system** by writing tokens into the spec and guidelines that describe how to interpret them.
+
+Think about what that means in practice. When you write `(merge upsert, match_on customer_id)`, you are not using a feature the Satsuma language designers had to build. You are using a convention that someone documented. You can do the same thing for any pattern your organisation cares about — `(data_domain "finance")`, `(cost_center "CC-4200")`, `(audit_level high)`, `(team_owner "platform-eng")`, `(sla "99.9%")` — and an AI agent that has read your guidelines will know exactly what to generate from each one.
+
+This extensibility is what separates Satsuma from rigid schema languages. You are not waiting for a language update to support your use case. You write the token, document what it means, and every AI agent and human reader in your organisation knows how to act on it.
 
 ### Dimensional modelling
 
