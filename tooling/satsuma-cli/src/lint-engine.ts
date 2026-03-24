@@ -163,6 +163,15 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
   };
 }
 
+// Known pipeline function names from SATSUMA-V2-SPEC.md section 7.2
+const KNOWN_PIPELINE_FUNCTIONS = new Set([
+  "trim", "lowercase", "uppercase", "coalesce", "round", "split", "first",
+  "last", "to_utc", "to_iso8601", "parse", "null_if_empty", "null_if_invalid",
+  "drop_if_invalid", "drop_if_null", "warn_if_invalid", "warn_if_null",
+  "error_if_invalid", "error_if_null", "validate_email", "now_utc",
+  "title_case", "escape_html", "truncate", "to_number", "prepend", "max_length",
+]);
+
 function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
   const diagnostics: LintDiagnostic[] = [];
   if (!index.nlRefData) return diagnostics;
@@ -180,7 +189,39 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
       namespace: item.namespace,
     };
 
+    // For note blocks inside metrics/schemas, enrich mapping context with the
+    // block's own fields and source schemas so refs to them resolve correctly.
+    let scopeLabel = "mapping";
+    const noteMatch = item.mapping.match(/^note:(.+)$/);
+    if (noteMatch) {
+      const blockName = noteMatch[1]!;
+      const nsBlockName = item.namespace ? `${item.namespace}::${blockName}` : blockName;
+      const metric = index.metrics?.get(nsBlockName) ?? index.metrics?.get(blockName);
+      if (metric) {
+        scopeLabel = "metric";
+        // Add metric's own fields as virtual source so bare field refs resolve
+        mappingContext.sources = [...mappingContext.sources, ...(metric.sources ?? [])];
+      }
+      const schema = index.schemas.get(nsBlockName) ?? index.schemas.get(blockName);
+      if (schema) {
+        scopeLabel = "schema";
+      }
+    } else if (item.mapping.startsWith("transform:")) {
+      scopeLabel = "transform";
+    }
+
     for (const { ref, offset } of refs) {
+      // Skip known pipeline function names
+      if (KNOWN_PIPELINE_FUNCTIONS.has(ref)) continue;
+
+      // For metric notes, check if the ref matches one of the metric's own field names
+      if (noteMatch) {
+        const blockName = noteMatch[1]!;
+        const nsBlockName = item.namespace ? `${item.namespace}::${blockName}` : blockName;
+        const metric = index.metrics?.get(nsBlockName) ?? index.metrics?.get(blockName);
+        if (metric && metric.fields.some((f) => f.name === ref)) continue;
+      }
+
       const resolution = resolveRef(ref, mappingContext, index);
       if (!resolution.resolved) {
         diagnostics.push({
@@ -189,7 +230,7 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
           column: item.column + offset + 1,
           severity: "warning",
           rule: "unresolved-nl-ref",
-          message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
+          message: `NL reference \`${ref}\` in ${scopeLabel} '${mappingKey}' does not resolve to any known identifier`,
           fixable: false,
         });
       }

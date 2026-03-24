@@ -94,8 +94,25 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
     const dotIdx = ref.indexOf(".");
     const schemaName = ref.slice(0, dotIdx);
     const fieldName = ref.slice(dotIdx + 1);
-    // First check mapping sources/targets
+
+    // First, try resolving as a nested field path within mapping source/target schemas.
+    // e.g. `PID.DateOfBirth` where PID is a nested record field in source schema hl7_adt
     const allSchemas = [...(mappingContext.sources ?? []), ...(mappingContext.targets ?? [])];
+    for (const s of allSchemas) {
+      const schema = index.schemas.get(s);
+      if (schema && hasNestedFieldPath(schema.fields, ref)) {
+        return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${ref}` } };
+      }
+      // Also check expanded spread fields
+      if (schema?.hasSpreads) {
+        const expanded = expandEntityFields(schema, schema.namespace ?? null, index);
+        if (hasNestedFieldPath([...schema.fields, ...expanded], ref)) {
+          return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${ref}` } };
+        }
+      }
+    }
+
+    // Then try as schema.field (original behavior)
     for (const s of allSchemas) {
       const nsIdx = s.indexOf("::");
       const baseName = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
@@ -170,6 +187,43 @@ interface SchemaLike {
   hasSpreads: boolean;
   spreads?: string[];
   namespace?: string;
+}
+
+/**
+ * Check if a dotted path resolves to a nested field within a field tree.
+ * Tries exact path match first (e.g. "PID.DateOfBirth" where PID is at the
+ * current level), then searches recursively through nested records.
+ */
+function hasNestedFieldPath(fields: FieldDecl[], path: string): boolean {
+  const segments = path.split(".");
+  // Try exact path match from the current level
+  if (matchPath(fields, segments)) return true;
+  // Try starting from any nested record level
+  return searchNestedPath(fields, segments);
+}
+
+function matchPath(fields: FieldDecl[], segments: string[]): boolean {
+  let current = fields;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const field = current.find((f) => f.name === seg);
+    if (!field) return false;
+    if (i < segments.length - 1) {
+      if (!field.children || field.children.length === 0) return false;
+      current = field.children;
+    }
+  }
+  return true;
+}
+
+function searchNestedPath(fields: FieldDecl[], segments: string[]): boolean {
+  for (const f of fields) {
+    if (f.children) {
+      if (matchPath(f.children, segments)) return true;
+      if (searchNestedPath(f.children, segments)) return true;
+    }
+  }
+  return false;
 }
 
 /**
