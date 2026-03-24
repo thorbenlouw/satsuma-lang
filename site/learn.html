@@ -107,11 +107,11 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           Quick Start
         </div>
-        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Up and running in 3 steps</h2>
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Up and running in 4 steps</h2>
         <p class="text-warm-gray text-lg max-w-2xl mx-auto">From zero to your first validated mapping in under two minutes.</p>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-8 reveal">
+      <div class="grid md:grid-cols-2 gap-8 reveal">
         <!-- Step 1 -->
         <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
           <div class="absolute -top-4 left-8 w-8 h-8 gradient-orange rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
@@ -125,6 +125,17 @@
         <!-- Step 2 -->
         <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
           <div class="absolute -top-4 left-8 w-8 h-8 gradient-green rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+          <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Install the VS Code extension</h3>
+          <div class="code-block text-sm mb-4">
+            <pre><code class="font-mono text-charcoal">code --install-extension vscode-satsuma.vsix</code></pre>
+          </div>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3">Get syntax highlighting, real-time diagnostics, go-to-definition, IntelliSense, lineage visualisation, and more. Download the <code class="font-mono text-orange">.vsix</code> from the latest GitHub release.</p>
+          <a href="vscode.html" class="text-green text-sm font-semibold hover:underline">See all extension features &rarr;</a>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="absolute -top-4 left-8 w-8 h-8 bg-charcoal rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
           <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Create your first <code class="font-mono text-orange">.stm</code> file</h3>
           <div class="code-block text-sm mb-4">
             <pre><code class="font-mono"><span class="text-orange">schema</span> <span class="text-charcoal">source</span> {
@@ -145,14 +156,14 @@
           <p class="text-warm-gray text-sm leading-relaxed">Define schemas, then connect them with a mapping block. The <code class="font-mono text-orange">-></code> arrow reads as "maps to".</p>
         </div>
 
-        <!-- Step 3 -->
+        <!-- Step 4 -->
         <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
-          <div class="absolute -top-4 left-8 w-8 h-8 bg-charcoal rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+          <div class="absolute -top-4 left-8 w-8 h-8 bg-gradient-to-br from-orange to-green rounded-full flex items-center justify-center text-white font-bold text-sm">4</div>
           <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Validate with the CLI</h3>
           <div class="code-block text-sm mb-4">
             <pre><code class="font-mono text-charcoal">satsuma validate my-mapping.stm</code></pre>
           </div>
-          <p class="text-warm-gray text-sm leading-relaxed mb-3">The parser checks syntax, reference resolution, and structural correctness. Zero errors means you are ready to go.</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3">The parser checks syntax, reference resolution, and structural correctness. Zero errors means you are ready to go. The VS Code extension also shows diagnostics in real time as you type.</p>
           <a href="cli.html" class="text-orange text-sm font-semibold hover:underline">Explore all 16 commands &rarr;</a>
         </div>
       </div>
