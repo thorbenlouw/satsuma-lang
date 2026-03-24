@@ -33,14 +33,15 @@ describe("computeDiagnostics", () => {
     assert.match(warnings[0].message, /known issue/);
   });
 
-  it("reports question comments as Information severity", () => {
+  it("reports question comments as Hint severity with TODO prefix", () => {
     const tree = parse(`schema foo {
   bar STRING //? should this be INT?
 }`);
     const diags = computeDiagnostics(tree);
-    const infos = diags.filter((d) => d.severity === 3); // Information
-    assert.equal(infos.length, 1);
-    assert.match(infos[0].message, /should this be INT/);
+    const hints = diags.filter((d) => d.severity === 4); // Hint
+    assert.equal(hints.length, 1);
+    assert.match(hints[0].message, /^TODO: /);
+    assert.match(hints[0].message, /should this be INT/);
   });
 
   it("sets source to 'satsuma' on all diagnostics", () => {

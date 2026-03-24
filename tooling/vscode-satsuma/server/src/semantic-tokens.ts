@@ -32,6 +32,7 @@ const tokenModifiers: string[] = [
   SemanticTokenModifiers.declaration,   // 1
   SemanticTokenModifiers.readonly,      // 2
   SemanticTokenModifiers.defaultLibrary,// 3
+  "nlRef",                              // 4 — backtick reference inside NL string
 ];
 
 export const semanticTokensLegend: SemanticTokensLegend = {
@@ -278,8 +279,10 @@ function emitSplitStringTokens(
   }
 
   // Emit each segment, splitting across lines as needed
+  const nlRefBit = 1 << 4;  // nlRef modifier bitmask
   for (const seg of segments) {
     const typeIndex = seg.isRef ? 3 : 5;  // variable or string
+    const modBits = seg.isRef ? nlRefBit : 0;
     const segText = text.slice(seg.offset, seg.offset + seg.length);
     const segLines = segText.split("\n");
 
@@ -302,7 +305,7 @@ function emitSplitStringTokens(
       }
       const len = segLines[i]!.length;
       if (len > 0) {
-        builder.push(row, col, len, typeIndex, 0);
+        builder.push(row, col, len, typeIndex, modBits);
       }
     }
   }

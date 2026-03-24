@@ -1,6 +1,7 @@
 import {
   Diagnostic,
   DiagnosticSeverity,
+  DiagnosticTag,
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange } from "./parser-utils";
@@ -65,9 +66,10 @@ function walkComments(node: SyntaxNode, out: Diagnostic[]): void {
     } else if (child.type === "question_comment") {
       out.push({
         range: nodeRange(child),
-        severity: DiagnosticSeverity.Information,
+        severity: DiagnosticSeverity.Hint,
         source: "satsuma",
-        message: child.text.replace(/^\/\/\?\s*/, ""),
+        message: `TODO: ${child.text.replace(/^\/\/\?\s*/, "")}`,
+        tags: [DiagnosticTag.Unnecessary],
       });
     }
 

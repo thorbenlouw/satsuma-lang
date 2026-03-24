@@ -249,4 +249,31 @@ describe("computeSemanticTokens", () => {
     assert.ok(semanticTokensLegend.tokenTypes.includes("variable"));
     assert.ok(semanticTokensLegend.tokenTypes.includes("property"));
   });
+
+  it("applies nlRef modifier to backtick references in nl_string", () => {
+    const tree = parse(
+      'note { "Check `balance` field." }',
+    );
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 1, "should have 1 variable token");
+    // nlRef modifier is at bit index 4 (1 << 4 = 16)
+    assert.equal(varTokens[0].mods & 16, 16, "should have nlRef modifier set");
+
+    // String parts should NOT have the nlRef modifier
+    const stringTokens = tokens.filter(
+      (t) => t.type === "string" && t.line === 0 && t.col >= 7,
+    );
+    for (const st of stringTokens) {
+      assert.equal(st.mods & 16, 0, "string segments should not have nlRef modifier");
+    }
+  });
+
+  it("legend includes nlRef modifier", () => {
+    assert.ok(
+      semanticTokensLegend.tokenModifiers.includes("nlRef"),
+      "should include nlRef modifier in legend",
+    );
+  });
 });
