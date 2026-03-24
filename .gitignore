@@ -7,6 +7,11 @@ tooling/tree-sitter-satsuma/scripts/__pycache__
 **/node_modules
 **/dist
 **/generated
+
+# TypeScript build artifacts that may leak into src/ directories
+**/*.js.map
+tooling/satsuma-cli/src/**/*.js
+tooling/satsuma-cli/src/**/*.d.ts
 .worktrees/
 
 **/*.vsix
