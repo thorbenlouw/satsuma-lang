@@ -228,7 +228,7 @@ describe("satsuma schema", () => {
     const data = JSON.parse(stdout);
     const items = data.fields.find((f) => f.name === "items");
     assert.ok(items, "should have items field");
-    assert.equal(items.type, "list", "empty list_of record should have type 'list'");
+    assert.equal(items.type, "record", "empty list_of record should have type 'record'");
     assert.equal(items.isList, true);
     assert.ok(Array.isArray(items.children), "should have children array");
   });
@@ -238,6 +238,30 @@ describe("satsuma schema", () => {
     const { stdout, code } = await run("schema", "test", F);
     assert.equal(code, 0);
     assert.match(stdout, /items list_of record/, "should show list_of record");
+  });
+
+  it("--json nests fragment spread fields inside record (sl-6gck)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nested-record-spread.stm");
+    const { stdout, code } = await run("fields", "customer", "--json", F);
+    assert.equal(code, 0);
+    const fields = JSON.parse(stdout);
+    const addr = fields.find((f) => f.name === "address");
+    assert.ok(addr, "should have address field");
+    assert.equal(addr.type, "record");
+    assert.ok(addr.children.length > 0, "fragment fields should be nested inside record");
+    const street = addr.children.find((c) => c.name === "street");
+    assert.ok(street, "should have street inside address");
+    assert.equal(street.fromFragment, "address_fields");
+    // Verify no fragment fields at schema level
+    const topStreet = fields.find((f) => f.name === "street");
+    assert.ok(!topStreet, "fragment fields should NOT appear at schema level");
+  });
+
+  it("validate no false positives for spread fields in nested records (sl-6gck)", async () => {
+    const F = resolve(import.meta.dirname, "fixtures", "nested-record-spread.stm");
+    const { stdout, code } = await run("validate", F);
+    assert.equal(code, 0);
+    assert.ok(!stdout.includes("field-not-in-schema"), "should not report field-not-in-schema for spread fields");
   });
 
   it("--json --compact strips comments from fieldLines (sl-xtpd)", async () => {

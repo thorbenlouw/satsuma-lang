@@ -164,7 +164,7 @@ describe("Bug 1: nested field path resolution", () => {
         name: "src_schema",
         fields: [{
           name: "CartLines",
-          type: "list",
+          type: "record",
           isList: true,
           children: [{ name: "unit_price", type: "DECIMAL" }],
         }],

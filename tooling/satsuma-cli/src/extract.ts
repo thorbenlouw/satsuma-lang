@@ -137,14 +137,18 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
         const nested = extractFieldTree(innerBody);
         const decl: FieldDecl = {
           name,
-          type: isList ? "list" : "record",
+          type: "record",
           isList,
           children: nested.fields,
         };
         if (meta.length > 0) decl.metadata = meta;
+        // Keep nested spreads on this record field (not the parent schema)
+        if (nested.hasSpreads) {
+          decl.hasSpreads = true;
+          decl.spreads = nested.spreads;
+          hasSpreads = true;
+        }
         fields.push(decl);
-        if (nested.hasSpreads) hasSpreads = true;
-        spreads.push(...nested.spreads);
       } else {
         // Scalar field or list_of scalar
         const isList = hasListOfKeyword(c);
@@ -153,7 +157,7 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
         if (hasRecordKeyword) {
           const decl: FieldDecl = {
             name,
-            type: isList ? "list" : "record",
+            type: "record",
             isList: isList || undefined,
             children: [],
           };

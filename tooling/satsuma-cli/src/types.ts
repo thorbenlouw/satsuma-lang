@@ -38,6 +38,8 @@ export interface FieldDecl {
   children?: FieldDecl[];
   isList?: boolean;
   metadata?: import("./meta-extract.js").MetaEntry[];
+  hasSpreads?: boolean;
+  spreads?: string[];
 }
 
 export interface SchemaRecord {

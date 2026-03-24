@@ -17,12 +17,23 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
-import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex } from "../types.js";
+import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
+import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
-function totalFieldCount(schema: { fields: { length: number }; namespace?: string | null }, index: WorkspaceIndex): number {
+function countFieldsDeep(fields: FieldDecl[]): number {
+  let count = 0;
+  for (const f of fields) {
+    count++;
+    if (f.children) count += countFieldsDeep(f.children);
+  }
+  return count;
+}
+
+function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: WorkspaceIndex): number {
+  const fieldsCopy: FieldDecl[] = JSON.parse(JSON.stringify(schema.fields)) as FieldDecl[];
+  expandNestedSpreads(fieldsCopy, schema.namespace ?? null, index);
   const expanded = expandEntityFields(schema as Parameters<typeof expandEntityFields>[0], schema.namespace ?? null, index);
-  return schema.fields.length + expanded.length;
+  return countFieldsDeep([...fieldsCopy, ...expanded]);
 }
 
 export function register(program: Command): void {

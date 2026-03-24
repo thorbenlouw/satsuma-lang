@@ -72,8 +72,38 @@ export function expandSpreads(
     if (!expandEntitySpreads(schema, currentNs, index, fieldPaths, visited, diagnostics, [])) {
       hasUnresolved = true;
     }
+    // Also expand nested record-level spreads into fieldPaths
+    expandNestedFieldPaths(schema.fields, "", currentNs, index, fieldPaths);
   }
   return hasUnresolved;
+}
+
+/**
+ * Walk the field tree and expand nested record-level spreads into the
+ * fieldPaths set with proper prefixing.
+ */
+function expandNestedFieldPaths(
+  fields: FieldDecl[],
+  prefix: string,
+  currentNs: string | null,
+  index: WorkspaceIndex,
+  fieldPaths: Set<string>,
+): void {
+  for (const field of fields) {
+    if (field.children && field.hasSpreads && field.spreads) {
+      const fieldPrefix = prefix + field.name + ".";
+      for (const spreadName of field.spreads) {
+        const resolvedKey = resolveEntityRef(spreadName, currentNs, index.fragments);
+        if (!resolvedKey) continue;
+        const fragment = index.fragments.get(resolvedKey);
+        if (!fragment) continue;
+        collectFieldPaths(fragment.fields, fieldPrefix, fieldPaths);
+      }
+    }
+    if (field.children) {
+      expandNestedFieldPaths(field.children, prefix + field.name + ".", currentNs, index, fieldPaths);
+    }
+  }
 }
 
 /**
@@ -126,6 +156,35 @@ function collectExpandedFields(
     // Recursively expand spreads within this fragment
     if (fragment.hasSpreads) {
       collectExpandedFields(fragment, currentNs, index, fields, visited, [...chain, resolvedKey]);
+    }
+  }
+}
+
+/**
+ * Recursively expand fragment spreads within nested record fields.
+ * Modifies field children in place, inserting fragment fields into the
+ * correct nesting level rather than hoisting to the schema level.
+ */
+export function expandNestedSpreads(
+  fields: FieldDecl[],
+  currentNs: string | null,
+  index: WorkspaceIndex,
+): void {
+  for (const field of fields) {
+    if (field.children) {
+      // First recurse into deeper levels
+      expandNestedSpreads(field.children, currentNs, index);
+      // Then expand spreads at this level
+      if (field.hasSpreads && field.spreads) {
+        const expanded = expandEntityFields(
+          { fields: field.children, hasSpreads: true, spreads: field.spreads },
+          currentNs,
+          index,
+        );
+        field.children = [...field.children, ...expanded];
+        delete field.hasSpreads;
+        delete field.spreads;
+      }
     }
   }
 }

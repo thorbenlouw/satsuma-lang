@@ -1,0 +1,22 @@
+// Fixture for sl-6gck: fragment spread inside nested record
+fragment address_fields {
+  street STRING(255)
+  city STRING(100)
+  zip STRING(10)
+}
+
+schema customer {
+  id INT
+  name STRING
+  address record {
+    ...address_fields
+  }
+}
+
+mapping customer_map {
+  source { raw_customer }
+  target { customer }
+
+  raw_street -> address.street
+  raw_city -> address.city
+}

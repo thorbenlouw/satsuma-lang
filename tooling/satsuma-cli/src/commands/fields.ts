@@ -14,7 +14,7 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
-import { expandEntityFields } from "../spread-expand.js";
+import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import type { WorkspaceIndex, FieldDecl, ParsedFile, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
 
 interface FieldWithTags extends FieldDecl {
@@ -74,10 +74,13 @@ Examples:
       const resolvedSchemaName = resolved.key;
 
       const entity = resolved.entry;
-      let fields: FieldWithTags[] = entity.fields.map((f) => ({ ...f }));
+      let fields: FieldWithTags[] = deepCopyFields(entity.fields);
 
       // Expand fragment spreads — inline fields from spread fragments (schemas and fragments only)
       if (entityKind !== "metric") {
+        // Expand nested record-level spreads in place first
+        expandNestedSpreads(fields, entity.namespace ?? null, index);
+        // Then expand schema-level spreads
         const spreadFields = expandEntityFields(entity as SchemaRecord | FragmentRecord, entity.namespace ?? null, index);
         fields = [...fields, ...spreadFields];
       }
@@ -121,6 +124,14 @@ Examples:
 
       printDefault(schemaName, fields, opts);
     });
+}
+
+function deepCopyFields(fields: FieldDecl[]): FieldWithTags[] {
+  return fields.map((f) => {
+    const copy: FieldWithTags = { ...f };
+    if (f.children) copy.children = deepCopyFields(f.children);
+    return copy;
+  });
 }
 
 /**
