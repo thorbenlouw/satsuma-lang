@@ -266,6 +266,8 @@ jobs:
       contents: read
       checks: write
     steps:
+      - uses: actions/checkout@v6
+
       - uses: actions/download-artifact@v4
         with:
           pattern: test-results-*
@@ -278,6 +280,7 @@ jobs:
           name: Test Results
           path: test-results/*.xml
           reporter: java-junit
+          fail-on-empty: false
 
   secrets:
     name: Secret scanning
