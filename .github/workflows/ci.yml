@@ -230,44 +230,55 @@ jobs:
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
-      - name: Collect test counts and write summary
+      - name: Run all test suites
         run: |
-          # CLI tests
-          cli_output=$(cd tooling/satsuma-cli && npm test 2>&1) || true
-          cli_tests=$(echo "$cli_output" | grep -oP '(?<=ℹ tests )\d+' || echo "?")
-          cli_pass=$(echo "$cli_output" | grep -oP '(?<=ℹ pass )\d+' || echo "?")
-          cli_fail=$(echo "$cli_output" | grep -oP '(?<=ℹ fail )\d+' || echo "0")
+          mkdir -p /tmp/test-logs
 
-          # Tree-sitter corpus
-          corpus_output=$(cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh test 2>&1) || true
-          corpus_tests=$(echo "$corpus_output" | grep -oP 'Total parses: \K\d+' || echo "?")
+          echo "::group::CLI tests"
+          (cd tooling/satsuma-cli && npm test 2>&1) | tee /tmp/test-logs/cli.log || true
+          echo "::endgroup::"
 
-          # Tree-sitter fixtures
-          fixture_output=$(python3 tooling/tree-sitter-satsuma/scripts/test_fixtures.py 2>&1) || true
-          fixture_pass=$(echo "$fixture_output" | grep -c '^PASS' || echo "0")
-          fixture_fail=$(echo "$fixture_output" | grep -c '^FAIL' || echo "0")
+          echo "::group::Tree-sitter corpus"
+          (cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh test 2>&1) | tee /tmp/test-logs/corpus.log || true
+          echo "::endgroup::"
+
+          echo "::group::Tree-sitter fixtures"
+          python3 tooling/tree-sitter-satsuma/scripts/test_fixtures.py 2>&1 | tee /tmp/test-logs/fixtures.log || true
+          echo "::endgroup::"
+
+          echo "::group::VS Code TextMate tests"
+          (cd tooling/vscode-satsuma && npm test 2>&1) | tee /tmp/test-logs/textmate.log || true
+          echo "::endgroup::"
+
+          echo "::group::VS Code LSP tests"
+          (cd tooling/vscode-satsuma && npm run test:lsp 2>&1) | tee /tmp/test-logs/lsp.log || true
+          echo "::endgroup::"
+
+      - name: Write test summary
+        if: always()
+        run: |
+          # Parse counts from log files
+          cli_tests=$(grep -oP '(?<=ℹ tests )\d+' /tmp/test-logs/cli.log || echo "?")
+          cli_pass=$(grep -oP '(?<=ℹ pass )\d+' /tmp/test-logs/cli.log || echo "?")
+          cli_fail=$(grep -oP '(?<=ℹ fail )\d+' /tmp/test-logs/cli.log || echo "0")
+
+          corpus_tests=$(grep -oP 'Total parses: \K\d+' /tmp/test-logs/corpus.log || echo "?")
+
+          fixture_pass=$(grep -c '^PASS' /tmp/test-logs/fixtures.log || echo "0")
+          fixture_fail=$(grep -c '^FAIL' /tmp/test-logs/fixtures.log || echo "0")
           fixture_total=$((fixture_pass + fixture_fail))
 
-          # VS Code TextMate tests
-          tm_output=$(cd tooling/vscode-satsuma && npm test 2>&1) || true
-          tm_tests=$(echo "$tm_output" | grep -c '✓' || echo "0")
+          tm_tests=$(grep -c '✓' /tmp/test-logs/textmate.log || echo "0")
 
-          # VS Code LSP tests
-          lsp_output=$(cd tooling/vscode-satsuma && npm run test:lsp 2>&1) || true
-          lsp_tests=$(echo "$lsp_output" | grep -oP '(?<=ℹ tests )\d+' || echo "?")
-          lsp_pass=$(echo "$lsp_output" | grep -oP '(?<=ℹ pass )\d+' || echo "?")
-          lsp_fail=$(echo "$lsp_output" | grep -oP '(?<=ℹ fail )\d+' || echo "0")
+          lsp_tests=$(grep -oP '(?<=ℹ tests )\d+' /tmp/test-logs/lsp.log || echo "?")
+          lsp_pass=$(grep -oP '(?<=ℹ pass )\d+' /tmp/test-logs/lsp.log || echo "?")
+          lsp_fail=$(grep -oP '(?<=ℹ fail )\d+' /tmp/test-logs/lsp.log || echo "0")
 
-          # CLI commands
           cli_commands=$(cd tooling/satsuma-cli && node dist/index.js --help 2>&1 | grep -c '^\s\s[a-z]' || echo "?")
-
-          # Examples
           example_count=$(ls examples/*.stm 2>/dev/null | wc -l | tr -d ' ')
 
-          # Total
           total=$((cli_tests + corpus_tests + fixture_total + tm_tests + lsp_tests))
 
-          # Write summary
           {
             echo "## Test Report"
             echo ""
@@ -288,6 +299,14 @@ jobs:
             echo "| Canonical examples | $example_count |"
             echo "| Parser corpus tests | $corpus_tests |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: /tmp/test-logs/
+          retention-days: 7
 
   secrets:
     name: Secret scanning
