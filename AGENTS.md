@@ -21,7 +21,7 @@ All tooling is parser-backed. Downstream tools should be built on the tree-sitte
 - `scripts/`: utility scripts used during development
 - `tooling/tree-sitter-satsuma/`: tree-sitter grammar (482 corpus tests), generated parser artifacts, and queries
 - `tooling/satsuma-cli/`: TypeScript CLI tool for workspace extraction, validation, and structural analysis (637 tests)
-- `tooling/vscode-satsuma/`: VS Code TextMate grammar for Satsuma v2 syntax highlighting
+- `tooling/vscode-satsuma/`: VS Code extension with LSP server (semantic tokens, diagnostics, go-to-definition, find-references, completions, hover, rename, code lens, folding, document symbols) and TextMate grammar
 
 ## Platform Lineage Entry Point
 

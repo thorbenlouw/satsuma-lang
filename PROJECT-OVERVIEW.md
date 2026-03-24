@@ -252,7 +252,7 @@ How we'll know Satsuma is working:
 - Tree-sitter parser (482 corpus tests)
 - TypeScript CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md) (637 tests)
 - `satsuma lint` with 3 policy rules and `--fix` support
-- VS Code syntax-highlighting extension
+- VS Code extension with LSP server (go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, diagnostics, folding, document symbols)
 - Namespace support for multi-team, multi-domain platform modelling
 - Unified field syntax (`Name record { }`, `Name list_of record { }`, `Name list_of TYPE`)
 - Data-modelling conventions and examples for Kimball and Data Vault patterns
@@ -261,15 +261,15 @@ How we'll know Satsuma is working:
 ### What is strategically important next
 
 - **Agent workflows on top of deterministic tooling.** The parser and CLI are dependable primitives inside AI agents that draft mappings, explain lineage, review changes, and generate implementation scaffolding.
-- **Editor intelligence.** Syntax highlighting exists; a VS Code language server (go-to-definition, completions, live diagnostics, lineage visualization) is the next major editor milestone.
+- **Editor intelligence.** The VS Code language server delivers go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, and live diagnostics. Lineage visualization is the next editor milestone.
 - **Expanded linting.** `satsuma lint` ships with 3 rules today. Deeper convention checks and broader semantic analysis are next.
 - **Excel and code-generation loops.** Excel-to-Satsuma, Satsuma-to-Excel, and code generation remain important. A lite conversion prompt is available; full tooling is deferred.
 - **Explicit NL lineage.** Making natural-language transform dependencies machine-readable requires a language design review.
 
 ### Near-term roadmap
 
-1. **VS Code language server.** Go-to-definition, find-references, completions, and live diagnostics — bringing the CLI's structural precision into the editor.
-2. **Expand linting and validation.** More lint rules, convention checks, and cross-file semantic analysis.
+1. **Expand linting and validation.** More lint rules, convention checks, and cross-file semantic analysis.
+2. **Lineage visualization.** Interactive lineage webview in VS Code, building on the LSP and `satsuma graph` command.
 3. **Excel conversion tooling.** Full-featured Excel-to-Satsuma skill for Claude Code, building on the lite prompt already available.
 4. **Code generation.** Generate implementation scaffolding (Python, SQL, dbt) from Satsuma specs.
 

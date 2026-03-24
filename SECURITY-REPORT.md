@@ -55,8 +55,8 @@ reproducible builds from source.
 |---|---|---|
 | `satsuma` CLI | TypeScript CLI with 16 read-only commands | Node.js process, invoked from terminal |
 | `tree-sitter-satsuma` | C parser generated from `grammar.js` | Native `.node` addon loaded by the CLI |
-| VS Code extension (`.vsix`) | TextMate grammar + extension that calls the CLI | Runs inside VS Code extension host |
-| Language server | LSP server for diagnostics (in progress) | Child process of the extension, IPC only |
+| VS Code extension (`.vsix`) | TextMate grammar + LSP client that calls the CLI | Runs inside VS Code extension host |
+| Language server | LSP server for diagnostics, navigation, completions, hover, rename, semantic tokens | Child process of the extension, IPC only |
 
 None of these components access the network, require authentication, or modify
 your files.
