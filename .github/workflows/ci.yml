@@ -188,6 +188,10 @@ jobs:
       - name: Build extension (client + server + webview)
         run: npm run build
 
+      - name: Build tree-sitter WASM for LSP tests
+        working-directory: tooling/tree-sitter-satsuma
+        run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
+
       - name: Run LSP server tests
         run: npm run test:lsp
 
