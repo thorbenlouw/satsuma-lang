@@ -20,7 +20,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
-import { expandEntityFields } from "../spread-expand.js";
+import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import type { WorkspaceIndex } from "../types.js";
 import type { FullGraph } from "../graph-builder.js";
 
@@ -175,8 +175,10 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       note: schema.note ?? null,
     };
     if (!schemaOnly) {
+      const fieldsCopy: import("../types.js").FieldDecl[] = JSON.parse(JSON.stringify(schema.fields)) as import("../types.js").FieldDecl[];
+      expandNestedSpreads(fieldsCopy, schema.namespace ?? null, index);
       const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
-      node.fields = [...schema.fields, ...spreadFields].map((f) => ({
+      node.fields = ([...fieldsCopy, ...spreadFields] as import("../types.js").FieldDecl[]).map((f) => ({
         name: f.name,
         type: f.isList && f.type ? `list_of ${f.type}` : (f.type ?? null),
       }));
