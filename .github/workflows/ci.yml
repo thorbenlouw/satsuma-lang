@@ -202,6 +202,93 @@ jobs:
       - name: Run LSP server tests
         run: npm run test:lsp
 
+  test-summary:
+    name: Test summary
+    if: always()
+    needs: [lint, satsuma-cli, parser, vscode-extension]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache/restore@v5
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
+          key: workspace-${{ github.sha }}
+
+      - name: Collect test counts and write summary
+        run: |
+          # CLI tests
+          cli_output=$(cd tooling/satsuma-cli && npm test 2>&1) || true
+          cli_tests=$(echo "$cli_output" | grep -oP '(?<=ℹ tests )\d+' || echo "?")
+          cli_pass=$(echo "$cli_output" | grep -oP '(?<=ℹ pass )\d+' || echo "?")
+          cli_fail=$(echo "$cli_output" | grep -oP '(?<=ℹ fail )\d+' || echo "0")
+
+          # Tree-sitter corpus
+          corpus_output=$(cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh test 2>&1) || true
+          corpus_tests=$(echo "$corpus_output" | grep -oP 'Total parses: \K\d+' || echo "?")
+
+          # Tree-sitter fixtures
+          fixture_output=$(python3 tooling/tree-sitter-satsuma/scripts/test_fixtures.py 2>&1) || true
+          fixture_pass=$(echo "$fixture_output" | grep -c '^PASS' || echo "0")
+          fixture_fail=$(echo "$fixture_output" | grep -c '^FAIL' || echo "0")
+          fixture_total=$((fixture_pass + fixture_fail))
+
+          # VS Code TextMate tests
+          tm_output=$(cd tooling/vscode-satsuma && npm test 2>&1) || true
+          tm_tests=$(echo "$tm_output" | grep -c '✓' || echo "0")
+
+          # VS Code LSP tests
+          lsp_output=$(cd tooling/vscode-satsuma && npm run test:lsp 2>&1) || true
+          lsp_tests=$(echo "$lsp_output" | grep -oP '(?<=ℹ tests )\d+' || echo "?")
+          lsp_pass=$(echo "$lsp_output" | grep -oP '(?<=ℹ pass )\d+' || echo "?")
+          lsp_fail=$(echo "$lsp_output" | grep -oP '(?<=ℹ fail )\d+' || echo "0")
+
+          # CLI commands
+          cli_commands=$(cd tooling/satsuma-cli && node dist/index.js --help 2>&1 | grep -c '^\s\s[a-z]' || echo "?")
+
+          # Examples
+          example_count=$(ls examples/*.stm 2>/dev/null | wc -l | tr -d ' ')
+
+          # Total
+          total=$((cli_tests + corpus_tests + fixture_total + tm_tests + lsp_tests))
+
+          # Write summary
+          {
+            echo "## Test Report"
+            echo ""
+            echo "| Suite | Tests | Passed | Failed |"
+            echo "|-------|------:|-------:|-------:|"
+            echo "| Satsuma CLI | $cli_tests | $cli_pass | $cli_fail |"
+            echo "| Tree-sitter corpus | $corpus_tests | $corpus_tests | 0 |"
+            echo "| Tree-sitter fixtures | $fixture_total | $fixture_pass | $fixture_fail |"
+            echo "| VS Code TextMate | $tm_tests | $tm_tests | 0 |"
+            echo "| VS Code LSP | $lsp_tests | $lsp_pass | $lsp_fail |"
+            echo "| **Total** | **$total** | | |"
+            echo ""
+            echo "### Project Stats"
+            echo ""
+            echo "| Metric | Count |"
+            echo "|--------|------:|"
+            echo "| CLI commands | $cli_commands |"
+            echo "| Canonical examples | $example_count |"
+            echo "| Parser corpus tests | $corpus_tests |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   secrets:
     name: Secret scanning
     runs-on: ubuntu-latest
