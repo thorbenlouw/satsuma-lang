@@ -62,7 +62,6 @@ Document what is in place:
 - Release security gate
 
 Also document what is NOT in place (be honest — this builds trust):
-- CodeQL
 - SBOM generation
 - Artifact signing
 - OSSF Scorecard
