@@ -328,4 +328,129 @@ describe("edge cases", () => {
     assert.ok(out.includes("< 1000"), "should preserve comparison key");
     assert.ok(out.includes("default"), "should preserve default key");
   });
+
+  it("handles list_of scalar fields in alignment", () => {
+    const src = `schema test {
+  id INT (pk)
+  tags list_of STRING
+  codes list_of INT (required)
+}`;
+    const out = fmt(src);
+    // list_of fields participate in alignment
+    assert.ok(out.includes("tags   list_of STRING") || out.includes("tags  list_of STRING"));
+    assert.ok(out.includes("codes  list_of INT"));
+  });
+
+  it("handles namespace blocks", () => {
+    const src = `namespace myns (note "Test namespace") {
+  schema inner { x INT }
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes('namespace myns (note "Test namespace") {'));
+    assert.ok(out.includes("  schema inner {"));
+  });
+
+  it("handles multi-line metadata on blocks", () => {
+    const src = `schema test (
+  format postgresql,
+  note "A long description"
+) {
+  id INT (pk)
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("schema test ("));
+    assert.ok(out.includes("format postgresql,"));
+    assert.ok(out.includes(") {"));
+  });
+
+  it("handles each/flatten blocks", () => {
+    const src = `mapping test {
+  source { s }
+  target { t }
+  each s.items -> t.items {
+    .sku -> .sku { trim }
+  }
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("each s.items -> t.items {"));
+    assert.ok(out.includes("  .sku -> .sku { trim }"));
+  });
+
+  it("handles metric block with display name and metadata", () => {
+    const src = `metric mrr "MRR" (source subs, grain monthly) {
+  value DECIMAL(14,2) (measure additive)
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes('metric mrr "MRR"'));
+    assert.ok(out.includes("value  DECIMAL(14,2)  (measure additive)"));
+  });
+
+  it("handles multi-source blocks", () => {
+    const src = `mapping test {
+  source {
+    schema_a
+    schema_b
+    "join condition"
+  }
+  target { t }
+  a.x -> t.x
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("source {"));
+    assert.ok(out.includes("  schema_a"));
+    assert.ok(out.includes("  schema_b"));
+  });
+
+  it("handles quoted block labels", () => {
+    const src = `schema 'my schema' { x INT }`;
+    const out = fmt(src);
+    assert.ok(out.includes("schema 'my schema' {"));
+  });
+
+  it("handles backtick field names in alignment", () => {
+    const src = `schema test {
+  \`special_field\` INT
+  normal STRING
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("`special_field`"));
+  });
+
+  it("handles inline map on single line", () => {
+    const src = `mapping test {
+  source { s }
+  target { t }
+  s.x -> t.y { map { A: "active", I: "inactive" } }
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("map {") && out.includes("}"));
+  });
+
+  it("preserves NL string content verbatim", () => {
+    const src = `mapping test {
+  source { s }
+  target { t }
+  -> t.x {
+    "Complex NL: use \`field_a\` + \`field_b\`. Handle edge cases."
+  }
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("`field_a`"));
+    assert.ok(out.includes("`field_b`"));
+  });
+});
+
+// ── Golden Fixture Tests ─────────────────────────────────────────────────────
+
+describe("golden fixture round-trip (all corpus)", () => {
+  const stmFiles = readdirSync(examplesDir).filter(f => f.endsWith(".stm"));
+
+  for (const file of stmFiles) {
+    it(`format(parse(examples/${file})) parses without errors`, () => {
+      const src = readFileSync(join(examplesDir, file), "utf8");
+      const out = fmt(src);
+      const { errorCount } = parseSource(out);
+      assert.equal(errorCount, 0, `formatted output should parse cleanly`);
+    });
+  }
 });
