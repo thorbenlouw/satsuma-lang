@@ -93,9 +93,13 @@ jobs:
         working-directory: .
         run: npm run ci:all
 
+      - name: Build WASM parser
+        working-directory: tooling/tree-sitter-satsuma
+        run: npx tree-sitter build --wasm
+
       - name: Build and package .vsix
         run: |
-          # Build client + server + webview bundles
+          # Build client + server + webview bundles (copies .wasm + highlights.scm)
           npm run build
 
           # Package the extension (--allow-missing-repository for monorepo layout)

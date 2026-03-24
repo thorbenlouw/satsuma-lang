@@ -2,7 +2,7 @@ import {
   Diagnostic,
   DiagnosticSeverity,
 } from "vscode-languageserver";
-import type { SyntaxNode, Tree } from "tree-sitter";
+import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange } from "./parser-utils";
 
 /**

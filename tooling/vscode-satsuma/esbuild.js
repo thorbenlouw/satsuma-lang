@@ -21,7 +21,6 @@ const serverConfig = {
   platform: "node",
   target: "node20",
   outfile: "server/dist/server.js",
-  external: ["tree-sitter", "tree-sitter-satsuma"],
   format: "cjs",
   sourcemap: true,
 };
@@ -48,21 +47,31 @@ const webviewLineageConfig = {
   sourcemap: true,
 };
 
-// Copy CSS to dist
+// Copy static assets to dist
 const { copyFileSync, mkdirSync, existsSync } = require("fs");
+const path = require("path");
 
-function copyCss() {
+function copyAssets() {
   const pairs = [
     ["src/webview/graph/graph.css", "dist/webview/graph/graph.css"],
     ["src/webview/lineage/lineage.css", "dist/webview/lineage/lineage.css"],
   ];
+
+  // Copy WASM and highlights.scm into server/dist/ so the server can load them
+  // at runtime via __dirname.
+  const treeSitterDir = path.resolve(__dirname, "../tree-sitter-satsuma");
+  pairs.push(
+    [path.join(treeSitterDir, "tree-sitter-satsuma.wasm"), "server/dist/tree-sitter-satsuma.wasm"],
+    [path.join(treeSitterDir, "queries/highlights.scm"), "server/dist/highlights.scm"],
+  );
+
   for (const [src, dst] of pairs) {
     try {
-      const dir = require("path").dirname(dst);
+      const dir = path.dirname(dst);
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       copyFileSync(src, dst);
     } catch {
-      // CSS file may not exist yet
+      // Asset may not exist yet (e.g. CSS or WASM not built)
     }
   }
 }
@@ -84,7 +93,7 @@ async function build() {
     console.log("Watching for changes...");
   } else {
     await Promise.all(configs.map((c) => esbuild.build(c)));
-    copyCss();
+    copyAssets();
     console.log("Build complete.");
   }
 }

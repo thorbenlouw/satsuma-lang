@@ -4,7 +4,9 @@ import {
   SemanticTokenModifiers,
   SemanticTokensLegend,
 } from "vscode-languageserver";
-import type { Tree, SyntaxNode } from "tree-sitter";
+import type { Tree, Query } from "web-tree-sitter";
+import { getLanguage } from "./parser-utils";
+import type { SyntaxNode } from "./parser-utils";
 
 // ---------- Legend ----------
 
@@ -96,24 +98,25 @@ const CAPTURE_MAP: Record<string, TokenMapping> = {
 
 // ---------- Query loading ----------
 
-let _query: InstanceType<typeof import("tree-sitter").Query> | null = null;
+let _query: Query | null = null;
+let _highlightsSource: string | null = null;
 
-function getHighlightsQuery(): InstanceType<typeof import("tree-sitter").Query> {
+/**
+ * Set the highlights.scm source that will be used for semantic token queries.
+ * Must be called once during server initialisation (before any document is parsed).
+ */
+export function setHighlightsSource(source: string): void {
+  _highlightsSource = source;
+  _query = null; // reset cached query
+}
+
+function getHighlightsQuery(): Query {
   if (_query) return _query;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Parser = require("tree-sitter");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Satsuma = require("tree-sitter-satsuma");
-  const fs = require("fs");
-  const path = require("path");
-
-  // Resolve highlights.scm relative to tree-sitter-satsuma package
-  const satsumaDir = path.dirname(require.resolve("tree-sitter-satsuma/package.json"));
-  const queryPath = path.join(satsumaDir, "queries", "highlights.scm");
-  const querySource = fs.readFileSync(queryPath, "utf8");
-
-  _query = new Parser.Query(Satsuma, querySource);
-  return _query!;
+  if (!_highlightsSource) throw new Error("highlights.scm not loaded — call setHighlightsSource() first");
+  const language = getLanguage();
+  const TreeSitter = require("web-tree-sitter") as typeof import("web-tree-sitter");
+  _query = new TreeSitter.Query(language, _highlightsSource);
+  return _query;
 }
 
 // ---------- Public API ----------

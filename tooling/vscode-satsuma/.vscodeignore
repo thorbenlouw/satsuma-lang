@@ -13,4 +13,6 @@ server/tsconfig.json
 server/node_modules/**
 server/dist/**
 !server/dist/server.js
+!server/dist/tree-sitter-satsuma.wasm
+!server/dist/highlights.scm
 !dist/**

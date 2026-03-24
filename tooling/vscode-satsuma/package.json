@@ -5,6 +5,7 @@
   "license": "MIT",
   "version": "0.3.0",
   "publisher": "satsuma",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/thorbenlouw/satsuma-lang"

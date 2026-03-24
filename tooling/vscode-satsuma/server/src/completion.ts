@@ -2,7 +2,7 @@ import {
   CompletionItem,
   CompletionItemKind,
 } from "vscode-languageserver";
-import type { SyntaxNode, Tree } from "tree-sitter";
+import type { SyntaxNode, Tree } from "./parser-utils";
 import { child } from "./parser-utils";
 import {
   WorkspaceIndex,

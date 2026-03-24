@@ -337,14 +337,14 @@ satsuma agent-reference > .github/copilot-instructions.md   # feed to Copilot
 See [SATSUMA-CLI.md](SATSUMA-CLI.md) for full command reference.
 
 ### VS Code extension
-
+We haven't published the extension to the official VSCode Marketplace yet. 
 A pre-built `.vsix` is published on every merge to `main`. Download it from the
 [latest release](https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest)
 and install:
 
-```bash
-code --install-extension vscode-satsuma.vsix
-```
+* In VSCode, open the Command Palette (CMD-SHIFT-P) and choose 'Extensions: Install from VSIX...'
+* Navigate to where you downloaded the .vsix file and select it
+* You should see the Satsuma extension in the list of extensions now. Commands like 'Satsuma: Show Warnings' are available, and the syntax highlighting for `.stm` files should work. 
 
 To build from source or run the test suite:
 

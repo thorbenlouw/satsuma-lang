@@ -1,5 +1,5 @@
 import { FoldingRange, FoldingRangeKind } from "vscode-languageserver";
-import type { SyntaxNode, Tree } from "tree-sitter";
+import type { SyntaxNode, Tree } from "./parser-utils";
 
 /**
  * Foldable node types — mirrors folds.scm.
