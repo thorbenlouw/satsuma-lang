@@ -1,6 +1,6 @@
 # Feature 20 — `satsuma fmt`: Opinionated Formatter
 
-> **Status: NOT STARTED**
+> **Status: COMPLETE**
 
 ## Goal
 
