@@ -142,15 +142,38 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 reveal">
       <div class="max-w-3xl mx-auto">
         <h2 class="text-3xl font-bold text-charcoal mb-3">Installation</h2>
-        <p class="text-warm-gray mb-8">Download a prebuilt package from the <a href="https://github.com/thorbenlouw/satsuma-lang/releases/latest" target="_blank" class="text-orange hover:underline">latest GitHub release</a> and install globally with npm.</p>
+        <p class="text-warm-gray mb-8">Download a prebuilt package from the <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="text-orange hover:underline">__VERSION__ release</a> and install globally with npm.</p>
         <div class="terminal">
           <div class="terminal-header">
             <div class="terminal-dot red"></div>
             <div class="terminal-dot yellow"></div>
             <div class="terminal-dot green"></div>
-            <span class="text-xs text-gray-400 ml-2 font-mono">terminal</span>
+            <span class="text-xs text-gray-400 ml-2 font-mono">terminal — stable (__VERSION__)</span>
           </div>
           <pre>
+<span class="output"># macOS (Apple Silicon)</span>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/__VERSION_TAG__/satsuma-cli-darwin-arm64.tgz
+
+<span class="output"># macOS (Intel)</span>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/__VERSION_TAG__/satsuma-cli-darwin-x64.tgz
+
+<span class="output"># Linux (x64)</span>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/__VERSION_TAG__/satsuma-cli-linux-x64.tgz
+
+<span class="prompt">$</span> satsuma <span class="flag">--help</span>
+<span class="output">satsuma &lt;command&gt; [options]</span>
+<span class="output">16 commands available</span></pre>
+        </div>
+        <details class="mt-4 text-sm">
+          <summary class="cursor-pointer text-warm-gray hover:text-charcoal transition-colors font-medium">Latest unstable build (from main)</summary>
+          <div class="terminal mt-3">
+            <div class="terminal-header">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+              <span class="text-xs text-gray-400 ml-2 font-mono">terminal — unstable (latest)</span>
+            </div>
+            <pre>
 <span class="output"># macOS (Apple Silicon)</span>
 <span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-arm64.tgz
 
@@ -158,12 +181,9 @@
 <span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-x64.tgz
 
 <span class="output"># Linux (x64)</span>
-<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-linux-x64.tgz
-
-<span class="prompt">$</span> satsuma <span class="flag">--help</span>
-<span class="output">satsuma &lt;command&gt; [options]</span>
-<span class="output">16 commands available</span></pre>
-        </div>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-linux-x64.tgz</pre>
+          </div>
+        </details>
         <div class="mt-6 flex items-start gap-3 p-4 bg-peach rounded-xl">
           <svg class="w-5 h-5 text-orange flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <p class="text-sm text-charcoal">
@@ -723,13 +743,14 @@
           <h4 class="font-semibold text-charcoal mb-3">Community</h4>
           <ul class="space-y-2 text-sm text-warm-gray">
             <li><a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" class="hover:text-orange transition-colors">GitHub Repository</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="hover:text-orange transition-colors">Release Notes (__VERSION__)</a></li>
             <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" class="hover:text-orange transition-colors">Changelog</a></li>
             <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AGENT-CONTRIBUTIONS.md" target="_blank" class="hover:text-orange transition-colors">Contributing</a></li>
           </ul>
         </div>
       </div>
       <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-charcoal/5 text-sm text-warm-gray">
-        <p>v0.1.0 &middot; MIT License</p>
+        <p><a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="hover:text-orange transition-colors">__VERSION__</a> &middot; MIT License</p>
         <p class="mt-2 sm:mt-0">Made with care for the data community</p>
       </div>
     </div>
