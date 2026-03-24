@@ -1,6 +1,6 @@
 ---
 id: sl-lu7y
-status: open
+status: closed
 deps: [sl-zf33]
 links: []
 created: 2026-03-24T18:29:27Z
@@ -25,3 +25,9 @@ Implement formatting for mapping_block: source/target sub-blocks (single-line/mu
 - [ ] note sub-blocks within mappings formatted correctly
 - [ ] Tests for all mapping formatting patterns
 
+
+## Notes
+
+**2026-03-24T19:08:41Z**
+
+Cause: New feature. Fix: Implemented mapping formatting with source/target sub-blocks (single/multi-line), map_arrow, computed_arrow, nested_arrow, each/flatten blocks, pipe chains (inline/multi-line), map literals, arithmetic steps. 55 tests passing.
