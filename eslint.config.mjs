@@ -40,12 +40,25 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ignores: ["tooling/tree-sitter-satsuma/grammar.js"],
+    ignores: ["tooling/tree-sitter-satsuma/grammar.js", "site/**/*.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
       globals: {
         ...globals.node,
+      },
+    },
+    rules: {
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    },
+  },
+  {
+    files: ["site/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.browser,
       },
     },
     rules: {

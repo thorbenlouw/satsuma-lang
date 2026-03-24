@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examples — Satsuma</title>
+  <meta name="description" content="Explore 16 canonical Satsuma examples covering database migration, legacy modernization, enterprise integration, platform modelling, and governance.">
+  <meta property="og:title" content="Examples — Satsuma">
+  <meta property="og:description" content="Explore 16 canonical Satsuma examples covering database migration, legacy modernization, enterprise integration, platform modelling, and governance.">
+  <meta property="og:image" content="img/satsuma-logo-512.png">
+  <link rel="icon" type="image/png" href="img/satsuma-logo-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: { DEFAULT: '#F2913D', dark: '#D97726', light: '#F9B97A' },
+            green: { DEFAULT: '#5A9E6F', dark: '#3D7A52', light: '#7DBF92' },
+            cream: '#FFFAF5',
+            peach: '#FFF3E8',
+            charcoal: '#2D2A26',
+            'warm-gray': '#6B6560',
+            'code-bg': '#FEF7EE',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full bg-cream/90 backdrop-blur-md z-50 border-b border-orange-light/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2.5">
+          <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-8 w-8">
+          <span class="text-lg font-bold text-charcoal">Satsuma</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="nav-link text-sm font-medium">Home</a>
+          <a href="cli.html" class="nav-link text-sm font-medium">CLI</a>
+          <a href="vscode.html" class="nav-link text-sm font-medium">VS Code</a>
+          <a href="examples.html" class="nav-link text-sm font-medium">Examples</a>
+          <a href="learn.html" class="nav-link text-sm font-medium">Learn</a>
+          <a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-lg hover:bg-charcoal/90 transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+        <button id="menu-btn" class="md:hidden p-2 text-warm-gray">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+      <div id="mobile-menu" class="mobile-menu md:hidden">
+        <div class="pb-4 space-y-2">
+          <a href="index.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Home</a>
+          <a href="cli.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">CLI</a>
+          <a href="vscode.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">VS Code</a>
+          <a href="examples.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Examples</a>
+          <a href="learn.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Learn</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-32 pb-16 lg:pt-40 lg:pb-20">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="reveal">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-charcoal leading-tight mb-6">
+          Example
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange to-orange-dark">Gallery</span>
+        </h1>
+        <p class="text-lg text-warm-gray leading-relaxed max-w-2xl mx-auto mb-8">
+          16 canonical examples covering real-world data mapping scenarios. From legacy mainframe migrations to modern platform architectures, each example is a complete, parser-validated <code class="font-mono text-sm bg-white/60 px-1.5 py-0.5 rounded">.stm</code> file you can use as a starting point.
+        </p>
+        <div class="flex items-center justify-center gap-6 text-sm text-warm-gray">
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            16 examples
+          </span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+            5 categories
+          </span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-orange-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Parser-validated
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Tabs + Examples Grid -->
+  <section class="py-16 lg:py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Category Filter -->
+      <div class="reveal mb-12">
+        <div class="flex flex-wrap items-center justify-center gap-2" data-tab-group="examples">
+          <button class="tab-btn active" data-tab="all">All</button>
+          <button class="tab-btn" data-tab="database">Database Migration</button>
+          <button class="tab-btn" data-tab="legacy">Legacy Modernization</button>
+          <button class="tab-btn" data-tab="enterprise">Enterprise Integration</button>
+          <button class="tab-btn" data-tab="platform">Platform Modelling</button>
+          <button class="tab-btn" data-tab="governance">Governance &amp; Metrics</button>
+        </div>
+      </div>
+
+      <!-- Examples Grid -->
+      <div id="examples-grid" class="grid md:grid-cols-2 gap-6">
+
+        <!-- ==================== DATABASE MIGRATION ==================== -->
+
+        <!-- db-to-db.stm -->
+        <div class="example-item reveal" data-category="database">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Legacy Customer Migration</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/db-to-db.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">SQL Server 2008 to PostgreSQL 16 with PII handling, type mapping, enum normalization, and UUID generation for 2.4M customer records.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">database</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">PII</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">migration</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'customer migration'</span> {
+  <span class="keyword">source</span> { <span class="field">`legacy_sqlserver`</span> }
+  <span class="keyword">target</span> { <span class="field">`postgres_db`</span> }
+
+  CUST_ID <span class="operator">-></span> customer_id { <span class="function">uuid_v5</span>(<span class="string">"6ba7b810-..."</span>, CUST_ID) }
+  CUST_ID <span class="operator">-></span> legacy_customer_id
+
+  CUST_TYPE <span class="operator">-></span> customer_type {
+    <span class="keyword">map</span> {
+      R: <span class="string">"retail"</span>
+      B: <span class="string">"business"</span>
+      G: <span class="string">"government"</span>
+      null: <span class="string">"retail"</span>
+    }
+  }
+
+  FIRST_NM <span class="operator">-></span> first_name  { <span class="function">trim</span> | <span class="function">title_case</span> | <span class="function">null_if_empty</span> }
+  LAST_NM  <span class="operator">-></span> last_name   { <span class="function">trim</span> | <span class="function">title_case</span> | <span class="function">null_if_empty</span> }
+  EMAIL_ADDR <span class="operator">-></span> email { <span class="function">trim</span> | <span class="function">lowercase</span> | <span class="function">validate_email</span> | <span class="function">null_if_invalid</span> }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- sfdc_to_snowflake.stm -->
+        <div class="example-item reveal" data-category="database">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Salesforce to Snowflake</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/sfdc_to_snowflake.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Maps Sales Cloud Opportunity and Account objects into a Snowflake analytics warehouse with currency conversion and stage normalization.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">database</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">CRM</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">analytics</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'opportunity ingestion'</span> {
+  <span class="keyword">source</span> { <span class="field">`sfdc_opportunity`</span>, <span class="field">`fx_spot_rates`</span> }
+  <span class="keyword">target</span> { <span class="field">`snowflake_opps`</span> }
+
+  Id <span class="operator">-></span> opp_key
+  AccountId <span class="operator">-></span> account_key
+  Name <span class="operator">-></span> opportunity_name
+
+  Amount <span class="operator">-></span> amount_usd {
+    <span class="string">"Multiply by rate from `fx_spot_rates` using CurrencyIsoCode"</span>
+    | <span class="function">round</span>(2)
+  }
+
+  StageName <span class="operator">-></span> pipeline_stage {
+    <span class="keyword">map</span> {
+      Prospecting:   <span class="string">"top_funnel"</span>
+      Qualification: <span class="string">"mid_funnel"</span>
+      Closed_Won:    <span class="string">"closed_won"</span>
+      _:             <span class="string">"unknown"</span>
+    }
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== LEGACY MODERNIZATION ==================== -->
+
+        <!-- cobol-to-avro.stm -->
+        <div class="example-item reveal" data-category="legacy">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">COBOL to Avro</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/cobol-to-avro.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Transforms a mainframe COBOL customer master record into an Avro customer-change event for Kafka. Handles COMP-3 packed decimals, REDEFINES, and EBCDIC encoding.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">legacy</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">mainframe</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">streaming</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">cobol_customer_master</span> (<span class="annotation">format</span> copybook, <span class="annotation">encoding</span> ebcdic) {
+  CUST_ID      <span class="type">INTEGER</span>  (<span class="constraint">pic <span class="string">"9(10)"</span></span>, <span class="constraint">offset 1</span>, <span class="constraint">length 10</span>, <span class="constraint">required</span>)
+  CUST_TYPE    <span class="type">STRING</span>   (<span class="constraint">pic <span class="string">"X(1)"</span></span>, <span class="constraint">offset 11</span>, <span class="constraint">enum {R, B}</span>)
+
+  PERSONAL_NAME <span class="keyword">record</span> (<span class="constraint">offset 12</span>, <span class="constraint">length 40</span>) {
+    FIRST_NAME <span class="type">STRING</span>   (<span class="constraint">pic <span class="string">"X(20)"</span></span>, <span class="constraint">offset 12</span>)
+    LAST_NAME  <span class="type">STRING</span>   (<span class="constraint">pic <span class="string">"X(20)"</span></span>, <span class="constraint">offset 32</span>)
+  }
+
+  BUSINESS_NAME <span class="keyword">record</span> (<span class="constraint">redefines PERSONAL_NAME</span>, <span class="constraint">offset 12</span>) {
+    COMPANY_NAME <span class="type">STRING</span> (<span class="constraint">pic <span class="string">"X(40)"</span></span>, <span class="constraint">offset 12</span>)
+  }
+
+  ADDRESS <span class="keyword">record</span> (<span class="constraint">offset 52</span>, <span class="constraint">length 57</span>) {
+    STREET     <span class="type">STRING</span>   (<span class="constraint">pic <span class="string">"X(30)"</span></span>, <span class="constraint">offset 52</span>)
+    CITY       <span class="type">STRING</span>   (<span class="constraint">pic <span class="string">"X(20)"</span></span>, <span class="constraint">offset 82</span>)
+    STATE      <span class="type">STRING</span>   (<span class="constraint">pic <span class="string">"X(2)"</span></span>, <span class="constraint">offset 102</span>)
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- protobuf-to-parquet.stm -->
+        <div class="example-item reveal" data-category="legacy">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Protobuf to Parquet</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/protobuf-to-parquet.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Consumes protobuf commerce events from Kafka and produces session-level Parquet for analytics. Demonstrates group-by aggregation and error-handling defaults.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">protobuf</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">streaming</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">aggregation</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'session aggregation'</span> (<span class="annotation">group_by</span> session_id, <span class="annotation">on_error</span> log, <span class="annotation">error_threshold</span> 0.02) {
+  <span class="keyword">source</span> { <span class="field">`commerce_event_pb`</span> }
+  <span class="keyword">target</span> { <span class="field">`commerce_session_parquet`</span> }
+
+  session_id <span class="operator">-></span> session_id
+  user_id <span class="operator">-></span> user_id { <span class="function">first</span> }
+
+  event_ts <span class="operator">-></span> session_start_utc { <span class="function">min</span> | <span class="string">"Parse minimum timestamp as UTC."</span> }
+  event_ts <span class="operator">-></span> session_end_utc { <span class="function">max</span> | <span class="string">"Parse maximum timestamp as UTC."</span> }
+
+  source_system <span class="operator">-></span> source_system { <span class="function">first</span> }
+  country_code <span class="operator">-></span> country_code { <span class="function">first</span> | <span class="function">uppercase</span> }
+  Context.entry_channel <span class="operator">-></span> entry_channel { <span class="function">first</span> | <span class="function">lowercase</span> }
+  Context.device_type <span class="operator">-></span> device_type { <span class="function">first</span> | <span class="function">lowercase</span> }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== ENTERPRISE INTEGRATION ==================== -->
+
+        <!-- edi-to-json.stm -->
+        <div class="example-item reveal" data-category="enterprise">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">EDI to JSON</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/edi-to-json.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Transforms EDI 856 Despatch Advice fixed-length ASN messages into MFCS JSON Shipment format for warehouse ingestion. Documents data gaps and open issues.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">EDI</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">warehouse</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">fixed-length</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">edi_desadv</span> (<span class="annotation">format</span> fixed-length) {
+  BeginningOfMessage <span class="keyword">record</span> {
+    DOCNUM    <span class="type">CHAR(35)</span>         <span class="comment">// despatch advice number</span>
+    MESSGFUN  <span class="type">CHAR(3)</span>          <span class="comment">// message function: 9 = Original</span>
+  }
+
+  ShipmentRefs <span class="keyword">list_of record</span> (<span class="constraint">filter SHPRFQUAL == <span class="string">"SRN"</span></span>) {
+    SHPRFQUAL <span class="type">CHAR(3)</span>
+    SHIPREF   <span class="type">CHAR(70)</span>         <span class="comment">// shipment reference number</span>
+  }
+
+  POReferences <span class="keyword">list_of record</span> (<span class="constraint">filter REFQUAL == <span class="string">"ON"</span></span>) {
+    REFQUAL   <span class="type">CHAR(3)</span>
+    REFNUM    <span class="type">CHAR(35)</span>         <span class="comment">// PO Number + "/" + Dissection No</span>
+  }
+
+  LineItems <span class="keyword">list_of record</span> {
+    ITEMQTY   <span class="type">NUMBER(15)</span>       <span class="warning">//! 4 implied decimal places</span>
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- xml-to-parquet.stm -->
+        <div class="example-item reveal" data-category="enterprise">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">XML to Parquet</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/xml-to-parquet.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Ingests namespace-qualified commerce order XML from an integration bus and lands curated Parquet datasets for order headers and line items.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">XML</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">lakehouse</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">XPath</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">commerce_order</span> (
+  <span class="annotation">format</span> xml,
+  <span class="annotation">namespace</span> ord <span class="string">"http://example.com/commerce/order/v2"</span>,
+  <span class="annotation">namespace</span> com <span class="string">"http://example.com/common/v1"</span>
+) {
+  Order <span class="keyword">record</span> (<span class="constraint">xpath <span class="string">"/ord:OrderMessage/ord:Order"</span></span>) {
+    OrderId        <span class="type">STRING</span>  (<span class="constraint">xpath <span class="string">"ord:OrderId"</span></span>)
+    Channel        <span class="type">STRING</span>  (<span class="constraint">xpath <span class="string">"ord:Channel"</span></span>)
+    CurrencyCode   <span class="type">STRING</span>  (<span class="constraint">xpath <span class="string">"ord:Currency/com:Code"</span></span>)
+
+    Customer <span class="keyword">record</span> {
+      CustomerId   <span class="type">STRING</span>  (<span class="constraint">xpath <span class="string">"ord:CustomerId"</span></span>)
+      LoyaltyTier  <span class="type">STRING</span>  (<span class="constraint">xpath <span class="string">"ord:LoyaltyTier"</span></span>)
+    }
+
+    LineItems <span class="keyword">list_of record</span> (<span class="constraint">xpath <span class="string">"ord:LineItems/ord:LineItem"</span></span>) {
+      SKU          <span class="type">STRING</span>       (<span class="constraint">xpath <span class="string">"ord:SKU"</span></span>)
+      Quantity     <span class="type">INT32</span>        (<span class="constraint">xpath <span class="string">"ord:Quantity"</span></span>)
+      UnitPrice    <span class="type">DECIMAL(12,2)</span> (<span class="constraint">xpath <span class="string">"ord:UnitPrice"</span></span>)
+    }
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- sap-po-to-mfcs.stm -->
+        <div class="example-item reveal" data-category="enterprise">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">SAP PO to MFCS</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/sap-po-to-mfcs.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Maps SAP ERP purchase orders into Oracle MFCS ingestion contracts. A business-level mapping with explicit cross-reference resolution notes.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">ERP</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">SAP</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">manufacturing</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">sap_purchase_order</span> (<span class="annotation">format</span> sap) {
+  EBELN    <span class="type">STRING(10)</span>  (<span class="constraint">pk</span>, <span class="constraint">required</span>, <span class="constraint">note <span class="string">"SAP purchase order number"</span></span>)
+  BUKRS    <span class="type">STRING(4)</span>   (<span class="constraint">required</span>, <span class="constraint">note <span class="string">"Company code"</span></span>)
+  BSART    <span class="type">STRING(4)</span>   (<span class="constraint">required</span>, <span class="constraint">enum {NB, UB, FO, ZST}</span>)
+  LIFNR    <span class="type">STRING(10)</span>  (<span class="constraint">required</span>, <span class="constraint">note <span class="string">"Vendor account number"</span></span>)
+  WAERS    <span class="type">STRING(3)</span>   (<span class="constraint">required</span>, <span class="constraint">note <span class="string">"Document currency"</span></span>)
+
+  Items <span class="keyword">list_of record</span> {
+    EBELP    <span class="type">STRING(5)</span>   (<span class="constraint">pk</span>, <span class="constraint">required</span>, <span class="constraint">note <span class="string">"Item number"</span></span>)
+    MATNR    <span class="type">STRING(18)</span>  (<span class="constraint">note <span class="string">"Material number"</span></span>)
+    MENGE    <span class="type">DECIMAL(13,3)</span> (<span class="constraint">required</span>)
+    NETPR    <span class="type">DECIMAL(11,2)</span> (<span class="constraint">note <span class="string">"Net price"</span></span>)
+    MEINS    <span class="type">STRING(3)</span>   (<span class="constraint">required</span>, <span class="constraint">note <span class="string">"Unit of measure"</span></span>)
+    WERKS    <span class="type">STRING(4)</span>   (<span class="constraint">required</span>, <span class="constraint">note <span class="string">"Plant"</span></span>)
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- multi-source-hub.stm -->
+        <div class="example-item reveal" data-category="enterprise">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Multi-Source Hub</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/multi-source-hub.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Aggregates customer, payment, and inventory data from three independent sources and distributes to analytics, notification, and reporting targets.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">multi-source</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">hub</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">analytics</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'payments to analytics'</span> {
+  <span class="keyword">source</span> { <span class="field">`payment_gateway`</span> }
+  <span class="keyword">target</span> { <span class="field">`analytics_db`</span> }
+
+  amount <span class="operator">-></span> total_spent {
+    <span class="string">"Sum all transactions where status = 'completed',
+     grouped by customer_email.
+     Join to crm_system on email to resolve customer_id."</span>
+  }
+
+  <span class="operator">-></span> transaction_count {
+    <span class="string">"Count transactions where status = 'completed', per customer."</span>
+  }
+
+  <span class="operator">-></span> last_transaction_date {
+    <span class="string">"Max transaction timestamp where status = 'completed',
+     per customer."</span>
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- multi-source-join.stm -->
+        <div class="example-item reveal" data-category="enterprise">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Multi-Source Join</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/multi-source-join.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Combines CRM profiles, order history, and support tickets into a Customer 360 view. Demonstrates filtered multi-source joins with aggregation.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">multi-source</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">join</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">customer-360</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'customer 360'</span> {
+  <span class="keyword">source</span> {
+    <span class="field">`crm_customers`</span>      (<span class="constraint">filter <span class="string">"email NOT LIKE '%@test.internal'"</span></span>)
+    <span class="field">`order_transactions`</span>  (<span class="constraint">filter <span class="string">"status IN ('completed', 'refunded')"</span></span>)
+    <span class="field">`support_tickets`</span>     (<span class="constraint">filter <span class="string">"created_at >= date_sub(now(), 12 month)"</span></span>)
+    <span class="string">"Join crm_customers to order_transactions on customer_id (left join).
+     Join crm_customers to support_tickets on customer_id (left join)."</span>
+  }
+  <span class="keyword">target</span> { <span class="field">`customer_360`</span> }
+
+  crm_customers.customer_id <span class="operator">-></span> customer_id
+  crm_customers.email <span class="operator">-></span> email { <span class="function">trim</span> | <span class="function">lowercase</span> }
+  crm_customers.segment <span class="operator">-></span> segment { <span class="function">lowercase</span> }
+
+  <span class="operator">-></span> full_name {
+    <span class="string">"Concat first_name + ' ' + last_name. If both null, use company_name."</span>
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PLATFORM MODELLING ==================== -->
+
+        <!-- namespaces.stm -->
+        <div class="example-item reveal" data-category="platform">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Namespace Basics</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/namespaces.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Multi-team retail platform with POS, e-commerce, and warehouse namespaces. Shows global fragments, cross-namespace references, and hub loading.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">namespace</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">fragment</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">data-vault</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">fragment</span> <span class="field">audit_fields</span> {
+  created_at    <span class="type">TIMESTAMPTZ</span>  (<span class="constraint">required</span>)
+  updated_at    <span class="type">TIMESTAMPTZ</span>
+  etl_batch_id  <span class="type">VARCHAR(50)</span>
+}
+
+<span class="keyword">namespace</span> <span class="field">warehouse</span> (<span class="constraint">note <span class="string">"Data vault hub layer"</span></span>) {
+  <span class="keyword">schema</span> <span class="field">hub_store</span> {
+    store_hk     <span class="type">BINARY(32)</span>   (<span class="constraint">pk</span>)
+    store_id     <span class="type">VARCHAR(20)</span>  (<span class="constraint">required</span>, <span class="constraint">unique</span>)
+    ...<span class="field">audit_fields</span>
+  }
+
+  <span class="keyword">mapping</span> <span class="string">'load hub_store'</span> {
+    <span class="keyword">source</span> { <span class="field">`pos::stores`</span> }
+    <span class="keyword">target</span> { <span class="field">`hub_store`</span> }
+
+    STORE_ID <span class="operator">-></span> store_hk   { <span class="function">md5</span>(STORE_ID) }
+    STORE_ID <span class="operator">-></span> store_id
+    STORE_NAME <span class="operator">-></span> store_name { <span class="function">trim</span> }
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ns-platform.stm -->
+        <div class="example-item reveal" data-category="platform">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Enterprise Platform</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/ns-platform.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Full three-layer data platform with raw ingestion, Data Vault 2.0, and dimensional mart layers. Uses imports, cross-namespace mappings, and derived arrows.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">namespace</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">data-vault</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">import</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">import</span> { pos::stores, pos::transactions } <span class="keyword">from</span> <span class="import-path">"namespaces.stm"</span>
+<span class="keyword">import</span> { ecom::orders, ecom::customers } <span class="keyword">from</span> <span class="import-path">"namespaces.stm"</span>
+
+<span class="keyword">transform</span> <span class="field">dv_hash_key</span> {
+  <span class="function">trim</span> | <span class="function">lowercase</span> | <span class="function">md5</span>
+}
+
+<span class="keyword">namespace</span> <span class="field">vault</span> (<span class="constraint">note <span class="string">"Data Vault 2.0 — hubs, links, and satellites"</span></span>) {
+  <span class="keyword">schema</span> <span class="field">hub_contact</span> {
+    contact_hk   <span class="type">BINARY(32)</span>   (<span class="constraint">pk</span>)
+    contact_bk   <span class="type">VARCHAR(36)</span>  (<span class="constraint">required</span>, <span class="constraint">unique</span>)
+    ...<span class="field">standard_metadata</span>
+  }
+
+  <span class="keyword">schema</span> <span class="field">sat_contact_details</span> (<span class="constraint">note <span class="string">"Contact PII satellite"</span></span>) {
+    contact_hk   <span class="type">BINARY(32)</span>   (<span class="constraint">pk</span>, <span class="constraint">ref hub_contact.contact_hk</span>)
+    load_ts      <span class="type">TIMESTAMPTZ</span>  (<span class="constraint">pk</span>)
+    email        <span class="type">VARCHAR(255)</span> (<span class="constraint">pii</span>)
+    phone        <span class="type">VARCHAR(30)</span>  (<span class="constraint">pii</span>)
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ns-merging.stm -->
+        <div class="example-item reveal" data-category="platform">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Namespace Merging</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/ns-merging.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Same namespace appearing multiple times in one file with cross-namespace references between merged blocks. Tests global shadowing patterns.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">namespace</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">merging</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">cross-ref</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">namespace</span> <span class="field">staging</span> (<span class="constraint">note <span class="string">"Cleaned and conformed staging area"</span></span>) {
+  <span class="comment">// Map HR employees to staging — source is in merged namespace block</span>
+  <span class="keyword">mapping</span> <span class="string">'stage employees'</span> {
+    <span class="keyword">source</span> { <span class="field">`source::hr_employees`</span> }
+    <span class="keyword">target</span> { <span class="field">`stg_employees`</span> }
+
+    employee_id <span class="operator">-></span> employee_hk  { <span class="field">hash_key</span> }
+    employee_id <span class="operator">-></span> employee_id
+    full_name   <span class="operator">-></span> full_name    { <span class="field">clean_string</span> }
+    email       <span class="operator">-></span> email        { <span class="function">trim</span> | <span class="function">lowercase</span> }
+    department  <span class="operator">-></span> department   { <span class="field">clean_string</span> }
+
+    <span class="operator">-></span> is_active {
+      <span class="string">"True if no termination record exists in HR system"</span>
+    }
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- common.stm -->
+        <div class="example-item reveal" data-category="platform">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Shared Fragments</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/common.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Library file with reusable lookup schemas (country codes, FX rates, product catalog) and shared fragments for addresses and audit columns.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">fragment</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">lookup</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">library</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">country_codes</span> (<span class="constraint">note <span class="string">"ISO 3166 country code mapping"</span></span>) {
+  alpha2  <span class="type">STRING(2)</span>    (<span class="constraint">pk</span>)
+  alpha3  <span class="type">STRING(3)</span>
+  name    <span class="type">STRING(100)</span>
+}
+
+<span class="keyword">schema</span> <span class="field">currency_rates</span> (<span class="constraint">note <span class="string">"Daily FX rates"</span></span>) {
+  from_ccy  <span class="type">ISO-4217</span>       (<span class="constraint">pk</span>)
+  to_ccy    <span class="type">ISO-4217</span>       (<span class="constraint">pk</span>)
+  rate      <span class="type">DECIMAL(18,8)</span>
+  as_of     <span class="type">DATE</span>
+}
+
+<span class="keyword">fragment</span> <span class="string">'address fields'</span> {
+  line1        <span class="type">STRING(200)</span>  (<span class="constraint">required</span>)
+  line2        <span class="type">STRING(200)</span>
+  city         <span class="type">STRING(100)</span>  (<span class="constraint">required</span>)
+  state        <span class="type">STRING(50)</span>
+  postal_code  <span class="type">STRING(20)</span>   (<span class="constraint">required</span>)
+  country      <span class="type">ISO-3166-a2</span>  (<span class="constraint">required</span>)
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== GOVERNANCE & METRICS ==================== -->
+
+        <!-- filter-flatten-governance.stm -->
+        <div class="example-item reveal" data-category="governance">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Governance Patterns</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/filter-flatten-governance.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Demonstrates scalar list fields, filtered and flattened lists, and governance metadata with classification, retention, and PII annotations.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">governance</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">filter</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">flatten</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">order_events</span> (
+  <span class="annotation">classification</span> <span class="string">"INTERNAL"</span>
+) {
+  event_id      <span class="type">UUID</span>          (<span class="constraint">pk</span>, <span class="constraint">required</span>)
+  event_time    <span class="type">TIMESTAMPTZ</span>   (<span class="constraint">required</span>)
+  order_status  <span class="type">STRING(20)</span>    (<span class="constraint">enum {completed, pending, failed, refunded}</span>)
+
+  customer <span class="keyword">record</span> {
+    customer_id <span class="type">UUID</span>          (<span class="constraint">required</span>)
+    email       <span class="type">STRING(255)</span>   (<span class="constraint">pii</span>, <span class="annotation">classification</span> <span class="string">"RESTRICTED"</span>, <span class="annotation">retention</span> <span class="string">"3y"</span>)
+    tier        <span class="type">STRING(20)</span>    (<span class="constraint">enum {standard, silver, gold, platinum}</span>)
+  }
+
+  promo_codes <span class="keyword">list_of</span> <span class="type">STRING</span>
+  tag_ids     <span class="keyword">list_of</span> <span class="type">INT</span>    (<span class="annotation">classification</span> <span class="string">"INTERNAL"</span>)
+
+  line_items <span class="keyword">list_of record</span> (<span class="constraint">filter item_status != <span class="string">"cancelled"</span></span>) {
+    sku         <span class="type">STRING(30)</span>    (<span class="constraint">required</span>)
+    quantity    <span class="type">INT</span>           (<span class="constraint">required</span>)
+    unit_price  <span class="type">DECIMAL(12,2)</span> (<span class="constraint">required</span>)
+  }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- metrics.stm -->
+        <div class="example-item reveal" data-category="governance">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Metric Definitions</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/metrics.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Business metric specifications for MRR, CLV, churn rate, and conversion rate. Terminal lineage nodes with grain, slice, and filter definitions.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">metric</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">analytics</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">lineage</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">metric</span> <span class="field">monthly_recurring_revenue</span> <span class="string">"MRR"</span> (
+  <span class="annotation">source</span> fact_subscriptions,
+  <span class="annotation">grain</span> monthly,
+  <span class="annotation">slice</span> {customer_segment, product_line, region},
+  <span class="annotation">filter</span> <span class="string">"status = 'active' AND is_trial = false"</span>
+) {
+  value  <span class="type">DECIMAL(14,2)</span>  (<span class="constraint">measure additive</span>)
+}
+
+<span class="keyword">metric</span> <span class="field">churn_rate</span> (
+  <span class="annotation">source</span> {fact_subscriptions, dim_customer},
+  <span class="annotation">grain</span> monthly,
+  <span class="annotation">slice</span> {segment, region, product_line}
+) {
+  value  <span class="type">DECIMAL(5,4)</span>  (<span class="constraint">measure non_additive</span>)
+}
+
+<span class="keyword">metric</span> <span class="field">customer_lifetime_value</span> <span class="string">"CLV"</span> (
+  <span class="annotation">source</span> {fact_orders, dim_customer},
+  <span class="annotation">slice</span> {acquisition_channel, segment, cohort_year}
+) {
+  value          <span class="type">DECIMAL(14,2)</span>  (<span class="constraint">measure non_additive</span>)
+  order_count    <span class="type">INTEGER</span>        (<span class="constraint">measure additive</span>)
+  avg_order_value <span class="type">DECIMAL(12,2)</span> (<span class="constraint">measure non_additive</span>)
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- metric_sources.stm -->
+        <div class="example-item reveal" data-category="governance">
+          <div class="border border-charcoal/10 rounded-xl overflow-hidden hover:border-orange-light/50 transition-colors bg-cream/50">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-bold text-charcoal">Metric Sources</h3>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/metric_sources.stm" target="_blank" rel="noopener"
+                   class="text-warm-gray hover:text-orange transition-colors flex-shrink-0 ml-3" title="View full file on GitHub">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+              </div>
+              <p class="text-sm text-warm-gray mb-4">Fact and dimension tables referenced by metric definitions. Maps the underlying source schemas for subscriptions, orders, opportunities, and sessions.</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">metric</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">fact-table</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-peach text-orange-dark">dimension</span>
+              </div>
+              <button class="example-toggle inline-flex items-center gap-1.5 text-sm font-medium text-orange hover:text-orange-dark transition-colors">
+                View snippet
+                <svg class="w-4 h-4 arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+            <div class="example-content">
+              <div class="code-block rounded-none border-x-0 border-b-0">
+                <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">fact_subscriptions</span> (<span class="constraint">note <span class="string">"Active and historical subscription records"</span></span>) {
+  subscription_id <span class="type">STRING(36)</span>   (<span class="constraint">pk</span>)
+  customer_id     <span class="type">STRING(36)</span>   (<span class="constraint">ref dim_customer.customer_id</span>)
+  product_line    <span class="type">STRING(50)</span>
+  amount          <span class="type">DECIMAL(14,2)</span>
+  billing_period  <span class="type">STRING(10)</span>   (<span class="constraint">enum {monthly, quarterly, annual}</span>)
+  status          <span class="type">STRING(20)</span>   (<span class="constraint">enum {active, cancelled, trial}</span>)
+  started_at      <span class="type">TIMESTAMPTZ</span>
+  cancelled_at    <span class="type">TIMESTAMPTZ</span>
+}
+
+<span class="keyword">schema</span> <span class="field">fact_orders</span> (<span class="constraint">note <span class="string">"Commerce order header records"</span></span>) {
+  order_id        <span class="type">STRING(36)</span>   (<span class="constraint">pk</span>)
+  customer_id     <span class="type">STRING(36)</span>   (<span class="constraint">ref dim_customer.customer_id</span>)
+  order_date      <span class="type">DATE</span>
+  total_amount    <span class="type">DECIMAL(14,2)</span>
+  is_gift         <span class="type">BOOLEAN</span>      (<span class="constraint">default false</span>)
+  loyalty_tier    <span class="type">STRING(20)</span>
+}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /examples-grid -->
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16 lg:py-20 gradient-hero">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
+      <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Ready to write your own?</h2>
+      <p class="text-lg text-warm-gray mb-8 max-w-xl mx-auto">
+        Every example above is parser-validated and ready to use as a template. Get started with the language guide or explore the CLI.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="learn.html" class="inline-flex items-center gap-2 px-6 py-3 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl hover:shadow-orange/30 transition-all">
+          Learn Satsuma
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+        <a href="cli.html" class="inline-flex items-center gap-2 px-6 py-3 bg-white text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+          CLI Reference
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-charcoal/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div>
+          <div class="flex items-center gap-2.5 mb-4">
+            <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-7 w-7">
+            <span class="text-lg font-bold text-charcoal">Satsuma</span>
+          </div>
+          <p class="text-sm text-warm-gray leading-relaxed">The data mapping language that humans can read and machines can parse.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Tooling</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="cli.html" class="hover:text-orange transition-colors">CLI Reference</a></li>
+            <li><a href="vscode.html" class="hover:text-orange transition-colors">VS Code Extension</a></li>
+            <li><a href="examples.html" class="hover:text-orange transition-colors">Example Gallery</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Learn</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="learn.html" class="hover:text-orange transition-colors">Getting Started</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/BA-TUTORIAL.md" target="_blank" class="hover:text-orange transition-colors">BA Tutorial</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-V2-SPEC.md" target="_blank" class="hover:text-orange transition-colors">Language Spec</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Community</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" class="hover:text-orange transition-colors">GitHub Repository</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" class="hover:text-orange transition-colors">Changelog</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AGENT-CONTRIBUTIONS.md" target="_blank" class="hover:text-orange transition-colors">Contributing</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-charcoal/5 text-sm text-warm-gray">
+        <p>v0.1.0 &middot; MIT License</p>
+        <p class="mt-2 sm:mt-0">Made with care for the data community</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+    // Category filtering for examples grid
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabGroup = document.querySelector('[data-tab-group="examples"]');
+      if (!tabGroup) return;
+
+      const btns = tabGroup.querySelectorAll('.tab-btn');
+      const items = document.querySelectorAll('.example-item');
+
+      btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const category = btn.dataset.tab;
+
+          // Update active tab
+          btns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          // Filter items
+          items.forEach(item => {
+            if (category === 'all' || item.dataset.category === category) {
+              item.style.display = '';
+            } else {
+              item.style.display = 'none';
+            }
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>

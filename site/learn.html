@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn Satsuma &mdash; Choose Your Path</title>
+  <meta name="description" content="Learning resources for Satsuma, the data mapping language. Guides for business analysts, data engineers, integration engineers, and AI automation.">
+  <meta property="og:title" content="Learn Satsuma &mdash; Choose Your Path">
+  <meta property="og:description" content="Role-based learning paths, documentation hub, and quick-start guide for the Satsuma data mapping language.">
+  <meta property="og:image" content="img/satsuma-logo-512.png">
+  <link rel="icon" type="image/png" href="img/satsuma-logo-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: { DEFAULT: '#F2913D', dark: '#D97726', light: '#F9B97A' },
+            green: { DEFAULT: '#5A9E6F', dark: '#3D7A52', light: '#7DBF92' },
+            cream: '#FFFAF5',
+            peach: '#FFF3E8',
+            charcoal: '#2D2A26',
+            'warm-gray': '#6B6560',
+            'code-bg': '#FEF7EE',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full bg-cream/90 backdrop-blur-md z-50 border-b border-orange-light/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2.5">
+          <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-8 w-8">
+          <span class="text-lg font-bold text-charcoal">Satsuma</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="nav-link text-sm font-medium">Home</a>
+          <a href="cli.html" class="nav-link text-sm font-medium">CLI</a>
+          <a href="vscode.html" class="nav-link text-sm font-medium">VS Code</a>
+          <a href="examples.html" class="nav-link text-sm font-medium">Examples</a>
+          <a href="learn.html" class="nav-link text-sm font-medium">Learn</a>
+          <a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-lg hover:bg-charcoal/90 transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+        <button id="menu-btn" class="md:hidden p-2 text-warm-gray">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+      <div id="mobile-menu" class="mobile-menu md:hidden">
+        <div class="pb-4 space-y-2">
+          <a href="index.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Home</a>
+          <a href="cli.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">CLI</a>
+          <a href="vscode.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">VS Code</a>
+          <a href="examples.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Examples</a>
+          <a href="learn.html" class="block px-3 py-2 text-sm font-medium text-orange rounded-lg bg-peach">Learn</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-32 pb-16 lg:pt-40 lg:pb-24">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-charcoal leading-tight mb-6">
+        Learn
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange to-orange-dark">Satsuma</span>
+      </h1>
+      <p class="text-lg text-warm-gray leading-relaxed max-w-2xl mx-auto mb-4">
+        Choose a path based on your role. Whether you review mappings, build pipelines, or automate with AI, there is a learning track for you.
+      </p>
+      <div class="flex flex-wrap justify-center gap-3 mt-8 text-sm">
+        <a href="#quick-start" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Quick Start</a>
+        <a href="#business-analysts" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Business Analysts</a>
+        <a href="#data-engineers" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Data Engineers</a>
+        <a href="#integration-engineers" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Integration</a>
+        <a href="#governance" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Governance</a>
+        <a href="#ai-automation" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">AI &amp; Automation</a>
+        <a href="#architects" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Architects</a>
+        <a href="#docs" class="px-4 py-2 bg-white/80 text-charcoal font-medium rounded-full border border-charcoal/10 hover:border-orange transition-colors">Documentation</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quick-start" class="py-20 lg:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange/10 text-orange-dark text-sm font-medium mb-4">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Quick Start
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Up and running in 3 steps</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">From zero to your first validated mapping in under two minutes.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 reveal">
+        <!-- Step 1 -->
+        <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="absolute -top-4 left-8 w-8 h-8 gradient-orange rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+          <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Install the CLI</h3>
+          <div class="code-block text-sm mb-4">
+            <pre><code class="font-mono text-charcoal">npm install -g satsuma-cli</code></pre>
+          </div>
+          <p class="text-warm-gray text-sm leading-relaxed">Requires Node.js 18+. The CLI includes the tree-sitter parser, all 16 commands, and the AI agent reference.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="absolute -top-4 left-8 w-8 h-8 gradient-green rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+          <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Create your first <code class="font-mono text-orange">.stm</code> file</h3>
+          <div class="code-block text-sm mb-4">
+            <pre><code class="font-mono"><span class="text-orange">schema</span> <span class="text-charcoal">source</span> {
+  name  <span class="text-green">STRING</span>
+}
+
+<span class="text-orange">schema</span> <span class="text-charcoal">target</span> {
+  full_name  <span class="text-green">STRING</span>
+}
+
+<span class="text-orange">mapping</span> {
+  <span class="text-orange">source</span> { <span class="text-charcoal">`source`</span> }
+  <span class="text-orange">target</span> { <span class="text-charcoal">`target`</span> }
+
+  name <span class="text-warm-gray">-></span> full_name
+}</code></pre>
+          </div>
+          <p class="text-warm-gray text-sm leading-relaxed">Define schemas, then connect them with a mapping block. The <code class="font-mono text-orange">-></code> arrow reads as "maps to".</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="relative bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="absolute -top-4 left-8 w-8 h-8 bg-charcoal rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+          <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Validate with the CLI</h3>
+          <div class="code-block text-sm mb-4">
+            <pre><code class="font-mono text-charcoal">satsuma validate my-mapping.stm</code></pre>
+          </div>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3">The parser checks syntax, reference resolution, and structural correctness. Zero errors means you are ready to go.</p>
+          <a href="cli.html" class="text-orange text-sm font-semibold hover:underline">Explore all 16 commands &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Role Pathways -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Choose your learning path</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Every role interacts with data mappings differently. Find the resources that match your workflow.</p>
+      </div>
+
+      <!-- Business Analysts -->
+      <div id="business-analysts" class="scroll-mt-24 mb-16 reveal">
+        <div class="bg-white rounded-2xl p-8 lg:p-10 border border-charcoal/5 hover:border-orange-light/50 transition-colors">
+          <div class="flex items-start gap-5 mb-6">
+            <div class="w-14 h-14 gradient-orange rounded-2xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-charcoal mb-1">Business Analysts</h3>
+              <p class="text-warm-gray">Read, review, and sign off on data mappings without learning to code.</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                Primary Resource
+              </h4>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/BA-TUTORIAL.md" target="_blank" rel="noopener"
+                 class="inline-flex items-center gap-2 px-4 py-2.5 bg-peach text-orange-dark font-medium rounded-lg hover:bg-orange/10 transition-colors text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                BA Tutorial
+              </a>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                Key Concepts
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Schemas and field definitions</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Mapping blocks and arrows</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Natural language descriptions</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Metadata and annotations</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                What You'll Learn
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> Reading and reviewing mappings</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> Reviewing changes in pull requests</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> Understanding data lineage</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> Validating business rules</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Engineers -->
+      <div id="data-engineers" class="scroll-mt-24 mb-16 reveal">
+        <div class="bg-white rounded-2xl p-8 lg:p-10 border border-charcoal/5 hover:border-green-light/50 transition-colors">
+          <div class="flex items-start gap-5 mb-6">
+            <div class="w-14 h-14 gradient-green rounded-2xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-charcoal mb-1">Data Engineers</h3>
+              <p class="text-warm-gray">Build, validate, and trace data pipelines with parser-backed tooling.</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                Primary Resources
+              </h4>
+              <div class="space-y-2">
+                <a href="cli.html" class="inline-flex items-center gap-2 px-4 py-2.5 bg-green/10 text-green-dark font-medium rounded-lg hover:bg-green/20 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  CLI Reference (site)
+                </a>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-CLI.md" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-green/10 text-green-dark font-medium rounded-lg hover:bg-green/20 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  CLI Reference (GitHub)
+                </a>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Key Workflows
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">validate</code> Check syntax and references</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">lint</code> Enforce conventions with auto-fix</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">lineage</code> Trace field-level data flow</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">graph</code> Visualize workspace structure</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">diff</code> Compare mapping versions</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                Example Walkthroughs
+              </h4>
+              <p class="text-sm text-warm-gray mb-3">The examples gallery includes real-world patterns: multi-source joins, SCD Type 2, Kimball star schemas, and more.</p>
+              <a href="examples.html" class="inline-flex items-center gap-2 text-green font-semibold text-sm hover:underline">
+                Browse examples &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Integration Engineers -->
+      <div id="integration-engineers" class="scroll-mt-24 mb-16 reveal">
+        <div class="bg-white rounded-2xl p-8 lg:p-10 border border-charcoal/5 hover:border-orange-light/50 transition-colors">
+          <div class="flex items-start gap-5 mb-6">
+            <div class="w-14 h-14 bg-gradient-to-br from-orange to-green rounded-2xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-charcoal mb-1">Integration Engineers</h3>
+              <p class="text-warm-gray">Map complex interchange formats: EDI, XML, COBOL copybooks, Protobuf, and more.</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Format Focus
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> EDI X12 / HIPAA</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> COBOL Copybook</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> HL7 / DICOM</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> ISO 20022 / SWIFT MT</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> FIX Protocol / Protobuf</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Resources
+              </h4>
+              <div class="space-y-2">
+                <a href="examples.html" class="inline-flex items-center gap-2 px-4 py-2.5 bg-peach text-orange-dark font-medium rounded-lg hover:bg-orange/10 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                  Examples Gallery
+                </a>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-peach text-orange-dark font-medium rounded-lg hover:bg-orange/10 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  Schema Format Conventions
+                </a>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                Why Satsuma?
+              </h4>
+              <p class="text-sm text-warm-gray leading-relaxed">Satsuma handles deeply nested structures, repeating segments, and format-specific idioms natively. Each schema format convention documents how to represent the format's structures in Satsuma.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Governance & Audit -->
+      <div id="governance" class="scroll-mt-24 mb-16 reveal">
+        <div class="bg-white rounded-2xl p-8 lg:p-10 border border-charcoal/5 hover:border-green-light/50 transition-colors">
+          <div class="flex items-start gap-5 mb-6">
+            <div class="w-14 h-14 bg-green/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-7 h-7 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-charcoal mb-1">Governance &amp; Audit</h3>
+              <p class="text-warm-gray">Trace every field from source to target. PII tags, encryption markers, and lineage are structural.</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Focus Areas
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> PII tags and sensitivity markers</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> End-to-end lineage tracing</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> Audit trail workflows</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-green rounded-full flex-shrink-0"></span> Regulatory compliance</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Key Commands
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">lineage</code> Trace data flow end-to-end</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">where-used</code> Find all consumers of a field</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">find --tag</code> Search by metadata tag</li>
+                <li class="flex items-center gap-2"><code class="font-mono text-xs bg-green/10 text-green-dark px-1.5 py-0.5 rounded">graph</code> Dependency visualisation</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                Example
+              </h4>
+              <p class="text-sm text-warm-gray mb-3">The <strong>filter-flatten-governance</strong> example demonstrates PII tagging, encryption metadata, and compliance-ready mapping patterns.</p>
+              <a href="examples.html" class="inline-flex items-center gap-2 text-green font-semibold text-sm hover:underline">
+                View governance examples &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI & Automation -->
+      <div id="ai-automation" class="scroll-mt-24 mb-16 reveal">
+        <div class="bg-white rounded-2xl p-8 lg:p-10 border border-charcoal/5 hover:border-charcoal/20 transition-colors">
+          <div class="flex items-start gap-5 mb-6">
+            <div class="w-14 h-14 bg-charcoal rounded-2xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-charcoal mb-1">AI &amp; Automation Engineers</h3>
+              <p class="text-warm-gray">Build reliable AI workflows with a constrained grammar that LLMs can generate and validate.</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                Primary Resource
+              </h4>
+              <div class="space-y-2">
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AI-AGENT-REFERENCE.md" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-charcoal/5 text-charcoal font-medium rounded-lg hover:bg-charcoal/10 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  AI Agent Reference
+                </a>
+              </div>
+              <div class="mt-3 code-block text-xs">
+                <pre><code class="font-mono text-charcoal">satsuma agent-reference</code></pre>
+              </div>
+              <p class="text-xs text-warm-gray mt-2">Also available via the CLI for piping into agent prompts.</p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Key Features
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-charcoal rounded-full flex-shrink-0"></span> Compact EBNF grammar (~500 tokens)</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-charcoal rounded-full flex-shrink-0"></span> Deterministic parsing via tree-sitter</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-charcoal rounded-full flex-shrink-0"></span> Validation-in-the-loop workflows</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-charcoal rounded-full flex-shrink-0"></span> LLMs generate valid Satsuma &gt;90%</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Hybrid Workflows
+              </h4>
+              <p class="text-sm text-warm-gray leading-relaxed">Use AI to generate initial mappings from source documentation, then validate with the CLI, review with humans, and iterate. The constrained grammar means fewer hallucinations and reliable round-tripping.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enterprise Architects -->
+      <div id="architects" class="scroll-mt-24 reveal">
+        <div class="bg-white rounded-2xl p-8 lg:p-10 border border-charcoal/5 hover:border-orange-light/50 transition-colors">
+          <div class="flex items-start gap-5 mb-6">
+            <div class="w-14 h-14 bg-orange/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-7 h-7 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-charcoal mb-1">Enterprise Architects</h3>
+              <p class="text-warm-gray">Model entire data platforms with namespaces, imports, and workspace-wide analysis.</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Focus Areas
+              </h4>
+              <ul class="space-y-1.5 text-sm text-warm-gray">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Namespace-scoped platform models</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Cross-file imports and references</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Workspace-wide dependency graphs</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange rounded-full flex-shrink-0"></span> Multi-team mapping ownership</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                Resources
+              </h4>
+              <div class="space-y-2">
+                <a href="examples.html" class="inline-flex items-center gap-2 px-4 py-2.5 bg-peach text-orange-dark font-medium rounded-lg hover:bg-orange/10 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                  Namespace Examples
+                </a>
+                <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/examples/ns-platform.stm" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-peach text-orange-dark font-medium rounded-lg hover:bg-orange/10 transition-colors text-sm w-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  ns-platform.stm
+                </a>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-semibold text-charcoal mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                Platform Modelling
+              </h4>
+              <p class="text-sm text-warm-gray leading-relaxed">Use a platform entry point file with <code class="font-mono text-xs bg-orange/10 text-orange-dark px-1.5 py-0.5 rounded">import</code> statements to pull definitions across domains. Then use <code class="font-mono text-xs bg-orange/10 text-orange-dark px-1.5 py-0.5 rounded">satsuma graph</code> to visualize the whole platform.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation Hub -->
+  <section id="docs" class="py-20 lg:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green/10 text-green-dark text-sm font-medium mb-4">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Documentation Hub
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">All documentation in one place</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Specifications, references, tooling guides, and technical deep-dives.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 reveal">
+
+        <!-- Language & Specification -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-12 h-12 gradient-orange rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-4">Language &amp; Specification</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-V2-SPEC.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Language Specification (v2)
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AI-AGENT-REFERENCE.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                AI Agent Reference
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Changelog
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tooling -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-12 h-12 gradient-green rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-4">Tooling</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-CLI.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-green transition-colors group">
+                <svg class="w-4 h-4 text-green/60 group-hover:text-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                CLI Reference
+              </a>
+            </li>
+            <li>
+              <a href="vscode.html"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-green transition-colors group">
+                <svg class="w-4 h-4 text-green/60 group-hover:text-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                VS Code Extension
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/docs/using-satsuma-without-cli.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-green transition-colors group">
+                <svg class="w-4 h-4 text-green/60 group-hover:text-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Using Satsuma Without the CLI
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Technical Reference -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-12 h-12 bg-charcoal rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-4">Technical Reference</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/docs/ast-mapping.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-charcoal transition-colors group">
+                <svg class="w-4 h-4 text-charcoal/40 group-hover:text-charcoal flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                AST Mapping
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/docs/tree-sitter-ambiguities.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-charcoal transition-colors group">
+                <svg class="w-4 h-4 text-charcoal/40 group-hover:text-charcoal flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Tree-sitter Ambiguities
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/docs/tree-sitter-precedence.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-charcoal transition-colors group">
+                <svg class="w-4 h-4 text-charcoal/40 group-hover:text-charcoal flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Tree-sitter Precedence
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Schema Format Conventions -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-12 h-12 bg-gradient-to-br from-orange to-green rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-4">Schema Format Conventions</h3>
+          <ul class="space-y-2">
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/asn1" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>ASN.1</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/cobol-copybook" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>COBOL Copybook</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/dicom" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>DICOM</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/fix-protocol" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>FIX Protocol</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/hl7" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-green/60 rounded-full flex-shrink-0"></span>HL7</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/icalendar" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-green/60 rounded-full flex-shrink-0"></span>iCalendar</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/iso20022" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-green/60 rounded-full flex-shrink-0"></span>ISO 20022</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/iso8583" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-green/60 rounded-full flex-shrink-0"></span>ISO 8583</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/marc21" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>MARC21</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/swift-mt" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>SWIFT MT</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/conventions-for-schema-formats/x12-hipaa" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors"><span class="w-1.5 h-1.5 bg-orange/60 rounded-full flex-shrink-0"></span>X12 / HIPAA</a></li>
+          </ul>
+        </div>
+
+        <!-- Data Modelling Patterns -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-4">Data Modelling Patterns</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/data-modelling/kimball" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Kimball Dimensional Modelling
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/docs/data-modelling/datavault" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Data Vault
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- BA Tutorial -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-12 h-12 gradient-orange rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-4">Tutorials</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/BA-TUTORIAL.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Business Analyst Tutorial
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/PROJECT-OVERVIEW.md" target="_blank" rel="noopener"
+                 class="flex items-center gap-2 text-sm text-warm-gray hover:text-orange transition-colors group">
+                <svg class="w-4 h-4 text-orange/60 group-hover:text-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Project Overview &amp; Roadmap
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
+      <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-20 w-20 mx-auto mb-8 opacity-80">
+      <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Ready to start mapping?</h2>
+      <p class="text-lg text-warm-gray mb-8 max-w-2xl mx-auto">
+        Satsuma is open source and free. Install the CLI and write your first mapping in minutes.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="examples.html" class="inline-flex items-center gap-2 px-8 py-3.5 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl transition-all">
+          Browse Examples
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+        <a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-charcoal/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div>
+          <div class="flex items-center gap-2.5 mb-4">
+            <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-7 w-7">
+            <span class="text-lg font-bold text-charcoal">Satsuma</span>
+          </div>
+          <p class="text-sm text-warm-gray leading-relaxed">The data mapping language that humans can read and machines can parse.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Tooling</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="cli.html" class="hover:text-orange transition-colors">CLI Reference</a></li>
+            <li><a href="vscode.html" class="hover:text-orange transition-colors">VS Code Extension</a></li>
+            <li><a href="examples.html" class="hover:text-orange transition-colors">Example Gallery</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Learn</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="learn.html" class="hover:text-orange transition-colors">Getting Started</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/BA-TUTORIAL.md" target="_blank" class="hover:text-orange transition-colors">BA Tutorial</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-V2-SPEC.md" target="_blank" class="hover:text-orange transition-colors">Language Spec</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Community</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" class="hover:text-orange transition-colors">GitHub Repository</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" class="hover:text-orange transition-colors">Changelog</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AGENT-CONTRIBUTIONS.md" target="_blank" class="hover:text-orange transition-colors">Contributing</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-charcoal/5 text-sm text-warm-gray">
+        <p>v0.1.0 &middot; MIT License</p>
+        <p class="mt-2 sm:mt-0">Made with care for the data community</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
