@@ -279,11 +279,36 @@ function showTooltip(e: MouseEvent, node: GraphNode): void {
     tooltipEl.className = "tooltip";
     document.body.appendChild(tooltipEl);
   }
-  const lines: string[] = [`<b>${node.kind}</b> ${node.id}`];
-  if (node.fields) lines.push(`${node.fields.length} field(s)`);
-  if (node.sources) lines.push(`sources: ${node.sources.join(", ")}`);
-  if (node.targets) lines.push(`targets: ${node.targets.join(", ")}`);
-  tooltipEl.innerHTML = lines.join("<br>");
+  // Clear previous content safely
+  while (tooltipEl.firstChild) {
+    tooltipEl.removeChild(tooltipEl.firstChild);
+  }
+
+  // First line: bold kind, then id as plain text
+  const firstLine = document.createElement("div");
+  const kindEl = document.createElement("b");
+  kindEl.textContent = node.kind;
+  firstLine.appendChild(kindEl);
+  firstLine.appendChild(document.createTextNode(" " + node.id));
+  tooltipEl.appendChild(firstLine);
+
+  // Additional lines
+  if (node.fields) {
+    const line = document.createElement("div");
+    line.textContent = `${node.fields.length} field(s)`;
+    tooltipEl.appendChild(line);
+  }
+  if (node.sources) {
+    const line = document.createElement("div");
+    line.textContent = `sources: ${node.sources.join(", ")}`;
+    tooltipEl.appendChild(line);
+  }
+  if (node.targets) {
+    const line = document.createElement("div");
+    line.textContent = `targets: ${node.targets.join(", ")}`;
+    tooltipEl.appendChild(line);
+  }
+
   tooltipEl.style.left = `${e.clientX + 12}px`;
   tooltipEl.style.top = `${e.clientY + 12}px`;
   tooltipEl.style.display = "block";
