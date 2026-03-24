@@ -19,115 +19,108 @@ note {
 
 
 // --- Source ---
-
-schema cobol_customer_master (format copybook, encoding ebcdic,
+schema cobol_customer_master (
+  format copybook,
+  encoding ebcdic,
   note "Customer master record from mainframe VSAM file"
 ) {
-  CUST_ID        INTEGER    (pic "9(10)", offset 1, length 10, required)
-  CUST_TYPE      STRING     (pic "X(1)", offset 11, enum {R, B})
+  CUST_ID       INTEGER       (pic "9(10)", offset 1, length 10, required)
+  CUST_TYPE     STRING        (pic "X(1)", offset 11, enum {R, B})
 
-  PERSONAL_NAME record (offset 12, length 40,
+  PERSONAL_NAME record (
+    offset 12,
+    length 40,
     note "Present when CUST_TYPE = 'R' (retail customer)"
   ) {
-    FIRST_NAME   STRING     (pic "X(20)", offset 12)
-    LAST_NAME    STRING     (pic "X(20)", offset 32)
+    FIRST_NAME  STRING  (pic "X(20)", offset 12)
+    LAST_NAME   STRING  (pic "X(20)", offset 32)
   }
 
-  BUSINESS_NAME record (redefines PERSONAL_NAME, offset 12,
+  BUSINESS_NAME record (
+    redefines PERSONAL_NAME,
+    offset 12,
     note "Present when CUST_TYPE = 'B' (business customer)"
   ) {
-    COMPANY_NAME STRING     (pic "X(40)", offset 12)
+    COMPANY_NAME  STRING  (pic "X(40)", offset 12)
   }
 
   ADDRESS record (offset 52, length 57) {
-    STREET       STRING     (pic "X(30)", offset 52)
-    CITY         STRING     (pic "X(20)", offset 82)
-    STATE        STRING     (pic "X(2)", offset 102)
-    ZIP          INTEGER    (pic "9(5)", offset 104)
+    STREET  STRING   (pic "X(30)", offset 52)
+    CITY    STRING   (pic "X(20)", offset 82)
+    STATE   STRING   (pic "X(2)", offset 102)
+    ZIP     INTEGER  (pic "9(5)", offset 104)
   }
 
-  CREDIT_LIMIT   DECIMAL(9,2) (
-    pic "S9(7)V99",
-    encoding comp-3,
-    offset 109,
-    length 5,
-    note "Packed decimal: last nibble is sign (C=positive, D=negative)"
-  )
+  CREDIT_LIMIT  DECIMAL(9,2)  (pic "S9(7)V99", encoding comp-3, offset 109, length 5, note "Packed decimal: last nibble is sign (C=positive, D=negative)")
 
-  ACCOUNT_BAL    DECIMAL(9,2) (
-    pic "S9(7)V99",
-    encoding comp-3,
-    offset 114,
-    length 5
-  )
+  ACCOUNT_BAL   DECIMAL(9,2)  (pic "S9(7)V99", encoding comp-3, offset 114, length 5)
 
-  STATUS_CODE    STRING     (pic "X(1)", offset 119, enum {A, I, S})
+  STATUS_CODE   STRING        (pic "X(1)", offset 119, enum {A, I, S})
 
-  PHONE_COUNT    INTEGER    (pic "9(1)", offset 120)
+  PHONE_COUNT   INTEGER       (pic "9(1)", offset 120)
 
-  PHONE_NUMBERS list_of record (occurs 3, depends_on PHONE_COUNT,
+  PHONE_NUMBERS list_of record (
+    occurs 3,
+    depends_on PHONE_COUNT,
     note "Only the first PHONE_COUNT entries are populated"
   ) {
-    PHONE_TYPE   STRING     (pic "X(1)", note "H=home, W=work, M=mobile")
-    PHONE_NUM    STRING     (pic "X(15)")
+    PHONE_TYPE  STRING  (pic "X(1)", note "H=home, W=work, M=mobile")
+    PHONE_NUM   STRING  (pic "X(15)")
   }
 }
 
 
 // --- Target ---
-
-schema customer_event_avro (format avro, evolution backward,
+schema customer_event_avro (
+  format avro,
+  evolution backward,
   schema_registry "https://registry.example.com",
   namespace "com.example.customer.events",
   note "Customer change event — published to Kafka topic customer.changes"
 ) {
-  event_id         STRING       (required)
-  event_type       STRING       (required, enum {created, updated, deactivated})
-  event_timestamp  STRING       (required)
-  customer_id      STRING       (required)
-  customer_type    STRING       (required, enum {retail, business})
-  display_name     STRING       (required)
+  event_id         STRING         (required)
+  event_type       STRING         (required, enum {created, updated, deactivated})
+  event_timestamp  STRING         (required)
+  customer_id      STRING         (required)
+  customer_type    STRING         (required, enum {retail, business})
+  display_name     STRING         (required)
 
   contact_info record {
-    email          STRING
+    email  STRING
     phones list_of record {
-      type         STRING       (enum {home, work, mobile})
-      number       STRING       (note "E.164 format")
+      type    STRING  (enum {home, work, mobile})
+      number  STRING  (note "E.164 format")
     }
   }
 
   address record {
-    street         STRING
-    city           STRING
-    state          STRING
-    postal_code    STRING
-    country        STRING
+    street       STRING
+    city         STRING
+    state        STRING
+    postal_code  STRING
+    country      STRING
   }
 
   credit_limit     DECIMAL(12,2)
   account_balance  DECIMAL(12,2)
-  status           STRING       (required, enum {active, inactive, suspended})
+  status           STRING         (required, enum {active, inactive, suspended})
 }
 
 
 // --- Mapping ---
-
 mapping 'cobol customer to avro event' {
   source { `cobol_customer_master` }
   target { `customer_event_avro` }
 
   -> event_id { uuid_v4() }
-  -> event_type { "updated" }
+  -> event_type {
+    "updated"
+  }
   -> event_timestamp { now_utc() }
 
   CUST_ID -> customer_id { to_string | lpad(10, "0") }
 
-  CUST_TYPE -> customer_type {
-    map {
-      R: "retail"
-      B: "business"
-    }
-  }
+  CUST_TYPE -> customer_type { map { R: "retail", B: "business" } }
 
   -> display_name {
     "If CUST_TYPE = 'R', trim and concatenate FIRST_NAME + ' ' + LAST_NAME.
@@ -139,27 +132,17 @@ mapping 'cobol customer to avro event' {
   ADDRESS.CITY -> address.city { trim }
   ADDRESS.STATE -> address.state { trim | uppercase }
   ADDRESS.ZIP -> address.postal_code { to_string | lpad(5, "0") }
-  -> address.country { "US" }
+  -> address.country {
+    "US"
+  }
 
   CREDIT_LIMIT -> credit_limit
   ACCOUNT_BAL -> account_balance
 
-  STATUS_CODE -> status {
-    map {
-      A: "active"
-      I: "inactive"
-      S: "suspended"
-    }
-  }
+  STATUS_CODE -> status { map { A: "active", I: "inactive", S: "suspended" } }
 
   each PHONE_NUMBERS -> contact_info.phones {
-    .PHONE_TYPE -> .type {
-      map {
-        H: "home"
-        W: "work"
-        M: "mobile"
-      }
-    }
+    .PHONE_TYPE -> .type { map { H: "home", W: "work", M: "mobile" } }
 
     .PHONE_NUM -> .number {
       trim

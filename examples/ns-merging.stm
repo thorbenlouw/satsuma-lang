@@ -2,65 +2,69 @@
 //
 // Tests: same namespace appearing multiple times in one file,
 // cross-namespace references between merged blocks, global shadowing patterns.
-
 // Global transform — used across namespaces
+
 transform clean_string {
   trim | uppercase
 }
+
 
 transform hash_key {
   trim | md5
 }
 
+
 // --- First block of 'source' namespace ---
 namespace source (note "External source systems") {
   schema hr_employees (note "HRIS employee master") {
-    employee_id    VARCHAR(20)   (pk)
-    full_name      VARCHAR(200)  (required)
-    email          VARCHAR(255)  (pii, required)
-    department     VARCHAR(100)
-    hire_date      DATE          (required)
-    salary         DECIMAL(12,2) (pii)
-    manager_id     VARCHAR(20)   (ref hr_employees.employee_id)
+    employee_id  VARCHAR(20)    (pk)
+    full_name    VARCHAR(200)   (required)
+    email        VARCHAR(255)   (pii, required)
+    department   VARCHAR(100)
+    hire_date    DATE           (required)
+    salary       DECIMAL(12,2)  (pii)
+    manager_id   VARCHAR(20)    (ref hr_employees.employee_id)
   }
 }
+
 
 // --- Second block of 'source' namespace (merges with first) ---
 namespace source (note "External source systems") {
   schema finance_gl (note "General ledger entries") {
-    gl_entry_id    BIGINT        (pk)
-    account_code   VARCHAR(20)   (required)
-    entry_date     DATE          (required)
-    amount         DECIMAL(14,2)
-    department     VARCHAR(100)
-    description    TEXT
-    posted_by      VARCHAR(20)   (ref hr_employees.employee_id)
+    gl_entry_id   BIGINT         (pk)
+    account_code  VARCHAR(20)    (required)
+    entry_date    DATE           (required)
+    amount        DECIMAL(14,2)
+    department    VARCHAR(100)
+    description   TEXT
+    posted_by     VARCHAR(20)    (ref hr_employees.employee_id)
   }
 
   schema finance_budgets (note "Department budgets") {
-    budget_id      BIGINT        (pk)
-    department     VARCHAR(100)  (required)
-    fiscal_year    INTEGER       (required)
-    budget_amount  DECIMAL(14,2) (required)
-    approved_by    VARCHAR(20)   (ref hr_employees.employee_id)
+    budget_id      BIGINT         (pk)
+    department     VARCHAR(100)   (required)
+    fiscal_year    INTEGER        (required)
+    budget_amount  DECIMAL(14,2)  (required)
+    approved_by    VARCHAR(20)    (ref hr_employees.employee_id)
   }
 }
+
 
 // --- Staging namespace referencing merged source ---
 namespace staging (note "Cleaned and conformed staging area") {
   schema stg_employees {
-    employee_hk    BINARY(32)    (pk)
-    employee_id    VARCHAR(20)   (unique)
-    full_name      VARCHAR(200)
-    email          VARCHAR(255)  (pii)
-    department     VARCHAR(100)
-    hire_date      DATE
-    is_active      BOOLEAN
+    employee_hk  BINARY(32)    (pk)
+    employee_id  VARCHAR(20)   (unique)
+    full_name    VARCHAR(200)
+    email        VARCHAR(255)  (pii)
+    department   VARCHAR(100)
+    hire_date    DATE
+    is_active    BOOLEAN
   }
 
   schema stg_gl_entries {
-    gl_hk          BINARY(32)    (pk)
-    gl_entry_id    BIGINT        (unique)
+    gl_hk          BINARY(32)     (pk)
+    gl_entry_id    BIGINT         (unique)
     account_code   VARCHAR(20)
     entry_date     DATE
     amount         DECIMAL(14,2)
@@ -73,12 +77,12 @@ namespace staging (note "Cleaned and conformed staging area") {
     source { `source::hr_employees` }
     target { `stg_employees` }
 
-    employee_id -> employee_hk  { hash_key }
+    employee_id -> employee_hk { hash_key }
     employee_id -> employee_id
-    full_name   -> full_name    { clean_string }
-    email       -> email        { trim | lowercase }
-    department  -> department   { clean_string }
-    hire_date   -> hire_date
+    full_name -> full_name { clean_string }
+    email -> email { trim | lowercase }
+    department -> department { clean_string }
+    hire_date -> hire_date
 
     -> is_active {
       "True if no termination record exists in HR system"
@@ -87,14 +91,17 @@ namespace staging (note "Cleaned and conformed staging area") {
 
   // Map GL entries — joins to employees across merged namespace
   mapping 'stage gl entries' {
-    source { `source::finance_gl`, `source::hr_employees` }
+    source {
+      `source::finance_gl`
+      `source::hr_employees`
+    }
     target { `stg_gl_entries` }
 
-    gl_entry_id -> gl_hk        { hash_key }
+    gl_entry_id -> gl_hk { hash_key }
     gl_entry_id -> gl_entry_id
     account_code -> account_code { trim }
-    entry_date  -> entry_date
-    amount      -> amount
+    entry_date -> entry_date
+    amount -> amount
 
     -> department {
       "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`"
@@ -106,20 +113,25 @@ namespace staging (note "Cleaned and conformed staging area") {
   }
 }
 
+
 // --- Reporting namespace ---
 namespace reporting (note "Executive reporting layer") {
   schema dept_budget_vs_actual (note "Department spend analysis") {
-    department       VARCHAR(100)  (pk)
-    fiscal_year      INTEGER       (pk)
-    budget_amount    DECIMAL(14,2)
-    actual_spend     DECIMAL(14,2)
-    variance         DECIMAL(14,2)
-    variance_pct     DECIMAL(5,2)
-    headcount        INTEGER
+    department     VARCHAR(100)   (pk)
+    fiscal_year    INTEGER        (pk)
+    budget_amount  DECIMAL(14,2)
+    actual_spend   DECIMAL(14,2)
+    variance       DECIMAL(14,2)
+    variance_pct   DECIMAL(5,2)
+    headcount      INTEGER
   }
 
   mapping 'build budget vs actual' {
-    source { `staging::stg_gl_entries`, `source::finance_budgets`, `staging::stg_employees` }
+    source {
+      `staging::stg_gl_entries`
+      `source::finance_budgets`
+      `staging::stg_employees`
+    }
     target { `dept_budget_vs_actual` }
 
     department -> department
@@ -149,13 +161,10 @@ namespace reporting (note "Executive reporting layer") {
     }
   }
 
-  metric budget_health "Budget Utilization Health" (
-    source staging::stg_gl_entries,
-    grain monthly
-  ) {
-    department     VARCHAR(100)
-    month          DATE
-    utilization    DECIMAL(5,2)  (measure)
-    remaining      DECIMAL(14,2) (measure)
+  metric budget_health "Budget Utilization Health" (source staging::stg_gl_entries, grain monthly) {
+    department   VARCHAR(100)
+    month        DATE
+    utilization  DECIMAL(5,2)   (measure)
+    remaining    DECIMAL(14,2)  (measure)
   }
 }

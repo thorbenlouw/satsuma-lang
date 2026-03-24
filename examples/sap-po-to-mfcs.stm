@@ -27,11 +27,7 @@ note {
 
 
 // --- Source ---
-
-schema sap_purchase_order (
-  format sap,
-  note "Logical SAP ERP purchase order contract"
-) {
+schema sap_purchase_order (format sap, note "Logical SAP ERP purchase order contract") {
   EBELN          STRING(10)    (pk, required, note "SAP purchase order number")
   BUKRS          STRING(4)     (required, note "Company code")
   BSART          STRING(4)     (required, enum {NB, UB, FO, ZST}, note "Purchasing document type")
@@ -45,48 +41,46 @@ schema sap_purchase_order (
   HeaderText     STRING(1000)
 
   Items list_of record {
-    EBELP        STRING(5)     (required, note "PO line number")
-    MATNR        STRING(18)    (required, note "SAP material number")
-    TXZ01        STRING(250)   (note "Short item description")
-    MENGE        NUMBER(13,3)  (required, note "Ordered quantity")
-    MEINS        STRING(3)     (required, note "Base unit of measure")
-    NETPR        NUMBER(13,4)  (required, note "Net price")
-    PEINH        NUMBER(5)     (default 1, note "Price unit divisor")
-    WERKS        STRING(4)     (required, note "Plant")
-    LGORT        STRING(4)     (note "Storage location")
-    EINDT        DATE          (note "Requested delivery date")
+    EBELP  STRING(5)     (required, note "PO line number")
+    MATNR  STRING(18)    (required, note "SAP material number")
+    TXZ01  STRING(250)   (note "Short item description")
+    MENGE  NUMBER(13,3)  (required, note "Ordered quantity")
+    MEINS  STRING(3)     (required, note "Base unit of measure")
+    NETPR  NUMBER(13,4)  (required, note "Net price")
+    PEINH  NUMBER(5)     (default 1, note "Price unit divisor")
+    WERKS  STRING(4)     (required, note "Plant")
+    LGORT  STRING(4)     (note "Storage location")
+    EINDT  DATE          (note "Requested delivery date")
   }
 }
 
 
 // --- Target ---
-
 schema mfcs_purchase_order (
   format json,
   note "Logical Oracle MFCS purchase order ingestion contract"
 ) {
   orderNo        NUMBER(12)    (required)
-  supplier       NUMBER(10)    (required)   //! requires MFCS supplier cross-reference
-  location       NUMBER(10)    (required)   //! requires site-to-location resolution
+  supplier       NUMBER(10)    (required)  //! requires MFCS supplier cross-reference
+  location       NUMBER(10)    (required)  //! requires site-to-location resolution
   currencyCode   STRING(3)     (required)
   orderType      STRING(20)    (required)
   notBeforeDate  DATE
   comments       STRING(1000)
 
   items list_of record {
-    item         STRING(25)      (required)   //! requires material-to-item cross-reference
-    orderedQty   NUMBER(12,4)    (required)
-    unitCost     NUMBER(12,4)
-    uom          STRING(10)      (required)
-    needByDate   DATE
-    referenceLine NUMBER(6)      (required)
-    description  STRING(250)
+    item           STRING(25)    (required)  //! requires material-to-item cross-reference
+    orderedQty     NUMBER(12,4)  (required)
+    unitCost       NUMBER(12,4)
+    uom            STRING(10)    (required)
+    needByDate     DATE
+    referenceLine  NUMBER(6)     (required)
+    description    STRING(250)
   }
 }
 
 
 // --- Mapping ---
-
 mapping 'sap po to mfcs' {
   note {
     """
@@ -139,15 +133,10 @@ mapping 'sap po to mfcs' {
      If all line dates are null, fall back to `BEDAT`."
   }
 
-  HeaderText -> comments {
-    trim
-    | max_length(1000)
-  }
+  HeaderText -> comments { trim | max_length(1000) }
 
   // --- Lines ---
-  each Items -> items (
-    note "One MFCS target line per SAP purchase order item."
-  ) {
+  each Items -> items (note "One MFCS target line per SAP purchase order item.") {
     .EBELP -> .referenceLine { to_number }
 
     .MATNR -> .item {

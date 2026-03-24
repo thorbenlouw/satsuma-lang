@@ -16,7 +16,6 @@ note {
 
 
 // --- Source ---
-
 schema commerce_event_pb (
   format protobuf,
   schema_registry "https://registry.example.com",
@@ -24,64 +23,62 @@ schema commerce_event_pb (
   namespace "com.example.commerce.events",
   note "Commerce event protobuf envelope"
 ) {
-  event_id         STRING      (tag 1)
-  event_type       STRING      (tag 2)
-  event_ts         STRING      (tag 3)
-  source_system    STRING      (tag 4)
-  session_id       STRING      (tag 5)
-  user_id          STRING      (tag 6)
-  country_code     STRING      (tag 7)
-  currency_code    STRING      (tag 8)
+  event_id       STRING  (tag 1)
+  event_type     STRING  (tag 2)
+  event_ts       STRING  (tag 3)
+  source_system  STRING  (tag 4)
+  session_id     STRING  (tag 5)
+  user_id        STRING  (tag 6)
+  country_code   STRING  (tag 7)
+  currency_code  STRING  (tag 8)
 
   Context record (tag 9) {
-    device_type    STRING      (tag 1)
-    app_version    STRING      (tag 2)
-    entry_channel  STRING      (tag 3)
+    device_type    STRING  (tag 1)
+    app_version    STRING  (tag 2)
+    entry_channel  STRING  (tag 3)
   }
 
   CartLines list_of record (tag 10) {
-    sku            STRING      (tag 1)
-    quantity       INT32       (tag 2)
-    unit_price     DECIMAL(12,2) (tag 3)
-    discount_amt   DECIMAL(12,2) (tag 4)
-    category       STRING      (tag 5)
+    sku           STRING         (tag 1)
+    quantity      INT32          (tag 2)
+    unit_price    DECIMAL(12,2)  (tag 3)
+    discount_amt  DECIMAL(12,2)  (tag 4)
+    category      STRING         (tag 5)
   }
 
   Attributes list_of record (tag 11) {
-    key            STRING      (tag 1)
-    value          STRING      (tag 2)
+    key    STRING  (tag 1)
+    value  STRING  (tag 2)
   }
 }
 
 
 // --- Target ---
-
 schema commerce_session_parquet (format parquet, note "Session-level analytics dataset") {
-  session_id                 STRING         (pk)
-  user_id                    STRING
-  session_start_utc          TIMESTAMPTZ    (required)
-  session_end_utc            TIMESTAMPTZ    (required)
-  source_system              STRING
-  country_code               STRING
-  currency_code              STRING
-  entry_channel              STRING         (enum {web, mobile_app, kiosk, marketplace})
-  device_type                STRING         (enum {desktop, mobile, tablet, pos})
-  event_count                INT32          (required)
-  distinct_event_types       JSON
-  viewed_product_count       INT32
-  cart_add_count             INT32
-  purchase_event_count       INT32
-  checkout_completed         BOOLEAN        (required)
-  gross_merchandise_value    DECIMAL(14,2)
-  total_discount_amount      DECIMAL(14,2)
-  distinct_product_count     INT32
-  top_category               STRING
-  session_quality            STRING         (enum {bounce, browse, engaged, purchaser})
+  session_id               STRING         (pk)
+  user_id                  STRING
+  session_start_utc        TIMESTAMPTZ    (required)
+  session_end_utc          TIMESTAMPTZ    (required)
+  source_system            STRING
+  country_code             STRING
+  currency_code            STRING
+  entry_channel            STRING         (enum {web, mobile_app, kiosk, marketplace})
+  device_type              STRING         (enum {desktop, mobile, tablet, pos})
+  event_count              INT32          (required)
+  distinct_event_types     JSON
+  viewed_product_count     INT32
+  cart_add_count           INT32
+  purchase_event_count     INT32
+  checkout_completed       BOOLEAN        (required)
+  gross_merchandise_value  DECIMAL(14,2)
+  total_discount_amount    DECIMAL(14,2)
+  distinct_product_count   INT32
+  top_category             STRING
+  session_quality          STRING         (enum {bounce, browse, engaged, purchaser})
 }
 
 
 // --- Mapping ---
-
 mapping 'session aggregation' (group_by session_id, on_error log, error_threshold 0.02) {
   source { `commerce_event_pb` }
   target { `commerce_session_parquet` }
@@ -89,8 +86,14 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   session_id -> session_id
   user_id -> user_id { first }
 
-  event_ts -> session_start_utc { min | "Parse the minimum timestamp in the group as UTC." }
-  event_ts -> session_end_utc { max | "Parse the maximum timestamp in the group as UTC." }
+  event_ts -> session_start_utc {
+    min
+    | "Parse the minimum timestamp in the group as UTC."
+  }
+  event_ts -> session_end_utc {
+    max
+    | "Parse the maximum timestamp in the group as UTC."
+  }
 
   source_system -> source_system { first }
   country_code -> country_code { first | uppercase }
@@ -101,7 +104,8 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   -> event_count { count }
 
   event_type -> distinct_event_types {
-    distinct | "Emit the distinct `event_type` values as a JSON array string."
+    distinct
+    | "Emit the distinct `event_type` values as a JSON array string."
   }
 
   -> viewed_product_count {
@@ -116,9 +120,7 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
     "Count records in the group where `event_type` == 'purchase'."
   }
 
-  event_type -> checkout_completed {
-    map { purchase: true, _: false } | max
-  }
+  event_type -> checkout_completed { map { purchase: true, _: false } | max }
 
   CartLines.unit_price -> gross_merchandise_value {
     "For each event, multiply `unit_price` by `quantity`,

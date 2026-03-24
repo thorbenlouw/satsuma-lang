@@ -18,67 +18,65 @@ note {
 
 
 // --- Source ---
-
 schema edi_desadv (
   format fixed-length,
   note "EDI 856 Despatch Advice — Fixed Length Format"
 ) {
   BeginningOfMessage record {
-    DOCNUM      CHAR(35)                          // despatch advice number
-    MESSGFUN    CHAR(3)                           // message function: 9 = Original
+    DOCNUM    CHAR(35)  // despatch advice number
+    MESSGFUN  CHAR(3)  // message function: 9 = Original
   }
 
   DateTime record {
-    DATEQUAL    CHAR(3)                           // qualifier: 137 = document date/time
-    DATETIME    CHAR(35)                          // date/time value
-    DATEFMT     CHAR(3)                           // format: 102=CCYYMMDD, 203=CCYYMMDDHHMM
+    DATEQUAL  CHAR(3)  // qualifier: 137 = document date/time
+    DATETIME  CHAR(35)  // date/time value
+    DATEFMT   CHAR(3)  // format: 102=CCYYMMDD, 203=CCYYMMDDHHMM
   }
 
   ShipmentRefs list_of record (filter SHPRFQUAL == "SRN") {
-    SHPRFQUAL   CHAR(3)
-    SHIPREF     CHAR(70)                          // shipment reference number
+    SHPRFQUAL  CHAR(3)
+    SHIPREF    CHAR(70)  // shipment reference number
   }
 
   POReferences list_of record (filter REFQUAL == "ON") {
-    REFQUAL     CHAR(3)
-    REFNUM      CHAR(35)                          // PO Number + "/" + Dissection No
+    REFQUAL  CHAR(3)
+    REFNUM   CHAR(35)  // PO Number + "/" + Dissection No
   }
 
   NameAddress record {
-    PARTYQUAL   CHAR(3)                           // BY=Buyer, SU=Supplier
-    PARTYID     CHAR(35)                          // 13-digit ANA number
+    PARTYQUAL  CHAR(3)  // BY=Buyer, SU=Supplier
+    PARTYID    CHAR(35)  // 13-digit ANA number
   }
 
   LineItems list_of record {
-    LINENUM     NUMBER(6)
-    ITEMNO      CHAR(35)                          // product identifier
-    ITEMTYPE    CHAR(3)                           // EN=EAN, UP=UPC12
+    LINENUM   NUMBER(6)
+    ITEMNO    CHAR(35)  // product identifier
+    ITEMTYPE  CHAR(3)  // EN=EAN, UP=UPC12
   }
 
-  Quantities list_of record (filter QUANTQUAL == "12") {    // only despatch quantities
-    QUANTQUAL   CHAR(3)
-    QUANTITY    NUMBER(15)                         //! 4 implied decimal places
+  Quantities list_of record (filter QUANTQUAL == "12") {  // only despatch quantities
+    QUANTQUAL  CHAR(3)
+    QUANTITY   NUMBER(15)  //! 4 implied decimal places
   }
 }
 
 
 // --- Target ---
-
 schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
   ShipmentHeader record {
     toLocation            NUMBER(10)
-    asnNo                 STRING(30)   (required)
-    shipDate              DATE         (required)
+    asnNo                 STRING(30)    (required)
+    shipDate              DATE          (required)
     estimatedArrivalDate  DATE
     comments              STRING(2000)
     carrierCode           STRING(4)
-    asnType               STRING(1)    (required)     // C=UCC-128, 0=ASN Shipment
-    supplier              NUMBER(10)   (required)
+    asnType               STRING(1)     (required)  // C=UCC-128, 0=ASN Shipment
+    supplier              NUMBER(10)    (required)
     shipPayMethod         STRING(2)
 
     asnDetails list_of record {
-      orderNo             NUMBER(12)   (required)
-      notAfterDate        DATE
+      orderNo       NUMBER(12)  (required)
+      notAfterDate  DATE
 
       containers list_of record (
         note """
@@ -88,19 +86,19 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
         See Jira: DWHT-2847 for resolution status.
         """
       ) {
-        containerId       STRING(30)   (required)     //! no source mapping
-        finalLocation     NUMBER(10)   (required)     //! no source mapping
+        containerId    STRING(30)  (required)  //! no source mapping
+        finalLocation  NUMBER(10)  (required)  //! no source mapping
         items list_of record {
-          item            STRING(25)
-          unitQuantity    NUMBER(12,4)                 //! no source mapping
+          item          STRING(25)
+          unitQuantity  NUMBER(12,4)  //! no source mapping
         }
       }
 
       items list_of record {
-        item              STRING(25)
-        unitQuantity      NUMBER(12,4)  (required)
-        vpn               STRING(30)
-        referenceItem     STRING(25)
+        item           STRING(25)
+        unitQuantity   NUMBER(12,4)  (required)
+        vpn            STRING(30)
+        referenceItem  STRING(25)
       }
     }
   }
@@ -108,7 +106,6 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
 
 
 // --- Mapping ---
-
 mapping 'edi to mfcs' {
   source { `edi_desadv` }
   target { `mfcs_json` }
@@ -121,7 +118,9 @@ mapping 'edi to mfcs' {
      if 203 parse as CCYYMMDDHHMM. Output format: YYYY-MM-DD."
   }
 
-  -> ShipmentHeader.asnType { "0" }    // default: ASN Shipment
+  -> ShipmentHeader.asnType {
+    "0"
+  }  // default: ASN Shipment
 
   POReferences.REFNUM -> ShipmentHeader.toLocation {
     "Extract PO number from `REFNUM` (digits before '/').
@@ -129,11 +128,15 @@ mapping 'edi to mfcs' {
   }
 
   POReferences.REFNUM -> ShipmentHeader.supplier {
-    split("/") | first | to_number
+    split("/")
+    | first
+    | to_number
     | "Validate supplier exists in MFCS PO table."
   }
 
-  ShipmentRefs.SHIPREF -> ShipmentHeader.comments { prepend("Shipment reference number: ") }
+  ShipmentRefs.SHIPREF -> ShipmentHeader.comments {
+    prepend("Shipment reference number: ")
+  }
 
   // --- Detail lines grouped by PO ---
   each POReferences -> ShipmentHeader.asnDetails (
