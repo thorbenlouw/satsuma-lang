@@ -214,6 +214,48 @@
     </div>
   </section>
 
+  <!-- Superpower Callout -->
+  <section class="py-16 lg:py-20 bg-white">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 reveal">
+      <div class="rounded-2xl border-2 border-orange/20 bg-gradient-to-br from-cream to-white p-8 lg:p-12">
+        <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange/10 text-orange-dark text-sm font-semibold mb-4">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              The superpower
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-charcoal mb-4">Your conventions. Your tokens.<br>No language changes. Ever.</h2>
+            <p class="text-warm-gray leading-relaxed mb-4">
+              <code class="font-mono text-sm bg-cream px-1.5 py-0.5 rounded">(merge upsert, match_on customer_id)</code> is not a built-in keyword. It is a <strong>convention</strong> someone documented. You can do the same for anything your organisation cares about.
+            </p>
+            <p class="text-warm-gray leading-relaxed">
+              Write what your tokens mean once in an <code class="font-mono text-sm bg-cream px-1.5 py-0.5 rounded">LLM-Guidelines.md</code> file. From that point on, every AI tool in your org reads the spec and generates the right code &mdash; correct merge logic, correct DDL, correct tests &mdash; without you re-explaining your standards in every prompt.
+            </p>
+          </div>
+          <div class="code-block shadow-lg">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-orange-light/30">
+              <span class="w-3 h-3 rounded-full bg-red-400/60"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-400/60"></span>
+              <span class="w-3 h-3 rounded-full bg-green/60"></span>
+              <span class="ml-2 text-xs text-warm-gray font-mono">your_conventions.stm</span>
+            </div>
+            <pre class="text-sm"><code class="stm"><span class="keyword">schema</span> <span class="field">payments</span> (
+  <span class="annotation">owner</span> <span class="string">"payments-team"</span>,
+  <span class="annotation">data_domain</span> <span class="string">"finance"</span>,
+  <span class="annotation">cost_center</span> <span class="string">"CC-4200"</span>,
+  <span class="annotation">audit_level</span> high,
+  <span class="annotation">compliance</span> {PCI-DSS, SOX}
+) {
+  card_number  <span class="type">STRING</span>   (<span class="constraint">pii</span>, <span class="annotation">encrypt</span> AES-256,
+    <span class="annotation">mask</span> last_four)
+  amount       <span class="type">DECIMAL</span>  (<span class="constraint">required</span>)
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Key Features -->
   <section class="py-20 lg:py-28">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -221,7 +263,7 @@
         <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Why teams choose Satsuma</h2>
         <p class="text-warm-gray text-lg max-w-2xl mx-auto">Designed for real-world enterprise data mapping, not toy examples.</p>
       </div>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 reveal">
         <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
           <div class="w-12 h-12 gradient-orange rounded-xl flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -249,15 +291,6 @@
           </div>
           <h3 class="text-lg font-bold text-charcoal mb-2">40-60% Smaller</h3>
           <p class="text-warm-gray text-sm leading-relaxed">More concise than equivalent YAML or JSON specs, and <bold>3-8x less token usage</bold> than mapping spreadsheets. Less noise, more signal.</p>
-        </div>
-        <div class="feature-card bg-white rounded-2xl p-6 border-2 border-orange/30 relative sm:col-span-2">
-          <div class="absolute -top-3 left-6 px-3 py-0.5 bg-orange text-white text-xs font-bold rounded-full uppercase tracking-wide">Superpower</div>
-          <div class="w-12 h-12 gradient-orange rounded-xl flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-          </div>
-          <h3 class="text-lg font-bold text-charcoal mb-2">Extensible Metadata &mdash; No Grammar Changes Ever</h3>
-          <p class="text-warm-gray text-sm leading-relaxed mb-3">The <code class="font-mono text-xs bg-cream px-1.5 py-0.5 rounded">( )</code> metadata system accepts <strong>any vocabulary token</strong>. Kimball dimensions, Data Vault hubs, merge strategies, governance tags, org-specific conventions like <code class="font-mono text-xs bg-cream px-1.5 py-0.5 rounded">cost_center</code> or <code class="font-mono text-xs bg-cream px-1.5 py-0.5 rounded">audit_level</code> &mdash; they all work today without a language update.</p>
-          <p class="text-warm-gray text-sm leading-relaxed">Write an <code class="font-mono text-xs bg-cream px-1.5 py-0.5 rounded">LLM-Guidelines.md</code> that tells AI agents how to interpret your tokens, and every AI tool in your organisation generates the right code from them. Your conventions travel with the spec.</p>
         </div>
       </div>
     </div>
