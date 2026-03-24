@@ -28,21 +28,7 @@ jobs:
       - name: Parse allowlist
         id: allowlist
         run: |
-          node -e "
-            const fs = require('fs');
-            const text = fs.readFileSync('.security-allowlist.yml', 'utf8');
-            const ids = [];
-            let inSection = false;
-            for (const line of text.split('\n')) {
-              if (/^npm-audit:/.test(line)) { inSection = true; continue; }
-              if (/^[a-z]/.test(line) && inSection) break;
-              if (inSection) {
-                const m = line.match(/id:\s*(\d+)/);
-                if (m) ids.push(m[1]);
-              }
-            }
-            console.log(ids.join(','));
-          " > /tmp/npm-allowlist.txt
+          python3 scripts/parse-security-allowlist.py npm-audit > /tmp/npm-allowlist.txt
           echo "ids=$(cat /tmp/npm-allowlist.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Audit all packages
@@ -76,23 +62,7 @@ jobs:
       - name: Parse allowlist
         id: allowlist
         run: |
-          python3 -c "
-          import re
-          text = open('.security-allowlist.yml').read()
-          in_section = False
-          ids = []
-          for line in text.split('\n'):
-              if re.match(r'^semgrep:', line):
-                  in_section = True
-                  continue
-              if re.match(r'^[a-z]', line) and in_section:
-                  break
-              if in_section:
-                  m = re.search(r'id:\s*[\"'\''](.*?)[\"'\'']\s*', line)
-                  if m:
-                      ids.append(m.group(1))
-          print(','.join(ids))
-          " > /tmp/semgrep-allowlist.txt
+          python3 scripts/parse-security-allowlist.py semgrep > /tmp/semgrep-allowlist.txt
           echo "ids=$(cat /tmp/semgrep-allowlist.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Run Semgrep
