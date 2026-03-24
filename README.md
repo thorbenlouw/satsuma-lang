@@ -86,6 +86,39 @@ Satsuma keeps both in one versioned artifact. That is important for AI agents:
 - the CLI can surface both without inventing semantics
 - the agent can then apply judgment instead of scraping prose from Excel cells
 
+## Extensible Metadata: Satsuma's Superpower
+
+Satsuma's `( )` metadata accepts **any vocabulary token**. There are no reserved
+metadata keywords. When you write `(merge upsert, match_on customer_id)` or
+`(dimension, scd 2)`, you are not using built-in language features — you are
+using conventions that anyone can define and document.
+
+That means your organisation can encode its own standards directly into specs:
+
+```stm
+schema payments (
+    owner "payments-team",
+    data_domain "finance",
+    cost_center "CC-4200",
+    audit_level high,
+    compliance {PCI-DSS, SOX}
+) {
+  ...
+}
+```
+
+None of those tokens required a language change. They work today. Write an
+`LLM-Guidelines.md` that tells AI agents how to interpret your custom tokens
+(what DDL to generate, what tests to create, what policies to enforce), and
+every AI agent in your organisation knows how to act on them. The
+[convention guides](docs/) that ship with Satsuma
+([Kimball](docs/data-modelling/kimball/LLM-Guidelines.md),
+[Data Vault](docs/data-modelling/datavault/LLM-Guidelines.md),
+[Merge Strategy](docs/conventions-for-merge-strategy/LLM-Guidelines.md),
+[Governance](docs/conventions-for-governance/LLM-Guidelines.md),
+[Reports & Models](docs/conventions-for-reports-and-models/LLM-Guidelines.md))
+are ready-made examples of this pattern.
+
 ## What Satsuma Covers
 
 Satsuma supports:
@@ -217,7 +250,7 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 What exists today:
 
 - the Satsuma v2 language specification
-- a canonical example corpus (16 `.stm` files covering major integration patterns)
+- a canonical example corpus (20 `.stm` files covering major integration patterns)
 - a tree-sitter parser (482 corpus tests, all examples parse clean)
 - a TypeScript CLI (`satsuma`) with 17 commands for structural extraction, analysis, validation, formatting, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
 - `satsuma fmt` — opinionated, zero-config formatter (CLI + VS Code Format Document)
