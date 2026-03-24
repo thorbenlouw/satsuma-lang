@@ -1,6 +1,6 @@
 # Satsuma-to-Excel Export — TODO
 
-> **Status: NOT STARTED** — All phases deferred. See `FUTURE-WORK.md`.
+> **Status: NOT STARTED** — All phases deferred. See `ROADMAP.md`.
 
 ## Phase 1: Lite System Prompt
 - [ ] Author `satsuma-to-excel-prompt.md` — condense workbook layout, styling, column definitions, transform translation rules, and row grouping into a self-contained prompt (~2,900 tokens)

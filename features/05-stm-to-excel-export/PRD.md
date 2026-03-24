@@ -1,6 +1,6 @@
 # Satsuma-to-Excel Export
 
-> **Status: LITE COMPLETE** — Lite system prompt authored at `useful-prompts/stm-to-excel-prompt.md`. Full deterministic CLI tool not started. See `FUTURE-WORK.md` for deferred scope.
+> **Status: LITE COMPLETE** — Lite system prompt authored at `useful-prompts/stm-to-excel-prompt.md`. Full deterministic CLI tool not started. See `ROADMAP.md` for deferred scope.
 
 ## Goal
 
