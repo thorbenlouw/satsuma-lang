@@ -1,6 +1,6 @@
 ---
 id: sl-jzkp
-status: open
+status: closed
 deps: [sl-3z3i]
 links: []
 created: 2026-03-24T18:29:59Z
@@ -26,3 +26,9 @@ Implement tooling/satsuma-cli/src/commands/fmt.ts: file/directory resolution, re
 - [ ] Command registered in index.ts
 - [ ] Tests for CLI flags and exit codes
 
+
+## Notes
+
+**2026-03-24T19:45:50Z**
+
+Cause: New feature. Fix: Created commands/fmt.ts with file/dir resolution, recursive .stm discovery, --check (exit 1 if unformatted), --diff (unified diff output), --stdin (pipe mode), exit codes 0/1/2, parse-error file skipping. Registered in index.ts. 734 tests passing.
