@@ -24,11 +24,11 @@ Generate Excel workbooks from Satsuma files for non-technical stakeholders. Ship
 
 ---
 
-## VS Code Language Server (Feature 16)
+## VS Code Language Server — Lineage Visualization (Feature 16, Phase 3 extension)
 
-A full-featured LSP-backed VS Code extension: go-to-definition, find-references, completions, live diagnostics, outline, breadcrumbs, and lineage visualization. Three phases planned (core server → navigation → advanced features).
+The LSP server is complete (Phases 1–3 delivered: semantic tokens, diagnostics, go-to-definition, find-references, completions, hover, rename, code lens, folding, document symbols). The remaining deferred item is an interactive lineage visualization webview powered by `satsuma graph`.
 
-**Why deferred:** Syntax highlighting is sufficient for current usage. The language server is the next major editor milestone but requires sustained implementation effort across 3 phases.
+**Why deferred:** The core LSP features are shipped. Lineage visualization is a standalone enhancement that depends on webview infrastructure.
 
 **Source:** `features/16-vscode-language-server/PRD.md`
 

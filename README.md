@@ -131,6 +131,13 @@ npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/lat
 This gives you the `satsuma` command on your PATH. Run `satsuma --help` to see
 available commands.
 
+> **Can't install the CLI or VS Code extension?** Satsuma is still useful
+> without any tooling. LLMs can read and generate `.stm` files directly — our
+> tests show 3–8x fewer tokens than equivalent spreadsheets or YAML — and
+> plain-text files version-control cleanly. See
+> **[Using Satsuma Without the CLI](docs/using-satsuma-without-cli.md)** for
+> workflows with web LLMs like ChatGPT, Gemini, or Claude.ai.
+
 ## Example
 
 ```stm
@@ -200,7 +207,7 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [examples/](examples): canonical Satsuma examples
 - [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
 - [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation
-- [tooling/vscode-satsuma/](tooling/vscode-satsuma): VS Code syntax highlighting extension
+- [tooling/vscode-satsuma/](tooling/vscode-satsuma): VS Code extension with LSP server and syntax highlighting
 - [useful-prompts/](useful-prompts): self-contained system prompts for web LLMs (e.g., [Excel-to-Satsuma conversion](useful-prompts/excel-to-stm-prompt.md))
 
 ## Current Status
@@ -211,7 +218,7 @@ What exists today:
 - a canonical example corpus (16 `.stm` files covering major integration patterns)
 - a tree-sitter parser (482 corpus tests, all examples parse clean)
 - a TypeScript CLI (`satsuma`) with 16 commands for structural extraction, analysis, validation, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md) (637 tests)
-- a VS Code extension with TextMate grammar for v2 syntax highlighting
+- a VS Code extension with an LSP server (go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, diagnostics, folding, document symbols) and TextMate grammar
 - `satsuma lint` with 3 rules (hidden NL source refs, unresolved NL refs, duplicate definitions) and `--fix` support
 - namespace support for multi-team, multi-domain platform modelling
 - data modelling conventions for Kimball and Data Vault patterns with canonical examples
@@ -219,7 +226,6 @@ What exists today:
 
 What is not complete yet:
 
-- VS Code language server (go-to-definition, completions, live diagnostics)
 - formatting (`satsuma fmt`)
 - type checking
 - code generation
