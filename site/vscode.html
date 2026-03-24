@@ -94,10 +94,14 @@
           Full language support for Satsuma: syntax highlighting, an LSP server with navigation and completions, real-time diagnostics, and interactive workspace visualization. All parser-backed.
         </p>
         <div class="flex flex-wrap gap-4">
-          <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" rel="noopener"
+          <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" rel="noopener"
              class="inline-flex items-center gap-2 px-6 py-3 gradient-green text-white font-semibold rounded-xl shadow-lg shadow-green/25 hover:shadow-xl hover:shadow-green/30 transition-all">
-            Download .vsix
+            Download .vsix (__VERSION__)
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          </a>
+          <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-6 py-3 bg-warm-gray/10 text-warm-gray font-medium rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all text-sm">
+            Latest unstable
           </a>
           <a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/tooling/vscode-satsuma" target="_blank" rel="noopener"
              class="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
@@ -455,7 +459,7 @@
             <h3 class="text-lg font-bold text-charcoal">From GitHub Release</h3>
             <span class="px-2 py-0.5 bg-green/10 text-green-dark text-xs font-semibold rounded-full">Recommended</span>
           </div>
-          <p class="text-warm-gray text-sm leading-relaxed mb-4">Download <a href="https://github.com/thorbenlouw/satsuma-lang/releases/latest" target="_blank" class="text-orange hover:underline">vscode-satsuma.vsix</a> from the latest GitHub release, then install:</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Download <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="text-orange hover:underline">vscode-satsuma.vsix</a> from the __VERSION__ release (or <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" class="text-warm-gray hover:underline">latest unstable</a>), then install:</p>
           <div class="terminal">
             <div class="terminal-header">
               <span class="terminal-dot red"></span>
@@ -529,7 +533,7 @@
             </div>
             <div>
               <h3 class="font-semibold text-charcoal"><code class="font-mono text-sm">satsuma</code> CLI on PATH</h3>
-              <p class="text-warm-gray text-sm mt-1">Required for validation diagnostics, workspace commands, and webview panels. <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" class="text-orange hover:underline">Download from the latest release</a> or <a href="cli.html" class="text-orange hover:underline">see the CLI page</a>.</p>
+              <p class="text-warm-gray text-sm mt-1">Required for validation diagnostics, workspace commands, and webview panels. <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="text-orange hover:underline">Download from the __VERSION__ release</a> or <a href="cli.html" class="text-orange hover:underline">see the CLI page</a>.</p>
             </div>
           </div>
         </div>
@@ -599,13 +603,14 @@
           <h4 class="font-semibold text-charcoal mb-3">Community</h4>
           <ul class="space-y-2 text-sm text-warm-gray">
             <li><a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" class="hover:text-orange transition-colors">GitHub Repository</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="hover:text-orange transition-colors">Release Notes (__VERSION__)</a></li>
             <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" class="hover:text-orange transition-colors">Changelog</a></li>
             <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AGENT-CONTRIBUTIONS.md" target="_blank" class="hover:text-orange transition-colors">Contributing</a></li>
           </ul>
         </div>
       </div>
       <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-charcoal/5 text-sm text-warm-gray">
-        <p>v0.1.0 &middot; MIT License</p>
+        <p><a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/__VERSION_TAG__" target="_blank" class="hover:text-orange transition-colors">__VERSION__</a> &middot; MIT License</p>
         <p class="mt-2 sm:mt-0">Made with care for the data community</p>
       </div>
     </div>

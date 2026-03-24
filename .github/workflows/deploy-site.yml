@@ -4,11 +4,14 @@ on:
   push:
     branches: [main]
     paths: ['site/**']
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
   pages: write
   id-token: write
+  contents: read
 
 concurrency:
   group: pages
@@ -22,6 +25,22 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve latest tagged version
+        id: version
+        run: |
+          TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo 'v0.0.0')
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $TAG"
+
+      - name: Inject version into site HTML
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          find site -name '*.html' -exec sed -i "s|__VERSION_TAG__|${TAG}|g" {} +
+          find site -name '*.html' -exec sed -i "s|__VERSION__|${TAG}|g" {} +
+
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
