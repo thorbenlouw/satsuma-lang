@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 TOOL = Path(__file__).parent / "excel_tool.py"
-DATA = Path(__file__).parent / "test-data"
+DATA = Path(__file__).parent.parent / "assets" / "test-data"
 SIMPLE = DATA / "test-01-simple-customer-sync.xlsx"
 MULTI = DATA / "test-02-multi-tab-order-pipeline.xlsx"
 HEALTH = DATA / "test-03-healthcare-hl7-to-fhir.xlsx"
