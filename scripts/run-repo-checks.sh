@@ -27,6 +27,6 @@ if cc -x c -o /dev/null - <<< 'int main(){return 0;}' 2>/dev/null; then
 else
   run_step "tree-sitter corpus (wasm)" bash -lc 'cd "$1/tooling/tree-sitter-satsuma" && "$1/scripts/tree-sitter-local.sh" test --wasm' -- "$ROOT_DIR"
 fi
-run_step "tree-sitter fixtures" python3 "$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/test_fixtures.py"
-run_step "tree-sitter CST tests" python3 "$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/test_cst_summary.py"
-run_step "tree-sitter smoke" python3 "$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/test_smoke_summary.py"
+run_step "tree-sitter Python tests" python3 -m pytest "$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/" -v
+
+run_step "excel-to-satsuma skill tests" python3 -m pytest "$ROOT_DIR/skills/excel-to-satsuma/scripts/test_excel_tool.py" -v
