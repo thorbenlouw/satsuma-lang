@@ -8,16 +8,16 @@
 - [ ] Iterate on prompt wording based on output quality
 
 ## Phase 1: Python CLI Tool (`excel_tool.py`)
-- [ ] Scaffold `excel_tool.py` with CLI arg parsing and subcommand dispatch
-- [ ] Implement `survey` subcommand (tab metadata, row/col counts, merged cells, frozen panes, filters, first 3 rows preview)
-- [ ] Implement `headers` subcommand (column headers, sample rows, inferred data types)
-- [ ] Implement `formatting` subcommand (conditional formatting, fill colours + frequency, hidden rows/cols, data validation, row groupings)
-- [ ] Implement `range` subcommand (cell values for specified row/col range, with headers)
-- [ ] Implement `lookup` subcommand (full tab content for small reference tabs, with row cap)
-- [ ] Add output size enforcement / truncation with warning
-- [ ] Add `requirements.txt` with openpyxl
+- [x] Scaffold `excel_tool.py` with CLI arg parsing and subcommand dispatch
+- [x] Implement `survey` subcommand (tab metadata, row/col counts, merged cells, frozen panes, filters, first 3 rows preview)
+- [x] Implement `headers` subcommand (column headers, sample rows, inferred data types)
+- [x] Implement `formatting` subcommand (conditional formatting, fill colours + frequency, hidden rows/cols, data validation, row groupings)
+- [x] Implement `range` subcommand (cell values for specified row/col range, with headers)
+- [x] Implement `lookup` subcommand (full tab content for small reference tabs, with row cap)
+- [x] Add output size enforcement / truncation with warning
+- [x] Add `requirements.txt` with openpyxl
 - [ ] Add venv bootstrap logic (auto-create `.venv/` on first run)
-- [ ] Test against diverse sample spreadsheets
+- [x] Test against diverse sample spreadsheets (24 pytest tests, 3 spreadsheets)
 
 ## Phase 2: Skill Prompt — Survey Phase
 - [ ] Create `.claude/commands/excel-to-satsuma.md` skill prompt
