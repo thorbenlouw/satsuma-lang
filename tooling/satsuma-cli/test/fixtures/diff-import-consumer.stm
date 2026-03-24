@@ -1,0 +1,8 @@
+// Consumer file that imports from the library
+import { audit_fields, ref_data } from "diff-import-lib.stm"
+
+schema orders {
+  order_id  UUID   (pk, required)
+  amount    DECIMAL(18,2)
+  ...audit_fields
+}

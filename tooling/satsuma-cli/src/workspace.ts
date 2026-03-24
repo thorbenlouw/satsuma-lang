@@ -122,11 +122,14 @@ function followImports(entryFile: string): string[] {
  * When given a single file, follows import declarations to discover
  * referenced files recursively.
  */
-export async function resolveInput(pathArg: string): Promise<string[]> {
+export async function resolveInput(pathArg: string, opts?: { followImports?: boolean }): Promise<string[]> {
   const abs = resolve(pathArg);
   const s = await stat(abs);
   if (s.isDirectory()) {
     return findStmFiles(abs);
+  }
+  if (opts?.followImports === false) {
+    return [abs];
   }
   return followImports(abs);
 }
