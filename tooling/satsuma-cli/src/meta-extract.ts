@@ -54,7 +54,7 @@ export function extractMetadata(metaNode: SyntaxNode | null | undefined): MetaEn
       entries.push({ kind: "kv", key: key?.text ?? "", value });
     } else if (c.type === "enum_body") {
       const values = c.namedChildren
-        .filter((x) => x.type === "identifier" || x.type === "nl_string")
+        .filter((x) => x.type === "identifier" || x.type === "nl_string" || x.type === "number_literal")
         .map((x) =>
           x.type === "nl_string" ? x.text.slice(1, -1) : x.text,
         );

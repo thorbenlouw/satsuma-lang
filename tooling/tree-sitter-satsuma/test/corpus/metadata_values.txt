@@ -305,3 +305,62 @@ mapping 'order lines' (flatten `Order.LineItems[]`) {
       (target_block
         (source_ref
           (identifier))))))
+
+================================================================================
+Namespace-qualified dotted ref value
+================================================================================
+
+schema customer {
+  instrument_isin STRING(12) (ref exchange_refs::instrument_ref.isin)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (qualified_dotted_name
+              (qualified_name
+                (identifier)
+                (identifier))
+              (identifier))))))))
+
+================================================================================
+Namespace-qualified dotted ref with multiple segments
+================================================================================
+
+schema orders {
+  order_id UUID (ref oms::internal_order.details.order_id)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (key_value_pair
+            (kv_key
+              (identifier))
+            (qualified_dotted_name
+              (qualified_name
+                (identifier)
+                (identifier))
+              (identifier)
+              (identifier))))))))

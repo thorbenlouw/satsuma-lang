@@ -149,6 +149,10 @@
         {
           "type": "nl_string",
           "named": true
+        },
+        {
+          "type": "number_literal",
+          "named": true
         }
       ]
     }
@@ -398,6 +402,10 @@
         },
         {
           "type": "number_literal",
+          "named": true
+        },
+        {
+          "type": "qualified_dotted_name",
           "named": true
         },
         {
@@ -931,6 +939,25 @@
         },
         {
           "type": "token_call",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "qualified_dotted_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "qualified_name",
           "named": true
         }
       ]
