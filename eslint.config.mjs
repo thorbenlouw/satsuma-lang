@@ -27,6 +27,7 @@ export default [
       "**/build/**",
       "**/dist/**",
       "**/*.min.js",
+      "site/js/tailwind.js",
     ],
   },
   js.configs.recommended,
