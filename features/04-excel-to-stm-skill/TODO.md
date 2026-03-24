@@ -1,6 +1,6 @@
 # Excel-to-Satsuma Skill — TODO
 
-> **Status: PARTIAL** — Phase 0 lite prompt authored. Remaining phases deferred (see `FUTURE-WORK.md`).
+> **Status: PARTIAL** — Phase 0 lite prompt authored. Remaining phases deferred (see `ROADMAP.md`).
 
 ## Phase 0: Lite System Prompt
 - [x] Author `excel-to-satsuma-prompt.md` — assemble grammar, cheat sheet, examples, generation rules, and self-critique checklist from `AI-AGENT-REFERENCE.md`

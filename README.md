@@ -201,9 +201,10 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
 - [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (16 commands for structural extraction, analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents (also available via `satsuma agent-reference`)
-- [BA-TUTORIAL.md](BA-TUTORIAL.md): practical tutorial for business analysts
+- [docs/tutorials/](docs/tutorials/): role-based tutorials (BA, data engineer, integration engineer)
 - [USE_CASES.md](USE_CASES.md): practical scenarios and personas
-- [FUTURE-WORK.md](FUTURE-WORK.md): deferred and speculative work items
+- [HOW-DO-I.md](HOW-DO-I.md): question-based index to all guides and conventions
+- [ROADMAP.md](ROADMAP.md): deferred work items, ideas, and convention docs still to write
 - [examples/](examples): canonical Satsuma examples
 - [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
 - [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation

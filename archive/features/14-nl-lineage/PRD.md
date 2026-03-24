@@ -1,6 +1,6 @@
 # Natural Language Lineage Plan
 
-> **Status: DEFERRED** — Spec/proposal only. Requires language change to Satsuma syntax. See `FUTURE-WORK.md`.
+> **Status: DEFERRED** — Spec/proposal only. Requires language change to Satsuma syntax. See `ROADMAP.md`.
 
 ## Goal
 
