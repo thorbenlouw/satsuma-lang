@@ -34,7 +34,10 @@ try {
 /** Initialize the formatting module. Call in test setup to load the format function. */
 export async function initFormatting(): Promise<void> {
   if (_formatFn) return;
-  const mod = await import("../../../satsuma-cli/dist/format.js") as { format: FormatFn };
+  // Use a variable path so esbuild doesn't try to resolve this at bundle time.
+  // This path is only used by tests running against tsc-compiled dist/ output.
+  const modPath = ["../../../satsuma-cli", "dist", "format.js"].join("/");
+  const mod = await import(modPath) as { format: FormatFn };
   _formatFn = mod.format;
 }
 
