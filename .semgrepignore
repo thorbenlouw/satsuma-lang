@@ -8,5 +8,8 @@ tooling/satsuma-cli/src/generated/
 # Node modules
 node_modules/
 
+# Vendored third-party scripts
+site/js/tailwind.js
+
 # Archived specs and examples (not active code)
 archive/
