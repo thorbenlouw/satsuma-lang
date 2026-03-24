@@ -19,7 +19,6 @@ note {
 
 
 // --- Subscription Metrics ---
-
 metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
   grain monthly,
@@ -40,6 +39,7 @@ metric monthly_recurring_revenue "MRR" (
   }
 }
 
+
 metric churn_rate (
   source {fact_subscriptions, dim_customer},
   grain monthly,
@@ -56,13 +56,14 @@ metric churn_rate (
   }
 }
 
+
 metric customer_lifetime_value "CLV" (
   source {fact_orders, dim_customer},
   slice {acquisition_channel, segment, cohort_year}
 ) {
-  value              DECIMAL(14,2)  (measure non_additive)
-  order_count        INTEGER        (measure additive)
-  avg_order_value    DECIMAL(12,2)  (measure non_additive)
+  value            DECIMAL(14,2)  (measure non_additive)
+  order_count      INTEGER        (measure additive)
+  avg_order_value  DECIMAL(12,2)  (measure non_additive)
 
   note {
     """
@@ -78,7 +79,6 @@ metric customer_lifetime_value "CLV" (
 
 
 // --- Pipeline / Sales Metrics ---
-
 metric conversion_rate (
   source {fact_opportunities, dim_stage},
   grain monthly,
@@ -92,6 +92,7 @@ metric conversion_rate (
   }
 }
 
+
 metric pipeline_value "ARR Pipeline" (
   source fact_opportunities,
   grain weekly,
@@ -99,8 +100,7 @@ metric pipeline_value "ARR Pipeline" (
   filter "pipeline_stage NOT IN ('closed_won', 'closed_lost')"
 ) {
   arr_value           DECIMAL(18,2)  (measure additive)
-  weighted_arr_value  DECIMAL(18,2)  (measure additive,
-    note "`arr_value` * `probability` — use for forecast roll-ups")
+  weighted_arr_value  DECIMAL(18,2)  (measure additive, note "`arr_value` * `probability` — use for forecast roll-ups")
 
   note {
     "Open pipeline as of the snapshot date, expressed in ARR."
@@ -109,17 +109,16 @@ metric pipeline_value "ARR Pipeline" (
 
 
 // --- Commerce Metrics ---
-
 metric order_revenue (
   source {fact_orders, dim_date, dim_customer},
   grain daily,
   slice {order_channel, ship_country, currency_code, loyalty_tier}
 ) {
-  gross_revenue   DECIMAL(14,2)  (measure additive)
-  net_revenue     DECIMAL(14,2)  (measure additive)
-  order_count     INTEGER        (measure additive)
-  units_sold      INTEGER        (measure additive)
-  avg_order_value DECIMAL(12,2)  (measure non_additive)
+  gross_revenue    DECIMAL(14,2)  (measure additive)
+  net_revenue      DECIMAL(14,2)  (measure additive)
+  order_count      INTEGER        (measure additive)
+  units_sold       INTEGER        (measure additive)
+  avg_order_value  DECIMAL(12,2)  (measure non_additive)
 
   note {
     """
@@ -134,6 +133,7 @@ metric order_revenue (
     """
   }
 }
+
 
 metric cart_abandonment_rate (
   source {fact_sessions, fact_orders},

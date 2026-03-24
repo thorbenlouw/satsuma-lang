@@ -3,7 +3,7 @@
 schema fx_spot_rates (
   note "Sourced from OpenExchangeRates API. Updated daily at 00:01 UTC."
 ) {
-  iso_code    STRING(3)    (pk)
+  iso_code    STRING(3)      (pk)
   rate        DECIMAL(10,6)
   updated_at  DATETIME
 }

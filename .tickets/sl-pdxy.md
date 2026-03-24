@@ -1,6 +1,6 @@
 ---
 id: sl-pdxy
-status: open
+status: closed
 deps: [sl-jper]
 links: []
 created: 2026-03-24T18:30:20Z
@@ -21,3 +21,9 @@ Run satsuma fmt --check against all examples/*.stm files. Fix any formatting div
 - [ ] Any surprising results documented in features/20-stm-fmt/NOTES.md
 - [ ] No regressions in existing CLI or parser tests
 
+
+## Notes
+
+**2026-03-24T19:49:35Z**
+
+Cause: New feature. Fix: Ran satsuma fmt on all 18 .stm files in examples/. All pass --check (exit 0). Idempotency verified. Structural equivalence verified. 760 tests still passing with reformatted corpus.

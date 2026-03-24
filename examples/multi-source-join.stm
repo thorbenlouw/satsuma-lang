@@ -1,6 +1,6 @@
 // Satsuma v2 — Multi-Source Join: Customer 360 View
-
 import { 'audit fields' } from "lib/common.stm"
+
 
 note {
   """
@@ -28,105 +28,104 @@ note {
 
 
 // --- Sources ---
-
 schema crm_customers (
   format postgresql,
   note "Customer profile table from the CRM system"
 ) {
-  customer_id     UUID           (pk)
-  email           VARCHAR(255)   (pii, required)
-  first_name      VARCHAR(100)
-  last_name       VARCHAR(100)
-  company_name    VARCHAR(200)
-  segment         VARCHAR(20)    (enum {enterprise, mid_market, smb, individual})
-  region          VARCHAR(50)
-  signup_date     DATE           (required)
-  is_active       BOOLEAN        (default true)
-  account_owner   VARCHAR(100)                     // sales rep assigned
-  annual_contract_value  DECIMAL(12,2)             // NULL for non-contract customers
+  customer_id            UUID           (pk)
+  email                  VARCHAR(255)   (pii, required)
+  first_name             VARCHAR(100)
+  last_name              VARCHAR(100)
+  company_name           VARCHAR(200)
+  segment                VARCHAR(20)    (enum {enterprise, mid_market, smb, individual})
+  region                 VARCHAR(50)
+  signup_date            DATE           (required)
+  is_active              BOOLEAN        (default true)
+  account_owner          VARCHAR(100)  // sales rep assigned
+  annual_contract_value  DECIMAL(12,2)  // NULL for non-contract customers
 }
+
 
 schema order_transactions (
   format mysql,
   note "Order transactions from the e-commerce order service"
 ) {
-  order_id        BIGINT         (pk)
-  customer_id     UUID           (required, ref crm_customers.customer_id)
-  order_date      DATETIME       (required)
-  status          VARCHAR(20)    (enum {pending, completed, refunded, cancelled})
-  subtotal        DECIMAL(12,2)
-  tax             DECIMAL(12,2)
-  total           DECIMAL(12,2)  (required)
-  currency        CHAR(3)        (default "USD")
-  channel         VARCHAR(20)    (enum {web, mobile, api, pos})
-  coupon_code     VARCHAR(50)
+  order_id     BIGINT         (pk)
+  customer_id  UUID           (required, ref crm_customers.customer_id)
+  order_date   DATETIME       (required)
+  status       VARCHAR(20)    (enum {pending, completed, refunded, cancelled})
+  subtotal     DECIMAL(12,2)
+  tax          DECIMAL(12,2)
+  total        DECIMAL(12,2)  (required)
+  currency     CHAR(3)        (default "USD")
+  channel      VARCHAR(20)    (enum {web, mobile, api, pos})
+  coupon_code  VARCHAR(50)
 }
+
 
 schema support_tickets (
   format json,
   note "Support tickets from the helpdesk platform REST API"
 ) {
-  ticket_id       STRING         (pk)
-  customer_id     STRING         (required)        //! stored as string, must cast to UUID
-  created_at      STRING         (required)        //! ISO-8601 string
-  resolved_at     STRING                           // NULL if still open
-  category        STRING         (enum {billing, technical, account, general})
-  priority        STRING         (enum {low, medium, high, critical})
-  status          STRING         (enum {open, in_progress, resolved, closed})
-  csat_score      NUMBER                           // 1–5, NULL if not yet rated
+  ticket_id    STRING  (pk)
+  customer_id  STRING  (required)  //! stored as string, must cast to UUID
+  created_at   STRING  (required)  //! ISO-8601 string
+  resolved_at  STRING  // NULL if still open
+  category     STRING  (enum {billing, technical, account, general})
+  priority     STRING  (enum {low, medium, high, critical})
+  status       STRING  (enum {open, in_progress, resolved, closed})
+  csat_score   NUMBER  // 1–5, NULL if not yet rated
 }
 
 
 // --- Target ---
-
 schema customer_360 (
   format snowflake,
   note "DIM_CUSTOMER_360 — unified customer view in Snowflake analytics warehouse"
 ) {
-  customer_id              VARCHAR(36)    (pk)
-  email                    VARCHAR(255)   (pii)
-  full_name                VARCHAR(200)
-  company_name             VARCHAR(200)
-  segment                  VARCHAR(20)    (required)
-  region                   VARCHAR(50)
-  account_owner            VARCHAR(100)
-  signup_date              DATE           (required)
-  is_active                BOOLEAN
-  tenure_months            INT
+  customer_id            VARCHAR(36)    (pk)
+  email                  VARCHAR(255)   (pii)
+  full_name              VARCHAR(200)
+  company_name           VARCHAR(200)
+  segment                VARCHAR(20)    (required)
+  region                 VARCHAR(50)
+  account_owner          VARCHAR(100)
+  signup_date            DATE           (required)
+  is_active              BOOLEAN
+  tenure_months          INT
 
   // order metrics
-  total_orders             INT            (default 0)
-  total_revenue            DECIMAL(14,2)  (default 0)
-  total_refunds            DECIMAL(14,2)  (default 0)
-  net_revenue              DECIMAL(14,2)  (default 0)
-  avg_order_value          DECIMAL(12,2)
-  first_order_date         DATE
-  last_order_date          DATE
-  preferred_channel        VARCHAR(20)
-  distinct_coupon_count    INT            (default 0)
+  total_orders           INT            (default 0)
+  total_revenue          DECIMAL(14,2)  (default 0)
+  total_refunds          DECIMAL(14,2)  (default 0)
+  net_revenue            DECIMAL(14,2)  (default 0)
+  avg_order_value        DECIMAL(12,2)
+  first_order_date       DATE
+  last_order_date        DATE
+  preferred_channel      VARCHAR(20)
+  distinct_coupon_count  INT            (default 0)
 
   // support metrics
-  tickets_last_12m         INT            (default 0)
-  open_tickets             INT            (default 0)
-  avg_resolution_hours     DECIMAL(8,1)
-  avg_csat_score           DECIMAL(3,1)
-  has_critical_ticket      BOOLEAN        (default false)
+  tickets_last_12m       INT            (default 0)
+  open_tickets           INT            (default 0)
+  avg_resolution_hours   DECIMAL(8,1)
+  avg_csat_score         DECIMAL(3,1)
+  has_critical_ticket    BOOLEAN        (default false)
 
   // calculated
-  health_score             VARCHAR(20)    (enum {healthy, at_risk, churning})
-  annual_contract_value    DECIMAL(12,2)
+  health_score           VARCHAR(20)    (enum {healthy, at_risk, churning})
+  annual_contract_value  DECIMAL(12,2)
 
   ...audit fields
 }
 
 
 // --- Mapping ---
-
 mapping 'customer 360' {
   source {
-    `crm_customers`       (filter "email NOT LIKE '%@test.internal'")
-    `order_transactions`   (filter "status IN ('completed', 'refunded')")
-    `support_tickets`      (filter "created_at >= date_sub(now(), interval 12 month)")
+    `crm_customers` (filter "email NOT LIKE '%@test.internal'")
+    `order_transactions` (filter "status IN ('completed', 'refunded')")
+    `support_tickets` (filter "created_at >= date_sub(now(), interval 12 month)")
     "Join `crm_customers` to `order_transactions` on `crm_customers.customer_id` = `order_transactions.customer_id` (left join — customers may have no orders).
      Join `crm_customers` to `support_tickets` on `crm_customers.customer_id` = cast(`support_tickets.customer_id` as UUID) (left join — customers may have no tickets)."
   }
@@ -166,12 +165,14 @@ mapping 'customer 360' {
 
   -> total_revenue {
     "Sum `order_transactions.total` where `status` = 'completed'."
-    | coalesce(0) | round(2)
+    | coalesce(0)
+    | round(2)
   }
 
   -> total_refunds {
     "Sum abs(`order_transactions.total`) where `status` = 'refunded'."
-    | coalesce(0) | round(2)
+    | coalesce(0)
+    | round(2)
   }
 
   -> net_revenue {

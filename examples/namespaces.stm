@@ -1,11 +1,12 @@
 // Satsuma v2 — Namespace Example: Multi-System Retail Platform
-
 // Global definitions — visible from all namespaces without qualification
+
 fragment audit_fields {
   created_at    TIMESTAMPTZ  (required)
   updated_at    TIMESTAMPTZ
   etl_batch_id  VARCHAR(50)
 }
+
 
 transform trim_and_lower {
   trim | lowercase
@@ -13,62 +14,59 @@ transform trim_and_lower {
 
 
 // --- POS Source System ---
-
 namespace pos (note "Oracle Retail POS — store and transaction data") {
   schema stores (note "POS store reference data") {
-    STORE_ID    VARCHAR(20)  (pk)
-    STORE_NAME  VARCHAR(100) (required)
+    STORE_ID    VARCHAR(20)   (pk)
+    STORE_NAME  VARCHAR(100)  (required)
     REGION_CD   CHAR(2)
     OPEN_DATE   DATE
   }
 
   schema transactions (note "Daily transaction feed") {
-    TXN_ID      BIGINT       (pk)
-    STORE_ID    VARCHAR(20)  (ref stores.STORE_ID)
-    TXN_DATE    DATE         (required)
+    TXN_ID      BIGINT         (pk)
+    STORE_ID    VARCHAR(20)    (ref stores.STORE_ID)
+    TXN_DATE    DATE           (required)
     TXN_AMOUNT  DECIMAL(12,2)
-    CUST_ID     VARCHAR(30)  (pii)
+    CUST_ID     VARCHAR(30)    (pii)
   }
 }
 
 
 // --- E-Commerce Source System ---
-
 namespace ecom (note "Shopify e-commerce platform") {
   schema orders (note "Shopify order lines") {
-    order_id        BIGINT    (pk)
-    order_date      DATE      (required)
-    customer_email  VARCHAR(255)  (pii)
+    order_id        BIGINT         (pk)
+    order_date      DATE           (required)
+    customer_email  VARCHAR(255)   (pii)
     total_amount    DECIMAL(10,2)
     store_code      VARCHAR(20)
   }
 
   schema customers (note "Shopify customer profiles") {
-    customer_id     BIGINT    (pk)
-    email           VARCHAR(255)  (pii)
-    first_name      VARCHAR(100)
-    last_name       VARCHAR(100)
-    created_at      TIMESTAMPTZ
+    customer_id  BIGINT        (pk)
+    email        VARCHAR(255)  (pii)
+    first_name   VARCHAR(100)
+    last_name    VARCHAR(100)
+    created_at   TIMESTAMPTZ
   }
 }
 
 
 // --- Warehouse / Hub Layer ---
-
 namespace warehouse (note "Data vault hub layer") {
   schema hub_store {
-    store_hk         BINARY(32)   (pk)
-    store_id         VARCHAR(20)  (required, unique)
-    store_name       VARCHAR(100)
-    region           CHAR(2)
+    store_hk    BINARY(32)    (pk)
+    store_id    VARCHAR(20)   (required, unique)
+    store_name  VARCHAR(100)
+    region      CHAR(2)
     ...audit_fields
   }
 
   schema hub_customer {
-    customer_hk      BINARY(32)   (pk)
-    customer_email   VARCHAR(255) (required, unique, pii)
-    first_name       VARCHAR(100)
-    last_name        VARCHAR(100)
+    customer_hk     BINARY(32)    (pk)
+    customer_email  VARCHAR(255)  (required, unique, pii)
+    first_name      VARCHAR(100)
+    last_name       VARCHAR(100)
     ...audit_fields
   }
 
@@ -77,10 +75,10 @@ namespace warehouse (note "Data vault hub layer") {
     source { `pos::stores` }
     target { `hub_store` }
 
-    STORE_ID   -> store_hk     { md5(STORE_ID) }
-    STORE_ID   -> store_id
-    STORE_NAME -> store_name   { trim }
-    REGION_CD  -> region
+    STORE_ID -> store_hk { md5(STORE_ID) }
+    STORE_ID -> store_id
+    STORE_NAME -> store_name { trim }
+    REGION_CD -> region
   }
 
   // Cross-namespace mapping: e-commerce customers into hub
@@ -88,24 +86,20 @@ namespace warehouse (note "Data vault hub layer") {
     source { `ecom::customers` }
     target { `hub_customer` }
 
-    email       -> customer_hk     { md5(email) }
-    email       -> customer_email  { trim_and_lower }
-    first_name  -> first_name      { trim }
-    last_name   -> last_name       { trim }
+    email -> customer_hk { md5(email) }
+    email -> customer_email { trim_and_lower }
+    first_name -> first_name { trim }
+    last_name -> last_name { trim }
   }
 }
 
 
 // --- Metrics ---
-
 namespace analytics (note "Business metrics layer") {
-  metric daily_sales "Daily Sales Volume" (
-    source ecom::orders,
-    grain daily
-  ) {
+  metric daily_sales "Daily Sales Volume" (source ecom::orders, grain daily) {
     sale_date    DATE
     channel      VARCHAR(20)
-    order_count  INTEGER       (measure)
-    total_value  DECIMAL(12,2) (measure)
+    order_count  INTEGER        (measure)
+    total_value  DECIMAL(12,2)  (measure)
   }
 }

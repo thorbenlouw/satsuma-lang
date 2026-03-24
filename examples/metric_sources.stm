@@ -2,42 +2,45 @@
 // Fact and dimension tables referenced by metrics.stm
 
 schema fact_subscriptions (note "Active and historical subscription records") {
-  subscription_id   STRING(36)     (pk)
-  customer_id       STRING(36)     (ref dim_customer.customer_id)
-  product_line      STRING(50)
-  amount            DECIMAL(14,2)
-  billing_period    STRING(10)     (enum {monthly, quarterly, annual})
-  status            STRING(20)     (enum {active, cancelled, trial})
-  started_at        TIMESTAMPTZ
-  cancelled_at      TIMESTAMPTZ
+  subscription_id  STRING(36)     (pk)
+  customer_id      STRING(36)     (ref dim_customer.customer_id)
+  product_line     STRING(50)
+  amount           DECIMAL(14,2)
+  billing_period   STRING(10)     (enum {monthly, quarterly, annual})
+  status           STRING(20)     (enum {active, cancelled, trial})
+  started_at       TIMESTAMPTZ
+  cancelled_at     TIMESTAMPTZ
 }
+
 
 schema fact_orders (note "Commerce order header records") {
-  order_id          STRING(36)     (pk)
-  customer_id       STRING(36)     (ref dim_customer.customer_id)
-  order_date        DATE
-  order_channel     STRING(30)
-  currency_code     ISO-4217
-  total_amount      DECIMAL(14,2)
-  is_gift           BOOLEAN        (default false)
-  ship_country      ISO-3166-a2
-  loyalty_tier      STRING(20)
+  order_id       STRING(36)     (pk)
+  customer_id    STRING(36)     (ref dim_customer.customer_id)
+  order_date     DATE
+  order_channel  STRING(30)
+  currency_code  ISO-4217
+  total_amount   DECIMAL(14,2)
+  is_gift        BOOLEAN        (default false)
+  ship_country   ISO-3166-a2
+  loyalty_tier   STRING(20)
 }
+
 
 schema fact_opportunities (note "Sales pipeline opportunity snapshots") {
-  opportunity_id    STRING(36)     (pk)
-  pipeline_stage    STRING(50)
-  region            STRING(50)
-  account_segment   STRING(50)
-  arr_value         DECIMAL(18,2)
-  probability       DECIMAL(5,2)
-  close_quarter     STRING(6)
-  is_deleted        BOOLEAN        (default false)
-  snapshot_date     DATE
+  opportunity_id   STRING(36)     (pk)
+  pipeline_stage   STRING(50)
+  region           STRING(50)
+  account_segment  STRING(50)
+  arr_value        DECIMAL(18,2)
+  probability      DECIMAL(5,2)
+  close_quarter    STRING(6)
+  is_deleted       BOOLEAN        (default false)
+  snapshot_date    DATE
 }
 
+
 schema fact_sessions (note "Web/app checkout sessions for abandonment tracking") {
-  session_id        STRING(64)     (pk)
+  session_id        STRING(64)   (pk)
   session_type      STRING(20)
   order_channel     STRING(30)
   device_type       STRING(20)
@@ -45,22 +48,25 @@ schema fact_sessions (note "Web/app checkout sessions for abandonment tracking")
   started_at        TIMESTAMPTZ
 }
 
+
 schema dim_customer (note "Customer dimension") {
-  customer_id        STRING(36)    (pk)
-  segment            STRING(30)
-  region             STRING(50)
-  acquisition_channel STRING(50)
-  cohort_year        INTEGER
-  customer_segment   STRING(30)
+  customer_id          STRING(36)  (pk)
+  segment              STRING(30)
+  region               STRING(50)
+  acquisition_channel  STRING(50)
+  cohort_year          INTEGER
+  customer_segment     STRING(30)
 }
 
+
 schema dim_date (note "Date dimension for time-series analysis") {
-  date_key    DATE       (pk)
-  year        INTEGER
-  quarter     STRING(2)
-  month       INTEGER
-  day_of_week STRING(10)
+  date_key     DATE        (pk)
+  year         INTEGER
+  quarter      STRING(2)
+  month        INTEGER
+  day_of_week  STRING(10)
 }
+
 
 schema dim_stage (note "Pipeline stage dimension") {
   stage_key    STRING(50)   (pk)

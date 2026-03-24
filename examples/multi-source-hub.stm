@@ -12,7 +12,6 @@ note {
 
 
 // --- Sources ---
-
 schema crm_system (note "CRM customer data") {
   customer_id     UUID
   email           EMAIL
@@ -20,38 +19,41 @@ schema crm_system (note "CRM customer data") {
   loyalty_points  INT32
 }
 
+
 schema payment_gateway (note "Payment transaction data") {
   transaction_id  UUID
   customer_email  EMAIL
   amount          DECIMAL(12,2)
   currency        ISO-4217
-  status          ENUM (enum {pending, completed, failed})
+  status          ENUM           (enum {pending, completed, failed})
 }
 
+
 schema inventory_system (note "Inventory management") {
-  product_sku          STRING(20)
-  stock_level          INT32
-  warehouse_location   STRING(50)
+  product_sku         STRING(20)
+  stock_level         INT32
+  warehouse_location  STRING(50)
 }
 
 
 // --- Targets ---
-
 schema analytics_db (note "Analytics database") {
-  customer_id           UUID
-  email                 VARCHAR(255)
-  total_spent           DECIMAL(12,2)
-  transaction_count     INT
-  last_transaction_date TIMESTAMPTZ
+  customer_id            UUID
+  email                  VARCHAR(255)
+  total_spent            DECIMAL(12,2)
+  transaction_count      INT
+  last_transaction_date  TIMESTAMPTZ
 }
+
 
 schema notification_service (note "Notification message format") {
   recipient_email  EMAIL
   recipient_phone  STRING(20)
   message_type     ENUM
   message_body     TEXT
-  priority         ENUM (enum {low, medium, high})
+  priority         ENUM        (enum {low, medium, high})
 }
+
 
 schema reporting_warehouse (note "Reporting data warehouse") {
   product_id       VARCHAR(20)
@@ -62,7 +64,6 @@ schema reporting_warehouse (note "Reporting data warehouse") {
 
 
 // --- Mappings ---
-
 mapping 'crm to analytics' {
   source { `crm_system` }
   target { `analytics_db` }
@@ -70,6 +71,7 @@ mapping 'crm to analytics' {
   customer_id -> customer_id
   email -> email
 }
+
 
 mapping 'payments to analytics' {
   source { `payment_gateway` }
@@ -89,8 +91,12 @@ mapping 'payments to analytics' {
   }
 }
 
+
 mapping 'crm to notifications' {
-  source { `crm_system`, `payment_gateway` }
+  source {
+    `crm_system`
+    `payment_gateway`
+  }
   target { `notification_service` }
 
   email -> recipient_email
@@ -106,6 +112,7 @@ mapping 'crm to notifications' {
   }
 }
 
+
 mapping 'payments to notifications' {
   source { `payment_gateway` }
   target { `notification_service` }
@@ -116,6 +123,7 @@ mapping 'payments to notifications' {
     "Format as 'Transaction {`transaction_id`} completed successfully.'"
   }
 }
+
 
 mapping 'inventory to reporting' {
   source { `inventory_system` }

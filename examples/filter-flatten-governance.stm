@@ -28,91 +28,90 @@ note {
 
 
 // --- Sources ---
-
 schema order_events (
   note "Enriched order events from the streaming platform (Kafka → S3)",
   classification "INTERNAL"
 ) {
-  event_id        UUID          (pk, required)
-  event_time      TIMESTAMPTZ   (required)
-  order_status    STRING(20)    (enum {completed, pending, failed, refunded}, required)
+  event_id      UUID            (pk, required)
+  event_time    TIMESTAMPTZ     (required)
+  order_status  STRING(20)      (enum {completed, pending, failed, refunded}, required)
 
   customer record {
-    customer_id   UUID          (required)
-    email         STRING(255)   (pii, classification "RESTRICTED", retention "3y")
-    tier          STRING(20)    (enum {standard, silver, gold, platinum})
+    customer_id  UUID         (required)
+    email        STRING(255)  (pii, classification "RESTRICTED", retention "3y")
+    tier         STRING(20)   (enum {standard, silver, gold, platinum})
   }
 
   order_totals record {
-    subtotal      DECIMAL(12,2)
-    tax           DECIMAL(12,2)
-    discount      DECIMAL(12,2)
-    total         DECIMAL(12,2) (required)
-    currency      CHAR(3)       (required, default "GBP")
+    subtotal  DECIMAL(12,2)
+    tax       DECIMAL(12,2)
+    discount  DECIMAL(12,2)
+    total     DECIMAL(12,2)  (required)
+    currency  CHAR(3)        (required, default "GBP")
   }
 
   // Scalar lists: element type is machine-readable in the type position
-  promo_codes list_of STRING (note "Applied promotion codes, may be empty")
-  tag_ids     list_of INT    (classification "INTERNAL")
+  promo_codes   list_of STRING  (note "Applied promotion codes, may be empty")
+  tag_ids       list_of INT     (classification "INTERNAL")
 
   // Filtered list: only include line items that are not cancelled.
   // Items with status = 'cancelled' are excluded before any mapping runs.
   line_items list_of record (filter item_status != "cancelled") {
-    line_number   INT           (required)
-    sku           STRING(30)    (required)
-    item_status   STRING(20)    (enum {active, cancelled, backordered})
-    quantity      INT           (required)
-    unit_price    DECIMAL(12,2) (required)
-    tax_amount    DECIMAL(12,2)
+    line_number  INT            (required)
+    sku          STRING(30)     (required)
+    item_status  STRING(20)     (enum {active, cancelled, backordered})
+    quantity     INT            (required)
+    unit_price   DECIMAL(12,2)  (required)
+    tax_amount   DECIMAL(12,2)
     discount_lines list_of record (filter discount_type != "internal") {
-      discount_code   STRING(30)
-      discount_type   STRING(20) (enum {promo, loyalty, internal, staff})
-      discount_amount DECIMAL(12,2)
+      discount_code    STRING(30)
+      discount_type    STRING(20)     (enum {promo, loyalty, internal, staff})
+      discount_amount  DECIMAL(12,2)
     }
   }
 }
+
 
 schema customer_profiles (
   note "Customer master — CRM system of record",
   classification "RESTRICTED",
   retention "7y"
 ) {
-  customer_id       UUID          (pk, required)
-  email             STRING(255)   (pii, classification "RESTRICTED", retention "3y")
-  first_name        STRING(100)   (pii)
-  last_name         STRING(100)   (pii)
-  acquisition_channel STRING(50)
-  region            STRING(50)
+  customer_id          UUID            (pk, required)
+  email                STRING(255)     (pii, classification "RESTRICTED", retention "3y")
+  first_name           STRING(100)     (pii)
+  last_name            STRING(100)     (pii)
+  acquisition_channel  STRING(50)
+  region               STRING(50)
   // Scalar lists used here for preference lists — no subfields needed
-  consent_flags     list_of STRING (classification "RESTRICTED", retention "7y",
-                       note "e.g. ['email_marketing', 'sms', 'third_party']")
-  opt_out_channels  list_of STRING (classification "RESTRICTED")
+  consent_flags        list_of STRING  (classification "RESTRICTED", retention "7y", note "e.g. ['email_marketing', 'sms', 'third_party']")
+  opt_out_channels     list_of STRING  (classification "RESTRICTED")
 }
 
 
 // --- Targets ---
-
 schema completed_orders_parquet (
   format parquet,
   classification "INTERNAL",
   note "Curated completed-orders fact table — one row per order"
 ) {
-  order_id          UUID          (pk, required)
-  event_time_utc    TIMESTAMPTZ   (required)
-  customer_id       UUID          (indexed)
-  customer_email    STRING(255)   (pii, classification "RESTRICTED", retention "3y")
-  tier              STRING(20)
-  acquisition_channel STRING(50)
-  region            STRING(50)
-  currency          CHAR(3)       (required)
-  subtotal          DECIMAL(12,2)
-  tax               DECIMAL(12,2)
-  discount          DECIMAL(12,2)
-  total             DECIMAL(12,2) (required)
-  promo_codes       list_of STRING (note "Passed through from source unchanged")
-  active_line_count INT           (required)
-  ingest_timestamp  TIMESTAMPTZ   (required)
+  order_id             UUID            (pk, required)
+  event_time_utc       TIMESTAMPTZ     (required)
+  customer_id          UUID            (indexed)
+  customer_email       STRING(255)     (pii, classification "RESTRICTED", retention "3y")
+  tier                 STRING(20)
+  acquisition_channel  STRING(50)
+  region               STRING(50)
+  currency             CHAR(3)         (required)
+  subtotal             DECIMAL(12,2)
+  tax                  DECIMAL(12,2)
+  discount             DECIMAL(12,2)
+  total                DECIMAL(12,2)   (required)
+  promo_codes          list_of STRING  (note "Passed through from source unchanged")
+  active_line_count    INT             (required)
+  ingest_timestamp     TIMESTAMPTZ     (required)
 }
+
 
 schema order_line_facts_parquet (
   format parquet,
@@ -120,22 +119,21 @@ schema order_line_facts_parquet (
   retention "5y",
   note "Curated order line facts — one row per non-cancelled line item"
 ) {
-  order_id          UUID          (required)
+  order_id          UUID           (required)
   customer_id       UUID
-  line_number       INT           (required)
-  sku               STRING(30)    (required)
-  quantity          INT           (required)
-  unit_price        DECIMAL(12,2) (required)
+  line_number       INT            (required)
+  sku               STRING(30)     (required)
+  quantity          INT            (required)
+  unit_price        DECIMAL(12,2)  (required)
   tax_amount        DECIMAL(12,2)
-  line_total        DECIMAL(12,2) (required)
-  currency          CHAR(3)       (required)
+  line_total        DECIMAL(12,2)  (required)
+  currency          CHAR(3)        (required)
   promo_code_count  INT
-  ingest_timestamp  TIMESTAMPTZ   (required)
+  ingest_timestamp  TIMESTAMPTZ    (required)
 }
 
 
 // --- Mapping 1: Order headers — multi-source filtered join ---
-
 mapping 'completed orders' {
   note {
     """
@@ -153,21 +151,29 @@ mapping 'completed orders' {
   }
   target { `completed_orders_parquet` }
 
-  event_id                       -> order_id
-  event_time                     -> event_time_utc
-  customer.customer_id           -> customer_id
-  customer.email                 -> customer_email { trim | lowercase | validate_email | null_if_invalid }
-  customer.tier                  -> tier { trim | lowercase | null_if_empty }
-  customer_profiles.acquisition_channel -> acquisition_channel { trim | null_if_empty }
-  customer_profiles.region       -> region { trim | uppercase | null_if_empty }
-  order_totals.currency          -> currency { trim | uppercase }
-  order_totals.subtotal          -> subtotal { coalesce(0) }
-  order_totals.tax               -> tax { coalesce(0) }
-  order_totals.discount          -> discount { coalesce(0) }
-  order_totals.total             -> total
+  event_id -> order_id
+  event_time -> event_time_utc
+  customer.customer_id -> customer_id
+  customer.email -> customer_email {
+    trim
+    | lowercase
+    | validate_email
+    | null_if_invalid
+  }
+  customer.tier -> tier { trim | lowercase | null_if_empty }
+  customer_profiles.acquisition_channel -> acquisition_channel {
+    trim
+    | null_if_empty
+  }
+  customer_profiles.region -> region { trim | uppercase | null_if_empty }
+  order_totals.currency -> currency { trim | uppercase }
+  order_totals.subtotal -> subtotal { coalesce(0) }
+  order_totals.tax -> tax { coalesce(0) }
+  order_totals.discount -> discount { coalesce(0) }
+  order_totals.total -> total
 
   // Scalar array passed through as-is — no iteration or subfield mapping needed
-  promo_codes                    -> promo_codes
+  promo_codes -> promo_codes
 
   -> active_line_count {
     "Count elements in line_items (already filtered to exclude cancelled items at source)"
@@ -178,7 +184,6 @@ mapping 'completed orders' {
 
 
 // --- Mapping 2: Order lines — flatten nested list ---
-
 // flatten lifts each element of line_items into its own output row,
 // so downstream field arrows reference the flattened element directly.
 mapping 'order line facts' {
@@ -191,18 +196,18 @@ mapping 'order line facts' {
   source { `order_events` }
   target { `order_line_facts_parquet` }
 
-  event_id                       -> order_id
-  customer.customer_id           -> customer_id
+  event_id -> order_id
+  customer.customer_id -> customer_id
 
   flatten line_items -> order_line_facts_parquet {
-    .line_number       -> line_number
-    .sku               -> sku { trim | uppercase }
-    .quantity          -> quantity
-    .unit_price        -> unit_price
-    .tax_amount        -> tax_amount { coalesce(0) }
+    .line_number -> line_number
+    .sku -> sku { trim | uppercase }
+    .quantity -> quantity
+    .unit_price -> unit_price
+    .tax_amount -> tax_amount { coalesce(0) }
   }
 
-  order_totals.currency          -> currency { trim | uppercase }
+  order_totals.currency -> currency { trim | uppercase }
 
   -> line_total {
     "Multiply line_items.unit_price by line_items.quantity, then add line_items.tax_amount"

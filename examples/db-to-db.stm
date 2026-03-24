@@ -1,6 +1,6 @@
 // Satsuma v2 — Legacy Customer Migration
-
 import { 'address fields' } from "lib/common.stm"
+
 
 note {
   """
@@ -24,16 +24,15 @@ note {
 
 
 // --- Source ---
-
 schema legacy_sqlserver (
   note "CUSTOMER table — SQL Server 2008. No app-level validation until 2018."
 ) {
-  CUST_ID         INT            (pk)                          // sequential, gaps from deletions
-  CUST_TYPE       CHAR(1)        (enum {R, B, G}, default R)   //! some records have NULL
-  FIRST_NM        VARCHAR(100)                                 // retail customers only
-  LAST_NM         VARCHAR(100)                                 // retail customers only
-  COMPANY_NM      VARCHAR(200)                                 // business/government only
-  EMAIL_ADDR      VARCHAR(255)   (pii)                         //! not validated — contains garbage
+  CUST_ID         INT            (pk)  // sequential, gaps from deletions
+  CUST_TYPE       CHAR(1)        (enum {R, B, G}, default R)  //! some records have NULL
+  FIRST_NM        VARCHAR(100)  // retail customers only
+  LAST_NM         VARCHAR(100)  // retail customers only
+  COMPANY_NM      VARCHAR(200)  // business/government only
+  EMAIL_ADDR      VARCHAR(255)   (pii)  //! not validated — contains garbage
   PHONE_NBR       VARCHAR(50) (
     note """
     No consistent format across the dataset:
@@ -47,47 +46,45 @@ schema legacy_sqlserver (
   ADDR_LINE_1     VARCHAR(200)
   ADDR_LINE_2     VARCHAR(200)
   CITY            VARCHAR(100)
-  STATE_PROV      VARCHAR(50)                                  //! full names AND 2-char codes mixed
+  STATE_PROV      VARCHAR(50)  //! full names AND 2-char codes mixed
   ZIP_POSTAL      VARCHAR(20)
   COUNTRY_CD      CHAR(2)        (default US)
-  CREDIT_LIMIT    DECIMAL(12,2)                                // NULL = no credit extended
+  CREDIT_LIMIT    DECIMAL(12,2)  // NULL = no credit extended
   ACCOUNT_STATUS  CHAR(1)        (enum {A, S, C, D}, default A)
-  CREATED_DATE    VARCHAR(10)                                  //! stored as MM/DD/YYYY string
-  LAST_MOD_DATE   VARCHAR(20)                                  //! MM/DD/YYYY HH:MM:SS AM/PM
-  TAX_ID          VARCHAR(20)    (pii, encrypt)                //! plaintext in legacy — SSN or EIN
+  CREATED_DATE    VARCHAR(10)  //! stored as MM/DD/YYYY string
+  LAST_MOD_DATE   VARCHAR(20)  //! MM/DD/YYYY HH:MM:SS AM/PM
+  TAX_ID          VARCHAR(20)    (pii, encrypt)  //! plaintext in legacy — SSN or EIN
   LOYALTY_POINTS  INT            (default 0)
   PREF_CONTACT    CHAR(1)        (enum {E, P, M, N}, default E)
-  NOTES           VARCHAR(MAX)                                 // free-text, may contain profanity
+  NOTES           VARCHAR(MAX)  // free-text, may contain profanity
 }
 
 
 // --- Target ---
-
 schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
-  customer_id              UUID           (pk, required)
-  legacy_customer_id       INTEGER        (unique, indexed)
-  customer_type            VARCHAR(20)    (enum {retail, business, government}, required)
-  display_name             VARCHAR(200)   (required)
-  first_name               VARCHAR(100)
-  last_name                VARCHAR(100)
-  company_name             VARCHAR(200)
-  email                    VARCHAR(255)   (format email, pii)
-  phone                    VARCHAR(20)    (format E.164)
-  address_id               UUID           (ref addresses.id)
-  credit_limit_cents       BIGINT         (default 0)
-  status                   VARCHAR(20)    (enum {active, suspended, closed, delinquent}, required)
-  created_at               TIMESTAMPTZ    (required)
-  updated_at               TIMESTAMPTZ
-  tax_identifier_encrypted TEXT           (pii, encrypt AES-256-GCM)
-  loyalty_tier             VARCHAR(20)    (enum {bronze, silver, gold, platinum})
-  preferred_contact_method VARCHAR(20)    (enum {email, phone, mail, none})
-  notes                    TEXT
-  migration_timestamp      TIMESTAMPTZ
+  customer_id               UUID          (pk, required)
+  legacy_customer_id        INTEGER       (unique, indexed)
+  customer_type             VARCHAR(20)   (enum {retail, business, government}, required)
+  display_name              VARCHAR(200)  (required)
+  first_name                VARCHAR(100)
+  last_name                 VARCHAR(100)
+  company_name              VARCHAR(200)
+  email                     VARCHAR(255)  (format email, pii)
+  phone                     VARCHAR(20)   (format E.164)
+  address_id                UUID          (ref addresses.id)
+  credit_limit_cents        BIGINT        (default 0)
+  status                    VARCHAR(20)   (enum {active, suspended, closed, delinquent}, required)
+  created_at                TIMESTAMPTZ   (required)
+  updated_at                TIMESTAMPTZ
+  tax_identifier_encrypted  TEXT          (pii, encrypt AES-256-GCM)
+  loyalty_tier              VARCHAR(20)   (enum {bronze, silver, gold, platinum})
+  preferred_contact_method  VARCHAR(20)   (enum {email, phone, mail, none})
+  notes                     TEXT
+  migration_timestamp       TIMESTAMPTZ
 }
 
 
 // --- Mapping ---
-
 mapping 'customer migration' {
   note {
     "Mapping assumptions:
@@ -100,7 +97,9 @@ mapping 'customer migration' {
   target { `postgres_db` }
 
   // --- Identifiers ---
-  CUST_ID -> customer_id { uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", CUST_ID) }
+  CUST_ID -> customer_id {
+    uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", CUST_ID)
+  }
   CUST_ID -> legacy_customer_id
 
   // --- Customer Type ---
@@ -119,9 +118,9 @@ mapping 'customer migration' {
      Otherwise, trim `COMPANY_NM`."
   }
 
-  FIRST_NM   -> first_name    { trim | title_case | null_if_empty }
-  LAST_NM    -> last_name     { trim | title_case | null_if_empty }
-  COMPANY_NM -> company_name  { trim | null_if_empty }
+  FIRST_NM -> first_name { trim | title_case | null_if_empty }
+  LAST_NM -> last_name { trim | title_case | null_if_empty }
+  COMPANY_NM -> company_name { trim | null_if_empty }
 
   // --- Contact ---
   EMAIL_ADDR -> email { trim | lowercase | validate_email | null_if_invalid }
@@ -146,32 +145,52 @@ mapping 'customer migration' {
 
   // --- Status ---
   ACCOUNT_STATUS -> status {
-    map { A: "active", S: "suspended", C: "closed", D: "delinquent" }
+    map {
+      A: "active"
+      S: "suspended"
+      C: "closed"
+      D: "delinquent"
+    }
   }
 
   // --- Dates ---
-  CREATED_DATE -> created_at { parse("MM/DD/YYYY") | drop_if_invalid | assume_utc | to_iso8601 }
+  CREATED_DATE -> created_at {
+    parse("MM/DD/YYYY")
+    | drop_if_invalid
+    | assume_utc
+    | to_iso8601
+  }
 
   LAST_MOD_DATE -> updated_at {
-    parse("MM/DD/YYYY hh:mm:ss a") | to_utc | to_iso8601
+    parse("MM/DD/YYYY hh:mm:ss a")
+    | to_utc
+    | to_iso8601
     | "If null, fall back to CREATED_DATE parsed as MM/DD/YYYY in UTC"
   }
 
   // --- Security ---
-  TAX_ID -> tax_identifier_encrypted { error_if_null | encrypt(AES-256-GCM, secrets.tax_encryption_key) }
+  TAX_ID -> tax_identifier_encrypted {
+    error_if_null
+    | encrypt(AES-256-GCM, secrets.tax_encryption_key)
+  }
 
   // --- Calculated ---
   LOYALTY_POINTS -> loyalty_tier {
     map {
-      < 1000:  "bronze"
-      < 5000:  "silver"
+      < 1000: "bronze"
+      < 5000: "silver"
       < 10000: "gold"
       default: "platinum"
     }
   }
 
   PREF_CONTACT -> preferred_contact_method {
-    map { E: "email", P: "phone", M: "mail", N: "none" }
+    map {
+      E: "email"
+      P: "phone"
+      M: "mail"
+      N: "none"
+    }
   }
 
   // --- Text ---

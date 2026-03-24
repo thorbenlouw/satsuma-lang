@@ -17,7 +17,6 @@ note {
 
 
 // --- Source ---
-
 schema commerce_order (
   format xml,
   namespace ord "http://example.com/commerce/order/v2",
@@ -25,21 +24,21 @@ schema commerce_order (
   note "Canonical commerce order message"
 ) {
   Order record (xpath "/ord:OrderMessage/ord:Order") {
-    OrderId           STRING       (xpath "ord:OrderId")
-    Channel           STRING       (xpath "ord:Channel")
-    OrderTimestamp    STRING       (xpath "ord:OrderTimestamp")
-    CurrencyCode      STRING       (xpath "ord:Currency/com:Code")
+    OrderId         STRING  (xpath "ord:OrderId")
+    Channel         STRING  (xpath "ord:Channel")
+    OrderTimestamp  STRING  (xpath "ord:OrderTimestamp")
+    CurrencyCode    STRING  (xpath "ord:Currency/com:Code")
 
     Customer record {
-      CustomerId      STRING       (xpath "ord:CustomerId")
-      Email           STRING       (xpath "ord:Email")
-      LoyaltyTier     STRING       (xpath "ord:LoyaltyTier")
+      CustomerId   STRING  (xpath "ord:CustomerId")
+      Email        STRING  (xpath "ord:Email")
+      LoyaltyTier  STRING  (xpath "ord:LoyaltyTier")
     }
 
     ShippingAddress record {
-      CountryCode     STRING       (xpath "ord:CountryCode")
-      RegionCode      STRING       (xpath "ord:RegionCode")
-      PostalCode      STRING       (xpath "ord:PostalCode")
+      CountryCode  STRING  (xpath "ord:CountryCode")
+      RegionCode   STRING  (xpath "ord:RegionCode")
+      PostalCode   STRING  (xpath "ord:PostalCode")
     }
 
     Totals record {
@@ -49,27 +48,26 @@ schema commerce_order (
     }
 
     Discounts list_of record (xpath "ord:Discounts/ord:Discount") {
-      DiscountCode    STRING       (xpath "ord:Code")
-      DiscountAmount  DECIMAL(12,2) (xpath "ord:Amount")
-      DiscountType    STRING       (xpath "ord:Type")
+      DiscountCode    STRING         (xpath "ord:Code")
+      DiscountAmount  DECIMAL(12,2)  (xpath "ord:Amount")
+      DiscountType    STRING         (xpath "ord:Type")
     }
 
     LineItems list_of record (xpath "ord:LineItems/ord:LineItem") {
-      LineNumber      INT32        (xpath "ord:LineNumber")
-      SKU             STRING       (xpath "ord:SKU")
-      FulfillmentType STRING       (xpath "ord:FulfillmentType")
-      Quantity        INT32        (xpath "ord:Quantity")
-      UnitPrice       DECIMAL(12,2) (xpath "ord:UnitPrice")
-      ExtendedAmount  DECIMAL(12,2) (xpath "ord:ExtendedAmount")
-      TaxAmount       DECIMAL(12,2) (xpath "ord:TaxAmount")
-      IsGift          BOOLEAN      (xpath "ord:IsGift")
+      LineNumber       INT32          (xpath "ord:LineNumber")
+      SKU              STRING         (xpath "ord:SKU")
+      FulfillmentType  STRING         (xpath "ord:FulfillmentType")
+      Quantity         INT32          (xpath "ord:Quantity")
+      UnitPrice        DECIMAL(12,2)  (xpath "ord:UnitPrice")
+      ExtendedAmount   DECIMAL(12,2)  (xpath "ord:ExtendedAmount")
+      TaxAmount        DECIMAL(12,2)  (xpath "ord:TaxAmount")
+      IsGift           BOOLEAN        (xpath "ord:IsGift")
     }
   }
 }
 
 
 // --- Targets ---
-
 schema order_headers_parquet (format parquet, note "Curated order header dataset") {
   order_id             STRING         (pk)
   order_channel        STRING         (enum {web, mobile, store, marketplace}, required)
@@ -90,26 +88,26 @@ schema order_headers_parquet (format parquet, note "Curated order header dataset
   ingest_date          DATE           (required)
 }
 
+
 schema order_lines_parquet (format parquet, note "Curated order line dataset") {
-  order_id             STRING         (required)
-  line_number          INT32          (required)
-  sku                  STRING         (required)
-  fulfillment_type     STRING         (enum {ship, pickup, digital, service})
-  quantity             INT32          (required)
-  unit_price           DECIMAL(12,2)
-  extended_amount      DECIMAL(12,2)  (required)
-  line_tax_amount      DECIMAL(12,2)
-  is_gift              BOOLEAN
-  currency_code        STRING         (required)
-  order_channel        STRING         (required)
-  customer_id          STRING
-  ship_country         STRING
-  ingest_date          DATE           (required)
+  order_id          STRING         (required)
+  line_number       INT32          (required)
+  sku               STRING         (required)
+  fulfillment_type  STRING         (enum {ship, pickup, digital, service})
+  quantity          INT32          (required)
+  unit_price        DECIMAL(12,2)
+  extended_amount   DECIMAL(12,2)  (required)
+  line_tax_amount   DECIMAL(12,2)
+  is_gift           BOOLEAN
+  currency_code     STRING         (required)
+  order_channel     STRING         (required)
+  customer_id       STRING
+  ship_country      STRING
+  ingest_date       DATE           (required)
 }
 
 
 // --- Mapping: Order Headers ---
-
 mapping 'order headers' {
   source { `commerce_order` }
   target { `order_headers_parquet` }
@@ -123,11 +121,24 @@ mapping 'order headers' {
   }
 
   Order.Customer.CustomerId -> customer_id
-  Order.Customer.Email -> customer_email { trim | lowercase | validate_email | null_if_invalid }
-  Order.Customer.LoyaltyTier -> loyalty_tier { trim | lowercase | null_if_empty }
+  Order.Customer.Email -> customer_email {
+    trim
+    | lowercase
+    | validate_email
+    | null_if_invalid
+  }
+  Order.Customer.LoyaltyTier -> loyalty_tier {
+    trim
+    | lowercase
+    | null_if_empty
+  }
 
   Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
-  Order.ShippingAddress.RegionCode -> ship_region { trim | uppercase | null_if_empty }
+  Order.ShippingAddress.RegionCode -> ship_region {
+    trim
+    | uppercase
+    | null_if_empty
+  }
   Order.ShippingAddress.PostalCode -> ship_postal_code { trim | null_if_empty }
 
   Order.CurrencyCode -> currency_code { trim | uppercase }
@@ -150,12 +161,14 @@ mapping 'order headers' {
     "Count `LineNumber` entries for the current order."
   }
 
-  -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
+  -> ingest_date {
+    now_utc()
+    | "Truncate to UTC calendar date YYYY-MM-DD."
+  }
 }
 
 
 // --- Mapping: Order Lines (flattened) ---
-
 mapping 'order lines' {
   source { `commerce_order` }
   target { `order_lines_parquet` }
@@ -178,5 +191,8 @@ mapping 'order lines' {
   Order.Customer.CustomerId -> customer_id
   Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
 
-  -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
+  -> ingest_date {
+    now_utc()
+    | "Truncate to UTC calendar date YYYY-MM-DD."
+  }
 }
