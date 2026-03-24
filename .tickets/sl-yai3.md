@@ -1,6 +1,6 @@
 ---
 id: sl-yai3
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-24T23:47:48Z
