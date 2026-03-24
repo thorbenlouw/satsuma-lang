@@ -110,31 +110,43 @@
             <span class="w-3 h-3 rounded-full bg-red-400/60"></span>
             <span class="w-3 h-3 rounded-full bg-yellow-400/60"></span>
             <span class="w-3 h-3 rounded-full bg-green/60"></span>
-            <span class="ml-2 text-xs text-warm-gray font-mono">sfdc_to_snowflake.stm</span>
+            <span class="ml-2 text-xs text-warm-gray font-mono">customer_migration.stm</span>
           </div>
-          <pre class="text-sm"><code class="stm"><span class="comment">// Salesforce to Snowflake Pipeline</span>
+          <pre class="text-sm"><code class="stm"><span class="comment">// Legacy Customer Migration</span>
 
-<span class="keyword">schema</span> <span class="field">sfdc_opportunity</span> {
-  Id              <span class="type">ID</span>             <span class="constraint">(pk)</span>
-  Name            <span class="type">STRING(120)</span>    <span class="constraint">(required)</span>
-  Amount          <span class="type">CURRENCY(18,2)</span>
-  StageName       <span class="type">PICKLIST</span>       <span class="constraint">(enum {Prospecting, Closed_Won})</span>
+<span class="keyword">fragment</span> <span class="string">'audit columns'</span> {
+  created_at  <span class="type">TIMESTAMPTZ</span>  <span class="constraint">(required)</span>
+  updated_at  <span class="type">TIMESTAMPTZ</span>
 }
 
-<span class="keyword">schema</span> <span class="field">snowflake_opps</span> {
-  opp_key         <span class="type">VARCHAR(18)</span>    <span class="constraint">(pk)</span>
-  amount_usd      <span class="type">NUMBER(18,2)</span>   <span class="constraint">(note <span class="string">"Converted at spot rate"</span>)</span>
-  pipeline_stage  <span class="type">VARCHAR(50)</span>
+<span class="keyword">schema</span> <span class="field">legacy_customers</span> {
+  CUST_ID     <span class="type">INT</span>           <span class="constraint">(pk)</span>
+  FIRST_NM    <span class="type">VARCHAR(100)</span>
+  EMAIL_ADDR  <span class="type">VARCHAR(255)</span>  <span class="constraint">(pii)</span>       <span class="warning">//!</span> <span class="comment">not validated</span>
+  PHONE_NBR   <span class="type">VARCHAR(50)</span>                  <span class="warning">//!</span> <span class="comment">mixed formats</span>
 }
 
-<span class="keyword">mapping</span> <span class="string">'opportunity sync'</span> {
-  <span class="keyword">source</span> { <span class="field">`sfdc_opportunity`</span> }
-  <span class="keyword">target</span> { <span class="field">`snowflake_opps`</span> }
+<span class="keyword">schema</span> <span class="field">customers</span> {
+  customer_id  <span class="type">UUID</span>          <span class="constraint">(pk, required)</span>
+  full_name    <span class="type">VARCHAR(200)</span>  <span class="constraint">(required)</span>
+  email        <span class="type">VARCHAR(255)</span>  <span class="constraint">(format email, pii)</span>
+  phone        <span class="type">VARCHAR(20)</span>   <span class="constraint">(format E.164)</span>
+  ...<span class="string">'audit columns'</span>
+}
 
-  Id     <span class="operator">-></span> opp_key
-  Amount <span class="operator">-></span> amount_usd { <span class="function">convert_currency</span>(CurrencyIsoCode, <span class="string">"USD"</span>) }
-  StageName <span class="operator">-></span> pipeline_stage {
-    <span class="keyword">map</span> { Prospecting: <span class="string">"top_funnel"</span>, Closed_Won: <span class="string">"closed_won"</span> }
+<span class="keyword">mapping</span> <span class="string">'customer migration'</span> {
+  <span class="keyword">source</span> { <span class="field">`legacy_customers`</span> }
+  <span class="keyword">target</span> { <span class="field">`customers`</span> }
+
+  CUST_ID    <span class="operator">-></span> customer_id { <span class="function">uuid_v5</span>(<span class="string">"6ba7b..."</span>, CUST_ID) }
+  FIRST_NM   <span class="operator">-></span> full_name   { <span class="function">trim</span> | <span class="function">title_case</span> }
+  EMAIL_ADDR <span class="operator">-></span> email       { <span class="function">trim</span> | <span class="function">lowercase</span> | <span class="function">validate_email</span> }
+
+  PHONE_NBR <span class="operator">-></span> phone {
+    <span class="note-text">"Extract digits, assume US country code +1 if 10 digits.
+     Format as E.164. For other patterns, determine country
+     from source address fields."</span>
+    | <span class="function">warn_if_invalid</span>
   }
 }</code></pre>
         </div>
@@ -225,14 +237,14 @@
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
           </div>
           <h3 class="text-lg font-bold text-charcoal mb-2">AI-Native</h3>
-          <p class="text-warm-gray text-sm leading-relaxed">Syntax borrows from SQL, TypeScript, and HCL. LLMs generate valid Satsuma reliably. Built for hybrid human + AI workflows.</p>
+          <p class="text-warm-gray text-sm leading-relaxed">Structured programming language syntax that LLMs understand natively and reason about well. CLI tooling gives AI agents deterministic workspace context to work with.</p>
         </div>
         <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
           <div class="w-12 h-12 bg-gradient-to-br from-orange to-green rounded-xl flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           </div>
           <h3 class="text-lg font-bold text-charcoal mb-2">40-60% Smaller</h3>
-          <p class="text-warm-gray text-sm leading-relaxed">More concise than equivalent YAML or JSON mapping specs. Less noise, more signal. Handles COBOL, EDI, XML, and every real-world format.</p>
+          <p class="text-warm-gray text-sm leading-relaxed">More concise than equivalent YAML or JSON specs, and 3-8x less token usage than mapping spreadsheets. Less noise, more signal for both humans and AI.</p>
         </div>
       </div>
     </div>
