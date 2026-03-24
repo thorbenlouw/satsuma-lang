@@ -19,6 +19,7 @@ run_step "satsuma-cli tests" npm --prefix tooling/satsuma-cli test
 
 run_step "vscode-satsuma validate" npm --prefix tooling/vscode-satsuma run validate
 run_step "vscode-satsuma tests" npm --prefix tooling/vscode-satsuma test
+run_step "vscode-satsuma LSP tests" npm --prefix tooling/vscode-satsuma run test:lsp
 
 run_step "tree-sitter generate" npm --prefix tooling/tree-sitter-satsuma run generate
 if cc -x c -o /dev/null - <<< 'int main(){return 0;}' 2>/dev/null; then
