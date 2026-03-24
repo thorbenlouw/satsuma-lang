@@ -3,7 +3,12 @@ name: Release
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to create (e.g. v0.3.0)"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -111,19 +116,21 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Upload artifacts to tagged release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Create tagged release
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
+          tag="${{ inputs.version }}"
+          gh release create "$tag" \
+            --title "$tag" \
+            --generate-notes \
             satsuma-cli-*.tgz \
-            vscode-satsuma.vsix \
-            --clobber
+            vscode-satsuma.vsix
 
       - name: Update latest release
-        if: github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
