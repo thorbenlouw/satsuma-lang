@@ -15,6 +15,7 @@ This directory documents conventions for representing esoteric and non-standard 
 | Format | Directory | What it Stresses |
 |--------|-----------|-----------------|
 | COBOL Copybook | [`cobol-copybook/`](cobol-copybook/) | Positional layout, packed decimals, REDEFINES, OCCURS |
+| EDI (EDIFACT / ODETTE / TRADACOMS) | [`edi/`](edi/) | Qualifier-driven segments, implied decimals, positional correlation, `filter` pattern |
 | HL7 v2.x | [`hl7/`](hl7/) | Delimiter-based segments, inconsistent real-world feeds |
 | X12 / HIPAA | [`x12-hipaa/`](x12-hipaa/) | Loop hierarchies, qualifiers, implementation guide divergence |
 
@@ -64,6 +65,7 @@ The `examples/` directory at the repo root contains full working Satsuma files f
 
 | Format | Convention Doc | Example | What it Stresses |
 |--------|---------------|---------|-----------------|
+| EDI (EDIFACT / ODETTE / TRADACOMS) | [`edi/`](edi/) | `examples/edi-to-json.stm` | Qualifier filters, implied decimals, positional correlation with `each` |
 | JSON / JSON API | [`json/`](json/) | `examples/json-api-to-parquet.stm` | Deep nesting, array iteration, relative paths, JSON blob preservation |
 
 The remaining conventions in this directory focus on formats that are **not** yet covered by canonical examples and where Satsuma's mixed-model approach provides the most value.
