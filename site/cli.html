@@ -142,7 +142,7 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 reveal">
       <div class="max-w-3xl mx-auto">
         <h2 class="text-3xl font-bold text-charcoal mb-3">Installation</h2>
-        <p class="text-warm-gray mb-8">The CLI lives in the Satsuma repository. Install it globally with npm.</p>
+        <p class="text-warm-gray mb-8">Download a prebuilt package from the <a href="https://github.com/thorbenlouw/satsuma-lang/releases/latest" target="_blank" class="text-orange hover:underline">latest GitHub release</a> and install globally with npm.</p>
         <div class="terminal">
           <div class="terminal-header">
             <div class="terminal-dot red"></div>
@@ -151,10 +151,14 @@
             <span class="text-xs text-gray-400 ml-2 font-mono">terminal</span>
           </div>
           <pre>
-<span class="prompt">$</span> git clone https://github.com/thorbenlouw/satsuma-lang.git
-<span class="prompt">$</span> cd satsuma-lang/tooling/satsuma-cli
-<span class="prompt">$</span> npm install
-<span class="prompt">$</span> npm link    <span class="output"># makes `satsuma` available globally</span>
+<span class="output"># macOS (Apple Silicon)</span>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-arm64.tgz
+
+<span class="output"># macOS (Intel)</span>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-x64.tgz
+
+<span class="output"># Linux (x64)</span>
+<span class="prompt">$</span> npm install <span class="flag">-g</span> https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-linux-x64.tgz
 
 <span class="prompt">$</span> satsuma <span class="flag">--help</span>
 <span class="output">satsuma &lt;command&gt; [options]</span>

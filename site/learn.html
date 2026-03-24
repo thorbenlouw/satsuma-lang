@@ -117,9 +117,10 @@
           <div class="absolute -top-4 left-8 w-8 h-8 gradient-orange rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
           <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Install the CLI</h3>
           <div class="code-block text-sm mb-4">
-            <pre><code class="font-mono text-charcoal">npm install -g satsuma-cli</code></pre>
+            <pre><code class="font-mono text-charcoal"><span class="text-warm-gray"># macOS (Apple Silicon)</span>
+npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-arm64.tgz</code></pre>
           </div>
-          <p class="text-warm-gray text-sm leading-relaxed">Requires Node.js 18+. The CLI includes the tree-sitter parser, all 16 commands, and the AI agent reference.</p>
+          <p class="text-warm-gray text-sm leading-relaxed">Requires Node.js 18+. Prebuilt packages for macOS, Linux, and Windows are on the <a href="https://github.com/thorbenlouw/satsuma-lang/releases/latest" target="_blank" class="text-orange hover:underline">latest release</a>.</p>
         </div>
 
         <!-- Step 2 -->
@@ -127,9 +128,10 @@
           <div class="absolute -top-4 left-8 w-8 h-8 gradient-green rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
           <h3 class="text-lg font-bold text-charcoal mb-3 mt-2">Install the VS Code extension</h3>
           <div class="code-block text-sm mb-4">
-            <pre><code class="font-mono text-charcoal">code --install-extension vscode-satsuma.vsix</code></pre>
+            <pre><code class="font-mono text-charcoal"><span class="text-warm-gray"># Download from the latest release, then:</span>
+code --install-extension vscode-satsuma.vsix</code></pre>
           </div>
-          <p class="text-warm-gray text-sm leading-relaxed mb-3">Get syntax highlighting, real-time diagnostics, go-to-definition, IntelliSense, lineage visualisation, and more. Download the <code class="font-mono text-orange">.vsix</code> from the latest GitHub release.</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3">Download <a href="https://github.com/thorbenlouw/satsuma-lang/releases/latest" target="_blank" class="text-orange hover:underline">vscode-satsuma.vsix</a> from the latest release. Get syntax highlighting, real-time diagnostics, go-to-definition, IntelliSense, lineage visualisation, and more.</p>
           <a href="vscode.html" class="text-green text-sm font-semibold hover:underline">See all extension features &rarr;</a>
         </div>
 
