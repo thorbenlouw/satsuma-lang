@@ -208,7 +208,8 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
 - [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation
 - [tooling/vscode-satsuma/](tooling/vscode-satsuma): VS Code extension with LSP server and syntax highlighting
-- [useful-prompts/](useful-prompts): self-contained system prompts for web LLMs (e.g., [Excel-to-Satsuma conversion](useful-prompts/excel-to-stm-prompt.md))
+- [skills/excel-to-satsuma/](skills/excel-to-satsuma): Agent Skill for converting Excel mapping spreadsheets to Satsuma ([agentskills.io](https://agentskills.io) standard) — includes Python CLI tool and Claude Code slash command
+- [useful-prompts/](useful-prompts): self-contained system prompts for web LLMs ([Excel-to-Satsuma](useful-prompts/excel-to-stm-prompt.md), [Satsuma-to-Excel](useful-prompts/stm-to-excel-prompt.md))
 
 ## Current Status
 
@@ -229,7 +230,11 @@ What is not complete yet:
 - formatting (`satsuma fmt`)
 - type checking
 - code generation
-- Excel-to-Satsuma and Satsuma-to-Excel conversion tooling (a [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is available now)
+
+### Excel Conversion Tooling
+
+- **Excel → Satsuma**: A full [Agent Skill](skills/excel-to-satsuma/) with a Python CLI tool (`excel_tool.py`) and a Claude Code slash command (`/excel-to-satsuma`). The skill surveys the spreadsheet, generates idiomatic Satsuma with chunked extraction, and self-critiques the output. A [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is also available for zero-setup conversion.
+- **Satsuma → Excel**: A [lite prompt for web LLMs](useful-prompts/stm-to-excel-prompt.md) that generates a Python script producing stakeholder-ready Excel workbooks from `.stm` files. A deterministic CLI tool is planned but not yet started.
 
 ## Multi-File Lineage
 

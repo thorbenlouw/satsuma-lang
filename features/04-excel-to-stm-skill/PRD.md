@@ -1,6 +1,6 @@
 # Excel-to-Satsuma Agent Skill
 
-> **Status: PARTIAL** — Lite system prompt authored. Phases 1-5 (Python CLI tool, skill prompt, critique loop, end-to-end validation) not started. See `FUTURE-WORK.md` for deferred scope.
+> **Status: IMPLEMENTED** — Lite system prompt, Python CLI tool (`excel_tool.py` with 5 subcommands), and full Claude Code skill prompt (`/excel-to-satsuma`) are complete. End-to-end validation (Phase 5) is outstanding. See `skills/excel-to-satsuma/` for the Agent Skill package.
 
 ## Goal
 

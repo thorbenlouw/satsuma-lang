@@ -1,6 +1,6 @@
 # Satsuma-to-Excel Export
 
-> **Status: NOT STARTED** — All phases deferred. See `FUTURE-WORK.md`.
+> **Status: LITE COMPLETE** — Lite system prompt authored at `useful-prompts/stm-to-excel-prompt.md`. Full deterministic CLI tool not started. See `FUTURE-WORK.md` for deferred scope.
 
 ## Goal
 
