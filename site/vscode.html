@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VS Code Extension — Satsuma</title>
+  <meta name="description" content="Full language support for Satsuma in VS Code: syntax highlighting, LSP server with navigation and completions, interactive workspace visualization.">
+  <meta property="og:title" content="VS Code Extension — Satsuma">
+  <meta property="og:description" content="Full language support for Satsuma in VS Code: syntax highlighting, LSP, diagnostics, and interactive workspace visualization.">
+  <meta property="og:image" content="img/satsuma-logo-512.png">
+  <link rel="icon" type="image/png" href="img/satsuma-logo-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: { DEFAULT: '#F2913D', dark: '#D97726', light: '#F9B97A' },
+            green: { DEFAULT: '#5A9E6F', dark: '#3D7A52', light: '#7DBF92' },
+            cream: '#FFFAF5',
+            peach: '#FFF3E8',
+            charcoal: '#2D2A26',
+            'warm-gray': '#6B6560',
+            'code-bg': '#FEF7EE',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full bg-cream/90 backdrop-blur-md z-50 border-b border-orange-light/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2.5">
+          <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-8 w-8">
+          <span class="text-lg font-bold text-charcoal">Satsuma</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="nav-link text-sm font-medium">Home</a>
+          <a href="cli.html" class="nav-link text-sm font-medium">CLI</a>
+          <a href="vscode.html" class="nav-link text-sm font-medium">VS Code</a>
+          <a href="examples.html" class="nav-link text-sm font-medium">Examples</a>
+          <a href="learn.html" class="nav-link text-sm font-medium">Learn</a>
+          <a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-lg hover:bg-charcoal/90 transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+        <button id="menu-btn" class="md:hidden p-2 text-warm-gray">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+      <div id="mobile-menu" class="mobile-menu md:hidden">
+        <div class="pb-4 space-y-2">
+          <a href="index.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Home</a>
+          <a href="cli.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">CLI</a>
+          <a href="vscode.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">VS Code</a>
+          <a href="examples.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Examples</a>
+          <a href="learn.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Learn</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-32 pb-20 lg:pt-40 lg:pb-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-3xl">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-14 h-14 gradient-green rounded-2xl flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          </div>
+          <span class="px-3 py-1 bg-green/10 text-green-dark text-sm font-semibold rounded-full">v0.3.0</span>
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-charcoal leading-tight mb-6">
+          VS Code
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-green to-green-dark">Extension</span>
+        </h1>
+        <p class="text-lg text-warm-gray leading-relaxed mb-8 max-w-xl">
+          Full language support for Satsuma: syntax highlighting, an LSP server with navigation and completions, real-time diagnostics, and interactive workspace visualization. All parser-backed.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-6 py-3 gradient-green text-white font-semibold rounded-xl shadow-lg shadow-green/25 hover:shadow-xl hover:shadow-green/30 transition-all">
+            Download .vsix
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          </a>
+          <a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/tooling/vscode-satsuma" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+            View Source
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <section class="py-8 bg-white border-b border-charcoal/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+        <div class="stat-item">
+          <div class="text-2xl font-bold text-green">142</div>
+          <div class="text-sm text-warm-gray">LSP Tests</div>
+        </div>
+        <div class="stat-item">
+          <div class="text-2xl font-bold text-green">9</div>
+          <div class="text-sm text-warm-gray">Commands</div>
+        </div>
+        <div class="stat-item">
+          <div class="text-2xl font-bold text-green">12</div>
+          <div class="text-sm text-warm-gray">LSP Capabilities</div>
+        </div>
+        <div class="stat-item">
+          <div class="text-2xl font-bold text-green">3</div>
+          <div class="text-sm text-warm-gray">Webview Panels</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core LSP Features -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Full LSP, zero compromise</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Every feature is backed by the tree-sitter parser. No regex heuristics, no guesswork &mdash; deterministic, correct results as you type.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
+
+        <!-- Syntax Highlighting -->
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-green/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Syntax Highlighting</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3">TextMate grammar for immediate highlighting of all Satsuma constructs &mdash; keywords, types, metadata, strings, comments, and operators.</p>
+          <p class="text-warm-gray text-sm leading-relaxed">Semantic tokens from the LSP override TextMate scopes for context-sensitive constructs: <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">source</code>/<code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">target</code> as keyword vs. field name, vocabulary tokens, and more.</p>
+        </div>
+
+        <!-- Diagnostics -->
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Real-time Diagnostics</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Parse errors</strong> &mdash; red squiggles as you type, powered by tree-sitter ERROR and MISSING nodes.</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Semantic warnings</strong> &mdash; yellow squiggles on save via <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">satsuma validate</code>: undefined schemas, duplicate names, broken imports.</p>
+          <p class="text-warm-gray text-sm leading-relaxed"><strong class="text-charcoal">Marker comments</strong> &mdash; <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">//!</code> warnings and <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">//?</code> questions surface in the Problems panel.</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-green/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Navigation</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Go-to-Definition</strong> (Ctrl+Click / F12) &mdash; jump to schema definitions, fragment blocks, imported definitions, and import file paths.</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Find References</strong> (Shift+F12) &mdash; locate all usages of a schema, fragment, or transform across the workspace.</p>
+          <p class="text-warm-gray text-sm leading-relaxed"><strong class="text-charcoal">Rename Symbol</strong> (F2) &mdash; rename across all files with duplicate detection. Handles namespace-qualified references.</p>
+        </div>
+
+        <!-- IntelliSense -->
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">IntelliSense</h3>
+          <p class="text-warm-gray text-sm leading-relaxed">Context-aware completions for every position:</p>
+          <ul class="mt-2 space-y-1.5 text-sm text-warm-gray">
+            <li class="flex items-start gap-2"><span class="text-orange mt-0.5">&#x2022;</span> Schema names in <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">source</code> / <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">target</code> blocks</li>
+            <li class="flex items-start gap-2"><span class="text-orange mt-0.5">&#x2022;</span> Fragment and transform names after <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">...</code></li>
+            <li class="flex items-start gap-2"><span class="text-orange mt-0.5">&#x2022;</span> Field names from source/target schemas in arrow paths</li>
+            <li class="flex items-start gap-2"><span class="text-orange mt-0.5">&#x2022;</span> Metadata tokens: <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">pk</code>, <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">pii</code>, <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">scd</code>, <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">required</code>, etc.</li>
+            <li class="flex items-start gap-2"><span class="text-orange mt-0.5">&#x2022;</span> Pipeline functions: <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">trim</code>, <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">lowercase</code>, <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">coalesce</code>, etc.</li>
+            <li class="flex items-start gap-2"><span class="text-orange mt-0.5">&#x2022;</span> Block names in <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">import { }</code> declarations</li>
+          </ul>
+        </div>
+
+        <!-- Document Structure -->
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-green/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Document Structure</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Outline Panel</strong> &mdash; schemas, mappings, fragments, transforms, metrics, namespaces, and notes with nested fields.</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Breadcrumbs</strong> &mdash; automatic navigation breadcrumbs from document symbols.</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3"><strong class="text-charcoal">Code Folding</strong> &mdash; fold any block type: schema, mapping, fragment, transform, metric, note, namespace, each, flatten, map literal, metadata, nested arrow.</p>
+          <p class="text-warm-gray text-sm leading-relaxed"><strong class="text-charcoal">Hover</strong> &mdash; contextual info for blocks, fields, tags, spreads, arrow paths, and pipeline functions.</p>
+        </div>
+
+        <!-- CodeLens -->
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">CodeLens</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-3">Inline annotations above every block, giving you at-a-glance structural insight:</p>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2">
+              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded text-charcoal">schema</code>
+              <span class="text-warm-gray">N fields | used in M mappings</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded text-charcoal">mapping</code>
+              <span class="text-warm-gray">source &rarr; target | N arrows</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded text-charcoal">fragment</code>
+              <span class="text-warm-gray">spread in N places</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded text-charcoal">transform</code>
+              <span class="text-warm-gray">used in N places</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded text-charcoal">metric</code>
+              <span class="text-warm-gray">sources: schema1, schema2</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Commands -->
+  <section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">9 commands at your fingertips</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Access every command from the Command Palette (<kbd class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded border border-charcoal/10">Ctrl+Shift+P</kbd>). Each one integrates directly with the Satsuma CLI.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 reveal">
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-green/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Validate Workspace</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Run <code class="font-mono bg-code-bg px-1 py-0.5 rounded">satsuma validate</code> and populate the Problems panel with semantic errors.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-green/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Show Lineage From...</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Pick a schema and trace its downstream data flow through the pipeline.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-green/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Where Used</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Find all references to the symbol under the cursor across every file.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-orange/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Show Warnings</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Surface all <code class="font-mono bg-code-bg px-1 py-0.5 rounded">//!</code> warning comments in the Problems panel.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-orange/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Show Workspace Summary</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Display workspace statistics: schema count, mapping count, arrow count, and more.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-orange/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Show Arrows for Field</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Show all arrow mappings involving a specific field across the workspace.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-green/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Show Workspace Graph</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Open an interactive SVG diagram of your workspace with click-to-navigate nodes.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-green/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Trace Field Lineage</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Open a visual multi-hop trace showing how a field flows from source to target.</p>
+        </div>
+
+        <div class="feature-card bg-cream rounded-xl p-5 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-green/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <h3 class="font-semibold text-charcoal text-sm">Show Mapping Coverage</h3>
+          </div>
+          <p class="text-warm-gray text-xs leading-relaxed">Gutter markers and status bar showing mapped vs. unmapped fields with coverage percentage.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Webviews -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Interactive visualization</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Three dedicated webview panels bring your mapping workspace to life, right inside VS Code.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8 reveal">
+
+        <!-- Workspace Graph -->
+        <div class="feature-card bg-white rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-14 h-14 gradient-green rounded-2xl flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-3">Workspace Graph</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">An interactive SVG diagram of your entire workspace, laid out by block type.</p>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Schemas, mappings, metrics, and fragments as distinct node shapes</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Click any node to jump to its definition</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Namespace filter dropdown to focus on a single namespace</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Auto-refreshes on file save</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Field-Level Lineage -->
+        <div class="feature-card bg-white rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-14 h-14 gradient-orange rounded-2xl flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-3">Field-Level Lineage</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Trace a single field through the entire data pipeline with multi-hop chain visualization.</p>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Horizontal flow: source.field &rarr; [transform] &rarr; target.field</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>NL transforms displayed with distinct styling</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Click any node to navigate to the definition</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Multi-hop chain tracing via <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">satsuma arrows</code></span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Mapping Coverage -->
+        <div class="feature-card bg-white rounded-2xl p-8 border border-charcoal/5">
+          <div class="w-14 h-14 gradient-green rounded-2xl flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-charcoal mb-3">Mapping Coverage</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">See at a glance which target fields are mapped and which are missing.</p>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Green gutter markers for mapped fields</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Red gutter markers for unmapped fields</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Status bar shows coverage percentage</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Works from cursor position inside any mapping block</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Installation -->
+  <section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Get started in seconds</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Download the extension, install it, and open any <code class="font-mono text-base bg-code-bg px-1.5 py-0.5 rounded">.stm</code> file.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8 reveal">
+
+        <!-- From Release -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 gradient-green rounded-xl flex items-center justify-center flex-shrink-0">
+              <span class="text-white font-bold text-sm">1</span>
+            </div>
+            <h3 class="text-lg font-bold text-charcoal">From GitHub Release</h3>
+            <span class="px-2 py-0.5 bg-green/10 text-green-dark text-xs font-semibold rounded-full">Recommended</span>
+          </div>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Download the pre-built <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">.vsix</code> from the latest release and install:</p>
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <pre><span class="prompt">$</span> code <span class="flag">--install-extension</span> vscode-satsuma.vsix</pre>
+          </div>
+        </div>
+
+        <!-- From Source -->
+        <div class="bg-cream rounded-2xl p-8 border border-charcoal/5">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-charcoal rounded-xl flex items-center justify-center flex-shrink-0">
+              <span class="text-white font-bold text-sm">2</span>
+            </div>
+            <h3 class="text-lg font-bold text-charcoal">From Source</h3>
+          </div>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Clone the repo and build the extension yourself:</p>
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <pre><span class="prompt">$</span> <span class="output">cd</span> tooling/vscode-satsuma
+<span class="prompt">$</span> npm install
+<span class="prompt">$</span> <span class="output">cd</span> server <span class="output">&&</span> npm install <span class="output">&&</span> <span class="output">cd</span> ..
+<span class="prompt">$</span> npm run build
+<span class="prompt">$</span> npx <span class="flag">@vscode/vsce</span> package <span class="flag">--no-dependencies</span> <span class="flag">-o</span> vscode-satsuma.vsix
+<span class="prompt">$</span> code <span class="flag">--install-extension</span> vscode-satsuma.vsix</pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Requirements -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-3xl mx-auto reveal">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Requirements</h2>
+        </div>
+
+        <div class="space-y-4">
+          <div class="flex items-start gap-4 bg-white rounded-xl p-5 border border-charcoal/5">
+            <div class="w-10 h-10 bg-green/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-charcoal">VS Code 1.85+</h3>
+              <p class="text-warm-gray text-sm mt-1">Required for the Language Server Protocol client and all extension features.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 bg-white rounded-xl p-5 border border-charcoal/5">
+            <div class="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-charcoal">Node.js 20+</h3>
+              <p class="text-warm-gray text-sm mt-1">Needed only for building from source. Not required when installing the pre-built <code class="font-mono text-xs bg-code-bg px-1 py-0.5 rounded">.vsix</code>.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 bg-white rounded-xl p-5 border border-charcoal/5">
+            <div class="w-10 h-10 bg-green/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-charcoal"><code class="font-mono text-sm">satsuma</code> CLI on PATH</h3>
+              <p class="text-warm-gray text-sm mt-1">Required for validation diagnostics, workspace commands, and webview panels. <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" class="text-orange hover:underline">Download from the latest release</a> or <a href="cli.html" class="text-orange hover:underline">see the CLI page</a>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 p-5 bg-peach rounded-xl border border-orange-light/30">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-orange flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <h4 class="font-semibold text-charcoal text-sm mb-1">Configuration</h4>
+              <p class="text-warm-gray text-sm">If <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">satsuma</code> is not on your PATH, set the <code class="font-mono text-xs bg-code-bg px-1.5 py-0.5 rounded">satsuma.cliPath</code> setting in VS Code to the full path of the CLI executable.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
+      <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-20 w-20 mx-auto mb-8 opacity-80">
+      <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Ready to simplify your data mappings?</h2>
+      <p class="text-lg text-warm-gray mb-8 max-w-2xl mx-auto">
+        Satsuma is open source and free. Start mapping in minutes.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="learn.html" class="inline-flex items-center gap-2 px-8 py-3.5 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl transition-all">
+          Get Started
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+        <a href="examples.html" class="inline-flex items-center gap-2 px-8 py-3.5 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+          Browse Examples
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-charcoal/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div>
+          <div class="flex items-center gap-2.5 mb-4">
+            <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-7 w-7">
+            <span class="text-lg font-bold text-charcoal">Satsuma</span>
+          </div>
+          <p class="text-sm text-warm-gray leading-relaxed">The data mapping language that humans can read and machines can parse.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Tooling</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="cli.html" class="hover:text-orange transition-colors">CLI Reference</a></li>
+            <li><a href="vscode.html" class="hover:text-orange transition-colors">VS Code Extension</a></li>
+            <li><a href="examples.html" class="hover:text-orange transition-colors">Example Gallery</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Learn</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="learn.html" class="hover:text-orange transition-colors">Getting Started</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/BA-TUTORIAL.md" target="_blank" class="hover:text-orange transition-colors">BA Tutorial</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-V2-SPEC.md" target="_blank" class="hover:text-orange transition-colors">Language Spec</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Community</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" class="hover:text-orange transition-colors">GitHub Repository</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" class="hover:text-orange transition-colors">Changelog</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AGENT-CONTRIBUTIONS.md" target="_blank" class="hover:text-orange transition-colors">Contributing</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-charcoal/5 text-sm text-warm-gray">
+        <p>v0.1.0 &middot; MIT License</p>
+        <p class="mt-2 sm:mt-0">Made with care for the data community</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Satsuma — The Data Mapping Language</title>
+  <meta name="description" content="A domain-specific language for source-to-target data mapping. Human-readable, machine-parseable, AI-native.">
+  <meta property="og:title" content="Satsuma — The Data Mapping Language">
+  <meta property="og:description" content="Replace spreadsheets and wikis with a single source of truth for data mappings.">
+  <meta property="og:image" content="img/satsuma-logo-512.png">
+  <link rel="icon" type="image/png" href="img/satsuma-logo-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: { DEFAULT: '#F2913D', dark: '#D97726', light: '#F9B97A' },
+            green: { DEFAULT: '#5A9E6F', dark: '#3D7A52', light: '#7DBF92' },
+            cream: '#FFFAF5',
+            peach: '#FFF3E8',
+            charcoal: '#2D2A26',
+            'warm-gray': '#6B6560',
+            'code-bg': '#FEF7EE',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full bg-cream/90 backdrop-blur-md z-50 border-b border-orange-light/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2.5">
+          <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-8 w-8">
+          <span class="text-lg font-bold text-charcoal">Satsuma</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="nav-link text-sm font-medium">Home</a>
+          <a href="cli.html" class="nav-link text-sm font-medium">CLI</a>
+          <a href="vscode.html" class="nav-link text-sm font-medium">VS Code</a>
+          <a href="examples.html" class="nav-link text-sm font-medium">Examples</a>
+          <a href="learn.html" class="nav-link text-sm font-medium">Learn</a>
+          <a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-lg hover:bg-charcoal/90 transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+        <button id="menu-btn" class="md:hidden p-2 text-warm-gray">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+      <div id="mobile-menu" class="mobile-menu md:hidden">
+        <div class="pb-4 space-y-2">
+          <a href="index.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Home</a>
+          <a href="cli.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">CLI</a>
+          <a href="vscode.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">VS Code</a>
+          <a href="examples.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Examples</a>
+          <a href="learn.html" class="block px-3 py-2 text-sm font-medium text-charcoal rounded-lg hover:bg-peach">Learn</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-32 pb-20 lg:pt-40 lg:pb-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="flex items-center gap-3 mb-6">
+            <img src="img/satsuma-logo.png" alt="Satsuma" class="h-16 w-auto">
+          </div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-charcoal leading-tight mb-6">
+            The mapping language humans can
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange to-orange-dark">read</span>
+            and machines can
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-green to-green-dark">parse</span>
+          </h1>
+          <p class="text-lg text-warm-gray leading-relaxed mb-8 max-w-lg">
+            Replace spreadsheets and wikis with a single source of truth for source-to-target data mappings. Readable by business analysts, parseable by tooling, and AI-native by design.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <a href="learn.html" class="inline-flex items-center gap-2 px-6 py-3 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl hover:shadow-orange/30 transition-all">
+              Get Started
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+            <a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" rel="noopener"
+               class="inline-flex items-center gap-2 px-6 py-3 bg-white text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+        <div class="code-block shadow-xl">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-orange-light/30">
+            <span class="w-3 h-3 rounded-full bg-red-400/60"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-400/60"></span>
+            <span class="w-3 h-3 rounded-full bg-green/60"></span>
+            <span class="ml-2 text-xs text-warm-gray font-mono">sfdc_to_snowflake.stm</span>
+          </div>
+          <pre class="text-sm"><code class="stm"><span class="comment">// Salesforce to Snowflake Pipeline</span>
+
+<span class="keyword">schema</span> <span class="field">sfdc_opportunity</span> {
+  Id              <span class="type">ID</span>             <span class="constraint">(pk)</span>
+  Name            <span class="type">STRING(120)</span>    <span class="constraint">(required)</span>
+  Amount          <span class="type">CURRENCY(18,2)</span>
+  StageName       <span class="type">PICKLIST</span>       <span class="constraint">(enum {Prospecting, Closed_Won})</span>
+}
+
+<span class="keyword">schema</span> <span class="field">snowflake_opps</span> {
+  opp_key         <span class="type">VARCHAR(18)</span>    <span class="constraint">(pk)</span>
+  amount_usd      <span class="type">NUMBER(18,2)</span>   <span class="constraint">(note <span class="string">"Converted at spot rate"</span>)</span>
+  pipeline_stage  <span class="type">VARCHAR(50)</span>
+}
+
+<span class="keyword">mapping</span> <span class="string">'opportunity sync'</span> {
+  <span class="keyword">source</span> { <span class="field">`sfdc_opportunity`</span> }
+  <span class="keyword">target</span> { <span class="field">`snowflake_opps`</span> }
+
+  Id     <span class="operator">-></span> opp_key
+  Amount <span class="operator">-></span> amount_usd { <span class="function">convert_currency</span>(CurrencyIsoCode, <span class="string">"USD"</span>) }
+  StageName <span class="operator">-></span> pipeline_stage {
+    <span class="keyword">map</span> { Prospecting: <span class="string">"top_funnel"</span>, Closed_Won: <span class="string">"closed_won"</span> }
+  }
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem / Solution -->
+  <section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-2 gap-12 lg:gap-20 reveal">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 text-sm font-medium mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            The Problem
+          </div>
+          <h2 class="text-3xl font-bold text-charcoal mb-4">Data mappings are scattered everywhere</h2>
+          <p class="text-warm-gray leading-relaxed mb-6">
+            In most enterprises, source-to-target mapping logic lives in spreadsheets, wiki pages, Confluence docs, YAML files, and tribal knowledge. Nobody trusts the docs, nobody can trace lineage, and AI can't help because there's no parseable format.
+          </p>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 text-warm-gray">
+              <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              <span>Excel specs that are outdated by the time they're reviewed</span>
+            </div>
+            <div class="flex items-start gap-3 text-warm-gray">
+              <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              <span>No way to diff, lint, or validate mapping changes</span>
+            </div>
+            <div class="flex items-start gap-3 text-warm-gray">
+              <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              <span>AI can't generate or reason about freeform docs</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green/10 text-green-dark text-sm font-medium mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            The Solution
+          </div>
+          <h2 class="text-3xl font-bold text-charcoal mb-4">One language for all your mappings</h2>
+          <p class="text-warm-gray leading-relaxed mb-6">
+            Satsuma is a concise, beautiful, parseable format that becomes the single source of truth. Like DBML for database schemas, but for data mappings. Version it in Git, validate it with tooling, and let AI agents help write it.
+          </p>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 text-warm-gray">
+              <svg class="w-5 h-5 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Text-based, diffable, version-controlled</span>
+            </div>
+            <div class="flex items-start gap-3 text-warm-gray">
+              <svg class="w-5 h-5 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Parser-backed tooling: lint, validate, lineage, graph</span>
+            </div>
+            <div class="flex items-start gap-3 text-warm-gray">
+              <svg class="w-5 h-5 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>LLMs generate valid Satsuma &gt;90% of the time</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Features -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Why teams choose Satsuma</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Designed for real-world enterprise data mapping, not toy examples.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 reveal">
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 gradient-orange rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Human-Readable</h3>
+          <p class="text-warm-gray text-sm leading-relaxed">Business analysts can read and review mappings without learning a programming language. Natural language is first-class.</p>
+        </div>
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 gradient-green rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Machine-Parseable</h3>
+          <p class="text-warm-gray text-sm leading-relaxed">Tree-sitter grammar with 482 corpus tests. Every CLI command produces 100% deterministically correct results from the parse tree.</p>
+        </div>
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-charcoal rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">AI-Native</h3>
+          <p class="text-warm-gray text-sm leading-relaxed">Syntax borrows from SQL, TypeScript, and HCL. LLMs generate valid Satsuma reliably. Built for hybrid human + AI workflows.</p>
+        </div>
+        <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
+          <div class="w-12 h-12 bg-gradient-to-br from-orange to-green rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">40-60% Smaller</h3>
+          <p class="text-warm-gray text-sm leading-relaxed">More concise than equivalent YAML or JSON mapping specs. Less noise, more signal. Handles COBOL, EDI, XML, and every real-world format.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="py-16 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="stat-item text-center">
+          <div class="text-4xl font-extrabold text-orange mb-1">16</div>
+          <div class="text-sm text-warm-gray font-medium">CLI Commands</div>
+        </div>
+        <div class="stat-item text-center">
+          <div class="text-4xl font-extrabold text-green mb-1">482</div>
+          <div class="text-sm text-warm-gray font-medium">Parser Tests</div>
+        </div>
+        <div class="stat-item text-center">
+          <div class="text-4xl font-extrabold text-orange mb-1">637</div>
+          <div class="text-sm text-warm-gray font-medium">CLI Tests</div>
+        </div>
+        <div class="stat-item text-center">
+          <div class="text-4xl font-extrabold text-green mb-1">142</div>
+          <div class="text-sm text-warm-gray font-medium">LSP Tests</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Real Code Example -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Real-world mappings, beautifully expressed</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">From legacy database migrations to enterprise platform modelling. Every construct serves a purpose.</p>
+      </div>
+      <div class="code-block shadow-xl max-w-4xl mx-auto reveal">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-orange-light/30">
+          <span class="w-3 h-3 rounded-full bg-red-400/60"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-400/60"></span>
+          <span class="w-3 h-3 rounded-full bg-green/60"></span>
+          <span class="ml-2 text-xs text-warm-gray font-mono">db-to-db.stm</span>
+        </div>
+        <button class="copy-btn">Copy</button>
+        <pre class="text-sm"><code class="stm"><span class="comment">// Legacy Customer Migration</span>
+<span class="keyword">import</span> { <span class="string">'address fields'</span> } <span class="keyword">from</span> <span class="import-path">"lib/common.stm"</span>
+
+<span class="keyword">schema</span> <span class="field">legacy_sqlserver</span> (<span class="constraint">note</span> <span class="string">"CUSTOMER table &mdash; SQL Server 2008"</span>) {
+  CUST_ID      <span class="type">INT</span>           <span class="constraint">(pk)</span>
+  CUST_TYPE    <span class="type">CHAR(1)</span>       <span class="constraint">(enum {R, B, G})</span>   <span class="warning">//!</span> <span class="comment">some records have NULL</span>
+  EMAIL_ADDR   <span class="type">VARCHAR(255)</span>  <span class="constraint">(pii)</span>              <span class="warning">//!</span> <span class="comment">not validated</span>
+  TAX_ID       <span class="type">VARCHAR(20)</span>   <span class="constraint">(pii, encrypt)</span>     <span class="warning">//!</span> <span class="comment">plaintext in legacy</span>
+}
+
+<span class="keyword">schema</span> <span class="field">postgres_db</span> (<span class="constraint">note</span> <span class="string">"Normalized &mdash; PostgreSQL 16"</span>) {
+  customer_id              <span class="type">UUID</span>          <span class="constraint">(pk, required)</span>
+  legacy_customer_id       <span class="type">INTEGER</span>       <span class="constraint">(unique, indexed)</span>
+  customer_type            <span class="type">VARCHAR(20)</span>   <span class="constraint">(enum {retail, business, government})</span>
+  email                    <span class="type">VARCHAR(255)</span>  <span class="constraint">(format email, pii)</span>
+  tax_identifier_encrypted <span class="type">TEXT</span>          <span class="constraint">(pii, encrypt AES-256-GCM)</span>
+}
+
+<span class="keyword">mapping</span> <span class="string">'customer migration'</span> {
+  <span class="keyword">source</span> { <span class="field">`legacy_sqlserver`</span> }
+  <span class="keyword">target</span> { <span class="field">`postgres_db`</span> }
+
+  CUST_ID    <span class="operator">-></span> customer_id  { <span class="function">uuid_v5</span>(<span class="string">"6ba7b..."</span>, CUST_ID) }
+  CUST_ID    <span class="operator">-></span> legacy_customer_id
+  CUST_TYPE  <span class="operator">-></span> customer_type {
+    <span class="keyword">map</span> { R: <span class="string">"retail"</span>, B: <span class="string">"business"</span>, G: <span class="string">"government"</span>, null: <span class="string">"retail"</span> }
+  }
+  EMAIL_ADDR <span class="operator">-></span> email { <span class="function">trim</span> | <span class="function">lowercase</span> | <span class="function">validate_email</span> | <span class="function">null_if_invalid</span> }
+  TAX_ID     <span class="operator">-></span> tax_identifier_encrypted {
+    <span class="function">error_if_null</span> | <span class="function">encrypt</span>(AES-256-GCM, secrets.tax_encryption_key)
+  }
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Role Pathways -->
+  <section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Built for your role</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Satsuma serves the entire data team, from architects to analysts.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
+        <a href="learn.html#business-analysts" class="role-card bg-cream rounded-2xl p-6">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Business Analysts</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Read and review mappings without learning code. Natural language descriptions are built right into the syntax.</p>
+          <span class="text-orange text-sm font-semibold">Start the BA tutorial &rarr;</span>
+        </a>
+        <a href="learn.html#data-engineers" class="role-card bg-cream rounded-2xl p-6">
+          <div class="w-12 h-12 bg-green/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Data Engineers</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Define mapping contracts your pipelines can consume. Validate, lint, and trace lineage with 16 CLI commands.</p>
+          <span class="text-green text-sm font-semibold">Explore the CLI &rarr;</span>
+        </a>
+        <a href="learn.html#integration-engineers" class="role-card bg-cream rounded-2xl p-6">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Integration Engineers</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Replace proprietary ESB config with portable, version-controlled mapping specs. EDI, XML, COBOL &mdash; all supported.</p>
+          <span class="text-orange text-sm font-semibold">See examples &rarr;</span>
+        </a>
+        <a href="learn.html#governance" class="role-card bg-cream rounded-2xl p-6">
+          <div class="w-12 h-12 bg-green/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Governance &amp; Audit</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Trace every field from source to target. PII tags, encryption markers, and lineage are structural &mdash; not comments.</p>
+          <span class="text-green text-sm font-semibold">Learn about lineage &rarr;</span>
+        </a>
+        <a href="learn.html#ai-automation" class="role-card bg-cream rounded-2xl p-6">
+          <div class="w-12 h-12 bg-charcoal/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">AI &amp; Automation</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">A structured format LLMs can reliably generate and validate. Build safe automation with the agent reference guide.</p>
+          <span class="text-charcoal text-sm font-semibold">Agent reference &rarr;</span>
+        </a>
+        <a href="learn.html#architects" class="role-card bg-cream rounded-2xl p-6">
+          <div class="w-12 h-12 bg-orange/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </div>
+          <h3 class="text-lg font-bold text-charcoal mb-2">Architects</h3>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">One mapping language across the entire platform. Namespaces, imports, and workspace graphs for multi-team modelling.</p>
+          <span class="text-orange text-sm font-semibold">Platform modelling &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tooling -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Professional tooling, built-in</h2>
+        <p class="text-warm-gray text-lg max-w-2xl mx-auto">Parser-backed tools that give you deterministic, correct results. Not regex heuristics.</p>
+      </div>
+      <div class="grid md:grid-cols-2 gap-8 reveal">
+        <!-- CLI Card -->
+        <a href="cli.html" class="group bg-white rounded-2xl p-8 border border-charcoal/5 hover:border-orange-light transition-colors">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 gradient-orange rounded-2xl flex items-center justify-center">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-charcoal">Satsuma CLI</h3>
+              <p class="text-sm text-warm-gray">16 commands &middot; 637 tests</p>
+            </div>
+          </div>
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center gap-3 text-sm text-warm-gray">
+              <svg class="w-4 h-4 text-orange flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Lineage tracing, impact analysis, where-used</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm text-warm-gray">
+              <svg class="w-4 h-4 text-orange flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Validation, linting with auto-fix, workspace diff</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm text-warm-gray">
+              <svg class="w-4 h-4 text-orange flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Workspace graph with namespace filtering</span>
+            </div>
+          </div>
+          <span class="text-orange font-semibold text-sm group-hover:underline">Explore all commands &rarr;</span>
+        </a>
+        <!-- VS Code Card -->
+        <a href="vscode.html" class="group bg-white rounded-2xl p-8 border border-charcoal/5 hover:border-green-light transition-colors">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 gradient-green rounded-2xl flex items-center justify-center">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-charcoal">VS Code Extension</h3>
+              <p class="text-sm text-warm-gray">Full LSP &middot; 142 tests</p>
+            </div>
+          </div>
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center gap-3 text-sm text-warm-gray">
+              <svg class="w-4 h-4 text-green flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Go-to-definition, find references, rename</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm text-warm-gray">
+              <svg class="w-4 h-4 text-green flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>IntelliSense, diagnostics, hover, CodeLens</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm text-warm-gray">
+              <svg class="w-4 h-4 text-green flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span>Interactive workspace graph &amp; field lineage</span>
+            </div>
+          </div>
+          <span class="text-green font-semibold text-sm group-hover:underline">See all features &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
+      <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-20 w-20 mx-auto mb-8 opacity-80">
+      <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Ready to simplify your data mappings?</h2>
+      <p class="text-lg text-warm-gray mb-8 max-w-2xl mx-auto">
+        Satsuma is open source and free. Start mapping in minutes.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="learn.html" class="inline-flex items-center gap-2 px-8 py-3.5 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl transition-all">
+          Get Started
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+        <a href="examples.html" class="inline-flex items-center gap-2 px-8 py-3.5 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+          Browse Examples
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-charcoal/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div>
+          <div class="flex items-center gap-2.5 mb-4">
+            <img src="img/satsuma-logo-512.png" alt="Satsuma" class="h-7 w-7">
+            <span class="text-lg font-bold text-charcoal">Satsuma</span>
+          </div>
+          <p class="text-sm text-warm-gray leading-relaxed">The data mapping language that humans can read and machines can parse.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Tooling</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="cli.html" class="hover:text-orange transition-colors">CLI Reference</a></li>
+            <li><a href="vscode.html" class="hover:text-orange transition-colors">VS Code Extension</a></li>
+            <li><a href="examples.html" class="hover:text-orange transition-colors">Example Gallery</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Learn</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="learn.html" class="hover:text-orange transition-colors">Getting Started</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/BA-TUTORIAL.md" target="_blank" class="hover:text-orange transition-colors">BA Tutorial</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-V2-SPEC.md" target="_blank" class="hover:text-orange transition-colors">Language Spec</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-charcoal mb-3">Community</h4>
+          <ul class="space-y-2 text-sm text-warm-gray">
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang" target="_blank" class="hover:text-orange transition-colors">GitHub Repository</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/CHANGELOG.md" target="_blank" class="hover:text-orange transition-colors">Changelog</a></li>
+            <li><a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/AGENT-CONTRIBUTIONS.md" target="_blank" class="hover:text-orange transition-colors">Contributing</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-charcoal/5 text-sm text-warm-gray">
+        <p>v0.1.0 &middot; MIT License</p>
+        <p class="mt-2 sm:mt-0">Made with care for the data community</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
