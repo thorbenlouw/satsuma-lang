@@ -63,6 +63,8 @@ function copyAssets() {
   pairs.push(
     [path.join(treeSitterDir, "tree-sitter-satsuma.wasm"), "server/dist/tree-sitter-satsuma.wasm"],
     [path.join(treeSitterDir, "queries/highlights.scm"), "server/dist/highlights.scm"],
+    // web-tree-sitter runtime WASM — loaded by the web-tree-sitter module at init
+    ["server/node_modules/web-tree-sitter/tree-sitter.wasm", "server/dist/tree-sitter.wasm"],
   );
 
   for (const [src, dst] of pairs) {
