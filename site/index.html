@@ -226,10 +226,17 @@
             </div>
             <h2 class="text-2xl sm:text-3xl font-bold text-charcoal mb-4">Your conventions. Your tokens.<br>No language changes. Ever.</h2>
             <p class="text-warm-gray leading-relaxed mb-4">
-              <code class="font-mono text-sm bg-cream px-1.5 py-0.5 rounded">(merge upsert, match_on customer_id)</code> is not a built-in keyword. It is a <strong>convention</strong> someone documented. You can do the same for anything your organisation cares about.
+              Satsuma's <code class="font-mono text-sm bg-cream px-1.5 py-0.5 rounded">( )</code> metadata accepts <strong>any token you invent</strong>. That means you can extend the language to describe anything &mdash; without waiting for an update:
             </p>
+            <ul class="text-warm-gray text-sm leading-relaxed mb-4 space-y-1.5">
+              <li class="flex items-start gap-2"><span class="text-orange mt-1">&#9679;</span> <span><strong class="text-charcoal">Exotic file formats</strong> &mdash; COBOL copybooks, EDI qualifiers, HL7 segments, ISO 8583 bitmaps</span></li>
+              <li class="flex items-start gap-2"><span class="text-orange mt-1">&#9679;</span> <span><strong class="text-charcoal">Governance metadata</strong> &mdash; PII flags, classification, retention, masking, compliance frameworks</span></li>
+              <li class="flex items-start gap-2"><span class="text-orange mt-1">&#9679;</span> <span><strong class="text-charcoal">Pipeline construction</strong> &mdash; merge strategies, SCD types, match keys, refresh schedules</span></li>
+              <li class="flex items-start gap-2"><span class="text-orange mt-1">&#9679;</span> <span><strong class="text-charcoal">Analytics modelling</strong> &mdash; Kimball dimensions, Data Vault hubs, grain declarations, conformed keys</span></li>
+              <li class="flex items-start gap-2"><span class="text-orange mt-1">&#9679;</span> <span><strong class="text-charcoal">Your org&rsquo;s standards</strong> &mdash; cost centres, data domains, audit levels, SLA tiers</span></li>
+            </ul>
             <p class="text-warm-gray leading-relaxed">
-              Write what your tokens mean once in an <code class="font-mono text-sm bg-cream px-1.5 py-0.5 rounded">LLM-Guidelines.md</code> file. From that point on, every AI tool in your org reads the spec and generates the right code &mdash; correct merge logic, correct DDL, correct tests &mdash; without you re-explaining your standards in every prompt.
+              Document what your tokens mean once in an <code class="font-mono text-sm bg-cream px-1.5 py-0.5 rounded">LLM-Guidelines.md</code>. From that point on, every AI tool in your org reads the spec and generates the right code &mdash; correct merge logic, correct DDL, correct tests &mdash; without re-explaining your standards in every prompt.
             </p>
           </div>
           <div class="code-block shadow-lg">
