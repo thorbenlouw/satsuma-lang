@@ -37,7 +37,14 @@ export function register(program: Command): void {
       const parsedFiles = files.map((f) => parseFile(f));
       const index = buildIndex(parsedFiles);
 
-      const items = opts.questions ? index.questions : index.warnings;
+      // By default show both //! and //? comments; --questions shows only //?
+      type TaggedItem = (WarningRecord | QuestionRecord) & { _kind: "warning" | "question" };
+      const taggedWarnings: TaggedItem[] = index.warnings.map((w) => ({ ...w, _kind: "warning" as const }));
+      const taggedQuestions: TaggedItem[] = index.questions.map((q) => ({ ...q, _kind: "question" as const }));
+      const items: TaggedItem[] = opts.questions
+        ? taggedQuestions
+        : [...taggedWarnings, ...taggedQuestions].sort((a, b) =>
+            a.file.localeCompare(b.file) || a.row - b.row);
       const kind = opts.questions ? "question" : "warning";
 
       if (opts.json) {
@@ -64,10 +71,10 @@ export function register(program: Command): void {
         byFile.get(item.file)!.push(item);
       }
 
-      const prefix = opts.questions ? "//?" : "//!";
       for (const [file, fileItems] of byFile) {
         console.log(file);
         for (const item of fileItems) {
+          const prefix = (item as TaggedItem)._kind === "question" ? "//?" : "//!";
           console.log(`  :${item.row + 1}  ${prefix} ${item.text}`);
         }
         console.log();
