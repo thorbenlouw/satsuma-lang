@@ -44,7 +44,6 @@ describe("computeFormatting", () => {
     const src = "mapping test {\n  source { s }\n  target { t }\n  s.x -> t.x { trim | lowercase }\n}";
     const tree = parse(src);
     const edits = computeFormatting(tree, src);
-    // May or may not have edits depending on current formatting
     const result = edits.length > 0 ? edits[0].newText : src;
     assert.ok(result.includes("source { s }"));
     assert.ok(result.includes("target { t }"));
@@ -60,7 +59,7 @@ describe("computeFormatting", () => {
   });
 
   it("is idempotent", () => {
-    const src = "schema messy{id INT(pk)name STRING}";
+    const src = "schema messy{id INT (pk) name STRING}";
     const tree = parse(src);
     const edits1 = computeFormatting(tree, src);
     assert.equal(edits1.length, 1);

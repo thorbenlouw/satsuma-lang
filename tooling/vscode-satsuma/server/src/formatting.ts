@@ -36,6 +36,7 @@ export async function initFormatting(): Promise<void> {
   if (_formatFn) return;
   // Use a variable path so esbuild doesn't try to resolve this at bundle time.
   // This path is only used by tests running against tsc-compiled dist/ output.
+  // CI must build satsuma-cli before running LSP tests.
   const modPath = ["../../../satsuma-cli", "dist", "format.js"].join("/");
   const mod = await import(modPath) as { format: FormatFn };
   _formatFn = mod.format;
