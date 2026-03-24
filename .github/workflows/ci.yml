@@ -159,14 +159,18 @@ jobs:
       - name: Run corpus tests
         run: ../../scripts/tree-sitter-local.sh test
 
-      - name: Run fixture tests
-        run: python3 scripts/test_fixtures.py
+      - name: Install pytest
+        run: pip install pytest
 
-      - name: Run CST consumer unit tests
-        run: python3 scripts/test_cst_summary.py
+      - name: Run Python tests (fixtures, CST, smoke)
+        run: python3 -m pytest scripts/ --junitxml=../../test-results/parser.xml -v
 
-      - name: Run smoke tests (parse all examples)
-        run: python3 scripts/test_smoke_summary.py
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-parser
+          path: test-results/parser.xml
 
   vscode-extension:
     name: VS Code extension
@@ -226,10 +230,36 @@ jobs:
           name: test-results-vscode
           path: test-results/lsp.xml
 
+  excel-skill:
+    name: Excel-to-Satsuma skill
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/excel-to-satsuma/scripts
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pytest openpyxl
+
+      - name: Run skill tests
+        run: python3 -m pytest test_excel_tool.py --junitxml=../../../test-results/excel-skill.xml -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-excel-skill
+          path: test-results/excel-skill.xml
+
   test-report:
     name: Test report
     if: always()
-    needs: [satsuma-cli, vscode-extension]
+    needs: [satsuma-cli, parser, vscode-extension, excel-skill]
     runs-on: ubuntu-latest
     permissions:
       contents: read
