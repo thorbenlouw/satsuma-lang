@@ -220,6 +220,24 @@ body { background-color: var(--cream); color: var(--charcoal); }
   border-color: var(--orange);
 }
 
+/* FAQ accordion */
+.faq-item summary {
+  list-style: none;
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item {
+  transition: all 0.2s ease;
+}
+.faq-item:hover {
+  border-color: var(--orange-light);
+}
+.faq-item[open] {
+  border-color: var(--orange-light);
+  box-shadow: 0 4px 12px rgba(45, 42, 38, 0.06);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
