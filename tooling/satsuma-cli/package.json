@@ -26,7 +26,7 @@
     "tree-sitter-satsuma": "file:../tree-sitter-satsuma"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.5.0",
     "typescript": "^5.8.0"
   }
 }
