@@ -1,6 +1,6 @@
 # Satsuma-to-Excel Export
 
-> **Status: LITE COMPLETE** — Lite system prompt authored at `useful-prompts/stm-to-excel-prompt.md`. Full deterministic CLI tool not started. See `ROADMAP.md` for deferred scope.
+> **Status: SKILL COMPLETE** — Lite system prompt at `useful-prompts/stm-to-excel-prompt.md`. Deterministic skill at `skills/satsuma-to-excel/` with Python tool (`stm_to_excel.py`, 53 tests) backed by the satsuma CLI. See `ROADMAP.md` for remaining full CLI variant (standalone `satsuma-to-excel` command).
 
 ## Goal
 
