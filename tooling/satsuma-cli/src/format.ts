@@ -893,7 +893,7 @@ function formatTransformBlock(node: SyntaxNode, source: string, indent: number):
   const label = findChild(node, "block_label");
   const pipeChain = findChild(node, "pipe_chain");
 
-  let line = ind(indent) + "transform " + formatBlockLabel(label!);
+  const line = ind(indent) + "transform " + formatBlockLabel(label!);
 
   if (!pipeChain) {
     return line + " { }";
@@ -1170,7 +1170,7 @@ function formatMetadataEntry(node: SyntaxNode, source: string): string {
   }
 }
 
-function formatKeyValuePair(node: SyntaxNode, source: string): string {
+function formatKeyValuePair(node: SyntaxNode, _source: string): string {
   const key = findChild(node, "kv_key");
   const keyText = key ? key.children[0]?.text || key.text : "";
 
@@ -1197,7 +1197,7 @@ function formatKeyValuePair(node: SyntaxNode, source: string): string {
   return keyText + " " + valueParts.join(" ");
 }
 
-function formatNoteTag(node: SyntaxNode, source: string): string {
+function formatNoteTag(node: SyntaxNode, _source: string): string {
   // note "string" or note """multiline"""
   for (const child of node.children) {
     if (child.type === "nl_string") return "note " + child.text;
