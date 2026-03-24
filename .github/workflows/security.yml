@@ -66,10 +66,12 @@ jobs:
           echo "ids=$(cat /tmp/semgrep-allowlist.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Run Semgrep
+        shell: bash
         run: |
           EXCLUDE_ARGS=""
-          if [ -n "${{ steps.allowlist.outputs.ids }}" ]; then
-            IFS=',' read -ra RULES <<< "${{ steps.allowlist.outputs.ids }}"
+          ALLOWLISTED="${{ steps.allowlist.outputs.ids }}"
+          if [ -n "$ALLOWLISTED" ]; then
+            IFS=',' read -ra RULES <<< "$ALLOWLISTED"
             for rule in "${RULES[@]}"; do
               if [ -n "$rule" ]; then
                 EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude-rule $rule"
@@ -82,11 +84,17 @@ jobs:
             --error \
             --severity ERROR \
             --severity WARNING \
-            $EXCLUDE_ARGS \
-            --sarif --sarif-output semgrep-results.sarif || SCAN_EXIT=$?
+            $EXCLUDE_ARGS
 
-          # Upload SARIF regardless of scan result
-          exit ${SCAN_EXIT:-0}
+      - name: Generate SARIF
+        if: always()
+        shell: bash
+        run: |
+          semgrep scan \
+            --config auto \
+            --severity ERROR \
+            --severity WARNING \
+            --sarif --sarif-output semgrep-results.sarif || true
 
       - name: Upload SARIF
         if: always()
