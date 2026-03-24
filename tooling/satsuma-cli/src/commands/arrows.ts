@@ -138,11 +138,22 @@ Examples:
         }
       }
 
-      // Apply direction filters — match against both full path and leaf name
+      // Apply direction filters — verify the queried schema is on the correct
+      // side of the mapping, not just that the field name matches
       if (opts.asSource) {
-        arrows = arrows.filter((a) => a.source === fieldName || a.source === leafName);
+        arrows = arrows.filter((a) => {
+          const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+          const m = index.mappings.get(qMapping);
+          return m?.sources.includes(resolvedSchema.key) &&
+            (a.source === fieldName || a.source === leafName);
+        });
       } else if (opts.asTarget) {
-        arrows = arrows.filter((a) => a.target === fieldName || a.target === leafName);
+        arrows = arrows.filter((a) => {
+          const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+          const m = index.mappings.get(qMapping);
+          return m?.targets.includes(resolvedSchema.key) &&
+            (a.target === fieldName || a.target === leafName);
+        });
       }
 
       if (arrows.length === 0) {
@@ -256,7 +267,8 @@ function printDefault(fieldRef: string, arrows: ArrowRecord[], _index: Workspace
   const fieldPath = dot >= 0 ? fieldRef.slice(dot + 1) : fieldRef;
   const leafName = fieldPath.split(".").pop();
   const matchesField = (val: string | null) =>
-    val === fieldPath || val === leafName;
+    val === fieldPath || val === leafName ||
+    (val != null && (val.endsWith(`.${fieldPath}`) || val.endsWith(`.${leafName}`)));
   const asSource = arrows.filter((a) => matchesField(a.source));
   const asTarget = arrows.filter((a) => matchesField(a.target));
 

@@ -155,8 +155,19 @@ function getMappedFieldNames(mappingName: string, schemaName: string, index: Wor
       // Match arrow by bare mapping name and namespace
       const arrowQualified = arrow.namespace ? `${arrow.namespace}::${arrow.mapping}` : arrow.mapping;
       if (arrowQualified !== mappingName && arrow.mapping !== bareMappingName) continue;
-      if (isSource && arrow.source) mapped.add(normalizePath(arrow.source));
-      if (isTarget && arrow.target) mapped.add(normalizePath(arrow.target));
+      if (isSource && arrow.source) {
+        const norm = normalizePath(arrow.source);
+        mapped.add(norm);
+        // Also add leaf name for nested paths (e.g. each/flatten child arrows)
+        const leafIdx = norm.lastIndexOf(".");
+        if (leafIdx > 0) mapped.add(norm.slice(leafIdx + 1));
+      }
+      if (isTarget && arrow.target) {
+        const norm = normalizePath(arrow.target);
+        mapped.add(norm);
+        const leafIdx = norm.lastIndexOf(".");
+        if (leafIdx > 0) mapped.add(norm.slice(leafIdx + 1));
+      }
     }
   }
   return mapped;

@@ -355,10 +355,15 @@ function buildSchemaEdges(index: WorkspaceIndex, _schemaGraph: FullGraph, includ
   const edges: SchemaEdge[] = [];
 
   for (const [mappingName, mapping] of index.mappings) {
-    if (nsFilter && mapping.namespace !== nsFilter) continue;
+    // When namespace-filtering, include edges if either the mapping is in
+    // the namespace OR any of its sources/targets are in the namespace
+    if (nsFilter && mapping.namespace !== nsFilter) {
+      const touchesNs = mapping.sources.some((s) => includedNodeIds.has(s)) ||
+        mapping.targets.some((t) => includedNodeIds.has(t));
+      if (!touchesNs) continue;
+    }
 
     for (const src of mapping.sources) {
-      // Include cross-namespace edges when filtering
       if (!nsFilter || includedNodeIds.has(src) || includedNodeIds.has(mappingName)) {
         edges.push({ from: src, to: mappingName, role: "source" });
       }
@@ -444,7 +449,12 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
 
       if (nsFilter) {
         const mapping = index.mappings.get(mappingKey);
-        if (mapping?.namespace !== nsFilter) continue;
+        if (mapping?.namespace !== nsFilter) {
+          // Still include if the mapping touches schemas in the namespace
+          const touchesNs = (mapping?.sources ?? []).some((s) => includedNodeIds.has(s)) ||
+            (mapping?.targets ?? []).some((t) => includedNodeIds.has(t));
+          if (!touchesNs) continue;
+        }
       }
 
       // Resolve source and target schema names

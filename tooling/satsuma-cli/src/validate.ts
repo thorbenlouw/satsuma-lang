@@ -531,9 +531,15 @@ function resolveFieldPath(path: string, schemaNames: string[], index: WorkspaceI
   const dotIdx = path.indexOf(".");
   if (dotIdx > 0) {
     const qualifier = path.slice(0, dotIdx);
-    if (schemaNames.includes(qualifier)) {
+    // Match qualifier against both fully qualified names (ns::schema) and bare names
+    const matchedSchema = schemaNames.find((s) => {
+      if (s === qualifier) return true;
+      const nsIdx = s.indexOf("::");
+      return nsIdx !== -1 && s.slice(nsIdx + 2) === qualifier;
+    });
+    if (matchedSchema) {
       const rest = path.slice(dotIdx + 1);
-      const schemaFields = index.schemas.get(qualifier)?.fields ?? [];
+      const schemaFields = index.schemas.get(matchedSchema)?.fields ?? [];
       const qualPaths = new Set<string>();
       collectFieldPaths(schemaFields, "", qualPaths);
       if (qualPaths.has(rest)) return true;
