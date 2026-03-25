@@ -349,16 +349,16 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
     const sourceSchemas = mapping?.sources ?? [];
     const targetSchemas = mapping?.targets ?? [];
 
-    if (record.source) {
-      const bareSource = record.source.replace(/^\./, "");
+    for (const source of record.sources) {
+      const bareSource = source.replace(/^\./, "");
       for (const schema of sourceSchemas) {
         // Don't double-prefix if source already starts with schema name
         if (!bareSource.startsWith(schema + ".") && bareSource !== schema) {
           addToIndex(`${schema}.${bareSource}`, record);
         }
       }
-      addToIndex(record.source, record);
-      if (bareSource !== record.source) addToIndex(bareSource, record);
+      addToIndex(source, record);
+      if (bareSource !== source) addToIndex(bareSource, record);
       // Index leaf field name for nested paths (e.g., PHONES[].PHONE_TYPE → PHONE_TYPE)
       const srcLastDot = bareSource.lastIndexOf(".");
       if (srcLastDot > 0) {

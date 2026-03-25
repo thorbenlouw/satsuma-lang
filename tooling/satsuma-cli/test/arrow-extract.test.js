@@ -81,7 +81,7 @@ describe("extractArrowRecords", () => {
     const records = extractArrowRecords(root);
     assert.equal(records.length, 1);
     assert.equal(records[0].mapping, "m1");
-    assert.equal(records[0].source, "CUST_ID");
+    assert.equal(records[0].sources[0], "CUST_ID");
     assert.equal(records[0].target, "legacy_id");
     assert.equal(records[0].classification, "none");
     assert.equal(records[0].derived, false);
@@ -145,7 +145,7 @@ describe("extractArrowRecords", () => {
 
     const records = extractArrowRecords(root);
     assert.equal(records.length, 1);
-    assert.equal(records[0].source, null);
+    assert.deepEqual(records[0].sources, []);
     assert.equal(records[0].target, "migration_ts");
     assert.equal(records[0].derived, true);
     assert.equal(records[0].classification, "structural");
@@ -195,7 +195,7 @@ describe("extractArrowRecords", () => {
     // Should include the nested_arrow itself and the inner map_arrow
     const nestedRecord = records.find((r) => r.target === "items");
     assert.ok(nestedRecord, "should extract nested_arrow target");
-    assert.equal(nestedRecord.source, "Items");
+    assert.equal(nestedRecord.sources[0], "Items");
     assert.equal(nestedRecord.line, 14);
   });
 });
@@ -224,7 +224,7 @@ describe("extractArrowRecords against real examples", () => {
 
     // Check a structural arrow
     const trimArrow = records.find(
-      (r) => r.source === "FIRST_NM" && r.target === "first_name",
+      (r) => r.sources[0] === "FIRST_NM" && r.target === "first_name",
     );
     assert.ok(trimArrow, "should find FIRST_NM -> first_name");
     assert.equal(trimArrow.classification, "structural");
@@ -232,13 +232,13 @@ describe("extractArrowRecords against real examples", () => {
     assert.equal(trimArrow.steps.length, 3);
 
     // Check a mixed arrow (NL body + warn_if_invalid structural step)
-    const phoneArrow = records.find((r) => r.source === "PHONE_NBR");
+    const phoneArrow = records.find((r) => r.sources[0] === "PHONE_NBR");
     assert.ok(phoneArrow);
     assert.equal(phoneArrow.classification, "mixed");
 
     // Check a mixed arrow
     const notesArrow = records.find(
-      (r) => r.source === "NOTES" && r.target === "notes",
+      (r) => r.sources[0] === "NOTES" && r.target === "notes",
     );
     assert.ok(notesArrow);
     assert.equal(notesArrow.classification, "mixed");
@@ -260,19 +260,19 @@ describe("extractArrowRecords against real examples", () => {
 
     // Find child arrows of the each Items -> items block
     const childArrows = records.filter(
-      (r) => r.source && r.source.startsWith("Items."),
+      (r) => r.sources.length > 0 && r.sources[0].startsWith("Items."),
     );
     assert.ok(childArrows.length >= 7, `expected >=7 child arrows, got ${childArrows.length}`);
 
     // Each child arrow should have a clean source (no newlines, no target contamination)
     for (const a of childArrows) {
-      assert.ok(!a.source.includes("\n"), `source should not contain newline: ${a.source}`);
+      assert.ok(!a.sources[0].includes("\n"), `source should not contain newline: ${a.sources[0]}`);
       assert.ok(!a.target.includes("\n"), `target should not contain newline: ${a.target}`);
-      assert.equal(a.derived, false, `${a.source} should not be derived`);
+      assert.equal(a.derived, false, `${a.sources[0]} should not be derived`);
     }
 
     // Specifically check the last arrow (.TXZ01 -> .description) which was previously broken
-    const txz01 = childArrows.find((r) => r.source === "Items.TXZ01");
+    const txz01 = childArrows.find((r) => r.sources[0] === "Items.TXZ01");
     assert.ok(txz01, "should find Items.TXZ01 arrow");
     assert.equal(txz01.target, "items.description");
     assert.equal(txz01.derived, false);

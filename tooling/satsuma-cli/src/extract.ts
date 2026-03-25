@@ -699,7 +699,7 @@ function decomposePipeSteps(steps: SyntaxNode[]): PipeStep[] {
 interface ExtractedArrow {
   mapping: string | null;
   namespace: string | null;
-  source: string | null;
+  sources: string[];
   target: string | null;
   transform_raw: string;
   steps: PipeStep[];
@@ -784,21 +784,25 @@ function extractSingleArrow(
   parentSrc: string | null,
   parentTgt: string | null,
 ): ExtractedArrow {
-  const srcNode = child(arrow, "src_path");
+  const srcNodes = children(arrow, "src_path");
   const tgtNode = child(arrow, "tgt_path");
   const pipeChain = child(arrow, "pipe_chain");
   const pipeSteps = pipeChain ? children(pipeChain, "pipe_step") : [];
 
-  let source = cleanPathText(pathText(srcNode));
+  let sources: string[] = srcNodes
+    .map((n) => cleanPathText(pathText(n)))
+    .filter((s): s is string => s !== null);
   let target = cleanPathText(pathText(tgtNode));
   const classification = classifyTransform(pipeSteps);
   const derived = classifyArrow(arrow);
   const steps = decomposePipeSteps(pipeSteps);
 
   // Prefix with parent path for nested child arrows
-  if (parentSrc && source) {
-    const cleanSrc = source.replace(/^\./, "");
-    source = `${parentSrc}.${cleanSrc}`;
+  if (parentSrc && sources.length > 0) {
+    sources = sources.map((s) => {
+      const cleanSrc = s.replace(/^\./, "");
+      return `${parentSrc}.${cleanSrc}`;
+    });
   }
   if (parentTgt && target) {
     const cleanTgt = target.replace(/^\./, "");
@@ -816,7 +820,7 @@ function extractSingleArrow(
   const record: ExtractedArrow = {
     mapping: mappingName,
     namespace,
-    source,
+    sources,
     target,
     transform_raw: transformRaw,
     steps,

@@ -569,7 +569,7 @@ describe("schema field merging across files", () => {
       arrowRecords: [{
         mapping: "pos to hub_customer",
         namespace: null,
-        source: "CUSTOMER_ID",
+        sources: ["CUSTOMER_ID"],
         target: "customer_id",
         row: 85,
       }],
@@ -596,7 +596,7 @@ describe("schema field merging across files", () => {
       arrowRecords: [{
         mapping: "pos to hub_store",
         namespace: null,
-        source: "STORE_NAME",
+        sources: ["STORE_NAME"],
         target: null,
         row: 45,
       }],
@@ -655,7 +655,7 @@ describe("schema field merging across files", () => {
         {
           mapping: "customer to hub_customer",
           namespace: null,
-          source: "address.street",
+          sources: ["address.street"],
           target: "address_street",
           row: 35,
         },
@@ -688,7 +688,7 @@ describe("schema field merging across files", () => {
       arrowRecords: [{
         mapping: "customer to hub_customer_b",
         namespace: null,
-        source: "address.city",
+        sources: ["address.city"],
         target: "address_city",
         row: 15,
       }],

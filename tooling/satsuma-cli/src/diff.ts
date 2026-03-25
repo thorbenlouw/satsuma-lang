@@ -68,7 +68,7 @@ function collectArrowsByMapping(index: WorkspaceIndex): Map<string, ArrowRecord[
 
   for (const [, records] of index.fieldArrows) {
     for (const r of records) {
-      const dedupKey = `${r.file}:${r.line}:${r.source}:${r.target}`;
+      const dedupKey = `${r.file}:${r.line}:${r.sources.join(",")}:${r.target}`;
       if (seen.has(dedupKey)) continue;
       seen.add(dedupKey);
       const key = r.namespace ? `${r.namespace}::${r.mapping}` : (r.mapping ?? "");
@@ -231,7 +231,7 @@ function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[],
   }
 
   // Compare individual arrows by source→target key
-  const arrowKey = (r: ArrowRecord) => `${r.source ?? ""}→${r.target ?? ""}`;
+  const arrowKey = (r: ArrowRecord) => `${r.sources.join(",") || ""}→${r.target ?? ""}`;
   const aByKey = new Map<string, ArrowRecord>();
   const bByKey = new Map<string, ArrowRecord>();
   for (const r of arrowsA) aByKey.set(arrowKey(r), r);

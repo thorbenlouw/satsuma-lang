@@ -98,10 +98,10 @@ Examples:
       // Also search by bare field name (handles nested child fields indexed by leaf name)
       // Only include arrows from mappings involving the resolved schema
       const leafName = fieldName.includes(".") ? fieldName.split(".").pop()! : fieldName;
-      const seen = new Set(arrows.map((a) => `${a.mapping}:${a.namespace}:${a.source}:${a.target}:${a.line}`));
+      const seen = new Set(arrows.map((a) => `${a.mapping}:${a.namespace}:${a.sources.join(",")}:${a.target}:${a.line}`));
       for (const altKey of [fieldName, leafName]) {
         for (const a of findFieldArrows(altKey, index)) {
-          const dedupKey = `${a.mapping}:${a.namespace}:${a.source}:${a.target}:${a.line}`;
+          const dedupKey = `${a.mapping}:${a.namespace}:${a.sources.join(",")}:${a.target}:${a.line}`;
           if (seen.has(dedupKey)) continue;
           // Verify this arrow's mapping involves the queried schema
           const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
@@ -118,7 +118,7 @@ Examples:
       // This allows disambiguating fields that share a leaf name at different nesting levels.
       if (fieldName.includes(".")) {
         arrows = arrows.filter((a) => {
-          return arrowPathMatches(a.source, fieldName) || arrowPathMatches(a.target, fieldName);
+          return a.sources.some((s) => arrowPathMatches(s, fieldName)) || arrowPathMatches(a.target, fieldName);
         });
       }
 
@@ -135,7 +135,7 @@ Examples:
               ? nlRef.mapping.slice(nlRef.namespace.length + 2)
               : nlRef.mapping,
             namespace: nlRef.namespace,
-            source: resolvedTo,
+            sources: [resolvedTo],
             target: nlRef.targetField,
             transform_raw: `(NL ref)`,
             steps: [],
@@ -154,7 +154,7 @@ Examples:
           const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
           const m = index.mappings.get(qMapping);
           return m?.sources.includes(resolvedSchema.key) &&
-            (a.source === fieldName || a.source === leafName);
+            a.sources.some((s) => s === fieldName || s === leafName);
         });
       } else if (opts.asTarget) {
         arrows = arrows.filter((a) => {
@@ -208,7 +208,7 @@ Examples:
 
           const result: Record<string, unknown> = {
             mapping: qMapping,
-            source: qualifyPath(a.source, sourceSchema),
+            source: a.sources.map((s) => qualifyPath(s, sourceSchema)).join(", "),
             target: qualifyPath(a.target, targetSchema),
             classification: a.classification,
             transform_raw: a.transform_raw,
@@ -261,7 +261,7 @@ function findFieldArrows(fieldKey: string, index: WorkspaceIndex): ArrowRecord[]
   const seen = new Set<string>();
   const results: ArrowRecord[] = [];
   for (const arrow of index.fieldArrows.get(fieldKey)!) {
-    const key = `${arrow.mapping}:${arrow.namespace}:${arrow.source}:${arrow.target}:${arrow.line}`;
+    const key = `${arrow.mapping}:${arrow.namespace}:${arrow.sources.join(",")}:${arrow.target}:${arrow.line}`;
     if (!seen.has(key)) {
       seen.add(key);
       results.push(arrow);
@@ -311,7 +311,7 @@ function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceI
   // Schema-aware source/target classification: verify the queried schema
   // is on the correct side of the mapping, not just that the field name matches
   const asSource = arrows.filter((a) => {
-    if (!matchesField(a.source)) return false;
+    if (!a.sources.some((s) => matchesField(s))) return false;
     const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
     const m = index.mappings.get(qMapping);
     return m ? m.sources.includes(schemaName) : true;
@@ -345,7 +345,7 @@ function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceI
   for (const [mappingName, mappingArrows] of byMapping) {
     console.log(`  mapping '${mappingName}':`);
     for (const a of mappingArrows) {
-      const src = a.source ?? "(computed)";
+      const src = a.sources.length > 0 ? a.sources.join(", ") : "(computed)";
       const tgt = a.target ?? "?";
       let line = `    ${src} -> ${tgt}`;
       if (a.transform_raw) {

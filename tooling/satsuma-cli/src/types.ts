@@ -114,7 +114,7 @@ export type Classification = "structural" | "nl" | "mixed" | "none" | "nl-derive
 export interface ArrowRecord {
   mapping: string | null;
   namespace: string | null;
-  source: string | null;
+  sources: string[];
   target: string | null;
   transform_raw: string;
   steps: PipeStep[];
