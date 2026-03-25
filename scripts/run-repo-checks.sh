@@ -11,6 +11,26 @@ run_step() {
   "$@"
 }
 
+# Run commands in parallel, fail if any fail.
+run_parallel() {
+  local label="$1"
+  shift
+  printf '\n[%s]\n' "$label"
+  local pids=()
+  for cmd in "$@"; do
+    eval "$cmd" &
+    pids+=($!)
+  done
+  local failed=0
+  for pid in "${pids[@]}"; do
+    wait "$pid" || failed=1
+  done
+  if [ "$failed" -ne 0 ]; then
+    echo "FAIL: $label" >&2
+    exit 1
+  fi
+}
+
 cd "$ROOT_DIR"
 
 run_step "repo lint" npm run lint
@@ -20,8 +40,9 @@ run_step "satsuma-cli tests" npm --prefix tooling/satsuma-cli test
 run_step "satsuma fmt --check examples" node tooling/satsuma-cli/dist/index.js fmt --check examples/
 
 run_step "vscode-satsuma validate" npm --prefix tooling/vscode-satsuma run validate
-run_step "vscode-satsuma tests" npm --prefix tooling/vscode-satsuma test
-run_step "vscode-satsuma LSP tests" npm --prefix tooling/vscode-satsuma run test:lsp
+run_parallel "vscode-satsuma tests + LSP" \
+  "npm --prefix tooling/vscode-satsuma test" \
+  "npm --prefix tooling/vscode-satsuma run test:lsp"
 
 run_step "tree-sitter generate" npm --prefix tooling/tree-sitter-satsuma run generate
 if cc -x c -o /dev/null - <<< 'int main(){return 0;}' 2>/dev/null; then
@@ -29,6 +50,6 @@ if cc -x c -o /dev/null - <<< 'int main(){return 0;}' 2>/dev/null; then
 else
   run_step "tree-sitter corpus (wasm)" bash -lc 'cd "$1/tooling/tree-sitter-satsuma" && "$1/scripts/tree-sitter-local.sh" test --wasm' -- "$ROOT_DIR"
 fi
-run_step "tree-sitter Python tests" python3 -m pytest "$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/" -v
-
-run_step "excel-to-satsuma skill tests" python3 -m pytest "$ROOT_DIR/skills/excel-to-satsuma/scripts/test_excel_tool.py" -v
+run_parallel "Python tests (tree-sitter + excel skill)" \
+  "python3 -m pytest '$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/' -v" \
+  "python3 -m pytest '$ROOT_DIR/skills/excel-to-satsuma/scripts/test_excel_tool.py' -v"

@@ -13,7 +13,11 @@ import { copyFileSync, mkdtempSync, readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
-import { describe, it } from "node:test";
+import { describe as _describe, it } from "node:test";
+
+// Run top-level describe blocks concurrently — each test spawns its own
+// CLI subprocess so there are no shared-state conflicts.
+const describe = (name, fn) => _describe(name, { concurrency: true }, fn);
 import assert from "node:assert/strict";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
