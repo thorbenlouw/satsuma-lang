@@ -1,6 +1,6 @@
 ---
 id: lsp-lnmw
-status: open
+status: closed
 deps: [lsp-vupl]
 links: []
 created: 2026-03-25T17:28:46Z
@@ -20,3 +20,14 @@ Add a canonical example .stm file demonstrating multi-source arrows in realistic
 - Demonstrates bare and schema-qualified sources
 - satsuma validate passes on example
 
+
+## Notes
+
+**2026-03-25T22:45:26Z**
+
+## Notes
+
+**2026-03-25T23:15:00Z**
+
+Cause: Needed canonical example demonstrating multi-source arrow syntax.
+Fix: Created multi-source-arrows.stm with 2-source, 3-source, derived, and schema-qualified multi-source arrows. Parses cleanly and passes validation.
