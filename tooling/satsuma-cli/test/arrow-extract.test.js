@@ -211,6 +211,37 @@ describe("extractArrowRecords", () => {
     assert.equal(nestedRecord.line, 14);
   });
 
+  it("extracts multiple sources from multi-source arrow", () => {
+    const arrow = n("map_arrow", [srcPath("first_name"), srcPath("last_name"), tgtPath("full_name")], "", 40);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.deepEqual(records[0].sources, ["first_name", "last_name"]);
+    assert.equal(records[0].target, "full_name");
+  });
+
+  it("extracts three sources from multi-source arrow", () => {
+    const arrow = n("map_arrow", [srcPath("city"), srcPath("state"), srcPath("zip"), tgtPath("address")], "", 41);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.deepEqual(records[0].sources, ["city", "state", "zip"]);
+  });
+
+  it("single-source arrow produces length-1 sources array", () => {
+    const arrow = mapArrow("CUST_ID", "legacy_id", [], 42);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.deepEqual(records[0].sources, ["CUST_ID"]);
+  });
+
   it("produces canonical form for namespaced source paths", () => {
     const arrow = n("map_arrow", [srcPathNs("crm", "customers", "email"), tgtPath("email_addr")], "", 30);
     const mapping = mappingBlock("m1", [arrow]);
