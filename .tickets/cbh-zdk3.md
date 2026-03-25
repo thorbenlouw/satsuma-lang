@@ -2,7 +2,7 @@
 id: cbh-zdk3
 status: open
 deps: []
-links: []
+links: [cbh-ekvb]
 created: 2026-03-25T11:16:54Z
 type: bug
 priority: 2

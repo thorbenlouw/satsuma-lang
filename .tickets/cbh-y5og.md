@@ -2,7 +2,7 @@
 id: cbh-y5og
 status: open
 deps: []
-links: []
+links: [cbh-cyl0, cbh-h0or, cbh-n4vm]
 created: 2026-03-25T11:18:20Z
 type: bug
 priority: 2

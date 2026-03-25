@@ -2,7 +2,7 @@
 id: cbh-2y8p
 status: open
 deps: []
-links: []
+links: [cbh-ukcx, cbh-so1o, cbh-kyv3, cbh-7ji8, cbh-9cqh, cbh-b0w8, cbh-e01s]
 created: 2026-03-25T11:16:52Z
 type: bug
 priority: 2

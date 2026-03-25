@@ -2,7 +2,7 @@
 id: cbh-5lzd
 status: open
 deps: []
-links: []
+links: [cbh-5tvk, cbh-mpz2, cbh-rkia]
 created: 2026-03-25T11:17:34Z
 type: bug
 priority: 2

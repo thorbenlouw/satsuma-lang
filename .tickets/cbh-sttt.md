@@ -2,7 +2,7 @@
 id: cbh-sttt
 status: open
 deps: []
-links: []
+links: [cbh-h0or]
 created: 2026-03-25T11:16:10Z
 type: bug
 priority: 2
