@@ -408,6 +408,12 @@ describe("satsuma metric", () => {
     assert.match(data.note, /subscription/i, "note should contain subscription text");
   });
 
+  it("text output preserves quotes around filter value (cbh-djny)", async () => {
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", EXAMPLES);
+    assert.equal(code, 0);
+    assert.match(stdout, /filter "status/, "filter value should be double-quoted");
+  });
+
   it("--json includes slices for metrics with slice metadata (sl-se2f)", async () => {
     const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", EXAMPLES);
     assert.equal(code, 0);

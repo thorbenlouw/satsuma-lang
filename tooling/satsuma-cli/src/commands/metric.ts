@@ -77,6 +77,7 @@ Examples:
 interface MetaEntry {
   key: string;
   value: string | null;
+  quoted?: boolean;
 }
 
 /**
@@ -92,8 +93,9 @@ function extractMetaEntries(metaNode: SyntaxNode | undefined): MetaEntry[] {
       const val = c.namedChildren.find((x) => x.type !== "kv_key");
       if (key) {
         let valText = val?.text ?? "";
+        const quoted = val?.type === "nl_string" || val?.type === "multiline_string";
         if (val?.type === "nl_string") valText = val.text.slice(1, -1);
-        entries.push({ key: key.text, value: valText });
+        entries.push({ key: key.text, value: valText, quoted });
       }
     } else if (c.type === "tag_token") {
       entries.push({ key: c.text, value: null });
@@ -115,7 +117,11 @@ function extractMetaEntries(metaNode: SyntaxNode | undefined): MetaEntry[] {
  */
 function formatMeta(entries: MetaEntry[]): string {
   if (entries.length === 0) return "";
-  const format = (e: MetaEntry): string => (e.value !== null ? `${e.key} ${e.value}` : e.key);
+  const format = (e: MetaEntry): string => {
+    if (e.value === null) return e.key;
+    const displayVal = e.quoted ? `"${e.value}"` : e.value;
+    return `${e.key} ${displayVal}`;
+  };
   if (entries.length <= 2) {
     return ` (${entries.map(format).join(", ")})`;
   }
