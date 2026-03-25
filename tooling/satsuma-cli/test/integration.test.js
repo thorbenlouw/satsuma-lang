@@ -3395,6 +3395,79 @@ describe("satsuma where-used — fragment-to-fragment spreads (sl-307v)", () => 
 // ---------------------------------------------------------------------------
 // Bug fix: nl/meta field syntax (sg-95gr) — dot-separated scope works
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Bug fix: nl text output no longer truncates (sl-d9hi)
+// ---------------------------------------------------------------------------
+const DEEP_NESTED = resolve(__dirname, "fixtures", "deep-nested-bugs.stm");
+
+describe("satsuma nl — no truncation (sl-d9hi)", () => {
+  it("text output shows full NL content without truncation", async () => {
+    const { stdout, code } = await run("nl", "pacs008", DEEP_NESTED);
+    assert.equal(code, 0);
+    // The note is >100 chars — should NOT be truncated with "..."
+    assert.match(stdout, /Used for tracking across the entire payment chain\./);
+    assert.ok(!stdout.includes("..."), "should not truncate with ellipsis");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl supports deeply nested field paths (sl-kutf)
+// ---------------------------------------------------------------------------
+describe("satsuma nl — deeply nested paths (sl-kutf)", () => {
+  it("3-level nested path finds NL on record scope", async () => {
+    const { stdout, code } = await run("nl", "pacs008.CdtTrfTxInf.PmtId", DEEP_NESTED);
+    assert.equal(code, 0);
+    assert.match(stdout, /Unique end-to-end transaction reference/);
+  });
+
+  it("3-level nested path finds warnings", async () => {
+    const { stdout, code } = await run("nl", "pacs008.GrpHdr.InstgAgt", DEEP_NESTED);
+    assert.equal(code, 0);
+    assert.match(stdout, /BIC may need SWIFT validation/);
+  });
+
+  it("exits 1 for invalid nested path", async () => {
+    const { stderr, code } = await run("nl", "pacs008.GrpHdr.Nonexistent.BIC", DEEP_NESTED);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: arrows supports deeply nested field paths (sl-xj4p)
+// ---------------------------------------------------------------------------
+describe("satsuma arrows — deeply nested paths (sl-xj4p)", () => {
+  it("deeply nested path returns only matching arrow", async () => {
+    const { stdout, code } = await run("arrows", "pacs008.CdtTrfTxInf.DbtrAgt.BIC", DEEP_NESTED);
+    assert.equal(code, 0);
+    assert.match(stdout, /1 arrow/);
+    assert.match(stdout, /DbtrAgt\.BIC -> debtor_bic/);
+    // Should NOT include other BIC arrows
+    assert.ok(!stdout.includes("instructing_bic"), "should not include InstgAgt.BIC arrow");
+    assert.ok(!stdout.includes("creditor_bic"), "should not include CdtrAgt.BIC arrow");
+  });
+
+  it("leaf-name query still returns all matching arrows", async () => {
+    const { stdout, code } = await run("arrows", "pacs008.BIC", DEEP_NESTED);
+    assert.equal(code, 0);
+    assert.match(stdout, /3 arrow/);
+  });
+
+  it("--json includes full nested path for source", async () => {
+    const { stdout, code } = await run("arrows", "pacs008.CdtTrfTxInf.DbtrAgt.BIC", "--json", DEEP_NESTED);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.length, 1);
+    assert.match(data[0].source, /pacs008\.CdtTrfTxInf\.DbtrAgt\.BIC/);
+  });
+
+  it("exits 1 for invalid deeply nested path", async () => {
+    const { stderr, code } = await run("arrows", "pacs008.Nonexistent.BIC", DEEP_NESTED);
+    assert.equal(code, 1);
+    assert.match(stderr, /not found/i);
+  });
+});
+
 describe("satsuma nl/meta field syntax (sg-95gr)", () => {
   it("nl accepts schema.field without 'field' keyword", async () => {
     const { code } = await run("nl", "mart::dim_contact.email", NS_PLATFORM);

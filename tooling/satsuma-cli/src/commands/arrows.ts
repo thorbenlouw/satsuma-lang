@@ -113,6 +113,15 @@ Examples:
         }
       }
 
+      // When the user specifies a deeply nested path (e.g. CdtTrfTxInf.DbtrAgt.BIC),
+      // filter out arrows whose source/target path doesn't match the requested path.
+      // This allows disambiguating fields that share a leaf name at different nesting levels.
+      if (fieldName.includes(".")) {
+        arrows = arrows.filter((a) => {
+          return arrowPathMatches(a.source, fieldName) || arrowPathMatches(a.target, fieldName);
+        });
+      }
+
       // Add NL-derived arrows for this field
       const nlRefs = resolveAllNLRefs(index);
       for (const nlRef of nlRefs) {
@@ -212,6 +221,27 @@ Examples:
 
       printDefault(fieldRef, arrows, index);
     });
+}
+
+/**
+ * Check if an arrow's source/target path matches the user's requested nested path.
+ * For example, if the arrow source is "CdtTrfTxInf.DbtrAgt.BIC" and the user
+ * requested "CdtTrfTxInf.DbtrAgt.BIC", this returns true.
+ * Also matches if the arrow path ends with the requested path (suffix match).
+ */
+function arrowPathMatches(arrowPath: string | null, requestedPath: string): boolean {
+  if (!arrowPath) return false;
+  if (arrowPath === requestedPath) return true;
+  // Suffix match: arrow path ends with the requested path
+  if (arrowPath.endsWith(`.${requestedPath}`)) return true;
+  // The requested path ends with the arrow path (arrow has shorter dotted path)
+  if (requestedPath.endsWith(`.${arrowPath}`)) return true;
+  // Exact match on leaf only when the full path also has matching intermediate segments
+  if (requestedPath.endsWith(arrowPath) && arrowPath === requestedPath.split(".").pop()) {
+    // Leaf-only match — only accept if no deeper path was specified
+    return false;
+  }
+  return false;
 }
 
 /**
