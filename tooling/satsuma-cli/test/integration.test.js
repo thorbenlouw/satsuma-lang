@@ -460,6 +460,23 @@ describe("satsuma mapping", () => {
     assert.ok(Array.isArray(data.arrows));
   });
 
+  it("--json includes note field when mapping has a note block (cbh-e01s)", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout, code } = await run("mapping", "completed orders", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(typeof data.note === "string", "expected note field to be a string");
+    assert.match(data.note, /order events/i);
+  });
+
+  it("--json omits note field when mapping has no note block (cbh-e01s)", async () => {
+    const HUB = resolve(EXAMPLES, "multi-source-hub.stm");
+    const { stdout, code } = await run("mapping", "crm to analytics", "--json", HUB);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal("note" in data, false, "expected no note field");
+  });
+
   it("exits 1 for unknown mapping", async () => {
     const { code, stderr } = await run("mapping", "no_such_mapping_xyz", EXAMPLES);
     assert.equal(code, 1);

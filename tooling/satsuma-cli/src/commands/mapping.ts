@@ -132,10 +132,22 @@ function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
+function extractNoteText(node: SyntaxNode | undefined): string | null {
+  if (!node) return null;
+  const parts: string[] = [];
+  for (const c of node.namedChildren) {
+    if (c.type === "nl_string") parts.push(c.text.slice(1, -1));
+    else if (c.type === "multiline_string") parts.push(c.text.slice(3, -3).trim());
+  }
+  return parts.length > 0 ? parts.join("\n") : null;
+}
+
 function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
   const metadata = extractMetadata(metaNode);
+  const noteBlock = body?.namedChildren.find((c) => c.type === "note_block");
+  const note = extractNoteText(noteBlock);
   function arrowToJson(info: ArrowInfo): Record<string, unknown> {
     const { kind, src, tgt, hasBody, metaNode: arrowMeta, node: arrowNode, children } = info;
     const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
@@ -162,6 +174,7 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
         sources: entry.sources,
         targets: entry.targets,
         arrowCount: entry.arrowCount,
+        ...(note != null ? { note } : {}),
         ...(metadata.length > 0 ? { metadata } : {}),
         arrows,
         file: entry.file,
