@@ -17,7 +17,6 @@ note {
   """
 }
 
-
 // --- Subscription Metrics ---
 metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
@@ -39,7 +38,6 @@ metric monthly_recurring_revenue "MRR" (
   }
 }
 
-
 metric churn_rate (
   source {fact_subscriptions, dim_customer},
   grain monthly,
@@ -55,7 +53,6 @@ metric churn_rate (
     """
   }
 }
-
 
 metric customer_lifetime_value "CLV" (
   source {fact_orders, dim_customer},
@@ -77,7 +74,6 @@ metric customer_lifetime_value "CLV" (
   }
 }
 
-
 // --- Pipeline / Sales Metrics ---
 metric conversion_rate (
   source {fact_opportunities, dim_stage},
@@ -92,7 +88,6 @@ metric conversion_rate (
   }
 }
 
-
 metric pipeline_value "ARR Pipeline" (
   source fact_opportunities,
   grain weekly,
@@ -106,7 +101,6 @@ metric pipeline_value "ARR Pipeline" (
     "Open pipeline as of the snapshot date, expressed in ARR."
   }
 }
-
 
 // --- Commerce Metrics ---
 metric order_revenue (
@@ -133,7 +127,6 @@ metric order_revenue (
     """
   }
 }
-
 
 metric cart_abandonment_rate (
   source {fact_sessions, fact_orders},

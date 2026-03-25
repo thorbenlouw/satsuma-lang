@@ -2,7 +2,6 @@
 import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
 import { fx_spot_rates } from "lookups/finance.stm"
 
-
 note {
   """
   # Salesforce to Snowflake Pipeline
@@ -15,7 +14,6 @@ note {
   - **Hard Deletes:** Captured via the `isDeleted` flag in SFDC.
   """
 }
-
 
 // --- Sources ---
 schema sfdc_opportunity (note "SFDC Opportunity Object") {
@@ -32,14 +30,12 @@ schema sfdc_opportunity (note "SFDC Opportunity Object") {
   SystemModStamp           DATETIME        (required)
 }
 
-
 schema sfdc_account (note "SFDC Account Object") {
   Id              ID           (pk)
   Name            STRING(255)  (required)
   Type            PICKLIST     (enum {Customer, Prospect, Partner, Competitor})
   BillingCountry  STRING(80)
 }
-
 
 // --- Target ---
 schema snowflake_opps (note "FACT_OPPORTUNITIES — Snowflake Analytics") {
@@ -55,7 +51,6 @@ schema snowflake_opps (note "FACT_OPPORTUNITIES — Snowflake Analytics") {
   source_system     VARCHAR(10)    (default SFDC)
   ingested_at       TIMESTAMP_NTZ
 }
-
 
 // --- Mapping ---
 mapping 'opportunity ingestion' {

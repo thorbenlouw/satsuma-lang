@@ -16,7 +16,6 @@ note {
   """
 }
 
-
 // --- Source ---
 schema edi_desadv (
   format fixed-length,
@@ -60,7 +59,6 @@ schema edi_desadv (
   }
 }
 
-
 // --- Target ---
 schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
   ShipmentHeader record {
@@ -103,7 +101,6 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
     }
   }
 }
-
 
 // --- Mapping ---
 mapping 'edi to mfcs' {

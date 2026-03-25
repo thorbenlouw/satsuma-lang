@@ -8,11 +8,9 @@ transform clean_string {
   trim | uppercase
 }
 
-
 transform hash_key {
   trim | md5
 }
-
 
 // --- First block of 'source' namespace ---
 namespace source (note "External source systems") {
@@ -26,7 +24,6 @@ namespace source (note "External source systems") {
     manager_id   VARCHAR(20)    (ref hr_employees.employee_id)
   }
 }
-
 
 // --- Second block of 'source' namespace (merges with first) ---
 namespace source (note "External source systems") {
@@ -48,7 +45,6 @@ namespace source (note "External source systems") {
     approved_by    VARCHAR(20)    (ref hr_employees.employee_id)
   }
 }
-
 
 // --- Staging namespace referencing merged source ---
 namespace staging (note "Cleaned and conformed staging area") {
@@ -112,7 +108,6 @@ namespace staging (note "Cleaned and conformed staging area") {
     }
   }
 }
-
 
 // --- Reporting namespace ---
 namespace reporting (note "Executive reporting layer") {

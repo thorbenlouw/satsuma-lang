@@ -17,6 +17,8 @@ run_step "repo lint" npm run lint
 
 run_step "satsuma-cli tests" npm --prefix tooling/satsuma-cli test
 
+run_step "satsuma fmt --check examples" node tooling/satsuma-cli/dist/index.js fmt --check examples/
+
 run_step "vscode-satsuma validate" npm --prefix tooling/vscode-satsuma run validate
 run_step "vscode-satsuma tests" npm --prefix tooling/vscode-satsuma test
 run_step "vscode-satsuma LSP tests" npm --prefix tooling/vscode-satsuma run test:lsp

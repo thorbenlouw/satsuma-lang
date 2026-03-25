@@ -175,6 +175,12 @@ schema b { y STRING }`;
     assert.ok(!out.includes("}\n\n\nschema b"), "should not have 2 blank lines between blocks");
   });
 
+  it("preserves blank line between file header and section comment (cbh-0lhj)", () => {
+    const src = `// File header\n\n// Section comment\nschema a { x INT }`;
+    const out = fmt(src);
+    assert.ok(out.includes("// File header\n\n// Section comment"), "should preserve blank line between header and section comment");
+  });
+
   it("no blank lines between consecutive imports", () => {
     const src = `import { foo } from "a.stm"
 import { bar } from "b.stm"`;

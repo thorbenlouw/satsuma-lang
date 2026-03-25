@@ -7,7 +7,6 @@ import { pos::stores, pos::transactions } from "namespaces.stm"
 import { ecom::orders, ecom::customers } from "namespaces.stm"
 import { warehouse::hub_store, warehouse::hub_customer } from "namespaces.stm"
 
-
 note {
   """
   # Multi-Layer Data Platform
@@ -21,7 +20,6 @@ note {
   """
 }
 
-
 // --- Global definitions ---
 fragment standard_metadata {
   load_ts        TIMESTAMPTZ  (required)
@@ -29,16 +27,13 @@ fragment standard_metadata {
   batch_id       VARCHAR(36)
 }
 
-
 transform normalize_email {
   trim | lowercase
 }
 
-
 transform dv_hash_key {
   trim | lowercase | md5
 }
-
 
 // --- Raw Ingestion Layer ---
 namespace raw (note "Raw ingestion layer — one schema per source feed") {
@@ -74,7 +69,6 @@ namespace raw (note "Raw ingestion layer — one schema per source feed") {
     ...standard_metadata
   }
 }
-
 
 // --- Data Vault Layer ---
 namespace vault (note "Data Vault 2.0 — hubs, links, and satellites") {
@@ -156,7 +150,6 @@ namespace vault (note "Data Vault 2.0 — hubs, links, and satellites") {
     deal_id -> deal_hk { dv_hash_key }
   }
 }
-
 
 // --- Mart Layer ---
 namespace mart (note "Business-facing dimensional models") {
@@ -274,7 +267,6 @@ namespace mart (note "Business-facing dimensional models") {
     currency -> currency
   }
 }
-
 
 // --- Cross-Layer Metrics ---
 namespace analytics (note "Business metrics layer") {
