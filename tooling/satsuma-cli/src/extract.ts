@@ -6,6 +6,7 @@
  * they can be tested against mock CST objects.
  */
 
+import { canonicalRef } from "./canonical-ref.js";
 import { classifyTransform, classifyArrow } from "./classify.js";
 import { extractMetadata } from "./meta-extract.js";
 import type { Classification, FieldDecl, PipeStep, SyntaxNode } from "./types.js";
@@ -680,6 +681,16 @@ function pathText(pathNode: SyntaxNode | null): string | null {
   const inner = pathNode.namedChildren[0];
   if (!inner) return pathNode.text;
   if (inner.type === "backtick_path") return inner.text.slice(1, -1);
+  // For namespaced paths, produce canonical ns::schema.field form
+  if (inner.type === "namespaced_path") {
+    const ids = inner.namedChildren.filter((c) => c.type === "identifier");
+    if (ids.length >= 2) {
+      const ns = ids[0]!.text;
+      const schema = ids[1]!.text;
+      const field = ids.slice(2).map((c) => c.text).join(".") || null;
+      return canonicalRef(ns, schema, field);
+    }
+  }
   return inner.text;
 }
 

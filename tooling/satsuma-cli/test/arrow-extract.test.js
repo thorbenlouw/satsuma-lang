@@ -35,8 +35,20 @@ function fieldPath(name) {
   return n("field_path", [ident(name)], name);
 }
 
+function namespacedPath(ns, schema, field) {
+  const ids = [ident(ns), ident(schema)];
+  if (field) ids.push(ident(field));
+  const text = field ? `${ns}::${schema}.${field}` : `${ns}::${schema}`;
+  return n("namespaced_path", ids, text);
+}
+
 function srcPath(name) {
   return n("src_path", [fieldPath(name)], name);
+}
+
+function srcPathNs(ns, schema, field) {
+  const inner = namespacedPath(ns, schema, field);
+  return n("src_path", [inner], inner.text);
 }
 
 function tgtPath(name) {
@@ -197,6 +209,26 @@ describe("extractArrowRecords", () => {
     assert.ok(nestedRecord, "should extract nested_arrow target");
     assert.equal(nestedRecord.sources[0], "Items");
     assert.equal(nestedRecord.line, 14);
+  });
+
+  it("produces canonical form for namespaced source paths", () => {
+    const arrow = n("map_arrow", [srcPathNs("crm", "customers", "email"), tgtPath("email_addr")], "", 30);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].sources[0], "crm::customers.email");
+  });
+
+  it("produces canonical form for namespaced source without field", () => {
+    const arrow = n("map_arrow", [srcPathNs("billing", "invoices", null), tgtPath("out")], "", 31);
+    const mapping = mappingBlock("m1", [arrow]);
+    const root = n("source_file", [mapping]);
+
+    const records = extractArrowRecords(root);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].sources[0], "billing::invoices");
   });
 });
 
