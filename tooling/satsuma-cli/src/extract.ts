@@ -421,12 +421,13 @@ export function extractMappings(rootNode: SyntaxNode): ExtractedMapping[] {
         }
       }
 
+      // Count actual field-level arrows, not container blocks.
+      // flatten_block and each_block are structural groupings whose
+      // child arrows are already counted by the descendant searches.
       arrowCount =
         allDescendants(body, "map_arrow").length +
         allDescendants(body, "computed_arrow").length +
-        allDescendants(body, "nested_arrow").length +
-        allDescendants(body, "each_block").length +
-        allDescendants(body, "flatten_block").length;
+        allDescendants(body, "nested_arrow").length;
     }
 
     // Qualify unqualified targets with their enclosing namespace

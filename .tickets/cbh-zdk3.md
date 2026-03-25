@@ -1,6 +1,6 @@
 ---
 id: cbh-zdk3
-status: open
+status: closed
 deps: []
 links: [cbh-ekvb]
 created: 2026-03-25T11:16:54Z
@@ -20,3 +20,12 @@ DETAILED DESCRIPTION:
 - The JSON structure correctly nests children under the flatten/each block, but arrowCount adds the container to the total.
 - File: /tmp/satsuma-bug-hunt/mappings.stm (order flattening line 76, po to warehouse line 103)
 
+
+## Notes
+
+**2026-03-25T12:19:30Z**
+
+**2026-03-25T12:35:00Z**
+
+Cause: extractMappings counted flatten_block and each_block in arrowCount alongside their child arrows, double-counting.
+Fix: Removed each_block and flatten_block from arrowCount since they are structural containers and their child arrows are already counted by the allDescendants searches for map_arrow, computed_arrow, and nested_arrow.
