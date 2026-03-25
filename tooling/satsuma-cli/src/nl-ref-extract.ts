@@ -350,14 +350,23 @@ function extractBlockNoteRefs(
   let blockName = inner?.text ?? "";
   if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
 
+  // extractStandaloneNoteRefs prepends "note:" to the parentLabel, so we just pass
+  // a type-prefixed block name so downstream can distinguish metric vs mapping notes.
+  // Result: "note:metric:monthly_revenue" for metrics, "note:schema:foo" for schemas.
+  const blockTypePrefix = blockNode.type === "metric_block" ? "metric:"
+    : blockNode.type === "schema_block" ? "schema:"
+    : blockNode.type === "fragment_block" ? "fragment:"
+    : "";
+  const parentLabel = `${blockTypePrefix}${blockName}`;
+
   const bodyTypes = ["schema_body", "metric_body"];
   for (const child of blockNode.namedChildren) {
     if (child.type === "note_block") {
-      extractStandaloneNoteRefs(child, namespace, blockName, results);
+      extractStandaloneNoteRefs(child, namespace, parentLabel, results);
     } else if (bodyTypes.includes(child.type)) {
       for (const bodyChild of child.namedChildren) {
         if (bodyChild.type === "note_block") {
-          extractStandaloneNoteRefs(bodyChild, namespace, blockName, results);
+          extractStandaloneNoteRefs(bodyChild, namespace, parentLabel, results);
         }
       }
     }

@@ -280,12 +280,13 @@ function collectSpreadFieldMatches(
     if (!body) continue;
 
     // Search the fragment's body for matching fields, but report under the consuming schema
+    // Use the consuming schema's file and row, not the fragment's
     const fragMatches: Match[] = [];
     collectFieldMatches(body, "schema", schemaName, fragment.file, tag, fragMatches);
     for (const m of fragMatches) {
       if (!existing.has(m.field)) {
         existing.add(m.field);
-        acc.push(m);
+        acc.push({ ...m, file: schema.file, line: schema.row + 1 });
       }
     }
 

@@ -196,6 +196,13 @@ Examples:
           const qualifyPath = (path: string | null, schema: string): string | null => {
             if (!path) return null;
             if (path.startsWith(schema + ".") || path === schema) return path;
+            // If path is already schema-qualified (contains a dot and the prefix
+            // is a known schema), don't double-qualify
+            const dotIdx = path.indexOf(".");
+            if (dotIdx > 0) {
+              const prefix = path.slice(0, dotIdx);
+              if (index.schemas.has(prefix)) return path;
+            }
             return `${schema}.${path}`;
           };
 

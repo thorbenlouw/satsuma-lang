@@ -1,6 +1,6 @@
 ---
 id: cbh-zybb
-status: open
+status: closed
 deps: []
 links: [cbh-xj0m, cbh-vgka, cbh-0lhj, cbh-394k, cbh-qwyg, cbh-ya9k]
 created: 2026-03-25T11:24:09Z

@@ -188,7 +188,7 @@ function printDefault(entry: MetricRecord, metricNode: SyntaxNode | null, compac
         const metaDecl = c.namedChildren.find((x) => x.type === "metadata_block");
         const inner = nameNode?.namedChildren[0];
         const fname = inner?.text ?? "";
-        const metaDeclText = metaDecl && !compact ? ` ${metaDecl.text}` : "";
+        const metaDeclText = metaDecl ? ` ${metaDecl.text}` : "";
         console.log(`  ${fname.padEnd(20)}${typeNode?.text ?? ""}${metaDeclText}`);
       } else if (c.type === "note_block" && !compact) {
         console.log(`  note { ... }`);

@@ -50,9 +50,15 @@ schema cobol_customer_master (
     ZIP     INTEGER  (pic "9(5)", offset 104)
   }
 
-  CREDIT_LIMIT  DECIMAL(9,2)  (pic "S9(7)V99", encoding comp-3, offset 109, length 5, note "Packed decimal: last nibble is sign (C=positive, D=negative)")
+  CREDIT_LIMIT  DECIMAL(9,2) (
+    pic "S9(7)V99",
+    encoding comp-3,
+    offset 109,
+    length 5,
+    note "Packed decimal: last nibble is sign (C=positive, D=negative)"
+  )
 
-  ACCOUNT_BAL   DECIMAL(9,2)  (pic "S9(7)V99", encoding comp-3, offset 114, length 5)
+  ACCOUNT_BAL   DECIMAL(9,2) (pic "S9(7)V99", encoding comp-3, offset 114, length 5)
 
   STATUS_CODE   STRING        (pic "X(1)", offset 119, enum {A, I, S})
 
@@ -77,7 +83,7 @@ schema customer_event_avro (
   note "Customer change event — published to Kafka topic customer.changes"
 ) {
   event_id         STRING         (required)
-  event_type       STRING         (required, enum {created, updated, deactivated})
+  event_type       STRING (required, enum {created, updated, deactivated})
   event_timestamp  STRING         (required)
   customer_id      STRING         (required)
   customer_type    STRING         (required, enum {retail, business})

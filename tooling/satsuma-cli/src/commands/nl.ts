@@ -200,7 +200,9 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
     );
     if (!mBody) continue;
 
-    for (const arrow of mBody.namedChildren) {
+    const bodyChildren = mBody.namedChildren;
+    for (let idx = 0; idx < bodyChildren.length; idx++) {
+      const arrow = bodyChildren[idx]!;
       if (arrow.type !== "map_arrow" && arrow.type !== "computed_arrow")
         continue;
       const src = arrow.namedChildren.find((c) => c.type === "src_path");
@@ -209,10 +211,21 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
       const tgtText = tgt?.namedChildren[0]?.text ?? null;
       if (srcText !== leafName && tgtText !== leafName) continue;
 
-      for (const item of extractNLContent(
-        arrow,
-        `${getBlockName(mappingNode) ?? "?"}`,
-      )) {
+      const parentName = getBlockName(mappingNode) ?? "?";
+
+      // Include warning/question comments immediately preceding this arrow
+      for (let ci = idx - 1; ci >= 0; ci--) {
+        const prev = bodyChildren[ci]!;
+        if (prev.type === "warning_comment" || prev.type === "question_comment") {
+          for (const item of extractNLContent(prev, parentName)) {
+            items.push({ ...item, file: mapping.file });
+          }
+        } else {
+          break; // stop at first non-comment
+        }
+      }
+
+      for (const item of extractNLContent(arrow, parentName)) {
         items.push({ ...item, file: mapping.file });
       }
     }

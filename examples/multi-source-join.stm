@@ -35,7 +35,7 @@ schema crm_customers (
   first_name             VARCHAR(100)
   last_name              VARCHAR(100)
   company_name           VARCHAR(200)
-  segment                VARCHAR(20)    (enum {enterprise, mid_market, smb, individual})
+  segment                VARCHAR(20) (enum {enterprise, mid_market, smb, individual})
   region                 VARCHAR(50)
   signup_date            DATE           (required)
   is_active              BOOLEAN        (default true)

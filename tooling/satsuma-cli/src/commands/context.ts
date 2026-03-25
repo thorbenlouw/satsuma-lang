@@ -24,7 +24,8 @@ import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { extractBacktickRefs } from "../nl-ref-extract.js";
 import { extractNLContent } from "../nl-extract.js";
-import type { WorkspaceIndex, ParsedFile, SyntaxNode } from "../types.js";
+import { expandEntityFields } from "../spread-expand.js";
+import type { WorkspaceIndex, ParsedFile, SyntaxNode, FieldDecl } from "../types.js";
 
 interface ScoredCandidate {
   name: string;
@@ -252,8 +253,11 @@ function renderBlock(index: WorkspaceIndex, candidate: ScoredCandidate, compact?
     const s = index.schemas.get(name);
     const note = s?.note && !compact ? `  (note "${s.note}")` : "";
     lines.push(`schema ${name}${note} {`);
-    const maxLen = Math.max(24, ...((s?.fields ?? []).map((f) => f.name.length + 1)));
-    for (const f of s?.fields ?? []) lines.push(`  ${f.name.padEnd(maxLen)}${f.type}`);
+    // Include fields from fragment spreads
+    const spreadFields = s ? expandEntityFields(s, s.namespace ?? null, index) : [];
+    const allFields: FieldDecl[] = [...(s?.fields ?? []), ...spreadFields];
+    const maxLen = Math.max(24, ...allFields.map((f) => f.name.length + 1));
+    for (const f of allFields) lines.push(`  ${f.name.padEnd(maxLen)}${f.type}`);
     lines.push("}");
   } else if (type === "metric") {
     const m = index.metrics.get(name);

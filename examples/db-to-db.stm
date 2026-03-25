@@ -61,7 +61,7 @@ schema legacy_sqlserver (
 schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
   customer_id               UUID          (pk, required)
   legacy_customer_id        INTEGER       (unique, indexed)
-  customer_type             VARCHAR(20)   (enum {retail, business, government}, required)
+  customer_type             VARCHAR(20) (enum {retail, business, government}, required)
   display_name              VARCHAR(200)  (required)
   first_name                VARCHAR(100)
   last_name                 VARCHAR(100)
@@ -70,11 +70,11 @@ schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
   phone                     VARCHAR(20)   (format E.164)
   address_id                UUID          (ref addresses.id)
   credit_limit_cents        BIGINT        (default 0)
-  status                    VARCHAR(20)   (enum {active, suspended, closed, delinquent}, required)
+  status                    VARCHAR(20) (enum {active, suspended, closed, delinquent}, required)
   created_at                TIMESTAMPTZ   (required)
   updated_at                TIMESTAMPTZ
   tax_identifier_encrypted  TEXT          (pii, encrypt AES-256-GCM)
-  loyalty_tier              VARCHAR(20)   (enum {bronze, silver, gold, platinum})
+  loyalty_tier              VARCHAR(20) (enum {bronze, silver, gold, platinum})
   preferred_contact_method  VARCHAR(20)   (enum {email, phone, mail, none})
   notes                     TEXT
   migration_timestamp       TIMESTAMPTZ

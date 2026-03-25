@@ -17,23 +17,12 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
-import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
+import { expandEntityFields } from "../spread-expand.js";
 import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
-function countFieldsDeep(fields: FieldDecl[]): number {
-  let count = 0;
-  for (const f of fields) {
-    count++;
-    if (f.children) count += countFieldsDeep(f.children);
-  }
-  return count;
-}
-
 function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: WorkspaceIndex): number {
-  const fieldsCopy: FieldDecl[] = JSON.parse(JSON.stringify(schema.fields)) as FieldDecl[];
-  expandNestedSpreads(fieldsCopy, schema.namespace ?? null, index);
   const expanded = expandEntityFields(schema as Parameters<typeof expandEntityFields>[0], schema.namespace ?? null, index);
-  return countFieldsDeep([...fieldsCopy, ...expanded]);
+  return schema.fields.length + expanded.length;
 }
 
 export function register(program: Command): void {
@@ -161,7 +150,8 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
   if (schemas.length > 0) {
     console.log(`Schemas (${schemas.length}):`);
     for (const s of schemas) {
-      const note = s.note ? `  — ${s.note}` : "";
+      const noteText = s.note?.split("\n")[0]?.trim() ?? null;
+      const note = noteText ? `  — ${noteText}` : "";
       console.log(`  ${displayName(s)}  [${plural(totalFieldCount(s, index), "field")}]${note}`);
     }
     console.log();

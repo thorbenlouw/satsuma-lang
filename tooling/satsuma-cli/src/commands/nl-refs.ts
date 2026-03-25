@@ -92,7 +92,22 @@ function printDefault(refs: ResolvedNLRef[]): void {
   }
 
   for (const [mapping, mappingRefs] of byMapping) {
-    console.log(`  mapping '${mapping}':`);
+    // Format the label: "mapping 'name'", "metric 'name'", "schema 'name'", etc.
+    let label: string;
+    if (mapping.startsWith("note:metric:")) {
+      label = `metric '${mapping.slice(12)}'`;
+    } else if (mapping.startsWith("note:schema:")) {
+      label = `schema '${mapping.slice(12)}'`;
+    } else if (mapping.startsWith("note:fragment:")) {
+      label = `fragment '${mapping.slice(14)}'`;
+    } else if (mapping.startsWith("note:")) {
+      label = `note '${mapping.slice(5)}'`;
+    } else if (mapping.startsWith("transform:")) {
+      label = `transform '${mapping.slice(10)}'`;
+    } else {
+      label = `mapping '${mapping}'`;
+    }
+    console.log(`  ${label}:`);
     for (const ref of mappingRefs) {
       const status = ref.resolved
         ? `-> ${ref.resolvedTo?.name ?? "?"}`

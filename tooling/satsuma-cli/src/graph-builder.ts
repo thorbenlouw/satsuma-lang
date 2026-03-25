@@ -4,7 +4,6 @@
  * Shared by `satsuma lineage` and `satsuma graph` commands.
  */
 
-import { extractBacktickRefs, classifyRef } from "./nl-ref-extract.js";
 import type { WorkspaceIndex } from "./types.js";
 
 export interface GraphNode {
@@ -59,45 +58,11 @@ export function buildFullGraph(index: WorkspaceIndex): FullGraph {
     }
   }
 
-  // NL backtick references
-  if (index.nlRefData) {
-    for (const item of index.nlRefData) {
-      // Skip note blocks — they are not real mappings
-      if (item.mapping.startsWith("note:")) continue;
-
-      const refs = extractBacktickRefs(item.text);
-      const mappingKey = item.namespace
-        ? `${item.namespace}::${item.mapping}`
-        : item.mapping;
-
-      for (const { ref } of refs) {
-        const classification = classifyRef(ref);
-        if (classification === "namespace-qualified-schema" && index.schemas.has(ref)) {
-          addNode(ref, "schema");
-          addEdge(ref, mappingKey);
-        } else if (classification === "namespace-qualified-field") {
-          const dotIdx = ref.indexOf(".", ref.indexOf("::") + 2);
-          const schemaRef = ref.slice(0, dotIdx);
-          if (index.schemas.has(schemaRef)) {
-            addNode(schemaRef, "schema");
-            addEdge(schemaRef, mappingKey);
-          }
-        } else if (classification === "bare" && item.namespace) {
-          const nsRef = `${item.namespace}::${ref}`;
-          if (index.schemas.has(nsRef)) {
-            addNode(nsRef, "schema");
-            addEdge(nsRef, mappingKey);
-          } else if (index.schemas.has(ref)) {
-            addNode(ref, "schema");
-            addEdge(ref, mappingKey);
-          }
-        } else if (classification === "bare" && index.schemas.has(ref)) {
-          addNode(ref, "schema");
-          addEdge(ref, mappingKey);
-        }
-      }
-    }
-  }
+  // NL backtick references — only create field-level edges, NOT schema-level
+  // edges. Schema refs in NL text are informational references, not real
+  // source/target declarations. Creating schema edges from NL text would
+  // produce phantom lineage paths (cbh-y5og).
+  // Schema-level edges are already created above from declared source/target blocks.
 
   return { nodes, edges };
 }

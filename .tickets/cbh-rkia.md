@@ -1,6 +1,6 @@
 ---
 id: cbh-rkia
-status: open
+status: closed
 deps: []
 links: [cbh-5tvk, cbh-mpz2, cbh-5lzd]
 created: 2026-03-25T11:18:41Z

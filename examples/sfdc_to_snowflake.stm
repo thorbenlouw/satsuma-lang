@@ -22,7 +22,9 @@ schema sfdc_opportunity (note "SFDC Opportunity Object") {
   AccountId                ID              (ref sfdc_account.Id)
   Amount                   CURRENCY(18,2)
   CurrencyIsoCode          STRING(3)       (default USD)
-  StageName                PICKLIST        (enum {Prospecting, Qualification, "Value Prop", Closed_Won, Closed_Lost})
+  StageName                PICKLIST (
+    enum {Prospecting, Qualification, "Value Prop", Closed_Won, Closed_Lost}
+  )
   CloseDate                DATE            (required)
   Probability              PERCENT(3,0)
   `Lead_Source_Detail__c`  STRING(255)
@@ -45,7 +47,7 @@ schema snowflake_opps (note "FACT_OPPORTUNITIES — Snowflake Analytics") {
   amount_raw        NUMBER(18,2)
   amount_usd        NUMBER(18,2)   (note "Converted at daily spot rate")
   arr_value         NUMBER(18,2)   (required)
-  pipeline_stage    VARCHAR(50)    (enum {top_funnel, mid_funnel, closed_won, closed_lost})
+  pipeline_stage    VARCHAR(50) (enum {top_funnel, mid_funnel, closed_won, closed_lost})
   is_closed         BOOLEAN
   close_date        DATE
   source_system     VARCHAR(10)    (default SFDC)

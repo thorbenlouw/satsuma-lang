@@ -58,14 +58,17 @@ schema api_order_response (format json, note "Commerce REST API v2 order respons
       IsGift           BOOLEAN        (jsonpath ".is_gift")
     }
 
-    OrderMetadata   JSON    (jsonpath "$.order.metadata", note "Preserved as raw JSON — contains variable vendor-specific fields")
+    OrderMetadata   JSON (
+      jsonpath "$.order.metadata",
+      note "Preserved as raw JSON — contains variable vendor-specific fields"
+    )
   }
 }
 
 // --- Targets ---
 schema order_headers_parquet (format parquet, note "Curated order header dataset") {
   order_id             STRING         (pk)
-  order_channel        STRING         (enum {web, mobile, store, marketplace}, required)
+  order_channel        STRING (enum {web, mobile, store, marketplace}, required)
   order_timestamp_utc  TIMESTAMPTZ    (required)
   customer_id          STRING
   customer_email       STRING         (format email, pii)

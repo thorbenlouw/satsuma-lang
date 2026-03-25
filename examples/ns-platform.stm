@@ -52,7 +52,9 @@ namespace raw (note "Raw ingestion layer — one schema per source feed") {
     deal_id      VARCHAR(36)    (pk)
     contact_id   VARCHAR(36)    (ref crm_contacts.contact_id)
     deal_name    VARCHAR(200)
-    stage        VARCHAR(50)    (enum {discovery, proposal, negotiation, closed_won, closed_lost})
+    stage        VARCHAR(50) (
+      enum {discovery, proposal, negotiation, closed_won, closed_lost}
+    )
     amount       DECIMAL(14,2)
     close_date   DATE
     owner_email  VARCHAR(255)

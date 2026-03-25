@@ -125,7 +125,30 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
       const metaNode = node.namedChildren.find(
         (c) => c.type === "metadata_block",
       );
-      return { scope: blockName, entries: extractMetadata(metaNode) };
+      const entries = extractMetadata(metaNode);
+
+      // Also extract note blocks from the body (mapping_body, metric_body)
+      const bodyNode = node.namedChildren.find(
+        (c) => c.type === "mapping_body" || c.type === "metric_body",
+      );
+      if (bodyNode) {
+        for (const child of bodyNode.namedChildren) {
+          if (child.type === "note_block") {
+            const strNodes = child.namedChildren.filter(
+              (x: SyntaxNode) => x.type === "nl_string" || x.type === "multiline_string",
+            );
+            if (strNodes.length > 0) {
+              const text = strNodes.map((s: SyntaxNode) => {
+                if (s.type === "multiline_string") return s.text.slice(3, -3).trim();
+                return s.text.slice(1, -1);
+              }).join("\n");
+              entries.push({ kind: "note" as const, text });
+            }
+          }
+        }
+      }
+
+      return { scope: blockName, entries };
     }
   }
 
@@ -323,10 +346,7 @@ function printDefault(result: MetaResult): void {
     } else if (entry.kind === "enum") {
       console.log(`  enum { ${entry.values.join(", ")} }`);
     } else if (entry.kind === "note") {
-      const text = entry.text.length > 100
-        ? entry.text.slice(0, 97) + "..."
-        : entry.text;
-      console.log(`  note: ${text}`);
+      console.log(`  note: ${entry.text}`);
     } else if (entry.kind === "slice") {
       console.log(`  slice { ${entry.values.join(", ")} }`);
     }

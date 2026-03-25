@@ -29,14 +29,25 @@ note {
 schema sap_purchase_order (format sap, note "Logical SAP ERP purchase order contract") {
   EBELN          STRING(10)    (pk, required, note "SAP purchase order number")
   BUKRS          STRING(4)     (required, note "Company code")
-  BSART          STRING(4)     (required, enum {NB, UB, FO, ZST}, note "Purchasing document type")
-  BSTYP          STRING(1)     (required, enum {F}, note "Document category: purchase order")
+  BSART          STRING(4) (
+    required,
+    enum {NB, UB, FO, ZST},
+    note "Purchasing document type"
+  )
+  BSTYP          STRING(1) (
+    required,
+    enum {F},
+    note "Document category: purchase order"
+  )
   LIFNR          STRING(10)    (required, note "Vendor account number")
   EKORG          STRING(4)     (required, note "Purchasing organization")
   EKGRP          STRING(3)     (note "Purchasing group")
   WAERS          STRING(3)     (required, note "Document currency")
   BEDAT          DATE          (required, note "PO document date")
-  ReceivingSite  STRING(10)    (required, note "Business receiving site used for MFCS location resolution")
+  ReceivingSite  STRING(10) (
+    required,
+    note "Business receiving site used for MFCS location resolution"
+  )
   HeaderText     STRING(1000)
 
   Items list_of record {

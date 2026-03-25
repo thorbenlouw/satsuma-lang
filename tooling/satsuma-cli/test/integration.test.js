@@ -1774,13 +1774,18 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", "--json", BAD);
     assert.equal(code, 2);
     const data = JSON.parse(stdout);
-    assert.ok(Array.isArray(data));
-    assert.ok(data.length > 0);
-    assert.ok(data[0].file);
-    assert.ok(data[0].line);
-    assert.ok(data[0].severity);
-    assert.ok(data[0].rule);
-    assert.ok(data[0].message);
+    assert.ok(data.findings, "should have findings key");
+    assert.ok(Array.isArray(data.findings));
+    assert.ok(data.findings.length > 0);
+    assert.ok(data.findings[0].file);
+    assert.ok(data.findings[0].line);
+    assert.ok(data.findings[0].severity);
+    assert.ok(data.findings[0].rule);
+    assert.ok(data.findings[0].message);
+    assert.ok(data.summary, "should have summary key");
+    assert.equal(typeof data.summary.files, "number");
+    assert.equal(typeof data.summary.errors, "number");
+    assert.equal(typeof data.summary.warnings, "number");
   });
 
   it("expands fragment spreads — no false field-not-in-schema warnings", async () => {
@@ -1836,7 +1841,7 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", BAD, "--json");
     assert.equal(code, 0, "missing import is a warning, not an error");
     const data = JSON.parse(stdout);
-    assert.ok(data.some((d) => d.rule === "missing-import"), "should have missing-import diagnostic");
+    assert.ok(data.findings.some((d) => d.rule === "missing-import"), "should have missing-import diagnostic");
   });
 
   it("warns on undefined import name (sl-t5k4)", async () => {
@@ -1844,7 +1849,7 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", dir, "--json");
     assert.equal(code, 0, "undefined import is a warning, not an error");
     const data = JSON.parse(stdout);
-    const undefinedImport = data.find((d) => d.rule === "undefined-import");
+    const undefinedImport = data.findings.find((d) => d.rule === "undefined-import");
     assert.ok(undefinedImport, "should have undefined-import diagnostic");
     assert.match(undefinedImport.message, /totally_fake_name/);
   });
@@ -1854,10 +1859,10 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", F, "--json");
     assert.equal(code, 0, "ref warning is not an error");
     const data = JSON.parse(stdout);
-    const refWarning = data.find((d) => d.rule === "undefined-ref" && d.message.includes("nonexistent_table"));
+    const refWarning = data.findings.find((d) => d.rule === "undefined-ref" && d.message.includes("nonexistent_table"));
     assert.ok(refWarning, "should warn about ref to nonexistent_table");
     // Valid ref to customers should NOT produce a warning
-    assert.ok(!data.some((d) => d.message.includes("customers")), "valid ref should not warn");
+    assert.ok(!data.findings.some((d) => d.message.includes("customers")), "valid ref should not warn");
   });
 
   it("target-only mapping parses without errors (sl-icqz)", async () => {
@@ -2306,8 +2311,9 @@ describe("satsuma validate (namespaces)", () => {
     const { stdout, code } = await run("validate", "--json", DUP);
     assert.notEqual(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(Array.isArray(data));
-    const dupError = data.find((d) => d.rule === "duplicate-definition");
+    assert.ok(data.findings, "should have findings key");
+    assert.ok(Array.isArray(data.findings));
+    const dupError = data.findings.find((d) => d.rule === "duplicate-definition");
     assert.ok(dupError, "Should contain a duplicate-definition diagnostic");
     assert.ok(dupError.message.includes("pos::stores"));
   });
@@ -2731,7 +2737,7 @@ describe("satsuma nl-refs", () => {
     const fixture = resolve(import.meta.dirname, "fixtures", "transform-nl-refs.stm");
     const { stdout, code } = await run("nl-refs", fixture);
     assert.equal(code, 0);
-    assert.match(stdout, /transform:build_fullname/);
+    assert.match(stdout, /transform 'build_fullname'/);
     assert.match(stdout, /first_name/);
     assert.match(stdout, /last_name/);
     assert.match(stdout, /region_code/);
@@ -2804,7 +2810,7 @@ describe("satsuma where-used (NL refs)", () => {
     const result = JSON.parse(stdout);
     const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
     assert.ok(nlRefs.length >= 1, "should find NL ref in metric note block");
-    assert.ok(nlRefs.some((r) => r.name === "note:order_count"), "should attribute to metric");
+    assert.ok(nlRefs.some((r) => r.name === "note:metric:order_count"), "should attribute to metric");
   });
 
   it("text output uses 'Referenced in NL text' label", async () => {
