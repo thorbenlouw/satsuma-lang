@@ -262,15 +262,29 @@ function collectAllFieldNames(fields: FieldDecl[]): string[] {
   return names;
 }
 
-function printDefault(fieldRef: string, arrows: ArrowRecord[], _index: WorkspaceIndex): void {
+function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceIndex): void {
   const dot = fieldRef.indexOf(".");
+  const schemaName = dot >= 0 ? fieldRef.slice(0, dot) : "";
   const fieldPath = dot >= 0 ? fieldRef.slice(dot + 1) : fieldRef;
   const leafName = fieldPath.split(".").pop();
   const matchesField = (val: string | null) =>
     val === fieldPath || val === leafName ||
     (val != null && (val.endsWith(`.${fieldPath}`) || val.endsWith(`.${leafName}`)));
-  const asSource = arrows.filter((a) => matchesField(a.source));
-  const asTarget = arrows.filter((a) => matchesField(a.target));
+
+  // Schema-aware source/target classification: verify the queried schema
+  // is on the correct side of the mapping, not just that the field name matches
+  const asSource = arrows.filter((a) => {
+    if (!matchesField(a.source)) return false;
+    const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+    const m = index.mappings.get(qMapping);
+    return m ? m.sources.includes(schemaName) : true;
+  });
+  const asTarget = arrows.filter((a) => {
+    if (!matchesField(a.target)) return false;
+    const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+    const m = index.mappings.get(qMapping);
+    return m ? m.targets.includes(schemaName) : true;
+  });
 
   const parts: string[] = [];
   if (asSource.length > 0) parts.push(`${asSource.length} as source`);
