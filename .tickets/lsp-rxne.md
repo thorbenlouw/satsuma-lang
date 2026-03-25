@@ -1,6 +1,6 @@
 ---
 id: lsp-rxne
-status: open
+status: closed
 deps: [lsp-9vgj]
 links: []
 created: 2026-03-25T17:28:46Z
@@ -19,3 +19,14 @@ Update extractArrowRecords() to extract all source fields from multi-source arro
 - Single-source arrows produce length-1 array
 - Extraction tests pass
 
+
+## Notes
+
+**2026-03-25T19:07:39Z**
+
+## Notes
+
+**2026-03-25T19:10:00Z**
+
+Cause: Multi-source extraction logic was already implemented in P2.3 type change.
+Fix: Added 3 dedicated unit tests verifying multi-source (2-source, 3-source) and single-source arrow extraction produces correct sources array. (commit pending)

@@ -1,6 +1,6 @@
 ---
 id: lsp-xdjz
-status: open
+status: in_progress
 deps: [lsp-ulfa]
 links: []
 created: 2026-03-25T17:28:23Z
