@@ -28,10 +28,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve latest tagged version
+      - name: Resolve version from VERSION file (falls back to git tag)
         id: version
         run: |
-          TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo 'v0.0.0')
+          if [ -f VERSION ]; then
+            TAG="v$(cat VERSION | tr -d '[:space:]')"
+          else
+            TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo 'v0.0.0')
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $TAG"
 
