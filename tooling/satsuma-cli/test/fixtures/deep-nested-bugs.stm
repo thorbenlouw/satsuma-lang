@@ -1,0 +1,45 @@
+// Fixture for testing deeply nested field paths in nl, arrows, and meta commands
+// Related tickets: sl-d9hi, sl-kutf, sl-xj4p
+
+schema pacs008 {
+  GrpHdr record {
+    MsgId STRING
+    InstgAgt record {
+      //! BIC may need SWIFT validation
+      BIC STRING
+    }
+    InstdAgt record {
+      BIC STRING
+    }
+  }
+  CdtTrfTxInf record {
+    PmtId record {
+      UETR STRING
+        note { "Unique end-to-end transaction reference (UUID v4). Used for tracking across the entire payment chain." }
+    }
+    DbtrAgt record {
+      BIC STRING
+    }
+    CdtrAgt record {
+      BIC STRING
+    }
+  }
+}
+
+schema iso_target {
+  payment_id STRING
+  debtor_bic STRING
+  creditor_bic STRING
+  instructing_bic STRING
+}
+
+mapping 'pacs008 to iso_target' {
+  source { pacs008 }
+  target { iso_target }
+
+  //! Validate all BIC fields before mapping
+  CdtTrfTxInf.PmtId.UETR -> payment_id { uppercase }
+  GrpHdr.InstgAgt.BIC -> instructing_bic { trim }
+  CdtTrfTxInf.DbtrAgt.BIC -> debtor_bic { trim }
+  CdtTrfTxInf.CdtrAgt.BIC -> creditor_bic { trim }
+}

@@ -138,7 +138,10 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: W
 function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): NLItemWithFile[] {
   const dot = fieldRef.indexOf(".");
   const schemaName = fieldRef.slice(0, dot);
-  const fieldName = fieldRef.slice(dot + 1);
+  const fieldPath = fieldRef.slice(dot + 1);
+  // Support nested paths like schema.record.nested.field
+  const pathSegments = fieldPath.split(".");
+  const leafName = pathSegments[pathSegments.length - 1]!;
 
   const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
   if (!resolvedSchema) {
@@ -147,9 +150,13 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   }
 
   const schema = resolvedSchema.entry;
-  if (!schemaHasField(schema.fields, fieldName)) {
+  // For multi-segment paths, require exact path match; for single-segment, use flat search
+  const fieldExists = pathSegments.length > 1
+    ? schemaHasFieldByPath(schema.fields, pathSegments)
+    : schemaHasField(schema.fields, leafName);
+  if (!fieldExists) {
     console.error(
-      `Field '${fieldName}' not found in schema '${schemaName}'.`,
+      `Field '${fieldPath}' not found in schema '${schemaName}'.`,
     );
     process.exit(1);
   }
@@ -159,8 +166,10 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   const schemaNode = parsed ? findBlockNode(parsed.tree.rootNode, "schema_block", resolvedSchema.key) : null;
   const body = schemaNode?.namedChildren.find((c) => c.type === "schema_body");
   if (body) {
-    for (const fieldDecl of findFieldDecls(body, fieldName)) {
-      for (const item of extractNLContent(fieldDecl, fieldName)) {
+    // Navigate to the nested body for intermediate path segments, then find the leaf field
+    const targetBody = navigateToNestedBody(body, pathSegments.slice(0, -1));
+    for (const fieldDecl of findFieldDecls(targetBody, leafName)) {
+      for (const item of extractNLContent(fieldDecl, leafName)) {
         items.push({ ...item, file: schema.file });
       }
     }
@@ -198,7 +207,7 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
       const tgt = arrow.namedChildren.find((c) => c.type === "tgt_path");
       const srcText = src?.namedChildren[0]?.text ?? null;
       const tgtText = tgt?.namedChildren[0]?.text ?? null;
-      if (srcText !== fieldName && tgtText !== fieldName) continue;
+      if (srcText !== leafName && tgtText !== leafName) continue;
 
       for (const item of extractNLContent(
         arrow,
@@ -230,6 +239,39 @@ function schemaHasField(fields: FieldDecl[], fieldName: string): boolean {
   return false;
 }
 
+function schemaHasFieldByPath(fields: FieldDecl[], segments: string[]): boolean {
+  if (segments.length === 0) return false;
+  const [head, ...rest] = segments;
+  for (const field of fields) {
+    if (field.name === head) {
+      if (rest.length === 0) return true;
+      if (field.children) return schemaHasFieldByPath(field.children, rest);
+    }
+  }
+  return false;
+}
+
+function navigateToNestedBody(body: SyntaxNode, intermediateSegments: string[]): SyntaxNode {
+  let current = body;
+  for (const seg of intermediateSegments) {
+    let found = false;
+    for (const c of current.namedChildren) {
+      if (c.type === "field_decl") {
+        if (getFieldDeclName(c) === seg) {
+          const nested = c.namedChildren.find((x) => x.type === "schema_body");
+          if (nested) {
+            current = nested;
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+    if (!found) break;
+  }
+  return current;
+}
+
 function findFieldDecls(bodyNode: SyntaxNode, fieldName: string, acc: SyntaxNode[] = []): SyntaxNode[] {
   for (const child of bodyNode.namedChildren) {
     if (child.type === "field_decl") {
@@ -252,9 +294,6 @@ function printDefault(items: NLItemWithFile[]): void {
         item.kind === "transform" ? "[transform] " :
           "[note] ";
     const parent = item.parent ? ` (${item.parent})` : "";
-    const text = item.text.length > 120
-      ? item.text.slice(0, 117) + "..."
-      : item.text;
-    console.log(`${prefix}${text}${parent}`);
+    console.log(`${prefix}${item.text}${parent}`);
   }
 }

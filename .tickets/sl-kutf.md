@@ -1,6 +1,6 @@
 ---
 id: sl-kutf
-status: open
+status: closed
 deps: []
 links: [cbh-so1o, cbh-9cqh]
 created: 2026-03-24T08:18:27Z
