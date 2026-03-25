@@ -617,6 +617,15 @@ describe("satsuma mapping", () => {
     assert.match(stdout, /`Account\.Name`/, "should preserve backticks in text output");
   });
 
+  it("--json arrowCount excludes flatten/each containers (cbh-zdk3)", async () => {
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const { stdout, code } = await run("mapping", "order line facts", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    // 2 outer map arrows + 5 flatten children + 1 regular map + 3 computed = 11
+    assert.equal(data.arrowCount, 11, "flatten container should not be counted as an arrow");
+  });
+
   it("--json preserves backtick-quoted source field names (cbh-sttt)", async () => {
     const FIXTURE = resolve(import.meta.dirname, "fixtures", "backtick-fields.stm");
     const { stdout, code } = await run("mapping", "crm sync", "--json", FIXTURE);
