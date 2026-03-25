@@ -90,27 +90,27 @@ function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean):
   const out: Record<string, unknown> = {
     schemas: [...index.schemas.values()].map((s) => {
       const obj: Record<string, unknown> = { name: displayName(s), fieldCount: totalFieldCount(s, index) };
-      if (!compact) { obj.note = s.note; obj.file = s.file; obj.row = s.row; }
+      if (!compact) { obj.note = s.note; obj.file = s.file; obj.row = s.row + 1; }
       return obj;
     }),
     metrics: [...index.metrics.values()].map((m) => {
       const obj: Record<string, unknown> = { name: displayName(m), fieldCount: m.fields.length };
-      if (!compact) { obj.displayName = m.displayName; obj.grain = m.grain; obj.sources = m.sources; obj.file = m.file; obj.row = m.row; }
+      if (!compact) { obj.displayName = m.displayName; obj.grain = m.grain; obj.sources = m.sources; obj.file = m.file; obj.row = m.row + 1; }
       return obj;
     }),
     mappings: [...index.mappings.values()].map((m) => {
       const obj: Record<string, unknown> = { name: displayName(m), arrowCount: m.arrowCount };
-      if (!compact) { obj.sources = m.sources; obj.targets = m.targets; obj.file = m.file; obj.row = m.row; }
+      if (!compact) { obj.sources = m.sources; obj.targets = m.targets; obj.file = m.file; obj.row = m.row + 1; }
       return obj;
     }),
     fragments: [...index.fragments.values()].map((f) => {
       const obj: Record<string, unknown> = { name: displayName(f), fieldCount: f.fields.length };
-      if (!compact) { obj.file = f.file; obj.row = f.row; }
+      if (!compact) { obj.file = f.file; obj.row = f.row + 1; }
       return obj;
     }),
     transforms: [...index.transforms.values()].map((t) => {
       const obj: Record<string, unknown> = { name: displayName(t) };
-      if (!compact) { obj.file = t.file; obj.row = t.row; }
+      if (!compact) { obj.file = t.file; obj.row = t.row + 1; }
       return obj;
     }),
     fileCount,

@@ -1,6 +1,6 @@
 ---
 id: cbh-7rvo
-status: open
+status: closed
 deps: []
 links: [cbh-fmtb, cbh-gz2v, cbh-s9w6, cbh-myj2]
 created: 2026-03-25T11:19:22Z
@@ -20,3 +20,12 @@ The context command JSON output uses 0-indexed row numbers, inconsistent with gr
 - This inconsistency means consumers cannot use row numbers from different commands interchangeably
 - Test file: /tmp/satsuma-bug-hunt/mappings.stm, /tmp/satsuma-bug-hunt/schemas.stm
 
+
+## Notes
+
+**2026-03-25T12:23:12Z**
+
+**2026-03-25T12:45:00Z**
+
+Cause: context, warnings, where-used, summary, mapping, and metric commands output raw 0-indexed tree-sitter row numbers in JSON.
+Fix: Added + 1 to all row fields in JSON output across all affected commands for consistency with graph (which was already 1-indexed).

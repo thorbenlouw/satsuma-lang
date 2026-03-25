@@ -108,14 +108,14 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
     const mappingNames = index.referenceGraph.usedByMappings.get(name) ?? [];
     for (const mname of mappingNames) {
       const m = index.mappings.get(mname);
-      refs.push({ kind: "mapping", name: mname, file: m?.file ?? "?", row: m?.row });
+      refs.push({ kind: "mapping", name: mname, file: m?.file ?? "?", row: (m?.row ?? 0) + 1 });
     }
 
     // Metrics that reference this schema
     for (const [metricName, sources] of index.referenceGraph.metricsReferences) {
       if (sources.includes(name)) {
         const m = index.metrics.get(metricName);
-        refs.push({ kind: "metric", name: metricName, file: m?.file ?? "?", row: m?.row });
+        refs.push({ kind: "metric", name: metricName, file: m?.file ?? "?", row: (m?.row ?? 0) + 1 });
       }
     }
   }
@@ -149,7 +149,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
           if (m.kind === "kv" && m.key === "ref") {
             const refTarget = m.value.split(".")[0];
             if (refTarget === name || refTarget === name.split("::").pop()) {
-              refs.push({ kind: "ref_metadata", name: `${schemaName}.${field.name}`, file: schema.file, row: schema.row });
+              refs.push({ kind: "ref_metadata", name: `${schemaName}.${field.name}`, file: schema.file, row: schema.row + 1 });
             }
           }
         }
@@ -180,7 +180,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
         kind: "nl_ref",
         name: nlRef.mapping,
         file: nlRef.file,
-        row: nlRef.line,
+        row: nlRef.line + 1,
       });
     }
   }

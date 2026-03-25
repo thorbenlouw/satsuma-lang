@@ -50,7 +50,7 @@ export function register(program: Command): void {
       if (opts.json) {
         const jsonItems = items.map((item) => ({
           text: item.text,
-          row: item.row,
+          row: item.row + 1,
           file: item.file,
           ...(item.parent ? { block: item.parent, blockType: item.parentType } : {}),
         }));

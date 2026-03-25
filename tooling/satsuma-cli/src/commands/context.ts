@@ -189,7 +189,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
       score += scoreText(rawText, terms);
     }
     if (score > 0) {
-      results.push({ name, type, score, file: entry.file, row: entry.row });
+      results.push({ name, type, score, file: entry.file, row: entry.row + 1 });
     }
   };
 
