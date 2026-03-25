@@ -13,7 +13,7 @@
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import type { SyntaxNode, MetricRecord } from "../types.js";
 
@@ -151,7 +151,7 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
   console.log(
     JSON.stringify(
       {
-        name: entry.name,
+        name: canonicalKey(entry.namespace ? `${entry.namespace}::${entry.name}` : entry.name),
         ...(entry.namespace ? { namespace: entry.namespace } : {}),
         displayName: entry.displayName,
         sources: entry.sources,

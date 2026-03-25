@@ -16,7 +16,7 @@
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
 import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
@@ -73,7 +73,7 @@ function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean):
   /** Format a display name with namespace prefix when applicable. */
   const displayName = (entity: { namespace?: string; name: string | null }): string => {
     if (entity.namespace) return `${entity.namespace}::${entity.name}`;
-    return entity.name ?? "";
+    return canonicalKey(entity.name ?? "");
   };
 
   const out: Record<string, unknown> = {
@@ -144,7 +144,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
   /** Format a display name with namespace prefix when applicable. */
   const displayName = (entity: { namespace?: string; name: string | null }): string => {
     if (entity.namespace) return `${entity.namespace}::${entity.name}`;
-    return entity.name ?? "";
+    return canonicalKey(entity.name ?? "");
   };
 
   if (schemas.length > 0) {

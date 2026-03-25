@@ -1,6 +1,6 @@
 ---
 id: lsp-vupl
-status: open
+status: closed
 deps: [lsp-rxne]
 links: []
 created: 2026-03-25T17:28:46Z
@@ -22,3 +22,14 @@ Update arrows, mapping, graph, lineage, and validate commands to handle ArrowRec
 - validate checks all source refs
 - All command tests pass
 
+
+## Notes
+
+**2026-03-25T22:32:13Z**
+
+## Notes
+
+**2026-03-25T19:30:00Z**
+
+Cause: CLI commands needed multi-source arrow support.
+Fix: All command updates were completed in P2.3 (lsp-9vgj) when ArrowRecord.sources was introduced. arrows, graph, validate, fields, diff commands all updated. 809 tests pass.

@@ -13,7 +13,7 @@
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
 import { extractMetadata } from "../meta-extract.js";
@@ -198,7 +198,7 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
   const metadata = extractMetadata(metaNode);
 
   const out: Record<string, unknown> = {
-    name: entry.name,
+    name: canonicalKey(entry.namespace ? `${entry.namespace}::${entry.name}` : entry.name),
     ...(entry.namespace ? { namespace: entry.namespace } : {}),
     file: entry.file,
     row: entry.row + 1,

@@ -13,7 +13,7 @@
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { extractMetadata } from "../meta-extract.js";
 import { classifyTransform } from "../classify.js";
@@ -165,10 +165,10 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   console.log(
     JSON.stringify(
       {
-        name: entry.name,
+        name: canonicalKey(entry.namespace ? `${entry.namespace}::${entry.name}` : (entry.name ?? "")),
         ...(entry.namespace ? { namespace: entry.namespace } : {}),
-        sources: entry.sources,
-        targets: entry.targets,
+        sources: entry.sources.map((s) => canonicalKey(s)),
+        targets: entry.targets.map((t) => canonicalKey(t)),
         arrowCount: entry.arrowCount,
         ...(note != null ? { note } : {}),
         ...(metadata.length > 0 ? { metadata } : {}),

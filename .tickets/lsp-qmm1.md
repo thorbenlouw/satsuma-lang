@@ -1,6 +1,6 @@
 ---
 id: lsp-qmm1
-status: open
+status: closed
 deps: [lsp-xdjz]
 links: []
 created: 2026-03-25T17:28:23Z
@@ -19,3 +19,14 @@ Update all command files in tooling/satsuma-cli/src/commands/ to emit canonical 
 - No bare field names or inconsistent schema.field forms in output
 - Tests updated for all commands
 
+
+## Notes
+
+**2026-03-25T22:43:32Z**
+
+## Notes
+
+**2026-03-25T23:00:00Z**
+
+Cause: CLI commands needed canonical ::schema or ns::schema form in output.
+Fix: Updated summary, arrows, graph, lineage, schema, metric, mapping, where-used commands to use canonicalKey() for output. Updated 5 integration tests. (commit pending)

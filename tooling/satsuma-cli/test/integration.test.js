@@ -93,7 +93,7 @@ describe("satsuma summary", () => {
     const { stdout, code } = await run("summary", "--json", FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const schema = data.schemas.find((s) => s.name === "with_spreads");
+    const schema = data.schemas.find((s) => s.name === "::with_spreads");
     assert.ok(schema, "should find with_spreads schema");
     assert.equal(schema.fieldCount, 4, "should count 1 direct + 3 spread fields");
   });
@@ -2266,7 +2266,7 @@ describe("satsuma schema (namespaces)", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.namespace, "pos");
-    assert.equal(data.name, "stores");
+    assert.equal(data.name, "pos::stores");
   });
 
   it("text output includes namespace prefix for namespaced schema (sl-5pa2)", async () => {
@@ -2575,7 +2575,7 @@ describe("satsuma metric (namespace bugs)", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.namespace, "analytics");
-    assert.equal(data.name, "daily_sales");
+    assert.equal(data.name, "analytics::daily_sales");
   });
 
   it("text output includes namespace prefix for namespaced metric (sl-09bo)", async () => {
@@ -3342,8 +3342,8 @@ describe("satsuma graph: nested array arrow edges (sl-4e5c)", () => {
     const data = JSON.parse(stdout);
     const skuEdge = data.edges.find((e) => e.to && e.to.includes("product_code"));
     assert.ok(skuEdge, "should have product_code edge");
-    assert.equal(skuEdge.from, "order_api.line_items.sku");
-    assert.equal(skuEdge.to, "order_flat.items.product_code");
+    assert.equal(skuEdge.from, "::order_api.line_items.sku");
+    assert.equal(skuEdge.to, "::order_flat.items.product_code");
   });
 
   it("no corrupted newlines in edge paths", async () => {
@@ -3358,7 +3358,7 @@ describe("satsuma graph: nested array arrow edges (sl-4e5c)", () => {
   it("parent array edge exists", async () => {
     const { stdout } = await run("graph", FIXTURE, "--json");
     const data = JSON.parse(stdout);
-    const parentEdge = data.edges.find((e) => e.from === "order_api.line_items" && e.to === "order_flat.items");
+    const parentEdge = data.edges.find((e) => e.from === "::order_api.line_items" && e.to === "::order_flat.items");
     assert.ok(parentEdge, "should have parent array edge");
   });
 });

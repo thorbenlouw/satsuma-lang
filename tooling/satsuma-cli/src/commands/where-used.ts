@@ -16,7 +16,7 @@
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { SyntaxNode, WorkspaceIndex, ParsedFile } from "../types.js";
 
@@ -84,7 +84,7 @@ Examples:
       const refs = gatherRefs(resolvedName, index, parsedFiles, isSchema, isFragment, isTransform);
 
       if (opts.json) {
-        console.log(JSON.stringify({ name, refs }, null, 2));
+        console.log(JSON.stringify({ name: canonicalKey(name), refs }, null, 2));
         if (refs.length === 0) process.exit(1);
         return;
       }
