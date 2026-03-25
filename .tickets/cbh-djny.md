@@ -1,6 +1,6 @@
 ---
 id: cbh-djny
-status: open
+status: closed
 deps: []
 links: [cbh-z5dy, cbh-ocid]
 created: 2026-03-25T11:16:20Z
@@ -21,3 +21,12 @@ DETAILED DESCRIPTION:
 - The JSON output correctly stores the value as a string: "value": "status != 'cancelled'" — so the issue is only in pretty-print rendering.
 - File: /tmp/satsuma-bug-hunt/metrics.stm (monthly_revenue metric, line 7)
 
+
+## Notes
+
+**2026-03-25T12:06:20Z**
+
+**2026-03-25T12:12:00Z**
+
+Cause: extractMetaEntries stripped quotes from nl_string values for display, but formatMeta never re-added them, producing bare unquoted filter expressions.
+Fix: Added a quoted flag to MetaEntry and made formatMeta wrap the value in double quotes when it was originally quoted in the source.
