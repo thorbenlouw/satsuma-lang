@@ -1,6 +1,6 @@
 ---
 id: lsp-vfn0
-status: open
+status: in_progress
 deps: [lsp-qmm1]
 links: []
 created: 2026-03-25T17:28:23Z

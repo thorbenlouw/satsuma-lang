@@ -598,13 +598,13 @@ function formatSourceRef(node: SyntaxNode, source: string): string {
 // ── Arrows ────────────────────────────────────────────────────────────────────
 
 function formatMapArrow(node: SyntaxNode, source: string, indent: number): string {
-  const srcPath = findChild(node, "src_path");
+  const srcPaths = findChildren(node, "src_path");
   const tgtPath = findChild(node, "tgt_path");
   const meta = findChild(node, "metadata_block");
   const pipeChain = findChild(node, "pipe_chain");
 
   let line = ind(indent);
-  if (srcPath) line += formatPath(srcPath);
+  if (srcPaths.length > 0) line += srcPaths.map((s) => formatPath(s)).join(", ");
   line += " -> " + formatPath(tgtPath!);
 
   if (meta) line += " " + formatMetadataInline(meta, source);

@@ -1,0 +1,80 @@
+// Multi-source arrow examples
+//
+// Demonstrates how multiple source fields can contribute to a single target
+// field using comma-separated source paths.
+
+schema customer_raw {
+  first_name   STRING
+  last_name    STRING
+  email        STRING
+  phone        STRING
+  street       STRING
+  city         STRING
+  state        STRING
+  zip          STRING
+  birth_year   INT
+  birth_month  INT
+  birth_day    INT
+}
+
+schema customer_enriched {
+  full_name      STRING
+  contact_info   STRING
+  full_address   STRING
+  date_of_birth  STRING
+}
+
+mapping customer_enrichment {
+  source { customer_raw }
+  target { customer_enriched }
+
+  // Two source fields concatenated
+  first_name, last_name -> full_name {
+    "Concatenate with space separator"
+  }
+
+  // Two sources combined
+  email, phone -> contact_info {
+    "Format as 'email (phone)'"
+  }
+
+  // Three sources into one
+  city, state, zip -> full_address {
+    "Format as 'city, state zip'"
+  }
+
+  // Three+ sources with a derived computation
+  birth_year, birth_month, birth_day -> date_of_birth (derived) {
+    "Construct ISO-8601 date from year, month, day components"
+  }
+}
+
+// Multi-source with schema-qualified paths
+schema orders {
+  amount    DECIMAL
+  tax       DECIMAL
+  discount  DECIMAL
+}
+
+schema billing {
+  invoices record {
+    contact_email  STRING
+  }
+}
+
+schema financial_summary {
+  net_total  DECIMAL
+}
+
+mapping order_to_summary {
+  source {
+    orders
+    billing
+  }
+  target { financial_summary }
+
+  // Schema-qualified multi-source
+  orders.amount, orders.tax, orders.discount -> net_total {
+    "Calculate: amount + tax - discount"
+  }
+}
