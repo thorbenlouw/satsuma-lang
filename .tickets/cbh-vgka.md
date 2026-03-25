@@ -1,6 +1,6 @@
 ---
 id: cbh-vgka
-status: open
+status: closed
 deps: []
 links: [cbh-zybb, cbh-xj0m, cbh-0lhj, cbh-394k, cbh-qwyg, cbh-ya9k]
 created: 2026-03-25T11:21:08Z
@@ -18,3 +18,12 @@ The formatter inserts an additional blank line between top-level blocks (schemas
 - This affects all top-level blocks consistently (schemas, mappings, fragments, transforms)
 - Test file path: /tmp/satsuma-bug-hunt/schemas.stm, /tmp/satsuma-bug-hunt/fragments.stm
 
+
+## Notes
+
+**2026-03-25T12:12:36Z**
+
+**2026-03-25T12:20:00Z**
+
+Cause: topLevelSep in format.ts used "\n\n\n" (2 blank lines) between top-level blocks and before section comments. The convention should be 1 blank line.
+Fix: Changed both block→block and non-comment→comment separators from "\n\n\n" to "\n\n" (1 blank line). Updated the corresponding unit test.

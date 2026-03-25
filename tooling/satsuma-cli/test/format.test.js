@@ -167,11 +167,12 @@ schema b { y STRING }`;
 // ── Blank Lines ──────────────────────────────────────────────────────────────
 
 describe("blank lines", () => {
-  it("puts 2 blank lines between top-level blocks", () => {
+  it("puts 1 blank line between top-level blocks", () => {
     const src = `schema a { x INT }
 schema b { y STRING }`;
     const out = fmt(src);
-    assert.ok(out.includes("}\n\n\nschema b"), "should have 2 blank lines between blocks");
+    assert.ok(out.includes("}\n\nschema b"), "should have 1 blank line between blocks");
+    assert.ok(!out.includes("}\n\n\nschema b"), "should not have 2 blank lines between blocks");
   });
 
   it("no blank lines between consecutive imports", () => {

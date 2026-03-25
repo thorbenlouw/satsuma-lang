@@ -160,14 +160,14 @@ function topLevelSep(prev: SyntaxNode, curr: SyntaxNode, seenNonComment: boolean
   // Comment → non-comment: pull tight
   if (isComment(prev) && !isComment(curr)) return "\n";
 
-  // Non-comment → comment: 2 blank lines (section break)
-  if (!isComment(prev) && isComment(curr)) return "\n\n\n";
+  // Non-comment → comment: 1 blank line (section break)
+  if (!isComment(prev) && isComment(curr)) return "\n\n";
 
   // Comment → comment (between blocks): no blank line
   if (isComment(prev) && isComment(curr)) return "\n";
 
-  // Block → Block (any combination): 2 blank lines
-  return "\n\n\n";
+  // Block → Block (any combination): 1 blank line
+  return "\n\n";
 }
 
 function formatTopLevel(node: SyntaxNode, source: string, indent: number): string {
