@@ -1,6 +1,6 @@
 ---
 id: lsp-upfx
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-03-25T17:28:11Z
