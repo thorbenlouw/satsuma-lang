@@ -2,7 +2,7 @@
 id: sl-kutf
 status: open
 deps: []
-links: []
+links: [cbh-so1o, cbh-9cqh]
 created: 2026-03-24T08:18:27Z
 type: feature
 priority: 3

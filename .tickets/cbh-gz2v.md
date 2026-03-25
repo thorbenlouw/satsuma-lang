@@ -2,7 +2,7 @@
 id: cbh-gz2v
 status: open
 deps: []
-links: []
+links: [cbh-fmtb, cbh-7rvo, cbh-s9w6, cbh-myj2]
 created: 2026-03-25T11:17:38Z
 type: bug
 priority: 2

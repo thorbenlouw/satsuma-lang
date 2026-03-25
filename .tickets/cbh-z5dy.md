@@ -2,7 +2,7 @@
 id: cbh-z5dy
 status: open
 deps: []
-links: []
+links: [cbh-ocid, cbh-djny]
 created: 2026-03-25T11:16:16Z
 type: bug
 priority: 2

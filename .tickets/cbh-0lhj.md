@@ -2,7 +2,7 @@
 id: cbh-0lhj
 status: open
 deps: []
-links: []
+links: [cbh-zybb, cbh-xj0m, cbh-vgka, cbh-394k, cbh-qwyg, cbh-ya9k]
 created: 2026-03-25T11:21:10Z
 type: bug
 priority: 2

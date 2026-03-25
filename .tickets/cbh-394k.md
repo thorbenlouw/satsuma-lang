@@ -2,7 +2,7 @@
 id: cbh-394k
 status: open
 deps: []
-links: []
+links: [cbh-zybb, cbh-xj0m, cbh-vgka, cbh-0lhj, cbh-qwyg, cbh-ya9k]
 created: 2026-03-25T11:20:25Z
 type: bug
 priority: 2

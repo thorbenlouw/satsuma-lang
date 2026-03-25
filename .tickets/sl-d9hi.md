@@ -2,7 +2,7 @@
 id: sl-d9hi
 status: open
 deps: []
-links: []
+links: [cbh-ukcx]
 created: 2026-03-24T08:14:41Z
 type: feature
 priority: 3
