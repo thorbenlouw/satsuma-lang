@@ -609,6 +609,23 @@ describe("satsuma mapping", () => {
     // The mapping text command may not yet render each_block children
     assert.match(stdout, /CUST_ID -> customer_id/, "should show regular arrows");
   });
+
+  it("text output preserves backtick-quoted source field names (cbh-sttt)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "backtick-fields.stm");
+    const { stdout, code } = await run("mapping", "crm sync", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /`Account\.Name`/, "should preserve backticks in text output");
+  });
+
+  it("--json preserves backtick-quoted source field names (cbh-sttt)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "backtick-fields.stm");
+    const { stdout, code } = await run("mapping", "crm sync", "--json", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const arrow = data.arrows.find((a) => a.tgt === "last_name");
+    assert.ok(arrow, "should find arrow to last_name");
+    assert.match(arrow.src, /`Account\.Name`/, "JSON src should have backticks");
+  });
 });
 
 // ---------------------------------------------------------------------------

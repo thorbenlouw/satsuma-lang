@@ -1,0 +1,17 @@
+schema salesforce {
+  `Account.Name` STRING
+  `Contact.Email` STRING
+}
+
+schema warehouse {
+  last_name STRING
+  email STRING
+}
+
+mapping 'crm sync' {
+  source { salesforce }
+  target { warehouse }
+
+  `Account.Name` -> last_name
+  `Contact.Email` -> email
+}
