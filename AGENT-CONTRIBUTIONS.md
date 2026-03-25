@@ -55,15 +55,22 @@ main working directory.
 
 ```bash
 cd .worktrees/satsuma-14x.8
-npm install                                 # if touching node packages
+npm run install:all                         # install all deps + build WASM + LSP server
 # ... do work, run tests, commit ...
 git push -u origin satsuma-14x.8
 gh pr create --title "..." --body "..."
 ```
 
-Important: each worktree needs its own `node_modules` if you're running npm
-scripts. Run `npm install` (or `npm ci`) in the relevant package directory
-within the worktree after creation.
+**Important:** after creating a worktree, run `npm run install:all` from the
+worktree root **before doing any work**. This installs all `node_modules`
+across every package, builds the tree-sitter WASM parser, and compiles the
+VS Code LSP server. Without this step, pre-commit hooks (`scripts/run-repo-checks.sh`)
+will fail on vscode-satsuma and tree-sitter tests.
+
+> **Sandboxed agents:** `npm run install:all` builds native tree-sitter bindings
+> which requires a C compiler and cannot run inside a sandbox. If you are running
+> in a sandboxed environment, ask the user to run `npm run install:all` from the
+> worktree root outside the sandbox before you begin work.
 
 ### Cleaning up worktrees
 
@@ -142,6 +149,7 @@ Before starting work:
 - [ ] Verify dependencies are closed or merged
 - [ ] Create a worktree: `git worktree add .worktrees/<branch> -b <branch>`
 - [ ] `cd` into the worktree
+- [ ] Run `npm run install:all` to install deps, build WASM, and compile LSP server
 
 Before opening a PR:
 
