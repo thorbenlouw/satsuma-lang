@@ -372,10 +372,10 @@ module.exports = grammar({
         "}",
       ),
 
-    // src_path -> tgt_path (metadata)? { pipe_chain }?
+    // src_path(, src_path)* -> tgt_path (metadata)? { pipe_chain }?
     map_arrow: ($) =>
       seq(
-        $.src_path,
+        commaSep1($.src_path),
         "->",
         $.tgt_path,
         optional($.metadata_block),

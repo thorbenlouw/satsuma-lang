@@ -1,6 +1,6 @@
 ---
 id: lsp-upfx
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-25T17:28:11Z
@@ -20,3 +20,14 @@ Create shared canonicalRef(namespace, schema, field?) utility in tooling/satsuma
 - Unit tests cover both cases plus edge cases (empty field, special chars)
 - Exported from a new canonical-ref.ts module
 
+
+## Notes
+
+**2026-03-25T18:43:03Z**
+
+## Notes
+
+**2026-03-25T18:00:00Z**
+
+Cause: CLI needed a shared utility for canonical field reference output format.
+Fix: Created canonical-ref.ts with canonicalRef(namespace, schema, field?) function and 9 unit tests. (commit dd362b5)
