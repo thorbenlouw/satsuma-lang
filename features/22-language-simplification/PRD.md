@@ -4,7 +4,7 @@
 
 ## Goal
 
-Simplify the Satsuma language surface and CLI output to eliminate entire classes of bugs discovered through 300+ tickets of exploratory testing. The grammar currently has ~45 rules for metadata/transforms/paths with 13 distinct metadata value forms — far more complexity than a language whose parser is an LLM needs. This feature reduces the grammar to its structural essentials, unifies quoting, normalizes output references, adds multi-source arrows, and elevates NL backtick references to structural sources.
+Simplify the Satsuma language surface and CLI output to eliminate entire classes of bugs discovered through 300+ tickets of exploratory testing. The grammar currently has ~45 rules for metadata/transforms/paths with 13 distinct metadata value forms — far more complexity than a language whose parser is an LLM needs. This feature reduces the grammar to its structural essentials, unifies quoting, normalizes output references, adds multi-source arrows, and elevates NL `@ref` references to structural sources.
 
 ---
 
@@ -20,7 +20,7 @@ The DISCOVERED-REQUIREMENTS.md audit identified 48 latent requirements, most ste
 
 4. **No multi-source arrows.** When a target field derives from multiple source fields, there's no way to express it at arrow level. The current workaround is a prose NL description, which breaks field-level lineage precision.
 
-5. **NL refs are second-class.** Backtick references in NL strings (`` "Look up `dim_customer`" ``) are informational only. The graph and lineage commands ignore them. But they represent real data dependencies that users expect to see in lineage output.
+5. **NL refs are second-class.** Backtick references in NL strings (`` "Look up `dim_customer`" ``) are informational only. The graph and lineage commands ignore them. But they represent real data dependencies that users expect to see in lineage output. Additionally, backticks inside NL are ambiguous — is `` `order-headers` `` a structural cross-reference or cosmetic Markdown code-span formatting?
 
 6. **Pipe step ceremony.** Transform pipe chains require quotes around NL text (`"Convert to uppercase" | trim`), but since the CLI doesn't execute any of it — `trim` and `"Convert to uppercase"` are both just text for the agent — the quotes are unnecessary ceremony.
 
@@ -43,7 +43,7 @@ The `::` prefix on unscoped schemas is visually distinct, machine-parseable, and
 
 | Type | Syntax | Purpose |
 |------|--------|---------|
-| Backticks | `` `...` `` | Identifiers and names that aren't bare-safe, or cross-references inside NL |
+| Backticks | `` `...` `` | Identifiers and names that aren't bare-safe |
 | Double quotes | `"..."` / `"""..."""` | Natural language content |
 
 Single quotes are removed. `schema 'my schema'` becomes `` schema `my schema` ``. This reduces the mental model to: "backticks for names, quotes for prose."
@@ -82,19 +82,21 @@ schema.`Account.Name`                 // second segment has a literal dot in its
 
 `` `schema.field` `` (whole path in one backtick pair) means "a single identifier whose name literally contains a dot" — it is NOT a path with two segments. This follows the SQL convention: `"my schema"."my column"`, not `"my schema.my column"`.
 
-**Inside NL strings**, structural cross-references use `{...}` (not backticks). Backticks in NL are inert cosmetic markup (like Markdown code spans) with no structural meaning:
+**Inside NL strings**, structural cross-references use the `@` prefix — like a GitHub/Slack mention. Backticks in NL are inert cosmetic markup (like Markdown code spans) with no structural meaning:
 
 ```stm
-field -> target { Look up {customers.email} in the dim table }
-field -> target { Apply {normalize} then check {crm::legacy.status} }
-field -> target { See {`order-headers`.status} for edge cases }
+field -> target { Look up @customers.email in the dim table }
+field -> target { Apply @normalize then check @crm::legacy.status }
+field -> target { See @`order-headers`.status for edge cases }
 ```
 
-Inside `{...}` refs, the same path and quoting rules apply — dots are path separators, backticks wrap segments with special chars. Refs can point to schemas, fields, mappings, transforms, fragments, or spreads.
+After `@`, the same path and quoting rules apply — dots are path separators, backticks wrap segments with special chars. An `@` ref ends at the first character that isn't part of a valid path (whitespace, punctuation other than `.`, `::`, or backtick pairs). Refs can point to schemas, fields, mappings, transforms, fragments, or spreads.
 
-Literal `{` and `}` characters in NL strings are escaped: `\{` and `\}`.
+`@` is **required** in NL strings (pipe text, `"..."`, `"""..."""`) for tooling to detect structural refs. It is **optional but allowed** everywhere else (source blocks, arrow sources, metadata values, etc.) — `@customers` resolves identically to `customers`. This means users who over-apply `@` get correct code; users who forget it in NL get a lint warning. Literal `@` in NL where it should NOT be a ref (rare) is escaped: `\@`.
 
-**One rule: bare names work when the name matches `[a-zA-Z_][a-zA-Z0-9_-]*`. Everything else gets backticks. Inside NL strings, `{...}` marks structural cross-references.**
+**One rule for agents: prefix field, schema, or transform names with `@` when you reference them in NL text — like a GitHub mention.**
+
+**One rule for names: bare names work when the name matches `[a-zA-Z_][a-zA-Z0-9_-]*`. Everything else gets backticks.**
 
 The formatter (`satsuma fmt`) auto-adds backticks to names that need them and strips unnecessary ones.
 
@@ -152,7 +154,7 @@ pipe_step := fragment_spread       // ...name(args) — structural, for IDE nav
 
 The `arithmetic_step`, `token_call`, and `_tc_arg` rules are removed — they're all just text now.
 
-Structural cross-references inside pipe text use `{...}` syntax (e.g., `Convert {amount} to USD`) and are extracted for NL-ref resolution and IDE features. Backticks in pipe text are inert.
+Structural cross-references inside pipe text use `@ref` syntax (e.g., `Convert @amount to USD`) and are extracted for NL-ref resolution and IDE features. Backticks in pipe text are inert.
 
 ### D5: Multi-source arrow syntax
 
@@ -169,11 +171,11 @@ In the extracted data model, `ArrowRecord.sources` becomes `string[]` (always an
 
 ### D6: NL refs are structural sources
 
-`{...}` references in NL strings that resolve to schemas or fields are structural data dependencies, not informational asides. The contract:
+`@ref` references in NL strings that resolve to schemas or fields are structural data dependencies, not informational asides. The contract:
 
 1. The `hidden-source-in-nl` lint rule becomes an **error** (was: warning).
 2. The auto-fix adds undeclared refs to the left side of a multi-source arrow, or to the mapping's `source { }` block.
-3. The graph and lineage commands treat NL refs as first-class edges (safe because lint guarantees they're declared).
+3. The graph and lineage commands treat `@ref` mentions as first-class edges (safe because lint guarantees they're declared).
 
 **Before (informational):**
 ```stm
@@ -184,7 +186,7 @@ field -> target { "Add to `other_field`" }
 
 **After (structural):**
 ```stm
-other_field, field -> target { Add to {other_field} }
+other_field, field -> target { Add to @other_field }
 // lint: passes — other_field declared on left
 // graph: edge from other_field to target
 ```
@@ -197,14 +199,13 @@ One rule: **backslash escapes the next character.** Applies identically inside b
 |--------|--------|-------|
 | `\"` | Literal `"` | Inside `"..."` |
 | `` \` `` | Literal `` ` `` | Inside `` `...` `` |
-| `\{` | Literal `{` | Inside `"..."` and `"""..."""` |
-| `\}` | Literal `}` | Inside `"..."` and `"""..."""` |
+| `\@` | Literal `@` | Inside NL strings (prevents `@` from starting a ref) |
 | `\\` | Literal `\` | Everywhere |
 | `\n`, `\t`, etc. | Literal `n`, `t`, etc. (no special sequences) |
 
-`\{` and `\}` are needed because `{...}` is the structural cross-reference syntax inside NL strings (see D2). Literal braces in prose must be escaped.
+`\@` is needed for the rare case where `@` appears in NL prose but should not be treated as a structural reference (e.g., email addresses). In practice this is uncommon — `@` followed by something that doesn't match an identifier is already inert.
 
-Triple-quoted strings (`"""..."""`) still need `\{` / `\}` for literal braces (since `{...}` refs work there too), but do not need `\"` escaping.
+Triple-quoted strings (`"""..."""`) do not need `\"` escaping. `\@` works the same in both quote forms.
 
 ### D8: Duplicate metadata tags
 
@@ -272,7 +273,7 @@ Extend `map_arrow` in the grammar to accept comma-separated source paths. Update
 Replace 13 `_kv_value` choices with a simple `value_text` rule (repeat of basic token types — identifiers, numbers, strings, backtick names, dotted names, operator chars). Commas and `)` naturally terminate the rule. No external scanner needed. Keep `enum_body`, `slice_body`, `note_tag` as structured rules. Remove `key_value_pair`, `kv_key`, `kv_braced_list`, `kv_comparison`, `kv_ref_on`, `kv_compound`.
 
 #### 3b: Pipe step simplification (implicit NL)
-Replace `pipe_step` choices with `fragment_spread | map_literal | pipe_text`. Remove `arithmetic_step`, `token_call`, `_tc_arg`. The `pipe_text` rule is a `repeat1` of basic tokens (identifiers, numbers, backtick names, operator chars, etc.) — `|` and `}` naturally terminate it because they're not in the token set. Double quotes still work for text containing literal `|` or `}`. Update NL-ref extraction to scan for `{...}` refs (replacing backtick scanning) in both quoted and bare pipe text.
+Replace `pipe_step` choices with `fragment_spread | map_literal | pipe_text`. Remove `arithmetic_step`, `token_call`, `_tc_arg`. The `pipe_text` rule is a `repeat1` of basic tokens (identifiers, numbers, backtick names, operator chars, etc.) — `|` and `}` naturally terminate it because they're not in the token set. Double quotes still work for text containing literal `|` or `}`. Update NL-ref extraction to scan for `@ref` mentions (replacing backtick scanning) in both quoted and bare pipe text.
 
 #### 3c: Map entry simplification
 Replace structured `map_key`/`map_value` with simple token-repeat rules. Map keys consume until `:`, map values consume until `,` or `}`. Same pattern as metadata — no external scanner, just natural termination by excluded delimiters.
@@ -286,7 +287,7 @@ Ensure `backtick_name` and `nl_string` use identical `\\[\\s\\S]` escape pattern
 - `tooling/tree-sitter-satsuma/test/corpus/*.txt` — rewrite CST expectations
 - `tooling/satsuma-cli/src/meta-extract.ts` — simpler extraction from `tag_with_value`
 - `tooling/satsuma-cli/src/extract.ts` — pipe step classification
-- `tooling/satsuma-cli/src/nl-ref-extract.ts` — switch from backtick regex to `{...}` ref extraction
+- `tooling/satsuma-cli/src/nl-ref-extract.ts` — switch from backtick regex to `@ref` extraction
 - `tooling/vscode-satsuma/server/src/*.ts` — update CST node type references
 - `tooling/vscode-satsuma/syntaxes/satsuma.tmLanguage.json` — TextMate patterns
 
@@ -318,13 +319,13 @@ Replace `quoted_name` (single-quote) with `backtick_name` in all label positions
 
 **Scope:** CLI only. Non-breaking (lint severity change).
 
-Change `hidden-source-in-nl` from warning to error. Add auto-fix that inserts undeclared refs into multi-source arrows or source blocks. Update graph and lineage to emit `{...}` ref edges (now safe because lint guarantees declaration).
+Change `hidden-source-in-nl` from warning to error. Add auto-fix that inserts undeclared refs into multi-source arrows or source blocks. Update graph and lineage to emit `@ref` edges (now safe because lint guarantees declaration).
 
 **Key files:**
 - `tooling/satsuma-cli/src/lint-engine.ts` — severity change + auto-fix
 - `tooling/satsuma-cli/src/graph-builder.ts` — NL ref edge promotion
 - `tooling/satsuma-cli/src/commands/lineage.ts` — NL ref traversal
-- `tooling/satsuma-cli/src/nl-ref-extract.ts` — switch to `{...}` extraction, add `isStructuralSource` flag
+- `tooling/satsuma-cli/src/nl-ref-extract.ts` — switch to `@ref` extraction, add `isStructuralSource` flag
 
 **Depends on:** Phase 2 (multi-source arrows must exist for auto-fix target).
 **Parallelizable with:** Phases 3 and 4.
@@ -358,8 +359,8 @@ Phase 2 (Multi-Source Arrow) ──┬──────────────
 3. Metadata with any combination of tags, values, enums, slices, and notes parses correctly under the simplified grammar.
 4. Bare text pipe steps (no quotes) parse correctly: `field -> target { Convert to uppercase | trim }`.
 5. The formatter auto-converts `'label'` to `` `label` `` and produces idempotent output.
-6. `hidden-source-in-nl` is an error. `satsuma lint --fix` auto-adds undeclared NL refs to source declarations.
-7. `satsuma graph --json` includes NL backtick ref edges in `schema_edges`.
+6. `hidden-source-in-nl` is an error. `satsuma lint --fix` auto-adds undeclared `@ref` mentions to source declarations.
+7. `satsuma graph --json` includes `@ref` edges in `schema_edges`.
 8. All example `.stm` files parse cleanly under the new grammar.
 9. Escaping behaves identically in backticks and double quotes.
 10. Duplicate metadata tags are preserved without error.
@@ -372,9 +373,9 @@ Phase 2 (Multi-Source Arrow) ──┬──────────────
 15. Integration tests: `satsuma fmt --check examples/` exits 0 after migration.
 
 ### Documentation
-16. `SATSUMA-V2-SPEC.md` updated: quoting rules, multi-source arrows, simplified metadata, implicit NL in pipes.
-17. `SATSUMA-CLI.md` updated: canonical ref format, multi-source arrow output, lint error change.
-18. `AI-AGENT-REFERENCE.md` updated: new syntax forms, canonical ref convention.
+16. `SATSUMA-V2-SPEC.md` updated: quoting rules, `@ref` syntax, multi-source arrows, simplified metadata, implicit NL in pipes.
+17. `SATSUMA-CLI.md` updated: canonical ref format, `@ref` output, multi-source arrow output, lint error change.
+18. `AI-AGENT-REFERENCE.md` updated: `@ref` convention, new syntax forms, canonical ref convention.
 19. `DISCOVERED-REQUIREMENTS.md` updated: mark resolved requirements.
 
 ---
@@ -386,7 +387,7 @@ Phase 2 (Multi-Source Arrow) ──┬──────────────
 | Grammar ambiguity in simplified rules | Medium — tree-sitter may struggle with greedy token repeats | Use `prec()` and `conflicts` to resolve; extensive corpus testing; keep delimiter exclusion clean |
 | Breaking change for `.stm` files (single→backtick quotes) | Medium — all existing files need migration | Ship `satsuma fmt` migration before or with the change; run on all examples |
 | Multi-source arrow ambiguity with comma in metadata | Low — comma in arrow source list vs metadata | Grammar precedence: comma-separated paths only before `->`, metadata only inside `()` |
-| NL ref elevation changes graph semantics | Medium — downstream consumers may not expect new edges | Document the change; add `--no-nl-edges` flag if needed for backward compat |
+| NL `@ref` elevation changes graph semantics | Medium — downstream consumers may not expect new edges | Document the change; add `--no-nl-edges` flag if needed for backward compat |
 | Test update volume (~1100 tests touch output formats) | High — time cost | Phase 1 (canonical refs) is the biggest test update; subsequent phases are incremental |
 
 ---
