@@ -1,6 +1,6 @@
 ---
 id: cbh-ekvb
-status: open
+status: closed
 deps: []
 links: [cbh-zdk3, sl-xj4p, cbh-n4vm]
 created: 2026-03-25T11:17:27Z
@@ -24,3 +24,12 @@ Also reproducible with:
 The bug occurs because the code matches on field name alone (e.g. 'email') without checking the schema prefix when determining if an arrow uses the field as target.
 - Test file: /tmp/satsuma-bug-hunt/mappings.stm, /tmp/satsuma-bug-hunt/edge-cases.stm
 
+
+## Notes
+
+**2026-03-25T12:01:59Z**
+
+**2026-03-25T12:05:00Z**
+
+Cause: printDefault's matchesField helper matched on bare field name alone, without checking which side of the mapping the queried schema was on. When source and target fields had the same name (e.g. email -> email), both sides matched.
+Fix: Made printDefault schema-aware — it now looks up the mapping's sources/targets to verify the queried schema is on the correct side before counting.

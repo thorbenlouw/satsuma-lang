@@ -1,0 +1,23 @@
+// Fixture for cbh-ekvb: arrows header over-counts when source and target
+// field names match across different schemas.
+
+schema source_system {
+  email STRING
+  phone STRING
+  name  STRING
+}
+
+schema target_warehouse {
+  email STRING
+  phone STRING
+  full_name STRING
+}
+
+mapping 'ingest customers' {
+  source { source_system }
+  target { target_warehouse }
+
+  email -> email
+  phone -> phone
+  name -> full_name { concat(first_name, " ", last_name) }
+}

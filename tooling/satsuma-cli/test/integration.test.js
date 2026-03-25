@@ -1066,6 +1066,22 @@ describe("satsuma arrows", () => {
     assert.match(stdout, /CUST_ID -> customer_id/);
   });
 
+  it("header does not over-count target when source/target field names match (cbh-ekvb)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "arrows-same-name.stm");
+    const { stdout, code } = await run("arrows", "source_system.email", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /1 as source/);
+    assert.doesNotMatch(stdout, /as target/);
+  });
+
+  it("target schema sees same-name arrow as target, not source (cbh-ekvb)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "arrows-same-name.stm");
+    const { stdout, code } = await run("arrows", "target_warehouse.email", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /1 as target/);
+    assert.doesNotMatch(stdout, /as source/);
+  });
+
   it("--json includes decomposed steps array", async () => {
     const { stdout, code } = await run(
       "arrows", "legacy_sqlserver.CUST_ID", "--json", DB,
