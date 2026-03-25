@@ -69,9 +69,9 @@ function makeIndex({ schemas = [], mappings = [], metrics = [], fragments = [], 
   }
   const arrowMap = new Map();
   for (const a of fieldArrows) {
-    if (a.source) {
-      if (!arrowMap.has(a.source)) arrowMap.set(a.source, []);
-      arrowMap.get(a.source).push(a);
+    for (const source of (a.sources ?? (a.source ? [a.source] : []))) {
+      if (!arrowMap.has(source)) arrowMap.set(source, []);
+      arrowMap.get(source).push(a);
     }
     if (a.target) {
       if (!arrowMap.has(a.target)) arrowMap.set(a.target, []);
@@ -148,8 +148,8 @@ describe("Bug 1: nested field path resolution", () => {
       }],
       mappings: [{ name: "m1", sources: ["src_schema"], targets: ["tgt_schema"] }],
       fieldArrows: [
-        { mapping: "m1", source: "Order.OrderId", target: "order_id", file: "test.stm", line: 10 },
-        { mapping: "m1", source: "Order.Customer.Email", target: "email", file: "test.stm", line: 11 },
+        { mapping: "m1", sources: ["Order.OrderId"], target: "order_id", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["Order.Customer.Email"], target: "email", file: "test.stm", line: 11 },
       ],
     });
 
@@ -174,7 +174,7 @@ describe("Bug 1: nested field path resolution", () => {
       }],
       mappings: [{ name: "m1", sources: ["src_schema"], targets: ["tgt_schema"] }],
       fieldArrows: [
-        { mapping: "m1", source: "CartLines.unit_price", target: "price", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["CartLines.unit_price"], target: "price", file: "test.stm", line: 10 },
       ],
     });
 
@@ -194,7 +194,7 @@ describe("Bug 1: nested field path resolution", () => {
       }],
       mappings: [{ name: "m1", sources: ["src_schema"], targets: ["tgt_schema"] }],
       fieldArrows: [
-        { mapping: "m1", source: ".REFNUM", target: ".orderNo", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: [".REFNUM"], target: ".orderNo", file: "test.stm", line: 10 },
       ],
     });
 
@@ -216,8 +216,8 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
       ],
       mappings: [{ name: "m1", sources: ["crm_customers", "orders"], targets: ["target"] }],
       fieldArrows: [
-        { mapping: "m1", source: "crm_customers.customer_id", target: "id", file: "test.stm", line: 10 },
-        { mapping: "m1", source: "crm_customers.email", target: "email", file: "test.stm", line: 11 },
+        { mapping: "m1", sources: ["crm_customers.customer_id"], target: "id", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["crm_customers.email"], target: "email", file: "test.stm", line: 11 },
       ],
     });
 
@@ -235,7 +235,7 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
       ],
       mappings: [{ name: "m1", sources: ["crm_customers", "orders"], targets: ["target"] }],
       fieldArrows: [
-        { mapping: "m1", source: "unknown_schema.email", target: "email", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["unknown_schema.email"], target: "email", file: "test.stm", line: 10 },
       ],
     });
 
@@ -257,8 +257,8 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
         { name: "beta::load_customer", namespace: "beta", sources: ["beta::customer"], targets: ["beta::customer_out"] },
       ],
       fieldArrows: [
-        { mapping: "load_customer", namespace: "alpha", source: "alpha_flag", target: "alpha_flag", file: "test.stm", line: 10 },
-        { mapping: "load_customer", namespace: "beta", source: "beta_score", target: "beta_score", file: "test.stm", line: 20 },
+        { mapping: "load_customer", namespace: "alpha", sources: ["alpha_flag"], target: "alpha_flag", file: "test.stm", line: 10 },
+        { mapping: "load_customer", namespace: "beta", sources: ["beta_score"], target: "beta_score", file: "test.stm", line: 20 },
       ],
     });
 
@@ -358,7 +358,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
       ],
       mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["created_at"], target: "created_at", file: "test.stm", line: 10 },
       ],
     });
 
@@ -378,7 +378,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
       ],
       mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["created_at"], target: "created_at", file: "test.stm", line: 10 },
       ],
     });
 
@@ -398,7 +398,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
       ],
       mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "bogus_field", target: "nonexistent_field", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["bogus_field"], target: "nonexistent_field", file: "test.stm", line: 10 },
       ],
     });
 
@@ -419,7 +419,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
       ],
       mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["created_at"], target: "created_at", file: "test.stm", line: 10 },
       ],
     });
 
@@ -444,7 +444,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
       ],
       mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "created_at", target: "created_at", file: "test.stm", line: 10 },
+        { mapping: "m1", sources: ["created_at"], target: "created_at", file: "test.stm", line: 10 },
       ],
     });
 
@@ -464,7 +464,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
       ],
       mappings: [{ name: "m1", sources: ["src"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "id", target: "id", file: "test.stm", line: 1 },
+        { mapping: "m1", sources: ["id"], target: "id", file: "test.stm", line: 1 },
       ],
     });
 
@@ -485,7 +485,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
       ],
       mappings: [{ name: "m1", sources: ["tgt"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "id", target: "id", file: "test.stm", line: 1 },
+        { mapping: "m1", sources: ["id"], target: "id", file: "test.stm", line: 1 },
       ],
     });
 
@@ -509,7 +509,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
       ],
       mappings: [{ name: "m1", sources: ["tgt"], targets: ["tgt"] }],
       fieldArrows: [
-        { mapping: "m1", source: "id", target: "id", file: "test.stm", line: 1 },
+        { mapping: "m1", sources: ["id"], target: "id", file: "test.stm", line: 1 },
       ],
     });
 
@@ -704,7 +704,7 @@ describe("Bug 6: duplicate named definitions", () => {
 
 describe("Bug 5: duplicate warning elimination", () => {
   it("emits at most one warning per arrow", () => {
-    const arrow = { mapping: "m1", source: "unknown_field", target: "also_unknown", file: "test.stm", line: 10 };
+    const arrow = { mapping: "m1", sources: ["unknown_field"], target: "also_unknown", file: "test.stm", line: 10 };
     const index = makeIndex({
       schemas: [
         { name: "src", fields: [{ name: "id", type: "INT" }] },

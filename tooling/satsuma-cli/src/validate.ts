@@ -411,22 +411,23 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
         // For anonymous mappings (name is null), also check file to avoid cross-file false positives
         if (mapping.name === null && arrow.file !== mapping.file) continue;
 
-        if (
-          arrow.source &&
-          srcSchema &&
-          index.schemas.has(srcSchema) &&
-          !srcHasUnresolved &&
-          !resolveFieldPath(arrow.source, resolvedSrcKeys, index, srcFieldPaths)
-        ) {
-          diagnostics.push({
-            file: arrow.file,
-            line: arrow.line + 1,
-            column: 1,
-            severity: "warning",
-            rule: "field-not-in-schema",
-            message: `Arrow source '${arrow.source}' not declared in schema '${srcSchema}'`,
-            fixable: false,
-          });
+        for (const source of arrow.sources) {
+          if (
+            srcSchema &&
+            index.schemas.has(srcSchema) &&
+            !srcHasUnresolved &&
+            !resolveFieldPath(source, resolvedSrcKeys, index, srcFieldPaths)
+          ) {
+            diagnostics.push({
+              file: arrow.file,
+              line: arrow.line + 1,
+              column: 1,
+              severity: "warning",
+              rule: "field-not-in-schema",
+              message: `Arrow source '${source}' not declared in schema '${srcSchema}'`,
+              fixable: false,
+            });
+          }
         }
         if (
           arrow.target &&

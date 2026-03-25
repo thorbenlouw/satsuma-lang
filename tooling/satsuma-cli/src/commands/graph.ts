@@ -462,13 +462,14 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
       const sourceSchemas = mapping?.sources ?? [];
       const targetSchemas = mapping?.targets ?? [];
 
-      const fromField = record.source
-        ? qualifyField(record.source, sourceSchemas)
-        : null;
+      const fromFields = record.sources.length > 0
+        ? record.sources.map((s) => qualifyField(s, sourceSchemas))
+        : [null];
       const toField = record.target
         ? qualifyField(record.target, targetSchemas)
         : null;
 
+      for (const fromField of fromFields) {
       const edge: FieldEdge = {
         from: fromField,
         to: toField,
@@ -498,6 +499,7 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
       }
 
       edges.push(edge);
+      } // end for fromFields
 
       // Track unresolved NL for the output section
       if (record.classification === "nl" || record.classification === "mixed") {
