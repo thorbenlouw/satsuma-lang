@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { canonicalRef } from "#src/canonical-ref.js";
+import { canonicalKey, resolveCanonicalKey } from "#src/index-builder.js";
 
 describe("canonicalRef", () => {
   it("returns ::schema.field when no namespace", () => {
@@ -40,5 +41,33 @@ describe("canonicalRef", () => {
 
   it("handles empty namespace string (treated same as no namespace)", () => {
     assert.equal(canonicalRef("", "customers", "id"), "::customers.id");
+  });
+});
+
+describe("canonicalKey", () => {
+  it("adds :: prefix to bare schema names", () => {
+    assert.equal(canonicalKey("customers"), "::customers");
+  });
+
+  it("preserves namespace-qualified keys", () => {
+    assert.equal(canonicalKey("crm::customers"), "crm::customers");
+  });
+
+  it("preserves already-canonical unscoped keys", () => {
+    assert.equal(canonicalKey("::customers"), "::customers");
+  });
+});
+
+describe("resolveCanonicalKey", () => {
+  it("strips :: prefix from unscoped canonical keys", () => {
+    assert.equal(resolveCanonicalKey("::customers"), "customers");
+  });
+
+  it("preserves namespace-qualified keys", () => {
+    assert.equal(resolveCanonicalKey("crm::customers"), "crm::customers");
+  });
+
+  it("preserves bare keys", () => {
+    assert.equal(resolveCanonicalKey("customers"), "customers");
   });
 });
