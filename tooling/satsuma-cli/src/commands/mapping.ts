@@ -174,7 +174,7 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
         ...(metadata.length > 0 ? { metadata } : {}),
         arrows,
         file: entry.file,
-        row: entry.row,
+        row: entry.row + 1,
       },
       null,
       2,

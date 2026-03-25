@@ -161,7 +161,7 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
         ...(note != null ? { note } : {}),
         metadata: meta,
         file: entry.file,
-        row: entry.row,
+        row: entry.row + 1,
       },
       null,
       2,

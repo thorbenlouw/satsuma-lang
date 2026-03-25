@@ -1,6 +1,6 @@
 ---
 id: cbh-gz2v
-status: open
+status: closed
 deps: []
 links: [cbh-fmtb, cbh-7rvo, cbh-s9w6, cbh-myj2]
 created: 2026-03-25T11:17:38Z
@@ -24,3 +24,12 @@ Examples:
 Additionally, the JSON field is named 'row' instead of 'line', unlike other commands which use 'line'.
 - Test file: /tmp/satsuma-bug-hunt/
 
+
+## Notes
+
+**2026-03-25T12:23:12Z**
+
+**2026-03-25T12:45:00Z**
+
+Cause: Same as cbh-7rvo — where-used JSON used 0-indexed row numbers.
+Fix: Fixed alongside cbh-7rvo.

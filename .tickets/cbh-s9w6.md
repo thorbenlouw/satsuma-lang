@@ -1,6 +1,6 @@
 ---
 id: cbh-s9w6
-status: open
+status: closed
 deps: []
 links: [cbh-fmtb, cbh-7rvo, cbh-gz2v, cbh-myj2]
 created: 2026-03-25T11:18:29Z
@@ -22,3 +22,12 @@ The warnings command returns inconsistent line numbering between JSON and human 
 - This off-by-one affects all items in the JSON output across all files
 - Test file: /tmp/satsuma-bug-hunt/warnings.stm
 
+
+## Notes
+
+**2026-03-25T12:23:12Z**
+
+**2026-03-25T12:45:00Z**
+
+Cause: Same as cbh-7rvo — warnings JSON used 0-indexed row numbers while text output was already 1-indexed.
+Fix: Fixed alongside cbh-7rvo.
