@@ -1,6 +1,6 @@
 ---
 id: cbh-e01s
-status: open
+status: closed
 deps: []
 links: [cbh-ukcx, cbh-so1o, cbh-kyv3, cbh-2y8p, cbh-7ji8, cbh-9cqh, cbh-b0w8]
 created: 2026-03-25T11:16:33Z
@@ -22,3 +22,12 @@ DETAILED DESCRIPTION:
 - Compare: metric --json DOES include the note field. schema --json DOES include the note field. mapping --json does NOT.
 - File: /tmp/satsuma-bug-hunt/mappings.stm (customer onboarding line 35, empty mapping in edge-cases.stm line 62)
 
+
+## Notes
+
+**2026-03-25T11:45:09Z**
+
+**2026-03-25T11:45:00Z**
+
+Cause: The mapping command's printJson function collected metadata_block entries but never looked for note_block children of mapping_body.
+Fix: Added extractNoteText helper to mapping.ts and included the note field in the JSON output object (conditionally, only when a note block exists).
