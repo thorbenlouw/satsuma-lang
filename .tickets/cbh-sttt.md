@@ -1,6 +1,6 @@
 ---
 id: cbh-sttt
-status: open
+status: closed
 deps: []
 links: [cbh-h0or]
 created: 2026-03-25T11:16:10Z
@@ -22,3 +22,12 @@ DETAILED DESCRIPTION:
 - Impact: Account.Name without backticks is ambiguous — it looks like a dotted path (record 'Account', field 'Name') rather than a single field named 'Account.Name'. This breaks round-trip fidelity and could mislead downstream consumers.
 - Source file: /tmp/satsuma-bug-hunt/mappings.stm (customer onboarding mapping, lines 53-59)
 
+
+## Notes
+
+**2026-03-25T12:15:42Z**
+
+**2026-03-25T12:28:00Z**
+
+Cause: pathText helper in mapping.ts explicitly stripped backticks from backtick_path/backtick_name nodes via slice(1, -1).
+Fix: Simplified pathText to return the raw node text, preserving backticks in both text and JSON output.

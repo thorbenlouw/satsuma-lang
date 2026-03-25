@@ -76,13 +76,9 @@ Examples:
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
 
-/** Extract text from a path node (_path_expr variants), stripping backticks. */
+/** Extract text from a path node (_path_expr variants), preserving backticks. */
 function pathText(pathNode: SyntaxNode | undefined): string {
   if (!pathNode) return "?";
-  const inner = pathNode.namedChildren[0];
-  if (inner?.type === "backtick_path" || inner?.type === "backtick_name") {
-    return inner.text.slice(1, -1);
-  }
   return pathNode.text;
 }
 
