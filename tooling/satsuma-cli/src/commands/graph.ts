@@ -18,7 +18,7 @@ import type { Command } from "commander";
 import { resolve } from "node:path";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { buildIndex, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import type { WorkspaceIndex } from "../types.js";
@@ -463,10 +463,10 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
       const targetSchemas = mapping?.targets ?? [];
 
       const fromFields = record.sources.length > 0
-        ? record.sources.map((s) => qualifyField(s, sourceSchemas))
+        ? record.sources.map((s) => canonicalKey(qualifyField(s, sourceSchemas)))
         : [null];
       const toField = record.target
-        ? qualifyField(record.target, targetSchemas)
+        ? canonicalKey(qualifyField(record.target, targetSchemas))
         : null;
 
       for (const fromField of fromFields) {

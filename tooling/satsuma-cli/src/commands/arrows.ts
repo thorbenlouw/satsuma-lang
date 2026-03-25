@@ -14,7 +14,7 @@
 import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
 import type { WorkspaceIndex, ArrowRecord, FieldDecl } from "../types.js";
@@ -207,9 +207,9 @@ Examples:
           };
 
           const result: Record<string, unknown> = {
-            mapping: qMapping,
-            source: a.sources.map((s) => qualifyPath(s, sourceSchema)).join(", "),
-            target: qualifyPath(a.target, targetSchema),
+            mapping: qMapping ? canonicalKey(qMapping) : null,
+            source: a.sources.map((s) => canonicalKey(qualifyPath(s, sourceSchema) ?? s)).join(", "),
+            target: a.target ? canonicalKey(qualifyPath(a.target, targetSchema) ?? a.target) : null,
             classification: a.classification,
             transform_raw: a.transform_raw,
             steps: a.steps,
