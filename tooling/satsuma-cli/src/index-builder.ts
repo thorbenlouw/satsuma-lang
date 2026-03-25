@@ -5,6 +5,7 @@
  * in-memory index with a cross-reference graph.
  */
 
+import { canonicalRef } from "./canonical-ref.js";
 import {
   extractSchemas,
   extractMetrics,
@@ -108,6 +109,25 @@ export function extractFileData({ filePath, tree, errorCount }: ParsedFile): Fil
  */
 export function qualifiedKey(namespace: string | null | undefined, name: string | null): string {
   return namespace ? `${namespace}::${name}` : (name ?? "");
+}
+
+/**
+ * Produce the canonical output form for an index key.
+ * Non-namespaced keys get a :: prefix; namespaced keys pass through.
+ * Use this for CLI output, not for internal map lookups.
+ */
+export function canonicalKey(key: string): string {
+  if (key.includes("::")) return key;
+  return canonicalRef(null, key);
+}
+
+/**
+ * Resolve a canonical ref (::name or ns::name) to the internal index key.
+ * Strips the leading :: from unscoped canonical refs.
+ */
+export function resolveCanonicalKey(canonical: string): string {
+  if (canonical.startsWith("::")) return canonical.slice(2);
+  return canonical;
 }
 
 export function resolveScopedEntityRef(ref: string, currentNs: string | null, entityMap: Map<string, unknown>): string | null {
