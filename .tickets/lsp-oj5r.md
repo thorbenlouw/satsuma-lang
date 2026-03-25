@@ -1,6 +1,6 @@
 ---
 id: lsp-oj5r
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-25T17:28:46Z
@@ -20,3 +20,14 @@ Extend map_arrow rule in grammar.js to accept commaSep1(src_path) instead of sin
 - tree-sitter generate succeeds
 - Existing corpus tests pass
 
+
+## Notes
+
+**2026-03-25T18:46:01Z**
+
+## Notes
+
+**2026-03-25T18:05:00Z**
+
+Cause: Grammar needed multi-source arrow support for field-level lineage precision.
+Fix: Changed map_arrow rule to accept commaSep1($.src_path) instead of single src_path. Regenerated parser. All 245 corpus tests pass, all 798 CLI tests pass. (commit pending)
