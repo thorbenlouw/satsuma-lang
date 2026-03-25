@@ -1,6 +1,6 @@
 ---
 id: lsp-eeaq
-status: open
+status: closed
 deps: [lsp-oj5r]
 links: []
 created: 2026-03-25T17:28:46Z
@@ -21,3 +21,14 @@ Create test/corpus/multi_source_arrows.txt with comprehensive corpus tests for m
 - Tests for multi-source with transforms
 - All corpus tests pass
 
+
+## Notes
+
+**2026-03-25T18:49:05Z**
+
+## Notes
+
+**2026-03-25T18:15:00Z**
+
+Cause: New multi-source arrow grammar needed corpus test coverage.
+Fix: Created multi_source_arrows.txt with 9 corpus tests covering 2/3+ sources, schema-qualified, namespace-qualified, mixed, with transforms, with metadata, and regression check for single-source. (commit pending)

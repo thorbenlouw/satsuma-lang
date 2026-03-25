@@ -1,0 +1,307 @@
+================================================================================
+Two bare source fields
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  first_name, last_name -> full_name
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Three bare source fields
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  city, state, zip -> address
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Schema-qualified multi-source
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  orders.amount, orders.tax -> invoices.total
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)
+            (identifier)))))))
+
+================================================================================
+Mixed bare and schema-qualified sources
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  amount, orders.tax -> total
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Multi-source with namespace-qualified path
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  crm::customers.email, billing::invoices.contact -> unified_email
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (namespaced_path
+            (identifier)
+            (identifier)
+            (identifier)))
+        (src_path
+          (namespaced_path
+            (identifier)
+            (identifier)
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
+
+================================================================================
+Multi-source with transform body
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  first_name, last_name -> full_name { "Concatenate with space" }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Multi-source with metadata
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  amount, discount -> net_amount (derived)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (tag_token
+            (identifier)))))))
+
+================================================================================
+Multi-source with metadata and transform
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  amount, tax -> total (derived) { "Sum amount and tax" }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (metadata_block
+          (tag_token
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (nl_string)))))))
+
+================================================================================
+Single source still works (regression check)
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  customer_id -> id
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))))))
