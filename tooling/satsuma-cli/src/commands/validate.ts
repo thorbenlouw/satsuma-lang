@@ -127,7 +127,14 @@ export function register(program: Command): void {
       }
 
       if (opts.json) {
-        console.log(JSON.stringify(diagnostics, null, 2));
+        console.log(JSON.stringify({
+          findings: diagnostics,
+          summary: {
+            files: extracted.length,
+            errors: errorCount,
+            warnings: warnCount,
+          },
+        }, null, 2));
         process.exit(errorCount > 0 ? 2 : 0);
       }
 

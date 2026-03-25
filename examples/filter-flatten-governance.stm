@@ -33,7 +33,7 @@ schema order_events (
 ) {
   event_id      UUID            (pk, required)
   event_time    TIMESTAMPTZ     (required)
-  order_status  STRING(20)      (enum {completed, pending, failed, refunded}, required)
+  order_status  STRING(20) (enum {completed, pending, failed, refunded}, required)
 
   customer record {
     customer_id  UUID         (required)
@@ -76,13 +76,17 @@ schema customer_profiles (
   retention "7y"
 ) {
   customer_id          UUID            (pk, required)
-  email                STRING(255)     (pii, classification "RESTRICTED", retention "3y")
+  email                STRING(255) (pii, classification "RESTRICTED", retention "3y")
   first_name           STRING(100)     (pii)
   last_name            STRING(100)     (pii)
   acquisition_channel  STRING(50)
   region               STRING(50)
   // Scalar lists used here for preference lists — no subfields needed
-  consent_flags        list_of STRING  (classification "RESTRICTED", retention "7y", note "e.g. ['email_marketing', 'sms', 'third_party']")
+  consent_flags        list_of STRING (
+    classification "RESTRICTED",
+    retention "7y",
+    note "e.g. ['email_marketing', 'sms', 'third_party']"
+  )
   opt_out_channels     list_of STRING  (classification "RESTRICTED")
 }
 
@@ -95,7 +99,7 @@ schema completed_orders_parquet (
   order_id             UUID            (pk, required)
   event_time_utc       TIMESTAMPTZ     (required)
   customer_id          UUID            (indexed)
-  customer_email       STRING(255)     (pii, classification "RESTRICTED", retention "3y")
+  customer_email       STRING(255) (pii, classification "RESTRICTED", retention "3y")
   tier                 STRING(20)
   acquisition_channel  STRING(50)
   region               STRING(50)
@@ -104,7 +108,7 @@ schema completed_orders_parquet (
   tax                  DECIMAL(12,2)
   discount             DECIMAL(12,2)
   total                DECIMAL(12,2)   (required)
-  promo_codes          list_of STRING  (note "Passed through from source unchanged")
+  promo_codes          list_of STRING (note "Passed through from source unchanged")
   active_line_count    INT             (required)
   ingest_timestamp     TIMESTAMPTZ     (required)
 }

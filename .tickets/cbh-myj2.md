@@ -1,6 +1,6 @@
 ---
 id: cbh-myj2
-status: open
+status: closed
 deps: []
 links: [cbh-fmtb, cbh-7rvo, cbh-gz2v, cbh-s9w6]
 created: 2026-03-25T11:20:43Z

@@ -59,6 +59,18 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
           line: c.startPosition.row + 1,
         });
       }
+    } else if (c.type === "source_block") {
+      // Extract NL strings from source blocks (join descriptions)
+      for (const sc of c.namedChildren) {
+        if (sc.type === "nl_string" || sc.type === "multiline_string") {
+          items.push({
+            text: stripDelimiters(sc.text, sc.type),
+            kind: "note",
+            parent,
+            line: sc.startPosition.row + 1,
+          });
+        }
+      }
     } else if (c.type === "pipe_step") {
       const inner = c.namedChildren[0];
       if (

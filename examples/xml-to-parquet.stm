@@ -68,7 +68,7 @@ schema commerce_order (
 // --- Targets ---
 schema order_headers_parquet (format parquet, note "Curated order header dataset") {
   order_id             STRING         (pk)
-  order_channel        STRING         (enum {web, mobile, store, marketplace}, required)
+  order_channel        STRING (enum {web, mobile, store, marketplace}, required)
   order_timestamp_utc  TIMESTAMPTZ    (required)
   customer_id          STRING
   customer_email       STRING         (format email, pii)

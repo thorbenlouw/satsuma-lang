@@ -368,13 +368,19 @@ function formatSingleLineField(
   let line = ind(indent) + name + " ".repeat(nameGap) + type;
 
   if (meta) {
-    // Check if metadata should be multi-line (contains multiline_string)
+    // Check if metadata should be multi-line (contains multiline_string or too long)
     if (hasMultilineString(meta)) {
       line += " " + formatMetadataBlock(meta, source, indent);
     } else {
       const metaStr = formatMetadataInline(meta, source);
       const typeGap = Math.max(metaCol - typeCol - type.length, 2);
-      line += " ".repeat(typeGap) + metaStr;
+      const candidateLine = line + " ".repeat(typeGap) + metaStr;
+      if (candidateLine.length > 80) {
+        // Too long for one line — use multi-line metadata
+        line += " " + formatMetadataBlock(meta, source, indent);
+      } else {
+        line += " ".repeat(typeGap) + metaStr;
+      }
     }
   }
 
@@ -452,10 +458,13 @@ function formatMappingBlock(node: SyntaxNode, source: string, indent: number): s
   line += " {";
 
   if (!body) {
-    return line + "\n" + ind(indent) + "}";
+    const trailing = collectBlockTrailingComments(node, -1, indent);
+    return line + trailing + "\n" + ind(indent) + "}";
   }
 
-  return line + "\n" + formatMappingBody(body, source, indent + 1) + "\n" + ind(indent) + "}";
+  const bodyStr = formatMappingBody(body, source, indent + 1);
+  const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
+  return line + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Mapping Body ──────────────────────────────────────────────────────────────

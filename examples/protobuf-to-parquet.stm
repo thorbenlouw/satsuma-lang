@@ -60,7 +60,7 @@ schema commerce_session_parquet (format parquet, note "Session-level analytics d
   source_system            STRING
   country_code             STRING
   currency_code            STRING
-  entry_channel            STRING         (enum {web, mobile_app, kiosk, marketplace})
+  entry_channel            STRING (enum {web, mobile_app, kiosk, marketplace})
   device_type              STRING         (enum {desktop, mobile, tablet, pos})
   event_count              INT32          (required)
   distinct_event_types     JSON
@@ -72,7 +72,7 @@ schema commerce_session_parquet (format parquet, note "Session-level analytics d
   total_discount_amount    DECIMAL(14,2)
   distinct_product_count   INT32
   top_category             STRING
-  session_quality          STRING         (enum {bounce, browse, engaged, purchaser})
+  session_quality          STRING (enum {bounce, browse, engaged, purchaser})
 }
 
 // --- Mapping ---

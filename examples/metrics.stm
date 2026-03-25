@@ -95,7 +95,10 @@ metric pipeline_value "ARR Pipeline" (
   filter "pipeline_stage NOT IN ('closed_won', 'closed_lost')"
 ) {
   arr_value           DECIMAL(18,2)  (measure additive)
-  weighted_arr_value  DECIMAL(18,2)  (measure additive, note "`arr_value` * `probability` — use for forecast roll-ups")
+  weighted_arr_value  DECIMAL(18,2) (
+    measure additive,
+    note "`arr_value` * `probability` — use for forecast roll-ups"
+  )
 
   note {
     "Open pipeline as of the snapshot date, expressed in ARR."

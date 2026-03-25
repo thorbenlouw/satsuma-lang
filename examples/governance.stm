@@ -38,23 +38,47 @@ schema crm_customers (
         Retention clock starts when account_closure_date is populated."
 ) {
   customer_id           UUID         (pk, required)
-  email                 STRING(255)  (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask partial_email, retention "3y", note "Email has a 3-year retention override per GDPR Art. 17 right-to-erasure.
+  email                 STRING(255) (
+    pii,
+    classification "RESTRICTED",
+    encrypt AES-256-GCM,
+    mask partial_email,
+    retention "3y",
+    note "Email has a 3-year retention override per GDPR Art. 17 right-to-erasure.
           Encrypted at rest with AES-256-GCM. Masked as j***@domain.com for
-          non-privileged consumers.")
-  first_name            STRING(100)  (pii, classification "CONFIDENTIAL", mask redact)
-  last_name             STRING(100)  (pii, classification "CONFIDENTIAL", mask redact)
-  phone                 STRING(20)   (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask last_four)
-  date_of_birth         DATE         (pii, classification "RESTRICTED", mask redact, note "DOB is one of the HIPAA Safe Harbor 18 identifiers. Masked completely
-          for non-privileged consumers.")
+          non-privileged consumers."
+  )
+  first_name            STRING(100) (pii, classification "CONFIDENTIAL", mask redact)
+  last_name             STRING(100) (pii, classification "CONFIDENTIAL", mask redact)
+  phone                 STRING(20) (
+    pii,
+    classification "RESTRICTED",
+    encrypt AES-256-GCM,
+    mask last_four
+  )
+  date_of_birth         DATE (
+    pii,
+    classification "RESTRICTED",
+    mask redact,
+    note "DOB is one of the HIPAA Safe Harbor 18 identifiers. Masked completely
+          for non-privileged consumers."
+  )
   loyalty_tier          STRING(20)   (enum {bronze, silver, gold, platinum})
   acquisition_channel   STRING(50)
   region                STRING(50)
-  account_closure_date  DATE         (note "Null while the account is active. Retention clock starts when populated.")
+  account_closure_date  DATE (
+    note "Null while the account is active. Retention clock starts when populated."
+  )
 
   consent record (note "Consent state — governs downstream marketing use") {
     email_marketing    BOOLEAN  (required, default false)
     sms_marketing      BOOLEAN  (required, default false)
-    third_party_share  BOOLEAN  (required, default false, classification "RESTRICTED", note "Must be checked before any data sharing with external partners.")
+    third_party_share  BOOLEAN (
+      required,
+      default false,
+      classification "RESTRICTED",
+      note "Must be checked before any data sharing with external partners."
+    )
   }
 }
 
@@ -76,8 +100,11 @@ schema finance_transactions (
   transaction_date  DATE           (required)
   amount            DECIMAL(15,2)  (required, audit_level critical)
   currency          CHAR(3)        (required, default "USD")
-  payment_method    STRING(30)     (classification "CONFIDENTIAL", note "Payment method reveals financial behaviour — classified CONFIDENTIAL
-          even though it is not PII by itself.")
+  payment_method    STRING(30) (
+    classification "CONFIDENTIAL",
+    note "Payment method reveals financial behaviour — classified CONFIDENTIAL
+          even though it is not PII by itself."
+  )
 
   card_details record (
     classification "RESTRICTED",
@@ -97,8 +124,10 @@ schema finance_transactions (
     country      CHAR(2)
   }
 
-  gl_account        STRING(20)     (required, ref "chart_of_accounts.account_code")
-  cost_center       STRING(10)     (note "Inherited from schema-level cost_center for per-row allocation overrides")
+  gl_account        STRING(20) (required, ref "chart_of_accounts.account_code")
+  cost_center       STRING(10) (
+    note "Inherited from schema-level cost_center for per-row allocation overrides"
+  )
 }
 
 // --- Target: Unified Customer View ---
@@ -115,9 +144,20 @@ schema customer_360_view (
         Retention clock anchored to last_activity_date."
 ) {
   customer_id            UUID           (pk, required)
-  email                  STRING(255)    (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask partial_email, retention "3y")
-  full_name              STRING(200)    (pii, classification "CONFIDENTIAL", mask redact)
-  phone                  STRING(20)     (pii, classification "RESTRICTED", encrypt AES-256-GCM, mask last_four)
+  email                  STRING(255) (
+    pii,
+    classification "RESTRICTED",
+    encrypt AES-256-GCM,
+    mask partial_email,
+    retention "3y"
+  )
+  full_name              STRING(200) (pii, classification "CONFIDENTIAL", mask redact)
+  phone                  STRING(20) (
+    pii,
+    classification "RESTRICTED",
+    encrypt AES-256-GCM,
+    mask last_four
+  )
   loyalty_tier           STRING(20)
   region                 STRING(50)
   acquisition_channel    STRING(50)
@@ -125,8 +165,10 @@ schema customer_360_view (
   total_transaction_amt  DECIMAL(15,2)
   transaction_count      INT
   last_transaction_date  DATE
-  last_activity_date     DATE           (note "Most recent of: last login, last transaction, last profile update.
-                                              Used as the retention anchor for this schema.")
+  last_activity_date     DATE (
+    note "Most recent of: last login, last transaction, last profile update.
+                                              Used as the retention anchor for this schema."
+  )
   consent_email          BOOLEAN
   consent_sms            BOOLEAN
   consent_third_party    BOOLEAN        (classification "RESTRICTED")
