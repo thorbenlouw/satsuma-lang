@@ -1,6 +1,6 @@
 ---
 id: lsp-yli5
-status: open
+status: closed
 deps: [lsp-lnmw]
 links: []
 created: 2026-03-25T17:28:46Z
@@ -19,3 +19,14 @@ Update SATSUMA-V2-SPEC.md with multi-source arrow syntax documentation.
 - Semantics of multi-source described
 - Comma disambiguation with metadata noted
 
+
+## Notes
+
+**2026-03-25T22:54:08Z**
+
+## Notes
+
+**2026-03-25T23:30:00Z**
+
+Cause: Spec needed multi-source arrow syntax documentation.
+Fix: Added multi-source arrow section to SATSUMA-V2-SPEC.md §4.2 with syntax, examples, and disambiguation note.
