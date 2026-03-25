@@ -15,7 +15,6 @@ note {
   """
 }
 
-
 // --- Source ---
 schema commerce_order (
   format xml,
@@ -66,7 +65,6 @@ schema commerce_order (
   }
 }
 
-
 // --- Targets ---
 schema order_headers_parquet (format parquet, note "Curated order header dataset") {
   order_id             STRING         (pk)
@@ -88,7 +86,6 @@ schema order_headers_parquet (format parquet, note "Curated order header dataset
   ingest_date          DATE           (required)
 }
 
-
 schema order_lines_parquet (format parquet, note "Curated order line dataset") {
   order_id          STRING         (required)
   line_number       INT32          (required)
@@ -105,7 +102,6 @@ schema order_lines_parquet (format parquet, note "Curated order line dataset") {
   ship_country      STRING
   ingest_date       DATE           (required)
 }
-
 
 // --- Mapping: Order Headers ---
 mapping 'order headers' {
@@ -166,7 +162,6 @@ mapping 'order headers' {
     | "Truncate to UTC calendar date YYYY-MM-DD."
   }
 }
-
 
 // --- Mapping: Order Lines (flattened) ---
 mapping 'order lines' {

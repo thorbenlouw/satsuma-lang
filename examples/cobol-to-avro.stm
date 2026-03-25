@@ -17,7 +17,6 @@ note {
   """
 }
 
-
 // --- Source ---
 schema cobol_customer_master (
   format copybook,
@@ -69,7 +68,6 @@ schema cobol_customer_master (
   }
 }
 
-
 // --- Target ---
 schema customer_event_avro (
   format avro,
@@ -105,7 +103,6 @@ schema customer_event_avro (
   account_balance  DECIMAL(12,2)
   status           STRING         (required, enum {active, inactive, suspended})
 }
-
 
 // --- Mapping ---
 mapping 'cobol customer to avro event' {

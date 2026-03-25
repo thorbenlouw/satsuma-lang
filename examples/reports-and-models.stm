@@ -22,7 +22,6 @@ note {
   """
 }
 
-
 // --- Upstream Schemas (simplified) ---
 // These represent the curated layer that consumers depend on.
 schema fact_orders (note "Order fact table — one row per order line") {
@@ -36,7 +35,6 @@ schema fact_orders (note "Order fact table — one row per order line") {
   discount     DECIMAL(12,2)
 }
 
-
 schema dim_customer (note "Customer dimension — SCD Type 2 in production") {
   customer_id           UUID          (pk, required)
   customer_name         VARCHAR(200)  (required)
@@ -46,7 +44,6 @@ schema dim_customer (note "Customer dimension — SCD Type 2 in production") {
   lifetime_order_count  INTEGER
 }
 
-
 schema dim_product (note "Product dimension") {
   product_sku   VARCHAR(20)   (pk, required)
   product_name  VARCHAR(200)  (required)
@@ -54,7 +51,6 @@ schema dim_product (note "Product dimension") {
   brand         VARCHAR(100)
   region        VARCHAR(50)
 }
-
 
 // --- BI Dashboard ---
 schema weekly_sales_dashboard (
@@ -74,7 +70,6 @@ schema weekly_sales_dashboard (
   week_ending_date  DATE           (note "Last day of the reporting week")
 }
 
-
 // --- ML Model ---
 schema churn_predictor (
   model,
@@ -90,7 +85,6 @@ schema churn_predictor (
   days_since_last_order  INTEGER        (note "Recency signal — days since most recent order")
   churn_probability      DECIMAL(5,4)   (note "Model output: probability of churn in next 90 days")
 }
-
 
 // --- Report with Governance Tokens ---
 schema customer_risk_report (
@@ -109,7 +103,6 @@ schema customer_risk_report (
   lifetime_revenue   DECIMAL(14,2)  (note "Sum of all historical orders from fact_orders")
   risk_tier          VARCHAR(20)    (note "High / Medium / Low based on churn probability and LTV")
 }
-
 
 // --- Minimal Report ---
 schema daily_order_summary (

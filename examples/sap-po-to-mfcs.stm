@@ -25,7 +25,6 @@ note {
   """
 }
 
-
 // --- Source ---
 schema sap_purchase_order (format sap, note "Logical SAP ERP purchase order contract") {
   EBELN          STRING(10)    (pk, required, note "SAP purchase order number")
@@ -54,7 +53,6 @@ schema sap_purchase_order (format sap, note "Logical SAP ERP purchase order cont
   }
 }
 
-
 // --- Target ---
 schema mfcs_purchase_order (
   format json,
@@ -78,7 +76,6 @@ schema mfcs_purchase_order (
     description    STRING(250)
   }
 }
-
 
 // --- Mapping ---
 mapping 'sap po to mfcs' {

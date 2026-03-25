@@ -26,7 +26,6 @@ note {
   """
 }
 
-
 // --- Source: CRM Customer Profiles ---
 schema crm_customers (
   owner "crm-data-team",
@@ -58,7 +57,6 @@ schema crm_customers (
     third_party_share  BOOLEAN  (required, default false, classification "RESTRICTED", note "Must be checked before any data sharing with external partners.")
   }
 }
-
 
 // --- Source: Finance Transactions ---
 schema finance_transactions (
@@ -103,7 +101,6 @@ schema finance_transactions (
   cost_center       STRING(10)     (note "Inherited from schema-level cost_center for per-row allocation overrides")
 }
 
-
 // --- Target: Unified Customer View ---
 schema customer_360_view (
   owner "analytics-platform",
@@ -135,7 +132,6 @@ schema customer_360_view (
   consent_third_party    BOOLEAN        (classification "RESTRICTED")
   ingest_timestamp       TIMESTAMPTZ    (required)
 }
-
 
 // --- Mapping: Customer 360 Assembly ---
 mapping 'customer 360 assembly' {

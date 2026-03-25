@@ -1,7 +1,6 @@
 // Satsuma v2 — Legacy Customer Migration
 import { 'address fields' } from "lib/common.stm"
 
-
 note {
   """
   # Legacy Customer Migration
@@ -21,7 +20,6 @@ note {
   - Profanity filter word list v3.2 must be loaded
   """
 }
-
 
 // --- Source ---
 schema legacy_sqlserver (
@@ -59,7 +57,6 @@ schema legacy_sqlserver (
   NOTES           VARCHAR(MAX)  // free-text, may contain profanity
 }
 
-
 // --- Target ---
 schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
   customer_id               UUID          (pk, required)
@@ -82,7 +79,6 @@ schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
   notes                     TEXT
   migration_timestamp       TIMESTAMPTZ
 }
-
 
 // --- Mapping ---
 mapping 'customer migration' {

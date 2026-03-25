@@ -7,11 +7,9 @@ fragment audit_fields {
   etl_batch_id  VARCHAR(50)
 }
 
-
 transform trim_and_lower {
   trim | lowercase
 }
-
 
 // --- POS Source System ---
 namespace pos (note "Oracle Retail POS — store and transaction data") {
@@ -31,7 +29,6 @@ namespace pos (note "Oracle Retail POS — store and transaction data") {
   }
 }
 
-
 // --- E-Commerce Source System ---
 namespace ecom (note "Shopify e-commerce platform") {
   schema orders (note "Shopify order lines") {
@@ -50,7 +47,6 @@ namespace ecom (note "Shopify e-commerce platform") {
     created_at   TIMESTAMPTZ
   }
 }
-
 
 // --- Warehouse / Hub Layer ---
 namespace warehouse (note "Data vault hub layer") {
@@ -92,7 +88,6 @@ namespace warehouse (note "Data vault hub layer") {
     last_name -> last_name { trim }
   }
 }
-
 
 // --- Metrics ---
 namespace analytics (note "Business metrics layer") {

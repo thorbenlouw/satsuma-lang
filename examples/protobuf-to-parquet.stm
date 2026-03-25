@@ -14,7 +14,6 @@ note {
   """
 }
 
-
 // --- Source ---
 schema commerce_event_pb (
   format protobuf,
@@ -52,7 +51,6 @@ schema commerce_event_pb (
   }
 }
 
-
 // --- Target ---
 schema commerce_session_parquet (format parquet, note "Session-level analytics dataset") {
   session_id               STRING         (pk)
@@ -76,7 +74,6 @@ schema commerce_session_parquet (format parquet, note "Session-level analytics d
   top_category             STRING
   session_quality          STRING         (enum {bounce, browse, engaged, purchaser})
 }
-
 
 // --- Mapping ---
 mapping 'session aggregation' (group_by session_id, on_error log, error_threshold 0.02) {

@@ -12,7 +12,6 @@ fragment 'sfdc standard types' {
   IsDeleted         BOOLEAN      (default false)
 }
 
-
 fragment 'sfdc address' {
   Street      STRING(255)
   City        STRING(40)
@@ -22,7 +21,6 @@ fragment 'sfdc address' {
   Latitude    DECIMAL(18,15)
   Longitude   DECIMAL(18,15)
 }
-
 
 fragment 'sfdc opportunity standard' {
   AccountId                 ID              (ref `Account.Id`)
@@ -35,7 +33,6 @@ fragment 'sfdc opportunity standard' {
   LeadSource                PICKLIST
   Type                      PICKLIST
 }
-
 
 fragment 'sfdc account standard' {
   Type               PICKLIST

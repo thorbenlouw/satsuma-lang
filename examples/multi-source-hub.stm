@@ -10,7 +10,6 @@ note {
   """
 }
 
-
 // --- Sources ---
 schema crm_system (note "CRM customer data") {
   customer_id     UUID
@@ -18,7 +17,6 @@ schema crm_system (note "CRM customer data") {
   phone           STRING(20)
   loyalty_points  INT32
 }
-
 
 schema payment_gateway (note "Payment transaction data") {
   transaction_id  UUID
@@ -28,13 +26,11 @@ schema payment_gateway (note "Payment transaction data") {
   status          ENUM           (enum {pending, completed, failed})
 }
 
-
 schema inventory_system (note "Inventory management") {
   product_sku         STRING(20)
   stock_level         INT32
   warehouse_location  STRING(50)
 }
-
 
 // --- Targets ---
 schema analytics_db (note "Analytics database") {
@@ -45,7 +41,6 @@ schema analytics_db (note "Analytics database") {
   last_transaction_date  TIMESTAMPTZ
 }
 
-
 schema notification_service (note "Notification message format") {
   recipient_email  EMAIL
   recipient_phone  STRING(20)
@@ -54,14 +49,12 @@ schema notification_service (note "Notification message format") {
   priority         ENUM        (enum {low, medium, high})
 }
 
-
 schema reporting_warehouse (note "Reporting data warehouse") {
   product_id       VARCHAR(20)
   available_stock  INT
   location         VARCHAR(50)
   reorder_needed   BOOLEAN
 }
-
 
 // --- Mappings ---
 mapping 'crm to analytics' {
@@ -71,7 +64,6 @@ mapping 'crm to analytics' {
   customer_id -> customer_id
   email -> email
 }
-
 
 mapping 'payments to analytics' {
   source { `payment_gateway` }
@@ -90,7 +82,6 @@ mapping 'payments to analytics' {
     "Max transaction timestamp where status = 'completed', per customer."
   }
 }
-
 
 mapping 'crm to notifications' {
   source {
@@ -112,7 +103,6 @@ mapping 'crm to notifications' {
   }
 }
 
-
 mapping 'payments to notifications' {
   source { `payment_gateway` }
   target { `notification_service` }
@@ -123,7 +113,6 @@ mapping 'payments to notifications' {
     "Format as 'Transaction {`transaction_id`} completed successfully.'"
   }
 }
-
 
 mapping 'inventory to reporting' {
   source { `inventory_system` }

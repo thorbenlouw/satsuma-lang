@@ -152,7 +152,10 @@ function topLevelSep(prev: SyntaxNode, curr: SyntaxNode, seenNonComment: boolean
 
   // File header comments (before any non-comment)
   if (!seenNonComment && isComment(prev)) {
-    if (isComment(curr)) return "\n";       // consecutive header comments
+    if (isComment(curr)) {
+      // Preserve blank line between header comments when source had one
+      return hasBlankBetween(prev, curr) ? "\n\n" : "\n";
+    }
     if (isImport(curr)) return "\n";        // header → imports: 0 blank lines
     return "\n\n";                          // header → first block: 1 blank line
   }

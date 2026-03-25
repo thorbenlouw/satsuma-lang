@@ -26,7 +26,6 @@ note {
   """
 }
 
-
 // --- Sources ---
 schema order_events (
   note "Enriched order events from the streaming platform (Kafka → S3)",
@@ -71,7 +70,6 @@ schema order_events (
   }
 }
 
-
 schema customer_profiles (
   note "Customer master — CRM system of record",
   classification "RESTRICTED",
@@ -87,7 +85,6 @@ schema customer_profiles (
   consent_flags        list_of STRING  (classification "RESTRICTED", retention "7y", note "e.g. ['email_marketing', 'sms', 'third_party']")
   opt_out_channels     list_of STRING  (classification "RESTRICTED")
 }
-
 
 // --- Targets ---
 schema completed_orders_parquet (
@@ -112,7 +109,6 @@ schema completed_orders_parquet (
   ingest_timestamp     TIMESTAMPTZ     (required)
 }
 
-
 schema order_line_facts_parquet (
   format parquet,
   classification "INTERNAL",
@@ -131,7 +127,6 @@ schema order_line_facts_parquet (
   promo_code_count  INT
   ingest_timestamp  TIMESTAMPTZ    (required)
 }
-
 
 // --- Mapping 1: Order headers — multi-source filtered join ---
 mapping 'completed orders' {
@@ -181,7 +176,6 @@ mapping 'completed orders' {
 
   -> ingest_timestamp { now_utc() }
 }
-
 
 // --- Mapping 2: Order lines — flatten nested list ---
 // flatten lifts each element of line_items into its own output row,
