@@ -288,11 +288,26 @@ The `source` and `target` sub-blocks use backtick references to previously decla
 
 ### 4.2 Arrow Declarations
 
-An arrow maps a source field to a target field:
+An arrow maps one or more source fields to a target field:
 
 ```
 source_field -> target_field
+source_a, source_b -> target_field
 ```
+
+#### Multi-source arrows
+
+When a target field derives from multiple source fields, list the sources separated by commas:
+
+```
+first_name, last_name -> full_name { "Concatenate with space" }
+city, state, zip -> address { "Format as city, state zip" }
+orders.amount, orders.tax -> total (derived) { "Sum amount and tax" }
+```
+
+Each source is a standard source path (bare field, schema-qualified, or namespace-qualified). The comma separator is unambiguous because metadata uses `( )` delimiters, not commas at the arrow level.
+
+Multi-source arrows appear in lineage as one edge per source field, all pointing to the same target.
 
 #### Direct mapping (no transform)
 
