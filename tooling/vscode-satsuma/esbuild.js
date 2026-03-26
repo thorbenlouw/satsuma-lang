@@ -32,17 +32,6 @@ const serverConfig = {
 };
 
 /** @type {import("esbuild").BuildOptions} */
-const webviewGraphConfig = {
-  entryPoints: ["src/webview/graph/graph.ts"],
-  bundle: true,
-  platform: "browser",
-  target: "es2020",
-  outfile: "dist/webview/graph/graph.js",
-  format: "iife",
-  sourcemap: true,
-};
-
-/** @type {import("esbuild").BuildOptions} */
 const webviewLineageConfig = {
   entryPoints: ["src/webview/lineage/lineage.ts"],
   bundle: true,
@@ -73,7 +62,6 @@ const { copyFileSync, mkdirSync, existsSync } = require("fs");
 
 function copyAssets() {
   const pairs = [
-    ["src/webview/graph/graph.css", "dist/webview/graph/graph.css"],
     ["src/webview/lineage/lineage.css", "dist/webview/lineage/lineage.css"],
     ["src/webview/viz/viz.css", "dist/webview/viz/viz.css"],
   ];
@@ -101,7 +89,7 @@ function copyAssets() {
 }
 
 async function build() {
-  const configs = [clientConfig, serverConfig, webviewGraphConfig];
+  const configs = [clientConfig, serverConfig];
 
   // Only include lineage config if the entry point exists
   try {

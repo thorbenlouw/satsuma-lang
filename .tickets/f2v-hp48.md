@@ -1,6 +1,6 @@
 ---
 id: f2v-hp48
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T23:39:26Z
@@ -20,3 +20,9 @@ Register .satsuma as an additional file extension for the Satsuma language along
 - Both .stm and .satsuma files show the satsuma icon next to the filename in editor tabs
 - Icon is visible in both light and dark themes
 
+
+## Notes
+
+**2026-03-26T23:46:18Z**
+
+.satsuma added to language extensions alongside .stm. File icon (orange satsuma SVG) added via language icon contribution. Icon theme also contributed for file explorer.

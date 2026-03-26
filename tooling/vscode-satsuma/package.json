@@ -23,7 +23,11 @@
       {
         "id": "satsuma",
         "aliases": ["Satsuma", "satsuma"],
-        "extensions": [".stm"],
+        "extensions": [".stm", ".satsuma"],
+        "icon": {
+          "light": "./icons/satsuma-file.svg",
+          "dark": "./icons/satsuma-file.svg"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
@@ -34,6 +38,13 @@
         "path": "./syntaxes/satsuma.tmLanguage.json"
       }
     ],
+    "iconThemes": [
+      {
+        "id": "satsuma-icons",
+        "label": "Satsuma File Icons",
+        "path": "./icons/satsuma-icon-theme.json"
+      }
+    ],
     "commands": [
       { "command": "satsuma.validateWorkspace", "title": "Satsuma: Validate Workspace" },
       { "command": "satsuma.showLineage", "title": "Satsuma: Show Lineage From..." },
@@ -41,7 +52,6 @@
       { "command": "satsuma.showWarnings", "title": "Satsuma: Show Warnings" },
       { "command": "satsuma.showSummary", "title": "Satsuma: Show Workspace Summary" },
       { "command": "satsuma.showArrows", "title": "Satsuma: Show Arrows for Field" },
-      { "command": "satsuma.showGraph", "title": "Satsuma: Show Workspace Graph" },
       { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Trace Field Lineage" },
       { "command": "satsuma.showCoverage", "title": "Satsuma: Show Mapping Coverage" },
       {
@@ -57,6 +67,13 @@
         { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showViz", "when": "editorLangId == satsuma" }
+      ],
+      "editor/context": [
+        { "command": "satsuma.showViz", "when": "editorLangId == satsuma", "group": "satsuma@1" },
+        { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma", "group": "satsuma@2" },
+        { "command": "satsuma.showArrows", "when": "editorLangId == satsuma", "group": "satsuma@3" },
+        { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma", "group": "satsuma@4" },
+        { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma", "group": "satsuma@5" }
       ],
       "editor/title": [
         {
