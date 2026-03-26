@@ -1,6 +1,6 @@
 ---
 id: sc-k5ii
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T06:21:28Z

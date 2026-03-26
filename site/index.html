@@ -118,24 +118,19 @@
           </div>
           <pre class="text-sm"><code class="stm"><span class="comment">// Legacy Customer Migration</span>
 
-<span class="keyword">fragment</span> <span class="string">`audit columns`</span> {
-  created_at  <span class="type">TIMESTAMPTZ</span>  <span class="constraint">(required)</span>
-  updated_at  <span class="type">TIMESTAMPTZ</span>
-}
-
 <span class="keyword">schema</span> <span class="field">legacy_customers</span> {
   CUST_ID     <span class="type">INT</span>           <span class="constraint">(pk)</span>
-  FIRST_NM    <span class="type">VARCHAR(100)</span>
+  CUST_TYPE   <span class="type">CHAR(1)</span>       <span class="constraint">(enum {R, B, G})</span>
   EMAIL_ADDR  <span class="type">VARCHAR(255)</span>  <span class="constraint">(pii)</span>       <span class="warning">//!</span> <span class="comment">not validated</span>
   PHONE_NBR   <span class="type">VARCHAR(50)</span>                  <span class="warning">//!</span> <span class="comment">mixed formats</span>
+  COUNTRY_CD  <span class="type">CHAR(2)</span>
 }
 
 <span class="keyword">schema</span> <span class="field">customers</span> {
   customer_id  <span class="type">UUID</span>          <span class="constraint">(pk, required)</span>
-  full_name    <span class="type">VARCHAR(200)</span>  <span class="constraint">(required)</span>
+  display_name <span class="type">VARCHAR(200)</span>  <span class="constraint">(required)</span>
   email        <span class="type">VARCHAR(255)</span>  <span class="constraint">(format email, pii)</span>
   phone        <span class="type">VARCHAR(20)</span>   <span class="constraint">(format E.164)</span>
-  ...<span class="string">`audit columns`</span>
 }
 
 <span class="keyword">mapping</span> <span class="string">`customer migration`</span> {
@@ -143,13 +138,16 @@
   <span class="keyword">target</span> { <span class="field">`customers`</span> }
 
   CUST_ID    <span class="operator">-></span> customer_id { <span class="function">uuid_v5</span>(<span class="string">"6ba7b..."</span>, CUST_ID) }
-  FIRST_NM   <span class="operator">-></span> full_name   { <span class="function">trim</span> | <span class="function">title_case</span> }
   EMAIL_ADDR <span class="operator">-></span> email       { <span class="function">trim</span> | <span class="function">lowercase</span> | <span class="function">validate_email</span> }
 
+  <span class="operator">-></span> display_name {
+    <span class="note-text">"If <span class="at-ref">@CUST_TYPE</span> is R or null, concat <span class="at-ref">@FIRST_NM</span> + <span class="at-ref">@LAST_NM</span>.
+     Otherwise use <span class="at-ref">@COMPANY_NM</span>. Trim and title-case."</span>
+  }
+
   PHONE_NBR <span class="operator">-></span> phone {
-    <span class="note-text">"Extract digits, assume US country code +1 if 10 digits.
-     Format as E.164. For other patterns, determine country
-     from source address fields."</span>
+    <span class="note-text">"Extract digits. If 10 digits assume US +1.
+     For other patterns, determine country from <span class="at-ref">@COUNTRY_CD</span>."</span>
     | <span class="function">warn_if_invalid</span>
   }
 }</code></pre>
@@ -345,32 +343,74 @@
         <pre class="text-sm"><code class="stm"><span class="comment">// Legacy Customer Migration</span>
 <span class="keyword">import</span> { <span class="string">`address fields`</span> } <span class="keyword">from</span> <span class="import-path">"lib/common.stm"</span>
 
+<span class="keyword">note</span> {
+  <span class="note-text">"""
+  # Legacy Customer Migration
+
+  Part of **Project Phoenix** &mdash; decommissioning the legacy SQL Server
+  2008 instance by Q2 2026.
+
+  ## Constraints
+  - Runs in **batches of 10,000** to prevent memory issues
+  - Target enforces referential integrity &mdash; addresses before customers
+  - Estimated total: **2.4M records**, ~180 batches
+  """</span>
+}
+
 <span class="keyword">schema</span> <span class="field">legacy_sqlserver</span> (<span class="constraint">note</span> <span class="string">"CUSTOMER table &mdash; SQL Server 2008"</span>) {
-  CUST_ID      <span class="type">INT</span>           <span class="constraint">(pk)</span>
-  CUST_TYPE    <span class="type">CHAR(1)</span>       <span class="constraint">(enum {R, B, G})</span>   <span class="warning">//!</span> <span class="comment">some records have NULL</span>
-  EMAIL_ADDR   <span class="type">VARCHAR(255)</span>  <span class="constraint">(pii)</span>              <span class="warning">//!</span> <span class="comment">not validated</span>
-  TAX_ID       <span class="type">VARCHAR(20)</span>   <span class="constraint">(pii, encrypt)</span>     <span class="warning">//!</span> <span class="comment">plaintext in legacy</span>
+  CUST_ID       <span class="type">INT</span>           <span class="constraint">(pk)</span>
+  CUST_TYPE     <span class="type">CHAR(1)</span>       <span class="constraint">(enum {R, B, G})</span>    <span class="warning">//!</span> <span class="comment">some records have NULL</span>
+  EMAIL_ADDR    <span class="type">VARCHAR(255)</span>  <span class="constraint">(pii)</span>               <span class="warning">//!</span> <span class="comment">not validated</span>
+  PHONE_NBR     <span class="type">VARCHAR(50)</span>                         <span class="warning">//!</span> <span class="comment">mixed formats</span>
+  COUNTRY_CD    <span class="type">CHAR(2)</span>       <span class="constraint">(default US)</span>
+  CREDIT_LIMIT  <span class="type">DECIMAL(12,2)</span>
+  TAX_ID        <span class="type">VARCHAR(20)</span>   <span class="constraint">(pii, encrypt)</span>      <span class="warning">//!</span> <span class="comment">plaintext in legacy</span>
 }
 
 <span class="keyword">schema</span> <span class="field">postgres_db</span> (<span class="constraint">note</span> <span class="string">"Normalized &mdash; PostgreSQL 16"</span>) {
-  customer_id              <span class="type">UUID</span>          <span class="constraint">(pk, required)</span>
-  legacy_customer_id       <span class="type">INTEGER</span>       <span class="constraint">(unique, indexed)</span>
-  customer_type            <span class="type">VARCHAR(20)</span>   <span class="constraint">(enum {retail, business, government})</span>
-  email                    <span class="type">VARCHAR(255)</span>  <span class="constraint">(format email, pii)</span>
-  tax_identifier_encrypted <span class="type">TEXT</span>          <span class="constraint">(pii, encrypt AES-256-GCM)</span>
+  customer_id       <span class="type">UUID</span>          <span class="constraint">(pk, required)</span>
+  customer_type     <span class="type">VARCHAR(20)</span>   <span class="constraint">(enum {retail, business, government})</span>
+  display_name      <span class="type">VARCHAR(200)</span>  <span class="constraint">(required)</span>
+  email             <span class="type">VARCHAR(255)</span>  <span class="constraint">(format email, pii)</span>
+  phone             <span class="type">VARCHAR(20)</span>   <span class="constraint">(format E.164)</span>
+  address_id        <span class="type">UUID</span>          <span class="constraint">(ref <span class="at-ref">@addresses</span>.id)</span>
+  credit_limit_cents <span class="type">BIGINT</span>       <span class="constraint">(default 0)</span>
+  tax_encrypted     <span class="type">TEXT</span>          <span class="constraint">(pii, encrypt AES-256-GCM)</span>
+  ...<span class="string">`address fields`</span>
 }
 
 <span class="keyword">mapping</span> <span class="string">`customer migration`</span> {
   <span class="keyword">source</span> { <span class="field">`legacy_sqlserver`</span> }
   <span class="keyword">target</span> { <span class="field">`postgres_db`</span> }
 
-  CUST_ID    <span class="operator">-></span> customer_id  { <span class="function">uuid_v5</span>(<span class="string">"6ba7b..."</span>, CUST_ID) }
-  CUST_ID    <span class="operator">-></span> legacy_customer_id
-  CUST_TYPE  <span class="operator">-></span> customer_type {
+  CUST_ID <span class="operator">-></span> customer_id { <span class="function">uuid_v5</span>(<span class="string">"6ba7b..."</span>, CUST_ID) }
+
+  CUST_TYPE <span class="operator">-></span> customer_type {
     <span class="keyword">map</span> { R: <span class="string">"retail"</span>, B: <span class="string">"business"</span>, G: <span class="string">"government"</span>, null: <span class="string">"retail"</span> }
   }
+
+  <span class="operator">-></span> display_name {
+    <span class="note-text">"If <span class="at-ref">@CUST_TYPE</span> is R or null, concat <span class="at-ref">@FIRST_NM</span> + ' ' + <span class="at-ref">@LAST_NM</span>.
+     Otherwise use <span class="at-ref">@COMPANY_NM</span>. Trim and title-case."</span>
+  }
+
   EMAIL_ADDR <span class="operator">-></span> email { <span class="function">trim</span> | <span class="function">lowercase</span> | <span class="function">validate_email</span> | <span class="function">null_if_invalid</span> }
-  TAX_ID     <span class="operator">-></span> tax_identifier_encrypted {
+
+  PHONE_NBR <span class="operator">-></span> phone {
+    <span class="note-text">"Extract all digits. If 10 digits, assume US country code +1.
+     Format as E.164. For other patterns, determine country from <span class="at-ref">@COUNTRY_CD</span>."</span>
+    | <span class="function">warn_if_invalid</span>
+  }
+
+  <span class="operator">-></span> address_id {
+    <span class="note-text">"Create record in <span class="at-ref">@addresses</span> from <span class="at-ref">@ADDR_LINE_1</span>, <span class="at-ref">@CITY</span>, <span class="at-ref">@STATE_PROV</span>,
+     <span class="at-ref">@ZIP_POSTAL</span>, <span class="at-ref">@COUNTRY_CD</span>. Normalize state to 2-char code.
+     Deduplicate by normalized street + zip. Return UUID."</span>
+  }
+
+  CREDIT_LIMIT <span class="operator">-></span> credit_limit_cents { <span class="function">coalesce</span>(0) | * 100 | <span class="function">round</span> }
+
+  TAX_ID <span class="operator">-></span> tax_encrypted {
     <span class="function">error_if_null</span> | <span class="function">encrypt</span>(AES-256-GCM, secrets.tax_encryption_key)
   }
 }</code></pre>
