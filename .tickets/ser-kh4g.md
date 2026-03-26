@@ -1,6 +1,6 @@
 ---
 id: ser-kh4g
-status: open
+status: closed
 deps: [ser-3g1j]
 links: []
 created: 2026-03-26T18:11:46Z
@@ -18,3 +18,14 @@ Acceptance:
 - Fragment card renders with green accent
 - Both support collapse/expand
 
+
+## Notes
+
+**2026-03-26T22:35:31Z**
+
+## Notes
+
+**2026-03-26T19:10:00Z**
+
+Cause: Metric and fragment cards needed for visualization.
+Fix: Implemented as part of ser-3g1j — <sz-metric-card> with violet accent, measure icons (Σ/≈/½), grain/slices display; <sz-fragment-card> with green accent and spread indicator (commit bb713d8)

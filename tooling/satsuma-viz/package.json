@@ -7,12 +7,13 @@
   "main": "dist/satsuma-viz.js",
   "types": "src/satsuma-viz.ts",
   "scripts": {
-    "build": "esbuild src/satsuma-viz.ts --bundle --format=esm --target=es2022 --outfile=dist/satsuma-viz.js --sourcemap --loader:.css=text",
+    "build": "esbuild src/satsuma-viz.ts --bundle --format=esm --target=es2022 --outfile=dist/satsuma-viz.js --sourcemap --loader:.css=text --minify",
     "watch": "npm run build -- --watch",
     "test": "node --test test/**/*.test.js",
     "pretest": "tsc --noEmit"
   },
   "dependencies": {
+    "elkjs": "^0.11.1",
     "lit": "^3.3.0"
   },
   "devDependencies": {
