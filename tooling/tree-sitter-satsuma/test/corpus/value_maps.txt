@@ -234,15 +234,18 @@ mapping {
           (pipe_step
             (map_literal
               (map_entry
-                (map_key)
+                (map_key
+                  (number_literal))
                 (map_value
                   (nl_string)))
               (map_entry
-                (map_key)
+                (map_key
+                  (number_literal))
                 (map_value
                   (nl_string)))
               (map_entry
-                (map_key)
+                (map_key
+                  (number_literal))
                 (map_value
                   (nl_string)))
               (map_entry

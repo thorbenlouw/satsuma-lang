@@ -485,24 +485,37 @@ module.exports = grammar({
 
     map_entry: ($) => seq($.map_key, ":", $.map_value),
 
+    // map_key: greedy tokens until `:`. Covers identifiers, strings,
+    // numbers, wildcards (_), null, default, and comparison expressions.
     map_key: ($) =>
-      choice(
-        $.identifier,
-        $.nl_string,
-        /[0-9]+/,
-        "_",
-        "null",
-        "default",
-        seq($._comparison_op, $._map_scalar),
+      repeat1(
+        choice(
+          $.nl_string,
+          $.identifier,
+          $.number_literal,
+          $._comparison_op,
+          "_",
+          "null",
+          "default",
+        ),
       ),
 
     _comparison_op: (_) =>
       token(choice(">=", "<=", ">", "<", "!=", "==")),
 
-    _map_scalar: ($) => choice($.identifier, /[0-9]+/, $.nl_string),
-
+    // map_value: greedy tokens until `,` or `}`.
     map_value: ($) =>
-      choice($.nl_string, $.multiline_string, $.identifier, /[0-9]+/, "null"),
+      prec.left(
+        repeat1(
+          choice(
+            $.nl_string,
+            $.multiline_string,
+            $.identifier,
+            $.number_literal,
+            "null",
+          ),
+        ),
+      ),
 
     // ── Block label ───────────────────────────────────────────────────────
 

@@ -1560,46 +1560,40 @@
       ]
     },
     "map_key": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "nl_string"
-        },
-        {
-          "type": "PATTERN",
-          "value": "[0-9]+"
-        },
-        {
-          "type": "STRING",
-          "value": "_"
-        },
-        {
-          "type": "STRING",
-          "value": "null"
-        },
-        {
-          "type": "STRING",
-          "value": "default"
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_comparison_op"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_map_scalar"
-            }
-          ]
-        }
-      ]
+      "type": "REPEAT1",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "nl_string"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "identifier"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "number_literal"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_comparison_op"
+          },
+          {
+            "type": "STRING",
+            "value": "_"
+          },
+          {
+            "type": "STRING",
+            "value": "null"
+          },
+          {
+            "type": "STRING",
+            "value": "default"
+          }
+        ]
+      }
     },
     "_comparison_op": {
       "type": "TOKEN",
@@ -1633,47 +1627,37 @@
         ]
       }
     },
-    "_map_scalar": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "PATTERN",
-          "value": "[0-9]+"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "nl_string"
-        }
-      ]
-    },
     "map_value": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "nl_string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "multiline_string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "PATTERN",
-          "value": "[0-9]+"
-        },
-        {
-          "type": "STRING",
-          "value": "null"
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "nl_string"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "multiline_string"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "number_literal"
+            },
+            {
+              "type": "STRING",
+              "value": "null"
+            }
+          ]
         }
-      ]
+      }
     },
     "block_label": {
       "type": "CHOICE",
