@@ -407,6 +407,12 @@ function indexMappingRefs(
     if (ch.type === "source_block" || ch.type === "target_block") continue;
     indexArrowSpreadRefs(index, uri, ch);
   }
+
+  // Index field-level references from arrow src_path / tgt_path nodes
+  indexArrowFieldRefs(index, uri, body);
+
+  // Index @refs and backtick refs inside NL strings in arrows
+  indexNlRefs(index, uri, body);
 }
 
 function indexArrowSpreadRefs(
@@ -429,6 +435,152 @@ function indexArrowSpreadRefs(
       }
     }
   });
+}
+
+function indexArrowFieldRefs(
+  index: WorkspaceIndex,
+  uri: string,
+  body: SyntaxNode,
+): void {
+  walkDescendants(body, (n) => {
+    if (n.type === "src_path" || n.type === "tgt_path") {
+      const fieldName = extractArrowFieldName(n);
+      if (fieldName) {
+        addReference(index, fieldName, {
+          uri,
+          range: nodeRange(n),
+          name: fieldName,
+          context: "arrow",
+        });
+      }
+    }
+  });
+}
+
+/** Extract the leaf field name from a src_path or tgt_path node. */
+function extractArrowFieldName(pathNode: SyntaxNode): string | null {
+  const text = pathNode.text;
+  if (!text) return null;
+
+  // Handle backtick paths: `field name` or `field name`.sub
+  if (text.startsWith("`")) {
+    const endTick = text.indexOf("`", 1);
+    if (endTick > 0) return text.slice(1, endTick);
+    return null;
+  }
+
+  // Handle relative paths: .field or .parent.field — strip leading dot
+  const stripped = text.startsWith(".") ? text.slice(1) : text;
+
+  // Take the first segment (before any dots)
+  const firstSegment = stripped.split(".")[0]!;
+
+  // Handle namespaced: ns::field → take field part
+  if (firstSegment.includes("::")) {
+    return firstSegment.split("::").pop() ?? null;
+  }
+
+  return firstSegment || null;
+}
+
+const NL_BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
+const NL_AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+
+function indexNlRefs(
+  index: WorkspaceIndex,
+  uri: string,
+  body: SyntaxNode,
+): void {
+  walkDescendants(body, (n) => {
+    if (n.type !== "nl_string" && n.type !== "multiline_string") return;
+
+    const text = n.text;
+    const startRow = n.startPosition.row;
+    const startCol = n.startPosition.column;
+
+    // Index @refs
+    NL_AT_REF_RE.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = NL_AT_REF_RE.exec(text)) !== null) {
+      // Strip leading @ and backtick delimiters
+      const rawRef = match[0].slice(1);
+      const refName = rawRef.replace(/`([^`]+)`/g, "$1");
+
+      const range = offsetToRange(text, match.index, match[0].length, startRow, startCol);
+      addReference(index, refName, {
+        uri,
+        range,
+        name: refName,
+        context: "arrow",
+      });
+    }
+
+    // Index backtick refs (only those NOT already covered by @ref)
+    NL_BACKTICK_REF_RE.lastIndex = 0;
+    while ((match = NL_BACKTICK_REF_RE.exec(text)) !== null) {
+      const refName = match[1]!;
+      // Skip if this backtick ref overlaps with an @ref already indexed
+      const matchStart = match.index;
+      if (isInsideAtRef(text, matchStart)) continue;
+
+      const range = offsetToRange(text, match.index, match[0].length, startRow, startCol);
+      addReference(index, refName, {
+        uri,
+        range,
+        name: refName,
+        context: "arrow",
+      });
+    }
+  });
+}
+
+/** Check if a position in the text falls inside an @ref match. */
+function isInsideAtRef(text: string, offset: number): boolean {
+  NL_AT_REF_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = NL_AT_REF_RE.exec(text)) !== null) {
+    if (offset >= m.index && offset < m.index + m[0].length) return true;
+  }
+  return false;
+}
+
+/** Convert an offset within a node's text to an LSP Range. */
+function offsetToRange(
+  text: string,
+  offset: number,
+  length: number,
+  nodeStartRow: number,
+  nodeStartCol: number,
+): Range {
+  // Find the row/col of the offset
+  let row = 0;
+  let col = 0;
+  for (let i = 0; i < offset; i++) {
+    if (text[i] === "\n") {
+      row++;
+      col = 0;
+    } else {
+      col++;
+    }
+  }
+  const startLine = nodeStartRow + row;
+  const startChar = row === 0 ? nodeStartCol + col : col;
+
+  // Find the row/col of offset + length
+  let endRow = row;
+  let endCol = col;
+  for (let i = offset; i < offset + length; i++) {
+    if (text[i] === "\n") {
+      endRow++;
+      endCol = 0;
+    } else {
+      endCol++;
+    }
+  }
+  const endLine = nodeStartRow + endRow;
+  const endChar = endRow === 0 ? nodeStartCol + endCol : (endRow === row ? (row === 0 ? nodeStartCol + endCol : endCol) : endCol);
+
+  return Range.create(startLine, startChar, endLine, endChar);
 }
 
 function indexSpreadRefs(

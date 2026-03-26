@@ -150,6 +150,40 @@ mapping \`b\` {
     assert.equal(result.length, 0);
   });
 
+  it("finds arrow field references for a schema field", () => {
+    const src = `schema customers {
+  id UUID
+  email VARCHAR
+}
+mapping \`a\` {
+  source { customers }
+  target { dim }
+  email -> contact_email
+}`;
+    // Cursor on "email" in schema definition (line 2, col 2)
+    const result = refs({ "file:///a.stm": src }, "file:///a.stm", 2, 3, false);
+    // Should include the arrow src_path reference
+    assert.ok(result.length >= 1, "expected at least one reference from arrow field path");
+    // Check that at least one result points to the arrow line
+    const arrowRef = result.find((r) => r.range.start.line === 7);
+    assert.ok(arrowRef, "expected a reference on the arrow line (line 7)");
+  });
+
+  it("finds @ref references in NL strings for a schema", () => {
+    const src = `schema customers {
+  id UUID
+}
+mapping \`a\` {
+  source { customers }
+  target { dim }
+  -> name { "Use data from @customers table" }
+}`;
+    // Cursor on "customers" in schema definition (line 0, col 8)
+    const result = refs({ "file:///a.stm": src }, "file:///a.stm", 0, 8, false);
+    // Should include: source block ref + @ref in NL string
+    assert.ok(result.length >= 2, `expected at least 2 references, got ${result.length}`);
+  });
+
   it("finds import references", () => {
     const result = refs(
       {
