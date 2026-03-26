@@ -31,7 +31,7 @@ Block-level extraction — retrieve whole blocks or workspace-level summaries.
 | `summary [path]` | Workspace overview — all schemas, mappings, metrics, counts | `satsuma summary examples/` |
 | `schema <name>` | Full schema definition from parse tree | `satsuma schema hub_customer` |
 | `metric <name>` | Full metric definition from parse tree | `satsuma metric monthly_revenue` |
-| `mapping <name>` | Full mapping with all arrows and transforms | `satsuma mapping 'sfdc to hub_customer'` |
+| `mapping <name>` | Full mapping with all arrows and transforms | `satsuma mapping "sfdc to hub_customer"` |
 | `find --tag <token>` | Fields carrying a metadata tag | `satsuma find --tag pii` |
 | `lineage --from/--to <schema>` | Schema-level graph traversal | `satsuma lineage --from loyalty_sfdc` |
 | `where-used <name>` | All references to a schema, fragment, or transform | `satsuma where-used hub_product` |
@@ -45,7 +45,7 @@ Fine-grained extraction — slice below block level to get specific arrows, NL c
 | Command | Operation | Example |
 |---|---|---|
 | `arrows <schema.field>` | All arrows involving a field, with transform classification | `satsuma arrows loyalty_sfdc.LoyaltyTier` |
-| `nl <scope>` | NL content (notes, transforms, comments) in a scope | `satsuma nl 'demographics to mart'` |
+| `nl <scope>` | NL content (notes, transforms, comments) in a scope | `satsuma nl "demographics to mart"` |
 | `meta <scope>` | Metadata entries for a block or field | `satsuma meta loyalty_sfdc.Email` |
 | `fields <schema>` | Field list with types and metadata | `satsuma fields sat_customer_demographics` |
 | `match-fields --source <s> --target <t>` | Normalized name comparison between two schemas | `satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics` |
@@ -59,6 +59,8 @@ Full workspace topology export for one-shot reasoning.
 | `graph [path]` | Complete semantic graph — nodes, edges, and field-level data flow | `satsuma graph examples/ --json` |
 
 Flags: `--json` (full graph), `--compact` (schema-level adjacency list), `--schema-only` (omit field-level edges), `--namespace <ns>` (filter to namespace), `--no-nl` (strip NL text from edges).
+
+The `schema_edges` array includes edges with roles: `source`, `target`, `metric_source`, `fragment_spread`, and `nl_ref`. The `nl_ref` role marks schemas referenced in NL text but not declared in the mapping's source/target list — these represent data dependencies discovered through NL analysis.
 
 ### Agent Setup
 
@@ -101,7 +103,7 @@ Flags: `--json` (structured output), `--fix` (apply safe fixes), `--select <rule
 
 | Rule | Severity | Fixable | Description |
 |---|---|---|---|
-| `hidden-source-in-nl` | warning | yes | NL text references a schema not in the mapping's source/target list |
+| `hidden-source-in-nl` | error | yes | NL text references a schema not in the mapping's source/target list |
 | `unresolved-nl-ref` | warning | no | Backtick reference in NL does not resolve to any known identifier |
 | `duplicate-definition` | error | no | Named definition is declared more than once in a namespace |
 
@@ -164,10 +166,10 @@ satsuma nl mart_customer_360.loyalty_tier
 
 ```bash
 # 1. Which target fields have no arrows from this mapping?
-satsuma fields mart_customer_360 --unmapped-by 'demographics to mart' --json
+satsuma fields mart_customer_360 --unmapped-by "demographics to mart" --json
 
 # 2. Repeat for other mappings targeting the same schema
-satsuma fields mart_customer_360 --unmapped-by 'online to mart' --json
+satsuma fields mart_customer_360 --unmapped-by "online to mart" --json
 
 # 3. Agent intersects results to find fields unmapped by ALL mappings
 # 4. For mapped fields, agent checks arrow classification via satsuma arrows

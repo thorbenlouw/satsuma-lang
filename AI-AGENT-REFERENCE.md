@@ -14,7 +14,7 @@ file             = { import_stmt | note_block | namespace | schema | fragment | 
 
 import_stmt      = "import" "{" name_list "}" "from" STRING ;
 name_list        = name {"," name} ;
-name             = qualified_name | IDENT | "'" ANY "'" ;
+name             = qualified_name | IDENT | BACKTICK_IDENT ;
 qualified_name   = IDENT "::" IDENT ;
 
 note_block       = "note" "{" (STRING | TRIPLESTRING) "}" ;
@@ -24,7 +24,7 @@ namespace_body   = { note_block | schema | fragment | transform | mapping | metr
 
 schema           = "schema" label ["(" metadata ")"] "{" schema_body "}" ;
 fragment         = "fragment" label "{" schema_body "}" ;
-label            = IDENT | "'" ANY "'" ;
+label            = IDENT | BACKTICK_IDENT ;
 
 metadata         = meta_entry {"," meta_entry} ;
 meta_entry       = IDENT [value] | IDENT "{" enum_items "}" | "note" (STRING | TRIPLESTRING) ;
@@ -50,7 +50,8 @@ source_decl      = "source" "{" ref_list "}" ;
 target_decl      = "target" "{" ref_list "}" ;
 ref_list         = { BACKTICK_IDENT | STRING } ;
 
-arrow            = [field_path] "->" field_path ["(" metadata ")"] ["{" transform_body "}"] ;
+arrow            = source_paths "->" field_path ["(" metadata ")"] ["{" transform_body "}"] ;
+source_paths     = [field_path {"," field_path}] ;
 nested_arrow     = field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
 each_block       = "each" field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
 flatten_block    = "flatten" field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
@@ -123,6 +124,7 @@ mapping <name> (<metadata>) {
   src -> tgt { transform }                   // with transform
   src -> tgt { trim | lowercase }            // pipeline
   src -> tgt { "NL transform description" }  // natural language
+  src1, src2 -> tgt { "multi-source" }       // multiple sources
   -> tgt { "computed, no source" }           // derived field
   -> tgt { now_utc() }                       // function
 
@@ -187,12 +189,17 @@ note { """multiline **Markdown** content""" }
 (note "inline on a field or schema")       // in metadata parens
 // info   //! warning   //? question/todo
 
-## Backtick References in NL Strings (IMPORTANT)
+## Backtick References & @ref in NL Strings (IMPORTANT)
 ALWAYS backtick field and schema names inside "..." NL strings:
   -> total { "Sum `line_amount` grouped by `order_id`" }
   (note "Derived from `customer.email` after dedup")
 This is NOT optional — tooling extracts backticked references for
 deterministic lineage tracing. Bare names in NL are invisible to tools.
+
+Use @ref for explicit cross-schema references in NL:
+  -> total { "Join with @ref `lookup_table` on `key`" }
+@ref marks schema references as structural sources; lint --fix
+auto-adds undeclared @ref schemas to the mapping source list.
 ```
 
 ---
@@ -211,7 +218,7 @@ Every command produces 100% correct results from structural analysis. There are 
 # Workspace extractors — retrieve whole blocks
 satsuma summary path/to/workspace/          # overview — schemas, mappings, metrics, counts
 satsuma schema hub_customer                  # full schema definition
-satsuma mapping 'sfdc to hub_customer'       # full mapping with all arrows
+satsuma mapping "sfdc to hub_customer"        # full mapping with all arrows
 satsuma metric monthly_revenue               # full metric definition
 satsuma lineage --from loyalty_sfdc          # schema-level graph traversal
 satsuma where-used hub_product               # all references to a name
@@ -221,7 +228,7 @@ satsuma context "customer mapping"           # keyword-ranked block extraction (
 
 # Structural primitives — slice below block level
 satsuma arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
-satsuma nl 'demographics to mart'              # NL content in a mapping
+satsuma nl "demographics to mart"               # NL content in a mapping
 satsuma nl mart_customer_360.email            # NL content on a specific field
 satsuma nl all path/to/workspace/             # all NL across the workspace
 satsuma meta loyalty_sfdc.Email              # metadata entries (tags, type, constraints)
@@ -349,7 +356,9 @@ When reporting results to humans, be transparent about which parts of your analy
 | Using `schema` for a business metric | Use `metric` — it signals a terminal node to lineage tooling |
 | Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
 | Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
+| Using `'single quotes'` for labels | Use `` `backtick quotes` `` — single quotes are not supported |
 | Writing field names bare in NL strings | Backtick field/schema references inside `"..."` strings — e.g. `"Sum \`order_total\` grouped by \`customer_id\`"`. This enables deterministic extraction by tooling. |
+| Referencing a schema in NL without declaring it | Schemas referenced in NL text must be in the mapping's `source { }` block. Use `satsuma lint --fix` to auto-add undeclared refs. |
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 id: lsp-dwk7
-status: open
+status: closed
 deps: [lsp-l9aq, lsp-4hai]
 links: []
 created: 2026-03-25T17:37:05Z

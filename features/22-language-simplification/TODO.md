@@ -55,9 +55,9 @@
 
 ## Cross-Cutting — Documentation
 
-- [ ] **DOC.1** Update `AI-AGENT-REFERENCE.md`: `@ref` convention, simplified grammar EBNF, updated cheat sheet
-- [ ] **DOC.2** Update `SATSUMA-CLI.md`: canonical ref format, `@ref` output, multi-source arrow output
-- [ ] **DOC.3** Update `DISCOVERED-REQUIREMENTS.md`: mark resolved requirements
+- [x] **DOC.1** Update `AI-AGENT-REFERENCE.md`: `@ref` convention, simplified grammar EBNF, updated cheat sheet
+- [x] **DOC.2** Update `SATSUMA-CLI.md`: canonical ref format, `@ref` output, multi-source arrow output
+- [x] **DOC.3** Update `DISCOVERED-REQUIREMENTS.md`: mark resolved requirements
 
 ---
 

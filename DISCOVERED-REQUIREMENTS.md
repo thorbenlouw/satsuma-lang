@@ -144,10 +144,11 @@ Mappings without a name are indexed as `<anon>@filepath:row`. All commands that 
 ## 9. NL Backtick References Are Not Structural Sources
 
 **Tickets:** sl-n11t, cbh-h0or
+**Resolved by:** Feature 22 Phase 5 (lsp-ah6m, lsp-d4yk, lsp-4hai)
 
-When a mapping's NL text references a schema via backtick (e.g., `` "Look up `dim_customer`" ``), that reference must **not** be promoted to a structural source edge in the graph or lineage. Graph `schema_edges` must only reflect declared `source` / `target` blocks. NL references are surfaced separately via `nl-refs` and may inform lint rules, but they are not part of the structural graph.
+~~When a mapping's NL text references a schema via backtick, that reference must **not** be promoted to a structural source edge in the graph or lineage.~~
 
-This distinction is easy to conflate. The `lineage` command was also found creating phantom edges from NL backtick refs. The `arrows` command was incorrectly prefixing NL-derived source fields with the mapping's source schema. These are all symptoms of treating NL mentions as structural declarations.
+**Updated policy (Feature 22):** NL backtick references to schemas now produce `nl_ref` edges in `schema_edges` and are traversed by `lineage`. This is safe because `hidden-source-in-nl` is now an error (not a warning), ensuring all NL-referenced schemas are explicitly declared. The `nl_ref` role distinguishes these from declared `source`/`target` edges. The original phantom lineage bug (cbh-y5og) was caused by treating NL refs as `source` edges — the new approach uses a distinct edge role.
 
 ---
 
@@ -609,5 +610,6 @@ The CLI provides only deterministic structural extraction — no NL interpretati
 ### NL References Are Structural Extracts, Not Semantic Links
 
 **Tickets:** sl-n11t, cbh-h0or
+**Updated by:** Feature 22 Phase 5
 
-Backtick references in NL are syntactic/structural extracts, not validated semantic links. The CLI extracts them mechanically. The agent decides what they mean. Promoting them to structural declarations breaks the graph and lineage.
+Backtick references in NL are syntactic/structural extracts, not validated semantic links. The CLI extracts them mechanically. The agent decides what they mean. ~~Promoting them to structural declarations breaks the graph and lineage.~~ Since Feature 22, NL backtick refs produce `nl_ref` edges (distinct from `source`/`target` edges) in graph and lineage. This is safe because `hidden-source-in-nl` is now an error, guaranteeing all NL-referenced schemas are declared.
