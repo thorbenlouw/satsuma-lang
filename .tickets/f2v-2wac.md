@@ -1,6 +1,6 @@
 ---
 id: f2v-2wac
-status: open
+status: closed
 deps: []
 links: [f2v-cd0p]
 created: 2026-03-26T23:15:21Z
@@ -21,3 +21,9 @@ Render //! and //? comments that apply to a block (not a specific field) as floa
 - Badges show full text on hover
 - Badges do not overlap with cards or edges
 
+
+## Notes
+
+**2026-03-26T23:25:12Z**
+
+Block-level comments render as floating badges positioned to the right of their schema card. Amber for warnings, blue for questions. Click navigates to source. Hover shows full text.

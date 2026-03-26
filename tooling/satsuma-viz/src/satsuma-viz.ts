@@ -351,6 +351,124 @@ export class SatsumaViz extends LitElement {
     .positioned-card.expanded {
       animation: slideInRight 0.3s ease-out;
     }
+
+    /* Right-side notes pane */
+    .notes-pane-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .notes-pane-wrapper > .viewport {
+      flex: 1;
+    }
+
+    .notes-pane {
+      width: 280px;
+      flex-shrink: 0;
+      border-left: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      background: var(--sz-bg, #FFFAF5);
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .notes-pane-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sz-text-muted, #6B6560);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+    }
+
+    .notes-pane-section {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--sz-text-muted, #6B6560);
+      margin-top: 6px;
+    }
+
+    .comment-card {
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+
+    .comment-card:hover {
+      filter: brightness(0.97);
+    }
+
+    .comment-card.warning {
+      background: var(--sz-warning-bg, #FEF3CD);
+      border: 1px solid rgba(196, 93, 34, 0.2);
+      color: var(--sz-warning-icon, #C45D22);
+    }
+
+    .comment-card.question {
+      background: var(--sz-question-bg, #E8F0FE);
+      border: 1px solid rgba(124, 107, 174, 0.2);
+      color: var(--sz-question-icon, #7C6BAE);
+    }
+
+    .comment-card-source {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    .note-card {
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      background: var(--sz-card-bg, #fff);
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      color: var(--sz-text, #2D2A26);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Block-level comment floating badges */
+    .block-comment-badge {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 50;
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .block-comment-badge.warning {
+      background: var(--sz-warning-bg, #FEF3CD);
+      color: var(--sz-warning-icon, #C45D22);
+      border: 1px solid rgba(196, 93, 34, 0.3);
+    }
+
+    .block-comment-badge.question {
+      background: var(--sz-question-bg, #E8F0FE);
+      color: var(--sz-question-icon, #7C6BAE);
+      border: 1px solid rgba(124, 107, 174, 0.3);
+    }
+
+    .block-comment-badge:hover {
+      filter: brightness(0.95);
+      max-width: none;
+    }
   `;
 
   @property({ type: Object })
@@ -530,26 +648,34 @@ export class SatsumaViz extends LitElement {
       `;
     }
 
+    const allComments = this._collectAllComments();
+    const hasComments = allComments.warnings.length > 0 || allComments.questions.length > 0;
+    const hasFileNotes = this.model.fileNotes.length > 0;
+    const showPane = this._showNotes && (hasComments || hasFileNotes);
+
     return html`
       ${this._renderToolbar(namespaces)}
       ${this._renderBreadcrumbs()}
       <div class=${toggleClasses}>
         ${this._renderFileNotes()}
-        <div class="viewport"
-          @wheel=${this._onWheel}
-          @mousedown=${this._onMouseDown}
-          @mousemove=${this._onMouseMove}
-          @mouseup=${this._onMouseUp}
-          @mouseleave=${this._onMouseUp}
-        >
-          <div class="viewport-inner"
-            style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._zoom});"
+        <div class="notes-pane-wrapper">
+          <div class="viewport"
+            @wheel=${this._onWheel}
+            @mousedown=${this._onMouseDown}
+            @mousemove=${this._onMouseMove}
+            @mouseup=${this._onMouseUp}
+            @mouseleave=${this._onMouseUp}
           >
-            ${this._renderPositioned(this._layout, filtered)}
+            <div class="viewport-inner"
+              style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._zoom});"
+            >
+              ${this._renderPositioned(this._layout, filtered)}
+            </div>
+            <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
+              ${Math.round(this._zoom * 100)}%
+            </div>
           </div>
-          <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
-            ${Math.round(this._zoom * 100)}%
-          </div>
+          ${showPane ? this._renderNotesPane(allComments) : ""}
         </div>
       </div>
     `;
@@ -699,6 +825,86 @@ export class SatsumaViz extends LitElement {
     `;
   }
 
+  private _collectAllComments(): {
+    warnings: Array<{ text: string; source: string; location: SourceLocation }>;
+    questions: Array<{ text: string; source: string; location: SourceLocation }>;
+  } {
+    const warnings: Array<{ text: string; source: string; location: SourceLocation }> = [];
+    const questions: Array<{ text: string; source: string; location: SourceLocation }> = [];
+
+    if (!this.model) return { warnings, questions };
+
+    for (const ns of this.model.namespaces) {
+      for (const s of ns.schemas) {
+        for (const c of s.comments) {
+          const entry = { text: c.text, source: s.id, location: c.location };
+          if (c.kind === "warning") warnings.push(entry);
+          else questions.push(entry);
+        }
+      }
+      for (const m of ns.mappings) {
+        for (const c of m.comments) {
+          const entry = { text: c.text, source: `mapping ${m.id}`, location: c.location };
+          if (c.kind === "warning") warnings.push(entry);
+          else questions.push(entry);
+        }
+      }
+    }
+
+    return { warnings, questions };
+  }
+
+  private _renderNotesPane(allComments: {
+    warnings: Array<{ text: string; source: string; location: SourceLocation }>;
+    questions: Array<{ text: string; source: string; location: SourceLocation }>;
+  }) {
+    const fileNotes = this.model?.fileNotes ?? [];
+
+    return html`
+      <div class="notes-pane">
+        <div class="notes-pane-header">Notes &amp; Comments</div>
+        ${fileNotes.length > 0
+          ? html`
+              <div class="notes-pane-section">File Notes</div>
+              ${fileNotes.map((n) => html`<div class="note-card">${n.text}</div>`)}
+            `
+          : ""}
+        ${allComments.warnings.length > 0
+          ? html`
+              <div class="notes-pane-section">&#9888; Warnings (${allComments.warnings.length})</div>
+              ${allComments.warnings.map(
+                (w) => html`
+                  <div class="comment-card warning" @click=${() => this._navigateTo(w.location)}
+                    title="Click to navigate">
+                    ${w.text}
+                    <div class="comment-card-source">${w.source}</div>
+                  </div>
+                `
+              )}
+            `
+          : ""}
+        ${allComments.questions.length > 0
+          ? html`
+              <div class="notes-pane-section">? Questions (${allComments.questions.length})</div>
+              ${allComments.questions.map(
+                (q) => html`
+                  <div class="comment-card question" @click=${() => this._navigateTo(q.location)}
+                    title="Click to navigate">
+                    ${q.text}
+                    <div class="comment-card-source">${q.source}</div>
+                  </div>
+                `
+              )}
+            `
+          : ""}
+      </div>
+    `;
+  }
+
+  private _navigateTo(loc: SourceLocation) {
+    this.dispatchEvent(new SzNavigateEvent(loc));
+  }
+
   private _collapseAll() {
     this._expandedModels = new Map();
     this._runLayout();
@@ -777,16 +983,29 @@ export class SatsumaViz extends LitElement {
         <!-- Positioned cards -->
         <div class="card-layer">
           ${namespaces.flatMap((ns) => [
-            ...ns.schemas.map((s) => {
+            ...ns.schemas.flatMap((s) => {
               const node = layout.nodes.get(s.qualifiedId);
-              if (!node) return html``;
+              if (!node) return [html``];
               const mapped = this._mappedFieldsBySchema.get(s.qualifiedId) ?? new Set();
               const isExpanded = expandedIds.has(s.qualifiedId);
-              return html`
+              const results = [html`
                 <div class="positioned-card ${isExpanded ? "expanded" : ""}" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
                   <sz-schema-card .schema=${s} .mappedFields=${mapped}></sz-schema-card>
                 </div>
-              `;
+              `];
+              // Block-level comment badges
+              let badgeOffset = 0;
+              for (const c of s.comments) {
+                results.push(html`
+                  <div class="block-comment-badge ${c.kind}"
+                    style="left: ${node.x + node.width + 8}px; top: ${node.y + badgeOffset}px;"
+                    title=${c.text}
+                    @click=${() => this._navigateTo(c.location)}
+                  >${c.kind === "warning" ? "⚠" : "?"} ${c.text}</div>
+                `);
+                badgeOffset += 24;
+              }
+              return results;
             }),
             ...ns.fragments.map((f) => {
               const node = layout.nodes.get(f.id);
