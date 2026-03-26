@@ -28,6 +28,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Resolve version from VERSION file (falls back to git tag)
         id: version
         run: |
@@ -39,15 +43,20 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $TAG"
 
-      - name: Inject version into site HTML
+      - name: Write version data for Eleventy
         run: |
           TAG="${{ steps.version.outputs.tag }}"
-          find site -name '*.html' -exec sed -i "s|__VERSION_TAG__|${TAG}|g" {} +
-          find site -name '*.html' -exec sed -i "s|__VERSION__|${TAG}|g" {} +
+          echo "{\"version\":\"$TAG\",\"version_tag\":\"$TAG\"}" > site/_data/site.json
+
+      - name: Install site dependencies
+        run: cd site && npm ci
+
+      - name: Build site with Eleventy
+        run: cd site && npx @11ty/eleventy
 
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/_site
       - id: deployment
         uses: actions/deploy-pages@v4

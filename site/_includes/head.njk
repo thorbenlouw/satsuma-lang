@@ -1,0 +1,36 @@
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ description }}">
+  <meta property="og:title" content="{{ og_title if og_title else title }}">
+  <meta property="og:description" content="{{ og_description if og_description else description }}">
+  <meta property="og:image" content="img/satsuma-logo-512.png">
+  <link rel="icon" type="image/png" href="img/satsuma-logo-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="js/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: { DEFAULT: '#F2913D', dark: '#D97726', light: '#F9B97A' },
+            green: { DEFAULT: '#5A9E6F', dark: '#3D7A52', light: '#7DBF92' },
+            cream: '#FFFAF5',
+            peach: '#FFF3E8',
+            charcoal: '#2D2A26',
+            'warm-gray': '#6B6560',
+            'code-bg': '#FEF7EE',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
