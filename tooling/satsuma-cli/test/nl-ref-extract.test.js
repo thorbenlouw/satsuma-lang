@@ -153,7 +153,7 @@ describe("resolveRef", () => {
     const result = resolveRef("user_id", context, index);
     assert.equal(result.resolved, true);
     assert.equal(result.resolvedTo.kind, "field");
-    assert.equal(result.resolvedTo.name, "my_schema.user_id");
+    assert.equal(result.resolvedTo.name, "::my_schema.user_id");
   });
 
   it("does not fall back to all schemas when sources/targets are provided", () => {

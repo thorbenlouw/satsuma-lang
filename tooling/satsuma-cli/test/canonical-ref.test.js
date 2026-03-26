@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { canonicalRef } from "#src/canonical-ref.js";
+import { canonicalRef, canonicalEntityName } from "#src/canonical-ref.js";
 import { canonicalKey, resolveCanonicalKey } from "#src/index-builder.js";
 
 describe("canonicalRef", () => {
@@ -55,6 +55,28 @@ describe("canonicalKey", () => {
 
   it("preserves already-canonical unscoped keys", () => {
     assert.equal(canonicalKey("::customers"), "::customers");
+  });
+});
+
+describe("canonicalEntityName", () => {
+  it("formats global entity", () => {
+    assert.equal(canonicalEntityName({ name: "customers" }), "::customers");
+  });
+
+  it("formats namespaced entity", () => {
+    assert.equal(canonicalEntityName({ namespace: "crm", name: "customers" }), "crm::customers");
+  });
+
+  it("handles null name", () => {
+    assert.equal(canonicalEntityName({ name: null }), "::");
+  });
+
+  it("treats undefined namespace as global", () => {
+    assert.equal(canonicalEntityName({ namespace: undefined, name: "foo" }), "::foo");
+  });
+
+  it("treats null namespace as global", () => {
+    assert.equal(canonicalEntityName({ namespace: null, name: "foo" }), "::foo");
   });
 });
 

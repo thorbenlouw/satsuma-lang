@@ -25,3 +25,15 @@ export function canonicalRef(
   if (field) return `${base}.${field}`;
   return base;
 }
+
+/**
+ * Canonical display name for an entity record with namespace and name fields.
+ * Consolidates the repeated `canonicalKey(entity.namespace ? ...)` pattern.
+ *
+ *   canonicalEntityName({ namespace: "crm", name: "customers" })  → "crm::customers"
+ *   canonicalEntityName({ name: "customers" })                     → "::customers"
+ *   canonicalEntityName({ name: null })                            → "::"
+ */
+export function canonicalEntityName(entity: { namespace?: string | null; name: string | null }): string {
+  return canonicalRef(entity.namespace, entity.name ?? "");
+}

@@ -13,6 +13,7 @@ import {
   resolveRef,
   isSchemaInMappingSources,
 } from "./nl-ref-extract.js";
+import { resolveCanonicalKey } from "./index-builder.js";
 import type { LintDiagnostic, LintFix, LintRule, WorkspaceIndex } from "./types.js";
 
 // ── Rule registry ──────────────────────────────────────────────────────────
@@ -109,8 +110,8 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
     : mappingKey;
   const mappingNs = nsIdx !== -1 ? mappingKey.slice(0, nsIdx) : null;
 
-  // If the schema ref is in the same namespace as the mapping, use the local name
-  let insertRef = schemaRef;
+  // Convert canonical ref (::name) back to source-level form for insertion
+  let insertRef = resolveCanonicalKey(schemaRef);
   if (mappingNs && schemaRef.startsWith(`${mappingNs}::`)) {
     insertRef = schemaRef.slice(mappingNs.length + 2);
   }
