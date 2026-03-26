@@ -1,6 +1,6 @@
 ---
 id: f2v-9i2q
-status: open
+status: closed
 deps: []
 links: [f2v-5ssp]
 created: 2026-03-26T23:15:39Z
@@ -19,3 +19,9 @@ Visualize source blocks showing join descriptions, multi-source indicators, and 
 - Multi-source indicators show when multiple schemas are joined
 - Filter expressions display on the relevant source schema card
 
+
+## Notes
+
+**2026-03-26T23:28:21Z**
+
+Source blocks extracted into SourceBlockLayout. Join descriptions render as dashed orange labels beside source cards. Filter expressions render as blue filter labels.

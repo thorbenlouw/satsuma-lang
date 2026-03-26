@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { VizModel, SourceLocation, NamespaceGroup } from "./model.js";
-import { computeLayout, type LayoutResult } from "./layout/elk-layout.js";
+import { computeLayout, type LayoutResult, type SourceBlockLayout } from "./layout/elk-layout.js";
 import tokens from "./tokens.css";
 
 export { VizModel } from "./model.js";
@@ -13,7 +13,7 @@ export { SzMetricCard } from "./components/sz-metric-card.js";
 export { SzFragmentCard } from "./components/sz-fragment-card.js";
 export { SzEdgeLayer } from "./edges/sz-edge-layer.js";
 export { computeLayout } from "./layout/elk-layout.js";
-export type { LayoutResult, LayoutNode, LayoutEdge } from "./layout/elk-layout.js";
+export type { LayoutResult, LayoutNode, LayoutEdge, SourceBlockLayout } from "./layout/elk-layout.js";
 
 /** Navigate event — dispatched when the user clicks a source-linked element. */
 export class SzNavigateEvent extends Event {
@@ -469,6 +469,33 @@ export class SatsumaViz extends LitElement {
       filter: brightness(0.95);
       max-width: none;
     }
+
+    /* Source block join/filter labels */
+    .source-block-label {
+      position: absolute;
+      background: var(--sz-badge-bg, #FFF3E8);
+      border: 1px dashed var(--sz-orange-dark, #D97726);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-family: var(--sz-font-mono, monospace);
+      color: var(--sz-orange-dark, #D97726);
+      white-space: nowrap;
+      z-index: 40;
+    }
+
+    .source-block-filter {
+      position: absolute;
+      background: var(--sz-question-bg, #E8F0FE);
+      border: 1px solid rgba(124, 107, 174, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-family: var(--sz-font-mono, monospace);
+      color: var(--sz-question-icon, #7C6BAE);
+      white-space: nowrap;
+      z-index: 40;
+    }
   `;
 
   @property({ type: Object })
@@ -901,6 +928,39 @@ export class SatsumaViz extends LitElement {
     `;
   }
 
+  private _renderSourceBlock(sb: SourceBlockLayout, layout: LayoutResult) {
+    if (!sb.joinDescription && sb.filters.length === 0) return html``;
+
+    // Position between the source schema cards
+    const nodes = sb.schemas.map((id) => layout.nodes.get(id)).filter(Boolean);
+    if (nodes.length === 0) return html``;
+
+    const firstNode = nodes[0]!;
+    const x = firstNode.x + firstNode.width + 12;
+    let y = firstNode.y;
+    const results = [];
+
+    if (sb.joinDescription) {
+      results.push(html`
+        <div class="source-block-label" style="left: ${x}px; top: ${y}px;">
+          &#x2A1D; ${sb.joinDescription}
+        </div>
+      `);
+      y += 24;
+    }
+
+    for (const f of sb.filters) {
+      results.push(html`
+        <div class="source-block-filter" style="left: ${x}px; top: ${y}px;">
+          &#x25B7; ${f}
+        </div>
+      `);
+      y += 20;
+    }
+
+    return results;
+  }
+
   private _navigateTo(loc: SourceLocation) {
     this.dispatchEvent(new SzNavigateEvent(loc));
   }
@@ -979,6 +1039,9 @@ export class SatsumaViz extends LitElement {
             </div>
           `
         )}
+
+        <!-- Source block join/filter labels -->
+        ${layout.sourceBlocks.map((sb) => this._renderSourceBlock(sb, layout))}
 
         <!-- Positioned cards -->
         <div class="card-layer">
