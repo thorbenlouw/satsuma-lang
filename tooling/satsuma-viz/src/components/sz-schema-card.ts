@@ -208,6 +208,20 @@ export class SzSchemaCard extends LitElement {
       border-color: var(--sz-orange-dark, #D97726);
     }
 
+    .spread-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 12px;
+      font-size: 11px;
+      color: var(--sz-green, #5A9E6F);
+      border-top: 1px dotted var(--sz-green, #5A9E6F);
+    }
+
+    .spread-indicator .spread-icon {
+      font-size: 10px;
+    }
+
     .notes-section {
       border-top: 1px dashed var(--sz-card-border, rgba(45, 42, 38, 0.08));
       padding: 6px 12px;
@@ -284,6 +298,11 @@ export class SzSchemaCard extends LitElement {
         <div class="fields">
           ${s.fields.map((f) => this._renderField(f, 0))}
         </div>
+        ${s.spreads.length > 0
+          ? s.spreads.map(
+              (sp) => html`<div class="spread-indicator"><span class="spread-icon">&#8230;</span> spreads ${sp}</div>`
+            )
+          : ""}
         ${hasNotes ? this._renderNotes(s.notes) : ""}
         ${s.hasExternalLineage ? this._renderLineageButtons(s.qualifiedId) : ""}
       </div>

@@ -30,6 +30,7 @@ export interface SchemaCard {
   metadata: MetadataEntry[];
   location: SourceLocation;
   hasExternalLineage: boolean;
+  spreads: string[];
 }
 
 export interface FieldEntry {
@@ -344,7 +345,17 @@ function extractSchema(
     metadata: meta ? extractMetadataEntries(meta) : [],
     location: nodeLocation(uri, node),
     hasExternalLineage: checkExternalLineage(qualifiedId, uri, wsIndex),
+    spreads: body ? extractSpreads(body) : [],
   };
+}
+
+function extractSpreads(body: SyntaxNode): string[] {
+  const spreads: string[] = [];
+  for (const spreadNode of children(body, "spread_statement")) {
+    const name = labelText(spreadNode) ?? child(spreadNode, "identifier")?.text;
+    if (name) spreads.push(name);
+  }
+  return spreads;
 }
 
 function extractSchemaLabel(meta: SyntaxNode | null): string | null {
