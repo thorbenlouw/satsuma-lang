@@ -151,7 +151,7 @@
             </div>
             <div class="example-content">
               <div class="code-block rounded-none border-x-0 border-b-0">
-                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'customer migration'</span> {
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">`customer migration`</span> {
   <span class="keyword">source</span> { <span class="field">`legacy_sqlserver`</span> }
   <span class="keyword">target</span> { <span class="field">`postgres_db`</span> }
 
@@ -200,7 +200,7 @@
             </div>
             <div class="example-content">
               <div class="code-block rounded-none border-x-0 border-b-0">
-                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'opportunity ingestion'</span> {
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">`opportunity ingestion`</span> {
   <span class="keyword">source</span> { <span class="field">`sfdc_opportunity`</span>, <span class="field">`fx_spot_rates`</span> }
   <span class="keyword">target</span> { <span class="field">`snowflake_opps`</span> }
 
@@ -301,7 +301,7 @@
             </div>
             <div class="example-content">
               <div class="code-block rounded-none border-x-0 border-b-0">
-                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'session aggregation'</span> (<span class="annotation">group_by</span> session_id, <span class="annotation">on_error</span> log, <span class="annotation">error_threshold</span> 0.02) {
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">`session aggregation`</span> (<span class="annotation">group_by</span> session_id, <span class="annotation">on_error</span> log, <span class="annotation">error_threshold</span> 0.02) {
   <span class="keyword">source</span> { <span class="field">`commerce_event_pb`</span> }
   <span class="keyword">target</span> { <span class="field">`commerce_session_parquet`</span> }
 
@@ -492,7 +492,7 @@
             </div>
             <div class="example-content">
               <div class="code-block rounded-none border-x-0 border-b-0">
-                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'payments to analytics'</span> {
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">`payments to analytics`</span> {
   <span class="keyword">source</span> { <span class="field">`payment_gateway`</span> }
   <span class="keyword">target</span> { <span class="field">`analytics_db`</span> }
 
@@ -540,7 +540,7 @@
             </div>
             <div class="example-content">
               <div class="code-block rounded-none border-x-0 border-b-0">
-                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'customer 360'</span> {
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">`customer 360`</span> {
   <span class="keyword">source</span> {
     <span class="field">`crm_customers`</span>      (<span class="constraint">filter <span class="string">"email NOT LIKE '%@test.internal'"</span></span>)
     <span class="field">`order_transactions`</span>  (<span class="constraint">filter <span class="string">"status IN ('completed', 'refunded')"</span></span>)
@@ -602,7 +602,7 @@
     ...<span class="field">audit_fields</span>
   }
 
-  <span class="keyword">mapping</span> <span class="string">'load hub_store'</span> {
+  <span class="keyword">mapping</span> <span class="string">`load hub_store`</span> {
     <span class="keyword">source</span> { <span class="field">`pos::stores`</span> }
     <span class="keyword">target</span> { <span class="field">`hub_store`</span> }
 
@@ -692,7 +692,7 @@
               <div class="code-block rounded-none border-x-0 border-b-0">
                 <pre class="text-sm"><code class="stm"><span class="keyword">namespace</span> <span class="field">staging</span> (<span class="constraint">note <span class="string">"Cleaned and conformed staging area"</span></span>) {
   <span class="comment">// Map HR employees to staging — source is in merged namespace block</span>
-  <span class="keyword">mapping</span> <span class="string">'stage employees'</span> {
+  <span class="keyword">mapping</span> <span class="string">`stage employees`</span> {
     <span class="keyword">source</span> { <span class="field">`source::hr_employees`</span> }
     <span class="keyword">target</span> { <span class="field">`stg_employees`</span> }
 
@@ -749,7 +749,7 @@
   as_of     <span class="type">DATE</span>
 }
 
-<span class="keyword">fragment</span> <span class="string">'address fields'</span> {
+<span class="keyword">fragment</span> <span class="string">`address fields`</span> {
   line1        <span class="type">STRING(200)</span>  (<span class="constraint">required</span>)
   line2        <span class="type">STRING(200)</span>
   city         <span class="type">STRING(100)</span>  (<span class="constraint">required</span>)
@@ -788,7 +788,7 @@
             </div>
             <div class="example-content">
               <div class="code-block rounded-none border-x-0 border-b-0">
-                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">'customer upsert'</span> (<span class="annotation">merge</span> upsert, <span class="annotation">match_on</span> customer_id) {
+                <pre class="text-sm"><code class="stm"><span class="keyword">mapping</span> <span class="string">`customer upsert`</span> (<span class="annotation">merge</span> upsert, <span class="annotation">match_on</span> customer_id) {
   <span class="keyword">source</span> { <span class="field">`crm_customers`</span> }
   <span class="keyword">target</span> { <span class="field">`dim_customer`</span> }
 
@@ -798,7 +798,7 @@
   <span class="operator">-></span> updated_at  { <span class="function">now_utc</span>() }
 }
 
-<span class="keyword">mapping</span> <span class="string">'purchase events'</span> (<span class="annotation">merge</span> append) {
+<span class="keyword">mapping</span> <span class="string">`purchase events`</span> (<span class="annotation">merge</span> append) {
   <span class="keyword">source</span> { <span class="field">`pos_events`</span> }
   <span class="keyword">target</span> { <span class="field">`fact_purchases`</span> }
 
