@@ -14,9 +14,13 @@ namespace pos {
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 namespace block with metadata
@@ -33,11 +37,17 @@ namespace pos (note "POS system") {
 (source_file
   (namespace_block
     name: (identifier)
-    (metadata_block (note_tag (nl_string)))
+    (metadata_block
+      (note_tag
+        (nl_string)))
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 namespace with multiple definitions
@@ -254,15 +264,23 @@ namespace ecom {
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr)))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr)))))
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 global and namespaced definitions mixed
@@ -321,9 +339,16 @@ import { pos::stores, vault::hub_customer } from "platform.stm"
 
 (source_file
   (import_decl
-    (import_name (qualified_name (identifier) (identifier)))
-    (import_name (qualified_name (identifier) (identifier)))
-    (import_path (nl_string))))
+    (import_name
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (import_name
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (import_path
+      (nl_string))))
 
 ================================================================================
 mixed qualified and unqualified imports
@@ -335,9 +360,14 @@ import { pos::stores, dv_hash } from "common.stm"
 
 (source_file
   (import_decl
-    (import_name (qualified_name (identifier) (identifier)))
-    (import_name (identifier))
-    (import_path (nl_string))))
+    (import_name
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (import_name
+      (identifier))
+    (import_path
+      (nl_string))))
 
 ================================================================================
 qualified source and target refs
@@ -357,15 +387,24 @@ namespace vault {
   (namespace_block
     name: (identifier)
     (mapping_block
-      (block_label (quoted_name))
+      (block_label
+        (quoted_name))
       (mapping_body
         (source_block
-          (source_ref (qualified_name (identifier) (identifier))))
+          (source_ref
+            (qualified_name
+              (identifier)
+              (identifier))))
         (target_block
-          (source_ref (identifier)))
+          (source_ref
+            (identifier)))
         (map_arrow
-          (src_path (field_path (identifier)))
-          (tgt_path (field_path (identifier))))))))
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))))))
 
 ================================================================================
 qualified fragment spread
@@ -384,11 +423,18 @@ namespace vault {
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))
         (fragment_spread
-          (spread_label (qualified_name (identifier) (identifier))))))))
+          (spread_label
+            (qualified_name
+              (identifier)
+              (identifier))))))))
 
 ================================================================================
 namespace with note block
@@ -409,11 +455,16 @@ namespace pos {
 (source_file
   (namespace_block
     name: (identifier)
-    (note_block (nl_string))
+    (note_block
+      (nl_string))
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 fragment spread inside namespace schema (ns-platform pattern)
@@ -434,16 +485,26 @@ namespace raw {
 
 (source_file
   (fragment_block
-    (block_label (identifier))
+    (block_label
+      (identifier))
     (schema_body
-      (field_decl (field_name (identifier)) (type_expr))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))))
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))
-        (fragment_spread (spread_label (identifier)))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))
+        (fragment_spread
+          (spread_label
+            (identifier)))))))
 
 ================================================================================
 cross-namespace mapping with computed arrow (ns-platform pattern)
@@ -519,15 +580,23 @@ namespace source {
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr)))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr)))))
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 cross-namespace staging mapping (ns-merging pattern)

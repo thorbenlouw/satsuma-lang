@@ -384,7 +384,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
@@ -393,6 +393,10 @@
         },
         {
           "type": "nl_string",
+          "named": true
+        },
+        {
+          "type": "number_literal",
           "named": true
         }
       ]
@@ -418,7 +422,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
@@ -431,6 +435,10 @@
         },
         {
           "type": "nl_string",
+          "named": true
+        },
+        {
+          "type": "number_literal",
           "named": true
         }
       ]
