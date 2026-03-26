@@ -1,0 +1,30 @@
+// Fixture for sl-kqfj: @refs inside each_block and flatten_block
+schema order_api {
+  order_id    STRING
+  line_items  list_of record {
+    sku    STRING
+    qty    INTEGER
+    price  DECIMAL
+  }
+}
+
+schema order_flat {
+  order_id      STRING
+  items  list_of record {
+    product_code  STRING
+    quantity      INTEGER
+    unit_price    DECIMAL
+  }
+}
+
+mapping `flatten orders` {
+  source { order_api }
+  target { order_flat }
+
+  order_id -> order_id
+  each line_items -> items {
+    .sku -> .product_code { "Convert @sku to product code format" }
+    .qty -> .quantity
+    .price -> .unit_price { "Round @price to 2 decimal places" }
+  }
+}

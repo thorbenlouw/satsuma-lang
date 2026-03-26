@@ -200,38 +200,50 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
     );
     if (!mBody) continue;
 
-    const bodyChildren = mBody.namedChildren;
-    for (let idx = 0; idx < bodyChildren.length; idx++) {
-      const arrow = bodyChildren[idx]!;
-      if (arrow.type !== "map_arrow" && arrow.type !== "computed_arrow")
-        continue;
-      const src = arrow.namedChildren.find((c) => c.type === "src_path");
-      const tgt = arrow.namedChildren.find((c) => c.type === "tgt_path");
-      const srcText = src?.namedChildren[0]?.text ?? null;
-      const tgtText = tgt?.namedChildren[0]?.text ?? null;
-      if (srcText !== leafName && tgtText !== leafName) continue;
-
-      const parentName = getBlockName(mappingNode) ?? "?";
-
-      // Include warning/question comments immediately preceding this arrow
-      for (let ci = idx - 1; ci >= 0; ci--) {
-        const prev = bodyChildren[ci]!;
-        if (prev.type === "warning_comment" || prev.type === "question_comment") {
-          for (const item of extractNLContent(prev, parentName)) {
-            items.push({ ...item, file: mapping.file });
-          }
-        } else {
-          break; // stop at first non-comment
-        }
-      }
-
-      for (const item of extractNLContent(arrow, parentName)) {
-        items.push({ ...item, file: mapping.file });
-      }
-    }
+    const parentName = getBlockName(mappingNode) ?? "?";
+    collectFieldArrowNL(mBody.namedChildren, leafName, parentName, mapping.file, items);
   }
 
   return items;
+}
+
+function collectFieldArrowNL(
+  children: SyntaxNode[],
+  leafName: string,
+  parentName: string,
+  file: string,
+  items: NLItemWithFile[],
+): void {
+  for (let idx = 0; idx < children.length; idx++) {
+    const child = children[idx]!;
+    if (child.type === "each_block" || child.type === "flatten_block") {
+      collectFieldArrowNL(child.namedChildren, leafName, parentName, file, items);
+      continue;
+    }
+    if (child.type !== "map_arrow" && child.type !== "computed_arrow")
+      continue;
+    const src = child.namedChildren.find((c) => c.type === "src_path");
+    const tgt = child.namedChildren.find((c) => c.type === "tgt_path");
+    const srcText = src?.namedChildren[0]?.text?.replace(/^\./, "") ?? null;
+    const tgtText = tgt?.namedChildren[0]?.text?.replace(/^\./, "") ?? null;
+    if (srcText !== leafName && tgtText !== leafName) continue;
+
+    // Include warning/question comments immediately preceding this arrow
+    for (let ci = idx - 1; ci >= 0; ci--) {
+      const prev = children[ci]!;
+      if (prev.type === "warning_comment" || prev.type === "question_comment") {
+        for (const item of extractNLContent(prev, parentName)) {
+          items.push({ ...item, file });
+        }
+      } else {
+        break;
+      }
+    }
+
+    for (const item of extractNLContent(child, parentName)) {
+      items.push({ ...item, file });
+    }
+  }
 }
 
 function getFieldDeclName(fieldDecl: SyntaxNode): string | null {

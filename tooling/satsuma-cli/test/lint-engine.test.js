@@ -260,6 +260,76 @@ describe("lint: hidden-source-in-nl", () => {
     const diags = runLint(index, { select: ["hidden-source-in-nl"] });
     assert.equal(diags.length, 0);
   });
+
+  it("does not flag dotted sub-field path when root segment is a declared source field", () => {
+    // When an NL ref is `PERSONAL_NAME.FIRST_NAME` and PERSONAL_NAME is a
+    // record field within a declared source schema, it should NOT be flagged.
+    const index = makeIndex({
+      schemas: [
+        {
+          name: "src_contact",
+          fields: [
+            {
+              name: "PERSONAL_NAME",
+              children: [
+                { name: "FIRST_NAME" },
+                { name: "LAST_NAME" },
+              ],
+            },
+            { name: "email" },
+          ],
+        },
+        { name: "tgt_person", fields: [{ name: "first_name" }] },
+      ],
+      mappings: [{
+        name: "map_person",
+        sources: ["src_contact"],
+        targets: ["tgt_person"],
+      }],
+      nlRefData: [{
+        text: "Copy from @PERSONAL_NAME.FIRST_NAME",
+        mapping: "map_person",
+        namespace: null,
+        targetField: "first_name",
+        file: "test.stm",
+        line: 5,
+        column: 6,
+      }],
+    });
+
+    const diags = runLint(index, { select: ["hidden-source-in-nl"] });
+    assert.equal(diags.length, 0);
+  });
+
+  it("flags dotted sub-field path when root segment is NOT a declared source field", () => {
+    // `other_schema.some_field` where other_schema is a real schema but not
+    // in the mapping's source/target list — should be flagged.
+    const index = makeIndex({
+      schemas: [
+        { name: "src_contact", fields: [{ name: "email" }] },
+        { name: "other_schema", fields: [{ name: "some_field" }] },
+        { name: "tgt_person", fields: [{ name: "first_name" }] },
+      ],
+      mappings: [{
+        name: "map_person",
+        sources: ["src_contact"],
+        targets: ["tgt_person"],
+      }],
+      nlRefData: [{
+        text: "Lookup from @other_schema.some_field",
+        mapping: "map_person",
+        namespace: null,
+        targetField: "first_name",
+        file: "test.stm",
+        line: 5,
+        column: 6,
+      }],
+    });
+
+    const diags = runLint(index, { select: ["hidden-source-in-nl"] });
+    assert.equal(diags.length, 1);
+    assert.equal(diags[0].rule, "hidden-source-in-nl");
+  });
 });
 
 // ── unresolved-nl-ref ──────────────────────────────────────────────────────
@@ -319,6 +389,47 @@ describe("lint: unresolved-nl-ref", () => {
 
     const diags = runLint(index, { select: ["unresolved-nl-ref"] });
     assert.equal(diags.length, 0);
+  });
+
+  it("skips file-level standalone notes (sl-vrsu)", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::orders", fields: [{ name: "order_id" }] },
+      ],
+      nlRefData: [{
+        text: "The `flatten` transform is used for `pii` compliance",
+        mapping: "note:",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 1,
+        column: 0,
+      }],
+    });
+
+    const diags = runLint(index, { select: ["unresolved-nl-ref"] });
+    assert.equal(diags.length, 0, "standalone note backtick terms should not produce warnings");
+  });
+
+  it("still flags unresolved refs in metric/schema note blocks", () => {
+    const index = makeIndex({
+      schemas: [
+        { name: "source::orders", fields: [{ name: "order_id" }] },
+      ],
+      nlRefData: [{
+        text: "Lookup from `nonexistent_thing`",
+        mapping: "note:source::orders",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 6,
+      }],
+    });
+
+    const diags = runLint(index, { select: ["unresolved-nl-ref"] });
+    assert.equal(diags.length, 1, "block-level note refs should still be checked");
+    assert.equal(diags[0].rule, "unresolved-nl-ref");
   });
 });
 

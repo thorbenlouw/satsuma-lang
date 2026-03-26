@@ -213,6 +213,22 @@ describe("satsuma graph --schema-only", () => {
     }
   });
 
+  it("produces no duplicate edges for namespaced mappings (sl-057k)", async () => {
+    const { stdout, code } = await run("graph", "--json", "--schema-only", resolve(FIXTURES, "namespaces.stm"));
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    // Collect all edge keys to detect duplicates
+    const edgeKeys = data.edges.map((e) => `${e.from}->${e.to}:${e.mapping}`);
+    const unique = new Set(edgeKeys);
+    assert.equal(edgeKeys.length, unique.size, `duplicate edges found: ${JSON.stringify(edgeKeys)}`);
+    // Edges for the namespaced mapping should use qualified name
+    const warehouseEdges = data.edges.filter((e) => e.mapping && e.mapping.includes("warehouse::"));
+    assert.ok(warehouseEdges.length > 0, "should have edges with namespace-qualified mapping name");
+    for (const e of warehouseEdges) {
+      assert.ok(e.mapping.startsWith("warehouse::"), `mapping should be namespace-qualified: ${e.mapping}`);
+    }
+  });
+
   it("omits fields from schema nodes", async () => {
     const { stdout } = await run("graph", "--json", "--schema-only", EXAMPLES);
     const data = JSON.parse(stdout);

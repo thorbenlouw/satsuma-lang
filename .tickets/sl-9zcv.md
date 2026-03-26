@@ -1,6 +1,6 @@
 ---
 id: sl-9zcv
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T08:29:53Z

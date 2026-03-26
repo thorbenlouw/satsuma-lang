@@ -256,8 +256,18 @@ function searchNestedPath(fields: FieldDecl[], segments: string[]): boolean {
 
 /**
  * Check if a schema has a field, including fields contributed by fragment spreads.
+ * For multi-segment dotted paths (e.g. "record.subfield"), delegates to
+ * hasNestedFieldPath to walk the nested record structure.
  */
 function hasFieldWithSpreads(schema: SchemaLike, fieldName: string, index: WorkspaceIndex): boolean {
+  if (fieldName.includes(".")) {
+    // Multi-segment path — walk nested record structure
+    if (hasNestedFieldPath(schema.fields, fieldName)) return true;
+    if (!schema.hasSpreads) return false;
+    const ns = schema.namespace ?? null;
+    const expanded = expandEntityFields(schema, ns, index);
+    return hasNestedFieldPath([...schema.fields, ...expanded], fieldName);
+  }
   if (hasField(schema.fields, fieldName)) return true;
   if (!schema.hasSpreads) return false;
   const ns = schema.namespace ?? null;
@@ -357,7 +367,7 @@ function extractStandaloneNoteRefs(
       const text = inner.type === "multiline_string"
         ? inner.text.slice(3, -3)
         : inner.text.slice(1, -1);
-      if (text.includes("`")) {
+      if (text.includes("`") || /@[a-zA-Z_`]/.test(text)) {
         results.push({
           text,
           mapping: parentLabel ? `note:${parentLabel}` : "note:",
@@ -430,6 +440,38 @@ function walkArrowsForNL(
           }
         }
       }
+      continue;
+    }
+    if (c.type === "source_block") {
+      // Extract NL refs from source block join descriptions
+      // NL strings may be direct children or inside source_ref nodes
+      const nlNodes = [
+        ...c.namedChildren.filter((x) => x.type === "nl_string" || x.type === "multiline_string"),
+        ...c.namedChildren
+          .filter((x) => x.type === "source_ref")
+          .flatMap((x) => x.namedChildren.filter((y) => y.type === "nl_string" || y.type === "multiline_string")),
+      ];
+      for (const nlNode of nlNodes) {
+        const text = nlNode.type === "multiline_string"
+          ? nlNode.text.slice(3, -3)
+          : nlNode.text.slice(1, -1);
+        if (text.includes("`") || /@[a-zA-Z_`]/.test(text)) {
+          results.push({
+            text,
+            mapping: mappingName,
+            namespace,
+            targetField: null,
+            line: nlNode.startPosition.row,
+            column: nlNode.startPosition.column,
+          });
+        }
+      }
+      continue;
+    }
+    if (c.type === "each_block" || c.type === "flatten_block") {
+      const tgtNode = c.namedChildren.find((x) => x.type === "tgt_path");
+      const tgt = extractPathText(tgtNode) ?? targetField;
+      walkArrowsForNL(c, mappingName, namespace, tgt, results);
       continue;
     }
     if (c.type === "map_arrow" || c.type === "computed_arrow" || c.type === "nested_arrow") {

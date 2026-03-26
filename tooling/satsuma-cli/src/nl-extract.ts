@@ -61,6 +61,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
       }
     } else if (c.type === "source_block") {
       // Extract NL strings from source blocks (join descriptions)
+      // NL strings may be direct children or nested inside source_ref nodes
       for (const sc of c.namedChildren) {
         if (sc.type === "nl_string" || sc.type === "multiline_string") {
           items.push({
@@ -69,6 +70,17 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
             parent,
             line: sc.startPosition.row + 1,
           });
+        } else if (sc.type === "source_ref") {
+          for (const inner of sc.namedChildren) {
+            if (inner.type === "nl_string" || inner.type === "multiline_string") {
+              items.push({
+                text: stripDelimiters(inner.text, inner.type),
+                kind: "note",
+                parent,
+                line: inner.startPosition.row + 1,
+              });
+            }
+          }
         }
       }
     } else if (c.type === "pipe_step") {

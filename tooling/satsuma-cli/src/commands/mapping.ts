@@ -66,7 +66,7 @@ Examples:
       const mappingNode = parsed ? findBlockNode(parsed.tree.rootNode, "mapping_block", resolved.key) : null;
 
       if (opts.json) {
-        printJson(entry, mappingNode);
+        printJson(entry, mappingNode, opts.compact);
       } else if (opts.arrowsOnly) {
         printArrowsOnly(entry, mappingNode);
       } else {
@@ -114,7 +114,8 @@ function collectArrows(bodyNode: SyntaxNode | undefined): ArrowInfo[] {
       const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
       const meta = c.namedChildren.find((x) => x.type === "metadata_block");
       const children = collectArrows(c);
-      arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true, metaNode: meta, node: c, children: children.length > 0 ? children : undefined });
+      const hasChildren = children.length > 0;
+      arrows.push({ kind: hasChildren ? "nested" : "map", src: pathText(src), tgt: pathText(tgt), hasBody: hasChildren, metaNode: meta, node: c, children: hasChildren ? children : undefined });
     } else if (c.type === "flatten_block" || c.type === "each_block") {
       const blockKind = c.type === "flatten_block" ? "flatten" : "each";
       const src = c.namedChildren.find((x) => x.type === "src_path");
@@ -139,12 +140,12 @@ function extractNoteText(node: SyntaxNode | undefined): string | null {
   return parts.length > 0 ? parts.join("\n") : null;
 }
 
-function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
+function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null, compact?: boolean): void {
   const body = mappingNode?.namedChildren.find((c) => c.type === "mapping_body");
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
-  const metadata = extractMetadata(metaNode);
+  const metadata = compact ? [] : extractMetadata(metaNode);
   const noteBlock = body?.namedChildren.find((c) => c.type === "note_block");
-  const note = extractNoteText(noteBlock);
+  const note = compact ? null : extractNoteText(noteBlock);
   function arrowToJson(info: ArrowInfo): Record<string, unknown> {
     const { kind, src, tgt, hasBody, metaNode: arrowMeta, node: arrowNode, children } = info;
     const pipeChain = arrowNode.namedChildren.find((x) => x.type === "pipe_chain");
@@ -152,11 +153,13 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
     const classification = classifyTransform(pipeSteps.length > 0 ? pipeSteps : null);
     const hasTransform = hasBody && pipeChain != null;
     const arrowObj: Record<string, unknown> = { kind, src, tgt, hasTransform, classification };
-    if (hasBody) {
+    if (!compact && hasBody) {
       if (pipeChain) arrowObj.transform = pipeChain.text;
     }
-    const arrowMetadata = extractMetadata(arrowMeta);
-    if (arrowMetadata.length > 0) arrowObj.metadata = arrowMetadata;
+    if (!compact) {
+      const arrowMetadata = extractMetadata(arrowMeta);
+      if (arrowMetadata.length > 0) arrowObj.metadata = arrowMetadata;
+    }
     if (children && children.length > 0) {
       arrowObj.children = children.map(arrowToJson);
     }

@@ -38,7 +38,9 @@ function collectArrows(bodyNode) {
     } else if (c.type === "nested_arrow") {
       const src = c.namedChildren.find((x) => x.type === "src_path");
       const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-      arrows.push({ kind: "nested", src: pathText(src), tgt: pathText(tgt), hasBody: true });
+      const children = collectArrows(c);
+      const hasChildren = children.length > 0;
+      arrows.push({ kind: hasChildren ? "nested" : "map", src: pathText(src), tgt: pathText(tgt), hasBody: hasChildren });
     }
   }
   return arrows;
@@ -86,10 +88,24 @@ describe("collectArrows", () => {
     assert.equal(arrows[0].hasBody, true);
   });
 
-  it("collects nested_arrow", () => {
+  it("classifies empty nested_arrow as map with no body", () => {
     const src = n("src_path", [], "addr");
     const tgt = n("tgt_path", [], "address");
     const arrow = n("nested_arrow", [src, tgt]);
+    const body = n("mapping_body", [arrow]);
+
+    const arrows = collectArrows(body);
+    assert.equal(arrows[0].kind, "map");
+    assert.equal(arrows[0].hasBody, false);
+  });
+
+  it("classifies nested_arrow with children as nested", () => {
+    const src = n("src_path", [], "addr");
+    const tgt = n("tgt_path", [], "address");
+    const childSrc = n("src_path", [], "street");
+    const childTgt = n("tgt_path", [], "street_name");
+    const childArrow = n("map_arrow", [childSrc, childTgt]);
+    const arrow = n("nested_arrow", [src, tgt, childArrow]);
     const body = n("mapping_body", [arrow]);
 
     const arrows = collectArrows(body);

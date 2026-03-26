@@ -1,6 +1,6 @@
 ---
 id: sl-sq4u
-status: open
+status: closed
 deps: []
 links: [sl-h8sb, cbh-so1o, sl-kqfj]
 created: 2026-03-26T08:30:27Z

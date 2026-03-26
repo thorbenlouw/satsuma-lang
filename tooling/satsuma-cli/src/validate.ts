@@ -408,8 +408,8 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
 
       for (const arrow of uniqueArrows) {
         if (arrow.mapping !== mapping.name || (arrow.namespace ?? null) !== currentNs) continue;
-        // For anonymous mappings (name is null), also check file to avoid cross-file false positives
-        if (mapping.name === null && arrow.file !== mapping.file) continue;
+        // Check file to avoid cross-file false positives when duplicate mapping names exist
+        if (arrow.file !== mapping.file) continue;
 
         for (const source of arrow.sources) {
           if (
