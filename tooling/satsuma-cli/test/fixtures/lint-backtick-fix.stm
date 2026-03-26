@@ -7,7 +7,7 @@ schema hidden_lookup {
   code  STRING
 }
 
-mapping 'data load' {
+mapping `data load` {
   source { `src_main` }
   target { `output` }
 

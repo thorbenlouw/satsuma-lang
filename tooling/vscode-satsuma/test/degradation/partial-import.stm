@@ -1,7 +1,7 @@
 // Degradation: partial import statement
 // Expected: incomplete import should not break highlighting of subsequent lines.
 
-import { 'address fields'
+import { `address fields`
 // Missing closing }, from, and path
 
 schema after_partial_import {
@@ -10,7 +10,7 @@ schema after_partial_import {
 }
 
 // Another partial: missing path
-import { 'audit fields' } from
+import { `audit fields` } from
 
 schema another {
   x INT

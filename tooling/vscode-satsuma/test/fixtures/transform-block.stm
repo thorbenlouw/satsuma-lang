@@ -1,13 +1,13 @@
 // SYNTAX TEST "source.satsuma" "named transform declarations"
 
 // NL-only transform
-transform 'clean email' {
+transform `clean email` {
   "Trim whitespace, lowercase, validate RFC 5322, return null if invalid"
   // <-- string.quoted.double.satsuma
 }
 
 // Pipeline transform
-transform 'to utc date' {
+transform `to utc date` {
   parse("MM/DD/YYYY") | assume_utc | to_iso8601
 }
 

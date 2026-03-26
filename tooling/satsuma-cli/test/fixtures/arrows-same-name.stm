@@ -13,7 +13,7 @@ schema target_warehouse {
   full_name STRING
 }
 
-mapping 'ingest customers' {
+mapping `ingest customers` {
   source { source_system }
   target { target_warehouse }
 

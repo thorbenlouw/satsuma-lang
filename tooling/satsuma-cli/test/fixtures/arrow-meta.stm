@@ -8,7 +8,7 @@ schema tgt {
   email STRING
 }
 
-mapping 'arrow test' {
+mapping `arrow test` {
   source { src }
   target { tgt }
 

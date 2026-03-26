@@ -14,7 +14,7 @@ schema tgt_sys {
   full_name STRING
 }
 
-mapping 'addr_map' {
+mapping `addr_map` {
   source { `src_sys` }
   target { `tgt_sys` }
 

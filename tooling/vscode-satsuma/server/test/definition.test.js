@@ -37,7 +37,7 @@ describe("computeDefinition", () => {
   id UUID (pk)
   name VARCHAR
 }
-mapping 'test' {
+mapping \`test\` {
   source { customers }
   target { dim }
   id -> id
@@ -64,7 +64,7 @@ mapping 'test' {
         "file:///a.stm": `schema dim {
   id UUID
 }
-mapping 'test' {
+mapping \`test\` {
   source { src }
   target { dim }
   id -> id
@@ -104,7 +104,7 @@ schema customers {
     const result = definition(
       {
         "file:///a.stm": "schema customers {\n  id UUID\n}",
-        "file:///b.stm": "mapping 'test' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+        "file:///b.stm": "mapping `test` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
       },
       "file:///b.stm",
       1,
@@ -124,7 +124,7 @@ schema customers {
     id UUID
   }
 }
-mapping 'test' {
+mapping \`test\` {
   source { crm::customers }
   target { dim }
   id -> id
@@ -157,7 +157,7 @@ mapping 'test' {
   it("returns null for unresolvable reference", () => {
     const result = definition(
       {
-        "file:///a.stm": "mapping 'test' {\n  source { nonexistent }\n  target { dim }\n  id -> id\n}",
+        "file:///a.stm": "mapping `test` {\n  source { nonexistent }\n  target { dim }\n  id -> id\n}",
       },
       "file:///a.stm",
       1,
@@ -191,7 +191,7 @@ mapping 'test' {
 schema tgt {
   email_addr VARCHAR
 }
-mapping 'test' {
+mapping \`test\` {
   source { src }
   target { tgt }
   email -> email_addr
@@ -216,7 +216,7 @@ mapping 'test' {
 schema tgt {
   email_addr VARCHAR
 }
-mapping 'test' {
+mapping \`test\` {
   source { src }
   target { tgt }
   email -> email_addr
@@ -233,14 +233,14 @@ mapping 'test' {
   });
 
   it("jumps from backtick ref in NL string to block definition", () => {
-    // Line 6: "  -> display { "Look up `customers` table" }"
+    // Line 6: "  -> display { "Look up \`customers\` table" }"
     //                         ^col15            ^col24 = start of `customers`
     const result = definition(
       {
         "file:///a.stm": `schema customers {
   id UUID
 }
-mapping 'test' {
+mapping \`test\` {
   source { customers }
   target { dim }
   -> display { "Look up \`customers\` table" }
@@ -256,7 +256,7 @@ mapping 'test' {
   });
 
   it("jumps from backtick ref in NL string to schema field", () => {
-    // Line 7: "  -> full_name { "Concat `customer_id` with name" }"
+    // Line 7: "  -> full_name { "Concat \`customer_id\` with name" }"
     //                           ^col17           ^col26 = start of `customer_id`
     const result = definition(
       {
@@ -264,7 +264,7 @@ mapping 'test' {
   customer_id UUID (pk)
   name VARCHAR
 }
-mapping 'test' {
+mapping \`test\` {
   source { src }
   target { dim }
   -> full_name { "Concat \`customer_id\` with name" }

@@ -17,7 +17,7 @@ transform region_lookup {
   "Map `region_code` to full region name using standard mapping"
 }
 
-mapping 'transform block test' {
+mapping `transform block test` {
   source { `data_in` }
   target { `data_out` }
   -> full_name { ...build_fullname }

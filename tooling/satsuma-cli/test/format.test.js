@@ -106,10 +106,10 @@ describe("field alignment", () => {
   it("handles fragment spreads as non-aligned standalone lines", () => {
     const src = `schema test {
   id INT (pk)
-  ...'audit fields'
+  ...\`audit fields\`
 }`;
     const out = fmt(src);
-    assert.ok(out.includes("  ...'audit fields'"), "spread should be at block indent");
+    assert.ok(out.includes("  ...`audit fields`"), "spread should be at block indent");
   });
 });
 
@@ -409,9 +409,9 @@ describe("edge cases", () => {
   });
 
   it("handles quoted block labels", () => {
-    const src = `schema 'my schema' { x INT }`;
+    const src = "schema `my schema` { x INT }";
     const out = fmt(src);
-    assert.ok(out.includes("schema 'my schema' {"));
+    assert.ok(out.includes("schema `my schema` {"));
   });
 
   it("handles backtick field names in alignment", () => {

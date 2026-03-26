@@ -8,7 +8,7 @@ schema tgt {
   age          INTEGER
 }
 
-mapping 'copy data' {
+mapping `copy data` {
   source { src }
   target { tgt }
 

@@ -12,7 +12,7 @@ schema sat_customer_details (satellite, parent hub_customer) {
   email VARCHAR(255)
 }
 
-mapping 'pos to hub' {
+mapping `pos to hub` {
   source { `pos_source` }
   target { `hub_customer` }
 
@@ -21,7 +21,7 @@ mapping 'pos to hub' {
   -> load_date { now() }
 }
 
-mapping 'pos to sat' {
+mapping `pos to sat` {
   source { `pos_source` }
   target { `sat_customer_details` }
 

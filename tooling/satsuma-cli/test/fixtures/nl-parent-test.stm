@@ -13,7 +13,7 @@ schema nested_test {
   }
 }
 
-transform 'nl transform' {
+transform `nl transform` {
   //! transform warning
   "NL transform instruction"
 }

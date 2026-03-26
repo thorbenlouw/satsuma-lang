@@ -18,7 +18,7 @@ schema dim_customer {
   signup_date DATE
 }
 
-mapping 'build dim_customer' {
+mapping `build dim_customer` {
   source { crm_accounts, erp_customers }
   target { dim_customer }
 

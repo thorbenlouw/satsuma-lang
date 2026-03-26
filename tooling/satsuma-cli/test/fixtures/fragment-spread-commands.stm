@@ -1,13 +1,13 @@
 // Test fixture for fragment spread expansion across CLI commands
 // Exercises: fields, arrows, match-fields, graph, schema, where-used
 
-fragment 'audit fields' {
+fragment `audit fields` {
   created_at   TIMESTAMPTZ
   updated_at   TIMESTAMPTZ
   created_by   VARCHAR(100)
 }
 
-fragment 'address fields' {
+fragment `address fields` {
   street_line_1  VARCHAR(200)
   city           VARCHAR(100)
   state          VARCHAR(50)
@@ -15,7 +15,7 @@ fragment 'address fields' {
 }
 
 // Transitive spread: full address spreads address fields
-fragment 'full address' {
+fragment `full address` {
   ...address fields
   country        VARCHAR(100)
 }
@@ -38,7 +38,7 @@ schema customer_with_full_address {
   ...full address
 }
 
-mapping 'customer sync' {
+mapping `customer sync` {
   source { `src_customers` }
   target { `tgt_customers` }
 

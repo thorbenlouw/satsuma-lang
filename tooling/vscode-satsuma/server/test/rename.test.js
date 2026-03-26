@@ -36,7 +36,7 @@ describe("prepareRename", () => {
   it("returns range for source ref", () => {
     const { index, trees } = buildIndex({
       "file:///a.stm":
-        "mapping 'test' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+        "mapping `test` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
     });
     const result = prepareRename(
       trees["file:///a.stm"],
@@ -70,7 +70,7 @@ describe("computeRename", () => {
     const { index, trees } = buildIndex({
       "file:///a.stm": "schema customers {\n  id UUID\n}",
       "file:///b.stm":
-        "mapping 'test' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+        "mapping `test` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
     });
     const edit = computeRename(
       trees["file:///a.stm"],
@@ -160,7 +160,7 @@ schema customers {
     const { index, trees } = buildIndex({
       "file:///a.stm": "schema customers {\n  id UUID\n}",
       "file:///b.stm":
-        "mapping 'test' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+        "mapping `test` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
     });
     const edit = computeRename(
       trees["file:///b.stm"],

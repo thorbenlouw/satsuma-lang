@@ -7,7 +7,7 @@ integration "Legacy_Customer_Migration_v2" {
   version "2.0.0"
   tags [migration, customer, phoenix-project]
 
-  note '''
+  note ```
     # Legacy Customer Migration
 
     Part of **Project Phoenix** — decommissioning the legacy SQL Server 2008
@@ -23,7 +23,7 @@ integration "Legacy_Customer_Migration_v2" {
     - Address normalization service must be running
     - Secrets Manager: `tax_encryption_key` must be provisioned
     - Profanity filter word list v3.2 must be loaded
-  '''
+  ```
 }
 
 
@@ -32,10 +32,10 @@ integration "Legacy_Customer_Migration_v2" {
 // ============================================================
 
 table legacy_sqlserver "CUSTOMER table — SQL Server 2008" {
-  note '''
+  note ```
     Primary customer store from 2005–2024. No application-level validation
     was enforced until 2018, resulting in significant data quality issues.
-  '''
+  ```
 
   CUST_ID         INT             [pk]                         // Sequential, gaps from deletions
   CUST_TYPE       CHAR(1)         [enum: {R, B, G}, default: R]    //! Some records have NULL
@@ -44,14 +44,14 @@ table legacy_sqlserver "CUSTOMER table — SQL Server 2008" {
   COMPANY_NM      VARCHAR(200)                                 // Business/government only
   EMAIL_ADDR      VARCHAR(255)    [pii]                        //! Not validated — contains garbage
   PHONE_NBR       VARCHAR(50) {
-    note '''
+    note ```
       No consistent format across the dataset. Sample analysis (50k records):
       - **42%** `(555) 123-4567` — US with parentheses
       - **31%** `555.123.4567` — dot-separated
       - **15%** `+15551234567` — already E.164
       - **8%** `5551234567` — raw 10-digit
       - **4%** other (international, extensions, garbage)
-    '''
+    ```
   }
   ADDR_LINE_1     VARCHAR(200)
   ADDR_LINE_2     VARCHAR(200)
@@ -102,12 +102,12 @@ table postgres_db "Normalized customer schema — PostgreSQL 16" {
 // ============================================================
 
 mapping {
-  note '''
+  note ```
     ## Mapping assumptions
     - All timestamps assumed US Eastern unless otherwise noted
     - NULL handling: source NULLs preserved unless target has stated default
     - Names are title-cased on migration
-  '''
+  ```
 
   // --- Identifiers ---
   CUST_ID -> customer_id             : uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", CUST_ID)

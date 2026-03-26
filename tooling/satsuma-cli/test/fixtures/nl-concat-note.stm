@@ -1,7 +1,7 @@
 schema src { id INTEGER }
 schema tgt { id INTEGER }
 
-mapping 'order transform' {
+mapping `order transform` {
   source { `src` }
   target { `tgt` }
   note {

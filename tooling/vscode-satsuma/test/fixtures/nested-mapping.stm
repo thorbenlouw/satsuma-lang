@@ -1,6 +1,6 @@
 // SYNTAX TEST "source.satsuma" "nested arrows with relative paths and array indicators"
 
-mapping 'edi to mfcs' {
+mapping `edi to mfcs` {
   source { `edi_desadv` }
   target { `mfcs_json` }
 

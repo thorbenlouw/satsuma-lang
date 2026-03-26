@@ -1,10 +1,10 @@
 // SYNTAX TEST "source.satsuma" "import/from syntax"
 
-import { 'address fields', 'audit fields' } from "lib/common.stm"
+import { `address fields`, `audit fields` } from "lib/common.stm"
 // <-- keyword.control.import.satsuma
 //                                          ^^^^ keyword.control.import.satsuma
 //                                               ^^^^^^^^^^^^^^^^ string.quoted.double.satsuma
 
-import { 'currency rates' } from "lookups/finance.stm"
+import { `currency rates` } from "lookups/finance.stm"
 
-import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
+import { `sfdc standard types` } from "lib/sfdc_fragments.stm"

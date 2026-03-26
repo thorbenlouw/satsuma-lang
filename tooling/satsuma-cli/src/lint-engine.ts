@@ -125,7 +125,7 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
       const trimmed = lines[i]!.trim();
 
       if (!inMapping) {
-        const mappingRe = /^mapping\s+(?:'([^']+)'|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
+        const mappingRe = /^mapping\s+(?:`([^`]+)`|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
         const m = trimmed.match(mappingRe);
         if (m) {
           const name = (m[1] ?? m[2] ?? m[3] ?? "").trim();

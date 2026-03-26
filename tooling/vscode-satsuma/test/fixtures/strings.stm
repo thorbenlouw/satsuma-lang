@@ -29,13 +29,13 @@ schema test2 {
   // <----- variable.other.quoted.satsuma
 }
 
-// Single-quoted block label
-schema 'order-headers-parquet' {
-//     ^^^^^^^^^^^^^^^^^^^^^^^ string.quoted.single.satsuma
+// Backtick block label
+schema `order-headers-parquet` {
+//     ^^^^^^^^^^^^^^^^^^^^^^^ entity.name.tag.satsuma
   order_id STRING
 }
 
-fragment 'US Address' {
-//       ^^^^^^^^^^^^ string.quoted.single.satsuma
+fragment `US Address` {
+//       ^^^^^^^^^^^^ entity.name.tag.satsuma
   city VARCHAR(100)
 }

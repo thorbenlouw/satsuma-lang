@@ -23,11 +23,11 @@ describe("computeFoldingRanges", () => {
   a STRING
 }
 
-fragment 'bar' {
+fragment \`bar\` {
   b INT
 }
 
-mapping 'baz' {
+mapping \`baz\` {
   source { \`foo\` }
   target { \`foo\` }
   a -> a

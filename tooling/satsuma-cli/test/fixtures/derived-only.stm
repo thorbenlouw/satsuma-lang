@@ -9,7 +9,7 @@ schema enriched_data {
   processed_at  TIMESTAMP
 }
 
-mapping 'enrich data' {
+mapping `enrich data` {
   source { raw_data }
   target { enriched_data }
 

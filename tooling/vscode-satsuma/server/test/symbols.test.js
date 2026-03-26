@@ -36,7 +36,7 @@ describe("computeDocumentSymbols", () => {
   });
 
   it("returns fragment as Interface", () => {
-    const tree = parse(`fragment 'audit fields' {
+    const tree = parse(`fragment \`audit fields\` {
   created_at TIMESTAMPTZ
   updated_at TIMESTAMPTZ
 }`);
@@ -48,7 +48,7 @@ describe("computeDocumentSymbols", () => {
   });
 
   it("returns mapping as Function", () => {
-    const tree = parse(`mapping 'customer migration' {
+    const tree = parse(`mapping \`customer migration\` {
   source { \`legacy_db\` }
   target { \`new_db\` }
   old_id -> new_id
@@ -60,7 +60,7 @@ describe("computeDocumentSymbols", () => {
   });
 
   it("returns transform as Function", () => {
-    const tree = parse(`transform 'clean email' {
+    const tree = parse(`transform \`clean email\` {
   trim | lowercase | validate_email
 }`);
     const symbols = computeDocumentSymbols(tree);
@@ -149,7 +149,7 @@ schema bar {
   b INT
 }
 
-mapping 'migrate' {
+mapping \`migrate\` {
   source { \`foo\` }
   target { \`bar\` }
   a -> b

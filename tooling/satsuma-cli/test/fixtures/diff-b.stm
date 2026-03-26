@@ -8,7 +8,7 @@ schema NewSchema {
   code  STRING
 }
 
-fragment 'audit columns' {
+fragment `audit columns` {
   created_at  TIMESTAMP
   updated_at  TIMESTAMP
   deleted_at  TIMESTAMP

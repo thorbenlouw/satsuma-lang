@@ -1,6 +1,6 @@
 // SYNTAX TEST "source.satsuma" "basic mapping with source/target blocks and direct arrows"
 
-mapping 'customer migration' {
+mapping `customer migration` {
 // <--- keyword.other.satsuma
 
   source { `legacy_sqlserver` }

@@ -10,7 +10,7 @@ namespace crm {
     email       STRING
   }
 
-  mapping 'account sync' {
+  mapping `account sync` {
     source { accounts }
     target { hub_account }
 
