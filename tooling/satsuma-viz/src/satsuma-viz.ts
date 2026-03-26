@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS } from "lit";
+import { LitElement, html, svg, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { VizModel, SourceLocation, NamespaceGroup } from "./model.js";
 import { computeLayout, type LayoutResult, type SourceBlockLayout } from "./layout/elk-layout.js";
@@ -484,6 +484,30 @@ export class SatsumaViz extends LitElement {
       z-index: 40;
     }
 
+    /* Minimap */
+    .minimap {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 160px;
+      height: 100px;
+      background: var(--sz-card-bg, #fff);
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      border-radius: 4px;
+      box-shadow: var(--sz-card-shadow, 0 2px 8px rgba(45, 42, 38, 0.06));
+      overflow: hidden;
+      cursor: pointer;
+      z-index: 80;
+    }
+
+    .minimap-viewport {
+      position: absolute;
+      border: 1.5px solid var(--sz-orange, #F2913D);
+      background: rgba(242, 145, 61, 0.08);
+      border-radius: 1px;
+      pointer-events: none;
+    }
+
     .source-block-filter {
       position: absolute;
       background: var(--sz-question-bg, #E8F0FE);
@@ -701,6 +725,7 @@ export class SatsumaViz extends LitElement {
             <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
               ${Math.round(this._zoom * 100)}%
             </div>
+            ${this._renderMinimap(this._layout)}
           </div>
           ${showPane ? this._renderNotesPane(allComments) : ""}
         </div>
@@ -731,6 +756,7 @@ export class SatsumaViz extends LitElement {
         <div class="toolbar-sep"></div>
         <button class="toolbar-btn" @click=${this._fit} title="Fit all content in viewport">Fit</button>
         <button class="toolbar-btn" @click=${this._refresh} title="Re-fetch visualization data">&#8635; Refresh</button>
+        <button class="toolbar-btn" @click=${this._exportSvg} title="Export as SVG">&#x21E9; Export</button>
         ${hasNamespaces
           ? html`
               <div class="toolbar-sep"></div>
@@ -760,6 +786,56 @@ export class SatsumaViz extends LitElement {
 
   private _refresh() {
     this.dispatchEvent(new Event("refresh", { bubbles: true, composed: true }));
+  }
+
+  private _exportSvg() {
+    if (!this._layout) return;
+    const w = this._layout.width + 48;
+    const h = this._layout.height + 48;
+
+    // Capture the canvas HTML and edge SVG
+    const canvas = this.renderRoot?.querySelector?.(".canvas") as HTMLElement | null;
+    if (!canvas) return;
+
+    // Serialize the canvas content (cards as foreignObject, edges as SVG)
+    const edgeSvg = canvas.querySelector("sz-edge-layer")?.shadowRoot?.querySelector("svg");
+    const edgeSvgContent = edgeSvg ? edgeSvg.innerHTML : "";
+
+    // Build a minimal SVG with the edge paths
+    const svgStr = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <style>
+    .edge-path { fill: none; stroke-width: 1.5; }
+    .edge-path.pipeline { stroke: #D97726; }
+    .edge-path.nl { stroke: #5A9E6F; stroke-dasharray: 6 3; }
+    .edge-path.bare { stroke: #6B6560; stroke-width: 1; }
+    .scope-label { font-family: monospace; font-size: 9px; font-weight: 600; fill: #6B6560; text-anchor: middle; }
+    .gear-circle { fill: #fff; stroke: #6B6560; stroke-width: 1; }
+    .gear-icon { fill: #6B6560; font-size: 10px; text-anchor: middle; dominant-baseline: central; }
+    rect.card { fill: #fff; stroke: rgba(45,42,38,0.08); rx: 8; }
+    rect.header { rx: 8; }
+    text.card-name { font-family: system-ui; font-size: 14px; font-weight: 600; fill: #fff; }
+    text.field-name { font-family: monospace; font-size: 12px; fill: #2D2A26; }
+    text.field-type { font-family: monospace; font-size: 11px; fill: #6B6560; }
+  </style>
+  <rect width="${w}" height="${h}" fill="#FFFAF5"/>
+  ${edgeSvgContent}
+  ${[...this._layout.nodes.values()].map((n) => `
+  <g transform="translate(${n.x},${n.y})">
+    <rect class="card" width="${n.width}" height="${n.height}" fill="#fff" stroke="rgba(45,42,38,0.08)" rx="8"/>
+    <rect class="header" width="${n.width}" height="40" fill="#F2913D" rx="8"/>
+    <rect x="0" y="32" width="${n.width}" height="8" fill="#F2913D"/>
+    <text class="card-name" x="12" y="26">${n.id}</text>
+  </g>`).join("")}
+</svg>`;
+
+    this.dispatchEvent(
+      new CustomEvent("export", {
+        bubbles: true,
+        composed: true,
+        detail: { format: "svg", content: svgStr },
+      }),
+    );
   }
 
   private _onWheel(e: WheelEvent) {
@@ -926,6 +1002,55 @@ export class SatsumaViz extends LitElement {
           : ""}
       </div>
     `;
+  }
+
+  private _renderMinimap(layout: LayoutResult) {
+    const mmW = 160;
+    const mmH = 100;
+    const scale = Math.min(mmW / (layout.width + 48), mmH / (layout.height + 48));
+
+    // Viewport rectangle (inverse of pan/zoom transform)
+    const host = this.renderRoot?.querySelector?.(".viewport") as HTMLElement | null;
+    const vpW = host?.clientWidth ?? 800;
+    const vpH = host?.clientHeight ?? 600;
+    const vx = (-this._panX / this._zoom) * scale;
+    const vy = (-this._panY / this._zoom) * scale;
+    const vw = (vpW / this._zoom) * scale;
+    const vh = (vpH / this._zoom) * scale;
+
+    return html`
+      <div class="minimap" @click=${(e: MouseEvent) => this._onMinimapClick(e, layout, scale)}>
+        <svg width=${mmW} height=${mmH} viewBox="0 0 ${mmW} ${mmH}">
+          ${[...layout.nodes.values()].map(
+            (n) => svg`
+              <rect
+                x=${n.x * scale} y=${n.y * scale}
+                width=${n.width * scale} height=${n.height * scale}
+                fill="var(--sz-card-border, rgba(45,42,38,0.15))"
+                rx="1"
+              />
+            `
+          )}
+        </svg>
+        <div class="minimap-viewport"
+          style="left: ${vx}px; top: ${vy}px; width: ${vw}px; height: ${vh}px;"
+        ></div>
+      </div>
+    `;
+  }
+
+  private _onMinimapClick(e: MouseEvent, layout: LayoutResult, scale: number) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    // Convert minimap coordinates to canvas coordinates and center the viewport
+    const host = this.renderRoot?.querySelector?.(".viewport") as HTMLElement | null;
+    const vpW = host?.clientWidth ?? 800;
+    const vpH = host?.clientHeight ?? 600;
+
+    this._panX = -(mx / scale - vpW / (2 * this._zoom)) * this._zoom;
+    this._panY = -(my / scale - vpH / (2 * this._zoom)) * this._zoom;
   }
 
   private _renderSourceBlock(sb: SourceBlockLayout, layout: LayoutResult) {

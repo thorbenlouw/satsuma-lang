@@ -29,6 +29,12 @@ vizEl.addEventListener("refresh", () => {
   vscode.postMessage({ type: "refresh" });
 });
 
+// Listen for export events from the toolbar
+vizEl.addEventListener("export", (ev: CustomEvent) => {
+  const detail = ev.detail ?? {};
+  vscode.postMessage({ type: "export", format: detail.format, content: detail.content });
+});
+
 // Listen for expand-lineage events from schema cards
 vizEl.addEventListener("expand-lineage", (ev: CustomEvent) => {
   const schemaId = ev.schemaId ?? ev.detail?.schemaId;
