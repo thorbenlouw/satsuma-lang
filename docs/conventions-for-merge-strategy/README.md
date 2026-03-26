@@ -53,7 +53,7 @@ These rules belong in `" "` descriptions, not forced into metadata tokens.
 The most common pattern for slowly changing reference data. New rows are inserted; existing rows (matched by business key) are updated with the latest values.
 
 ```stm
-mapping 'customer upsert' (merge upsert, match_on customer_id) {
+mapping `customer upsert` (merge upsert, match_on customer_id) {
   source { `crm_customers` }
   target { `dim_customer` }
 
@@ -70,7 +70,7 @@ mapping 'customer upsert' (merge upsert, match_on customer_id) {
 Every source record becomes a new row in the target. No matching, no updates. Used for event logs, audit trails, and immutable fact streams.
 
 ```stm
-mapping 'page view events' (merge append) {
+mapping `page view events` (merge append) {
   source { `clickstream_raw` }
   target { `event_log` }
 
@@ -87,7 +87,7 @@ mapping 'page view events' (merge append) {
 Rows are never physically removed from the target. When a record disappears from the source (or appears in a deletion feed), it is flagged as deleted. This preserves history for audit and analytics while keeping the "active" view clean.
 
 ```stm
-mapping 'customer soft delete' (
+mapping `customer soft delete` (
   merge soft_delete,
   match_on customer_id,
   delete_flag is_deleted,
@@ -113,7 +113,7 @@ mapping 'customer soft delete' (
 The target is truncated and reloaded from scratch on every run. Simple and correct, but risky if the source is incomplete or unavailable. Always pair with a safety note.
 
 ```stm
-mapping 'product catalog refresh' (merge full_refresh) {
+mapping `product catalog refresh` (merge full_refresh) {
   note {
     """
     Full refresh from the product master system.
@@ -140,7 +140,7 @@ mapping 'product catalog refresh' (merge full_refresh) {
 When no single field uniquely identifies a target row, use a composite key in `match_on { }`. Common for time-variant data, multi-tenant systems, and bridge tables.
 
 ```stm
-mapping 'price history upsert' (
+mapping `price history upsert` (
   merge upsert,
   match_on {product_id, effective_date}
 ) {

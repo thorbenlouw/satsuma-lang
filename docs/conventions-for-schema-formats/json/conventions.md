@@ -83,7 +83,7 @@ See [`examples/json-api-to-parquet.stm`](../../../examples/json-api-to-parquet.s
 
 ### 1. Simple Field Extraction
 
-```stm
+```satsuma
 order_id  STRING  (jsonpath "$.order.order_id", required)
 channel   STRING  (jsonpath "$.order.channel")
 ```
@@ -92,7 +92,7 @@ Direct dot-notation path from the root to a scalar value.
 
 ### 2. Nested Object Traversal
 
-```stm
+```satsuma
 Customer record {
   customer_id  STRING  (jsonpath "$.order.customer.id")
   email        STRING  (jsonpath "$.order.customer.email", pii)
@@ -103,7 +103,7 @@ Each field carries its full absolute path. The `record` groups them logically bu
 
 ### 3. Array Iteration
 
-```stm
+```satsuma
 LineItems list_of record (jsonpath "$.order.line_items[*]") {
   sku       STRING  (jsonpath ".sku")
   quantity  INT32   (jsonpath ".quantity")
@@ -116,7 +116,7 @@ The `[*]` on the parent iterates the array. Child fields use relative paths that
 
 Inside a `list_of record` with a `jsonpath` containing `[*]`, child paths are relative to each array element:
 
-```stm
+```satsuma
 LineItems list_of record (jsonpath "$.order.line_items[*]") {
   line_number  INT32          (jsonpath ".line_number")
   unit_price   DECIMAL(12,2)  (jsonpath ".unit_price")
@@ -128,7 +128,7 @@ The `.tax.amount` path traverses a nested object within each array element.
 
 ### 5. Whole Subtree as JSON Blob
 
-```stm
+```satsuma
 order_metadata  JSON  (jsonpath "$.order.metadata",
   note "Preserved as raw JSON — contains variable vendor-specific fields"
 )
