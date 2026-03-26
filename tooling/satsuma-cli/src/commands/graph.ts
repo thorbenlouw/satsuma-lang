@@ -21,6 +21,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
+import { extractBacktickRefs, classifyRef, resolveRef } from "../nl-ref-extract.js";
 import type { WorkspaceIndex } from "../types.js";
 import type { FullGraph } from "../graph-builder.js";
 
@@ -387,7 +388,87 @@ function buildSchemaEdges(index: WorkspaceIndex, _schemaGraph: FullGraph, includ
     }
   }
 
+  // NL @ref edges — promote resolved NL schema references to first-class edges.
+  // Now that hidden-source-in-nl is an error (P5.1), these references are
+  // guaranteed to be declared in the mapping's source list, so they represent
+  // intentional data lineage, not phantom paths.
+  if (index.nlRefData) {
+    const seen = new Set<string>();
+    for (const item of index.nlRefData) {
+      const mappingKey = item.namespace
+        ? `${item.namespace}::${item.mapping}`
+        : item.mapping;
+      const mapping = index.mappings.get(mappingKey);
+      if (!mapping) continue;
+
+      const backtickRefs = extractNlSchemaRefs(item.text, {
+        sources: mapping.sources ?? [],
+        targets: mapping.targets ?? [],
+        namespace: item.namespace,
+      }, index);
+
+      for (const schemaRef of backtickRefs) {
+        const key = `${schemaRef}|${mappingKey}|nl_ref`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (!nsFilter || includedNodeIds.has(schemaRef) || includedNodeIds.has(mappingKey)) {
+          edges.push({ from: schemaRef, to: mappingKey, role: "nl_ref" });
+        }
+      }
+    }
+  }
+
   return edges;
+}
+
+/**
+ * Extract index-key-format schema names referenced via backtick refs in NL text.
+ * Filters out schemas already in the mapping's declared sources/targets (those
+ * are already covered by the standard source/target edges).
+ */
+function extractNlSchemaRefs(
+  text: string,
+  mappingContext: { sources: string[]; targets: string[]; namespace: string | null },
+  index: WorkspaceIndex,
+): string[] {
+  const refs = extractBacktickRefs(text);
+  const schemas: string[] = [];
+  const allDeclared = new Set([...mappingContext.sources, ...mappingContext.targets]);
+
+  for (const { ref } of refs) {
+    const classification = classifyRef(ref);
+    const resolution = resolveRef(ref, mappingContext, index);
+    if (!resolution.resolved) continue;
+
+    let canonicalSchema: string | null = null;
+    if (classification === "namespace-qualified-schema" || classification === "bare") {
+      if (resolution.resolvedTo?.kind === "schema") {
+        canonicalSchema = resolution.resolvedTo.name;
+      }
+    } else if (classification === "dotted-field" || classification === "namespace-qualified-field") {
+      if (resolution.resolvedTo?.kind === "field") {
+        const fieldName = resolution.resolvedTo.name;
+        const lastDot = fieldName.lastIndexOf(".");
+        if (lastDot > 0) {
+          canonicalSchema = fieldName.slice(0, lastDot);
+        }
+      }
+    }
+
+    if (!canonicalSchema) continue;
+
+    // Convert canonical form (::name) to index key form (name)
+    const indexKey = canonicalSchema.startsWith("::")
+      ? canonicalSchema.slice(2)
+      : canonicalSchema;
+
+    // Skip schemas already declared as source or target
+    if (allDeclared.has(indexKey) || allDeclared.has(canonicalSchema)) continue;
+
+    schemas.push(indexKey);
+  }
+
+  return schemas;
 }
 
 /**

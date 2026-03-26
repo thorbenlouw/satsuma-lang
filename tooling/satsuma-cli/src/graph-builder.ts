@@ -58,11 +58,9 @@ export function buildFullGraph(index: WorkspaceIndex): FullGraph {
     }
   }
 
-  // NL backtick references — only create field-level edges, NOT schema-level
-  // edges. Schema refs in NL text are informational references, not real
-  // source/target declarations. Creating schema edges from NL text would
-  // produce phantom lineage paths (cbh-y5og).
-  // Schema-level edges are already created above from declared source/target blocks.
+  // NL backtick references — schema-level "nl_ref" edges are emitted in
+  // buildSchemaEdges() (graph.ts), not here. The directed graph only contains
+  // edges from declared source/target blocks. See P5.3 (lsp-d4yk).
 
   return { nodes, edges };
 }

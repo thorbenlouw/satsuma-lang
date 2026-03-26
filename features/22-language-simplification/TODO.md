@@ -50,7 +50,7 @@
 
 - [x] **P5.1** Change `hidden-source-in-nl` from warning to error in `lint-engine.ts`
 - [x] **P5.2** Add `lint --fix` auto-fix: insert undeclared `@ref` mentions into source declarations
-- [ ] **P5.3** Update `graph-builder.ts` to emit `@ref` edges as first-class `schema_edges`
+- [x] **P5.3** Update `graph-builder.ts` to emit `@ref` edges as first-class `schema_edges`
 - [ ] **P5.4** Update `lineage.ts` to traverse `@ref` edges
 
 ## Cross-Cutting — Documentation

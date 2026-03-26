@@ -3078,7 +3078,7 @@ describe("satsuma graph: --schema-only derived-only edges (sl-w4hv)", () => {
   });
 });
 
-describe("satsuma graph: schema_edges excludes NL-referenced schemas (sl-n11t)", () => {
+describe("satsuma graph: schema_edges NL-referenced schemas (sl-n11t)", () => {
   const FIXTURE = resolve(__dirname, "fixtures/hidden-source-graph.stm");
 
   it("does not promote NL-referenced schemas to source edges", async () => {
@@ -3089,13 +3089,33 @@ describe("satsuma graph: schema_edges excludes NL-referenced schemas (sl-n11t)",
     const sourceNames = sourceEdges.map((e) => e.from);
     assert.ok(sourceNames.includes("crm_accounts"), "should have declared source");
     assert.ok(sourceNames.includes("erp_customers"), "should have declared source");
-    assert.ok(!sourceNames.includes("web_profiles"), "should NOT include NL-referenced schema");
+    assert.ok(!sourceNames.includes("web_profiles"), "should NOT include NL-referenced schema as source");
   });
 
-  it("compact output does not show NL-referenced schemas", async () => {
+  it("emits nl_ref edges for NL-referenced schemas not in source list", async () => {
+    const { stdout, code } = await run("graph", FIXTURE, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const nlRefEdges = data.schema_edges.filter((e) => e.role === "nl_ref");
+    assert.equal(nlRefEdges.length, 1, "should have one nl_ref edge");
+    assert.equal(nlRefEdges[0].from, "web_profiles");
+    assert.equal(nlRefEdges[0].to, "build dim_customer");
+  });
+
+  it("does not duplicate nl_ref edge for schemas already in source list", async () => {
+    const { stdout, code } = await run("graph", FIXTURE, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const nlRefEdges = data.schema_edges.filter((e) => e.role === "nl_ref");
+    const nlRefNames = nlRefEdges.map((e) => e.from);
+    assert.ok(!nlRefNames.includes("crm_accounts"), "should NOT have nl_ref for declared source");
+  });
+
+  it("compact output shows NL-referenced schemas with nl_ref role", async () => {
     const { stdout, code } = await run("graph", FIXTURE, "--compact");
     assert.equal(code, 0);
-    assert.ok(!stdout.includes("web_profiles"), "should not show NL-referenced schema in compact");
+    assert.ok(stdout.includes("web_profiles"), "should show NL-referenced schema in compact");
+    assert.ok(stdout.includes("[nl_ref]"), "should show nl_ref role");
   });
 });
 
