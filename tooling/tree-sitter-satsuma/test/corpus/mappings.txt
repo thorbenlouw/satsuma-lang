@@ -58,10 +58,10 @@ mapping crm_to_warehouse (version 1) {
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (number_literal)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (number_literal))))
     (mapping_body
       (source_block
         (source_ref
@@ -335,3 +335,4 @@ mapping {
           (pipe_step
             (token_call
               (identifier))))))))
+

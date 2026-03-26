@@ -461,10 +461,10 @@ function indexMetricRefs(
   if (!meta) return;
 
   walkDescendants(meta, (n) => {
-    if (n.type === "key_value_pair") {
+    if (n.type === "tag_with_value") {
       const keyNode = n.namedChildren[0];
       if (keyNode?.text === "source") {
-        // Value can be identifier, qualified_name, or braced list
+        // Value can be identifier, qualified_name, or braced list (inside value_text)
         const valNode = n.namedChildren[1];
         if (valNode) {
           const name = valNode.text;

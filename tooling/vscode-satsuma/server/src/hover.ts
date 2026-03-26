@@ -62,7 +62,7 @@ function tryHover(node: SyntaxNode, tree: Tree): HoverResult | null {
     case "tag_token":
       return hoverTag(node);
 
-    case "key_value_pair":
+    case "tag_with_value":
       return hoverKeyValue(node);
 
     case "fragment_spread":
@@ -257,8 +257,8 @@ function hoverTag(node: SyntaxNode): HoverResult | null {
 }
 
 function hoverKeyValue(node: SyntaxNode): HoverResult | null {
-  const key = child(node, "kv_key");
-  const val = node.namedChildren.find((c) => c.type !== "kv_key");
+  const key = node.namedChildren[0]; // identifier (was kv_key)
+  const val = node.namedChildren[1]; // value_text
   if (!key) return null;
   const lines = [`**metadata** \`${key.text}\``];
   if (val) lines.push(`Value: \`${val.text}\``);
@@ -345,7 +345,7 @@ function collectMetadata(node: SyntaxNode): string | null {
   const parts: string[] = [];
   for (const ch of meta.namedChildren) {
     if (ch.type === "tag_token") parts.push(ch.text);
-    else if (ch.type === "key_value_pair") parts.push(ch.text);
+    else if (ch.type === "tag_with_value") parts.push(ch.text);
   }
   return parts.length > 0 ? parts.join(", ") : null;
 }

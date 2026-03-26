@@ -49,10 +49,10 @@ schema events (pii, domain crm) {}
     (metadata_block
       (tag_token
         (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))))
 
 ================================================================================
 Fragment block
@@ -118,14 +118,14 @@ metric mrr "MRR" (source fact_subscriptions, grain monthly) {}
       (identifier))
     (nl_string)
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))))
 
 ================================================================================
 Note block with NL string
@@ -410,3 +410,4 @@ schema schema {}
   (schema_block
     (block_label
       (identifier))))
+

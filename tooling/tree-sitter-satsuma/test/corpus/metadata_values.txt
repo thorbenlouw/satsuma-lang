@@ -18,10 +18,10 @@ schema customer {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (number_literal)))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (number_literal))))))))
 
 ================================================================================
 Boolean default value
@@ -43,10 +43,10 @@ schema customer {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (boolean_literal)))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (boolean_literal))))))))
 
 ================================================================================
 Quoted default value
@@ -68,10 +68,10 @@ schema customer {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (nl_string)))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (nl_string))))))))
 
 ================================================================================
 Dotted ref value
@@ -93,12 +93,12 @@ schema customer {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (dotted_name
-              (identifier)
-              (identifier))))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (dotted_name
+                (identifier)
+                (identifier)))))))))
 
 ================================================================================
 Dotted format value
@@ -120,12 +120,12 @@ schema customer {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (dotted_name
-              (identifier)
-              (number_literal))))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (dotted_name
+                (identifier)
+                (number_literal)))))))))
 
 ================================================================================
 Tag number value
@@ -147,10 +147,10 @@ schema proto {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (number_literal)))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (number_literal))))))))
 
 ================================================================================
 Decimal metadata value
@@ -168,10 +168,10 @@ mapping 'session aggregation' (error_threshold 0.02) {
     (block_label
       (quoted_name))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (number_literal)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (number_literal))))
     (mapping_body
       (source_block
         (source_ref
@@ -197,20 +197,18 @@ schema xml_order (
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (kv_compound
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
           (identifier)
           (nl_string)))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (kv_compound
+      (tag_with_value
+        (identifier)
+        (value_text
           (identifier)
           (nl_string))))))
 
@@ -235,10 +233,9 @@ schema edi_shipment {
         (field_name
           (identifier))
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (kv_comparison
+          (tag_with_value
+            (identifier)
+            (value_text
               (identifier)
               (nl_string))))
         (schema_body
@@ -264,16 +261,15 @@ metric churn_rate (
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (kv_braced_list
+      (tag_with_value
+        (identifier)
+        (value_text
           (identifier)
           (identifier)))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
       (slice_body
         (identifier)
         (identifier)))))
@@ -294,10 +290,10 @@ mapping 'order lines' (flatten `Order.LineItems[]`) {
     (block_label
       (quoted_name))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (backtick_name)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (backtick_name))))
     (mapping_body
       (source_block
         (source_ref
@@ -326,14 +322,14 @@ schema customer {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (qualified_dotted_name
-              (qualified_name
-                (identifier)
-                (identifier))
-              (identifier))))))))
+          (tag_with_value
+            (identifier)
+            (value_text
+              (qualified_dotted_name
+                (qualified_name
+                  (identifier)
+                  (identifier))
+                (identifier)))))))))
 
 ================================================================================
 Namespace-qualified dotted ref with multiple segments
@@ -355,12 +351,13 @@ schema orders {
           (identifier))
         (type_expr)
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (qualified_dotted_name
-              (qualified_name
+          (tag_with_value
+            (identifier)
+            (value_text
+              (qualified_dotted_name
+                (qualified_name
+                  (identifier)
+                  (identifier))
                 (identifier)
-                (identifier))
-              (identifier)
-              (identifier))))))))
+                (identifier)))))))))
+
