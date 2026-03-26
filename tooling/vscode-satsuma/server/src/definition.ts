@@ -156,6 +156,21 @@ function tryContext(node: SyntaxNode): NodeContext | null {
       };
     }
 
+    case "at_ref": {
+      // @ref CST node in bare pipe text or metadata value text
+      const rawRef = node.text.slice(1); // strip leading @
+      const refName = rawRef.replace(/`([^`]+)`/g, "$1");
+      const mapping = findEnclosingMapping(node);
+      return {
+        kind: "nl_ref",
+        name: refName,
+        namespace: ns,
+        node,
+        mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
+        mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
+      };
+    }
+
     // Handle identifiers and backtick_names that are inside source_ref, spread, etc.
     case "identifier":
     case "backtick_name":
@@ -456,9 +471,10 @@ function getMappingSchemaRefs(
 // ---------- NL reference detection ----------
 
 const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
+const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 /**
- * Check if the cursor is on a backtick reference inside an NL string.
+ * Check if the cursor is on a backtick or @ref reference inside an NL string.
  * Returns a NodeContext with kind "nl_ref" if so.
  */
 function tryNlRefContext(
@@ -492,9 +508,32 @@ function tryNlRefContext(
     cursorOffset = offset + character;
   }
 
-  // Find which backtick ref (if any) the cursor is within
-  BACKTICK_REF_RE.lastIndex = 0;
+  // Find which ref (backtick or @ref) the cursor is within
+  // Try @ref first (preferred modern syntax)
+  AT_REF_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
+  while ((match = AT_REF_RE.exec(text)) !== null) {
+    const refStart = match.index;
+    const refEnd = refStart + match[0].length;
+    if (cursorOffset >= refStart && cursorOffset < refEnd) {
+      // Strip leading @ and backtick delimiters from the ref name
+      const rawRef = match[0].slice(1);
+      const refName = rawRef.replace(/`([^`]+)`/g, "$1");
+      const ns = findEnclosingNamespace(nlNode);
+      const mapping = findEnclosingMapping(nlNode);
+      return {
+        kind: "nl_ref",
+        name: refName,
+        namespace: ns,
+        node: nlNode,
+        mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
+        mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
+      };
+    }
+  }
+
+  // Fall back to backtick refs (backward compat)
+  BACKTICK_REF_RE.lastIndex = 0;
   while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
     const refStart = match.index;
     const refEnd = refStart + match[0].length;

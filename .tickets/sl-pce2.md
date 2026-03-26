@@ -1,6 +1,6 @@
 ---
 id: sl-pce2
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T06:17:23Z
@@ -20,3 +20,9 @@ Add a dedicated tree-sitter corpus test file (e.g. test/corpus/at_ref.txt) for t
 - Covers escaped \@ (literal @ in NL)
 - All corpus tests pass (tree-sitter test)
 
+
+## Notes
+
+**2026-03-26T07:10:07Z**
+
+Added 12 corpus test cases in at_ref.txt covering: bare identifier, dotted field, namespace-qualified schema, namespace-qualified field, backtick segment, multiple refs, metadata value text (simple + ns-qualified), NL string opacity, multiline string opacity, escaped @, and mixed pipe text. All 266 corpus tests pass.

@@ -1,6 +1,6 @@
 ---
 id: sl-7vsy
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T06:17:27Z
@@ -21,3 +21,9 @@ Add LSP-level support for @ref mentions in NL strings: hover (show referenced sc
 - All existing LSP tests continue to pass
 - New tests added for @ref LSP features
 
+
+## Notes
+
+**2026-03-26T07:15:21Z**
+
+Added @ref support in definition.ts (tryNlRefContext detects @ref in NL strings, tryContext handles at_ref CST nodes in bare pipe/value text) and semantic-tokens.ts (@ref highlighting in NL strings). Go-to-definition and hover now work for @ref mentions. 4 new LSP tests added. All 158 LSP tests pass.

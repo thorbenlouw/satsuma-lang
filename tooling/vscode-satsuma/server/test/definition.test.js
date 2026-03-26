@@ -278,4 +278,49 @@ mapping \`test\` {
     const loc = Array.isArray(result) ? result[0] : result;
     assert.equal(loc.range.start.line, 1); // customer_id field on line 1
   });
+
+  it("jumps from @ref in NL string to block definition", () => {
+    // Line 6: "  -> display { "Look up @customers table" }"
+    const result = definition(
+      {
+        "file:///a.stm": `schema customers {
+  id UUID
+}
+mapping \`test\` {
+  source { customers }
+  target { dim }
+  -> display { "Look up @customers table" }
+}`,
+      },
+      "file:///a.stm",
+      6,
+      25, // cursor inside @customers
+    );
+    assert.ok(result, "Expected definition for @ref");
+    const loc = Array.isArray(result) ? result[0] : result;
+    assert.equal(loc.range.start.line, 0); // schema customers on line 0
+  });
+
+  it("jumps from @ref in NL string to schema field", () => {
+    // Line 7: "  -> full_name { "Concat @customer_id with name" }"
+    const result = definition(
+      {
+        "file:///a.stm": `schema src {
+  customer_id UUID (pk)
+  name VARCHAR
+}
+mapping \`test\` {
+  source { src }
+  target { dim }
+  -> full_name { "Concat @customer_id with name" }
+}`,
+      },
+      "file:///a.stm",
+      7,
+      26, // cursor inside @customer_id
+    );
+    assert.ok(result, "Expected definition for @ref field");
+    const loc = Array.isArray(result) ? result[0] : result;
+    assert.equal(loc.range.start.line, 1); // customer_id field on line 1
+  });
 });
