@@ -27,6 +27,10 @@ jobs:
         working-directory: tooling/tree-sitter-satsuma
         run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
 
+      - name: Copy WASM into CLI dist (prebuild ran before WASM existed)
+        working-directory: tooling/satsuma-cli
+        run: npm run prebuild && tsc
+
       - name: Cache workspace
         uses: actions/cache/save@v5
         with:
@@ -34,6 +38,7 @@ jobs:
             node_modules
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -58,6 +63,7 @@ jobs:
             node_modules
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -87,6 +93,7 @@ jobs:
             node_modules
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -137,6 +144,7 @@ jobs:
             node_modules
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -201,6 +209,7 @@ jobs:
             node_modules
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
