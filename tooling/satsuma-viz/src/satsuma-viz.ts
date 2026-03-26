@@ -237,6 +237,38 @@ export class SatsumaViz extends LitElement {
     .hide-notes .notes-section {
       display: none;
     }
+
+    /* Zoom/pan viewport */
+    .viewport {
+      overflow: hidden;
+      flex: 1;
+      position: relative;
+    }
+
+    .viewport-inner {
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    .zoom-indicator {
+      position: fixed;
+      bottom: 12px;
+      right: 12px;
+      font-size: 11px;
+      color: var(--sz-text-muted, #6B6560);
+      background: var(--sz-card-bg, #fff);
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      padding: 2px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 90;
+    }
+
+    .zoom-indicator.visible {
+      opacity: 1;
+    }
   `;
 
   @property({ type: Object })
@@ -261,7 +293,30 @@ export class SatsumaViz extends LitElement {
   private _nsFilter: string | null = null;
 
   @state()
+  private _zoom = 1;
+
+  @state()
+  private _panX = 0;
+
+  @state()
+  private _panY = 0;
+
+  @state()
+  private _zoomIndicatorVisible = false;
+
+  private _zoomIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+
+  @state()
   private _mappedFieldsBySchema = new Map<string, Set<string>>();
+
+  private static readonly MIN_ZOOM = 0.2;
+  private static readonly MAX_ZOOM = 3;
+
+  private _isPanning = false;
+  private _panStartX = 0;
+  private _panStartY = 0;
+  private _panStartPanX = 0;
+  private _panStartPanY = 0;
 
   override updated(changed: Map<string, unknown>) {
     if (changed.has("model") && this.model) {
@@ -321,7 +376,22 @@ export class SatsumaViz extends LitElement {
       ${this._renderToolbar(namespaces)}
       <div class=${toggleClasses}>
         ${this._renderFileNotes()}
-        ${this._renderPositioned(this._layout, filtered)}
+        <div class="viewport"
+          @wheel=${this._onWheel}
+          @mousedown=${this._onMouseDown}
+          @mousemove=${this._onMouseMove}
+          @mouseup=${this._onMouseUp}
+          @mouseleave=${this._onMouseUp}
+        >
+          <div class="viewport-inner"
+            style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._zoom});"
+          >
+            ${this._renderPositioned(this._layout, filtered)}
+          </div>
+          <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
+            ${Math.round(this._zoom * 100)}%
+          </div>
+        </div>
       </div>
     `;
   }
@@ -370,11 +440,76 @@ export class SatsumaViz extends LitElement {
   }
 
   private _fit() {
+    this._zoom = 1;
+    this._panX = 0;
+    this._panY = 0;
     this.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }
 
   private _refresh() {
     this.dispatchEvent(new Event("refresh", { bubbles: true, composed: true }));
+  }
+
+  private _onWheel(e: WheelEvent) {
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      // Zoom
+      const delta = -e.deltaY * 0.002;
+      const newZoom = Math.min(
+        SatsumaViz.MAX_ZOOM,
+        Math.max(SatsumaViz.MIN_ZOOM, this._zoom * (1 + delta)),
+      );
+
+      // Zoom toward cursor position
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      const scale = newZoom / this._zoom;
+      this._panX = mx - scale * (mx - this._panX);
+      this._panY = my - scale * (my - this._panY);
+      this._zoom = newZoom;
+
+      this._showZoomIndicator();
+    } else {
+      // Pan
+      this._panX -= e.deltaX;
+      this._panY -= e.deltaY;
+    }
+  }
+
+  private _onMouseDown(e: MouseEvent) {
+    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+      // Middle-click or Alt+click to pan
+      e.preventDefault();
+      this._isPanning = true;
+      this._panStartX = e.clientX;
+      this._panStartY = e.clientY;
+      this._panStartPanX = this._panX;
+      this._panStartPanY = this._panY;
+      (e.currentTarget as HTMLElement).style.cursor = "grabbing";
+    }
+  }
+
+  private _onMouseMove(e: MouseEvent) {
+    if (!this._isPanning) return;
+    this._panX = this._panStartPanX + (e.clientX - this._panStartX);
+    this._panY = this._panStartPanY + (e.clientY - this._panStartY);
+  }
+
+  private _onMouseUp(e: MouseEvent | Event) {
+    if (this._isPanning) {
+      this._isPanning = false;
+      (e.currentTarget as HTMLElement).style.cursor = "";
+    }
+  }
+
+  private _showZoomIndicator() {
+    this._zoomIndicatorVisible = true;
+    if (this._zoomIndicatorTimer) clearTimeout(this._zoomIndicatorTimer);
+    this._zoomIndicatorTimer = setTimeout(() => {
+      this._zoomIndicatorVisible = false;
+    }, 1000);
   }
 
   private _onNsFilterChange(e: Event) {
