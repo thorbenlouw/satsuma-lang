@@ -118,7 +118,7 @@
           </div>
           <pre class="text-sm"><code class="stm"><span class="comment">// Legacy Customer Migration</span>
 
-<span class="keyword">fragment</span> <span class="string">'audit columns'</span> {
+<span class="keyword">fragment</span> <span class="string">`audit columns`</span> {
   created_at  <span class="type">TIMESTAMPTZ</span>  <span class="constraint">(required)</span>
   updated_at  <span class="type">TIMESTAMPTZ</span>
 }
@@ -135,10 +135,10 @@
   full_name    <span class="type">VARCHAR(200)</span>  <span class="constraint">(required)</span>
   email        <span class="type">VARCHAR(255)</span>  <span class="constraint">(format email, pii)</span>
   phone        <span class="type">VARCHAR(20)</span>   <span class="constraint">(format E.164)</span>
-  ...<span class="string">'audit columns'</span>
+  ...<span class="string">`audit columns`</span>
 }
 
-<span class="keyword">mapping</span> <span class="string">'customer migration'</span> {
+<span class="keyword">mapping</span> <span class="string">`customer migration`</span> {
   <span class="keyword">source</span> { <span class="field">`legacy_customers`</span> }
   <span class="keyword">target</span> { <span class="field">`customers`</span> }
 
@@ -283,7 +283,7 @@
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           </div>
           <h3 class="text-lg font-bold text-charcoal mb-2">Machine-Parseable</h3>
-          <p class="text-warm-gray text-sm leading-relaxed">Tree-sitter grammar with 245 corpus tests. Every CLI command produces 100% deterministically correct results from the parse tree.</p>
+          <p class="text-warm-gray text-sm leading-relaxed">Tree-sitter grammar with 532 corpus tests. Every CLI command produces 100% deterministically correct results from the parse tree.</p>
         </div>
         <div class="feature-card bg-white rounded-2xl p-6 border border-charcoal/5">
           <div class="w-12 h-12 bg-charcoal rounded-xl flex items-center justify-center mb-4">
@@ -312,15 +312,15 @@
           <div class="text-sm text-warm-gray font-medium">CLI Commands</div>
         </div>
         <div class="stat-item text-center">
-          <div class="text-4xl font-extrabold text-green mb-1">245</div>
+          <div class="text-4xl font-extrabold text-green mb-1">532</div>
           <div class="text-sm text-warm-gray font-medium">Parser Tests</div>
         </div>
         <div class="stat-item text-center">
-          <div class="text-4xl font-extrabold text-orange mb-1">772</div>
+          <div class="text-4xl font-extrabold text-orange mb-1">824</div>
           <div class="text-sm text-warm-gray font-medium">CLI Tests</div>
         </div>
         <div class="stat-item text-center">
-          <div class="text-4xl font-extrabold text-green mb-1">142</div>
+          <div class="text-4xl font-extrabold text-green mb-1">179</div>
           <div class="text-sm text-warm-gray font-medium">LSP Tests</div>
         </div>
       </div>
@@ -343,7 +343,7 @@
         </div>
         <button class="copy-btn">Copy</button>
         <pre class="text-sm"><code class="stm"><span class="comment">// Legacy Customer Migration</span>
-<span class="keyword">import</span> { <span class="string">'address fields'</span> } <span class="keyword">from</span> <span class="import-path">"lib/common.stm"</span>
+<span class="keyword">import</span> { <span class="string">`address fields`</span> } <span class="keyword">from</span> <span class="import-path">"lib/common.stm"</span>
 
 <span class="keyword">schema</span> <span class="field">legacy_sqlserver</span> (<span class="constraint">note</span> <span class="string">"CUSTOMER table &mdash; SQL Server 2008"</span>) {
   CUST_ID      <span class="type">INT</span>           <span class="constraint">(pk)</span>
@@ -360,7 +360,7 @@
   tax_identifier_encrypted <span class="type">TEXT</span>          <span class="constraint">(pii, encrypt AES-256-GCM)</span>
 }
 
-<span class="keyword">mapping</span> <span class="string">'customer migration'</span> {
+<span class="keyword">mapping</span> <span class="string">`customer migration`</span> {
   <span class="keyword">source</span> { <span class="field">`legacy_sqlserver`</span> }
   <span class="keyword">target</span> { <span class="field">`postgres_db`</span> }
 
@@ -454,7 +454,7 @@
             </div>
             <div>
               <h3 class="text-xl font-bold text-charcoal">Satsuma CLI</h3>
-              <p class="text-sm text-warm-gray">21 commands &middot; 772 tests</p>
+              <p class="text-sm text-warm-gray">21 commands &middot; 824 tests</p>
             </div>
           </div>
           <div class="space-y-3 mb-6">
@@ -481,7 +481,7 @@
             </div>
             <div>
               <h3 class="text-xl font-bold text-charcoal">VS Code Extension</h3>
-              <p class="text-sm text-warm-gray">Full LSP &middot; 154 tests</p>
+              <p class="text-sm text-warm-gray">Full LSP &middot; 179 tests</p>
             </div>
           </div>
           <div class="space-y-3 mb-6">
