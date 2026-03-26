@@ -713,6 +713,11 @@
         {
           "name": "constant.character.escape.satsuma",
           "match": "\\\\."
+        },
+        {
+          "comment": "@ref structural cross-reference in NL string",
+          "name": "variable.other.reference.satsuma",
+          "match": "@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::`[^`]+`|::[a-zA-Z_][a-zA-Z0-9_-]*)?(?:\\.(?:`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*"
         }
       ]
     },
