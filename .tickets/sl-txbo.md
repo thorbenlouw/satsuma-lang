@@ -1,6 +1,6 @@
 ---
 id: sl-txbo
-status: done
+status: closed
 deps: []
 links: [sl-zufn, sl-i4go]
 created: 2026-03-26T13:54:57Z

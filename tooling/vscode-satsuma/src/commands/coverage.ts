@@ -155,7 +155,7 @@ function extractMappingInfo(
   // Walk backwards from cursor to find "mapping" keyword
   let mappingName: string | null = null;
   for (let i = cursorLine; i >= 0; i--) {
-    const match = lines[i]?.match(/^mapping\s+(?:'([^']+)'|(\S+))/);
+    const match = lines[i]?.match(/^\s*mapping\s+(?:`([^`]+)`|(\S+))/);
     if (match) {
       mappingName = match[1] ?? match[2] ?? null;
       break;
@@ -169,7 +169,7 @@ function extractMappingInfo(
   let braceDepth = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? "";
-    if (line.match(/^mapping\s/)) {
+    if (line.match(/^\s*mapping\s/)) {
       inMapping = line.includes(mappingName);
       braceDepth = 0;
     }

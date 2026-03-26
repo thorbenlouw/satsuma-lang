@@ -12,9 +12,10 @@ export function registerWhereUsedCommand(
 
       const wordRange = editor.document.getWordRangeAtPosition(
         editor.selection.active,
+        /[@]?[a-zA-Z_][a-zA-Z0-9_-]*(?:::[a-zA-Z_][a-zA-Z0-9_-]*)?(?:\.[a-zA-Z_][a-zA-Z0-9_-]*)*/,
       );
       if (!wordRange) return;
-      const word = editor.document.getText(wordRange);
+      const word = editor.document.getText(wordRange).replace(/^@/, "");
 
       const result = await runCli(cliPath, [
         "where-used",
