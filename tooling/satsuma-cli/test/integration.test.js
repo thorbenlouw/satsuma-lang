@@ -3235,6 +3235,40 @@ describe("satsuma lineage --to upstream branches (sg-pufq)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// P5.4: lineage follows @ref edges (lsp-4hai)
+// ---------------------------------------------------------------------------
+const HIDDEN_SOURCE_FIXTURE = resolve(__dirname, "fixtures/hidden-source-graph.stm");
+
+describe("satsuma lineage: @ref edge traversal (lsp-4hai)", () => {
+  it("--from follows NL-referenced schema downstream", async () => {
+    const { stdout, code } = await run("lineage", "--from", "web_profiles", HIDDEN_SOURCE_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /web_profiles/);
+    assert.match(stdout, /build dim_customer/);
+    assert.match(stdout, /dim_customer/);
+  });
+
+  it("--to includes NL-referenced schema in upstream path", async () => {
+    const { stdout, code } = await run("lineage", "--to", "dim_customer", HIDDEN_SOURCE_FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /web_profiles/);
+    assert.match(stdout, /crm_accounts/);
+    assert.match(stdout, /erp_customers/);
+  });
+
+  it("--from --json includes @ref-derived edges", async () => {
+    const { stdout, code } = await run("lineage", "--from", "web_profiles", "--json", HIDDEN_SOURCE_FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.nodes.map((n) => n.name);
+    assert.ok(names.includes("web_profiles"));
+    assert.ok(names.includes("build dim_customer"));
+    const edge = data.edges.find((e) => e.src === "web_profiles" && e.tgt === "build dim_customer");
+    assert.ok(edge, "should have edge from web_profiles to build dim_customer");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Bug fixes: fragment spread expansion across CLI commands
 // (sl-3aff, sl-h1b0, sl-wrzl, sl-t6lt, sl-zjec, sl-307v)
 // ---------------------------------------------------------------------------

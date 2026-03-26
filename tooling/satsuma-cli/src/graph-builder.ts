@@ -4,6 +4,7 @@
  * Shared by `satsuma lineage` and `satsuma graph` commands.
  */
 
+import { extractBacktickRefs, classifyRef, resolveRef } from "./nl-ref-extract.js";
 import type { WorkspaceIndex } from "./types.js";
 
 export interface GraphNode {
@@ -58,9 +59,54 @@ export function buildFullGraph(index: WorkspaceIndex): FullGraph {
     }
   }
 
-  // NL backtick references — schema-level "nl_ref" edges are emitted in
-  // buildSchemaEdges() (graph.ts), not here. The directed graph only contains
-  // edges from declared source/target blocks. See P5.3 (lsp-d4yk).
+  // NL @ref edges — promote NL schema references to directed edges so that
+  // lineage traversal follows them. Deduplicate against declared sources/targets.
+  if (index.nlRefData) {
+    const seen = new Set<string>();
+    for (const item of index.nlRefData) {
+      const mappingKey = item.namespace
+        ? `${item.namespace}::${item.mapping}`
+        : item.mapping;
+      const mapping = index.mappings.get(mappingKey);
+      if (!mapping) continue;
+
+      const allDeclared = new Set([...(mapping.sources ?? []), ...(mapping.targets ?? [])]);
+      const refs = extractBacktickRefs(item.text);
+      const mappingContext = {
+        sources: mapping.sources ?? [],
+        targets: mapping.targets ?? [],
+        namespace: item.namespace,
+      };
+
+      for (const { ref } of refs) {
+        const classification = classifyRef(ref);
+        const resolution = resolveRef(ref, mappingContext, index);
+        if (!resolution.resolved) continue;
+
+        let canonicalSchema: string | null = null;
+        if (classification === "namespace-qualified-schema" || classification === "bare") {
+          if (resolution.resolvedTo?.kind === "schema") canonicalSchema = resolution.resolvedTo.name;
+        } else if (classification === "dotted-field" || classification === "namespace-qualified-field") {
+          if (resolution.resolvedTo?.kind === "field") {
+            const fieldName = resolution.resolvedTo.name;
+            const lastDot = fieldName.lastIndexOf(".");
+            if (lastDot > 0) canonicalSchema = fieldName.slice(0, lastDot);
+          }
+        }
+        if (!canonicalSchema) continue;
+
+        const indexKey = canonicalSchema.startsWith("::") ? canonicalSchema.slice(2) : canonicalSchema;
+        if (allDeclared.has(indexKey) || allDeclared.has(canonicalSchema)) continue;
+
+        const edgeKey = `${indexKey}|${mappingKey}`;
+        if (seen.has(edgeKey)) continue;
+        seen.add(edgeKey);
+
+        addNode(indexKey, "schema");
+        addEdge(indexKey, mappingKey);
+      }
+    }
+  }
 
   return { nodes, edges };
 }
