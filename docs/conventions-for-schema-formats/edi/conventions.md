@@ -56,7 +56,7 @@ EDI is the format where the gap between the physical data and the business meani
 
 The most important Satsuma pattern for EDI is `filter` on `list_of record`. In an EDI message, the same segment type repeats with different qualifier values. In Satsuma, you model this as a filtered list:
 
-```stm
+```satsuma
 // All reference segments in the message
 // filter selects only the purchase order references
 POReferences list_of record (filter REFQUAL == "ON") {
@@ -77,7 +77,7 @@ This is how Satsuma handles the qualifier-driven nature of EDI without introduci
 
 Quantity segments are another common use of the `filter` pattern:
 
-```stm
+```satsuma
 // Only despatch quantities (qualifier 12), not ordered or invoiced
 Quantities list_of record (filter QUANTQUAL == "12") {
   QUANTQUAL  CHAR(3)
@@ -89,7 +89,7 @@ Quantities list_of record (filter QUANTQUAL == "12") {
 
 When EDI line items and their associated segments are correlated by position, use `each` blocks in mappings:
 
-```stm
+```satsuma
 each POReferences -> ShipmentHeader.asnDetails (
   note "Each PO reference generates one asnDetails entry.
         Line items and quantities are correlated by position."

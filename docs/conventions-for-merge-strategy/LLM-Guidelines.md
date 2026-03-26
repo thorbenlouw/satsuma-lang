@@ -38,7 +38,7 @@ WHEN NOT MATCHED THEN INSERT (col1, ...) VALUES (s.col1, ...);
 
 **Example:**
 ```stm
-mapping 'customer upsert' (merge upsert, match_on customer_id) {
+mapping `customer upsert` (merge upsert, match_on customer_id) {
   source { `crm_customers` }
   target { `dim_customer` }
 
@@ -74,7 +74,7 @@ FROM source s;
 
 **Example:**
 ```stm
-mapping 'page view events' (merge append) {
+mapping `page view events` (merge append) {
   source { `clickstream_raw` }
   target { `event_log` }
 
@@ -122,7 +122,7 @@ VALUES (s.match_key, TRUE, CURRENT_TIMESTAMP, ...);
 
 **Example:**
 ```stm
-mapping 'customer soft delete' (
+mapping `customer soft delete` (
   merge soft_delete,
   match_on customer_id,
   delete_flag is_deleted,
@@ -172,7 +172,7 @@ DROP TABLE target_staging;
 
 **Example:**
 ```stm
-mapping 'product catalog refresh' (merge full_refresh) {
+mapping `product catalog refresh` (merge full_refresh) {
   note {
     "If source returns fewer than 1,000 rows, abort and alert."
   }

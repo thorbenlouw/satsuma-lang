@@ -1,6 +1,6 @@
 ---
 id: sc-k40o
-status: open
+status: done
 deps: []
 links: []
 created: 2026-03-26T06:21:31Z
@@ -21,3 +21,9 @@ Extract all ```stm code blocks from docs/ convention guides (json, edi, cobol-co
 - Zero parse errors across all blocks
 - Convention guide narrative updated if syntax examples changed
 
+
+## Notes
+
+**2026-03-26T07:18:54Z**
+
+Split into child tasks: sl-num7 (merge-strategy single quotes → backticks), sl-kood (schema format snippets), sl-m5yl (remove stale tree-sitter-ambiguities.md). Governance and data-modelling blocks are clean (warnings only from illustrative import snippets, acceptable). Reports-and-models blocks validated clean.
