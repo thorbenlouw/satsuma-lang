@@ -7,35 +7,9 @@
 
 import { readdir, stat } from "fs/promises";
 import { readFileSync, statSync } from "fs";
-import { createRequire } from "module";
 import { join, dirname, extname, resolve } from "path";
 import { extractImports } from "./extract.js";
-import type { Tree } from "./types.js";
-
-interface TSParser {
-  setLanguage(lang: unknown): void;
-  parse(source: string): Tree;
-}
-
-/**
- * Lazy-initialised parser for import extraction. Defers native binding load
- * until actually needed (single-file mode with imports).
- */
-let _importParser: TSParser | null = null;
-function getImportParser(): TSParser {
-  if (!_importParser) {
-    const require = createRequire(import.meta.url);
-    // CJS interop — tree-sitter has no ESM or @types exports
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const Parser = require("tree-sitter");
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const STM = require("tree-sitter-satsuma");
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    _importParser = new Parser() as TSParser;
-    _importParser.setLanguage(STM);
-  }
-  return _importParser;
-}
+import { parseSource } from "./parser.js";
 
 /**
  * Recursively find all .stm files under `dir`.
@@ -75,8 +49,6 @@ async function walk(dir: string, acc: string[]): Promise<void> {
 function followImports(entryFile: string): string[] {
   const visited = new Set<string>();
   const queue = [entryFile];
-  const parser = getImportParser();
-
   while (queue.length > 0) {
     const filePath = queue.pop()!;
     if (visited.has(filePath)) continue;
@@ -85,7 +57,7 @@ function followImports(entryFile: string): string[] {
     let tree;
     try {
       const src = readFileSync(filePath, "utf8");
-      tree = parser.parse(src);
+      tree = parseSource(src).tree;
     } catch {
       continue;
     }

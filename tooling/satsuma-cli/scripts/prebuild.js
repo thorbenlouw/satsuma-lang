@@ -48,9 +48,10 @@ const wasmFiles = [
     label: "tree-sitter-satsuma.wasm",
   },
   {
-    src: join(cliRoot, "node_modules", "web-tree-sitter", "tree-sitter.wasm"),
-    dest: join(distDir, "tree-sitter.wasm"),
-    label: "tree-sitter.wasm (runtime)",
+    // web-tree-sitter 0.26+ renamed tree-sitter.wasm → web-tree-sitter.wasm
+    src: join(cliRoot, "node_modules", "web-tree-sitter", "web-tree-sitter.wasm"),
+    dest: join(distDir, "web-tree-sitter.wasm"),
+    label: "web-tree-sitter.wasm (runtime)",
   },
 ];
 
