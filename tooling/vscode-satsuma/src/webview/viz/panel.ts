@@ -125,6 +125,7 @@ export class VizPanel {
     uri?: string;
     line?: number;
     character?: number;
+    schemaId?: string;
   }): void {
     if (message.type === "navigate" && message.uri) {
       const uri = vscode.Uri.parse(message.uri);
@@ -135,6 +136,49 @@ export class VizPanel {
       });
     } else if (message.type === "refresh") {
       this.refresh();
+    } else if (message.type === "expandLineage" && message.schemaId) {
+      this.expandLineage(message.schemaId);
+    }
+  }
+
+  private async expandLineage(schemaId: string): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    const currentUri = editor?.document.uri.toString() ?? "";
+
+    try {
+      const linkedUris: string[] = await this.client.sendRequest(
+        "satsuma/vizLinkedFiles",
+        { schemaId, currentUri },
+      );
+
+      if (linkedUris.length === 0) {
+        return;
+      }
+
+      // Fetch VizModels for all linked files
+      const models = await Promise.all(
+        linkedUris.map((uri) =>
+          this.client.sendRequest("satsuma/vizModel", { uri }),
+        ),
+      );
+
+      const themeKind = vscode.window.activeColorTheme.kind;
+      const isDark =
+        themeKind === vscode.ColorThemeKind.Dark ||
+        themeKind === vscode.ColorThemeKind.HighContrast;
+
+      // Send expanded models to the webview
+      this.panel.webview.postMessage({
+        type: "expandedModels",
+        schemaId,
+        models: models.filter(Boolean),
+        isDark,
+      });
+    } catch (err) {
+      this.panel.webview.postMessage({
+        type: "error",
+        message: `Failed to expand lineage: ${err instanceof Error ? err.message : String(err)}`,
+      });
     }
   }
 

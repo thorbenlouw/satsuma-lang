@@ -29,6 +29,14 @@ vizEl.addEventListener("refresh", () => {
   vscode.postMessage({ type: "refresh" });
 });
 
+// Listen for expand-lineage events from schema cards
+vizEl.addEventListener("expand-lineage", (ev: CustomEvent) => {
+  const schemaId = ev.schemaId ?? ev.detail?.schemaId;
+  if (schemaId) {
+    vscode.postMessage({ type: "expandLineage", schemaId });
+  }
+});
+
 // Receive messages from the extension host
 window.addEventListener("message", (event) => {
   const msg = event.data;
@@ -43,6 +51,8 @@ window.addEventListener("message", (event) => {
 
     // Set model on the component
     vizEl.model = msg.payload;
+  } else if (msg.type === "expandedModels") {
+    vizEl.addExpandedModels(msg.schemaId, msg.models);
   } else if (msg.type === "error") {
     root.textContent = "";
     const div = document.createElement("div");

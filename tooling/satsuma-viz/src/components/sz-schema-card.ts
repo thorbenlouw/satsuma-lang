@@ -1,7 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { SchemaCard, FieldEntry } from "../model.js";
-import { SzNavigateEvent } from "../satsuma-viz.js";
+import { SzNavigateEvent, SzExpandLineageEvent } from "../satsuma-viz.js";
 
 @customElement("sz-schema-card")
 export class SzSchemaCard extends LitElement {
@@ -180,6 +180,34 @@ export class SzSchemaCard extends LitElement {
       display: none;
     }
 
+    .lineage-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px 12px 6px;
+      border-top: 1px dashed var(--sz-card-border, rgba(45, 42, 38, 0.08));
+    }
+
+    .lineage-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      border-radius: 4px;
+      background: transparent;
+      color: var(--sz-text-muted, #6B6560);
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    .lineage-btn:hover {
+      background: var(--sz-badge-bg, #FFF3E8);
+      color: var(--sz-orange-dark, #D97726);
+      border-color: var(--sz-orange-dark, #D97726);
+    }
+
     .notes-section {
       border-top: 1px dashed var(--sz-card-border, rgba(45, 42, 38, 0.08));
       padding: 6px 12px;
@@ -257,8 +285,24 @@ export class SzSchemaCard extends LitElement {
           ${s.fields.map((f) => this._renderField(f, 0))}
         </div>
         ${hasNotes ? this._renderNotes(s.notes) : ""}
+        ${s.hasExternalLineage ? this._renderLineageButtons(s.qualifiedId) : ""}
       </div>
     `;
+  }
+
+  private _renderLineageButtons(qualifiedId: string) {
+    return html`
+      <div class="lineage-buttons">
+        <button class="lineage-btn" @click=${(e: Event) => { e.stopPropagation(); this._expandLineage(qualifiedId); }}
+          title="Expand cross-file lineage">
+          &#9664; upstream &middot; downstream &#9654;
+        </button>
+      </div>
+    `;
+  }
+
+  private _expandLineage(schemaId: string) {
+    this.dispatchEvent(new SzExpandLineageEvent(schemaId));
   }
 
   private _renderNotes(notes: import("../model.js").NoteBlock[]) {
