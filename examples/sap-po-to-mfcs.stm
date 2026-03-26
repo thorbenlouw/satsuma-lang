@@ -138,7 +138,7 @@ mapping `sap po to mfcs` {
 
   Items.EINDT -> notBeforeDate {
     "Take the earliest non-null requested delivery date across all lines.
-     If all line dates are null, fall back to `BEDAT`."
+     If all line dates are null, fall back to @BEDAT."
   }
 
   HeaderText -> comments { trim | max_length(1000) }
@@ -156,13 +156,13 @@ mapping `sap po to mfcs` {
     }
 
     .MENGE -> .orderedQty {
-      "If `MEINS` represents supplier packs or cases, convert to the target
+      "If @MEINS represents supplier packs or cases, convert to the target
        stocking quantity using the MFCS supplier-item pack configuration.
        Otherwise preserve the numeric quantity. Round to 4 decimal places."
     }
 
     .NETPR -> .unitCost {
-      "If `PEINH` is greater than 1, divide `NETPR` by `PEINH` to derive the
+      "If @PEINH is greater than 1, divide @NETPR by @PEINH to derive the
        per-unit cost in document currency. Round to 4 decimal places."
     }
 

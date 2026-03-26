@@ -502,7 +502,7 @@ function checkFieldRefMetadata(
     if (field.metadata) {
       for (const m of field.metadata) {
         if (m.kind === "kv" && m.key === "ref") {
-          const refTarget = m.value.split(".")[0]!;
+          const refTarget = m.value.replace(/^@/, "").split(".")[0]!;
           if (!resolveEntityRef(refTarget, currentNs, index.schemas)) {
             diagnostics.push({
               file,

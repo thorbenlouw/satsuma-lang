@@ -149,11 +149,11 @@ mapping `order headers` {
   }
 
   -> discount_total {
-    "Sum `DiscountAmount` across the order discount entries for the current order.
+    "Sum @DiscountAmount across the order discount entries for the current order.
      If no discounts, emit 0.00."
   }
 
-  -> line_count { "Count `LineNumber` entries for the current order." }
+  -> line_count { "Count @LineNumber entries for the current order." }
 
   -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
 }

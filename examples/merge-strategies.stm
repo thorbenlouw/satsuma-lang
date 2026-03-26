@@ -143,11 +143,11 @@ mapping `customer soft delete` (
   note {
     """
     Processes the daily CRM deletion feed. Customers that appear in
-    this feed are marked as deleted in `dim_customer` — they are never
+    this feed are marked as deleted in @dim_customer — they are never
     physically removed.
 
-    Downstream queries should filter on `is_deleted = false` for the
-    active customer view. The `deleted_at` timestamp enables audit
+    Downstream queries should filter on @is_deleted = false for the
+    active customer view. The @deleted_at timestamp enables audit
     reporting on customer churn timing.
     """
   }
@@ -165,7 +165,7 @@ mapping `product catalog refresh` (merge full_refresh) {
   note {
     """
     Nightly full refresh from the product information management system.
-    The entire `dim_product` table is replaced with the latest catalog.
+    The entire @dim_product table is replaced with the latest catalog.
 
     //! **Safety rule:** If the source returns fewer than 500 products,
     //! abort the load and alert the data engineering on-call. The catalog

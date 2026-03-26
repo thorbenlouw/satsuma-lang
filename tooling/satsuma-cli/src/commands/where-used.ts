@@ -147,7 +147,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
         if (!field.metadata) continue;
         for (const m of field.metadata) {
           if (m.kind === "kv" && m.key === "ref") {
-            const refTarget = m.value.split(".")[0];
+            const refTarget = m.value.replace(/^@/, "").split(".")[0];
             if (refTarget === name || refTarget === name.split("::").pop()) {
               refs.push({ kind: "ref_metadata", name: `${schemaName}.${field.name}`, file: schema.file, row: schema.row + 1 });
             }

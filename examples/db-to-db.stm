@@ -1,5 +1,5 @@
 // Satsuma v2 — Legacy Customer Migration
-import { `address fields` } from "lib/common.stm"
+import { `address fields` } from "common.stm"
 
 note {
   """
@@ -58,6 +58,16 @@ schema legacy_sqlserver (
 }
 
 // --- Target ---
+schema addresses (note "Deduplicated address table — PostgreSQL 16") {
+  id           UUID          (pk, required)
+  line1        VARCHAR(200)  (required)
+  line2        VARCHAR(200)
+  city         VARCHAR(100)  (required)
+  state        VARCHAR(50)
+  postal_code  VARCHAR(20)   (required)
+  country      ISO-3166-a2   (required)
+}
+
 schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
   customer_id               UUID          (pk, required)
   legacy_customer_id        INTEGER       (unique, indexed)
@@ -68,7 +78,7 @@ schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
   company_name              VARCHAR(200)
   email                     VARCHAR(255)  (format email, pii)
   phone                     VARCHAR(20)   (format E.164)
-  address_id                UUID          (ref addresses.id)
+  address_id                UUID          (ref @addresses.id)
   credit_limit_cents        BIGINT        (default 0)
   status                    VARCHAR(20) (enum {active, suspended, closed, delinquent}, required)
   created_at                TIMESTAMPTZ   (required)
@@ -110,8 +120,8 @@ mapping `customer migration` {
 
   // --- Name Handling ---
   -> display_name {
-    "If `CUST_TYPE` is null or `R`, trim and concat `FIRST_NM` + ` ` + `LAST_NM`.
-     Otherwise, trim `COMPANY_NM`."
+    "If @CUST_TYPE is null or R, trim and concat @FIRST_NM + ' ' + @LAST_NM.
+     Otherwise, trim @COMPANY_NM."
   }
 
   FIRST_NM -> first_name { trim | title_case | null_if_empty }
@@ -124,14 +134,14 @@ mapping `customer migration` {
   PHONE_NBR -> phone {
     "Extract all digits. If 11 digits starting with 1, treat as US.
      If 10 digits, assume US country code +1. Format as E.164.
-     For other patterns, attempt to determine country from `COUNTRY_CD`."
+     For other patterns, attempt to determine country from @COUNTRY_CD."
     | warn_if_invalid
   }
 
   // --- Address (FK to separate table) ---
   -> address_id {
-    "Create a record in the addresses table using `ADDR_LINE_1`, `ADDR_LINE_2`,
-     `CITY`, `STATE_PROV`, `ZIP_POSTAL`, `COUNTRY_CD`. Normalize `STATE_PROV` to
+    "Create a record in the addresses table using @ADDR_LINE_1, @ADDR_LINE_2,
+     @CITY, @STATE_PROV, @ZIP_POSTAL, @COUNTRY_CD. Normalize @STATE_PROV to
      2-char code (handle full names). Deduplicate against existing addresses
      by normalized street + zip. Return the UUID of the new or existing record."
   }

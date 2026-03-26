@@ -111,14 +111,14 @@ mapping `edi to mfcs` {
   BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo { trim | max_length(30) }
 
   DateTime.DATETIME -> ShipmentHeader.shipDate {
-    "Parse using sibling field `DATEFMT`: if 102 parse as CCYYMMDD,
+    "Parse using sibling field @DATEFMT: if 102 parse as CCYYMMDD,
      if 203 parse as CCYYMMDDHHMM. Output format: YYYY-MM-DD."
   }
 
   -> ShipmentHeader.asnType { "0" }  // default: ASN Shipment
 
   POReferences.REFNUM -> ShipmentHeader.toLocation {
-    "Extract PO number from `REFNUM` (digits before `/`).
+    "Extract PO number from @REFNUM (digits before /).
      Look up the PO in MFCS to determine the delivery location."
   }
 
@@ -134,24 +134,28 @@ mapping `edi to mfcs` {
   }
 
   // --- Detail lines grouped by PO ---
-  each POReferences -> ShipmentHeader.asnDetails (
-    note "Each PO reference generates one asnDetails entry.
-          Line items and quantities are correlated by position."
-  ) {
+  each POReferences -> ShipmentHeader.asnDetails (note "Each PO reference generates one asnDetails entry.") {
     .REFNUM -> .orderNo { split("/") | first | to_number }
+  }
 
-    LineItems -> .items {
-      .ITEMNO -> .item {
-        trim
-        | "Retrieve MFCS item number using the supplier's traded code
-           from the MFCS supplier item cross-reference."
-      }
+  // --- Line items and quantities (correlated by position within PO group) ---
+  each LineItems -> ShipmentHeader.asnDetails.items (
+    note "Correlate to @POReferences by position within the EDI message group."
+  ) {
+    .ITEMNO -> .item {
+      trim
+      | "Retrieve MFCS item number using the supplier's traded code
+         from the MFCS supplier item cross-reference."
+    }
+  }
 
-      Quantities.QUANTITY -> .unitQuantity {
-        "Divide by 10000 to account for 4 implied decimal places.
-         Then multiply by PO pack size from MFCS (Action A-504).
-         Pack size retrieved from MFCS PO line matching this item."
-      }
+  each Quantities -> ShipmentHeader.asnDetails.items (
+    note "Match to @LineItems by position — each quantity corresponds to one line item."
+  ) {
+    .QUANTITY -> .unitQuantity {
+      "Divide by 10000 to account for 4 implied decimal places.
+       Then multiply by PO pack size from MFCS (Action A-504).
+       Pack size retrieved from MFCS PO line matching this item."
     }
   }
 
