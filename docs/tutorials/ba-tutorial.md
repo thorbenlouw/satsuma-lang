@@ -420,7 +420,7 @@ schema commerce_order (
   namespace ord "http://example.com/commerce/order/v2",
   namespace com "http://example.com/common/v1"
 ) {
-  record Order (xpath "/ord:OrderMessage/ord:Order") {
+  Order record (xpath "/ord:OrderMessage/ord:Order") {
     OrderId   STRING  (xpath "ord:OrderId")
     Channel   STRING  (xpath "ord:Channel")
   }
@@ -675,7 +675,7 @@ schema churn_predictor (
   refresh "daily",
   registry mlflow experiment "churn-v3"
 ) {
-  record features {
+  features record {
     note {
       """
       - days_since_last_order (from fact_orders)
@@ -687,7 +687,7 @@ schema churn_predictor (
     }
   }
 
-  record output {
+  output record {
     churn_probability  DECIMAL(5,4)
     churn_risk_tier    VARCHAR(10)  (enum {low, medium, high})
   }
