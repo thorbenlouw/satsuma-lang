@@ -31,7 +31,7 @@ transform `clean email` {
           (nl_string))))))
 
 ================================================================================
-Single token_call step
+Single bare identifier pipe step
 ================================================================================
 
 transform `normalize` {
@@ -50,7 +50,7 @@ transform `normalize` {
           (identifier))))))
 
 ================================================================================
-Token call with arguments
+Function-like pipe step with arguments
 ================================================================================
 
 transform `coerce` {
@@ -71,7 +71,7 @@ transform `coerce` {
           (identifier))))))
 
 ================================================================================
-Multi-step pipe chain with token calls
+Multi-step pipe chain with identifiers
 ================================================================================
 
 transform `clean email` {
@@ -96,7 +96,7 @@ transform `clean email` {
           (identifier))))))
 
 ================================================================================
-Pipe chain with NL string then token calls
+Pipe chain with NL string then identifiers
 ================================================================================
 
 transform `normalize phone` {

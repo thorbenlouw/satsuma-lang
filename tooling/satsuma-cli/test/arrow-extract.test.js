@@ -108,7 +108,7 @@ describe("extractArrowRecords", () => {
     assert.equal(records[0].line, 10);
   });
 
-  it("extracts a structural arrow with token_call pipeline", () => {
+  it("extracts a structural arrow with identifier pipeline", () => {
     const steps = [
       pipeStep("pipe_text", "trim"),
       pipeStep("pipe_text", "lowercase"),

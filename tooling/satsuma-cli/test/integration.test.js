@@ -1065,7 +1065,7 @@ describe("satsuma arrows", () => {
     assert.match(stdout, /\[none\]/);
   });
 
-  it("shows structural classification on token_call pipeline", async () => {
+  it("shows structural classification on identifier pipeline", async () => {
     const { stdout, code } = await run("arrows", "legacy_sqlserver.FIRST_NM", DB);
     assert.equal(code, 0);
     assert.match(stdout, /\[structural\]/);

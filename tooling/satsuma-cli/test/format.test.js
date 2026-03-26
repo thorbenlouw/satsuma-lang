@@ -310,7 +310,7 @@ describe("edge cases", () => {
     assert.ok(out.includes("      x  INT"));
   });
 
-  it("handles arithmetic steps in pipe chains", () => {
+  it("handles arithmetic operators in pipe chains", () => {
     const src = `mapping test {
   source { s }
   target { t }

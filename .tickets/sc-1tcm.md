@@ -1,6 +1,6 @@
 ---
 id: sc-1tcm
-status: open
+status: done
 deps: []
 links: []
 created: 2026-03-26T07:01:13Z
@@ -21,4 +21,12 @@ Feature 22 simplified the grammar (collapsed metadata value forms, unified quoti
 - No tests remain that validate removed v1/pre-Feature-22 syntax
 - All remaining tests pass
 - Test count may decrease — that is expected and acceptable
+
+## Notes
+
+**2026-03-26T12:00:00Z**
+
+Cause: Feature 22 grammar simplification removed node types (token_call, arithmetic_step, kv_value forms, quoted_name) but left 5 corpus test titles and 3 CLI test titles referencing the old concepts. No test code or assertions referenced removed node types — the test suite had been properly updated during the simplification, only the descriptive titles lagged.
+
+Fix: Renamed 5 corpus test titles (transforms.txt ×4, pipeline_extensions.txt ×1) and 3 CLI test titles (arrow-extract.test.js, integration.test.js, format.test.js) from pre-simplification terminology (token_call, arithmetic steps) to current grammar concepts (identifier pipeline, pipe step, arithmetic operators). All 824 CLI tests and 266 corpus tests pass. No tests needed removal — all validate distinct, valuable input patterns.
 

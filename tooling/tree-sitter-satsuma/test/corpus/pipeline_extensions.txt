@@ -39,7 +39,7 @@ mapping {
               (identifier))))))))
 
 ================================================================================
-Token call with dotted path argument
+Pipe step with dotted path argument
 ================================================================================
 
 mapping {
