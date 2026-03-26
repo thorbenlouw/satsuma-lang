@@ -1,6 +1,6 @@
 ---
 id: f2v-09bt
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T23:15:53Z
@@ -21,3 +21,13 @@ Add a minimap overview in the corner of the visualization viewport for large dia
 - Click on minimap navigates to that area
 - Drag on minimap pans the viewport
 
+
+## Notes
+
+**2026-03-26T23:32:43Z**
+
+Minimap renders as a 160x100px overlay in the bottom-right of the viewport. Shows scaled-down card outlines and an orange viewport rectangle. Click on minimap navigates to that area.
+
+**2026-03-26T23:34:15Z**
+
+Minimap renders as a 160x100px overlay in the bottom-right. Click navigates.

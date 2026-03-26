@@ -1,6 +1,6 @@
 ---
 id: f2v-fsxc
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T23:16:00Z
@@ -20,3 +20,9 @@ Add export functionality to render the current visualization view as an SVG or P
 - PNG export renders at 2x resolution for clarity
 - Export captures current view state (including collapsed/expanded cards)
 
+
+## Notes
+
+**2026-03-26T23:34:15Z**
+
+Export SVG button in toolbar serializes the current layout as a standalone SVG. Webview dispatches export event, panel shows save dialog and writes the file.

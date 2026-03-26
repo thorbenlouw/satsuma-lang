@@ -126,6 +126,8 @@ export class VizPanel {
     line?: number;
     character?: number;
     schemaId?: string;
+    content?: string;
+    format?: string;
   }): void {
     if (message.type === "navigate" && message.uri) {
       const uri = vscode.Uri.parse(message.uri);
@@ -138,6 +140,19 @@ export class VizPanel {
       this.refresh();
     } else if (message.type === "expandLineage" && message.schemaId) {
       this.expandLineage(message.schemaId);
+    } else if (message.type === "export" && message.content) {
+      this.exportSvg(message.content as string);
+    }
+  }
+
+  private async exportSvg(content: string): Promise<void> {
+    const uri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file("mapping-viz.svg"),
+      filters: { "SVG files": ["svg"] },
+    });
+    if (uri) {
+      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
+      vscode.window.showInformationMessage(`Saved SVG to ${uri.fsPath}`);
     }
   }
 
