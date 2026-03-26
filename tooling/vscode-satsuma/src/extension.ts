@@ -14,7 +14,6 @@ import { registerWarningsCommand } from "./commands/warnings";
 import { registerSummaryCommand } from "./commands/summary";
 import { registerArrowsCommand } from "./commands/arrows";
 import { registerCoverageCommand } from "./commands/coverage";
-import { GraphPanel } from "./webview/graph/panel";
 import { LineagePanel } from "./webview/lineage/panel";
 import { VizPanel } from "./webview/viz/panel";
 
@@ -43,7 +42,10 @@ export function activate(context: ExtensionContext): void {
       cliPath,
     },
     synchronize: {
-      fileEvents: workspace.createFileSystemWatcher("**/*.stm"),
+      fileEvents: [
+        workspace.createFileSystemWatcher("**/*.stm"),
+        workspace.createFileSystemWatcher("**/*.satsuma"),
+      ],
     },
   };
 
@@ -70,13 +72,6 @@ export function activate(context: ExtensionContext): void {
   registerArrowsCommand(context, cliPath, outputChannel);
 
   registerCoverageCommand(context, cliPath, client);
-
-  // Graph webview
-  context.subscriptions.push(
-    vscode.commands.registerCommand("satsuma.showGraph", () => {
-      GraphPanel.createOrShow(context.extensionUri, cliPath);
-    }),
-  );
 
   // Mapping visualization webview
   context.subscriptions.push(

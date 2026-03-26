@@ -1,6 +1,6 @@
 ---
 id: f2v-1tgg
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T23:39:18Z
@@ -20,3 +20,9 @@ Register Satsuma commands (Show Mapping Visualization, Trace Field Lineage, etc.
 - Commands only appear when editorLangId == satsuma
 - Commands work when invoked from the context menu
 
+
+## Notes
+
+**2026-03-26T23:46:18Z**
+
+Five Satsuma commands added to editor/context menu: Show Viz, Where Used, Show Arrows, Trace Lineage, Show Coverage. Grouped under satsuma@ groups.

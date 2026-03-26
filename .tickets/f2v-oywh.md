@@ -1,6 +1,6 @@
 ---
 id: f2v-oywh
-status: open
+status: closed
 deps: [f2v-hp48]
 links: []
 created: 2026-03-26T23:39:34Z
@@ -20,3 +20,9 @@ The editor title eye icon (Show Mapping Visualization) should appear for both .s
 - Clicking opens the VizPanel for either extension
 - Command palette entry also works for .satsuma files
 
+
+## Notes
+
+**2026-03-26T23:46:18Z**
+
+Eye icon uses editorLangId == satsuma which covers both .stm and .satsuma since both map to the satsuma language ID. VizPanel save watcher also matches .satsuma files.

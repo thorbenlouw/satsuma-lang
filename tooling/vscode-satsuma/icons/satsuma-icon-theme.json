@@ -1,0 +1,11 @@
+{
+  "iconDefinitions": {
+    "satsuma": {
+      "iconPath": "./satsuma-file.svg"
+    }
+  },
+  "fileExtensions": {
+    "stm": "satsuma",
+    "satsuma": "satsuma"
+  }
+}

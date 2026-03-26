@@ -55,7 +55,7 @@ export class VizPanel {
 
     // Refresh on save
     const saveWatcher = vscode.workspace.onDidSaveTextDocument((doc) => {
-      if (doc.fileName.endsWith(".stm")) {
+      if (doc.fileName.endsWith(".stm") || doc.fileName.endsWith(".satsuma")) {
         this.refresh();
       }
     });
