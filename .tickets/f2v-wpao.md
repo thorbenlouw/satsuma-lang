@@ -1,6 +1,6 @@
 ---
 id: f2v-wpao
-status: open
+status: closed
 deps: [f2v-u4vs]
 links: []
 created: 2026-03-26T23:03:55Z
@@ -23,3 +23,9 @@ Add a toolbar above the visualization canvas with: Schema Only toggle (hides arr
 - Namespace filter dropdown appears when namespaces exist
 - Toolbar persists across model updates
 
+
+## Notes
+
+**2026-03-26T23:10:38Z**
+
+Toolbar added to root satsuma-viz component with Schema Only toggle, Show Notes toggle, Fit button, Refresh button, and namespace filter dropdown. CSS classes schema-only and hide-notes control visibility. Refresh dispatches an event to the VS Code host.

@@ -154,6 +154,89 @@ export class SatsumaViz extends LitElement {
       word-break: break-word;
       border-top: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
     }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 12px;
+      background: var(--sz-card-bg, #fff);
+      border-bottom: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      font-family: var(--sz-font-sans, system-ui);
+      font-size: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .toolbar-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--sz-text, #2D2A26);
+      margin-right: 12px;
+      padding: 4px 0;
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      margin: 0 6px;
+    }
+
+    .toolbar-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--sz-text-muted, #6B6560);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .toolbar-btn:hover {
+      background: rgba(45, 42, 38, 0.05);
+      color: var(--sz-text, #2D2A26);
+    }
+
+    .toolbar-btn[data-active] {
+      background: var(--sz-badge-bg, #FFF3E8);
+      color: var(--sz-orange-dark, #D97726);
+      border-color: var(--sz-orange-dark, #D97726);
+    }
+
+    .toolbar-spacer {
+      flex: 1;
+    }
+
+    .toolbar-select {
+      padding: 4px 8px;
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      border-radius: 4px;
+      background: var(--sz-card-bg, #fff);
+      color: var(--sz-text, #2D2A26);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* Hide edges when schema-only mode */
+    .schema-only sz-edge-layer {
+      display: none;
+    }
+
+    /* Hide notes when notes hidden */
+    .hide-notes .file-notes,
+    .hide-notes .notes-section {
+      display: none;
+    }
   `;
 
   @property({ type: Object })
@@ -167,6 +250,15 @@ export class SatsumaViz extends LitElement {
 
   @state()
   private _fileNotesExpanded = false;
+
+  @state()
+  private _schemaOnly = false;
+
+  @state()
+  private _showNotes = true;
+
+  @state()
+  private _nsFilter: string | null = null;
 
   @state()
   private _mappedFieldsBySchema = new Map<string, Set<string>>();
@@ -203,23 +295,98 @@ export class SatsumaViz extends LitElement {
       return html`<div class="empty">No schemas found in this file</div>`;
     }
 
+    const filtered = this._filterNamespaces(namespaces);
+    const toggleClasses = `${this._schemaOnly ? "schema-only" : ""} ${!this._showNotes ? "hide-notes" : ""}`;
+
     // If layout hasn't computed yet, show flex fallback
     if (!this._layout && !this._layoutError) {
-      return html`<div class="loading">Computing layout...</div>`;
+      return html`
+        ${this._renderToolbar(namespaces)}
+        <div class="loading">Computing layout...</div>
+      `;
     }
 
     // If layout failed, fall back to simple flex layout
     if (this._layoutError || !this._layout) {
       return html`
-        ${this._renderFileNotes()}
-        ${this._renderFlexFallback(namespaces)}
+        ${this._renderToolbar(namespaces)}
+        <div class=${toggleClasses}>
+          ${this._renderFileNotes()}
+          ${this._renderFlexFallback(filtered)}
+        </div>
       `;
     }
 
     return html`
-      ${this._renderFileNotes()}
-      ${this._renderPositioned(this._layout, namespaces)}
+      ${this._renderToolbar(namespaces)}
+      <div class=${toggleClasses}>
+        ${this._renderFileNotes()}
+        ${this._renderPositioned(this._layout, filtered)}
+      </div>
     `;
+  }
+
+  private _renderToolbar(allNamespaces: NamespaceGroup[]) {
+    const namedNs = allNamespaces.filter((ns) => ns.name);
+    const hasNamespaces = namedNs.length > 0;
+
+    return html`
+      <div class="toolbar">
+        <span class="toolbar-title">&#9673; Mapping Viz</span>
+        <div class="toolbar-sep"></div>
+        <button
+          class="toolbar-btn"
+          ?data-active=${this._schemaOnly}
+          @click=${() => { this._schemaOnly = !this._schemaOnly; }}
+          title="Show only schema cards, hide arrows and transforms"
+        >Schema Only</button>
+        <button
+          class="toolbar-btn"
+          ?data-active=${this._showNotes}
+          @click=${() => { this._showNotes = !this._showNotes; }}
+          title="Show or hide notes"
+        >Show Notes</button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" @click=${this._fit} title="Fit all content in viewport">Fit</button>
+        <button class="toolbar-btn" @click=${this._refresh} title="Re-fetch visualization data">&#8635; Refresh</button>
+        ${hasNamespaces
+          ? html`
+              <div class="toolbar-sep"></div>
+              <select
+                class="toolbar-select"
+                @change=${this._onNsFilterChange}
+                title="Filter by namespace"
+              >
+                <option value="" ?selected=${this._nsFilter === null}>All namespaces</option>
+                ${namedNs.map(
+                  (ns) => html`<option value=${ns.name!} ?selected=${this._nsFilter === ns.name}>${ns.name}</option>`
+                )}
+              </select>
+            `
+          : ""}
+        <div class="toolbar-spacer"></div>
+      </div>
+    `;
+  }
+
+  private _fit() {
+    this.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }
+
+  private _refresh() {
+    this.dispatchEvent(new Event("refresh", { bubbles: true, composed: true }));
+  }
+
+  private _onNsFilterChange(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this._nsFilter = val || null;
+  }
+
+  private _filterNamespaces(namespaces: NamespaceGroup[]): NamespaceGroup[] {
+    if (!this._nsFilter) return namespaces;
+    return namespaces.filter(
+      (ns) => ns.name === this._nsFilter || (!ns.name && namespaces.some((n) => n.name === this._nsFilter))
+    );
   }
 
   private _renderFileNotes() {
