@@ -56,7 +56,7 @@ The `format`, `schema_registry`, and `tag` metadata tell both humans and AI agen
 ### Step 2: Describe the mapping logic
 
 ```stm
-mapping 'event ingest' {
+mapping `event ingest` {
   source { `commerce_event_pb` }
   target { `event_store` }
 
@@ -261,14 +261,14 @@ schema api_response (format json) {
   risk_tier    STRING
 }
 
-mapping 'build request' {
+mapping `build request` {
   source { `internal_record` }
   target { `api_request` }
   id -> customer_id
   -> query_type { "full_check" }
 }
 
-mapping 'process response' {
+mapping `process response` {
   source { `api_response` }
   target { `enriched_record` }
   credit_score -> credit_score
@@ -302,7 +302,7 @@ The `evolution backward` and `schema_registry` metadata tell an AI agent — and
 Use `note { }` blocks to document error handling strategies directly in the spec:
 
 ```stm
-mapping 'ingest events' {
+mapping `ingest events` {
   source { `raw_event` }
   target { `processed_event` }
 
@@ -326,7 +326,7 @@ This is integration metadata that traditionally lives in a runbook or a Jira tic
 ### Idempotency Keys and Deduplication Hints
 
 ```stm
-mapping 'order ingest' (
+mapping `order ingest` (
   idempotency_key order_id,
   dedup_window "24h",
   note "Deduplicate on order_id within a 24-hour window. Late duplicates are logged and dropped."
