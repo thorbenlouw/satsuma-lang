@@ -9,13 +9,13 @@ priority: 3
 assignee: Thorben Louw
 tags: [site, infra]
 ---
-# Migrate site/ to Jekyll or Hugo static site generator
+# Migrate site/ to Eleventy (11ty) static site generator
 
-The site/ directory is currently raw HTML with Tailwind CDN. Migrate to a static site generator (Jekyll or Hugo) so that Satsuma code examples, feature descriptions, and page structure can be maintained via templates and partials. This makes it easy to update examples across all pages when the language evolves (e.g. syntax changes like Feature 22) without manually editing each HTML file. Evaluate Jekyll (simpler, GitHub Pages native) vs Hugo (faster builds, richer templating) and choose based on project needs.
+The site/ directory is currently raw HTML with Tailwind CDN. Migrate to Eleventy (11ty) so that Satsuma code examples, feature descriptions, and page structure can be maintained via Nunjucks templates and data files. Eleventy was chosen over Jekyll/Hugo because it runs on Node.js (already in the repo toolchain), uses Nunjucks templates (same syntax as Liquid), and requires no new runtime dependencies. See `features/23-site-jekyll-migration/PRD.md` for the full framework evaluation.
 
 ## Acceptance Criteria
 
-- Site builds with a single command (e.g. hugo build or bundle exec jekyll build)
+- Site builds with a single command (`cd site && npx @11ty/eleventy`)
 - Satsuma code examples extracted into reusable includes/partials or data files
 - Shared layout (header, footer, nav) in a base template, not duplicated per page
 - Feature descriptions and CLI command lists driven by data/config where practical

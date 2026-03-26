@@ -12,6 +12,7 @@ tooling/tree-sitter-satsuma/scripts/__pycache__
 **/*.js.map
 tooling/satsuma-cli/src/**/*.js
 tooling/satsuma-cli/src/**/*.d.ts
+site/_site/
 .worktrees/
 .claude/*.local.md
 

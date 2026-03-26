@@ -28,6 +28,7 @@ export default [
       "**/dist/**",
       "**/*.min.js",
       "site/js/tailwind.js",
+      "site/_site/**",
     ],
   },
   js.configs.recommended,
@@ -54,7 +55,18 @@ export default [
     },
   },
   {
+    files: ["site/.eleventy.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     files: ["site/**/*.js"],
+    ignores: ["site/.eleventy.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
