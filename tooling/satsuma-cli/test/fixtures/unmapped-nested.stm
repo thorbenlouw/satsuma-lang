@@ -11,14 +11,14 @@ schema src {
   e STRING
 }
 
-mapping 'partial_map' {
+mapping `partial_map` {
   source { `src` }
   target { `nested_tgt` }
 
   n -> details.name
 }
 
-mapping 'full_map' {
+mapping `full_map` {
   source { `src` }
   target { `nested_tgt` }
 

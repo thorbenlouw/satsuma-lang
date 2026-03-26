@@ -247,19 +247,10 @@
     },
 
     "block-label": {
-      "comment": "Block name after keyword: bare identifier or 'single-quoted'",
+      "comment": "Block name after keyword: bare identifier or `backtick-quoted`",
       "patterns": [
         {
-          "comment": "single-quoted block label",
-          "begin": "'",
-          "end": "'",
-          "name": "string.quoted.single.satsuma",
-          "beginCaptures": {
-            "0": { "name": "punctuation.definition.string.begin.satsuma" }
-          },
-          "endCaptures": {
-            "0": { "name": "punctuation.definition.string.end.satsuma" }
-          }
+          "include": "#backtick-identifier"
         },
         {
           "comment": "bare block name after keyword",

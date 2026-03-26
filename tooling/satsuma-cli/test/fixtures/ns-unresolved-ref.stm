@@ -11,7 +11,7 @@ namespace vault {
     store_id VARCHAR(20)
   }
 
-  mapping 'bad ref' {
+  mapping `bad ref` {
     source { `stores` }
     target { `hub_store` }
 

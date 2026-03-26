@@ -5,7 +5,7 @@ integration "INT3051_Commerce_Events_Protobuf_to_Parquet" {
   version "1.0.0"
   tags [protobuf, parquet, analytics, streaming]
 
-  note '''
+  note ```
     # Protobuf Commerce Events to Session Parquet
 
     Consumes protobuf commerce events from Kafka and produces a session-level
@@ -15,7 +15,7 @@ integration "INT3051_Commerce_Events_Protobuf_to_Parquet" {
 
     This example demonstrates protobuf annotations, nested repeated fields,
     group-by aggregation, and per-field error-handling defaults.
-  '''
+  ```
 }
 
 
@@ -135,13 +135,13 @@ mapping commerce_event_pb -> commerce_session_parquet [group_by: session_id] {
     | nl("Emit the distinct event_type values as a JSON array string.")
 
   => viewed_product_count
-    : nl("Count records in the group where event_type == 'product_view'.")
+    : nl("Count records in the group where event_type == `product_view`.")
 
   => cart_add_count
-    : nl("Count records in the group where event_type == 'add_to_cart'.")
+    : nl("Count records in the group where event_type == `add_to_cart`.")
 
   => purchase_event_count
-    : nl("Count records in the group where event_type == 'purchase'.")
+    : nl("Count records in the group where event_type == `purchase`.")
 
   event_type -> checkout_completed
     : map { purchase: true, _: false }

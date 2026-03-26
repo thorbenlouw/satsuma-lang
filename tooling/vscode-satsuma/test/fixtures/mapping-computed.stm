@@ -7,7 +7,7 @@ mapping {
   // Computed with NL
   -> display_name {
   // <- keyword.operator.arrow.satsuma
-    "If CUST_TYPE is null or 'R', concat FIRST_NM + LAST_NM.
+    "If CUST_TYPE is null or `R`, concat FIRST_NM + LAST_NM.
      Otherwise use COMPANY_NM."
   }
 

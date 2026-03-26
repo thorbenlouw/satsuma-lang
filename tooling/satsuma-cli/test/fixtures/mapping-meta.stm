@@ -8,7 +8,7 @@ schema tgt_table {
   result VARCHAR
 }
 
-mapping 'metadata test' (
+mapping `metadata test` (
   note "This mapping has block-level metadata",
   scd type2,
   priority high

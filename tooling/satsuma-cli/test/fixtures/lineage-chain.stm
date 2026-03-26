@@ -14,19 +14,19 @@ schema target_d {
   id INTEGER
 }
 
-mapping 'a_to_b' {
+mapping `a_to_b` {
   source { source_a }
   target { intermediate_b }
   id -> id
 }
 
-mapping 'b_to_c' {
+mapping `b_to_c` {
   source { intermediate_b }
   target { intermediate_c }
   id -> id
 }
 
-mapping 'c_to_d' {
+mapping `c_to_d` {
   source { intermediate_c }
   target { target_d }
   id -> id

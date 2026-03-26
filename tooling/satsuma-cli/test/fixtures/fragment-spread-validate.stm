@@ -17,7 +17,7 @@ schema tgt_orders {
   ...audit_fields
 }
 
-mapping 'order load' {
+mapping `order load` {
   source { src_orders }
   target { tgt_orders }
 

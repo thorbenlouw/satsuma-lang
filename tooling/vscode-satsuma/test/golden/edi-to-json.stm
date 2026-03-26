@@ -4,7 +4,7 @@ integration "INT1008_PO_ASN-EDI_to_MFCS" {
   author "Thorben Louw"
   version "1.0.0"
 
-  note '''
+  note ```
     # EDI 856 → MFCS Shipment
 
     Transforms EDI 856 (DESADV) fixed-length ASN messages into
@@ -17,7 +17,7 @@ integration "INT1008_PO_ASN-EDI_to_MFCS" {
       **no source mapping** in the current EDI specification
     - `containerId` and `finalLocation` are required but unpopulated
     - Awaiting clarification from warehouse team (Jira: DWHT-2847)
-  '''
+  ```
 }
 
 
@@ -87,12 +87,12 @@ schema mfcs_json "MFCS Shipment Ingestion Format" {
       notAfterDate        DATE
 
       containers[] {
-        note '''
+        note ```
           ## DATA GAP
           This entire array is **required** by the MFCS schema but has
           **no source data** in the current EDI 856 mapping.
           See Jira: DWHT-2847 for resolution status.
-        '''
+        ```
         containerId       STRING(30)   [required]    //! No source mapping
         finalLocation     NUMBER(10)   [required]    //! No source mapping
         items[] {
@@ -128,7 +128,7 @@ mapping edi_desadv -> mfcs_json {
   => ShipmentHeader.asnType : "0"                    // Default: ASN Shipment
 
   POReferences[].REFNUM -> ShipmentHeader.toLocation
-    : nl("Extract PO number from REFNUM (digits before '/').
+    : nl("Extract PO number from REFNUM (digits before `/`).
           Look up the PO in MFCS to determine the delivery location.")
 
   POReferences[].REFNUM -> ShipmentHeader.supplier
@@ -140,10 +140,10 @@ mapping edi_desadv -> mfcs_json {
 
   // --- Detail lines grouped by PO ---
   POReferences[] -> ShipmentHeader.asnDetails[] {
-    note '''
+    note ```
       Each PO reference generates one asnDetails entry.
       Line items and quantities are correlated by position.
-    '''
+    ```
 
     .REFNUM -> .orderNo : split("/") | first | to_number
 

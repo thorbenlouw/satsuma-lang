@@ -95,7 +95,7 @@ describe("lint: hidden-source-in-nl", () => {
 
   it("fix adds schema to source block", () => {
     const source = [
-      "mapping 'stage gl' {",
+      "mapping `stage gl` {",
       "  source { source::finance_gl }",
       "  target { staging::stg_gl }",
       "}",

@@ -5,7 +5,7 @@ schema computed_target {
   id UUID
 }
 
-mapping 'computed values' {
+mapping `computed values` {
   target { computed_target }
   -> id { uuid_v4() }
 }

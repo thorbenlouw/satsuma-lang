@@ -35,7 +35,7 @@ describe("computeReferences", () => {
         "file:///a.stm": `schema customers {
   id UUID
 }
-mapping 'a' {
+mapping \`a\` {
   source { customers }
   target { dim }
   id -> id
@@ -56,7 +56,7 @@ mapping 'a' {
         "file:///a.stm": `schema customers {
   id UUID
 }
-mapping 'a' {
+mapping \`a\` {
   source { customers }
   target { dim }
   id -> id
@@ -75,8 +75,8 @@ mapping 'a' {
     const result = refs(
       {
         "file:///a.stm": "schema customers {\n  id UUID\n}",
-        "file:///b.stm": "mapping 'a' {\n  source { customers }\n  target { d }\n  id -> id\n}",
-        "file:///c.stm": "mapping 'b' {\n  source { customers }\n  target { e }\n  id -> id\n}",
+        "file:///b.stm": "mapping `a` {\n  source { customers }\n  target { d }\n  id -> id\n}",
+        "file:///c.stm": "mapping `b` {\n  source { customers }\n  target { e }\n  id -> id\n}",
       },
       "file:///a.stm",
       0,
@@ -117,12 +117,12 @@ schema orders {
         "file:///a.stm": `schema customers {
   id UUID
 }
-mapping 'a' {
+mapping \`a\` {
   source { customers }
   target { dim }
   id -> id
 }
-mapping 'b' {
+mapping \`b\` {
   source { customers }
   target { fact }
   id -> id
@@ -130,7 +130,7 @@ mapping 'b' {
       },
       "file:///a.stm",
       4,
-      12, // cursor on "customers" in source block of mapping 'a'
+      12, // cursor on "customers" in source block of mapping \`a\`
       false,
     );
     // Should find both source block references

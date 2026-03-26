@@ -33,7 +33,7 @@ schema iso_target {
   instructing_bic STRING
 }
 
-mapping 'pacs008 to iso_target' {
+mapping `pacs008 to iso_target` {
   source { pacs008 }
   target { iso_target }
 

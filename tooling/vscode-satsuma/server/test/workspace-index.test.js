@@ -47,7 +47,7 @@ describe("indexFile", () => {
 
   it("indexes fragment definitions", () => {
     const idx = buildIndex({
-      "file:///a.stm": "fragment 'audit fields' {\n  created_at TIMESTAMP\n  updated_at TIMESTAMP\n}",
+      "file:///a.stm": "fragment `audit fields` {\n  created_at TIMESTAMP\n  updated_at TIMESTAMP\n}",
     });
     const defs = idx.definitions.get("audit fields");
     assert.ok(defs);
@@ -56,7 +56,7 @@ describe("indexFile", () => {
 
   it("indexes transform definitions", () => {
     const idx = buildIndex({
-      "file:///a.stm": "transform 'clean email' {\n  trim | lowercase\n}",
+      "file:///a.stm": "transform `clean email` {\n  trim | lowercase\n}",
     });
     const defs = idx.definitions.get("clean email");
     assert.ok(defs);
@@ -65,7 +65,7 @@ describe("indexFile", () => {
 
   it("indexes mapping definitions", () => {
     const idx = buildIndex({
-      "file:///a.stm": `mapping 'customer migration' {
+      "file:///a.stm": `mapping \`customer migration\` {
   source { customers }
   target { dim_customers }
   id -> id
@@ -159,7 +159,7 @@ describe("indexFile", () => {
 
   it("indexes source/target references from mappings", () => {
     const idx = buildIndex({
-      "file:///a.stm": `mapping 'migrate' {
+      "file:///a.stm": `mapping \`migrate\` {
   source { customers }
   target { dim_customers }
   id -> id
@@ -177,7 +177,7 @@ describe("indexFile", () => {
 
   it("indexes backtick source references", () => {
     const idx = buildIndex({
-      "file:///a.stm": "mapping 'test' {\n  source { `raw_customers` }\n  target { dim_customers }\n  id -> id\n}",
+      "file:///a.stm": "mapping `test` {\n  source { `raw_customers` }\n  target { dim_customers }\n  id -> id\n}",
     });
     const refs = idx.references.get("raw_customers");
     assert.ok(refs);
@@ -186,7 +186,7 @@ describe("indexFile", () => {
 
   it("indexes qualified name source references", () => {
     const idx = buildIndex({
-      "file:///a.stm": "mapping 'test' {\n  source { crm::customers }\n  target { dim_customers }\n  id -> id\n}",
+      "file:///a.stm": "mapping `test` {\n  source { crm::customers }\n  target { dim_customers }\n  id -> id\n}",
     });
     const refs = idx.references.get("crm::customers");
     assert.ok(refs);
@@ -251,7 +251,7 @@ describe("removeFile", () => {
 
   it("removes references for a file", () => {
     const idx = buildIndex({
-      "file:///a.stm": "mapping 'test' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+      "file:///a.stm": "mapping `test` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
     });
     assert.ok(idx.references.get("customers"));
     removeFile(idx, "file:///a.stm");
@@ -316,7 +316,7 @@ describe("resolveDefinition", () => {
 describe("findReferences", () => {
   it("finds direct references", () => {
     const idx = buildIndex({
-      "file:///a.stm": "mapping 'test' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+      "file:///a.stm": "mapping `test` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
     });
     const refs = findReferences(idx, "customers");
     assert.equal(refs.length, 1);
@@ -325,8 +325,8 @@ describe("findReferences", () => {
 
   it("finds references across multiple files", () => {
     const idx = buildIndex({
-      "file:///a.stm": "mapping 'a' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
-      "file:///b.stm": "mapping 'b' {\n  source { customers }\n  target { fact }\n  id -> id\n}",
+      "file:///a.stm": "mapping `a` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+      "file:///b.stm": "mapping `b` {\n  source { customers }\n  target { fact }\n  id -> id\n}",
     });
     const refs = findReferences(idx, "customers");
     assert.equal(refs.length, 2);

@@ -33,7 +33,7 @@ describe("computeCompletions", () => {
     const items = complete(
       {
         "file:///a.stm": "schema customers {\n  id UUID\n}\nschema orders {\n  id UUID\n}",
-        "file:///b.stm": "mapping 'test' {\n  source { c }\n  target { dim }\n  id -> id\n}",
+        "file:///b.stm": "mapping `test` {\n  source { c }\n  target { dim }\n  id -> id\n}",
       },
       "file:///b.stm",
       1,
@@ -51,7 +51,7 @@ describe("computeCompletions", () => {
     const items = complete(
       {
         "file:///a.stm": "schema dim_customers {\n  id UUID\n}",
-        "file:///b.stm": "mapping 'test' {\n  source { src }\n  target { d }\n  id -> id\n}",
+        "file:///b.stm": "mapping `test` {\n  source { src }\n  target { d }\n  id -> id\n}",
       },
       "file:///b.stm",
       2,
@@ -66,7 +66,7 @@ describe("computeCompletions", () => {
         "file:///a.stm": `fragment audit_fields {
   ts TIMESTAMP
 }
-transform 'clean email' {
+transform \`clean email\` {
   trim | lowercase
 }
 schema customers {
@@ -104,7 +104,7 @@ schema customers {
   it("suggests transform functions in pipe chain", () => {
     const items = complete(
       {
-        "file:///a.stm": "transform 'clean' {\n  trim | lowercase\n}",
+        "file:///a.stm": "transform `clean` {\n  trim | lowercase\n}",
       },
       "file:///a.stm",
       1,
@@ -140,7 +140,7 @@ schema customers {
   name VARCHAR
   email VARCHAR
 }
-mapping 'test' {
+mapping \`test\` {
   source { customers }
   target { dim }
   name -> name

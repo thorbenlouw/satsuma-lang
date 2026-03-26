@@ -7,7 +7,7 @@ schema tgt_data {
   full_name  STRING
 }
 
-mapping 'name merge' {
+mapping `name merge` {
   source { src_data }
   target { tgt_data }
 

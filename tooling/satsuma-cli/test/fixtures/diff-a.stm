@@ -4,7 +4,7 @@ schema Customer {
   email    STRING
 }
 
-fragment 'audit columns' {
+fragment `audit columns` {
   created_at  TIMESTAMP
   updated_at  TIMESTAMP
 }

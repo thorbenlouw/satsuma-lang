@@ -5,7 +5,7 @@ integration "INT2042_Order_XML_to_Parquet_Lakehouse" {
   version "1.0.0"
   tags [xml, parquet, lakehouse, commerce]
 
-  note '''
+  note ```
     # Order XML to Lakehouse Parquet
 
     Ingests canonical commerce order XML messages from the integration bus
@@ -17,7 +17,7 @@ integration "INT2042_Order_XML_to_Parquet_Lakehouse" {
     The source XML is namespace-qualified and contains repeated discount
     fragments, optional loyalty identifiers, and mixed timestamp formats
     depending on upstream channel.
-  '''
+  ```
 }
 
 

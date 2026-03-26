@@ -8,7 +8,7 @@ integration "SFDC_Opportunity_Ingestion" {
   version "3.4.1"
   tags [salesforce, snowflake, revenue-engine]
 
-  note '''
+  note ```
     # Salesforce to Snowflake Pipeline
 
     Maps Sales Cloud `Opportunity` and `Account` objects into the 
@@ -17,7 +17,7 @@ integration "SFDC_Opportunity_Ingestion" {
     ## Sync Strategy
     - **Incremental:** Uses `SystemModStamp` to pull changes every 15 minutes.
     - **Hard Deletes:** Captured via the `isDeleted` flag in SFDC.
-  '''
+  ```
 }
 
 // ============================================================

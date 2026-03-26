@@ -14,7 +14,7 @@ schema mt_target_2 {
   code  VARCHAR
 }
 
-mapping 'multi target' {
+mapping `multi target` {
   source { `mt_source` }
   target { `mt_target_1`, `mt_target_2` }
   id -> id

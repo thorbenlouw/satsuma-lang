@@ -3,13 +3,13 @@ integration "Multi_Source_Data_Hub" {
   cardinality N:M
   author "Integration Team"
 
-  note '''
+  note ```
     # Data Hub
 
     Aggregates customer, payment, and inventory data from three
     independent sources and distributes to analytics, notification,
     and reporting targets.
-  '''
+  ```
 }
 
 
@@ -78,14 +78,14 @@ mapping crm_system -> analytics_db {
 
 mapping payment_gateway -> analytics_db {
   amount -> total_spent
-    : nl("Sum all transactions where status = 'completed', grouped by customer_email.
+    : nl("Sum all transactions where status = `completed`, grouped by customer_email.
           Join to crm_system on email to resolve customer_id.")
 
   => transaction_count
-    : nl("Count transactions where status = 'completed', per customer.")
+    : nl("Count transactions where status = `completed`, per customer.")
 
   => last_transaction_date
-    : nl("Max transaction timestamp where status = 'completed', per customer.")
+    : nl("Max transaction timestamp where status = `completed`, per customer.")
 }
 
 mapping crm_system -> notification_service {
@@ -105,7 +105,7 @@ mapping crm_system -> notification_service {
 mapping payment_gateway -> notification_service {
   customer_email -> recipient_email
   transaction_id -> message_body
-    : nl("Format as 'Transaction {transaction_id} completed successfully.'")
+    : nl("Format as `Transaction {transaction_id} completed successfully.`")
 }
 
 mapping inventory_system -> reporting_warehouse {

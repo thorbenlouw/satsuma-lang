@@ -16,7 +16,7 @@ schema order_flat {
   }
 }
 
-mapping 'flatten orders' {
+mapping `flatten orders` {
   source { order_api }
   target { order_flat }
 

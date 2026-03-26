@@ -1,6 +1,6 @@
 import { src::customers, mart::dim_customers } from "import-source.stm"
 
-mapping 'build dim_customers' {
+mapping `build dim_customers` {
   source { `src::customers` }
   target { `mart::dim_customers` }
 

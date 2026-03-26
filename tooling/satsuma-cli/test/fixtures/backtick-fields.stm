@@ -8,7 +8,7 @@ schema warehouse {
   email STRING
 }
 
-mapping 'crm sync' {
+mapping `crm sync` {
   source { salesforce }
   target { warehouse }
 

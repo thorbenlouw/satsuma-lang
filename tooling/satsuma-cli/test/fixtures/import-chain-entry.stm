@@ -1,6 +1,6 @@
 import { analytics::customer_stats } from "import-transitive.stm"
 
-mapping 'build customer_stats' {
+mapping `build customer_stats` {
   source { `src::customers` }
   target { `analytics::customer_stats` }
 

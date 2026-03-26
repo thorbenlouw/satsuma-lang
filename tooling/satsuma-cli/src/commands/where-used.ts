@@ -334,6 +334,7 @@ function findImportRefs(rootNode: SyntaxNode, name: string): Array<{ path: strin
         // import_name wraps a quoted_name, identifier, or qualified_name
         let text = child.text;
         if (text.startsWith("'") && text.endsWith("'")) text = text.slice(1, -1);
+        if (text.startsWith("`") && text.endsWith("`")) text = text.slice(1, -1);
         importedNames.push(text);
       }
     }

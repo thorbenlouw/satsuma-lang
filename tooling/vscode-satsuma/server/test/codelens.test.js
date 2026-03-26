@@ -42,8 +42,8 @@ describe("computeCodeLenses", () => {
     const result = lenses(
       {
         "file:///a.stm": "schema customers {\n  id UUID\n}",
-        "file:///b.stm": "mapping 'a' {\n  source { customers }\n  target { dim }\n  id -> id\n}",
-        "file:///c.stm": "mapping 'b' {\n  source { customers }\n  target { fact }\n  id -> id\n}",
+        "file:///b.stm": "mapping `a` {\n  source { customers }\n  target { dim }\n  id -> id\n}",
+        "file:///c.stm": "mapping `b` {\n  source { customers }\n  target { fact }\n  id -> id\n}",
       },
       "file:///a.stm",
     );
@@ -76,7 +76,7 @@ schema orders {
   it("shows source → target for mappings", () => {
     const result = lenses(
       {
-        "file:///a.stm": `mapping 'migrate' {
+        "file:///a.stm": `mapping \`migrate\` {
   source { customers }
   target { dim_customers }
   id -> id
@@ -105,10 +105,10 @@ schema orders {
   it("shows usage count for transforms", () => {
     const result = lenses(
       {
-        "file:///a.stm": `transform 'clean email' {
+        "file:///a.stm": `transform \`clean email\` {
   trim | lowercase
 }
-mapping 'test' {
+mapping \`test\` {
   source { src }
   target { tgt }
   email -> email { ...clean email }

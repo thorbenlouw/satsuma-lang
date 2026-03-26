@@ -3,7 +3,7 @@ schema tgt { field1 STRING; field2 STRING }
 
 transform my_xform { trim | lowercase }
 
-mapping 'test' {
+mapping `test` {
   source { `src` }
   target { `tgt` }
   field1 -> field1 { ...my_xform }
