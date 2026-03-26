@@ -1,5 +1,5 @@
 // Satsuma v2 — Multi-Source Join: Customer 360 View
-import { 'audit fields' } from "lib/common.stm"
+import { `audit fields` } from "lib/common.stm"
 
 note {
   """
@@ -21,7 +21,7 @@ note {
   ## Filters
   - Orders: only `completed` and `refunded` statuses (exclude `cancelled`, `pending`)
   - Tickets: only tickets created in the last 12 months
-  - Customers: exclude test accounts (`email LIKE '%@test.internal'`)
+  - Customers: exclude test accounts (`email LIKE `%@test.internal``)
   """
 }
 
@@ -115,10 +115,10 @@ schema customer_360 (
 }
 
 // --- Mapping ---
-mapping 'customer 360' {
+mapping `customer 360` {
   source {
-    `crm_customers` (filter "email NOT LIKE '%@test.internal'")
-    `order_transactions` (filter "status IN ('completed', 'refunded')")
+    `crm_customers` (filter "email NOT LIKE `%@test.internal`")
+    `order_transactions` (filter "status IN (`completed`, `refunded`)")
     `support_tickets` (filter "created_at >= date_sub(now(), interval 12 month)")
     "Join `crm_customers` to `order_transactions` on `crm_customers.customer_id` = `order_transactions.customer_id` (left join — customers may have no orders).
      Join `crm_customers` to `support_tickets` on `crm_customers.customer_id` = cast(`support_tickets.customer_id` as UUID) (left join — customers may have no tickets)."
@@ -136,7 +136,7 @@ mapping 'customer 360' {
   crm_customers.email -> email { trim | lowercase }
 
   -> full_name {
-    "Concat `crm_customers.first_name` + ' ' + `crm_customers.last_name`.
+    "Concat `crm_customers.first_name` + ` ` + `crm_customers.last_name`.
      Trim whitespace. If both are null, use `company_name` instead."
   }
 
@@ -154,17 +154,17 @@ mapping 'customer 360' {
 
   // --- Order metrics (aggregated from order_transactions) ---
   -> total_orders {
-    "Count of `order_transactions` where `status` = 'completed'."
+    "Count of `order_transactions` where `status` = `completed`."
   }
 
   -> total_revenue {
-    "Sum `order_transactions.total` where `status` = 'completed'."
+    "Sum `order_transactions.total` where `status` = `completed`."
     | coalesce(0)
     | round(2)
   }
 
   -> total_refunds {
-    "Sum abs(`order_transactions.total`) where `status` = 'refunded'."
+    "Sum abs(`order_transactions.total`) where `status` = `refunded`."
     | coalesce(0)
     | round(2)
   }
@@ -177,15 +177,15 @@ mapping 'customer 360' {
   }
 
   -> first_order_date {
-    "Min `order_transactions.order_date` where `status` = 'completed'."
+    "Min `order_transactions.order_date` where `status` = `completed`."
   }
 
   -> last_order_date {
-    "Max `order_transactions.order_date` where `status` = 'completed'."
+    "Max `order_transactions.order_date` where `status` = `completed`."
   }
 
   -> preferred_channel {
-    "Mode of `order_transactions.channel` where `status` = 'completed'.
+    "Mode of `order_transactions.channel` where `status` = `completed`.
      If tied, prefer in order: web > mobile > api > pos.
      Null if no orders."
   }
@@ -202,7 +202,7 @@ mapping 'customer 360' {
   }
 
   -> open_tickets {
-    "Count of `support_tickets` where `status` IN ('open', 'in_progress')."
+    "Count of `support_tickets` where `status` IN (`open`, `in_progress`)."
     | coalesce(0)
   }
 
@@ -219,8 +219,8 @@ mapping 'customer 360' {
   }
 
   -> has_critical_ticket {
-    "True if any support_tickets.priority = 'critical' and
-     status IN ('open', 'in_progress'). False otherwise."
+    "True if any support_tickets.priority = `critical` and
+     status IN (`open`, `in_progress`). False otherwise."
   }
 
   // --- Calculated fields ---

@@ -179,7 +179,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "quoted_name"
+          "name": "backtick_name"
         },
         {
           "type": "SYMBOL",
@@ -967,7 +967,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "quoted_name"
+          "name": "backtick_name"
         },
         {
           "type": "SYMBOL",
@@ -1672,7 +1672,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "quoted_name"
+          "name": "backtick_name"
         }
       ]
     },
@@ -2232,10 +2232,6 @@
     "identifier": {
       "type": "PATTERN",
       "value": "[a-zA-Z_][a-zA-Z0-9_-]*"
-    },
-    "quoted_name": {
-      "type": "PATTERN",
-      "value": "'(?:[^'\\\\]|\\\\.)*'"
     },
     "backtick_name": {
       "type": "PATTERN",

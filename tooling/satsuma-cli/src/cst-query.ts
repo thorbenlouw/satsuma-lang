@@ -22,7 +22,7 @@ export function getBlockName(node: SyntaxNode): string | null {
   const lbl = node.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   if (!inner) return null;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
+  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text;
 }
 

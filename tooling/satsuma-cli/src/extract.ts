@@ -41,7 +41,7 @@ function labelText(node: SyntaxNode): string | null {
   if (!lbl) return null;
   const inner = lbl.namedChildren[0];
   if (!inner) return null;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
+  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text; // identifier
 }
 
@@ -190,7 +190,7 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
 function spreadLabelText(labelNode: SyntaxNode): string {
   const qn = child(labelNode, "qualified_name");
   if (qn) return qualifiedNameText(qn)!;
-  const q = child(labelNode, "quoted_name");
+  const q = child(labelNode, "backtick_name");
   if (q) return q.text.slice(1, -1);
   // Multi-word or single-word: join all identifiers with spaces
   const ids = children(labelNode, "identifier");
@@ -650,7 +650,7 @@ export function extractImports(rootNode: SyntaxNode): ExtractedImport[] {
       .map((nm) => {
         const qn = child(nm, "qualified_name");
         if (qn) return qualifiedNameText(qn);
-        const q = child(nm, "quoted_name");
+        const q = child(nm, "backtick_name");
         if (q) return q.text.slice(1, -1);
         const id = child(nm, "identifier");
         return id?.text ?? null;

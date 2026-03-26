@@ -72,7 +72,7 @@ export function labelText(node: Node): string | null {
   if (!lbl) return null;
   const inner = lbl.namedChildren[0];
   if (!inner) return null;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
+  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text;
 }
 

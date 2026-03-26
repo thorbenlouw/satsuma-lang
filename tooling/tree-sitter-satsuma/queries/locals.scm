@@ -36,5 +36,5 @@
 
 ; Import declarations reference external file paths.
 (import_decl
-  (import_name (quoted_name) @local.reference)
+  (import_name (backtick_name) @local.reference)
   (import_path (nl_string) @local.reference))

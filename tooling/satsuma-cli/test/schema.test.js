@@ -16,7 +16,7 @@ function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = [])
   return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
 }
 function ident(t) { return n("identifier", [], t); }
-function quoted(t) { return n("quoted_name", [], `'${t}'`); }
+function quoted(t) { return n("backtick_name", [], `'${t}'`); }
 function _blockLabel(name) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
@@ -70,7 +70,7 @@ function collectFields(bodyNode, indent = 0) {
       const lbl = c.namedChildren.find((x) => x.type === "spread_label");
       let sname = "";
       if (lbl) {
-        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
         if (q) {
           sname = q.text;
         } else {
@@ -134,7 +134,7 @@ describe("collectFields", () => {
     const spread = n("fragment_spread", [spreadLabel("'address fields'")]);
     const body = n("schema_body", [spread]);
     const lines = collectFields(body, 1);
-    // quoted_name.text includes surrounding single quotes in display
+    // backtick_name.text includes surrounding single quotes in display
     assert.equal(lines[0].text.trim(), "...'address fields'");
   });
 

@@ -12,7 +12,7 @@ transform hash_key {
   trim | md5
 }
 
-// --- First block of 'source' namespace ---
+// --- First block of `source` namespace ---
 namespace source (note "External source systems") {
   schema hr_employees (note "HRIS employee master") {
     employee_id  VARCHAR(20)    (pk)
@@ -25,7 +25,7 @@ namespace source (note "External source systems") {
   }
 }
 
-// --- Second block of 'source' namespace (merges with first) ---
+// --- Second block of `source` namespace (merges with first) ---
 namespace source (note "External source systems") {
   schema finance_gl (note "General ledger entries") {
     gl_entry_id   BIGINT         (pk)
@@ -69,7 +69,7 @@ namespace staging (note "Cleaned and conformed staging area") {
   }
 
   // Map HR employees to staging — source is in merged namespace block
-  mapping 'stage employees' {
+  mapping `stage employees` {
     source { `source::hr_employees` }
     target { `stg_employees` }
 
@@ -84,7 +84,7 @@ namespace staging (note "Cleaned and conformed staging area") {
   }
 
   // Map GL entries — joins to employees across merged namespace
-  mapping 'stage gl entries' {
+  mapping `stage gl entries` {
     source {
       `source::finance_gl`
       `source::hr_employees`
@@ -119,7 +119,7 @@ namespace reporting (note "Executive reporting layer") {
     headcount      INTEGER
   }
 
-  mapping 'build budget vs actual' {
+  mapping `build budget vs actual` {
     source {
       `staging::stg_gl_entries`
       `source::finance_budgets`

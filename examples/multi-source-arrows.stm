@@ -32,10 +32,10 @@ mapping customer_enrichment {
   first_name, last_name -> full_name { "Concatenate with space separator" }
 
   // Two sources combined
-  email, phone -> contact_info { "Format as 'email (phone)'" }
+  email, phone -> contact_info { "Format as `email (phone)`" }
 
   // Three sources into one
-  city, state, zip -> full_address { "Format as 'city, state zip'" }
+  city, state, zip -> full_address { "Format as `city, state zip`" }
 
   // Three+ sources with a derived computation
   birth_year, birth_month, birth_day -> date_of_birth (derived) {

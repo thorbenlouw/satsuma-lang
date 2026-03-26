@@ -156,7 +156,7 @@ schema proto {
 Decimal metadata value
 ================================================================================
 
-mapping 'session aggregation' (error_threshold 0.02) {
+mapping `session aggregation` (error_threshold 0.02) {
   source { events }
   target { sessions }
 }
@@ -166,7 +166,7 @@ mapping 'session aggregation' (error_threshold 0.02) {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (metadata_block
       (tag_with_value
         (identifier)
@@ -278,7 +278,7 @@ metric churn_rate (
 Backtick metadata value for flatten
 ================================================================================
 
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping `order lines` (flatten `Order.LineItems[]`) {
   source { commerce_order }
   target { order_lines }
 }
@@ -288,7 +288,7 @@ mapping 'order lines' (flatten `Order.LineItems[]`) {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (metadata_block
       (tag_with_value
         (identifier)

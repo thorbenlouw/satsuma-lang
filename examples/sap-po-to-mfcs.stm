@@ -89,7 +89,7 @@ schema mfcs_purchase_order (
 }
 
 // --- Mapping ---
-mapping 'sap po to mfcs' {
+mapping `sap po to mfcs` {
   note {
     """
     Mapping policy:

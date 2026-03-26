@@ -79,7 +79,7 @@ Arrow with fragment spread in transform
 mapping {
   source { src }
   target { tgt }
-  amount -> amount_normalized { ...'currency-normalize' }
+  amount -> amount_normalized { ...`currency-normalize` }
 }
 
 --------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ mapping {
           (pipe_step
             (fragment_spread
               (spread_label
-                (quoted_name)))))))))
+                (backtick_name)))))))))
 
 ================================================================================
 Arrow with map literal inline

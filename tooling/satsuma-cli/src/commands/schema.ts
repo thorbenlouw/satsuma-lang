@@ -165,7 +165,7 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
       const lbl = c.namedChildren.find((x) => x.type === "spread_label");
       let sname = "";
       if (lbl) {
-        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
         if (q) {
           sname = q.text;
         } else {

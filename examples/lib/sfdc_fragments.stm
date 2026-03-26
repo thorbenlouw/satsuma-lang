@@ -1,7 +1,7 @@
 // Satsuma v2 — SFDC Standard Fragments Library
 // Reusable field sets for common Salesforce objects
 
-fragment 'sfdc standard types' {
+fragment `sfdc standard types` {
   Id                ID           (pk, unique)
   Name              STRING(255)  (required)
   CreatedDate       DATETIME     (required)
@@ -12,7 +12,7 @@ fragment 'sfdc standard types' {
   IsDeleted         BOOLEAN      (default false)
 }
 
-fragment 'sfdc address' {
+fragment `sfdc address` {
   Street      STRING(255)
   City        STRING(40)
   State       STRING(80)
@@ -22,7 +22,7 @@ fragment 'sfdc address' {
   Longitude   DECIMAL(18,15)
 }
 
-fragment 'sfdc opportunity standard' {
+fragment `sfdc opportunity standard` {
   AccountId                 ID              (ref `Account.Id`)
   Amount                    CURRENCY(18,2)
   CloseDate                 DATE            (required)
@@ -34,7 +34,7 @@ fragment 'sfdc opportunity standard' {
   Type                      PICKLIST
 }
 
-fragment 'sfdc account standard' {
+fragment `sfdc account standard` {
   Type               PICKLIST
   ParentId           ID        (ref `Account.Id`)
   BillingAddress record {

@@ -317,7 +317,7 @@ function indexImport(index: WorkspaceIndex, uri: string, node: SyntaxNode): void
       }
     } else {
       const inner = nameNode.namedChildren[0];
-      if (inner?.type === "quoted_name") {
+      if (inner?.type === "backtick_name") {
         names.push(inner.text.slice(1, -1));
       } else if (inner) {
         names.push(inner.text);
@@ -537,7 +537,7 @@ function qualifiedNameText(qn: SyntaxNode): string {
 function importNameText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
   if (qn) return qualifiedNameText(qn);
-  const quoted = child(node, "quoted_name");
+  const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   const id = child(node, "identifier");
   if (id) return id.text;
@@ -547,7 +547,7 @@ function importNameText(node: SyntaxNode): string | null {
 function spreadLabelText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
   if (qn) return qualifiedNameText(qn);
-  const quoted = child(node, "quoted_name");
+  const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   // Multi-word spread: join all identifier children
   const ids = node.namedChildren.filter((c) => c.type === "identifier");

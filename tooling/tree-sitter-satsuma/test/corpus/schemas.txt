@@ -288,8 +288,8 @@ Fragment spread quoted name
 
 schema customers {
   customer_id UUID (pk)
-  ...'address fields'
-  ...'audit fields'
+  ...`address fields`
+  ...`audit fields`
 }
 
 --------------------------------------------------------------------------------
@@ -308,10 +308,10 @@ schema customers {
             (identifier))))
       (fragment_spread
         (spread_label
-          (quoted_name)))
+          (backtick_name)))
       (fragment_spread
         (spread_label
-          (quoted_name))))))
+          (backtick_name))))))
 
 ================================================================================
 Note block inside schema body
@@ -541,7 +541,7 @@ schema events (pii, domain crm, format parquet) {
 Quoted-name schema
 ================================================================================
 
-schema 'order-headers-parquet' {
+schema `order-headers-parquet` {
   order_id STRING (pk)
 }
 
@@ -550,7 +550,7 @@ schema 'order-headers-parquet' {
 (source_file
   (schema_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (schema_body
       (field_decl
         (field_name

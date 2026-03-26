@@ -101,7 +101,7 @@ namespace with mapping
 ================================================================================
 
 namespace vault {
-  mapping 'load hub_customer' {
+  mapping `load hub_customer` {
     source { `pos::stores` }
     target { `hub_customer` }
     STORE_ID -> hub_key { dv_hash }
@@ -115,7 +115,7 @@ namespace vault {
     name: (identifier)
     (mapping_block
       (block_label
-        (quoted_name))
+        (backtick_name))
       (mapping_body
         (source_block
           (source_ref
@@ -374,7 +374,7 @@ qualified source and target refs
 ================================================================================
 
 namespace vault {
-  mapping 'cross namespace' {
+  mapping `cross namespace` {
     source { pos::stores }
     target { hub_store }
     STORE_ID -> hub_key
@@ -388,7 +388,7 @@ namespace vault {
     name: (identifier)
     (mapping_block
       (block_label
-        (quoted_name))
+        (backtick_name))
       (mapping_body
         (source_block
           (source_ref
@@ -511,7 +511,7 @@ cross-namespace mapping with computed arrow (ns-platform pattern)
 ================================================================================
 
 namespace vault {
-  mapping 'load hub' {
+  mapping `load hub` {
     source { `raw::contacts` }
     target { `hub_contact` }
 
@@ -530,7 +530,7 @@ namespace vault {
     name: (identifier)
     (mapping_block
       (block_label
-        (quoted_name))
+        (backtick_name))
       (mapping_body
         (source_block
           (source_ref
@@ -603,7 +603,7 @@ cross-namespace staging mapping (ns-merging pattern)
 ================================================================================
 
 namespace staging {
-  mapping 'stage employees' {
+  mapping `stage employees` {
     source { `source::employees` }
     target { `stg_employees` }
 
@@ -619,7 +619,7 @@ namespace staging {
     name: (identifier)
     (mapping_block
       (block_label
-        (quoted_name))
+        (backtick_name))
       (mapping_body
         (source_block
           (source_ref

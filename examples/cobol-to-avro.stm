@@ -29,7 +29,7 @@ schema cobol_customer_master (
   PERSONAL_NAME record (
     offset 12,
     length 40,
-    note "Present when CUST_TYPE = 'R' (retail customer)"
+    note "Present when CUST_TYPE = `R` (retail customer)"
   ) {
     FIRST_NAME  STRING  (pic "X(20)", offset 12)
     LAST_NAME   STRING  (pic "X(20)", offset 32)
@@ -38,7 +38,7 @@ schema cobol_customer_master (
   BUSINESS_NAME record (
     redefines PERSONAL_NAME,
     offset 12,
-    note "Present when CUST_TYPE = 'B' (business customer)"
+    note "Present when CUST_TYPE = `B` (business customer)"
   ) {
     COMPANY_NAME  STRING  (pic "X(40)", offset 12)
   }
@@ -111,7 +111,7 @@ schema customer_event_avro (
 }
 
 // --- Mapping ---
-mapping 'cobol customer to avro event' {
+mapping `cobol customer to avro event` {
   source { `cobol_customer_master` }
   target { `customer_event_avro` }
 
@@ -124,8 +124,8 @@ mapping 'cobol customer to avro event' {
   CUST_TYPE -> customer_type { map { R: "retail", B: "business" } }
 
   -> display_name {
-    "If CUST_TYPE = 'R', trim and concatenate FIRST_NAME + ' ' + LAST_NAME.
-     If CUST_TYPE = 'B', use COMPANY_NAME trimmed.
+    "If CUST_TYPE = `R`, trim and concatenate FIRST_NAME + ` ` + LAST_NAME.
+     If CUST_TYPE = `B`, use COMPANY_NAME trimmed.
      This resolves the REDEFINES: PERSONAL_NAME vs BUSINESS_NAME."
   }
 

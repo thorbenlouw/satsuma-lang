@@ -28,7 +28,7 @@ schema sfdc_opportunity {
 Multi-word fragment spread
 ================================================================================
 
-fragment 'audit fields' {
+fragment `audit fields` {
   created_at TIMESTAMPTZ
 }
 
@@ -42,7 +42,7 @@ schema users {
 (source_file
   (fragment_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (schema_body
       (field_decl
         (field_name
@@ -71,7 +71,7 @@ Multi-word transform spread in arrow
 mapping {
   source { src }
   target { tgt }
-  EMAIL_ADDR -> email { ...'clean email' }
+  EMAIL_ADDR -> email { ...`clean email` }
 }
 
 --------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ mapping {
           (pipe_step
             (fragment_spread
               (spread_label
-                (quoted_name)))))))))
+                (backtick_name)))))))))
 
 ================================================================================
 Multi-word spread with three words
@@ -170,3 +170,4 @@ schema codes {
             (nl_string)
             (identifier)
             (number_literal)))))))
+

@@ -11,7 +11,7 @@ function n(type, namedChildren = [], text = "", row = 0) {
   return { type, text, startPosition: { row, column: 0 }, namedChildren };
 }
 function ident(t) { return n("identifier", [], t); }
-function quoted(t) { return n("quoted_name", [], `'${t}'`); }
+function quoted(t) { return n("backtick_name", [], `'${t}'`); }
 function blockLabel(name) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
@@ -29,7 +29,7 @@ function walkForSpreads(bodyNode, fragmentName, blockName, results) {
       const lbl = c.namedChildren.find((x) => x.type === "spread_label" || x.type === "block_label");
       let sname = "";
       if (lbl) {
-        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
         if (q) {
           sname = q.text.slice(1, -1);
         } else {
@@ -54,7 +54,7 @@ function findFragmentSpreads(rootNode, fragmentName) {
     const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let blockName = inner?.text ?? "";
-    if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
+    if (inner?.type === "backtick_name") blockName = blockName.slice(1, -1);
 
     const body = topLevel.namedChildren.find((c) => c.type === "schema_body");
     if (body) walkForSpreads(body, fragmentName, blockName, results);

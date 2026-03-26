@@ -2,7 +2,7 @@
 Leading note block before source/target
 ================================================================================
 
-mapping 'customer migration' {
+mapping `customer migration` {
   note {
     "Assumptions for the mapping."
   }
@@ -16,7 +16,7 @@ mapping 'customer migration' {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (mapping_body
       (note_block
         (nl_string))
@@ -31,7 +31,7 @@ mapping 'customer migration' {
 Annotated source entries with metadata
 ================================================================================
 
-mapping 'customer 360' {
+mapping `customer 360` {
   source {
     `crm_customers` (filter "email NOT LIKE '%@test.internal'")
     `order_transactions` (filter "status IN ('completed', 'refunded')")
@@ -45,7 +45,7 @@ mapping 'customer 360' {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (mapping_body
       (source_block
         (source_ref

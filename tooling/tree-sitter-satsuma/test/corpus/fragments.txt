@@ -2,20 +2,20 @@
 Empty fragment body
 ================================================================================
 
-fragment 'audit fields' {}
+fragment `audit fields` {}
 
 --------------------------------------------------------------------------------
 
 (source_file
   (fragment_block
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Fragment with fields
 ================================================================================
 
-fragment 'address fields' {
+fragment `address fields` {
   street_line_1  VARCHAR(200)
   street_line_2  VARCHAR(200)
   city           VARCHAR(100)
@@ -29,7 +29,7 @@ fragment 'address fields' {
 (source_file
   (fragment_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (schema_body
       (field_decl
         (field_name
@@ -93,13 +93,13 @@ fragment audit_fields {
 Fragment spread into schema
 ================================================================================
 
-fragment 'audit fields' {
+fragment `audit fields` {
   created_at TIMESTAMPTZ
 }
 
 schema customers {
   customer_id UUID (pk)
-  ...'audit fields'
+  ...`audit fields`
 }
 
 --------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ schema customers {
 (source_file
   (fragment_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (schema_body
       (field_decl
         (field_name
@@ -126,7 +126,7 @@ schema customers {
             (identifier))))
       (fragment_spread
         (spread_label
-          (quoted_name))))))
+          (backtick_name))))))
 
 ================================================================================
 Multiple fragment spreads in schema
@@ -158,3 +158,4 @@ schema customers {
       (fragment_spread
         (spread_label
           (identifier))))))
+

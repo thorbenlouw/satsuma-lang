@@ -1,5 +1,5 @@
 // Satsuma v2 — Legacy Customer Migration
-import { 'address fields' } from "lib/common.stm"
+import { `address fields` } from "lib/common.stm"
 
 note {
   """
@@ -81,7 +81,7 @@ schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
 }
 
 // --- Mapping ---
-mapping 'customer migration' {
+mapping `customer migration` {
   note {
     "Mapping assumptions:
      - All timestamps assumed US Eastern unless otherwise noted
@@ -110,7 +110,7 @@ mapping 'customer migration' {
 
   // --- Name Handling ---
   -> display_name {
-    "If `CUST_TYPE` is null or 'R', trim and concat `FIRST_NM` + ' ' + `LAST_NM`.
+    "If `CUST_TYPE` is null or `R`, trim and concat `FIRST_NM` + ` ` + `LAST_NM`.
      Otherwise, trim `COMPANY_NM`."
   }
 

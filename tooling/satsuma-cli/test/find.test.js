@@ -52,7 +52,7 @@ function collectFieldMatches(bodyNode, blockType, blockName, file, tag, acc = []
       const lbl = c.namedChildren.find((x) => x.type === "block_label");
       const inner = lbl?.namedChildren[0];
       let lname = inner?.text ?? "";
-      if (inner?.type === "quoted_name") lname = lname.slice(1, -1);
+      if (inner?.type === "backtick_name") lname = lname.slice(1, -1);
       if (nested) collectFieldMatches(nested, blockType, `${blockName}.${lname}`, file, tag, acc);
     }
   }

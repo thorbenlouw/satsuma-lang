@@ -26,7 +26,7 @@ function ident(text) {
 
 function blockLabel(name) {
   const inner = name.startsWith("'")
-    ? n("quoted_name", [], name)
+    ? n("backtick_name", [], name)
     : n("identifier", [], name);
   return n("block_label", [inner]);
 }
