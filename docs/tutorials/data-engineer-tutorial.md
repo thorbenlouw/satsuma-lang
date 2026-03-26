@@ -49,7 +49,7 @@ This extensibility is what separates Satsuma from rigid schema languages. You ar
 
 ### Dimensional modelling
 
-```stm
+```satsuma
 schema dim_customer (dimension, conformed, scd 2,
     natural_key customer_id,
     track {email, phone, segment},
@@ -64,7 +64,7 @@ Tokens like `dimension`, `scd 2`, `track`, and `ignore` tell an AI agent exactly
 
 ### Data Vault
 
-```stm
+```satsuma
 schema hub_customer (hub, business_key customer_id) {
   customer_id  STRING  (required)
 }
@@ -79,7 +79,7 @@ Hub, satellite, and link tokens give an AI agent enough context to generate hash
 
 ### Merge strategy
 
-```stm
+```satsuma
 mapping `load customers` (merge upsert, match_on customer_id) {
   source { `stg_customers` }
   target { `dim_customer` }
@@ -93,7 +93,7 @@ The `merge upsert` and `match_on` tokens translate directly to platform-specific
 
 ### Governance
 
-```stm
+```satsuma
 schema customer_pii (
     owner "data-governance-team",
     classification confidential,
@@ -207,7 +207,7 @@ A Satsuma spec is also a test specification. The metadata tokens you already wri
 
 Beyond field metadata, the mapping arrows themselves imply tests:
 
-```stm
+```satsuma
 mapping `load orders` (merge append) {
   source { `raw_orders` }
   target { `stg_orders` }
@@ -279,7 +279,7 @@ This produces better test data than generic mock generators because the spec car
 
 Notes are particularly valuable for test data. When a BA writes:
 
-```stm
+```satsuma
 schema legacy_phones {
   phone_nbr  VARCHAR(50) (
     note """
@@ -304,7 +304,7 @@ Governance tokens in a Satsuma spec are not just documentation. They are machine
 
 ### PII and classification
 
-```stm
+```satsuma
 schema customer_record (classification confidential, compliance {GDPR}) {
   customer_id    STRING  (pk, required)
   email          STRING  (pii, format email)
@@ -321,7 +321,7 @@ From this spec, an AI agent can generate:
 
 ### Ownership and lineage
 
-```stm
+```satsuma
 schema dim_customer (
     dimension, owner "analytics-team",
     classification internal) {

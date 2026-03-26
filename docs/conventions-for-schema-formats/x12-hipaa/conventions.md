@@ -47,7 +47,7 @@ The repo already has an EDIFACT example (`examples/edi-to-json.stm`). X12 conven
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — X12 837 Professional Claim (simplified)
 
 schema x12_837_claim (format x12, transaction 837,

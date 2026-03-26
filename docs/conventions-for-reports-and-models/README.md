@@ -46,7 +46,7 @@ These belong in `note` metadata on schemas and fields, or in top-level `note { }
 
 ### 1. Dashboard with Source Dependencies and Schedule
 
-```stm
+```satsuma
 schema weekly_sales_dashboard (
   report,
   source {fact_orders, dim_product},
@@ -68,7 +68,7 @@ Fields represent the measures and dimensions visible on the dashboard. The `sour
 
 ### 2. ML Model with Features, Output, and Registry
 
-```stm
+```satsuma
 schema churn_predictor (
   model,
   source {dim_customer, fact_orders},
@@ -89,7 +89,7 @@ Feature fields document inputs to the model. The output field (`churn_probabilit
 
 ### 3. Report with Governance Tokens Composed
 
-```stm
+```satsuma
 schema customer_risk_report (
   report,
   source {dim_customer, fact_orders, churn_predictor},
@@ -112,7 +112,7 @@ Governance tokens (`classification`, `retention`, `pii`, `owner`) compose natura
 
 ### 4. Minimal Report
 
-```stm
+```satsuma
 schema daily_order_summary (
   report,
   source {fact_orders},

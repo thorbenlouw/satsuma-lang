@@ -150,7 +150,7 @@ spec as opaque prose.
 
 ### A taste of the syntax
 
-```stm
+```satsuma
 schema legacy_db (note "Legacy CUSTOMER table") {
   CUST_ID       INT          (pk)
   CUST_TYPE     CHAR(1)      (enum {R, B, G})       //! NULL means Retail

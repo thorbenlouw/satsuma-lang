@@ -48,7 +48,7 @@ DICOM (Digital Imaging and Communications in Medicine) is the standard for medic
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — DICOM CT Study Metadata (simplified)
 
 schema dicom_ct_study (format dicom, modality "CT",

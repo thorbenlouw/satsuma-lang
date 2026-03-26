@@ -48,7 +48,7 @@ The Feature 06 convention spec and examples are complete. Future phases include:
 
 The grammar doesn't need to understand every schema language. We just need a clean way to say "this structure is defined over there, bring it in."
 
-```stm
+```satsuma
 // Pull in a DBML file -- the tooling resolves it to Satsuma-equivalent fields
 schema crm_database (from dbml "schemas/crm.dbml", table "customers") {}
 

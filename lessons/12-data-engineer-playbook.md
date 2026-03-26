@@ -18,7 +18,7 @@ Where the BA focuses on meaning and intent, you focus on **precision and impleme
 
 Your schemas should be implementation-ready. Use exact types, constraints, and format metadata:
 
-```stm
+```satsuma
 schema order_headers_parquet (format parquet, note "Curated order header dataset") {
   order_id             STRING         (pk)
   order_channel        STRING         (enum {web, mobile, store, marketplace}, required)
@@ -51,7 +51,7 @@ schema order_headers_parquet (format parquet, note "Curated order header dataset
 
 As an engineer, you lean toward structural (deterministic) transforms because they translate directly to implementation code:
 
-```stm
+```satsuma
 // These translate directly to SQL/Spark/dbt
 EMAIL_ADDR -> email { trim | lowercase | validate_email | null_if_invalid }
 CREDIT_LIMIT -> credit_limit_cents { coalesce(0) | * 100 | round }
@@ -84,7 +84,7 @@ Choose based on your data quality requirements:
 
 Satsuma `metric` blocks define business metrics with source, grain, dimensions, and measure additivity:
 
-```stm
+```satsuma
 metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
   grain monthly,
@@ -109,23 +109,23 @@ metric monthly_recurring_revenue "MRR" (
 ### Key metric concepts:
 
 **Source** — which fact/dimension tables feed the metric:
-```stm
+```satsuma
 source fact_subscriptions              // single source
 source {fact_orders, dim_customer}     // multiple sources
 ```
 
 **Grain** — the time resolution:
-```stm
+```satsuma
 grain daily | weekly | monthly
 ```
 
 **Slice** — the dimensions you can break the metric by:
-```stm
+```satsuma
 slice {customer_segment, product_line, region}
 ```
 
 **Filter** — row-level filter applied before aggregation:
-```stm
+```satsuma
 filter "status = 'active' AND is_trial = false"
 ```
 
@@ -183,7 +183,7 @@ Satsuma supports data modeling conventions with domain-specific metadata tokens:
 
 ### Data Vault
 
-```stm
+```satsuma
 schema hub_customer (datavault hub) {
   customer_hk    BINARY(32)    (pk, hashkey)
   customer_email VARCHAR(255)  (required, unique)
@@ -203,7 +203,7 @@ schema sat_customer_details (datavault satellite) {
 
 ### Slowly Changing Dimensions
 
-```stm
+```satsuma
 schema dim_customer (scd_type_2) {
   customer_sk      BIGINT        (pk)
   customer_id      VARCHAR(36)   (unique)

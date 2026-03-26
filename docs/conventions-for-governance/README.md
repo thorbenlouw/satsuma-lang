@@ -53,7 +53,7 @@ Use `note` on schemas and fields to document:
 
 ### 1. Field-Level PII with Classification and Masking
 
-```stm
+```satsuma
 schema customer_profiles {
   customer_id   UUID       (pk, required)
   email         STRING     (pii, classification "RESTRICTED", mask partial_email)
@@ -65,7 +65,7 @@ schema customer_profiles {
 
 ### 2. Schema-Level Ownership and Stewardship
 
-```stm
+```satsuma
 schema billing_facts (
   owner "finance-data-eng",
   steward "alex.chen@company.com",
@@ -81,7 +81,7 @@ schema billing_facts (
 
 ### 3. Retention Policies with Temporal Anchors
 
-```stm
+```satsuma
 schema account_master (
   retention "7y",
   note "7-year retention per SOX Section 802. Clock starts at account_closure_date.
@@ -98,7 +98,7 @@ schema account_master (
 
 ### 4. Multi-Framework Compliance Declarations
 
-```stm
+```satsuma
 schema patient_records (
   compliance {HIPAA, GDPR, SOC2},
   classification "RESTRICTED",
@@ -118,7 +118,7 @@ schema patient_records (
 
 Satsuma's token system is open-ended. Teams can introduce tokens that reflect their own governance vocabulary without any language changes:
 
-```stm
+```satsuma
 schema gl_transactions (
   cost_center "CC-4420",
   audit_level critical,

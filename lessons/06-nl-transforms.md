@@ -24,7 +24,7 @@ The CLI classifies every arrow's transform into one of five types:
 | `[nl]` | Natural language — requires agent interpretation | `{ "Format as E.164" }` |
 | `[mixed]` | Both pipeline steps and NL in the same transform | `{ "Extract digits" \| warn_if_invalid }` |
 | `[none]` | Direct mapping, no transform | `Id -> id` |
-| `[nl-derived]` | Implicit arrow from a backtick reference inside NL | `` `FIRST_NM` `` referenced in an NL block |
+| `[nl-derived]` | Implicit arrow from an `@ref` inside NL | `@FIRST_NM` referenced in an NL block |
 
 This classification matters because:
 - **Structural** transforms can be validated and tested mechanically.
@@ -37,7 +37,7 @@ This classification matters because:
 
 Structural transforms chain operations with `|`:
 
-```stm
+```satsuma
 EMAIL_ADDR -> email { trim | lowercase | validate_email | null_if_invalid }
 ```
 
@@ -60,16 +60,16 @@ These are **vocabulary conventions**, not executable code. They specify intent p
 
 NL transforms express intent in prose:
 
-```stm
+```satsuma
 -> display_name {
-  "If `CUST_TYPE` is null or 'R', trim and concat `FIRST_NM` + ' ' + `LAST_NM`.
-   Otherwise, trim `COMPANY_NM`."
+  "If @CUST_TYPE is null or 'R', trim and concat @FIRST_NM + ' ' + @LAST_NM.
+   Otherwise, trim @COMPANY_NM."
 }
 ```
 
-### Backtick references inside NL
+### @ref inside NL
 
-Notice the backtick identifiers: `` `CUST_TYPE` ``, `` `FIRST_NM` ``, `` `LAST_NM` ``, `` `COMPANY_NM` ``. These create **traceable references** inside natural language. The parser extracts them as `[nl-derived]` arrows, so lineage tools can trace which source fields feed into this computed field — even though the logic is expressed in prose.
+Notice the `@ref` markers: `@CUST_TYPE`, `@FIRST_NM`, `@LAST_NM`, `@COMPANY_NM`. These create **traceable references** inside natural language. The parser extracts them as `[nl-derived]` arrows, so lineage tools can trace which source fields feed into this computed field — even though the logic is expressed in prose.
 
 ### When the CLI encounters NL
 
@@ -81,11 +81,11 @@ The CLI extracts NL content verbatim with `satsuma nl`. It does not interpret it
 
 Mixed transforms combine structural steps with NL:
 
-```stm
+```satsuma
 PHONE_NBR -> phone {
   "Extract all digits. If 11 digits starting with 1, treat as US.
    If 10 digits, assume US country code +1. Format as E.164.
-   For other patterns, attempt to determine country from `COUNTRY_CD`."
+   For other patterns, attempt to determine country from @COUNTRY_CD."
   | warn_if_invalid
 }
 ```
@@ -94,7 +94,7 @@ Here, the NL describes the extraction logic, and `warn_if_invalid` adds a determ
 
 Another example:
 
-```stm
+```satsuma
 Amount -> amount_usd {
   "Multiply by rate from currency_rates using CurrencyIsoCode"
   | round(2)
@@ -124,7 +124,7 @@ This is a judgment call. Here are guidelines:
 
 ### Example: the right choice
 
-```stm
+```satsuma
 // GOOD — formalize a simple enum mapping
 CUST_TYPE -> customer_type {
   map { R: "retail", B: "business", G: "government", null: "retail" }
@@ -158,7 +158,7 @@ The NL version is longer but clearer. Anyone can read it. The pseudo-code versio
 When the agent encounters an NL transform, it:
 
 1. **Reads the NL content** extracted by the CLI (via `satsuma nl`).
-2. **Identifies referenced fields** from backtick identifiers.
+2. **Identifies referenced fields** from `@ref` markers.
 3. **Interprets the business intent** in context (what schemas are involved, what the mapping does).
 4. **Can explain the logic** in business terms to the human.
 5. **Can draft implementation code** in SQL, Python, or another language — but that's outside Satsuma.
@@ -175,16 +175,16 @@ The key insight: **the agent interprets NL while the CLI only extracts it verbat
 When reviewing NL transforms, ask:
 
 1. **Is the intent clear?** Could two reasonable people interpret this differently?
-2. **Are all inputs referenced?** Does the NL mention every source field it depends on (preferably with backtick references)?
+2. **Are all inputs referenced?** Does the NL mention every source field it depends on (using `@ref` markers)?
 3. **Are edge cases covered?** What happens with nulls, empty strings, unexpected values?
 4. **Is the output specified?** Does the NL say what the result should look like?
 5. **Could this be formalized?** If the logic is actually simple, a `map { }` or pipeline might be clearer.
 
 If the answer to question 1 is "yes, this is ambiguous," that's valuable information. Add a `//?` comment:
 
-```stm
+```satsuma
 -> discount_total {
-  "Sum `DiscountAmount` across order discount entries."
+  "Sum @DiscountAmount across order discount entries."
 }                                                          //? should refunds reduce discount_total?
 ```
 
@@ -195,8 +195,8 @@ The ambiguity is now tracked and discoverable.
 ## Key Takeaways
 
 1. Natural language in transforms is a deliberate design choice — it handles complexity that pseudo-code would make worse.
-2. Transforms are classified as `[structural]`, `[nl]`, `[mixed]`, or `[none]` by syntax, and the CLI may also surface synthetic `[nl-derived]` lineage edges from backtick references in NL.
-3. Backtick references inside NL (`` `field_name` ``) create traceable lineage connections.
+2. Transforms are classified as `[structural]`, `[nl]`, `[mixed]`, or `[none]` by syntax, and the CLI may also surface synthetic `[nl-derived]` lineage edges from `@ref` markers in NL.
+3. `@ref` markers inside NL (e.g. `@field_name`) create traceable lineage connections.
 4. The CLI extracts NL verbatim. The agent interprets it. The human approves the interpretation.
 5. Formalize when you can. Keep it natural when formalization would obscure meaning or force false precision.
 

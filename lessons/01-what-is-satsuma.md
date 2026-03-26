@@ -49,7 +49,7 @@ If you understand what these three delimiters do, you can read any Satsuma file 
 
 Satsuma has three comment styles, each with a different audience:
 
-```stm
+```satsuma
 // This is a regular comment — author-side context, for people reading the file
 //! This is a warning — something is wrong or risky in the data
 //? This is a question or TODO — something unresolved that needs a decision
@@ -63,7 +63,7 @@ The CLI can extract `//!` warnings and `//?` questions across a whole workspace,
 
 Here is a minimal Satsuma file that maps customer data from a legacy CRM to a data warehouse:
 
-```stm
+```satsuma
 schema crm (note "Legacy CRM system") {
   id       INT           (pk)
   name     STRING(200)

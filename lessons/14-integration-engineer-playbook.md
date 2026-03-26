@@ -19,23 +19,23 @@ Satsuma handles all of these with the same structural model. Format-specific det
 
 ### XML with Namespaces and XPath
 
-```stm
+```satsuma
 schema commerce_order (
   format xml,
   namespace ord "http://example.com/commerce/order/v2",
   namespace com "http://example.com/common/v1",
   note "Canonical commerce order message"
 ) {
-  record Order (xpath "/ord:OrderMessage/ord:Order") {
+  Order record (xpath "/ord:OrderMessage/ord:Order") {
     OrderId        STRING   (xpath "ord:OrderId")
     Channel        STRING   (xpath "ord:Channel")
 
-    record Customer {
+    Customer record {
       CustomerId   STRING   (xpath "ord:CustomerId")
       Email        STRING   (xpath "ord:Email")
     }
 
-    list LineItems (xpath "ord:LineItems/ord:LineItem") {
+    LineItems list_of record (xpath "ord:LineItems/ord:LineItem") {
       LineNumber   INT32    (xpath "ord:LineNumber")
       SKU          STRING   (xpath "ord:SKU")
       Quantity     INT32    (xpath "ord:Quantity")
@@ -51,22 +51,22 @@ Key points:
 
 ### EDI with Fixed-Length Records and Filters
 
-```stm
+```satsuma
 schema edi_desadv (
   format fixed-length,
   note "EDI 856 Despatch Advice — Fixed Length Format"
 ) {
-  record BeginningOfMessage {
+  BeginningOfMessage record {
     DOCNUM      CHAR(35)
     MESSGFUN    CHAR(3)              // message function: 9 = Original
   }
 
-  list POReferences (filter REFQUAL == "ON") {
+  POReferences list_of record (filter REFQUAL == "ON") {
     REFQUAL     CHAR(3)
     REFNUM      CHAR(35)             // PO Number + "/" + Dissection No
   }
 
-  list Quantities (filter QUANTQUAL == "12") {
+  Quantities list_of record (filter QUANTQUAL == "12") {
     QUANTQUAL   CHAR(3)
     QUANTITY    NUMBER(15)           //! 4 implied decimal places
   }
@@ -80,7 +80,7 @@ Key points:
 
 ### COBOL Copybooks
 
-```stm
+```satsuma
 schema mainframe_policy (
   format cobol,
   encoding EBCDIC,
@@ -91,7 +91,7 @@ schema mainframe_policy (
   PREMIUM-AMT   PIC-S9(7)V99-COMP-3  (offset 50)    // packed decimal
   COVERAGE-TYPE PIC-X(2)         (offset 54, enum {LF, HE, AU, HO})
 
-  list BENEFICIARIES (offset 56, occurs 5, depends_on BENE-COUNT) {
+  BENEFICIARIES list_of record (offset 56, occurs 5, depends_on BENE-COUNT) {
     BENE-NAME   PIC-X(30)
     BENE-PCT    PIC-9(3)V9       // percentage, 1 decimal
   }
@@ -106,7 +106,7 @@ Key points:
 
 ### Protobuf with Schema Registry
 
-```stm
+```satsuma
 schema commerce_event (
   format protobuf,
   registry "https://schema-registry.prod.internal/subjects/commerce.events/versions/latest",
@@ -118,7 +118,7 @@ schema commerce_event (
   session_id      STRING       (tag 4)
   user_id         STRING       (tag 5, pii)
 
-  record product_detail (tag 6) {
+  product_detail record (tag 6) {
     sku           STRING       (tag 1)
     category      STRING       (tag 2)
     price_cents   INT64        (tag 3)
@@ -140,15 +140,17 @@ Integration engineering often involves mapping between formats with different ne
 
 ### Nested source to flat target (flattening)
 
-```stm
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+```satsuma
+mapping `order lines` {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
-  Order.OrderId -> order_id
-  Order.LineItems[].LineNumber -> line_number
-  Order.LineItems[].SKU -> sku { trim | uppercase }
-  Order.CurrencyCode -> currency_code { trim | uppercase }
+  flatten Order.LineItems -> order_lines {
+    Order.OrderId -> order_id
+    .LineNumber -> line_number
+    .SKU -> sku { trim | uppercase }
+    Order.CurrencyCode -> currency_code { trim | uppercase }
+  }
 }
 ```
 
@@ -156,13 +158,13 @@ Parent-level fields (`OrderId`, `CurrencyCode`) are denormalized onto every outp
 
 ### Flat source to nested target
 
-```stm
-POReferences[] -> ShipmentHeader.asnDetails[] {
+```satsuma
+each POReferences -> ShipmentHeader.asnDetails {
   .REFNUM -> .orderNo { split("/") | first | to_number }
 
-  LineItems[] -> .items[] {
+  each LineItems -> .items {
     .ITEMNO -> .item { trim }
-    Quantities[].QUANTITY -> .unitQuantity {
+    .QUANTITY -> .unitQuantity {
       "Divide by 10000 for 4 implied decimal places."
     }
   }
@@ -188,14 +190,14 @@ Nested arrow blocks build up the target structure from flat or differently-struc
 
 Enterprise integrations frequently join data from multiple independent systems:
 
-```stm
-mapping 'customer 360' {
+```satsuma
+mapping `customer 360` {
   source {
     `crm_customers`       (filter "email NOT LIKE '%@test.internal'")
     `order_transactions`   (filter "status IN ('completed', 'refunded')")
     `support_tickets`      (filter "created_at >= date_sub(now(), interval 12 month)")
-    "Join `crm_customers` to `order_transactions` on customer_id (left join).
-     Join `crm_customers` to `support_tickets` on customer_id (left join)."
+    "Join @crm_customers to @order_transactions on customer_id (left join).
+     Join @crm_customers to @support_tickets on customer_id (left join)."
   }
   target { `customer_360` }
 
@@ -204,12 +206,12 @@ mapping 'customer 360' {
   crm_customers.email -> email { trim | lowercase }
 
   // Aggregated from orders
-  -> total_orders { "Count of `order_transactions` where status = 'completed'." }
-  -> total_revenue { "Sum `order_transactions.total` where status = 'completed'." | coalesce(0) | round(2) }
+  -> total_orders { "Count of @order_transactions where status = 'completed'." }
+  -> total_revenue { "Sum @order_transactions.total where status = 'completed'." | coalesce(0) | round(2) }
 
   // Aggregated from support
-  -> tickets_last_12m { "Count of `support_tickets`." | coalesce(0) }
-  -> avg_csat_score { "Average `support_tickets.csat_score` where not null." | round(1) }
+  -> tickets_last_12m { "Count of @support_tickets." | coalesce(0) }
+  -> avg_csat_score { "Average @support_tickets.csat_score where not null." | round(1) }
 }
 ```
 
@@ -226,14 +228,14 @@ mapping 'customer 360' {
 
 Enterprise mappings frequently need to look up reference data:
 
-```stm
+```satsuma
 PHONE_NBR -> phone {
   "Extract all digits. If 10 digits, assume US (+1).
-   Validate country code against `country_codes` lookup using `COUNTRY_CD`."
+   Validate country code against @country_codes lookup using @COUNTRY_CD."
   | warn_if_invalid
 }
 
-LineItems[].ITEMNO -> .item {
+.ITEMNO -> .item {
   trim
   | "Retrieve MFCS item number using the supplier's traded code
      from the MFCS supplier item cross-reference."
@@ -253,9 +255,9 @@ If the lookup is simple enough, reference the lookup schema and let the implemen
 
 Enterprise integrations inevitably have gaps — target fields that have no source:
 
-```stm
-//! DATA GAP: containers[] required but no source data
--> ShipmentHeader.asnDetails[].containers {
+```satsuma
+//! DATA GAP: containers required but no source data
+-> ShipmentHeader.asnDetails.containers {
   "Required by MFCS schema but no source data available in EDI 856.
    Options under discussion:
    1. Populate with a single placeholder container per order
@@ -280,10 +282,10 @@ As an integration engineer, your deepest value is **knowing how the systems actu
 
 | You know | How to capture it |
 |---|---|
-| "This EDI segment only matters when the qualifier is ON" | `list POReferences (filter REFQUAL == "ON")` |
+| "This EDI segment only matters when the qualifier is ON" | `POReferences list_of record (filter REFQUAL == "ON")` |
 | "The quantity field has 4 implied decimal places" | `//! 4 implied decimal places` + NL transform |
 | "These two systems join on customer_id, but support stores it as a string" | Join description in source block + `//! stored as string, must cast to UUID` |
-| "The date format depends on which upstream system sent the message" | NL transform: "Parse format depends on `Channel` field" |
+| "The date format depends on which upstream system sent the message" | NL transform: "Parse format depends on @Channel field" |
 | "Nobody documented the status codes, but I found these in production" | `note "Values observed: AP, RJ, PN, CL. Meanings not documented."` + `//?` |
 
 The agent turns your knowledge into well-formed Satsuma. You don't need to know the exact syntax — describe what you know, and the agent structures it correctly.

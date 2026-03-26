@@ -54,7 +54,7 @@ The agent generates arrows, transforms, and notes. You review for correctness (L
 
 When you encounter business rules you don't fully understand yet, don't force precision. Use NL transforms and questions:
 
-```stm
+```satsuma
 -> health_score {
   "Derive from is_active, last_order_date, open_tickets, avg_csat_score.
    Exact thresholds TBD — need input from customer success team."

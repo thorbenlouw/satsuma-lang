@@ -608,7 +608,7 @@ Fields inside a metric body declare the numeric values the metric produces. The 
 
 **Simple revenue metric:**
 
-```stm
+```satsuma
 metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
   grain monthly,
@@ -627,7 +627,7 @@ metric monthly_recurring_revenue "MRR" (
 
 **Multi-source metric with multiple measures:**
 
-```stm
+```satsuma
 metric customer_lifetime_value "CLV" (
   source {fact_orders, dim_customer},
   slice {acquisition_channel, segment, cohort_year}
@@ -648,7 +648,7 @@ metric customer_lifetime_value "CLV" (
 
 **Metric with no display label:**
 
-```stm
+```satsuma
 metric churn_rate (
   source {fact_subscriptions, dim_customer},
   grain monthly,

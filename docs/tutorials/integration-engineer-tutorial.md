@@ -39,7 +39,7 @@ The core workflow has four steps:
 
 ### Step 1: Document source and target schemas with format metadata
 
-```stm
+```satsuma
 schema commerce_event_pb (
   format protobuf,
   schema_registry "https://registry.example.com",
@@ -55,7 +55,7 @@ The `format`, `schema_registry`, and `tag` metadata tell both humans and AI agen
 
 ### Step 2: Describe the mapping logic
 
-```stm
+```satsuma
 mapping `event ingest` {
   source { `commerce_event_pb` }
   target { `event_store` }
@@ -71,7 +71,7 @@ Arrows, pipe chains, value maps, natural-language transforms. The [BA Tutorial](
 
 ### Step 3: Add integration metadata
 
-```stm
+```satsuma
 note {
   """
   # Event Ingest Pipeline
@@ -100,7 +100,7 @@ One of Satsuma's strengths is that format-specific metadata lives right next to 
 
 ### XML with XPath and Namespaces
 
-```stm
+```satsuma
 schema commerce_order (
   format xml,
   namespace ord "http://example.com/commerce/order/v2",
@@ -115,7 +115,7 @@ The `namespace` declarations on the schema and `xpath` annotations on each field
 
 ### JSON with JSONPath
 
-```stm
+```satsuma
 schema webhook_payload (format json) {
   order_id  STRING  (jsonpath "$.order.id", required)
   items     list_of record (jsonpath "$.order.line_items[*]") {
@@ -129,7 +129,7 @@ JSONPath annotations make nested JSON structures explicit. The AI agent doesn't 
 
 ### COBOL Copybooks
 
-```stm
+```satsuma
 schema customer_master (
   format copybook,
   encoding ebcdic
@@ -143,7 +143,7 @@ Positional layout, PIC clauses, packed-decimal encoding — all the details that
 
 ### EDI with Segment Filters
 
-```stm
+```satsuma
 schema edi_desadv (format fixed-length) {
   ShipmentRefs list_of record (filter SHPRFQUAL == "SRN") {
     SHPRFQUAL  CHAR(3)
@@ -156,7 +156,7 @@ The `filter` metadata captures the qualifier-based segment selection that makes 
 
 ### Protobuf with Tag-Based References
 
-```stm
+```satsuma
 schema commerce_event_pb (format protobuf) {
   event_id    STRING  (tag 1)
   event_type  STRING  (tag 2)
@@ -249,7 +249,7 @@ Integration work is fundamentally about messages — requests, responses, events
 
 When an integration involves a request to one system and a response that feeds another, model them as two separate mappings sharing a common schema:
 
-```stm
+```satsuma
 schema api_request (format json) {
   customer_id  STRING  (required)
   query_type   STRING  (required)
@@ -282,7 +282,7 @@ Two mappings, one for each direction of the conversation. The schemas make the A
 
 For event-driven architectures, capture schema evolution metadata alongside the structure:
 
-```stm
+```satsuma
 schema customer_event (
   format avro,
   evolution backward,
@@ -301,7 +301,7 @@ The `evolution backward` and `schema_registry` metadata tell an AI agent — and
 
 Use `note { }` blocks to document error handling strategies directly in the spec:
 
-```stm
+```satsuma
 mapping `ingest events` {
   source { `raw_event` }
   target { `processed_event` }
@@ -325,7 +325,7 @@ This is integration metadata that traditionally lives in a runbook or a Jira tic
 
 ### Idempotency Keys and Deduplication Hints
 
-```stm
+```satsuma
 mapping `order ingest` (
   idempotency_key order_id,
   dedup_window "24h",

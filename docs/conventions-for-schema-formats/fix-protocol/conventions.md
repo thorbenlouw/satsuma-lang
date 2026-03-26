@@ -44,7 +44,7 @@ FIX (Financial Information eXchange) is the dominant protocol for electronic tra
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — FIX 4.4 New Order Single (simplified)
 
 schema fix_new_order (format fix, fix_version "4.4",

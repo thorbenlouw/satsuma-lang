@@ -37,7 +37,7 @@ WHEN NOT MATCHED THEN INSERT (col1, ...) VALUES (s.col1, ...);
 ```
 
 **Example:**
-```stm
+```satsuma
 mapping `customer upsert` (merge upsert, match_on customer_id) {
   source { `crm_customers` }
   target { `dim_customer` }
@@ -73,7 +73,7 @@ FROM source s;
 ```
 
 **Example:**
-```stm
+```satsuma
 mapping `page view events` (merge append) {
   source { `clickstream_raw` }
   target { `event_log` }
@@ -121,7 +121,7 @@ VALUES (s.match_key, TRUE, CURRENT_TIMESTAMP, ...);
 ```
 
 **Example:**
-```stm
+```satsuma
 mapping `customer soft delete` (
   merge soft_delete,
   match_on customer_id,
@@ -171,7 +171,7 @@ DROP TABLE target_staging;
 ```
 
 **Example:**
-```stm
+```satsuma
 mapping `product catalog refresh` (merge full_refresh) {
   note {
     "If source returns fewer than 1,000 rows, abort and alert."
