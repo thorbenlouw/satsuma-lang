@@ -29,7 +29,7 @@ Test areas:
 - **Triple-quoted strings**: `"""multiline content"""`. Preserved with formatting?
 - **Comment extraction**: `//`, `//!`, `//?` comments. Which are included in NL output?
 - **Mixed transforms**: Pipeline steps with NL strings. Only the NL parts extracted?
-- **Backtick references in NL**: `` "Sum `amount` grouped by `customer_id`" ``. Preserved?
+- **@ref in NL output**: `"Sum @amount grouped by @order_id"` — are @refs preserved verbatim?
 - **`--json` flag**: Valid JSON with content, type, and location for each NL item?
 - **Scope not found**: Non-existent scope. Exit code?
 - **Empty NL**: Scope with no NL content. Exit code? Output?
@@ -37,6 +37,13 @@ Test areas:
 - **Metric NL**: Notes and comments inside metrics.
 - **Single file path**: Does path argument work correctly?
 - **Special characters in NL**: Quotes, backslashes, unicode in NL strings.
+- **@ref preservation in NL output**: `"Sum @line_amount grouped by @order_id"` — are @refs preserved verbatim in NL output?
+- **NL inside each blocks**: `each items -> output { .sku -> .code { "NL text" } }` — is NL extracted?
+- **NL inside flatten blocks**: `flatten lines -> flat { .sku -> .code { "NL text" } }` — is NL extracted?
+- **Field-scoped NL in each/flatten**: `satsuma nl target.field_name` where the field is mapped inside an each/flatten block — found?
+- **Source block join descriptions**: `source { a, b, "Join condition NL" }` — is this NL extracted by `satsuma nl mapping_name`?
+- **NL in named transforms**: `transform t { "NL description" }` — extracted by `satsuma nl all`?
+- **@ref in NL**: `@schema.field` references should be preserved in NL output. (Backticks are only for quoting complex names, not for NL references.)
 
 ## Creating test fixtures
 

@@ -39,6 +39,13 @@ Test areas:
 - **Namespace validation**: Invalid namespace syntax. Caught?
 - **Import cycle detection**: Circular imports. Handled gracefully?
 - **Ref metadata validation**: `(ref nonexistent.field)`. Is the reference checked?
+- **@ref resolution in NL**: `"Sum @line_amount grouped by @order_id"` — are @refs validated against known schemas/fields?
+- **@ref with nested dot paths**: `@schema.record.subfield` (3+ segments) — correctly resolved against nested record structures?
+- **@ref in each/flatten blocks**: NL with @refs inside each/flatten — are they validated?
+- **@ref in standalone notes**: `note { "References @some_schema" }` — are @refs in top-level notes validated?
+- **@ref in source join descriptions**: `source { a, b, "Join on @a.id = @b.id" }` — are these @refs validated?
+- **Duplicate definitions across files**: Two files define the same mapping name. Does validate produce false field-not-in-schema warnings due to schema resolution confusion?
+- **False warning with cross-file duplicates**: When `mapping "order headers"` exists in two files with different source schemas, does validate attribute arrow fields to the wrong source schema?
 
 ## Creating test fixtures
 

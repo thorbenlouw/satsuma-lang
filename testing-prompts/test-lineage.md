@@ -35,7 +35,16 @@ Test areas:
 - **Neither `--from` nor `--to`**: What happens? Error message?
 - **Non-existent schema**: Exit code and message?
 - **Single file**: `satsuma lineage --from schema examples/common.stm`.
-- **NL backtick references**: Do NL references like `` "Join with `other_schema`" `` create lineage edges?
+- **@ref lineage edges**: Do `@ref` references in NL strings (e.g., `"Join with @other_schema"`) create lineage edges?
+- **@ref in NL transforms**: `"Sum @line_amount grouped by @order_id"` — do @refs create lineage edges? These are the primary ref syntax in v2.
+- **@ref to undeclared schema**: A mapping's NL transform references `@external_lookup.code` but `external_lookup` is not in source/target. Does lineage show it as an `nl_ref` dependency?
+- **@ref with dot-qualified nested paths**: `@schema.record.subfield` (3+ segments) — does lineage resolve nested record paths correctly?
+- **@ref in note blocks**: Do @refs in `note { "references @schema" }` create lineage edges? Test standalone notes, schema notes, and mapping-body notes.
+- **@ref in source join descriptions**: `source { a, b, "Join on @a.id = @b.id" }` — does lineage track @refs from join NL?
+- **@ref in each/flatten blocks**: `each items -> output { .sku -> .code { "Look up @catalog.sku" } }` — does lineage trace through each/flatten NL?
+- **Multiple @refs in one NL string**: `"Join @orders.id with @customers.customer_id and lookup @products.sku"` — are all three schemas tracked?
+- **Multi-hop @ref lineage**: Schema A maps to B, B maps to C where the NL references @A — does lineage show A as upstream of C?
+- **@ref in named transforms**: `transform enricher { "Look up @lookup.code" }` spread into a mapping. Does lineage follow through the spread?
 
 ## Creating test fixtures
 

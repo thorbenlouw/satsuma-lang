@@ -12,34 +12,43 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
    - `SATSUMA-V2-SPEC.md` — authoritative language specification
 2. Read the `satsuma nl-refs --help` output.
 3. Review existing open bug tickets with `tk list` to avoid duplicating known issues.
-4. Explore the `examples/` folder for files with NL content containing backtick references.
+4. Explore the `examples/` folder for files with NL content containing `@ref` references.
 
 ## What to test
 
-`satsuma nl-refs [path]` extracts backtick references from NL transform bodies.
+`satsuma nl-refs [path]` extracts `@ref` references from NL transform bodies.
+
+Note: Backtick refs in NL strings are no longer valid Satsuma v2 syntax. All NL references use `@ref` syntax (e.g., `@schema.field`). Backticks are only for identifiers/labels (e.g., `` `My Schema` ``).
 
 Test areas:
-- **Basic backtick refs**: NL string containing `` `field_name` ``. Extracted?
-- **Multiple refs in one string**: `` "Sum `amount` grouped by `customer_id`" ``. Both extracted?
-- **Schema-qualified refs**: `` `schema_name.field_name` ``. Extracted with dot path?
-- **Namespace-qualified refs**: `` `crm::customers.name` ``. Extracted?
-- **Refs in note blocks**: `` note { "See `other_schema` for details" } ``. Extracted?
-- **Refs in inline notes**: `` (note "Based on `source_field`") ``. Extracted?
-- **Refs in comments**: `` //! Watch out for `field_name` ``. Are comment backtick refs extracted?
-- **Refs in triple-quoted strings**: `` """See `field` for more""" ``. Extracted?
-- **No backtick refs**: NL content without any backtick references. Exit code? Output?
+
+### @ref extraction
+- **Basic @ref**: `"Sum @line_amount grouped by @order_id"`. Both @refs extracted?
+- **@ref with dot-qualified names**: `@schema.field` — extracted and resolved?
+- **@ref with nested paths (3+ segments)**: `@schema.record.subfield` — resolved against nested record structure?
+- **Multiple @refs in one string**: `"Join @orders.id with @customers.customer_id"` — all extracted?
+- **@ref in each/flatten blocks**: NL inside `each` or `flatten` block transforms — are @refs found?
+- **@ref in standalone note blocks**: `note { "References @some_schema" }` at file level — extracted?
+- **@ref in schema/metric/fragment notes**: `note { "Based on @source.field" }` inside a schema body — extracted?
+- **@ref in source join descriptions**: `source { a, b, "Join on @a.id = @b.id" }` — @refs found?
+- **@ref in named transforms**: `transform t { "Look up @lookup.code" }` — extracted with transform context?
+- **@ref in triple-quoted strings**: `"""Multi-line with @some_ref"""` — tracked?
+- **@ref resolution status**: Does output indicate resolved vs unresolved for @refs?
+- **@ref to non-existent schema**: `@nonexistent.field` — flagged as unresolved?
+
+### General
+- **No refs at all**: NL content without any references. Exit code? Output?
 - **`--json` flag**: Valid JSON? Each ref includes: the reference text, the containing block, file, line?
 - **Resolution status**: Does output indicate whether each ref resolves to a known identifier?
-- **Nested backticks**: Edge case — `` "Check `record.`nested_field`` " ``. How handled?
-- **Empty backticks**: `` "Something `` here" ``. How handled?
 - **Cross-file**: Refs across multiple files all collected?
 - **Single file path**: Works with a single file argument?
 - **Ref in mapping vs schema vs metric**: Refs in different block types. Context preserved?
-- **Duplicate refs**: Same backtick reference appears multiple times. All occurrences listed?
+- **Duplicate refs**: Same @ref reference appears multiple times. All occurrences listed?
+- **Namespace-qualified @refs**: `@ns::schema.field` — extracted and resolved?
 
 ## Creating test fixtures
 
-Create all temporary test files under `/tmp/satsuma-test-nl-refs/`. Construct files with diverse backtick reference patterns in NL content.
+Create all temporary test files under `/tmp/satsuma-test-nl-refs/`. Construct files with diverse `@ref` patterns in NL content across all block types.
 
 ## Logging bugs
 

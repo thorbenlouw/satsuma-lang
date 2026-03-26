@@ -24,7 +24,7 @@ Test areas:
 - **Transform spreads**: Named transform referenced via `...transform_name` in mapping bodies.
 - **Import references**: Schema or fragment referenced in `import { name } from "file.stm"`.
 - **Metric source references**: Schema referenced as `source schema_name` in metric metadata.
-- **NL backtick references**: Schema or field names in backtick references inside NL strings. Are these surfaced?
+- **@ref references in NL**: Schema or field names referenced via `@ref` syntax in NL strings (e.g., `"Sum @schema.field"`). Are these surfaced?
 - **Cross-file references**: Name used in a different file from its definition.
 - **Namespace-qualified references**: `crm::customers` references.
 - **Quoted names**: Fragments or schemas with quoted labels like `'Common Fields'`.
@@ -35,6 +35,11 @@ Test areas:
 - **Self-reference**: Schema that references itself somehow.
 - **Case sensitivity**: Is lookup case-sensitive?
 - **Ref metadata**: `(ref schema.field)` — is this caught as a reference?
+- **@ref references in NL**: `"Sum @schema.field"` — does where-used find this as a reference to the schema?
+- **@ref in each/flatten blocks**: Schema referenced via @ref inside each/flatten NL — found by where-used?
+- **@ref in standalone notes**: Schema referenced via @ref in a file-level `note { }` — found?
+- **@ref in source join descriptions**: Schema referenced via @ref in `source { a, b, "Join @a.id = @b.id" }` — found?
+- **@ref in named transforms**: Schema referenced via @ref in a named transform definition — found when the transform is spread?
 
 ## Creating test fixtures
 

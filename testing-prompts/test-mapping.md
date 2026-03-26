@@ -39,6 +39,14 @@ Test areas:
 - **Not found**: Non-existent mapping name. Exit code?
 - **Multiple mappings same name**: In different files or namespaces.
 - **Field paths with dots**: `record.child -> target.child` arrow paths.
+- **Each blocks**: `each items -> output.list { .field -> .field }` — are each block arrows shown with correct nesting?
+- **Flatten blocks**: `flatten lines -> flat { .field -> .field }` — are flatten block arrows included?
+- **Nested each blocks**: `each outer -> target { each inner -> .nested { ... } }` — correct nesting representation?
+- **Multi-source arrows**: `a, b -> c { "combine" }` — both sources shown?
+- **@ref in NL transforms**: `{ "Sum @line_amount grouped by @order_id" }` — @refs preserved in transform output?
+- **Source join descriptions**: `source { a, b, "Join condition" }` — is the join NL shown in mapping output?
+- **`--compact --json` consistency**: Does `--compact` omit transforms and notes in JSON mode too (not just text mode)?
+- **Empty transform body**: `a -> x { }` — what kind is it classified as?
 
 ## Creating test fixtures
 
