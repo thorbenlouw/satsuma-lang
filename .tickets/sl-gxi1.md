@@ -1,6 +1,6 @@
 ---
 id: sl-gxi1
-status: in_progress
+status: closed
 deps: [sl-2mm6]
 links: []
 created: 2026-03-26T08:54:56Z

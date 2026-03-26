@@ -1,6 +1,6 @@
 ---
 id: sl-dlgs
-status: open
+status: closed
 deps: [sl-gxi1]
 links: []
 created: 2026-03-26T08:55:03Z

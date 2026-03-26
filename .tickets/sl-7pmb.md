@@ -1,6 +1,6 @@
 ---
 id: sl-7pmb
-status: in_progress
+status: closed
 deps: [sl-ydwn]
 links: []
 created: 2026-03-26T07:43:51Z
