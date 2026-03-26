@@ -24,6 +24,11 @@ vizEl.addEventListener("navigate", (ev: CustomEvent) => {
   }
 });
 
+// Listen for refresh events from the toolbar
+vizEl.addEventListener("refresh", () => {
+  vscode.postMessage({ type: "refresh" });
+});
+
 // Receive messages from the extension host
 window.addEventListener("message", (event) => {
   const msg = event.data;
