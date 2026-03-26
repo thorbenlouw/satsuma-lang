@@ -1,9 +1,9 @@
 ---
 layout: default.njk
-title: "Satsuma CLI &mdash; 21 Commands for Structural Extraction"
-description: "The Satsuma CLI provides 21 deterministic, parser-backed commands for workspace extraction, validation, formatting, lineage tracing, and structural analysis."
-og_title: "Satsuma CLI &mdash; 21 Commands for Structural Extraction"
-og_description: "Deterministic structural extraction for Satsuma workspaces. Lineage, validation, linting, and more."
+title: "Satsuma CLI &mdash; Agent Tooling for Structural Extraction"
+description: "The Satsuma CLI gives AI agents 21 deterministic, parser-backed commands to slice, query, and validate Satsuma workspaces. Humans use it for formatting, validation, and linting."
+og_title: "Satsuma CLI &mdash; Agent Tooling for Structural Extraction"
+og_description: "Give your AI agent 21 commands to extract structure, trace lineage, and validate Satsuma workspaces. Humans get formatting, linting, and validation."
 nav_id: cli
 permalink: cli.html
 ---
@@ -17,18 +17,24 @@ permalink: cli.html
             21 commands &middot; 824 tests
           </div>
           <h1 class="text-4xl sm:text-5xl font-extrabold text-charcoal leading-tight mb-6">
-            Satsuma <span class="text-orange">CLI</span>
+            The agent's <span class="text-orange">toolkit</span> for Satsuma
           </h1>
           <p class="text-lg text-warm-gray leading-relaxed mb-4">
-            Deterministic structural extraction for Satsuma workspaces. Every command produces 100% correct results from the parse tree &mdash; no regex heuristics, no guessing.
+            The Satsuma CLI is built for AI agents. 21 parser-backed commands let your agent slice workspaces, trace lineage, extract metadata, and pull NL intent &mdash; all from the parse tree, with 100% deterministic results.
+          </p>
+          <p class="text-warm-gray leading-relaxed mb-4">
+            Humans use it too &mdash; <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">validate</code>, <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">fmt</code>, and <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">lint</code> are your day-to-day workflow commands. But the CLI's real power is as the structural backbone your agent reasons on top of.
           </p>
           <p class="text-warm-gray leading-relaxed mb-8">
-            The CLI extracts structural facts. It does not interpret natural language. Satsuma uses NL strings for intent that cannot be captured as deterministic pipelines &mdash; the CLI delivers them verbatim. <strong>The CLI is the toolkit. The agent is the runtime.</strong>
+            <strong>The CLI extracts facts. The agent interprets them.</strong> It also powers the VS Code extension's diagnostics, lineage views, and code intelligence.
           </p>
           <div class="flex flex-wrap gap-3">
-            <a href="#install" class="inline-flex items-center gap-2 px-6 py-3 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl transition-all">
-              Install
+            <a href="#agent-setup" class="inline-flex items-center gap-2 px-6 py-3 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl transition-all">
+              Set up your agent
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+            <a href="#install" class="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
+              Install
             </a>
             <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-CLI.md" target="_blank" rel="noopener"
                class="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
@@ -45,6 +51,10 @@ permalink: cli.html
             <span class="text-xs text-gray-400 ml-2 font-mono">satsuma</span>
           </div>
           <pre>
+<span class="output"># Teach your agent about Satsuma in one command</span>
+<span class="prompt">$</span> satsuma agent-reference <span class="flag">&gt;&gt;</span> AGENTS.md
+
+<span class="output"># Agent can now query your workspace</span>
 <span class="prompt">$</span> satsuma summary <span class="flag">examples/</span>
 
 <span class="highlight">Workspace Summary</span>  <span class="output">examples/</span>
@@ -59,10 +69,519 @@ permalink: cli.html
 
 <span class="highlight">loyalty_sfdc</span>
   <span class="output">-&gt;</span> sat_customer_demographics  <span class="output">(loyalty to demographics)</span>
-    <span class="output">-&gt;</span> mart_customer_360      <span class="output">(demographics to mart)</span>
+    <span class="output">-&gt;</span> mart_customer_360      <span class="output">(demographics to mart)</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent Setup — front and center -->
+  <section id="agent-setup" class="py-16 lg:py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-3xl mx-auto reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-charcoal/10 text-charcoal text-sm font-medium rounded-full mb-4">
+          Start here
+        </div>
+        <h2 class="text-3xl font-bold text-charcoal mb-3">Teach your agent Satsuma in 30 seconds</h2>
+        <p class="text-warm-gray mb-8">
+          <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">satsuma agent-reference</code> prints a compact ~900-token prompt that teaches any AI agent the Satsuma grammar, the CLI commands, and the recommended workflow patterns. Append it to your agent's instructions file and you're done.
+        </p>
+
+        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5 mb-6">
+          <h3 class="text-lg font-bold text-charcoal mb-2">One-time setup</h3>
+          <p class="text-sm text-warm-gray mb-4">Append the reference to whatever file your agent reads at startup. Works with Claude Code, Copilot, Cursor, Windsurf, or any agent that reads a system prompt from a file.</p>
+          <div class="terminal text-xs">
+            <div class="terminal-header">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+            </div>
+            <pre>
+<span class="output"># Claude Code</span>
+<span class="prompt">$</span> satsuma agent-reference <span class="flag">&gt;&gt;</span> CLAUDE.md
+
+<span class="output"># GitHub Copilot</span>
+<span class="prompt">$</span> satsuma agent-reference <span class="flag">&gt;&gt;</span> .github/copilot-instructions.md
+
+<span class="output"># Cursor</span>
+<span class="prompt">$</span> satsuma agent-reference <span class="flag">&gt;&gt;</span> .cursor/rules/satsuma.mdc
+
+<span class="output"># Or paste into any conversation</span>
+<span class="prompt">$</span> satsuma agent-reference <span class="flag">| pbcopy</span></pre>
+          </div>
+        </div>
+
+        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+          <h3 class="text-lg font-bold text-charcoal mb-2">What the agent gets</h3>
+          <p class="text-sm text-warm-gray mb-4">In ~900 tokens, the reference covers:</p>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-warm-gray">Compact EBNF grammar for all Satsuma syntax</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-warm-gray">All 21 CLI commands with usage patterns</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-warm-gray">Transform function library and metadata tokens</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-warm-gray">Step-by-step workflow for reading and writing <code class="font-mono text-xs">.stm</code> files</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-warm-gray">22 common mistakes with fixes</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-warm-gray">Excel-to-Satsuma conversion examples</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How Agents Use the CLI -->
+  <section id="agent-workflows" class="py-16 lg:py-24">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-orange/10 text-orange-dark text-sm font-medium rounded-full mb-4">
+          Agent Workflows
+        </div>
+        <h2 class="text-3xl font-bold text-charcoal mb-3">How agents use the CLI</h2>
+        <p class="text-warm-gray max-w-3xl mx-auto">The CLI gives agents token-efficient structural queries instead of dumping entire files into context. Agents compose these primitives into higher-level workflows &mdash; the CLI extracts the facts, the agent reasons over them.</p>
+      </div>
+
+      <!-- Validate lineage -->
+      <div class="mb-16 reveal">
+        <div class="grid lg:grid-cols-2 gap-8 items-start">
+          <div>
+            <h3 class="text-2xl font-bold text-charcoal mb-3">Validate lineage and trace data flow</h3>
+            <p class="text-warm-gray mb-4">
+              Your agent can trace any data element from source to destination across the entire workspace. It starts with <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">lineage</code> for schema-level paths, then drills into <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">arrows</code> for field-level detail.
+            </p>
+            <p class="text-warm-gray mb-4">
+              When an arrow is classified as <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">nl</code>, the agent reads the natural-language intent and interprets it. When it's <code class="font-mono text-sm text-green-dark bg-green/10 px-1.5 py-0.5 rounded">structural</code>, the transform pipeline is fully specified &mdash; no interpretation needed.
+            </p>
+            <div class="space-y-2 text-sm text-warm-gray">
+              <div class="flex items-start gap-2">
+                <span class="font-mono text-orange-dark font-bold mt-0.5">1.</span>
+                <span><code class="font-mono bg-code-bg px-1 rounded">lineage --from</code> traces all downstream consumers of a schema</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="font-mono text-orange-dark font-bold mt-0.5">2.</span>
+                <span><code class="font-mono bg-code-bg px-1 rounded">arrows --as-source</code> follows each field through its transforms</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="font-mono text-orange-dark font-bold mt-0.5">3.</span>
+                <span><code class="font-mono bg-code-bg px-1 rounded">nl</code> extracts NL intent at <code class="font-mono bg-code-bg px-1 rounded">[nl]</code> hops for the agent to interpret</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="font-mono text-orange-dark font-bold mt-0.5">4.</span>
+                <span><code class="font-mono bg-code-bg px-1 rounded">where-used</code> finds every reference to a schema or fragment</span>
+              </div>
+            </div>
+          </div>
+          <div class="terminal shadow-xl text-xs">
+            <div class="terminal-header">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+              <span class="text-xs text-gray-400 ml-2 font-mono">lineage workflow</span>
+            </div>
+            <pre>
+<span class="output"># Schema-level: where does this data go?</span>
+<span class="prompt">$</span> satsuma lineage <span class="flag">--from</span> loyalty_sfdc
+
+<span class="highlight">loyalty_sfdc</span>
+  <span class="output">-&gt;</span> sat_customer_demographics
+    <span class="output">-&gt;</span> mart_customer_360
+
+<span class="output"># Field-level: trace LoyaltyTier through transforms</span>
+<span class="prompt">$</span> satsuma arrows <span class="flag">loyalty_sfdc.LoyaltyTier --as-source --json</span>
+
+<span class="output">{ "target": "sat_customer_demographics.loyalty_tier",</span>
+  <span class="output">"classification": "<span class="highlight">structural</span>",</span>
+  <span class="output">"transform": "UPPER | TRIM" }</span>
+
+<span class="output"># Follow the chain — next hop is NL</span>
+<span class="prompt">$</span> satsuma arrows <span class="flag">sat_customer_demographics.loyalty_tier --as-source</span>
+
+<span class="output">[<span class="highlight">nl</span>] loyalty_tier -&gt; mart_customer_360.tier_label</span>
+  <span class="output">"Map Gold/Silver/Bronze to internal codes"</span>
+
+<span class="output"># Agent reads the NL and decides what to do</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- NL extraction and analysis -->
+      <div class="mb-16 reveal">
+        <div class="grid lg:grid-cols-2 gap-8 items-start">
+          <div class="lg:order-2">
+            <h3 class="text-2xl font-bold text-charcoal mb-3">Extract NL blocks for analysis and critique</h3>
+            <p class="text-warm-gray mb-4">
+              Satsuma uses natural-language strings for intent that can't be expressed as deterministic pipelines. The <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">nl</code> command extracts these verbatim &mdash; notes, transform descriptions, and comments &mdash; so your agent can analyze, critique, or summarize them.
+            </p>
+            <p class="text-warm-gray mb-4">
+              Agents use this to review business logic, check if NL descriptions match the structural transforms around them, identify ambiguities, or generate documentation from the intent strings.
+            </p>
+            <div class="space-y-2 text-sm text-warm-gray">
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Extract all NL from a mapping for business logic review</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Pull field-level NL for targeted interpretation</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Bulk-extract NL across a workspace for pattern analysis</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span><code class="font-mono bg-code-bg px-1 rounded">@ref</code> backtick references in NL are machine-extractable &mdash; the CLI traces them</span>
+              </div>
+            </div>
+          </div>
+          <div class="terminal shadow-xl text-xs lg:order-1">
+            <div class="terminal-header">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+              <span class="text-xs text-gray-400 ml-2 font-mono">NL extraction</span>
+            </div>
+            <pre>
+<span class="output"># All NL content in a mapping</span>
+<span class="prompt">$</span> satsuma nl <span class="flag">'demographics to mart'</span>
+
+<span class="highlight">mart_customer_360.full_name</span> [transform]
+  <span class="output">"Concatenate first and last name from</span>
+   <span class="output">`@ref sat_customer_demographics`"</span>
+
+<span class="highlight">mart_customer_360.tier_label</span> [transform]
+  <span class="output">"Map Gold/Silver/Bronze to internal codes</span>
+   <span class="output">per the tier mapping in `@ref lookup_tiers`"</span>
+
+<span class="highlight">mart_customer_360</span> [note]
+  <span class="output">"This mart combines demographic and loyalty</span>
+   <span class="output">data into a single customer view for BI"</span>
+
+<span class="output"># Field-level NL only</span>
+<span class="prompt">$</span> satsuma nl <span class="flag">mart_customer_360.email</span>
+
+<span class="output">"Hash with SHA-256 before loading into the</span>
+ <span class="output">mart. Original plaintext stays in the sat."</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metadata and custom tags for code generation -->
+      <div class="mb-16 reveal">
+        <div class="grid lg:grid-cols-2 gap-8 items-start">
+          <div>
+            <h3 class="text-2xl font-bold text-charcoal mb-3">Metadata and custom tags for code generation</h3>
+            <p class="text-warm-gray mb-4">
+              Satsuma's metadata system is open-ended &mdash; any token can be a tag. Your agent uses <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">meta</code> and <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">find --tag</code> to extract these, then combines them with <strong>your organisation's guidelines</strong> to drive code generation.
+            </p>
+            <p class="text-warm-gray mb-4">
+              For example, if your team follows the Data Vault standard, your agent reads <code class="font-mono text-xs bg-code-bg px-1 rounded">pk</code>, <code class="font-mono text-xs bg-code-bg px-1 rounded">bk</code>, <code class="font-mono text-xs bg-code-bg px-1 rounded">hash_diff</code> tags from schema metadata and generates hub, satellite, and link DDL accordingly. If your team uses <code class="font-mono text-xs bg-code-bg px-1 rounded">pii</code> and <code class="font-mono text-xs bg-code-bg px-1 rounded">encrypt</code> tags, the agent knows to emit encryption logic.
+            </p>
+            <p class="text-warm-gray">
+              The CLI doesn't know what <code class="font-mono text-xs bg-code-bg px-1 rounded">hash_diff</code> means &mdash; it just extracts the tag. Your agent, armed with your org's standards doc, interprets it.
+            </p>
+          </div>
+          <div class="terminal shadow-xl text-xs">
+            <div class="terminal-header">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+              <span class="text-xs text-gray-400 ml-2 font-mono">metadata + code gen</span>
+            </div>
+            <pre>
+<span class="output"># Read metadata on a target schema</span>
+<span class="prompt">$</span> satsuma meta <span class="flag">hub_customer</span>
+
+<span class="highlight">hub_customer</span>
+  customer_hk   (pk, hash_key)
+  customer_bk   (bk, required)
+  load_date     (required)
+  record_source (required)
+
+<span class="output"># Find all PII fields across the workspace</span>
+<span class="prompt">$</span> satsuma find <span class="flag">--tag</span> pii <span class="flag">--json</span>
+
+<span class="output">[</span>
+  <span class="output">{ "schema": "loyalty_sfdc", "field": "Email",</span>
+    <span class="output">"tags": ["pii", "encrypt"] },</span>
+  <span class="output">{ "schema": "loyalty_sfdc", "field": "SSN",</span>
+    <span class="output">"tags": ["pii", "encrypt", "mask"] }</span>
+<span class="output">]</span>
+
+<span class="output"># Agent reads your org's Data Vault standard,</span>
+<span class="output"># sees pk + hash_key, and generates:</span>
+<span class="output">#   CREATE TABLE hub_customer (</span>
+<span class="output">#     customer_hk BINARY(32) NOT NULL,</span>
+<span class="output">#     customer_bk VARCHAR(255) NOT NULL,</span>
+<span class="output">#     ...</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Whole-workspace reasoning -->
+      <div class="mb-16 reveal">
+        <div class="grid lg:grid-cols-2 gap-8 items-start">
+          <div class="lg:order-2">
+            <h3 class="text-2xl font-bold text-charcoal mb-3">One-shot workspace reasoning</h3>
+            <p class="text-warm-gray mb-4">
+              For complex analysis, <code class="font-mono text-sm text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">graph --json</code> exports the complete semantic graph in a single call &mdash; all nodes, edges, field-level data flow, and unresolved NL arrows. The agent loads it once and reasons offline, without round-trips.
+            </p>
+            <div class="space-y-2 text-sm text-warm-gray">
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Impact analysis, PII audit, and coverage check from a single payload</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span><code class="font-mono bg-code-bg px-1 rounded">--schema-only</code> and <code class="font-mono bg-code-bg px-1 rounded">--no-nl</code> reduce payload for large workspaces</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span><code class="font-mono bg-code-bg px-1 rounded">--namespace</code> scopes the export to a single namespace</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span><code class="font-mono bg-code-bg px-1 rounded">unresolved_nl</code> section surfaces all NL arrows awaiting interpretation</span>
+              </div>
+            </div>
+          </div>
+          <div class="terminal shadow-xl text-xs lg:order-1">
+            <div class="terminal-header">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+              <span class="text-xs text-gray-400 ml-2 font-mono">satsuma graph</span>
+            </div>
+            <pre>
+<span class="prompt">$</span> satsuma graph <span class="flag">examples/ --json</span>
+
+<span class="output">{</span>
+  <span class="highlight">"nodes"</span><span class="output">: [</span>
+    <span class="output">{ "name": "loyalty_sfdc", "type": "schema" },</span>
+    <span class="output">{ "name": "sat_customer_demographics", ... },</span>
+    <span class="output">{ "name": "mart_customer_360", ... }</span>
+  <span class="output">],</span>
+  <span class="highlight">"schema_edges"</span><span class="output">: [</span>
+    <span class="output">{ "from": "loyalty_sfdc",</span>
+      <span class="output">"to": "sat_customer_demographics",</span>
+      <span class="output">"role": "source" },</span>
+    <span class="output">...</span>
+  <span class="output">],</span>
+  <span class="highlight">"edges"</span><span class="output">: [ ... ],</span>
+  <span class="highlight">"unresolved_nl"</span><span class="output">: [ ... ]</span>
+<span class="output">}</span>
+
+<span class="output"># Narrow scope for large workspaces</span>
+<span class="prompt">$</span> satsuma graph <span class="flag">examples/ --json --namespace</span> warehouse</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent workflow examples grid -->
+      <div class="reveal">
+        <h3 class="text-2xl font-bold text-charcoal mb-6 text-center">Example agent workflows</h3>
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Impact Analysis -->
+          <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <h3 class="text-lg font-bold text-charcoal">Impact Analysis</h3>
+            </div>
+            <p class="text-sm text-warm-gray mb-3">"What breaks if I change this field?"</p>
+            <div class="terminal text-xs">
+              <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+              <pre>
+<span class="prompt">$</span> satsuma arrows <span class="flag">loyalty_sfdc.LoyaltyTier --as-source --json</span>
+<span class="prompt">$</span> satsuma arrows <span class="flag">sat_customer_demographics.loyalty_tier --as-source --json</span>
+<span class="prompt">$</span> satsuma nl <span class="flag">mart_customer_360.loyalty_tier</span></pre>
+            </div>
+          </div>
+
+          <!-- PII Audit -->
+          <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-green/10 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </div>
+              <h3 class="text-lg font-bold text-charcoal">PII Audit</h3>
+            </div>
+            <p class="text-sm text-warm-gray mb-3">"Does PII survive through the pipeline unencrypted?"</p>
+            <div class="terminal text-xs">
+              <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+              <pre>
+<span class="prompt">$</span> satsuma find <span class="flag">--tag pii --json</span>
+<span class="prompt">$</span> satsuma arrows <span class="flag">loyalty_sfdc.Email --as-source --json</span>
+<span class="prompt">$</span> satsuma nl <span class="flag">mart_customer_360.email</span></pre>
+            </div>
+          </div>
+
+          <!-- Coverage Assessment -->
+          <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              </div>
+              <h3 class="text-lg font-bold text-charcoal">Coverage Assessment</h3>
+            </div>
+            <p class="text-sm text-warm-gray mb-3">"Which target fields have no mapping?"</p>
+            <div class="terminal text-xs">
+              <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+              <pre>
+<span class="prompt">$</span> satsuma fields <span class="flag">mart_customer_360 --unmapped-by 'demographics to mart'</span>
+<span class="prompt">$</span> satsuma fields <span class="flag">mart_customer_360 --unmapped-by 'online to mart'</span></pre>
+            </div>
+          </div>
+
+          <!-- Drafting a Mapping -->
+          <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-green/10 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </div>
+              <h3 class="text-lg font-bold text-charcoal">Drafting a New Mapping</h3>
+            </div>
+            <p class="text-sm text-warm-gray mb-3">"Match source to target and write the mapping"</p>
+            <div class="terminal text-xs">
+              <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+              <pre>
+<span class="prompt">$</span> satsuma match-fields <span class="flag">--source</span> loyalty_sfdc <span class="flag">--target</span> sat_customer
+<span class="prompt">$</span> satsuma nl <span class="flag">sat_customer</span>
+<span class="prompt">$</span> satsuma meta <span class="flag">sat_customer.country_code</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Human Workflows -->
+  <section id="human-workflows" class="py-16 lg:py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-12 reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green/10 text-green-dark text-sm font-medium rounded-full mb-4">
+          Human Workflows
+        </div>
+        <h2 class="text-3xl font-bold text-charcoal mb-3">Your day-to-day commands</h2>
+        <p class="text-warm-gray max-w-2xl">These three commands are the human side of the CLI. Run them before committing, in CI, or as editor commands. They're also used by the VS Code extension under the hood.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8 reveal">
+        <!-- validate -->
+        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+          <h3 class="text-xl font-bold text-charcoal mb-2 font-mono">validate</h3>
+          <p class="text-sm text-warm-gray mb-2"><em>"Is my workspace well-formed?"</em></p>
+          <p class="text-sm text-warm-gray mb-4">Checks parse errors, undefined schema references, missing fields, and invalid paths. Run it before every commit.</p>
+          <div class="terminal text-xs">
+            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+            <pre>
+<span class="prompt">$</span> satsuma validate <span class="flag">examples/</span>
+<span class="output">valid &mdash; 0 errors, 0 warnings</span>
 
 <span class="prompt">$</span> satsuma validate <span class="flag">--json</span>
 <span class="output">{ "valid": true, "errors": 0, "warnings": 0 }</span></pre>
+          </div>
+        </div>
+
+        <!-- fmt -->
+        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+          <h3 class="text-xl font-bold text-charcoal mb-2 font-mono">fmt</h3>
+          <p class="text-sm text-warm-gray mb-2"><em>"One canonical style, zero config."</em></p>
+          <p class="text-sm text-warm-gray mb-4">Opinionated formatter backed by the tree-sitter CST. Semantics-preserving. Use <code class="font-mono text-xs bg-code-bg px-1 rounded">--check</code> in CI.</p>
+          <div class="terminal text-xs">
+            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+            <pre>
+<span class="prompt">$</span> satsuma fmt <span class="flag">examples/</span>
+<span class="output">Formatted 3 file(s)</span>
+
+<span class="prompt">$</span> satsuma fmt <span class="flag">--check examples/</span>
+<span class="output">0 file(s) would be reformatted</span>
+
+<span class="prompt">$</span> satsuma fmt <span class="flag">--diff mapping.stm</span></pre>
+          </div>
+        </div>
+
+        <!-- lint -->
+        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
+          <h3 class="text-xl font-bold text-charcoal mb-2 font-mono">lint</h3>
+          <p class="text-sm text-warm-gray mb-2"><em>"Does this follow best practices?"</em></p>
+          <p class="text-sm text-warm-gray mb-4">Policy and convention checks with <code class="font-mono text-xs bg-code-bg px-1 rounded">--fix</code> for safe autofix. Catches hidden NL dependencies and duplicate definitions.</p>
+          <div class="terminal text-xs">
+            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
+            <pre>
+<span class="prompt">$</span> satsuma lint <span class="flag">--fix</span>
+<span class="output">Fixed 2 issue(s)</span>
+
+<span class="prompt">$</span> satsuma lint <span class="flag">--rules</span>
+<span class="output">hidden-source-in-nl  (fixable)</span>
+<span class="output">unresolved-nl-ref</span>
+<span class="output">duplicate-definition</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Transform Classification -->
+  <section id="classification" class="py-16 lg:py-24">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-3xl mx-auto reveal">
+        <h2 class="text-3xl font-bold text-charcoal mb-3">Transform classification</h2>
+        <p class="text-warm-gray mb-8">Every arrow the CLI returns carries a classification derived from CST node types. This tells the agent whether it needs to interpret the transform or can trust the syntax.</p>
+
+        <div class="bg-white rounded-2xl border border-charcoal/5 overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-charcoal/5 bg-peach/50">
+                <th class="text-left px-6 py-3 font-semibold text-charcoal">Classification</th>
+                <th class="text-left px-6 py-3 font-semibold text-charcoal">Meaning</th>
+                <th class="text-left px-6 py-3 font-semibold text-charcoal">Agent action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-charcoal/5">
+                <td class="px-6 py-3"><code class="font-mono text-sm text-green-dark bg-green/10 px-2 py-0.5 rounded">structural</code></td>
+                <td class="px-6 py-3 text-warm-gray">Deterministic pipeline</td>
+                <td class="px-6 py-3 text-warm-gray">None &mdash; fully specified</td>
+              </tr>
+              <tr class="border-b border-charcoal/5">
+                <td class="px-6 py-3"><code class="font-mono text-sm text-orange-dark bg-orange/10 px-2 py-0.5 rounded">nl</code></td>
+                <td class="px-6 py-3 text-warm-gray">Natural-language string</td>
+                <td class="px-6 py-3 text-warm-gray">Read and interpret intent</td>
+              </tr>
+              <tr class="border-b border-charcoal/5">
+                <td class="px-6 py-3"><code class="font-mono text-sm text-charcoal bg-charcoal/10 px-2 py-0.5 rounded">mixed</code></td>
+                <td class="px-6 py-3 text-warm-gray">Pipeline steps + NL strings</td>
+                <td class="px-6 py-3 text-warm-gray">Review the NL portion</td>
+              </tr>
+              <tr class="border-b border-charcoal/5">
+                <td class="px-6 py-3"><code class="font-mono text-sm text-warm-gray bg-charcoal/5 px-2 py-0.5 rounded">none</code></td>
+                <td class="px-6 py-3 text-warm-gray">Bare <code class="font-mono text-xs">src -&gt; tgt</code></td>
+                <td class="px-6 py-3 text-warm-gray">None</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-3"><code class="font-mono text-sm text-purple-700 bg-purple-50 px-2 py-0.5 rounded">nl-derived</code></td>
+                <td class="px-6 py-3 text-warm-gray">Implicit from <code class="font-mono text-xs">@ref</code></td>
+                <td class="px-6 py-3 text-warm-gray">Verify referenced field exists</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -125,467 +644,170 @@ permalink: cli.html
     </div>
   </section>
 
-  <!-- Command Categories -->
-
-  <!-- Workspace Extractors -->
-  <section id="workspace-extractors" class="py-16 lg:py-24">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="mb-12 reveal">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-orange/10 text-orange-dark text-sm font-medium rounded-full mb-4">
-          Workspace Extractors
-        </div>
-        <h2 class="text-3xl font-bold text-charcoal mb-3">Block-level extraction</h2>
-        <p class="text-warm-gray max-w-2xl">Retrieve whole blocks or workspace-level summaries. These commands give agents and humans fast access to schemas, mappings, lineage, and metadata without reading raw <code class="font-mono text-sm">.stm</code> files.</p>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
-        <!-- summary -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">summary</h3>
-          <p class="text-sm text-warm-gray mb-4">Workspace overview &mdash; all schemas, mappings, metrics, and counts at a glance.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma summary <span class="flag">examples/</span></pre>
-          </div>
-        </div>
-        <!-- schema -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">schema</h3>
-          <p class="text-sm text-warm-gray mb-4">Full schema definition extracted from the parse tree, including fields, types, and metadata.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma schema <span class="flag">hub_customer</span></pre>
-          </div>
-        </div>
-        <!-- metric -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">metric</h3>
-          <p class="text-sm text-warm-gray mb-4">Full metric definition from the parse tree, with formula and dimensions.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma metric <span class="flag">monthly_revenue</span></pre>
-          </div>
-        </div>
-        <!-- mapping -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">mapping</h3>
-          <p class="text-sm text-warm-gray mb-4">Full mapping with all arrows and transforms. Quote names that contain spaces.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma mapping <span class="flag">'sfdc to hub_customer'</span></pre>
-          </div>
-        </div>
-        <!-- find --tag -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">find --tag</h3>
-          <p class="text-sm text-warm-gray mb-4">Find all fields carrying a specific metadata tag. Essential for PII audits.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma find <span class="flag">--tag</span> pii</pre>
-          </div>
-        </div>
-        <!-- lineage -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">lineage</h3>
-          <p class="text-sm text-warm-gray mb-4">Schema-level graph traversal. Trace data flow forward or backward through the workspace.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma lineage <span class="flag">--from</span> loyalty_sfdc</pre>
-          </div>
-        </div>
-        <!-- where-used -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">where-used</h3>
-          <p class="text-sm text-warm-gray mb-4">All references to a schema, fragment, or transform across the workspace.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma where-used <span class="flag">hub_product</span></pre>
-          </div>
-        </div>
-        <!-- warnings -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">warnings</h3>
-          <p class="text-sm text-warm-gray mb-4">All <code class="font-mono text-xs bg-code-bg px-1 rounded">//!</code> and <code class="font-mono text-xs bg-code-bg px-1 rounded">//? </code> comments across the workspace.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma warnings <span class="flag">examples/</span></pre>
-          </div>
-        </div>
-        <!-- context -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">context</h3>
-          <p class="text-sm text-warm-gray mb-4">Keyword-ranked block extraction. Returns the most relevant blocks for a query (heuristic).</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma context <span class="flag">"customer mapping"</span></pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Structural Primitives -->
-  <section id="structural-primitives" class="py-16 lg:py-24 bg-white">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="mb-12 reveal">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green/10 text-green-dark text-sm font-medium rounded-full mb-4">
-          Structural Primitives
-        </div>
-        <h2 class="text-3xl font-bold text-charcoal mb-3">Fine-grained extraction</h2>
-        <p class="text-warm-gray max-w-2xl">Slice below block level to get specific arrows, NL content, metadata, or field lists. These primitives are the building blocks agents compose into higher-level workflows.</p>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
-        <!-- arrows -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">arrows</h3>
-          <p class="text-sm text-warm-gray mb-4">All arrows involving a field, with transform classification: <em>structural</em>, <em>nl</em>, <em>mixed</em>, or <em>none</em>.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma arrows <span class="flag">loyalty_sfdc.LoyaltyTier</span></pre>
-          </div>
-        </div>
-        <!-- nl -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">nl</h3>
-          <p class="text-sm text-warm-gray mb-4">NL content &mdash; notes, transforms, and comments &mdash; extracted verbatim from a scope.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma nl <span class="flag">'demographics to mart'</span></pre>
-          </div>
-        </div>
-        <!-- meta -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">meta</h3>
-          <p class="text-sm text-warm-gray mb-4">Metadata entries for a block or field &mdash; tags, constraints, and annotations.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma meta <span class="flag">loyalty_sfdc.Email</span></pre>
-          </div>
-        </div>
-        <!-- fields -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">fields</h3>
-          <p class="text-sm text-warm-gray mb-4">Field list with types and metadata for a schema. Supports <code class="font-mono text-xs bg-code-bg px-1 rounded">--unmapped-by</code> filtering.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma fields <span class="flag">sat_customer_demographics</span></pre>
-          </div>
-        </div>
-        <!-- match-fields -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">match-fields</h3>
-          <p class="text-sm text-warm-gray mb-4">Normalized name comparison between two schemas. Finds likely field matches for mapping drafts.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma match-fields <span class="flag">--source</span> loyalty_sfdc <span class="flag">--target</span> sat_customer_demographics</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Analysis -->
-  <section id="analysis" class="py-16 lg:py-24">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="mb-12 reveal">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-orange/10 text-orange-dark text-sm font-medium rounded-full mb-4">
-          Analysis
-        </div>
-        <h2 class="text-3xl font-bold text-charcoal mb-3">Format, validate, lint, and diff</h2>
-        <p class="text-warm-gray max-w-2xl">One canonical style, structural correctness checks, policy conventions, and workspace comparison.</p>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 reveal">
-        <!-- fmt -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">fmt</h3>
-          <p class="text-sm text-warm-gray mb-4">Opinionated, zero-config formatter. One canonical style. Also available as VS Code <em>Format Document</em>.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma fmt <span class="flag">--check</span> <span class="flag">examples/</span>
-<span class="output">0 file(s) would be reformatted</span></pre>
-          </div>
-        </div>
-        <!-- validate -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">validate</h3>
-          <p class="text-sm text-warm-gray mb-4">Parse errors and semantic reference checks. Answers: <em>&ldquo;Is this workspace well-formed?&rdquo;</em></p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma validate <span class="flag">examples/</span>
-<span class="output">valid &mdash; 0 errors, 0 warnings</span></pre>
-          </div>
-        </div>
-        <!-- lint -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">lint</h3>
-          <p class="text-sm text-warm-gray mb-2">Policy and convention checks. Answers: <em>&ldquo;Does this workspace follow best practices?&rdquo;</em></p>
-          <p class="text-xs text-warm-gray mb-4">Supports <code class="font-mono bg-code-bg px-1 rounded">--fix</code> for safe, deterministic autofix. Use <code class="font-mono bg-code-bg px-1 rounded">--rules</code> to list available rules.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma lint <span class="flag">--fix</span> <span class="flag">--json</span></pre>
-          </div>
-          <div class="mt-4 space-y-1.5">
-            <div class="flex items-center gap-2 text-xs">
-              <span class="px-1.5 py-0.5 bg-orange/10 text-orange-dark font-mono rounded">warning</span>
-              <span class="text-warm-gray">hidden-source-in-nl</span>
-              <span class="text-green-dark font-medium ml-auto">fixable</span>
-            </div>
-            <div class="flex items-center gap-2 text-xs">
-              <span class="px-1.5 py-0.5 bg-orange/10 text-orange-dark font-mono rounded">warning</span>
-              <span class="text-warm-gray">unresolved-nl-ref</span>
-            </div>
-            <div class="flex items-center gap-2 text-xs">
-              <span class="px-1.5 py-0.5 bg-red-100 text-red-700 font-mono rounded">error</span>
-              <span class="text-warm-gray">duplicate-definition</span>
-            </div>
-          </div>
-        </div>
-        <!-- diff -->
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">diff</h3>
-          <p class="text-sm text-warm-gray mb-4">Structural comparison of two workspace snapshots. Shows added, removed, and changed definitions.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre><span class="prompt">$</span> satsuma diff <span class="flag">v1/ v2/</span> <span class="flag">--json</span></pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Graph -->
-  <section id="graph" class="py-16 lg:py-24 bg-white">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-12 items-center reveal">
-        <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green/10 text-green-dark text-sm font-medium rounded-full mb-4">
-            Graph
-          </div>
-          <h2 class="text-3xl font-bold text-charcoal mb-3">Full workspace topology</h2>
-          <p class="text-warm-gray mb-6">Export the complete semantic graph &mdash; nodes, edges, and field-level data flow &mdash; in a single call. Use flags to control scope and payload size.</p>
-          <div class="space-y-3 mb-6">
-            <div class="flex items-center gap-3 text-sm">
-              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded border border-code-bg text-charcoal">--json</code>
-              <span class="text-warm-gray">Full graph with all nodes and edges</span>
-            </div>
-            <div class="flex items-center gap-3 text-sm">
-              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded border border-code-bg text-charcoal">--compact</code>
-              <span class="text-warm-gray">Schema-level adjacency list</span>
-            </div>
-            <div class="flex items-center gap-3 text-sm">
-              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded border border-code-bg text-charcoal">--schema-only</code>
-              <span class="text-warm-gray">Topology only, omit field-level edges</span>
-            </div>
-            <div class="flex items-center gap-3 text-sm">
-              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded border border-code-bg text-charcoal">--namespace &lt;ns&gt;</code>
-              <span class="text-warm-gray">Filter to a single namespace</span>
-            </div>
-            <div class="flex items-center gap-3 text-sm">
-              <code class="font-mono text-xs bg-code-bg px-2 py-1 rounded border border-code-bg text-charcoal">--no-nl</code>
-              <span class="text-warm-gray">Strip NL text from edges for smaller payloads</span>
-            </div>
-          </div>
-        </div>
-        <div class="terminal shadow-xl">
-          <div class="terminal-header">
-            <div class="terminal-dot red"></div>
-            <div class="terminal-dot yellow"></div>
-            <div class="terminal-dot green"></div>
-            <span class="text-xs text-gray-400 ml-2 font-mono">satsuma graph</span>
-          </div>
-          <pre>
-<span class="prompt">$</span> satsuma graph <span class="flag">examples/ --json</span>
-
-<span class="output">{</span>
-  <span class="highlight">"nodes"</span><span class="output">: [</span>
-    <span class="output">{ "name": "loyalty_sfdc", "type": "schema" },</span>
-    <span class="output">{ "name": "sat_customer_demographics", ... },</span>
-    <span class="output">{ "name": "mart_customer_360", ... }</span>
-  <span class="output">],</span>
-  <span class="highlight">"schema_edges"</span><span class="output">: [</span>
-    <span class="output">{ "from": "loyalty_sfdc",</span>
-      <span class="output">"to": "sat_customer_demographics" },</span>
-    <span class="output">...</span>
-  <span class="output">],</span>
-  <span class="highlight">"edges"</span><span class="output">: [ ... ]</span>
-<span class="output">}</span>
-
-<span class="prompt">$</span> satsuma graph <span class="flag">examples/ --json --namespace</span> warehouse</pre>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Agent Setup -->
-  <section id="agent-setup" class="py-16 lg:py-24">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="max-w-3xl mx-auto reveal">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-charcoal/10 text-charcoal text-sm font-medium rounded-full mb-4">
-          Agent Setup
-        </div>
-        <h2 class="text-3xl font-bold text-charcoal mb-3">Bootstrap your AI agent</h2>
-        <p class="text-warm-gray mb-8">Print the complete AI Agent Reference &mdash; grammar, cheat sheet, CLI guide, and workflow patterns &mdash; in a single command. Pipe it straight into your agent's instructions.</p>
-
-        <div class="bg-white rounded-2xl p-6 border border-charcoal/5 mb-6">
-          <h3 class="text-lg font-bold text-charcoal mb-1 font-mono">agent-reference</h3>
-          <p class="text-sm text-warm-gray mb-4">Outputs the full AI Agent Reference baked into the CLI at build time from <code class="font-mono text-xs bg-code-bg px-1 rounded">AI-AGENT-REFERENCE.md</code>.</p>
-          <div class="terminal text-xs">
-            <div class="terminal-header">
-              <div class="terminal-dot red"></div>
-              <div class="terminal-dot yellow"></div>
-              <div class="terminal-dot green"></div>
-            </div>
-            <pre>
-<span class="prompt">$</span> satsuma agent-reference <span class="flag">&gt;</span> .github/copilot-instructions.md
-
-<span class="output"># Or paste directly into a conversation:</span>
-<span class="prompt">$</span> satsuma agent-reference <span class="flag">| pbcopy</span></pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Agent Workflows -->
-  <section id="workflows" class="py-16 lg:py-24 bg-white">
+  <!-- Command Reference -->
+  <section id="command-reference" class="py-16 lg:py-24">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12 reveal">
-        <h2 class="text-3xl font-bold text-charcoal mb-3">How agents use the CLI</h2>
-        <p class="text-warm-gray max-w-2xl mx-auto">The CLI is a set of structural primitives the agent composes into workflows. The agent &mdash; not the CLI &mdash; performs higher-level analysis.</p>
+        <h2 class="text-3xl font-bold text-charcoal mb-3">All 21 commands</h2>
+        <p class="text-warm-gray max-w-2xl mx-auto">Complete reference for every command in the CLI. See the <a href="https://github.com/thorbenlouw/satsuma-lang/blob/main/SATSUMA-CLI.md" target="_blank" class="text-orange hover:underline">full reference on GitHub</a> for detailed usage and examples.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-8 reveal">
-        <!-- Impact Analysis -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center">
-              <svg class="w-5 h-5 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <h3 class="text-lg font-bold text-charcoal">Impact Analysis</h3>
+      <!-- Workspace Extractors -->
+      <div class="mb-12">
+        <div class="mb-6 reveal">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-orange/10 text-orange-dark text-sm font-medium rounded-full mb-2">
+            Workspace Extractors
           </div>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre>
-<span class="output"># 1. Get arrows from the source field</span>
-<span class="prompt">$</span> satsuma arrows <span class="flag">loyalty_sfdc.LoyaltyTier --as-source --json</span>
-
-<span class="output"># 2. Follow the chain</span>
-<span class="prompt">$</span> satsuma arrows <span class="flag">sat_customer_demographics.loyalty_tier --as-source --json</span>
-
-<span class="output"># 3. When a hop is classified [nl], read the NL</span>
-<span class="prompt">$</span> satsuma nl <span class="flag">mart_customer_360.loyalty_tier</span></pre>
-          </div>
+          <p class="text-sm text-warm-gray">Block-level extraction &mdash; retrieve whole blocks or workspace-level summaries.</p>
         </div>
 
-        <!-- PII Audit -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-green/10 rounded-xl flex items-center justify-center">
-              <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            </div>
-            <h3 class="text-lg font-bold text-charcoal">PII Audit</h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 reveal">
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">summary</h4>
+            <p class="text-xs text-warm-gray">Workspace overview &mdash; schemas, mappings, metrics, and counts.</p>
           </div>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre>
-<span class="output"># 1. Find all PII-tagged fields</span>
-<span class="prompt">$</span> satsuma find <span class="flag">--tag pii --json</span>
-
-<span class="output"># 2. For each, trace outbound arrows</span>
-<span class="prompt">$</span> satsuma arrows <span class="flag">loyalty_sfdc.Email --as-source --json</span>
-
-<span class="output"># 3. Agent reads NL to judge if PII survives</span>
-<span class="prompt">$</span> satsuma nl <span class="flag">mart_customer_360.email</span></pre>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">schema</h4>
+            <p class="text-xs text-warm-gray">Full schema definition from the parse tree.</p>
           </div>
-        </div>
-
-        <!-- Coverage Assessment -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center">
-              <svg class="w-5 h-5 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            </div>
-            <h3 class="text-lg font-bold text-charcoal">Coverage Assessment</h3>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">metric</h4>
+            <p class="text-xs text-warm-gray">Full metric definition with formula and dimensions.</p>
           </div>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre>
-<span class="output"># 1. Unmapped fields from a specific mapping</span>
-<span class="prompt">$</span> satsuma fields <span class="flag">mart_customer_360 --unmapped-by 'demographics to mart' --json</span>
-
-<span class="output"># 2. Agent intersects results across mappings</span>
-<span class="prompt">$</span> satsuma fields <span class="flag">mart_customer_360 --unmapped-by 'online to mart' --json</span></pre>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">mapping</h4>
+            <p class="text-xs text-warm-gray">Full mapping with all arrows and transforms.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">find --tag</h4>
+            <p class="text-xs text-warm-gray">Find all fields carrying a metadata tag (pii, encrypt, etc.).</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">lineage</h4>
+            <p class="text-xs text-warm-gray">Schema-level graph traversal, forward or backward.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">where-used</h4>
+            <p class="text-xs text-warm-gray">All references to a schema, fragment, or transform.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">warnings</h4>
+            <p class="text-xs text-warm-gray">All <code class="font-mono text-xs">//!</code> and <code class="font-mono text-xs">//? </code> comments across the workspace.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">context</h4>
+            <p class="text-xs text-warm-gray">Keyword-ranked block extraction (heuristic fuzzy search).</p>
           </div>
         </div>
+      </div>
 
-        <!-- Structural Diff -->
-        <div class="bg-cream rounded-2xl p-6 border border-charcoal/5">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-green/10 rounded-xl flex items-center justify-center">
-              <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-            </div>
-            <h3 class="text-lg font-bold text-charcoal">Reviewing a Change</h3>
+      <!-- Structural Primitives -->
+      <div class="mb-12">
+        <div class="mb-6 reveal">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green/10 text-green-dark text-sm font-medium rounded-full mb-2">
+            Structural Primitives
           </div>
-          <div class="terminal text-xs">
-            <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
-            <pre>
-<span class="output"># 1. Structural diff between branches</span>
-<span class="prompt">$</span> satsuma diff <span class="flag">main-branch/ feature-branch/ --json</span>
+          <p class="text-sm text-warm-gray">Fine-grained extraction &mdash; slice below block level for arrows, NL, metadata, and fields.</p>
+        </div>
 
-<span class="output"># 2. Check downstream arrows for changed fields</span>
-<span class="prompt">$</span> satsuma arrows <span class="flag">changed_schema.changed_field --as-source --json</span></pre>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 reveal">
+          <div class="bg-cream rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">arrows</h4>
+            <p class="text-xs text-warm-gray">All arrows for a field, with transform classification.</p>
+          </div>
+          <div class="bg-cream rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">nl</h4>
+            <p class="text-xs text-warm-gray">NL content &mdash; notes, transforms, comments &mdash; extracted verbatim.</p>
+          </div>
+          <div class="bg-cream rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">meta</h4>
+            <p class="text-xs text-warm-gray">Metadata entries &mdash; tags, constraints, annotations.</p>
+          </div>
+          <div class="bg-cream rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">fields</h4>
+            <p class="text-xs text-warm-gray">Field list with types. Supports <code class="font-mono text-xs">--unmapped-by</code>.</p>
+          </div>
+          <div class="bg-cream rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">match-fields</h4>
+            <p class="text-xs text-warm-gray">Normalized name comparison between source and target schemas.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph -->
+      <div class="mb-12">
+        <div class="mb-6 reveal">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-charcoal/10 text-charcoal text-sm font-medium rounded-full mb-2">
+            Workspace Graph
+          </div>
+          <p class="text-sm text-warm-gray">Full semantic graph export in a single call.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 reveal">
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">graph --json</h4>
+            <p class="text-xs text-warm-gray">Complete graph with nodes, edges, and field-level data flow.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">graph --compact</h4>
+            <p class="text-xs text-warm-gray">Schema-level adjacency list (minimal payload).</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">graph --schema-only</h4>
+            <p class="text-xs text-warm-gray">Topology only, omit field-level edges.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis -->
+      <div class="mb-12">
+        <div class="mb-6 reveal">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-orange/10 text-orange-dark text-sm font-medium rounded-full mb-2">
+            Analysis
+          </div>
+          <p class="text-sm text-warm-gray">Formatting, validation, linting, and structural comparison.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 reveal">
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">fmt</h4>
+            <p class="text-xs text-warm-gray">Opinionated, zero-config formatter. <code class="font-mono text-xs">--check</code> for CI.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">validate</h4>
+            <p class="text-xs text-warm-gray">Parse errors and semantic reference checks.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">lint</h4>
+            <p class="text-xs text-warm-gray">Policy checks with <code class="font-mono text-xs">--fix</code> autofix.</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">diff</h4>
+            <p class="text-xs text-warm-gray">Structural comparison of two workspace snapshots.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Setup -->
+      <div>
+        <div class="mb-6 reveal">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-charcoal/10 text-charcoal text-sm font-medium rounded-full mb-2">
+            Agent Setup
+          </div>
+          <p class="text-sm text-warm-gray">Bootstrap your AI agent.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 reveal">
+          <div class="bg-white rounded-xl p-4 border border-charcoal/5">
+            <h4 class="font-bold text-charcoal mb-1 font-mono text-sm">agent-reference</h4>
+            <p class="text-xs text-warm-gray">Print the ~900-token AI Agent Reference for embedding in agent instructions.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Transform Classification -->
-  <section id="classification" class="py-16 lg:py-24">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="max-w-3xl mx-auto reveal">
-        <h2 class="text-3xl font-bold text-charcoal mb-3">Transform classification</h2>
-        <p class="text-warm-gray mb-8">Every arrow the CLI returns carries a classification derived from CST node types. No string content is examined &mdash; the first four are mechanical CST checks.</p>
-
-        <div class="bg-white rounded-2xl border border-charcoal/5 overflow-hidden">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-charcoal/5 bg-peach/50">
-                <th class="text-left px-6 py-3 font-semibold text-charcoal">Classification</th>
-                <th class="text-left px-6 py-3 font-semibold text-charcoal">Meaning</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-b border-charcoal/5">
-                <td class="px-6 py-3"><code class="font-mono text-sm text-green-dark bg-green/10 px-2 py-0.5 rounded">structural</code></td>
-                <td class="px-6 py-3 text-warm-gray">Deterministic pipeline &mdash; fully specified by the syntax</td>
-              </tr>
-              <tr class="border-b border-charcoal/5">
-                <td class="px-6 py-3"><code class="font-mono text-sm text-orange-dark bg-orange/10 px-2 py-0.5 rounded">nl</code></td>
-                <td class="px-6 py-3 text-warm-gray">Natural-language string &mdash; extracted verbatim for agent interpretation</td>
-              </tr>
-              <tr class="border-b border-charcoal/5">
-                <td class="px-6 py-3"><code class="font-mono text-sm text-charcoal bg-charcoal/10 px-2 py-0.5 rounded">mixed</code></td>
-                <td class="px-6 py-3 text-warm-gray">Both pipeline steps and NL strings</td>
-              </tr>
-              <tr class="border-b border-charcoal/5">
-                <td class="px-6 py-3"><code class="font-mono text-sm text-warm-gray bg-charcoal/5 px-2 py-0.5 rounded">none</code></td>
-                <td class="px-6 py-3 text-warm-gray">No transform body (bare <code class="font-mono text-xs">src -&gt; tgt</code>)</td>
-              </tr>
-              <tr>
-                <td class="px-6 py-3"><code class="font-mono text-sm text-purple-700 bg-purple-50 px-2 py-0.5 rounded">nl-derived</code></td>
-                <td class="px-6 py-3 text-warm-gray">Implicit arrow inferred from a backtick NL reference</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- What the CLI does not do -->
+  <!-- Design Boundaries -->
   <section class="py-16 lg:py-24 bg-white">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="max-w-3xl mx-auto reveal">
@@ -635,9 +857,9 @@ permalink: cli.html
   <!-- CTA -->
   <section class="py-20 lg:py-28">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
-      <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Ready to explore your workspace?</h2>
+      <h2 class="text-3xl sm:text-4xl font-bold text-charcoal mb-4">Ready to give your agent superpowers?</h2>
       <p class="text-lg text-warm-gray mb-8 max-w-2xl mx-auto">
-        Install the CLI and start querying your Satsuma workspaces in minutes.
+        Install the CLI, run <code class="font-mono text-orange-dark bg-orange/10 px-1.5 py-0.5 rounded">satsuma agent-reference >> AGENTS.md</code>, and your agent can query your data mappings in seconds.
       </p>
       <div class="flex flex-wrap justify-center gap-4">
         <a href="#install" class="inline-flex items-center gap-2 px-8 py-3.5 gradient-orange text-white font-semibold rounded-xl shadow-lg shadow-orange/25 hover:shadow-xl transition-all">
