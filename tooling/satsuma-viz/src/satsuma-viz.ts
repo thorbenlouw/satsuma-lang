@@ -279,6 +279,78 @@ export class SatsumaViz extends LitElement {
     .zoom-indicator.visible {
       opacity: 1;
     }
+
+    /* Breadcrumb trail for expanded lineage */
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      background: var(--sz-namespace-bg, #FFF3E8);
+      border-bottom: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      font-size: 11px;
+      color: var(--sz-text-muted, #6B6560);
+      overflow-x: auto;
+    }
+
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      background: var(--sz-card-bg, #fff);
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+    }
+
+    .breadcrumb-item:hover {
+      border-color: var(--sz-orange-dark, #D97726);
+      color: var(--sz-orange-dark, #D97726);
+    }
+
+    .breadcrumb-item.primary {
+      font-weight: 600;
+      color: var(--sz-text, #2D2A26);
+    }
+
+    .breadcrumb-sep {
+      color: var(--sz-text-muted, #6B6560);
+      font-size: 10px;
+    }
+
+    .breadcrumb-collapse {
+      margin-left: auto;
+      padding: 2px 8px;
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      border-radius: 4px;
+      background: transparent;
+      color: var(--sz-text-muted, #6B6560);
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    .breadcrumb-collapse:hover {
+      background: rgba(45, 42, 38, 0.05);
+      color: var(--sz-text, #2D2A26);
+    }
+
+    /* Slide-in animation for expanded cards */
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .positioned-card.expanded {
+      animation: slideInRight 0.3s ease-out;
+    }
   `;
 
   @property({ type: Object })
@@ -460,6 +532,7 @@ export class SatsumaViz extends LitElement {
 
     return html`
       ${this._renderToolbar(namespaces)}
+      ${this._renderBreadcrumbs()}
       <div class=${toggleClasses}>
         ${this._renderFileNotes()}
         <div class="viewport"
@@ -598,6 +671,39 @@ export class SatsumaViz extends LitElement {
     }, 1000);
   }
 
+  private _renderBreadcrumbs() {
+    if (this._expandedModels.size === 0) return html``;
+
+    const primaryUri = this.model?.uri ?? "";
+    const primaryName = primaryUri.split("/").pop() ?? primaryUri;
+
+    return html`
+      <div class="breadcrumbs">
+        <span class="breadcrumb-item primary" title=${primaryUri}>${primaryName}</span>
+        ${[...this._expandedModels.entries()].flatMap(([schemaId, models]) =>
+          models.map((m) => {
+            const name = m.uri.split("/").pop() ?? m.uri;
+            return html`
+              <span class="breadcrumb-sep">&#9654;</span>
+              <span class="breadcrumb-item" title="${m.uri} (via ${schemaId})"
+                @click=${() => this.addExpandedModels(schemaId, models)}
+              >${name}</span>
+            `;
+          })
+        )}
+        <button class="breadcrumb-collapse" @click=${this._collapseAll}
+          title="Collapse back to single-file view">
+          &#10005; Collapse all
+        </button>
+      </div>
+    `;
+  }
+
+  private _collapseAll() {
+    this._expandedModels = new Map();
+    this._runLayout();
+  }
+
   private _onNsFilterChange(e: Event) {
     const val = (e.target as HTMLSelectElement).value;
     this._nsFilter = val || null;
@@ -635,6 +741,18 @@ export class SatsumaViz extends LitElement {
     // Build namespace bounding boxes from child node positions
     const nsBoxes = this._computeNamespaceBoxes(layout, namespaces);
 
+    // Track which schema IDs came from expansions for animation
+    const expandedIds = new Set<string>();
+    for (const models of this._expandedModels.values()) {
+      for (const m of models) {
+        for (const ns of m.namespaces) {
+          for (const s of ns.schemas) expandedIds.add(s.qualifiedId);
+          for (const f of ns.fragments) expandedIds.add(f.id);
+          for (const mt of ns.metrics) expandedIds.add(mt.qualifiedId);
+        }
+      }
+    }
+
     return html`
       <div class="canvas" style="width: ${layout.width + 48}px; height: ${layout.height + 48}px; padding: 24px;">
         <!-- SVG edge layer (behind cards) -->
@@ -663,8 +781,9 @@ export class SatsumaViz extends LitElement {
               const node = layout.nodes.get(s.qualifiedId);
               if (!node) return html``;
               const mapped = this._mappedFieldsBySchema.get(s.qualifiedId) ?? new Set();
+              const isExpanded = expandedIds.has(s.qualifiedId);
               return html`
-                <div class="positioned-card" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                <div class="positioned-card ${isExpanded ? "expanded" : ""}" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
                   <sz-schema-card .schema=${s} .mappedFields=${mapped}></sz-schema-card>
                 </div>
               `;
@@ -672,8 +791,9 @@ export class SatsumaViz extends LitElement {
             ...ns.fragments.map((f) => {
               const node = layout.nodes.get(f.id);
               if (!node) return html``;
+              const isExpanded = expandedIds.has(f.id);
               return html`
-                <div class="positioned-card" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                <div class="positioned-card ${isExpanded ? "expanded" : ""}" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
                   <sz-fragment-card .fragment=${f}></sz-fragment-card>
                 </div>
               `;
@@ -681,8 +801,9 @@ export class SatsumaViz extends LitElement {
             ...ns.metrics.map((m) => {
               const node = layout.nodes.get(m.qualifiedId);
               if (!node) return html``;
+              const isExpanded = expandedIds.has(m.qualifiedId);
               return html`
-                <div class="positioned-card" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                <div class="positioned-card ${isExpanded ? "expanded" : ""}" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
                   <sz-metric-card .metric=${m}></sz-metric-card>
                 </div>
               `;

@@ -1,6 +1,6 @@
 ---
 id: f2v-no8k
-status: open
+status: closed
 deps: [f2v-davz]
 links: []
 created: 2026-03-26T23:14:59Z
@@ -20,3 +20,9 @@ When cross-file schemas are expanded, animate the new cards sliding in from left
 - Collapse button removes expanded cards with reverse animation
 - Collapsing returns to single-file view
 
+
+## Notes
+
+**2026-03-26T23:22:44Z**
+
+CSS slideInRight animation applied to expanded cards via .positioned-card.expanded class. Animation: 0.3s ease-out slide from +40px.
