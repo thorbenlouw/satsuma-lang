@@ -28,7 +28,7 @@ Test areas:
 - **Node completeness**: All schemas, mappings, metrics, fragments, transforms present as nodes?
 - **Edge completeness**: Every arrow in every mapping represented as an edge? Field-level data flow correct?
 - **Edge classification**: Transform classifications on edges match what `satsuma arrows` reports?
-- **`unresolved_nl` section**: NL arrows listed for agent interpretation?
+- **`unresolved_nl` section**: NL arrows listed for agent interpretation? Note: this section name may be misleading — it contains ALL NL content, not just unresolved refs.
 - **Schema-level edges**: `schema_edges` section correctly represents which schemas are connected via mappings?
 - **Metric connections**: Metrics connected to their source schemas?
 - **Fragment connections**: Fragment spreads create connections?
@@ -40,6 +40,14 @@ Test areas:
 - **Disconnected nodes**: Schemas with no mappings. Present as isolated nodes?
 - **Self-referencing**: Mapping where source and target are the same schema.
 - **Derived arrows**: `-> tgt` arrows in graph edges.
+- **@ref edges (nl_ref role)**: NL transforms with `@other_schema` refs should create `nl_ref` role entries in `schema_edges`. Do they?
+- **@ref in each/flatten blocks**: Do @refs inside each/flatten NL transforms create graph edges? Or are they invisible?
+- **@ref vs --no-nl**: Does `--no-nl` strip NL text but preserve `nl_ref` edges (since they're structural)?
+- **@ref vs --schema-only**: Are `nl_ref` edges preserved in schema-only mode?
+- **Namespaced mapping edge duplication**: In `--schema-only` mode, do namespaced mappings produce duplicate edges (one with bare name, one with qualified name)?
+- **Edge classification accuracy**: Do `mixed` classifications match what `satsuma arrows` reports? Test with transforms that have both structural and NL tokens in the same pipe step.
+- **Source join description NL**: `source { a, b, "join on @a.id = @b.id" }` — does graph capture this NL content and its @refs?
+- **@ref in note blocks**: @refs in schema/metric/standalone notes — do they produce graph edges?
 
 ## Creating test fixtures
 

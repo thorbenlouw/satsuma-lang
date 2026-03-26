@@ -37,9 +37,16 @@ Test areas:
 - **Field not found**: Non-existent schema or field. Exit code?
 - **Schema exists but field doesn't**: Correct error message?
 - **Namespace-qualified fields**: `crm::customers.name`.
-- **NL backtick references**: Are implicit arrows from backtick references in NL included?
+- **@ref-derived arrows**: Are implicit arrows from `@ref` references in NL included? (Backticks are only for quoting complex names, not for NL references.)
 - **Arithmetic transforms**: `{ * 100 }`, `{ + 1 }`. Classified as `structural`?
 - **Function transforms**: `{ now_utc() }`, `{ uuid_v5("ns", id) }`. Classification?
+- **@ref in NL transforms**: `{ "Sum @line_amount grouped by @order_id" }` — are @refs shown as sources? Classification?
+- **@ref-derived arrows**: Computed arrows like `-> total { "Sum @amount" }` — does `@amount` create an nl-derived arrow?
+- **Arrows inside each blocks**: `each items -> output { .sku -> .code { transform } }` — can arrows be looked up by target field?
+- **Arrows inside flatten blocks**: `flatten lines -> flat { .field -> .field }` — are these arrows findable?
+- **Mixed classification with @ref**: `{ lookup table "Apply rule using @field" }` — structural + NL in same pipe step. Classified as `[mixed]`?
+- **Multi-source arrows**: `a, b -> c { "combine" }` — does arrows show both sources?
+- **Empty transform body**: `a -> x { }` — classified as `[none]`?
 
 ## Creating test fixtures
 

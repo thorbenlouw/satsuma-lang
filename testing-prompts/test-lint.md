@@ -24,8 +24,8 @@ Known lint rules (from SATSUMA-CLI.md):
 - `duplicate-definition` (error, not fixable) — Named definition declared more than once in a namespace
 
 Test areas:
-- **`hidden-source-in-nl`**: Create a mapping where NL text references `` `other_schema` `` but `other_schema` is not in source/target. Does the rule fire?
-- **`unresolved-nl-ref`**: Create NL text with `` `nonexistent_thing` ``. Does the rule fire?
+- **`hidden-source-in-nl`**: Create a mapping where NL text references `@other_schema` but `other_schema` is not in source/target. Does the rule fire?
+- **`unresolved-nl-ref`**: Create NL text with `@nonexistent_thing` — does the rule fire?
 - **`duplicate-definition`**: Create two schemas with the same name. Does the rule fire?
 - **`--fix` flag**: For fixable rules, does `--fix` apply corrections? What does it change? (Test on copies in `/tmp/`.)
 - **`--json` flag**: Valid JSON with rule ID, severity, message, file, line?
@@ -42,6 +42,13 @@ Test areas:
 - **Namespace context**: NL references using namespace-qualified names.
 - **Metric source context**: NL in a metric body referencing its source schema.
 - **Single file**: `satsuma lint examples/common.stm`. Works?
+- **@ref in `hidden-source-in-nl`**: `"Sum @external_schema.amount"` where `external_schema` is not in source/target — does the rule fire?
+- **@ref in each/flatten blocks**: NL with @refs inside `each`/`flatten` blocks — does lint detect hidden sources there?
+- **Dotted sub-field paths as hidden sources**: `PARENT_RECORD.CHILD_FIELD` where `PARENT_RECORD` IS in the source schema — is this a false positive?
+- **Backtick emphasis vs field refs**: File-level `note { }` blocks using backticks for emphasis (e.g., `` `flatten` ``, `` `pii` ``) — should `unresolved-nl-ref` fire? Watch for false positives.
+- **@ref in note blocks**: `note { "Based on @source" }` — does `hidden-source-in-nl` apply to note blocks?
+- **@ref in source join descriptions**: `source { a, b, "Join on @a.id = @b.id" }` — are @refs in join NL checked by lint?
+- **Duplicate definitions with --fix**: What happens when `--fix` is applied to a workspace with duplicate-definition errors?
 
 ## Creating test fixtures
 
