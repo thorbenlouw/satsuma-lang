@@ -174,7 +174,6 @@ function tryContext(node: SyntaxNode): NodeContext | null {
     // Handle identifiers and backtick_names that are inside source_ref, spread, etc.
     case "identifier":
     case "backtick_name":
-    case "backtick_name":
     case "qualified_name":
     case "nl_string":
       // Let the parent handle it

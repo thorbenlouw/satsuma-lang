@@ -39,13 +39,10 @@ window.addEventListener("message", (event) => {
     // Set model on the component
     vizEl.model = msg.payload;
   } else if (msg.type === "error") {
-    root.innerHTML = `<div class="error-message">${escapeHtml(msg.message)}</div>`;
+    root.textContent = "";
+    const div = document.createElement("div");
+    div.className = "error-message";
+    div.textContent = msg.message;
+    root.appendChild(div);
   }
 });
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}

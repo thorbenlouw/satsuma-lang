@@ -31,6 +31,10 @@ jobs:
         working-directory: tooling/satsuma-cli
         run: npm run prebuild && tsc
 
+      - name: Build satsuma-viz (needed by VS Code extension webview)
+        working-directory: tooling/satsuma-viz
+        run: npm run build
+
       - name: Cache workspace
         uses: actions/cache/save@v5
         with:
@@ -39,6 +43,8 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -64,6 +70,8 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -94,6 +102,8 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -145,6 +155,8 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
@@ -210,6 +222,8 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
