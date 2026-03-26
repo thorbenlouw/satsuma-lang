@@ -7,9 +7,6 @@
 
 import type { Classification, SyntaxNode } from "./types.js";
 
-/** Node types that indicate structural (deterministic) transform steps. */
-const STRUCTURAL_TYPES = new Set(["token_call", "map_literal", "fragment_spread", "arithmetic_step"]);
-
 /** Node types that indicate NL (natural language) transform steps. */
 const NL_TYPES = new Set(["nl_string", "multiline_string"]);
 
@@ -25,8 +22,18 @@ export function classifyTransform(steps: SyntaxNode[] | null | undefined): Class
   for (const step of steps) {
     const inner = step.namedChildren[0];
     if (!inner) continue;
-    if (STRUCTURAL_TYPES.has(inner.type)) hasStructural = true;
-    else if (NL_TYPES.has(inner.type)) hasNl = true;
+
+    if (inner.type === "map_literal" || inner.type === "fragment_spread") {
+      hasStructural = true;
+    } else if (inner.type === "pipe_text") {
+      // pipe_text containing only NL strings → NL; otherwise structural
+      const kids = inner.namedChildren;
+      if (kids.length > 0 && kids.every((k) => NL_TYPES.has(k.type))) {
+        hasNl = true;
+      } else {
+        hasStructural = true;
+      }
+    }
   }
 
   if (hasStructural && hasNl) return "mixed";

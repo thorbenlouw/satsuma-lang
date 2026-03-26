@@ -56,7 +56,13 @@ function tgtPath(name) {
 }
 
 function pipeStep(innerType, text = "") {
-  return n("pipe_step", [n(innerType, [], text)], text);
+  if (innerType === "pipe_text" && (text.startsWith('"') || text.startsWith('"""'))) {
+    // NL pipe text — wrap nl_string inside pipe_text
+    const strType = text.startsWith('"""') ? "multiline_string" : "nl_string";
+    const inner = n("pipe_text", [n(strType, [], text)], text);
+    return n("pipe_step", [inner], text);
+  }
+  return n("pipe_step", [n(innerType, [n("identifier", [], text)], text)], text);
 }
 
 function pipeChain(steps) {
@@ -104,8 +110,8 @@ describe("extractArrowRecords", () => {
 
   it("extracts a structural arrow with token_call pipeline", () => {
     const steps = [
-      pipeStep("token_call", "trim"),
-      pipeStep("token_call", "lowercase"),
+      pipeStep("pipe_text", "trim"),
+      pipeStep("pipe_text", "lowercase"),
     ];
     const arrow = mapArrow("EMAIL", "email", steps, 20);
     const mapping = mappingBlock("m1", [arrow]);
@@ -116,13 +122,13 @@ describe("extractArrowRecords", () => {
     assert.equal(records[0].classification, "structural");
     assert.equal(records[0].transform_raw, "trim | lowercase");
     assert.deepEqual(records[0].steps, [
-      { type: "token_call", text: "trim" },
-      { type: "token_call", text: "lowercase" },
+      { type: "pipe_text", text: "trim" },
+      { type: "pipe_text", text: "lowercase" },
     ]);
   });
 
   it("extracts an NL arrow", () => {
-    const steps = [pipeStep("nl_string", '"Do something complex"')];
+    const steps = [pipeStep("pipe_text", '"Do something complex"')];
     const arrow = mapArrow("PHONE", "phone", steps, 30);
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
@@ -134,8 +140,8 @@ describe("extractArrowRecords", () => {
 
   it("extracts a mixed arrow", () => {
     const steps = [
-      pipeStep("nl_string", '"Filter profanity"'),
-      pipeStep("token_call", "escape_html"),
+      pipeStep("pipe_text", '"Filter profanity"'),
+      pipeStep("pipe_text", "escape_html"),
     ];
     const arrow = mapArrow("NOTES", "notes", steps, 40);
     const mapping = mappingBlock("m1", [arrow]);
@@ -144,13 +150,13 @@ describe("extractArrowRecords", () => {
     const records = extractArrowRecords(root);
     assert.equal(records[0].classification, "mixed");
     assert.deepEqual(records[0].steps, [
-      { type: "nl_string", text: '"Filter profanity"' },
-      { type: "token_call", text: "escape_html" },
+      { type: "pipe_text", text: '"Filter profanity"' },
+      { type: "pipe_text", text: "escape_html" },
     ]);
   });
 
   it("extracts a computed (derived) arrow", () => {
-    const steps = [pipeStep("token_call", "now_utc()")];
+    const steps = [pipeStep("pipe_text", "now_utc()")];
     const arrow = computedArrow("migration_ts", steps, 50);
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);

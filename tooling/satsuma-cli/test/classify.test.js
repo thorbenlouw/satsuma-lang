@@ -12,52 +12,62 @@ function n(type, namedChildren = [], text = "", row = 0) {
   return { type, text, startPosition: { row, column: 0 }, namedChildren };
 }
 
-function pipeStep(innerType, text = "") {
-  return n("pipe_step", [n(innerType, [], text)]);
+function pipeStep(innerType, innerChildren = [], text = "") {
+  return n("pipe_step", [n(innerType, innerChildren, text)]);
+}
+
+// Helper: pipe_text wrapping identifiers (structural)
+function structuralStep(text) {
+  return pipeStep("pipe_text", [n("identifier", [], text)], text);
+}
+
+// Helper: pipe_text wrapping nl_string (NL)
+function nlStep(text) {
+  return pipeStep("pipe_text", [n("nl_string", [], text)], text);
 }
 
 // ── classifyTransform ────────────────────────────────────────────────────────
 
 describe("classifyTransform", () => {
-  it("returns 'structural' for token_call-only pipelines", () => {
-    const steps = [pipeStep("token_call", "trim"), pipeStep("token_call", "lowercase")];
+  it("returns 'structural' for pipe_text with identifiers", () => {
+    const steps = [structuralStep("trim"), structuralStep("lowercase")];
     assert.equal(classifyTransform(steps), "structural");
   });
 
   it("returns 'structural' for map_literal steps", () => {
-    const steps = [pipeStep("map_literal", 'map { A: "active" }')];
+    const steps = [pipeStep("map_literal", [], 'map { A: "active" }')];
     assert.equal(classifyTransform(steps), "structural");
   });
 
   it("returns 'structural' for fragment_spread steps", () => {
-    const steps = [pipeStep("fragment_spread", "...address")];
+    const steps = [pipeStep("fragment_spread", [], "...address")];
     assert.equal(classifyTransform(steps), "structural");
   });
 
   it("returns 'structural' for mixed structural types", () => {
     const steps = [
-      pipeStep("token_call", "trim"),
-      pipeStep("map_literal", "map { X: Y }"),
-      pipeStep("fragment_spread", "...common"),
+      structuralStep("trim"),
+      pipeStep("map_literal", [], "map { X: Y }"),
+      pipeStep("fragment_spread", [], "...common"),
     ];
     assert.equal(classifyTransform(steps), "structural");
   });
 
-  it("returns 'nl' for nl_string-only transforms", () => {
-    const steps = [pipeStep("nl_string", '"Do something with this"')];
+  it("returns 'nl' for pipe_text containing only nl_string", () => {
+    const steps = [nlStep('"Do something with this"')];
     assert.equal(classifyTransform(steps), "nl");
   });
 
-  it("returns 'nl' for multiline_string-only transforms", () => {
-    const steps = [pipeStep("multiline_string", '"""Some long description"""')];
+  it("returns 'nl' for pipe_text containing only multiline_string", () => {
+    const steps = [pipeStep("pipe_text", [n("multiline_string", [], '"""Some long description"""')], '"""Some long description"""')];
     assert.equal(classifyTransform(steps), "nl");
   });
 
   it("returns 'mixed' for transforms with both structural and NL steps", () => {
     const steps = [
-      pipeStep("nl_string", '"Filter profanity"'),
-      pipeStep("token_call", "escape_html"),
-      pipeStep("token_call", "truncate(5000)"),
+      nlStep('"Filter profanity"'),
+      structuralStep("escape_html"),
+      structuralStep("truncate(5000)"),
     ];
     assert.equal(classifyTransform(steps), "mixed");
   });
@@ -76,8 +86,8 @@ describe("classifyTransform", () => {
     assert.equal(classifyTransform(steps), "none");
   });
 
-  it("returns 'structural' for arithmetic_step", () => {
-    const steps = [n("pipe_step", [n("arithmetic_step", [n("number_literal", [], "100")])])];
+  it("returns 'structural' for pipe_text with arithmetic tokens", () => {
+    const steps = [pipeStep("pipe_text", [n("number_literal", [], "100")], "* 100")];
     assert.equal(classifyTransform(steps), "structural");
   });
 });

@@ -299,18 +299,21 @@ function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | n
   for (const step of pipeChain.namedChildren) {
     if (step.type === "pipe_step") {
       const innerNode = step.namedChildren[0];
-      if (innerNode && (innerNode.type === "nl_string" || innerNode.type === "multiline_string")) {
-        const text = innerNode.type === "multiline_string"
-          ? innerNode.text.slice(3, -3)
-          : innerNode.text.slice(1, -1);
+      const nlNodes = innerNode?.type === "pipe_text"
+        ? innerNode.namedChildren.filter((k) => k.type === "nl_string" || k.type === "multiline_string")
+        : [];
+      for (const nlNode of nlNodes) {
+        const text = nlNode.type === "multiline_string"
+          ? nlNode.text.slice(3, -3)
+          : nlNode.text.slice(1, -1);
         if (text.includes("`")) {
           results.push({
             text,
             mapping: `transform:${transformName}`,
             namespace,
             targetField: null,
-            line: innerNode.startPosition.row,
-            column: innerNode.startPosition.column,
+            line: nlNode.startPosition.row,
+            column: nlNode.startPosition.column,
           });
         }
       }
@@ -413,18 +416,21 @@ function walkArrowsForNL(
         for (const step of pipeChain.namedChildren) {
           if (step.type === "pipe_step") {
             const innerNode = step.namedChildren[0];
-            if (innerNode && (innerNode.type === "nl_string" || innerNode.type === "multiline_string")) {
-              const text = innerNode.type === "multiline_string"
-                ? innerNode.text.slice(3, -3)
-                : innerNode.text.slice(1, -1);
+            const nlNodes2 = innerNode?.type === "pipe_text"
+              ? innerNode.namedChildren.filter((k) => k.type === "nl_string" || k.type === "multiline_string")
+              : [];
+            for (const nlNode of nlNodes2) {
+              const text = nlNode.type === "multiline_string"
+                ? nlNode.text.slice(3, -3)
+                : nlNode.text.slice(1, -1);
               if (text.includes("`")) {
                 results.push({
                   text,
                   mapping: mappingName,
                   namespace,
                   targetField: tgt,
-                  line: innerNode.startPosition.row,
-                  column: innerNode.startPosition.column,
+                  line: nlNode.startPosition.row,
+                  column: nlNode.startPosition.column,
                 });
               }
             }

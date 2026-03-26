@@ -149,9 +149,8 @@ describe("FieldDecl metadata enrichment", () => {
   });
 
   it("extracts ref key-value from field metadata", () => {
-    const kvKey = n("kv_key", [], "ref");
-    const kvVal = n("dotted_name", [], "dim_customer.customer_id");
-    const kvPair = n("key_value_pair", [kvKey, kvVal]);
+    const kvVal = n("value_text", [n("dotted_name", [], "dim_customer.customer_id")], "dim_customer.customer_id");
+    const kvPair = n("tag_with_value", [ident("ref"), kvVal]);
     const metaBlock = n("metadata_block", [kvPair]);
     const fd = n("field_decl", [fieldName("customer_id"), typeExpr("STRING(36)"), metaBlock]);
     const body = n("schema_body", [fd]);
@@ -346,9 +345,8 @@ describe("extractMappings", () => {
 
 describe("extractMetrics", () => {
   it("extracts a metric with fields", () => {
-    const kvKey = n("kv_key", [], "grain");
-    const kvVal = n("identifier", [], "monthly");
-    const kv = n("key_value_pair", [kvKey, kvVal]);
+    const kvVal = n("value_text", [n("identifier", [], "monthly")], "monthly");
+    const kv = n("tag_with_value", [ident("grain"), kvVal]);
     const meta = n("metadata_block", [kv]);
     const body = n("metric_body", [fieldDecl("value", "DECIMAL(14,2)")]);
     const block = n("metric_block", [blockLabel("mrr"), meta, body], "", 7);

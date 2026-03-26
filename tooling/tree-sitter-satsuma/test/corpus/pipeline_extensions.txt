@@ -28,14 +28,14 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)
               (number_literal)))
           (pipe_step
-            (arithmetic_step
+            (pipe_text
               (number_literal)))
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
 
 ================================================================================
@@ -68,7 +68,7 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)
               (identifier)
               (dotted_name
@@ -105,5 +105,6 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (arithmetic_step
+            (pipe_text
               (number_literal))))))))
+

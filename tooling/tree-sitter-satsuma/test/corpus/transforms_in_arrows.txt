@@ -30,7 +30,8 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Arrow with multi-step pipe chain
@@ -62,13 +63,13 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
 
 ================================================================================
@@ -178,7 +179,8 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Arrow with multiline transform
@@ -215,4 +217,6 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (multiline_string)))))))
+            (pipe_text
+              (multiline_string))))))))
+

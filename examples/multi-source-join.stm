@@ -169,10 +169,7 @@ mapping 'customer 360' {
     | round(2)
   }
 
-  -> net_revenue {
-    "`total_revenue` minus `total_refunds`."
-    | round(2)
-  }
+  -> net_revenue { "`total_revenue` minus `total_refunds`." | round(2) }
 
   -> avg_order_value {
     "`total_revenue` divided by `total_orders`. Null if `total_orders` = 0."

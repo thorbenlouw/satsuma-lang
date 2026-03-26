@@ -20,8 +20,8 @@ function typeExpr(t) { return n("type_expr", [], t); }
 function findTagInMeta(metaNode, tag) {
   for (const c of metaNode.namedChildren) {
     if (c.type === "tag_token" && c.text.toLowerCase() === tag) return c.text;
-    if (c.type === "key_value_pair") {
-      const key = c.namedChildren.find((x) => x.type === "kv_key");
+    if (c.type === "tag_with_value") {
+      const key = c.namedChildren[0];
       if (key && key.text.toLowerCase() === tag) return key.text;
     }
     if (c.type === "enum_body" || c.type === "slice_body") {
@@ -74,10 +74,10 @@ describe("findTagInMeta", () => {
     assert.equal(findTagInMeta(meta, "pii"), "PII");
   });
 
-  it("finds a key_value_pair key", () => {
-    const key = n("kv_key", [], "format");
-    const val = n("identifier", [], "email");
-    const kv = n("key_value_pair", [key, val]);
+  it("finds a tag_with_value key", () => {
+    const key = n("identifier", [], "format");
+    const val = n("value_text", [n("identifier", [], "email")], "email");
+    const kv = n("tag_with_value", [key, val]);
     const meta = n("metadata_block", [kv]);
     assert.equal(findTagInMeta(meta, "format"), "format");
   });

@@ -282,7 +282,7 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
             (map_literal
@@ -301,5 +301,6 @@ mapping {
                 (map_value
                   (nl_string)))))
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
+

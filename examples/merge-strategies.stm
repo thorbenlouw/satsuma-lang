@@ -128,9 +128,7 @@ mapping 'purchase events' (merge append) {
   sku -> sku
   quantity -> quantity
   unit_price -> unit_price
-  -> line_total {
-    "quantity * unit_price"
-  }
+  -> line_total { "quantity * unit_price" }
   event_timestamp -> event_timestamp
   -> ingested_at { now_utc() }
 }

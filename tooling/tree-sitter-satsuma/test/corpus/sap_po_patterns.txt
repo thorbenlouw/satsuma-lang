@@ -75,7 +75,7 @@ mapping {
               (identifier)))
           (pipe_chain
             (pipe_step
-              (token_call
+              (pipe_text
                 (identifier)))))))))
 
 ================================================================================
@@ -111,10 +111,11 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Pipe chain with multiple tokens then NL string
@@ -150,13 +151,14 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Each block with note metadata
@@ -248,7 +250,7 @@ mapping {
               (identifier)))
           (pipe_chain
             (pipe_step
-              (token_call
+              (pipe_text
                 (identifier)))))
         (map_arrow
           (src_path
@@ -259,13 +261,14 @@ mapping {
               (identifier)))
           (pipe_chain
             (pipe_step
-              (token_call
+              (pipe_text
                 (identifier)))
             (pipe_step
-              (token_call
+              (pipe_text
                 (identifier)))
             (pipe_step
-              (nl_string))))
+              (pipe_text
+                (nl_string)))))
         (map_arrow
           (src_path
             (relative_field_path
@@ -275,7 +278,8 @@ mapping {
               (identifier)))
           (pipe_chain
             (pipe_step
-              (nl_string))))
+              (pipe_text
+                (nl_string)))))
         (map_arrow
           (src_path
             (relative_field_path
@@ -285,10 +289,10 @@ mapping {
               (identifier)))
           (pipe_chain
             (pipe_step
-              (token_call
+              (pipe_text
                 (identifier)))
             (pipe_step
-              (token_call
+              (pipe_text
                 (identifier)
                 (number_literal)))))
         (map_arrow
@@ -384,7 +388,8 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Schema with list_of record field and field-level note metadata

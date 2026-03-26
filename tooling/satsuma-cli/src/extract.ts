@@ -350,23 +350,18 @@ export function extractMetrics(rootNode: SyntaxNode): ExtractedMetric[] {
     const slices: string[] = [];
     if (meta) {
       for (const entry of meta.namedChildren) {
-        if (entry.type === "key_value_pair") {
-          const key = child(entry, "kv_key");
-          const val = entry.namedChildren.find((c) => c.type !== "kv_key");
+        if (entry.type === "tag_with_value") {
+          const key = entry.namedChildren[0]; // identifier
+          const val = entry.namedChildren[1]; // value_text
           if (key?.text === "source") {
             if (!val) continue;
-            if (val.type === "kv_braced_list") {
-              for (const item of val.namedChildren) {
-                if (item.type === "qualified_name") {
-                  sources.push(qualifiedNameText(item)!);
-                } else if (item.type === "identifier") {
-                  sources.push(item.text);
-                }
+            // value_text children: identifiers, qualified_names, etc.
+            for (const item of val.namedChildren) {
+              if (item.type === "qualified_name") {
+                sources.push(qualifiedNameText(item)!);
+              } else if (item.type === "identifier") {
+                sources.push(item.text);
               }
-            } else if (val.type === "qualified_name") {
-              sources.push(qualifiedNameText(val)!);
-            } else {
-              sources.push(entryText(val)!);
             }
           } else if (key?.text === "grain") {
             if (val) grain = entryText(val);

@@ -63,16 +63,28 @@ namespace vault {
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))
     (fragment_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))
     (transform_block
-      (block_label (identifier))
-      (pipe_chain (pipe_step (token_call (identifier)))))))
+      (block_label
+        (identifier))
+      (pipe_chain
+        (pipe_step
+          (pipe_text
+            (identifier)))))))
 
 ================================================================================
 namespace with mapping
@@ -92,16 +104,26 @@ namespace vault {
   (namespace_block
     name: (identifier)
     (mapping_block
-      (block_label (quoted_name))
+      (block_label
+        (quoted_name))
       (mapping_body
         (source_block
-          (source_ref (backtick_name)))
+          (source_ref
+            (backtick_name)))
         (target_block
-          (source_ref (backtick_name)))
+          (source_ref
+            (backtick_name)))
         (map_arrow
-          (src_path (field_path (identifier)))
-          (tgt_path (field_path (identifier)))
-          (pipe_chain (pipe_step (token_call (identifier)))))))))
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (pipe_text
+                (identifier)))))))))
 
 ================================================================================
 namespace with metric
@@ -264,18 +286,30 @@ schema dim_date {
 
 (source_file
   (transform_block
-    (block_label (identifier))
-    (pipe_chain (pipe_step (token_call (identifier)))))
+    (block_label
+      (identifier))
+    (pipe_chain
+      (pipe_step
+        (pipe_text
+          (identifier)))))
   (namespace_block
     name: (identifier)
     (schema_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (schema_body
-        (field_decl (field_name (identifier)) (type_expr)))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr)))))
   (schema_block
-    (block_label (identifier))
+    (block_label
+      (identifier))
     (schema_body
-      (field_decl (field_name (identifier)) (type_expr)))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
 
 ================================================================================
 qualified import names
@@ -434,19 +468,34 @@ namespace vault {
   (namespace_block
     name: (identifier)
     (mapping_block
-      (block_label (quoted_name))
+      (block_label
+        (quoted_name))
       (mapping_body
         (source_block
-          (source_ref (backtick_name)))
+          (source_ref
+            (backtick_name)))
         (target_block
-          (source_ref (backtick_name)))
+          (source_ref
+            (backtick_name)))
         (map_arrow
-          (src_path (field_path (identifier)))
-          (tgt_path (field_path (identifier)))
-          (pipe_chain (pipe_step (token_call (identifier)))))
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (pipe_text
+                (identifier)))))
         (computed_arrow
-          (tgt_path (field_path (identifier)))
-          (pipe_chain (pipe_step (nl_string))))))))
+          (tgt_path
+            (field_path
+              (identifier)))
+          (pipe_chain
+            (pipe_step
+              (pipe_text
+                (nl_string)))))))))
 
 ================================================================================
 repeated namespace blocks (ns-merging pattern)
@@ -500,19 +549,34 @@ namespace staging {
   (namespace_block
     name: (identifier)
     (mapping_block
-      (block_label (quoted_name))
+      (block_label
+        (quoted_name))
       (mapping_body
         (source_block
-          (source_ref (backtick_name)))
+          (source_ref
+            (backtick_name)))
         (target_block
-          (source_ref (backtick_name)))
+          (source_ref
+            (backtick_name)))
         (map_arrow
-          (src_path (field_path (identifier)))
-          (tgt_path (field_path (identifier))))
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier))))
         (map_arrow
-          (src_path (field_path (identifier)))
-          (tgt_path (field_path (identifier)))
+          (src_path
+            (field_path
+              (identifier)))
+          (tgt_path
+            (field_path
+              (identifier)))
           (pipe_chain
-            (pipe_step (token_call (identifier)))
-            (pipe_step (token_call (identifier)))))))))
+            (pipe_step
+              (pipe_text
+                (identifier)))
+            (pipe_step
+              (pipe_text
+                (identifier)))))))))
 

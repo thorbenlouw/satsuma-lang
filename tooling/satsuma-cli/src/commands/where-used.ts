@@ -292,7 +292,7 @@ function walkForTransformCalls(node: SyntaxNode, transformName: string, mappingN
   for (const c of node.namedChildren) {
     if (c.type === "pipe_step") {
       const inner = c.namedChildren[0];
-      if (inner?.type === "token_call" && inner.text === transformName) {
+      if (inner?.type === "pipe_text" && inner.text === transformName) {
         results.push({ mapping: mappingName, row: c.startPosition.row });
       }
       // Check for fragment_spread inside pipe_step (transform spread: ...name)

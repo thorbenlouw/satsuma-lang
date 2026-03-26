@@ -441,27 +441,42 @@ module.exports = grammar({
 
     pipe_step: ($) =>
       choice(
-        $.multiline_string,
-        $.nl_string,
-        $.arithmetic_step,
-        $.token_call,
-        $.map_literal,
         $.fragment_spread,
+        $.map_literal,
+        $.pipe_text,
       ),
 
-    // Arithmetic: * N, / N, + N, - N
-    arithmetic_step: ($) =>
-      seq($._arithmetic_op, $.number_literal),
+    // pipe_text: greedy repeat of basic tokens.
+    // | and } naturally terminate it (not in the choice set).
+    // Double quotes still work for text containing | or }.
+    pipe_text: ($) =>
+      repeat1(
+        choice(
+          $.nl_string,
+          $.multiline_string,
+          $.backtick_name,
+          $.dotted_name,
+          $.number_literal,
+          $.identifier,
+          $._arithmetic_op,
+          $._comparison_op,
+          seq(
+            "(",
+            repeat(
+              choice(
+                $.nl_string,
+                $.dotted_name,
+                $.identifier,
+                $.number_literal,
+                ",",
+              ),
+            ),
+            ")",
+          ),
+        ),
+      ),
 
     _arithmetic_op: (_) => token(choice("*", "/", "+", "-")),
-
-    token_call: ($) =>
-      seq(
-        $.identifier,
-        optional(seq("(", optional(commaSep1($._tc_arg)), ")")),
-      ),
-
-    _tc_arg: ($) => choice($.nl_string, $.dotted_name, $.identifier, $.number_literal),
 
     // ── Map literal ───────────────────────────────────────────────────────
 

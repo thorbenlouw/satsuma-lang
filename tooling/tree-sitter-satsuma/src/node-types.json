@@ -1,20 +1,5 @@
 [
   {
-    "type": "arithmetic_step",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "number_literal",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "backtick_path",
     "named": true,
     "fields": {},
@@ -760,15 +745,38 @@
       "required": true,
       "types": [
         {
-          "type": "arithmetic_step",
-          "named": true
-        },
-        {
           "type": "fragment_spread",
           "named": true
         },
         {
           "type": "map_literal",
+          "named": true
+        },
+        {
+          "type": "pipe_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pipe_text",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "dotted_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -780,7 +788,7 @@
           "named": true
         },
         {
-          "type": "token_call",
+          "type": "number_literal",
           "named": true
         }
       ]
@@ -1111,33 +1119,6 @@
         },
         {
           "type": "relative_field_path",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "token_call",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "dotted_name",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "nl_string",
-          "named": true
-        },
-        {
-          "type": "number_literal",
           "named": true
         }
       ]

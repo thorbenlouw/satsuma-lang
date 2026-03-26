@@ -289,7 +289,7 @@ mapping 'computed values' {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
 
 ================================================================================
@@ -333,6 +333,6 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
 

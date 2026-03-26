@@ -202,7 +202,8 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Multi-source with metadata
@@ -275,7 +276,8 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (nl_string)))))))
+            (pipe_text
+              (nl_string))))))))
 
 ================================================================================
 Single source still works (regression check)
@@ -305,3 +307,4 @@ mapping {
         (tgt_path
           (field_path
             (identifier)))))))
+

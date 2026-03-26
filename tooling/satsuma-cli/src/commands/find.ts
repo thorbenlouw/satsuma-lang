@@ -202,8 +202,8 @@ function findTagInMeta(metaNode: SyntaxNode, tag: string): string | null {
     if (c.type === "tag_token" && c.text.toLowerCase() === tag) {
       return c.text;
     }
-    if (c.type === "key_value_pair") {
-      const key = c.namedChildren.find((x) => x.type === "kv_key");
+    if (c.type === "tag_with_value") {
+      const key = c.namedChildren[0];
       if (key && key.text.toLowerCase() === tag) return key.text;
     }
     // note_tag — matches --tag note
@@ -226,9 +226,9 @@ function collectAllTags(metaNode: SyntaxNode): string[] {
   const tags: string[] = [];
   for (const c of metaNode.namedChildren) {
     if (c.type === "tag_token") tags.push(c.text);
-    else if (c.type === "key_value_pair") {
-      const key = c.namedChildren.find((x) => x.type === "kv_key");
-      const val = c.namedChildren.find((x) => x.type !== "kv_key");
+    else if (c.type === "tag_with_value") {
+      const key = c.namedChildren[0]; // identifier
+      const val = c.namedChildren[1]; // value_text
       tags.push(val ? `${key?.text} ${val.text}` : (key?.text ?? ""));
     } else if (c.type === "note_tag") {
       const strNode = c.namedChildren.find((x) => x.type === "nl_string" || x.type === "multiline_string");
