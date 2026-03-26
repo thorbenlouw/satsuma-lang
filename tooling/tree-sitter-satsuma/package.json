@@ -4,22 +4,15 @@
   "private": true,
   "description": "Tree-sitter grammar for Satsuma v2",
   "license": "MIT",
-  "main": "bindings/node",
   "scripts": {
+    "install": "echo 'Skipping native build — WASM only'",
     "generate": "../../scripts/tree-sitter-local.sh generate",
-    "build": "../../scripts/tree-sitter-local.sh generate && node-gyp build",
+    "build": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm",
     "test": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test",
     "test:wasm": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test --wasm",
     "smoke": "node scripts/smoke-check.js"
   },
-  "dependencies": {
-    "node-addon-api": "^8.3.0",
-    "node-gyp-build": "^4.8.0"
-  },
   "devDependencies": {
     "tree-sitter-cli": "^0.26.7"
-  },
-  "peerDependencies": {
-    "tree-sitter": "^0.25.0"
   }
 }
