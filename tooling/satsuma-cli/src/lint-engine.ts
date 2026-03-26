@@ -81,6 +81,19 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
       }
 
       if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
+        const displayRef = item.namespace && referencedSchema.startsWith(`${item.namespace}::`)
+          ? referencedSchema.slice(item.namespace.length + 2)
+          : referencedSchema;
+        const sourceBlockFix = makeAddSourceFix(mappingKey, referencedSchema);
+        const fixApply = item.targetField
+          ? composeFixes(
+              makeAddArrowSourceFix(mappingKey, referencedSchema, item.targetField),
+              sourceBlockFix,
+            )
+          : sourceBlockFix;
+        const fixDesc = item.targetField
+          ? `Added '${displayRef}' to arrow source list and mapping source block in '${mappingKey}'`
+          : `Added '${displayRef}' to source list of mapping '${mappingKey}'`;
         diagnostics.push({
           file: item.file,
           line: item.line + 1,
@@ -92,8 +105,8 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
           fix: {
             file: item.file,
             rule: "hidden-source-in-nl",
-            description: `Added '${item.namespace && referencedSchema.startsWith(`${item.namespace}::`) ? referencedSchema.slice(item.namespace.length + 2) : referencedSchema}' to source list of mapping '${mappingKey}'`,
-            apply: makeAddSourceFix(mappingKey, referencedSchema),
+            description: fixDesc,
+            apply: fixApply,
           },
         });
       }
@@ -158,6 +171,88 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
         lines[i] = `${indent}source { ${newRefs} }`;
         return lines.join("\n");
       }
+    }
+
+    return source;
+  };
+}
+
+function composeFixes(...fns: ((s: string) => string)[]): (s: string) => string {
+  return (source: string): string => fns.reduce((s, fn) => fn(s), source);
+}
+
+function makeAddArrowSourceFix(
+  mappingKey: string,
+  schemaRef: string,
+  targetField: string,
+): (source: string) => string {
+  const nsIdx = mappingKey.indexOf("::");
+  const displayName = nsIdx !== -1 ? mappingKey.slice(nsIdx + 2) : mappingKey;
+  const mappingNs = nsIdx !== -1 ? mappingKey.slice(0, nsIdx) : null;
+
+  let insertRef = resolveCanonicalKey(schemaRef);
+  if (mappingNs && schemaRef.startsWith(`${mappingNs}::`)) {
+    insertRef = schemaRef.slice(mappingNs.length + 2);
+  }
+
+  // Strip namespace prefix from targetField for matching inside namespace block
+  let matchTarget = targetField;
+  if (mappingNs && matchTarget.startsWith(`${mappingNs}::`)) {
+    matchTarget = matchTarget.slice(mappingNs.length + 2);
+  }
+  // Also strip schema prefix — arrow target in source uses bare field name
+  const dotIdx = matchTarget.indexOf(".");
+  const bareTarget = dotIdx >= 0 ? matchTarget.slice(dotIdx + 1) : matchTarget;
+
+  return (source: string): string => {
+    const lines = source.split("\n");
+    let inMapping = false;
+    let braceDepth = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i]!.trim();
+
+      if (!inMapping) {
+        const mappingRe = /^mapping\s+(?:`([^`]+)`|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
+        const m = trimmed.match(mappingRe);
+        if (m) {
+          const name = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+          if (name === displayName) {
+            inMapping = true;
+            braceDepth = (trimmed.match(/\{/g) ?? []).length - (trimmed.match(/\}/g) ?? []).length;
+          }
+        }
+        continue;
+      }
+
+      for (const ch of trimmed) {
+        if (ch === "{") braceDepth++;
+        else if (ch === "}") braceDepth--;
+      }
+      if (braceDepth <= 0) break;
+
+      // Match arrow line: "src -> target" or "src1, src2 -> target"
+      const arrowMatch = trimmed.match(/^(.+?)\s*->\s*(.+?)(\s*\{.*)?$/);
+      if (!arrowMatch) continue;
+
+      const arrowTargetPart = arrowMatch[2]!.trim();
+      // Check if arrow target matches (with or without schema prefix)
+      const targetBare = arrowTargetPart.replace(/^`|`$/g, "");
+      const targetDotIdx = targetBare.indexOf(".");
+      const targetFieldOnly = targetDotIdx >= 0 ? targetBare.slice(targetDotIdx + 1) : targetBare;
+
+      if (targetFieldOnly !== bareTarget && targetBare !== matchTarget) continue;
+
+      // Check if insertRef is already in the source list
+      const srcPart = arrowMatch[1]!.trim();
+      const existingSrcs = srcPart.split(/\s*,\s*/).map((s) => s.replace(/^`|`$/g, ""));
+      if (existingSrcs.some((s) => s === insertRef || s === schemaRef)) return source;
+
+      // Insert the schema before the ->
+      const indent = lines[i]!.match(/^(\s*)/)![1];
+      const rest = arrowMatch[2]! + (arrowMatch[3] ?? "");
+      lines[i] = `${indent}${srcPart}, ${insertRef} -> ${rest}`;
+      return lines.join("\n");
     }
 
     return source;

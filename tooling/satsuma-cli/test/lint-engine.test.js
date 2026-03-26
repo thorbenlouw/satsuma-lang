@@ -136,6 +136,102 @@ describe("lint: hidden-source-in-nl", () => {
     assert.match(fixed, /source \{ source::finance_gl, source::hr_employees \}/);
   });
 
+  it("fix adds schema to arrow source list for arrow-level NL", () => {
+    const source = [
+      "mapping `stage gl` {",
+      "  source { source::finance_gl }",
+      "  target { staging::stg_gl }",
+      "",
+      "  finance_gl.posted_by -> stg_gl.department {",
+      '    "Lookup from `source::hr_employees`"',
+      "  }",
+      "}",
+    ].join("\n");
+
+    const index = makeIndex({
+      schemas: [
+        { name: "source::hr_employees", fields: [{ name: "department" }] },
+        { name: "source::finance_gl", fields: [{ name: "posted_by" }] },
+        { name: "staging::stg_gl", fields: [{ name: "department" }] },
+      ],
+      mappings: [{
+        name: "stage gl",
+        sources: ["source::finance_gl"],
+        targets: ["staging::stg_gl"],
+      }],
+      nlRefData: [{
+        text: "Lookup from `source::hr_employees`",
+        mapping: "stage gl",
+        namespace: null,
+        targetField: "stg_gl.department",
+        file: "test.stm",
+        line: 10,
+        column: 6,
+      }],
+    });
+
+    const diags = runLint(index, { select: ["hidden-source-in-nl"] });
+    assert.equal(diags.length, 1);
+
+    const sourceByFile = new Map([["test.stm", source]]);
+    const { fixedFiles, appliedFixes } = applyFixes(sourceByFile, diags);
+
+    assert.equal(appliedFixes.length, 1);
+    const fixed = fixedFiles.get("test.stm");
+    // Arrow should now be multi-source
+    assert.match(fixed, /finance_gl\.posted_by, source::hr_employees -> stg_gl\.department/);
+    // Source block should also be updated
+    assert.match(fixed, /source \{ source::finance_gl, source::hr_employees \}/);
+  });
+
+  it("fix adds schema to source block only for non-arrow NL", () => {
+    const source = [
+      "mapping `stage gl` {",
+      "  source { source::finance_gl }",
+      "  target { staging::stg_gl }",
+      "",
+      "  note {",
+      '    "Lookup from `source::hr_employees`"',
+      "  }",
+      "}",
+    ].join("\n");
+
+    const index = makeIndex({
+      schemas: [
+        { name: "source::hr_employees", fields: [{ name: "department" }] },
+        { name: "source::finance_gl", fields: [{ name: "posted_by" }] },
+        { name: "staging::stg_gl", fields: [{ name: "department" }] },
+      ],
+      mappings: [{
+        name: "stage gl",
+        sources: ["source::finance_gl"],
+        targets: ["staging::stg_gl"],
+      }],
+      nlRefData: [{
+        text: "Lookup from `source::hr_employees`",
+        mapping: "stage gl",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 10,
+        column: 6,
+      }],
+    });
+
+    const diags = runLint(index, { select: ["hidden-source-in-nl"] });
+    assert.equal(diags.length, 1);
+
+    const sourceByFile = new Map([["test.stm", source]]);
+    const { fixedFiles, appliedFixes } = applyFixes(sourceByFile, diags);
+
+    assert.equal(appliedFixes.length, 1);
+    const fixed = fixedFiles.get("test.stm");
+    // Source block should be updated
+    assert.match(fixed, /source \{ source::finance_gl, source::hr_employees \}/);
+    // No arrow modification (note block, not arrow NL)
+    assert.ok(!fixed.includes("->"));
+  });
+
   it("fix is idempotent", () => {
     // After fix, hr_employees is already in source list — no diagnostic expected
     const index = makeIndex({
