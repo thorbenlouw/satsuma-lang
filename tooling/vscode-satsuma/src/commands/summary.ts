@@ -26,27 +26,81 @@ export function registerSummaryCommand(
 
         if (data.files !== undefined) {
           outputChannel.appendLine(`Files: ${data.files}`);
+          outputChannel.appendLine("");
         }
-        if (data.schemas !== undefined) {
-          outputChannel.appendLine(`Schemas: ${data.schemas}`);
-        }
-        if (data.mappings !== undefined) {
-          outputChannel.appendLine(`Mappings: ${data.mappings}`);
-        }
-        if (data.fragments !== undefined) {
-          outputChannel.appendLine(`Fragments: ${data.fragments}`);
-        }
-        if (data.transforms !== undefined) {
-          outputChannel.appendLine(`Transforms: ${data.transforms}`);
-        }
-        if (data.metrics !== undefined) {
-          outputChannel.appendLine(`Metrics: ${data.metrics}`);
-        }
-        if (data.notes !== undefined) {
-          outputChannel.appendLine(`Notes: ${data.notes}`);
-        }
-        if (data.arrows !== undefined) {
-          outputChannel.appendLine(`Arrows: ${data.arrows}`);
+
+        const sections: {
+          key: string;
+          label: string;
+          format: (item: Record<string, unknown>) => string;
+        }[] = [
+          {
+            key: "schemas",
+            label: "Schemas",
+            format: (s) => {
+              const fields =
+                s.fieldCount === 1
+                  ? `[${s.fieldCount} field]`
+                  : `[${s.fieldCount} fields]`;
+              const note = s.note ? ` — ${s.note}` : "";
+              return `  ${s.name}  ${fields}${note}`;
+            },
+          },
+          {
+            key: "mappings",
+            label: "Mappings",
+            format: (m) => {
+              const note = m.note ? ` — ${m.note}` : "";
+              return `  ${m.name}${note}`;
+            },
+          },
+          {
+            key: "fragments",
+            label: "Fragments",
+            format: (f) => {
+              const note = f.note ? ` — ${f.note}` : "";
+              return `  ${f.name}${note}`;
+            },
+          },
+          {
+            key: "transforms",
+            label: "Transforms",
+            format: (t) => {
+              const note = t.note ? ` — ${t.note}` : "";
+              return `  ${t.name}${note}`;
+            },
+          },
+          {
+            key: "metrics",
+            label: "Metrics",
+            format: (m) => {
+              const note = m.note ? ` — ${m.note}` : "";
+              return `  ${m.name}${note}`;
+            },
+          },
+          {
+            key: "notes",
+            label: "Notes",
+            format: (n) => `  ${n.name || n.text || JSON.stringify(n)}`,
+          },
+          {
+            key: "arrows",
+            label: "Arrows",
+            format: (a) => `  ${a.name || JSON.stringify(a)}`,
+          },
+        ];
+
+        for (const section of sections) {
+          const items = data[section.key];
+          if (Array.isArray(items) && items.length > 0) {
+            outputChannel.appendLine(
+              `${section.label} (${items.length}):`,
+            );
+            for (const item of items) {
+              outputChannel.appendLine(section.format(item));
+            }
+            outputChannel.appendLine("");
+          }
         }
 
         outputChannel.show();
