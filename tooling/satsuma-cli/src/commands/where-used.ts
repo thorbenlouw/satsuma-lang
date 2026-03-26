@@ -168,11 +168,11 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
   // NL backtick references — find references inside NL transform bodies
   const nlRefs = resolveAllNLRefs(index);
   const seenNLRefs = new Set<string>();
+  const cName = canonicalKey(name);
   for (const nlRef of nlRefs) {
     if (!nlRef.resolved || !nlRef.resolvedTo) continue;
     const resolvedRefName = nlRef.resolvedTo.name;
-    // Match the queried name against the resolved reference
-    if (resolvedRefName === name || resolvedRefName.startsWith(name + ".")) {
+    if (matchesEntityOrField(resolvedRefName, name, cName)) {
       const dedup = `${nlRef.mapping}:${nlRef.file}:${nlRef.line}`;
       if (seenNLRefs.has(dedup)) continue;
       seenNLRefs.add(dedup);
@@ -186,6 +186,15 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
   }
 
   return refs;
+}
+
+/**
+ * Check whether a resolved ref name matches an entity query.
+ * Handles exact match and field-prefixed match in both internal and canonical forms.
+ */
+function matchesEntityOrField(resolvedName: string, internalName: string, canonicalName: string): boolean {
+  return resolvedName === internalName || resolvedName === canonicalName ||
+    resolvedName.startsWith(internalName + ".") || resolvedName.startsWith(canonicalName + ".");
 }
 
 /**

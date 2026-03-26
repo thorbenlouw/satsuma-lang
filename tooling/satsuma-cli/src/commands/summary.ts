@@ -18,6 +18,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
+import { canonicalEntityName } from "../canonical-ref.js";
 import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
 function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: WorkspaceIndex): number {
@@ -70,11 +71,7 @@ export function register(program: Command): void {
 // ── Formatters ────────────────────────────────────────────────────────────────
 
 function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean): void {
-  /** Format a display name with namespace prefix when applicable. */
-  const displayName = (entity: { namespace?: string; name: string | null }): string => {
-    if (entity.namespace) return `${entity.namespace}::${entity.name}`;
-    return canonicalKey(entity.name ?? "");
-  };
+  const displayName = canonicalEntityName;
 
   const out: Record<string, unknown> = {
     schemas: [...index.schemas.values()].map((s) => {
@@ -117,11 +114,11 @@ function printCompact(index: WorkspaceIndex): void {
     for (const name of items) console.log(`  ${name}`);
   };
 
-  section("schemas", [...index.schemas.keys()]);
-  section("metrics", [...index.metrics.keys()]);
-  section("mappings", [...index.mappings.keys()]);
-  section("fragments", [...index.fragments.keys()]);
-  section("transforms", [...index.transforms.keys()]);
+  section("schemas", [...index.schemas.keys()].map(canonicalKey));
+  section("metrics", [...index.metrics.keys()].map(canonicalKey));
+  section("mappings", [...index.mappings.keys()].map(canonicalKey));
+  section("fragments", [...index.fragments.keys()].map(canonicalKey));
+  section("transforms", [...index.transforms.keys()].map(canonicalKey));
 }
 
 function plural(n: number, word: string): string {
@@ -141,11 +138,7 @@ function printDefault(index: WorkspaceIndex, fileCount: number): void {
   }
   console.log();
 
-  /** Format a display name with namespace prefix when applicable. */
-  const displayName = (entity: { namespace?: string; name: string | null }): string => {
-    if (entity.namespace) return `${entity.namespace}::${entity.name}`;
-    return canonicalKey(entity.name ?? "");
-  };
+  const displayName = canonicalEntityName;
 
   if (schemas.length > 0) {
     console.log(`Schemas (${schemas.length}):`);

@@ -374,7 +374,10 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
       for (const schema of sourceSchemas) {
         // Don't double-prefix if source already starts with schema name
         if (!bareSource.startsWith(schema + ".") && bareSource !== schema) {
-          addToIndex(`${schema}.${bareSource}`, record);
+          const internalKey = `${schema}.${bareSource}`;
+          addToIndex(internalKey, record);
+          // Also index under canonical form for Phase 5 @ref edge lookups
+          addToIndex(canonicalKey(internalKey), record);
         }
       }
       addToIndex(source, record);
@@ -390,7 +393,10 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
       for (const schema of targetSchemas) {
         // Don't double-prefix if target already starts with schema name
         if (!bareTarget.startsWith(schema + ".") && bareTarget !== schema) {
-          addToIndex(`${schema}.${bareTarget}`, record);
+          const internalKey = `${schema}.${bareTarget}`;
+          addToIndex(internalKey, record);
+          // Also index under canonical form for Phase 5 @ref edge lookups
+          addToIndex(canonicalKey(internalKey), record);
         }
       }
       addToIndex(record.target, record);

@@ -11,6 +11,7 @@
 
 import type { FieldDecl, MappingRecord, NLRefData, SyntaxNode, WorkspaceIndex } from "./types.js";
 import { expandEntityFields } from "./spread-expand.js";
+import { canonicalKey } from "./index-builder.js";
 
 // ── Extraction ──────────────────────────────────────────────────────────────
 
@@ -73,9 +74,11 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
   const classification = classifyRef(ref);
 
   if (classification === "namespace-qualified-schema") {
-    if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: ref } };
-    if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: ref } };
-    if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: ref } };
+    // canonicalKey is a no-op here (ref already contains ::) but keeps the
+    // contract explicit: resolvedTo.name is always in canonical form.
+    if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: canonicalKey(ref) } };
+    if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: canonicalKey(ref) } };
+    if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: canonicalKey(ref) } };
     return { resolved: false, resolvedTo: null };
   }
 
@@ -85,7 +88,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
     const fieldName = ref.slice(dotIdx + 1);
     const schema = index.schemas.get(schemaRef);
     if (schema && hasFieldWithSpreads(schema, fieldName, index)) {
-      return { resolved: true, resolvedTo: { kind: "field", name: ref } };
+      return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(schemaRef)}.${fieldName}` } };
     }
     return { resolved: false, resolvedTo: null };
   }
@@ -101,13 +104,13 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
     for (const s of allSchemas) {
       const schema = index.schemas.get(s);
       if (schema && hasNestedFieldPath(schema.fields, ref)) {
-        return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${ref}` } };
+        return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(s)}.${ref}` } };
       }
       // Also check expanded spread fields
       if (schema?.hasSpreads) {
         const expanded = expandEntityFields(schema, schema.namespace ?? null, index);
         if (hasNestedFieldPath([...schema.fields, ...expanded], ref)) {
-          return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${ref}` } };
+          return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(s)}.${ref}` } };
         }
       }
     }
@@ -119,7 +122,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
       if (baseName === schemaName || s === schemaName) {
         const schema = index.schemas.get(s);
         if (schema && hasFieldWithSpreads(schema, fieldName, index)) {
-          return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${fieldName}` } };
+          return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(s)}.${fieldName}` } };
         }
       }
     }
@@ -129,7 +132,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
       const baseName = nsIdx !== -1 ? key.slice(nsIdx + 2) : key;
       if (baseName === schemaName || key === schemaName) {
         if (hasFieldWithSpreads(schema, fieldName, index)) {
-          return { resolved: true, resolvedTo: { kind: "field", name: `${key}.${fieldName}` } };
+          return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(key)}.${fieldName}` } };
         }
       }
     }
@@ -141,7 +144,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
   for (const s of allSchemaNames) {
     const schema = index.schemas.get(s);
     if (schema && hasFieldWithSpreads(schema, ref, index)) {
-      return { resolved: true, resolvedTo: { kind: "field", name: `${s}.${ref}` } };
+      return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(s)}.${ref}` } };
     }
   }
 
@@ -150,7 +153,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
   if (allSchemaNames.length === 0) {
     for (const [key, schema] of index.schemas) {
       if (hasFieldWithSpreads(schema, ref, index)) {
-        return { resolved: true, resolvedTo: { kind: "field", name: `${key}.${ref}` } };
+        return { resolved: true, resolvedTo: { kind: "field", name: `${canonicalKey(key)}.${ref}` } };
       }
     }
   }
@@ -158,15 +161,15 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
   // Try namespace-qualified lookup from mapping's namespace BEFORE global
   if (mappingContext.namespace) {
     const nsRef = `${mappingContext.namespace}::${ref}`;
-    if (index.schemas.has(nsRef)) return { resolved: true, resolvedTo: { kind: "schema", name: nsRef } };
-    if (index.fragments?.has(nsRef)) return { resolved: true, resolvedTo: { kind: "fragment", name: nsRef } };
-    if (index.transforms?.has(nsRef)) return { resolved: true, resolvedTo: { kind: "transform", name: nsRef } };
+    if (index.schemas.has(nsRef)) return { resolved: true, resolvedTo: { kind: "schema", name: canonicalKey(nsRef) } };
+    if (index.fragments?.has(nsRef)) return { resolved: true, resolvedTo: { kind: "fragment", name: canonicalKey(nsRef) } };
+    if (index.transforms?.has(nsRef)) return { resolved: true, resolvedTo: { kind: "transform", name: canonicalKey(nsRef) } };
   }
 
   // Check if it's a global schema, fragment, or transform name
-  if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: ref } };
-  if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: ref } };
-  if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: ref } };
+  if (index.schemas.has(ref)) return { resolved: true, resolvedTo: { kind: "schema", name: canonicalKey(ref) } };
+  if (index.fragments?.has(ref)) return { resolved: true, resolvedTo: { kind: "fragment", name: canonicalKey(ref) } };
+  if (index.transforms?.has(ref)) return { resolved: true, resolvedTo: { kind: "transform", name: canonicalKey(ref) } };
 
   return { resolved: false, resolvedTo: null };
 }
@@ -517,5 +520,7 @@ export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
 export function isSchemaInMappingSources(schemaRef: string, mapping: MappingRecord | undefined): boolean {
   if (!mapping) return false;
   const allRefs = [...(mapping.sources ?? []), ...(mapping.targets ?? [])];
-  return allRefs.includes(schemaRef);
+  // Compare using canonical forms since schemaRef may be canonical (::name)
+  // while mapping sources/targets are internal keys (bare name)
+  return allRefs.some((r) => r === schemaRef || canonicalKey(r) === schemaRef);
 }

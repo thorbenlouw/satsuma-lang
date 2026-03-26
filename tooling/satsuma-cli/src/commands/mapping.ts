@@ -16,6 +16,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { extractMetadata } from "../meta-extract.js";
+import { canonicalEntityName } from "../canonical-ref.js";
 import { classifyTransform } from "../classify.js";
 import type { SyntaxNode, MappingRecord } from "../types.js";
 
@@ -165,7 +166,7 @@ function printJson(entry: MappingRecord, mappingNode: SyntaxNode | null): void {
   console.log(
     JSON.stringify(
       {
-        name: canonicalKey(entry.namespace ? `${entry.namespace}::${entry.name}` : (entry.name ?? "")),
+        name: canonicalEntityName(entry),
         ...(entry.namespace ? { namespace: entry.namespace } : {}),
         sources: entry.sources.map((s) => canonicalKey(s)),
         targets: entry.targets.map((t) => canonicalKey(t)),
@@ -213,11 +214,7 @@ function printArrowNode(c: SyntaxNode, compact: boolean | undefined, indent: str
   const childArrows = c.namedChildren.filter((x) => x.type === "map_arrow" || x.type === "computed_arrow" || x.type === "nested_arrow");
 
   if (childArrows.length > 0) {
-    if (compact || !pipeChain) {
-      console.log(`${indent}${srcPart}${tgtStr}${metaSuffix} {`);
-    } else {
-      console.log(`${indent}${srcPart}${tgtStr}${metaSuffix} {`);
-    }
+    console.log(`${indent}${srcPart}${tgtStr}${metaSuffix} {`);
     for (const child of childArrows) {
       printArrowNode(child, compact, indent + "  ");
     }
