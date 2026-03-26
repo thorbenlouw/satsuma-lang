@@ -5,6 +5,7 @@ import { computeLayout, type LayoutResult } from "./layout/elk-layout.js";
 import tokens from "./tokens.css";
 
 export { VizModel } from "./model.js";
+export type { NamespaceGroup } from "./model.js";
 
 // Re-export components so they register when the bundle loads
 export { SzSchemaCard } from "./components/sz-schema-card.js";
@@ -20,6 +21,15 @@ export class SzNavigateEvent extends Event {
   constructor(location: SourceLocation) {
     super("navigate", { bubbles: true, composed: true });
     this.location = location;
+  }
+}
+
+/** Expand lineage event — dispatched when the user clicks an expand button on a schema card. */
+export class SzExpandLineageEvent extends Event {
+  readonly schemaId: string;
+  constructor(schemaId: string) {
+    super("expand-lineage", { bubbles: true, composed: true });
+    this.schemaId = schemaId;
   }
 }
 
@@ -306,6 +316,10 @@ export class SatsumaViz extends LitElement {
 
   private _zoomIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Expanded cross-file models keyed by the schema that triggered expansion. */
+  @state()
+  private _expandedModels = new Map<string, VizModel[]>();
+
   @state()
   private _mappedFieldsBySchema = new Map<string, Set<string>>();
 
@@ -320,8 +334,32 @@ export class SatsumaViz extends LitElement {
 
   override updated(changed: Map<string, unknown>) {
     if (changed.has("model") && this.model) {
+      this._expandedModels = new Map();
       this._runLayout();
     }
+  }
+
+  /** Add expanded cross-file models triggered by a schema card. */
+  addExpandedModels(schemaId: string, models: VizModel[]) {
+    const next = new Map(this._expandedModels);
+    if (next.has(schemaId)) {
+      next.delete(schemaId); // toggle off
+    } else {
+      next.set(schemaId, models);
+    }
+    this._expandedModels = next;
+    this._runLayout();
+  }
+
+  /** Get the list of expanded file URIs for breadcrumb display. */
+  get expandedFiles(): string[] {
+    const uris: string[] = [];
+    for (const models of this._expandedModels.values()) {
+      for (const m of models) {
+        if (!uris.includes(m.uri)) uris.push(m.uri);
+      }
+    }
+    return uris;
   }
 
   private async _runLayout() {
@@ -330,14 +368,62 @@ export class SatsumaViz extends LitElement {
     this._layout = null;
     this._layoutError = false;
 
+    // Build a merged model that includes expanded cross-file schemas
+    const mergedModel = this._buildMergedModel();
+
     // Build mapped fields index for card rendering
     this._mappedFieldsBySchema = this._buildMappedFieldsIndex();
 
     try {
-      this._layout = await computeLayout(this.model);
+      this._layout = await computeLayout(mergedModel);
     } catch {
       this._layoutError = true;
     }
+  }
+
+  /** Merge the primary model with any expanded cross-file models. */
+  private _buildMergedModel(): VizModel {
+    if (!this.model || this._expandedModels.size === 0) return this.model!;
+
+    // Collect all namespaces from expanded models, avoiding duplicates
+    const seenIds = new Set<string>();
+    const primaryNs = this.model.namespaces;
+    for (const ns of primaryNs) {
+      for (const s of ns.schemas) seenIds.add(s.qualifiedId);
+      for (const f of ns.fragments) seenIds.add(f.id);
+      for (const m of ns.metrics) seenIds.add(m.qualifiedId);
+    }
+
+    const extraNamespaces: NamespaceGroup[] = [];
+    for (const models of this._expandedModels.values()) {
+      for (const m of models) {
+        for (const ns of m.namespaces) {
+          const newSchemas = ns.schemas.filter((s) => !seenIds.has(s.qualifiedId));
+          const newFragments = ns.fragments.filter((f) => !seenIds.has(f.id));
+          const newMetrics = ns.metrics.filter((mt) => !seenIds.has(mt.qualifiedId));
+
+          for (const s of newSchemas) seenIds.add(s.qualifiedId);
+          for (const f of newFragments) seenIds.add(f.id);
+          for (const mt of newMetrics) seenIds.add(mt.qualifiedId);
+
+          if (newSchemas.length > 0 || newFragments.length > 0 || newMetrics.length > 0) {
+            extraNamespaces.push({
+              name: ns.name,
+              schemas: newSchemas,
+              mappings: ns.mappings,
+              metrics: newMetrics,
+              fragments: newFragments,
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      uri: this.model.uri,
+      fileNotes: this.model.fileNotes,
+      namespaces: [...primaryNs, ...extraNamespaces],
+    };
   }
 
   override render() {

@@ -26,6 +26,7 @@ import {
   removeFile,
   allBlockNames,
   resolveDefinition,
+  findReferences,
 } from "./workspace-index";
 import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
@@ -320,6 +321,23 @@ connection.onRequest(
     const tree = trees.get(params.uri);
     if (!tree) return null;
     return buildVizModel(params.uri, tree, wsIndex);
+  },
+);
+
+/** Return linked file URIs for cross-file lineage expansion in the viz. */
+connection.onRequest(
+  "satsuma/vizLinkedFiles",
+  (params: { schemaId: string; currentUri: string }) => {
+    const refs = findReferences(wsIndex, params.schemaId);
+    const defs = resolveDefinition(wsIndex, params.schemaId, null);
+    const uris = new Set<string>();
+    for (const r of refs) {
+      if (r.uri !== params.currentUri) uris.add(r.uri);
+    }
+    for (const d of defs) {
+      if (d.uri !== params.currentUri) uris.add(d.uri);
+    }
+    return [...uris];
   },
 );
 
