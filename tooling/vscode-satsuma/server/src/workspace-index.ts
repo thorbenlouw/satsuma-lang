@@ -442,14 +442,45 @@ function indexArrowFieldRefs(
   uri: string,
   body: SyntaxNode,
 ): void {
+  const sourceSchemas = getMappingBodySchemas(body, "source_block");
+  const targetSchemas = getMappingBodySchemas(body, "target_block");
+
   walkDescendants(body, (n) => {
-    if (n.type === "src_path" || n.type === "tgt_path") {
-      const fieldName = extractArrowFieldName(n);
-      if (fieldName) {
-        addReference(index, fieldName, {
+    if (n.type !== "src_path" && n.type !== "tgt_path") return;
+    const isSrc = n.type === "src_path";
+    const schemas = isSrc ? sourceSchemas : targetSchemas;
+
+    const fieldName = extractArrowFieldName(n);    // first segment / bare name
+    const fullPath = extractArrowFullPath(n);       // full dotted path, namespace-stripped
+
+    if (!fieldName) return;
+
+    // Bare field name — existing behaviour
+    addReference(index, fieldName, {
+      uri,
+      range: nodeRange(n),
+      name: fieldName,
+      context: "arrow",
+    });
+
+    // schema.fullPath — canonical qualified keys, matching CLI index-builder
+    if (fullPath) {
+      for (const schema of schemas) {
+        const qualKey = `${schema}.${fullPath}`;
+        addReference(index, qualKey, {
           uri,
           range: nodeRange(n),
-          name: fieldName,
+          name: qualKey,
+          context: "arrow",
+        });
+      }
+      // Also index the full path without a schema prefix when it differs from
+      // the bare name (nested paths like CdtTrfTxInf.DbtrAgt.BIC)
+      if (fullPath !== fieldName) {
+        addReference(index, fullPath, {
+          uri,
+          range: nodeRange(n),
+          name: fullPath,
           context: "arrow",
         });
       }
@@ -457,7 +488,48 @@ function indexArrowFieldRefs(
   });
 }
 
-/** Extract the leaf field name from a src_path or tgt_path node. */
+/** Extract the schemas named in a source_block or target_block within a mapping body. */
+function getMappingBodySchemas(body: SyntaxNode, blockType: string): string[] {
+  const names: string[] = [];
+  for (const ch of body.namedChildren) {
+    if (ch.type === blockType) {
+      for (const ref of children(ch, "source_ref")) {
+        const name = sourceRefText(ref);
+        if (name) names.push(name);
+      }
+    }
+  }
+  return names;
+}
+
+/**
+ * Extract the full field path from a src_path or tgt_path node —
+ * strips any leading dot (relative paths) and namespace prefix (ns::field).
+ * Returns the dotted field path, e.g. "Amount", "CdtTrfTxInf.DbtrAgt.BIC",
+ * or "field name" for a backtick-quoted first segment.
+ */
+function extractArrowFullPath(pathNode: SyntaxNode): string | null {
+  const text = pathNode.text;
+  if (!text) return null;
+
+  // Backtick path: `field name` or `field name`.nested — strip backticks from first seg
+  if (text.startsWith("`")) {
+    const endTick = text.indexOf("`", 1);
+    if (endTick <= 0) return null;
+    const firstSeg = text.slice(1, endTick);
+    const rest = text.slice(endTick + 1); // e.g. ".nested" or ""
+    return rest.startsWith(".") ? firstSeg + rest : firstSeg;
+  }
+
+  // Strip leading dot from relative paths (.field → field)
+  const stripped = text.startsWith(".") ? text.slice(1) : text;
+
+  // Strip namespace prefix (ns::field → field)
+  const nsIdx = stripped.indexOf("::");
+  return (nsIdx >= 0 ? stripped.slice(nsIdx + 2) : stripped) || null;
+}
+
+/** Extract the first-segment field name from a src_path or tgt_path node. */
 function extractArrowFieldName(pathNode: SyntaxNode): string | null {
   const text = pathNode.text;
   if (!text) return null;

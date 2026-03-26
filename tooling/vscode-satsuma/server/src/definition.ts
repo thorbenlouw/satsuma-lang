@@ -51,6 +51,8 @@ export interface NodeContext {
     | "unknown";
   name: string;
   namespace: string | null;
+  /** For field_name context: the qualified enclosing schema/fragment name (e.g. "sfdc_opportunity" or "ns::sfdc_opportunity"). */
+  parentName?: string;
   /** For arrow field context: the source/target schemas of the enclosing mapping. */
   mappingSources?: string[];
   mappingTargets?: string[];
@@ -125,7 +127,10 @@ function tryContext(node: SyntaxNode): NodeContext | null {
     case "field_name": {
       const name = fieldNameTextDef(node);
       if (!name) return null;
-      return { kind: "field_name", name, namespace: ns, node };
+      const block = findEnclosingBlock(node);
+      const blockName = block ? labelText(block) : null;
+      const parentName = blockName ? (ns ? `${ns}::${blockName}` : blockName) : undefined;
+      return { kind: "field_name", name, namespace: ns, parentName, node };
     }
 
     case "src_path": {
