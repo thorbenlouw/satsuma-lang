@@ -452,6 +452,7 @@ module.exports = grammar({
     pipe_text: ($) =>
       repeat1(
         choice(
+          $.at_ref,
           $.nl_string,
           $.multiline_string,
           $.backtick_name,
@@ -573,6 +574,7 @@ module.exports = grammar({
     value_text: ($) =>
       repeat1(
         choice(
+          $.at_ref,
           $.nl_string,
           $.multiline_string,
           $.backtick_name,
@@ -604,6 +606,19 @@ module.exports = grammar({
     boolean_literal: (_) => choice("true", "false"),
 
     tag_token: ($) => $.identifier,
+
+    // ── @ref — structural cross-reference ────────────────────────────────
+    // @identifier, @schema.field, @ns::schema.field, @`backtick-name`.field
+    // Used in pipe_text and value_text for structural references.
+    at_ref: ($) =>
+      seq(
+        "@",
+        choice(
+          seq($.identifier, "::", $.identifier, repeat(seq(".", $._path_seg))),
+          seq($.backtick_name, repeat(seq(".", $._path_seg))),
+          seq($.identifier, repeat(seq(".", $._path_seg))),
+        ),
+      ),
 
     // ── Lexical tokens ────────────────────────────────────────────────────
 
