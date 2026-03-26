@@ -22,4 +22,8 @@ The site/ directory is currently raw HTML with Tailwind CDN. Migrate to a static
 - Existing design (Tailwind styling, logo, page structure) preserved
 - README or CONTRIBUTING note explains how to add/update site content
 - Site deploys to GitHub Pages (or equivalent) from the build output
+- Release workflow updated to inject templated values (VERSION, test count, corpus test count, CLI command count, etc.) and rebuild the static site before publishing
 
+## Notes
+
+The current site publishing happens via a GitHub Actions release workflow. After the SSG migration, that workflow must run the SSG build step with dynamic values injected — e.g. current version number, number of passing tests, number of corpus tests, number of CLI commands — so these stay accurate on the live site without manual updates. These values should come from the build/test output or a generated data file, not be hardcoded in templates.
