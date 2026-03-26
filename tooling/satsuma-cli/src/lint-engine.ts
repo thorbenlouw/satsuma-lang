@@ -70,12 +70,16 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
           referencedSchema = resolution.resolvedTo.name;
         }
       } else if (classification === "dotted-field" || classification === "namespace-qualified-field") {
-        // Dotted field ref like `hidden.code` — extract the schema part
+        // Dotted field ref like `hidden.code` — extract the schema part.
+        // Use the FIRST dot (after any `::` prefix) so that nested sub-field
+        // paths like `schema.RECORD.CHILD` correctly yield the schema name
+        // rather than `schema.RECORD`.
         if (resolution.resolvedTo?.kind === "field") {
           const fieldName = resolution.resolvedTo.name;
-          const lastDot = fieldName.lastIndexOf(".");
-          if (lastDot > 0) {
-            referencedSchema = fieldName.slice(0, lastDot);
+          const nsEnd = fieldName.indexOf("::");
+          const firstDot = fieldName.indexOf(".", nsEnd >= 0 ? nsEnd + 2 : 0);
+          if (firstDot > 0) {
+            referencedSchema = fieldName.slice(0, firstDot);
           }
         }
       }
@@ -273,6 +277,11 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
   if (!index.nlRefData) return diagnostics;
 
   for (const item of index.nlRefData) {
+    // File-level standalone notes (mapping === "note:") use backtick-quoted
+    // terms for emphasis, not as field references.  Skip them to avoid false
+    // positives — mirrors the suppression already present in validate.ts.
+    if (item.mapping === "note:") continue;
+
     const refs = extractBacktickRefs(item.text);
     const mappingKey = item.namespace
       ? `${item.namespace}::${item.mapping}`

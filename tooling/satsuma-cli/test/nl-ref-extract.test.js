@@ -176,6 +176,72 @@ describe("resolveRef", () => {
     const result = resolveRef("Email", context, index);
     assert.equal(result.resolved, true);
   });
+
+  it("resolves 3-segment dotted-field path (schema.record.subfield)", () => {
+    const index = makeIndex({
+      source_data: {
+        fields: [{ name: "address", children: [{ name: "street" }, { name: "city" }] }],
+      },
+    });
+    const context = { sources: ["source_data"], targets: [] };
+    const result = resolveRef("source_data.address.street", context, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo.name, "::source_data.address.street");
+  });
+
+  it("resolves 3-segment namespace-qualified-field path (ns::schema.record.subfield)", () => {
+    const index = makeIndex({
+      "src::patient": {
+        fields: [{ name: "PID", children: [{ name: "DateOfBirth" }, { name: "Name" }] }],
+      },
+    });
+    const result = resolveRef("src::patient.PID.DateOfBirth", {}, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo.name, "src::patient.PID.DateOfBirth");
+  });
+
+  it("returns unresolved for 3-segment path when nested field does not exist", () => {
+    const index = makeIndex({
+      source_data: {
+        fields: [{ name: "address", children: [{ name: "street" }] }],
+      },
+    });
+    const context = { sources: ["source_data"], targets: [] };
+    const result = resolveRef("source_data.address.zipcode", context, index);
+    assert.equal(result.resolved, false);
+  });
+
+  it("resolves deeply nested path (4+ segments)", () => {
+    const index = makeIndex({
+      "src::msg": {
+        fields: [{
+          name: "header",
+          children: [{
+            name: "sender",
+            children: [{ name: "name" }],
+          }],
+        }],
+      },
+    });
+    const result = resolveRef("src::msg.header.sender.name", {}, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+  });
+
+  it("resolves 3-segment dotted path via workspace fallback", () => {
+    const index = makeIndex({
+      contacts: {
+        fields: [{ name: "home", children: [{ name: "phone" }] }],
+      },
+    });
+    // No sources/targets — should fall back to workspace-wide search
+    const context = { sources: [], targets: [] };
+    const result = resolveRef("contacts.home.phone", context, index);
+    assert.equal(result.resolved, true);
+    assert.equal(result.resolvedTo.kind, "field");
+  });
 });
 
 // ── resolveRef with fragment spreads ─────────────────────────────────────────

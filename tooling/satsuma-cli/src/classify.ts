@@ -26,13 +26,19 @@ export function classifyTransform(steps: SyntaxNode[] | null | undefined): Class
     if (inner.type === "map_literal" || inner.type === "fragment_spread") {
       hasStructural = true;
     } else if (inner.type === "pipe_text") {
-      // pipe_text containing only NL strings → NL; otherwise structural
+      // Check each child: NL strings count as NL, everything else as structural
       const kids = inner.namedChildren;
-      if (kids.length > 0 && kids.every((k) => NL_TYPES.has(k.type))) {
-        hasNl = true;
-      } else {
-        hasStructural = true;
+      let stepHasNl = false;
+      let stepHasStructural = false;
+      for (const k of kids) {
+        if (NL_TYPES.has(k.type)) {
+          stepHasNl = true;
+        } else {
+          stepHasStructural = true;
+        }
       }
+      if (stepHasNl) hasNl = true;
+      if (stepHasStructural) hasStructural = true;
     }
   }
 

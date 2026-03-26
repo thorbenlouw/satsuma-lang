@@ -1,0 +1,21 @@
+schema orders {
+  id     STRING
+  amount DECIMAL
+}
+
+schema customers {
+  id   STRING
+  name STRING
+}
+
+schema enriched_orders {
+  order_id      STRING
+  customer_name STRING
+}
+
+mapping `order enrichment` {
+  source { orders, customers, "Left join orders.id = customers.order_id" }
+  target { enriched_orders }
+  id -> order_id
+  name -> customer_name
+}

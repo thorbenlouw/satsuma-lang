@@ -1,6 +1,6 @@
 ---
 id: sl-rkdz
-status: open
+status: closed
 deps: []
 links: [sl-vrsu]
 created: 2026-03-26T08:30:46Z

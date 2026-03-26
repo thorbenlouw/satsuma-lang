@@ -1,6 +1,6 @@
 ---
 id: sl-kqfj
-status: open
+status: closed
 deps: []
 links: [sl-sq4u, sl-h8sb, cbh-so1o]
 created: 2026-03-26T08:30:20Z

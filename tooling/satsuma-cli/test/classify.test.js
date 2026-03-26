@@ -72,6 +72,18 @@ describe("classifyTransform", () => {
     assert.equal(classifyTransform(steps), "mixed");
   });
 
+  it("returns 'mixed' when a single pipe_text has both identifiers and NL strings", () => {
+    // e.g. `lookup some_table "Apply business rule"`
+    const steps = [
+      pipeStep("pipe_text", [
+        n("identifier", [], "lookup"),
+        n("identifier", [], "some_table"),
+        n("nl_string", [], '"Apply business rule"'),
+      ], 'lookup some_table "Apply business rule"'),
+    ];
+    assert.equal(classifyTransform(steps), "mixed");
+  });
+
   it("returns 'none' for empty steps array", () => {
     assert.equal(classifyTransform([]), "none");
   });

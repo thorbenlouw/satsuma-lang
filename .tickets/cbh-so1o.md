@@ -1,6 +1,6 @@
 ---
 id: cbh-so1o
-status: open
+status: closed
 deps: []
 links: [cbh-ukcx, cbh-kyv3, cbh-2y8p, cbh-7ji8, cbh-9cqh, cbh-b0w8, cbh-e01s, sl-kutf, sl-sq4u, sl-h8sb, sl-kqfj]
 created: 2026-03-25T11:17:46Z

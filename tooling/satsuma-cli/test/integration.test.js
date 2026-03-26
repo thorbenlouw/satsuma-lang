@@ -547,6 +547,33 @@ describe("satsuma mapping", () => {
     assert.doesNotMatch(stdout, /required/);
   });
 
+  it("--json --compact omits transform text from arrows (sl-gqoy)", async () => {
+    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const { stdout, code } = await run("mapping", "customer migration", "--json", "--compact", DB);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    for (const a of data.arrows) {
+      assert.equal("transform" in a, false, `arrow ${a.src} -> ${a.tgt} should not have transform in compact mode`);
+    }
+    // hasTransform and classification should still be present
+    const withTransform = data.arrows.filter((a) => a.hasTransform);
+    assert.ok(withTransform.length > 0, "hasTransform should still be present");
+    assert.ok(data.arrows.every((a) => "classification" in a), "classification should still be present");
+  });
+
+  it("--json --compact omits note and metadata from output (sl-gqoy)", async () => {
+    const FIXTURE = resolve(import.meta.dirname, "fixtures", "mapping-meta.stm");
+    const { stdout, code } = await run("mapping", "metadata test", "--json", "--compact", FIXTURE);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal("note" in data, false, "top-level note should be omitted in compact mode");
+    assert.equal("metadata" in data, false, "top-level metadata should be omitted in compact mode");
+    for (const a of data.arrows) {
+      assert.equal("metadata" in a, false, `arrow ${a.src} -> ${a.tgt} should not have metadata in compact mode`);
+      assert.equal("transform" in a, false, `arrow ${a.src} -> ${a.tgt} should not have transform in compact mode`);
+    }
+  });
+
   it("--json includes transform body text on arrows (sl-ari1)", async () => {
     const DB = resolve(EXAMPLES, "db-to-db.stm");
     const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
@@ -1061,7 +1088,7 @@ describe("satsuma arrows", () => {
     assert.equal(code, 0);
     assert.match(stdout, /CUST_ID -> customer_id/);
     assert.match(stdout, /CUST_ID -> legacy_customer_id/);
-    assert.match(stdout, /\[structural\]/);
+    assert.match(stdout, /\[mixed\]/);
     assert.match(stdout, /\[none\]/);
   });
 
@@ -1126,12 +1153,12 @@ describe("satsuma arrows", () => {
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data));
     assert.equal(data.length, 2);
-    const structural = data.find((a) => a.classification === "structural");
-    assert.ok(structural);
-    assert.ok(Array.isArray(structural.steps));
-    assert.ok(structural.steps.length > 0);
-    assert.ok(structural.steps[0].type);
-    assert.ok(structural.steps[0].text);
+    const mixed = data.find((a) => a.classification === "mixed");
+    assert.ok(mixed);
+    assert.ok(Array.isArray(mixed.steps));
+    assert.ok(mixed.steps.length > 0);
+    assert.ok(mixed.steps[0].type);
+    assert.ok(mixed.steps[0].text);
   });
 
   it("--json includes file and line", async () => {
@@ -2772,6 +2799,36 @@ describe("satsuma nl-refs", () => {
     assert.equal(refs[2].line, 17, "third ref should be on line 17");
     assert.equal(refs[3].line, 17, "fourth ref should be on line 17");
   });
+
+  it("extracts @refs from standalone and schema note blocks (sl-h8sb)", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "nl-refs-atref-notes.stm");
+    const { stdout, code } = await run("nl-refs", "--json", fixture);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    // Standalone note: @src_accounts
+    const standaloneRef = refs.find((r) => r.ref === "src_accounts" && r.mapping.startsWith("note:"));
+    assert.ok(standaloneRef, "should find @src_accounts in standalone note");
+    // Schema note: @balance, @currency
+    const balanceRef = refs.find((r) => r.ref === "balance" && r.mapping.startsWith("note:"));
+    assert.ok(balanceRef, "should find @balance in schema note");
+    const currencyRef = refs.find((r) => r.ref === "currency" && r.mapping.startsWith("note:"));
+    assert.ok(currencyRef, "should find @currency in schema note");
+    // Arrow NL: @balance, @currency (in mapping body)
+    const arrowBalance = refs.find((r) => r.ref === "balance" && !r.mapping.startsWith("note:"));
+    assert.ok(arrowBalance, "should find @balance in arrow NL");
+  });
+
+  it("extracts @refs from each_block and flatten_block (sl-kqfj)", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "nl-refs-each-flatten.stm");
+    const { stdout, code } = await run("nl-refs", "--json", fixture);
+    assert.equal(code, 0);
+    const refs = JSON.parse(stdout);
+    assert.ok(refs.length >= 2, "should find at least 2 @refs inside each block");
+    const skuRef = refs.find((r) => r.ref === "sku");
+    assert.ok(skuRef, "should find @sku ref inside each block");
+    const priceRef = refs.find((r) => r.ref === "price");
+    assert.ok(priceRef, "should find @price ref inside each block");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -3541,5 +3598,61 @@ describe("satsuma nl/meta field syntax (sg-95gr)", () => {
   it("meta accepts schema.field without 'field' keyword", async () => {
     const { code } = await run("meta", "vault::sat_contact_details.email", NS_PLATFORM);
     assert.equal(code, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl includes source block join NL (cbh-so1o)
+// ---------------------------------------------------------------------------
+describe("satsuma nl — source block join NL (cbh-so1o)", () => {
+  it("includes join NL strings from source blocks", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "source-join-nl.stm");
+    const { stdout, code } = await run("nl", "order enrichment", fixture);
+    assert.equal(code, 0);
+    assert.match(stdout, /Left join orders\.id = customers\.order_id/);
+  });
+
+  it("includes join NL in --json output", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "source-join-nl.stm");
+    const { stdout, code } = await run("nl", "order enrichment", "--json", fixture);
+    assert.equal(code, 0);
+    const items = JSON.parse(stdout);
+    const joinItem = items.find((i) => i.text.includes("Left join"));
+    assert.ok(joinItem, "should find join NL in JSON output");
+    assert.equal(joinItem.kind, "note");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl field-scoped query finds NL in each/flatten blocks (sl-sq4u)
+// ---------------------------------------------------------------------------
+describe("satsuma nl — field scope in each/flatten (sl-sq4u)", () => {
+  it("finds NL for fields mapped inside each blocks", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "nl-refs-each-flatten.stm");
+    const { stdout, code } = await run("nl", "order_flat.product_code", fixture);
+    assert.equal(code, 0);
+    assert.match(stdout, /Convert @sku to product code format/);
+  });
+
+  it("--json output works for each block field NL", async () => {
+    const fixture = resolve(import.meta.dirname, "fixtures", "nl-refs-each-flatten.stm");
+    const { stdout, code } = await run("nl", "order_flat.product_code", "--json", fixture);
+    assert.equal(code, 0);
+    const items = JSON.parse(stdout);
+    assert.ok(items.length > 0, "should find NL items");
+    assert.ok(items[0].text.includes("Convert"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: validate no false warnings with duplicate mapping names (sl-04eg)
+// ---------------------------------------------------------------------------
+describe("satsuma validate — duplicate mapping names (sl-04eg)", () => {
+  it("does not produce false field-not-in-schema warnings", async () => {
+    const fixtureA = resolve(import.meta.dirname, "fixtures", "dup-mapping-a.stm");
+    const fixtureB = resolve(import.meta.dirname, "fixtures", "dup-mapping-b.stm");
+    const { stdout } = await run("validate", fixtureA, fixtureB);
+    // Should only report duplicate-definition, not field-not-in-schema
+    assert.doesNotMatch(stdout, /field-not-in-schema/);
   });
 });

@@ -1,0 +1,16 @@
+schema xml_orders {
+  xml_id    STRING
+  xml_total DECIMAL
+}
+
+schema order_target_b {
+  id     STRING
+  total  DECIMAL
+}
+
+mapping `order sync` {
+  source { xml_orders }
+  target { order_target_b }
+  xml_id -> id
+  xml_total -> total
+}

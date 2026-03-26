@@ -1,6 +1,6 @@
 ---
 id: sl-h8sb
-status: open
+status: closed
 deps: []
 links: [sl-sq4u, cbh-so1o, sl-kqfj]
 created: 2026-03-26T08:29:47Z

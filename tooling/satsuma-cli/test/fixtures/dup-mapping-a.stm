@@ -1,0 +1,16 @@
+schema api_orders {
+  order_id STRING
+  amount   DECIMAL
+}
+
+schema order_target {
+  id     STRING
+  total  DECIMAL
+}
+
+mapping `order sync` {
+  source { api_orders }
+  target { order_target }
+  order_id -> id
+  amount -> total
+}
