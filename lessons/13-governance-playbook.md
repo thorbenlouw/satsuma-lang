@@ -150,7 +150,7 @@ For audit purposes, this means:
 
 Notes serve as governance documentation embedded in the spec itself:
 
-```stm
+```satsuma
 note {
   """
   # Legacy Customer Migration

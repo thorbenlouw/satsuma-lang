@@ -56,7 +56,7 @@ These rules belong in `" "` descriptions within mapping blocks, not forced into 
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — COBOL Customer Master Record
 
 schema cobol_customer (format copybook, encoding ebcdic,
@@ -104,7 +104,7 @@ schema cobol_customer (format copybook, encoding ebcdic,
 
 REDEFINES and OCCURS are the constructs that make copybooks genuinely difficult. Here is a record that uses both:
 
-```stm
+```satsuma
 schema cobol_transaction (format copybook, encoding ebcdic,
   note "Transaction record with polymorphic payload and repeating line items"
 ) {

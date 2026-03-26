@@ -65,7 +65,7 @@ When both indicators are fixed constraints, put them both on the record declarat
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — MARC21 Bibliographic Record
 
 schema marc21_bibliographic (format marc21, record_type bibliographic,

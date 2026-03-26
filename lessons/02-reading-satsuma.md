@@ -17,7 +17,7 @@ This lesson teaches you how to read Satsuma files as a collaboration problem —
 
 A `schema` block describes the structure of a data source or target. It lists fields with their types and metadata:
 
-```stm
+```satsuma
 schema legacy_sqlserver (
   note "CUSTOMER table — SQL Server 2008. No app-level validation until 2018."
 ) {
@@ -70,19 +70,19 @@ Metadata appears inside parentheses and describes structural properties of field
 
 ## Nested Structures: record and list
 
-Real data is rarely flat. Satsuma uses `record` for single nested objects and `list` for repeated structures:
+Real data is rarely flat. Satsuma uses `record` for single nested objects and `list_of record` for repeated structures:
 
-```stm
+```satsuma
 schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
-  record ShipmentHeader {
+  ShipmentHeader record {
     asnNo             STRING(30)   (required)
     shipDate          DATE         (required)
     supplier          NUMBER(10)   (required)
 
-    list asnDetails {
+    asnDetails list_of record {
       orderNo         NUMBER(12)   (required)
 
-      list items {
+      items list_of record {
         item            STRING(25)
         unitQuantity    NUMBER(12,4)  (required)
       }
@@ -92,7 +92,7 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
 ```
 
 - **`record`** = a single nested object (like a JSON object or XML element).
-- **`list`** = a repeated structure (like a JSON array or repeating XML element).
+- **`list_of record`** = a repeated structure (like a JSON array or repeating XML element).
 
 These can nest to any depth. The agent can help you navigate deeply nested schemas — you focus on understanding what the nesting means in business terms.
 
@@ -102,8 +102,8 @@ These can nest to any depth. The agent can help you navigate deeply nested schem
 
 A `fragment` is a named group of fields that can be reused across multiple schemas:
 
-```stm
-fragment 'address fields' {
+```satsuma
+fragment `address fields` {
   line1        STRING(200)    (required)
   line2        STRING(200)
   city         STRING(100)    (required)
@@ -115,10 +115,10 @@ fragment 'address fields' {
 
 Fragments are spread into schemas with `...`:
 
-```stm
+```satsuma
 schema customer {
   customer_id  UUID  (pk)
-  ...address fields
+  ...`address fields`
 }
 ```
 
@@ -132,13 +132,13 @@ Notes carry natural-language documentation. They come in two forms:
 
 ### Inline notes (in metadata)
 
-```stm
+```satsuma
 PHONE_NBR  VARCHAR(50) (note "No consistent format — 42% US with parens, 31% dot-separated")
 ```
 
 ### Block notes (standalone or with triple-quoted Markdown)
 
-```stm
+```satsuma
 note {
   """
   # Legacy Customer Migration
@@ -173,7 +173,7 @@ You don't need to read every field in detail. Look for:
 - **`(pii)`** — what's sensitive?
 - **`//!`** — what data quality issues exist?
 - **`//?`** — what's unresolved?
-- **Nested `record`/`list`** — what's the data shape?
+- **Nested `record`/`list_of record`** — what's the data shape?
 
 ### Step 4: Ask the agent
 
@@ -209,7 +209,7 @@ When you ask the agent to "explain this file," it gives you both the structural 
 
 Look at this source schema from the Acme Corp migration:
 
-```stm
+```satsuma
 schema legacy_sqlserver (
   note "CUSTOMER table — SQL Server 2008. No app-level validation until 2018."
 ) {
@@ -248,7 +248,7 @@ These are the kinds of questions you should be able to answer by scanning, not s
 ## Key Takeaways
 
 1. A `schema` block describes data structure — field names, types, and metadata.
-2. `record` nests a single object; `list` nests a repeated structure. Both can nest to any depth.
+2. `record` nests a single object; `list_of record` nests a repeated structure. Both can nest to any depth.
 3. `fragment` defines reusable field groups, spread with `...`.
 4. Notes carry natural language — inline with `(note "...")` or as block `note { """...""" }`.
 5. Reading a Satsuma file is a collaboration: scan the structure, spot the flags, then ask the agent to explain the rest.

@@ -248,7 +248,7 @@ Follow these steps in order:
 
 ### Minimal 1:1 mapping
 
-```stm
+```satsuma
 note { "Customer sync — 1:1 mapping from CRM to data warehouse" }
 
 schema crm (note "CRM System") {
@@ -287,7 +287,7 @@ mapping {
 
 **Satsuma equivalent:**
 
-```stm
+```satsuma
 // In source schema:
   CUST_TYPE    CHAR(1)    (enum {R, B, G})    //! Some records have NULL
 

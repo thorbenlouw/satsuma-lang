@@ -44,7 +44,7 @@ CREATE TABLE CUSTOMER (
 
 The agent produces:
 
-```stm
+```satsuma
 schema legacy_customer (note "CUSTOMER table — Legacy CRM") {
   CUST_ID       INT           (pk, required)
   CUST_TYPE     CHAR(1)       (default R)
@@ -63,7 +63,7 @@ This is structurally correct — but it's incomplete. You add context:
 
 The agent revises:
 
-```stm
+```satsuma
 schema legacy_customer (note "CUSTOMER table — Legacy CRM") {
   CUST_ID       INT           (pk, required)
   CUST_TYPE     CHAR(1)       (enum {R, B, G}, default R)  //! some records have NULL
@@ -99,17 +99,17 @@ Sample payloads are great for inferring structure. Given this JSON:
 
 The agent drafts:
 
-```stm
+```satsuma
 schema order_api (format json, note "Order API response payload") {
   orderId    STRING   (pk)
   total      DECIMAL(12,2)
 
-  record customer {
+  customer record {
     id       STRING
     email    STRING   (pii, format email)
   }
 
-  list items {
+  items list_of record {
     sku      STRING
     qty      INT32
     price    DECIMAL(12,2)
@@ -129,7 +129,7 @@ Notice how:
 
 Sometimes you don't know enough to specify a field precisely. The temptation is to make something up. Don't. Instead, preserve the ambiguity as a note:
 
-```stm
+```satsuma
 schema legacy_payments {
   STATUS_CD    CHAR(2) (
     note "Values seen in sample: 'AP', 'RJ', 'PN', 'CL'. Meanings not documented."
@@ -208,7 +208,7 @@ An Excel mapping row like this:
 
 Becomes this Satsuma:
 
-```stm
+```satsuma
 // In source schema:
 CUST_TYPE    CHAR(1)    (enum {R, B, G})    //! some records have NULL
 
@@ -237,7 +237,7 @@ The agent expresses the enum mapping structurally using `map { }` and preserves 
 | Guessing field meanings | Use `note "..."` or `//?` to capture uncertainty |
 | Inventing metadata tokens | Only use tokens from the spec (`pk`, `pii`, `enum`, etc.) |
 | Marking source vs. target on the schema | Use `schema` for all — role is declared in the mapping |
-| Using `STRUCT` or `ARRAY` types | Use `record Name { }` or `list Name { }` for nesting |
+| Using `STRUCT` or `ARRAY` types | Use `Name record { }` or `Name list_of record { }` for nesting |
 | Skipping data quality warnings | Capture them as `//!` — they matter for implementation |
 | Over-specifying types from limited samples | Use broader types and document what you observed in a note |
 

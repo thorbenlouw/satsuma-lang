@@ -29,7 +29,7 @@ All tooling is parser-backed. Downstream tools should be built on the tree-sitte
 
 When reasoning about lineage across a multi-file data platform, look for a **platform entry point file** that uses `import` with namespace-qualified names to pull definitions from across the platform. This is the canonical entry point for platform-wide lineage traversal.
 
-```stm
+```satsuma
 // platform.stm — the entry point
 import { crm::customers, crm::orders } from "crm/pipeline.stm"
 import { billing::invoices } from "billing/pipeline.stm"

@@ -18,7 +18,7 @@ Here's the headline: **if you can read a column list in a database tool, you can
 
 Let's start with the smallest useful Satsuma file. Imagine you're migrating customer records from an old system to a new one, and right now you only care about mapping the customer identifier.
 
-```stm
+```satsuma
 schema old_system {
   CUST_ID   INT
 }
@@ -57,7 +57,7 @@ field_name    DATA_TYPE    (metadata)
 
 Metadata appears in **parentheses** `( )` and captures the details you'd normally scatter across several Excel columns — whether a field is a primary key, whether it's required, what values are allowed, and so on:
 
-```stm
+```satsuma
 schema old_system {
   CUST_ID       INT            (pk)
   CUST_TYPE     CHAR(1)        (enum {R, B, G})
@@ -94,7 +94,7 @@ Notice that **data types are freeform** — Satsuma doesn't enforce a type syste
 
 A bare arrow (`->`) is fine for direct copies, but most real mappings require some transformation. In Satsuma, you add transforms in `{ }` after the arrow:
 
-```stm
+```satsuma
 mapping {
   source { `old_system` }
   target { `new_system` }
@@ -181,7 +181,7 @@ LAST_MOD_DATE -> updated_at {
 
 Satsuma has three kinds of comment, each carrying a different signal:
 
-```stm
+```satsuma
 // A normal informational comment
 //! A warning — a known risk, issue, or data-quality problem
 //? A question or TODO — something that still needs resolving
@@ -203,7 +203,7 @@ For longer explanations — context a developer or reviewer needs, data-quality 
 
 **On schemas and fields**, notes are metadata, so they go in `( )`. Use `"..."` for a short note, or `"""..."""` when you need Markdown headings, bullet points, or multiple paragraphs:
 
-```stm
+```satsuma
 schema legacy_customers (note "Primary customer store from 2005–2024.") {
   PHONE_NBR  VARCHAR(50) (
     note """
@@ -220,7 +220,7 @@ schema legacy_customers (note "Primary customer store from 2005–2024.") {
 
 **At file level or inside mapping blocks**, use a standalone `note { }` block:
 
-```stm
+```satsuma
 note {
   """
   # Legacy Customer Migration
@@ -277,7 +277,7 @@ Real data is rarely flat. Satsuma handles nested structures with two keywords th
 - **`record`** — a single nested object (one instance per parent record)
 - **`list_of record`** — a repeated nested object (zero or more instances per parent record)
 
-```stm
+```satsuma
 schema order {
   order_id   STRING (pk)
   customer record {
@@ -305,7 +305,7 @@ each LineItems -> .items {
 
 A common ETL pattern is taking a single source record with an array and producing one output row per array element. Satsuma makes this explicit with a `flatten` block inside the mapping:
 
-```stm
+```satsuma
 mapping `order lines` {
   source { `commerce_order` }
   target { `order_lines_parquet` }
@@ -328,7 +328,7 @@ This is one of those patterns that's notoriously difficult to express in a sprea
 
 Enterprise integrations rarely involve just one source. When a mapping draws from multiple schemas, list them all in the `source { }` block and describe the join in natural language:
 
-```stm
+```satsuma
 mapping `opportunity enrichment` {
   source {
     `sfdc_opportunity`
@@ -350,7 +350,7 @@ In a large programme, the same structures appear again and again — address blo
 
 A **fragment** is a reusable set of fields:
 
-```stm
+```satsuma
 // lib/common.stm
 fragment `address fields` {
   street_line_1   VARCHAR(200)
@@ -364,7 +364,7 @@ fragment `address fields` {
 
 Pull it into a schema using the spread operator (`...`):
 
-```stm
+```satsuma
 import { `address fields` } from "lib/common.stm"
 
 schema customers {
@@ -380,7 +380,7 @@ The fields from `` `address fields` `` are inlined as if you'd typed them direct
 
 A **named transform** is a reusable pipeline or natural-language step:
 
-```stm
+```satsuma
 transform `clean email` {
   "Trim whitespace, lowercase, validate RFC 5322 format, return null if invalid"
 }
@@ -401,7 +401,7 @@ CREATED_DATE -> created_at { ...`to utc date` }
 
 The `import` statement brings fragments, transforms, or schemas from other files into scope:
 
-```stm
+```satsuma
 import { `address fields`, `audit fields` } from "lib/common.stm"
 import { `currency rates` } from "lookups/finance.stm"
 ```
@@ -414,7 +414,7 @@ This supports splitting large specifications across multiple files — one per s
 
 When working with XML, EDI, CSV, or other structured formats, extraction hints go in `( )` — the same parentheses used for all other metadata. There's no separate annotation syntax to learn.
 
-```stm
+```satsuma
 schema commerce_order (
   format xml,
   namespace ord "http://example.com/commerce/order/v2",
@@ -444,7 +444,7 @@ You don't need to understand every format detail — the important thing is that
 
 Here's a realistic Salesforce-to-Snowflake integration, the kind of mapping you might review as a BA on a revenue operations project:
 
-```stm
+```satsuma
 // Satsuma — Salesforce to Snowflake Pipeline
 
 import { `sfdc standard types` } from "lib/sfdc_fragments.stm"
@@ -574,7 +574,7 @@ Data pipelines don't just move data — they feed business metrics. Satsuma has 
 
 A metric block says: **what** the metric measures, **where** the data comes from, and **how** it can be sliced. It doesn't describe the implementation step-by-step — that's what mappings are for. Instead, the `note { }` block captures the business definition in natural language.
 
-```stm
+```satsuma
 metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
   grain monthly,
@@ -607,7 +607,7 @@ The metadata tokens in `( )` work exactly like the ones you've already seen on s
 
 A metric with multiple measures and multi-source lineage:
 
-```stm
+```satsuma
 metric customer_lifetime_value "CLV" (
   source {fact_orders, dim_customer},
   slice {acquisition_channel, segment, cohort_year}
@@ -638,7 +638,7 @@ Satsuma handles these using the same building blocks you already know: a `schema
 
 ### Reports
 
-```stm
+```satsuma
 schema weekly_sales_dashboard (
   report,
   source {fact_orders, dim_customer, dim_product, dim_date},
@@ -667,7 +667,7 @@ A BA reads this and immediately knows: *"This Looker dashboard depends on four s
 
 ### ML Models
 
-```stm
+```satsuma
 schema churn_predictor (
   model,
   source {dim_customer, fact_orders, fact_support_tickets},
@@ -715,7 +715,7 @@ A **dimension** is a schema that describes a business entity you want to analyse
 
 Here's a customer dimension with SCD Type 2 history tracking:
 
-```stm
+```satsuma
 schema dim_customer (
   dimension, conformed, scd 2,
   natural_key customer_id,
@@ -751,7 +751,7 @@ The SCD Type 2 mechanical columns — `surrogate_key`, `valid_from`, `valid_to`,
 
 Here's a fact table referencing dimensions:
 
-```stm
+```satsuma
 schema fact_sales (
   fact,
   grain {transaction_id, line_number},
@@ -794,7 +794,7 @@ Data Vault is an alternative warehouse architecture designed for agility and aud
 - **Satellite** — descriptive attributes attached to a hub, versioned over time (SCD Type 2)
 - **Link** — a relationship between two or more hubs (e.g. "customer X bought product Y at store Z")
 
-```stm
+```satsuma
 schema hub_customer (
   hub,
   business_key customer_id
@@ -807,7 +807,7 @@ That's the entire hub. The mechanical columns — `hub_customer_hk` (hash key), 
 
 Satellites carry the descriptive data:
 
-```stm
+```satsuma
 schema sat_customer_demographics (
   satellite,
   parent hub_customer,
@@ -829,7 +829,7 @@ The `satellite` and `parent hub_customer` tokens tell you: *"These fields descri
 
 Links capture relationships. A sale involves a customer, a product, and a store — that's a three-way link:
 
-```stm
+```satsuma
 schema link_sale (
   link {hub_customer, hub_product, hub_store}
 ) {
@@ -840,7 +840,7 @@ schema link_sale (
 
 Mappings into vault targets look like regular Satsuma mappings — the `hub`, `satellite`, and `link` tokens only affect the target schema's physical structure, not the mapping syntax:
 
-```stm
+```satsuma
 mapping `sfdc to hub_customer` {
   source { `loyalty_sfdc` }
   target { `hub_customer` }

@@ -52,7 +52,7 @@ Single quotes are removed. `schema 'my schema'` becomes `` schema `my schema` ``
 
 **Bare identifiers** matching `[a-zA-Z_][a-zA-Z0-9_-]*` never need backticks:
 
-```stm
+```satsuma
 schema customers { ... }              // bare — simple name
 mapping load_customers { ... }        // bare — underscores are fine
 Lead_Source__c STRING                  // bare — double underscores are fine
@@ -63,7 +63,7 @@ source { orders, crm_customers }      // bare source refs
 
 **Backticks** are required when the name contains spaces, dots, or other special characters:
 
-```stm
+```satsuma
 schema `order-headers-parquet` { ... }   // hyphen in name
 mapping `customer migration` { ... }     // space in name
 `Account.Name` STRING                    // dot in name (single field, not a path)
@@ -73,7 +73,7 @@ source { `order-headers` }               // hyphen in source ref
 
 **In dotted paths**, backticks wrap individual segments, not the whole path. The dot lives outside any quoting:
 
-```stm
+```satsuma
 schema.field                          // both segments bare
 `order-headers`.field                 // first segment needs backticks
 schema.`Account.Name`                 // second segment has a literal dot in its name
@@ -84,7 +84,7 @@ schema.`Account.Name`                 // second segment has a literal dot in its
 
 **Inside NL strings**, structural cross-references use the `@` prefix — like a GitHub/Slack mention. Backticks in NL are inert cosmetic markup (like Markdown code spans) with no structural meaning:
 
-```stm
+```satsuma
 field -> target { Look up @customers.email in the dim table }
 field -> target { Apply @normalize then check @crm::legacy.status }
 field -> target { See @`order-headers`.status for edge cases }
@@ -135,12 +135,12 @@ The `value_text` rule is a `repeat1` of simple token types — no external scann
 Pipe step content between `|` delimiters is implicitly NL text — no quotes required. Double quotes remain available when the text contains literal `|` or `}` characters.
 
 **Before:**
-```stm
+```satsuma
 field -> target { "Convert to uppercase" | trim | "Handle nulls" | coalesce(0) }
 ```
 
 **After:**
-```stm
+```satsuma
 field -> target { Convert to uppercase | trim | Handle nulls | coalesce(0) }
 ```
 
@@ -160,7 +160,7 @@ Structural cross-references inside pipe text use `@ref` syntax (e.g., `Convert @
 
 New syntax for arrows with multiple source fields:
 
-```stm
+```satsuma
 a, b, c -> target { a + b + c | Concatenate and uppercase }
 orders.amount, rates.fx_rate -> amount_usd { Multiply amount by fx_rate }
 ```
@@ -178,14 +178,14 @@ In the extracted data model, `ArrowRecord.sources` becomes `string[]` (always an
 3. The graph and lineage commands treat `@ref` mentions as first-class edges (safe because lint guarantees they're declared).
 
 **Before (informational):**
-```stm
+```satsuma
 field -> target { "Add to `other_field`" }
 // lint: warning — other_field not in source list
 // graph: no edge from other_field
 ```
 
 **After (structural):**
-```stm
+```satsuma
 other_field, field -> target { Add to @other_field }
 // lint: passes — other_field declared on left
 // graph: edge from other_field to target

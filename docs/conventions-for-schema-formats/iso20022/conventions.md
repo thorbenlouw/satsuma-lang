@@ -60,7 +60,7 @@ See [`swift-mt/conventions.md`](../swift-mt/conventions.md) for the legacy count
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — ISO 20022 pacs.008 Customer Credit Transfer (simplified)
 
 schema iso20022_credit_transfer (

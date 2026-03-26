@@ -12,8 +12,8 @@ A mapping is a **specification artifact**. It says "this source field should bec
 
 Every mapping block follows this pattern:
 
-```stm
-mapping 'customer migration' {
+```satsuma
+mapping `customer migration` {
   source { `legacy_sqlserver` }
   target { `postgres_db` }
 
@@ -36,7 +36,7 @@ Arrows are the core of a mapping. They connect a source field to a target field 
 
 The simplest case — the value passes through unchanged:
 
-```stm
+```satsuma
 CUST_ID -> legacy_customer_id
 ```
 
@@ -44,7 +44,7 @@ CUST_ID -> legacy_customer_id
 
 Structural operations chained with `|`:
 
-```stm
+```satsuma
 EMAIL_ADDR -> email { trim | lowercase | validate_email | null_if_invalid }
 ```
 
@@ -52,10 +52,10 @@ EMAIL_ADDR -> email { trim | lowercase | validate_email | null_if_invalid }
 
 Business rules described in prose:
 
-```stm
+```satsuma
 -> display_name {
-  "If `CUST_TYPE` is null or 'R', trim and concat `FIRST_NM` + ' ' + `LAST_NM`.
-   Otherwise, trim `COMPANY_NM`."
+  "If @CUST_TYPE is null or 'R', trim and concat @FIRST_NM + ' ' + @LAST_NM.
+   Otherwise, trim @COMPANY_NM."
 }
 ```
 
@@ -63,7 +63,7 @@ Business rules described in prose:
 
 Combining pipeline steps with prose:
 
-```stm
+```satsuma
 PHONE_NBR -> phone {
   "Extract all digits. If 10 digits, assume US country code +1. Format as E.164."
   | warn_if_invalid
@@ -74,11 +74,11 @@ PHONE_NBR -> phone {
 
 When the target field is calculated or derived, there is no left-hand side:
 
-```stm
+```satsuma
 -> migration_timestamp { now_utc() }
 
 -> health_score {
-  "Derive from multiple signals: is_active, last_order_date, open_tickets, avg_csat_score."
+  "Derive from multiple signals: @is_active, @last_order_date, @open_tickets, @avg_csat_score."
 }
 ```
 
@@ -88,7 +88,7 @@ When the target field is calculated or derived, there is no left-hand side:
 
 For enum-style mappings where source values map to target values, use `map { }`:
 
-```stm
+```satsuma
 CUST_TYPE -> customer_type {
   map {
     R: "retail"
@@ -103,7 +103,7 @@ CUST_TYPE -> customer_type {
 
 For numeric ranges:
 
-```stm
+```satsuma
 LOYALTY_POINTS -> loyalty_tier {
   map {
     < 1000:  "bronze"
@@ -124,7 +124,7 @@ Special keys:
 
 Arrows can carry metadata in parentheses, just like fields:
 
-```stm
+```satsuma
 CUST_ID -> customer_id (note "Deterministic UUID from legacy ID") {
   uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", CUST_ID)
 }
@@ -138,15 +138,15 @@ This is useful for documenting the rationale behind a transformation without clu
 
 Mappings can be named or anonymous:
 
-```stm
+```satsuma
 // Named — useful when a file has multiple mappings
-mapping 'customer migration' {
+mapping `customer migration` {
   source { `legacy_crm` }
   target { `warehouse_customers` }
   ...
 }
 
-mapping 'order migration' {
+mapping `order migration` {
   source { `legacy_orders` }
   target { `warehouse_orders` }
   ...
@@ -168,14 +168,14 @@ Name your mappings when there are multiple in a file, or when the name adds clar
 
 When a target draws data from multiple sources, list all sources in the `source` block and describe the join logic:
 
-```stm
-mapping 'customer 360' {
+```satsuma
+mapping `customer 360` {
   source {
     `crm_customers`       (filter "email NOT LIKE '%@test.internal'")
     `order_transactions`   (filter "status IN ('completed', 'refunded')")
     `support_tickets`      (filter "created_at >= date_sub(now(), interval 12 month)")
-    "Join `crm_customers` to `order_transactions` on customer_id (left join).
-     Join `crm_customers` to `support_tickets` on customer_id (left join)."
+    "Join @crm_customers to @order_transactions on customer_id (left join).
+     Join @crm_customers to @support_tickets on customer_id (left join)."
   }
   target { `customer_360` }
   ...
@@ -189,7 +189,7 @@ The `source` block can contain:
 
 In the arrows, prefix field names with the schema name to disambiguate:
 
-```stm
+```satsuma
 crm_customers.email -> email { trim | lowercase }
 crm_customers.signup_date -> signup_date
 ```
@@ -200,8 +200,8 @@ crm_customers.signup_date -> signup_date
 
 You can place `note { }` blocks inside a mapping to document assumptions, constraints, or decisions:
 
-```stm
-mapping 'customer migration' {
+```satsuma
+mapping `customer migration` {
   note {
     "Mapping assumptions:
      - All timestamps assumed US Eastern unless otherwise noted
@@ -245,8 +245,8 @@ You handle:
 
 Putting it all together, here is a mapping from the Acme Corp scenario:
 
-```stm
-mapping 'customer migration' {
+```satsuma
+mapping `customer migration` {
   note {
     "Mapping assumptions:
      - All timestamps assumed US Eastern unless otherwise noted
@@ -267,8 +267,8 @@ mapping 'customer migration' {
 
   // Name handling
   -> display_name {
-    "If `CUST_TYPE` is null or 'R', concat `FIRST_NM` + ' ' + `LAST_NM`.
-     Otherwise, use `COMPANY_NM`."
+    "If @CUST_TYPE is null or 'R', concat @FIRST_NM + ' ' + @LAST_NM.
+     Otherwise, use @COMPANY_NM."
   }
   FIRST_NM   -> first_name    { trim | title_case | null_if_empty }
   LAST_NM    -> last_name     { trim | title_case | null_if_empty }

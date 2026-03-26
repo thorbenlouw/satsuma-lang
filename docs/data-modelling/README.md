@@ -19,7 +19,7 @@ Satsuma takes a three-layer approach:
 
 The `.stm` file contains **only business-meaningful fields and mapping logic**. Mechanical columns (surrogate keys, hash keys, load dates, validity ranges, row hashes) are never written — they are inferred by convention from the metadata tokens.
 
-```stm
+```satsuma
 schema dim_customer (dimension, conformed, scd 2, natural_key customer_id) {
   customer_id  VARCHAR(50)  (required)
   email        VARCHAR(255) (pii)
@@ -95,7 +95,7 @@ The full token dictionaries are documented in:
 
 Each example includes a `platform.stm` that imports every schema in the pipeline:
 
-```stm
+```satsuma
 // kimball/platform.stm
 import { dim_customer } from "dim-customer.stm"
 import { fact_sales } from "fact-sales.stm"

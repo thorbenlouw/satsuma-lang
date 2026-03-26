@@ -48,7 +48,7 @@ The decoded logical structure is often straightforward; the difficulty is in doc
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — ASN.1 Telecom CDR Record (simplified TAP3)
 
 schema telecom_cdr (format asn1, encoding ber,

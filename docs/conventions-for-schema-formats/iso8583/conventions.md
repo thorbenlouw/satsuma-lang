@@ -48,7 +48,7 @@ Without domain knowledge, an ISO 8583 message is essentially unreadable.
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — ISO 8583 Authorisation Request (simplified)
 
 schema iso8583_auth_request (format iso8583, version "1987",

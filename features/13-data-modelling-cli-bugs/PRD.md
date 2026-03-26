@@ -47,7 +47,7 @@ The regex `[^"]*` rejects any `"` inside the triple-quoted string. But real-worl
 The Feature 06 PRD defines `ref <dim> on <field>` as a standard Kimball convention for dimension references on fact tables (see PRD section "Kimball-Specific Conventions"). The grammar's `_metadata_entry` rule supports `key_value_pair` (key + single value), but not `key value value` or `key value "on" value` compound forms.
 
 Example failing syntax:
-```stm
+```satsuma
 schema fact_sales (
   fact,
   grain {transaction_id, line_number},

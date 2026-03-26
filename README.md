@@ -95,7 +95,7 @@ using conventions that anyone can define and document.
 
 That means your organisation can encode its own standards directly into specs:
 
-```stm
+```satsuma
 schema payments (
     owner "payments-team",
     data_domain "finance",
@@ -173,7 +173,7 @@ available commands.
 
 ## Example
 
-```stm
+```satsuma
 note { "Customer sync — legacy CRM to analytics warehouse" }
 
 schema crm (note "Legacy CRM — SQL Server 2008") {

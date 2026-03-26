@@ -46,7 +46,7 @@ iCalendar is a good "bridge" example: familiar enough that most readers have enc
 
 ## Example
 
-```stm
+```satsuma
 // Satsuma v2 — iCalendar Event (simplified)
 
 schema icalendar_event (format icalendar, component VEVENT,

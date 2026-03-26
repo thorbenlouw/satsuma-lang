@@ -24,7 +24,7 @@ The most valuable thing you contribute is clear business intent. When you say:
 
 The agent produces:
 
-```stm
+```satsuma
 CUST_TYPE -> customer_type {
   map {
     R: "retail"
@@ -51,7 +51,7 @@ You're reviewing **what the mapping says**, not **how it's formatted**.
 
 Some business rules are too complex for structural transforms. Write them in natural language:
 
-```stm
+```satsuma
 -> display_name {
   "If customer type is retail (R or null), use first name + last name.
    If customer type is business (B) or government (G), use company name.
@@ -71,7 +71,7 @@ You often know things about the data that aren't in the database schema:
 
 Capture these as `//!` warnings. The agent will place them correctly:
 
-```stm
+```satsuma
 EMAIL_ADDR    VARCHAR(255)  (pii)    //! ~15% are garbage, never validated
 CREATED_DATE  VARCHAR(10)            //! MM/DD/YYYY or DD/MM/YYYY depending on region
 ```
@@ -80,7 +80,7 @@ CREATED_DATE  VARCHAR(10)            //! MM/DD/YYYY or DD/MM/YYYY depending on r
 
 When something needs a decision that hasn't been made yet:
 
-```stm
+```satsuma
 -> health_score {
   "Derive from activity signals. Exact thresholds pending."
 }                                                          //? waiting on customer success team for thresholds
@@ -152,7 +152,7 @@ Notes are your primary authoring surface. Use them to capture:
 
 ### Context that shapes decisions
 
-```stm
+```satsuma
 note {
   """
   # Legacy Customer Migration
@@ -170,8 +170,8 @@ note {
 
 ### Assumptions in the mapping
 
-```stm
-mapping 'customer migration' {
+```satsuma
+mapping `customer migration` {
   note {
     "Mapping assumptions:
      - All timestamps assumed US Eastern unless otherwise noted
@@ -184,7 +184,7 @@ mapping 'customer migration' {
 
 ### Field-level rationale
 
-```stm
+```satsuma
 CUST_ID -> customer_id (note "Deterministic UUID from legacy ID — enables idempotent reruns") {
   uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", CUST_ID)
 }

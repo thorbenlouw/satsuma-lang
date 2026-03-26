@@ -16,8 +16,8 @@ Satsuma handles this with three mechanisms:
 
 A `fragment` defines a named set of fields that can be spread into any schema:
 
-```stm
-fragment 'address fields' {
+```satsuma
+fragment `address fields` {
   line1        STRING(200)    (required)
   line2        STRING(200)
   city         STRING(100)    (required)
@@ -26,7 +26,7 @@ fragment 'address fields' {
   country      ISO-3166-a2    (required)
 }
 
-fragment 'audit columns' {
+fragment `audit columns` {
   created_at   TIMESTAMPTZ    (required)
   created_by   VARCHAR(100)   (required)
   updated_at   TIMESTAMPTZ
@@ -36,12 +36,12 @@ fragment 'audit columns' {
 
 Use fragments with the spread operator `...`:
 
-```stm
+```satsuma
 schema customers {
   customer_id  UUID  (pk)
   name         VARCHAR(200)
-  ...address fields
-  ...audit columns
+  ...`address fields`
+  ...`audit columns`
 }
 ```
 
@@ -64,26 +64,26 @@ The parser expands the spread at parse time. Tools and agents see the individual
 
 Just as fragments let you reuse field groups, named transforms let you reuse transformation logic:
 
-```stm
-transform 'clean email' {
+```satsuma
+transform `clean email` {
   "Trim whitespace, lowercase, validate RFC 5322 format, return null if invalid"
 }
 
-transform 'to utc date' {
+transform `to utc date` {
   parse("MM/DD/YYYY") | assume_utc | to_iso8601
 }
 ```
 
 Spread them into mapping arrows with `...`:
 
-```stm
-EMAIL_ADDR -> email { ...clean email }
-CREATED_DATE -> created_at { ...to utc date }
+```satsuma
+EMAIL_ADDR -> email { ...`clean email` }
+CREATED_DATE -> created_at { ...`to utc date` }
 ```
 
 Named transforms are useful when the same transformation applies to multiple fields across different mappings — email normalization, date parsing, phone formatting.
 
-In this lesson, the spread form (`{ ...clean email }`) is treated as the canonical style because it matches the current spec. You may also encounter exploratory examples in this repo that invoke a named transform directly, such as `{ normalize_email }`. If you are writing new introductory material or teaching the basics, prefer one style consistently and call out the other explicitly when it appears.
+In this lesson, the spread form (`` { ...`clean email` } ``) is treated as the canonical style because it matches the current spec. You may also encounter exploratory examples in this repo that invoke a named transform directly, such as `{ normalize_email }`. If you are writing new introductory material or teaching the basics, prefer one style consistently and call out the other explicitly when it appears.
 
 ---
 
@@ -91,9 +91,9 @@ In this lesson, the spread form (`{ ...clean email }`) is treated as the canonic
 
 The `import` statement pulls named definitions from another file:
 
-```stm
-import { 'address fields', 'audit columns' } from "lib/common.stm"
-import { 'currency rates' } from "lookups/finance.stm"
+```satsuma
+import { `address fields`, `audit columns` } from "lib/common.stm"
+import { `currency rates` } from "lookups/finance.stm"
 ```
 
 ### What can be imported
@@ -125,7 +125,7 @@ The `lib/` directory holds reusable building blocks. Integration-specific files 
 
 All named definitions in a Satsuma workspace share a single namespace. You cannot have two definitions with the same name — even if they are different types:
 
-```stm
+```satsuma
 // This is INVALID — two definitions named 'customers'
 schema customers { ... }
 fragment customers { ... }    // name collision!
@@ -135,10 +135,10 @@ This constraint exists because imports, spreads, and lineage queries all resolve
 
 If you need to distinguish similar concepts, use descriptive names:
 
-```stm
+```satsuma
 schema crm_customers { ... }
 schema warehouse_customers { ... }
-fragment 'customer fields' { ... }
+fragment `customer fields` { ... }
 ```
 
 ---
@@ -147,7 +147,7 @@ fragment 'customer fields' { ... }
 
 For large multi-file workspaces, a **platform entry point** file imports key definitions from across the platform and makes them available for lineage traversal:
 
-```stm
+```satsuma
 // platform.stm — the entry point for platform-wide lineage
 import { crm_customers, crm_orders } from "crm/pipeline.stm"
 import { billing_invoices } from "billing/pipeline.stm"
@@ -166,9 +166,9 @@ This file serves two purposes:
 When working across multiple files, the agent's role is to:
 
 - **Identify reuse opportunities** — "These five schemas all have the same address fields. Should we extract a fragment?"
-- **Keep cross-file references consistent** — "This import references `'audit columns'` from `common.stm`, but I see the fragment was renamed to `'audit fields'`."
+- **Keep cross-file references consistent** — "This import references `` `audit columns` `` from `common.stm`, but I see the fragment was renamed to `` `audit fields` ``."
 - **Navigate the workspace** — "Which schemas reference `crm_customers`? Let me check the import graph."
-- **Draft imports** — "You need the `'address fields'` fragment in this new file. I'll add the import statement."
+- **Draft imports** — "You need the `` `address fields` `` fragment in this new file. I'll add the import statement."
 
 The CLI supports this with commands like `where-used`, `lineage`, and `summary` that work across the full workspace — not just individual files.
 
@@ -183,15 +183,15 @@ Suppose you're building the Acme Corp migration workspace. You notice these fiel
 
 **Step 1:** Create a `lib/common.stm` file with the shared fragments:
 
-```stm
+```satsuma
 // lib/common.stm — Shared fragments for the Acme Corp migration
 
-fragment 'audit timestamps' {
+fragment `audit timestamps` {
   created_at   TIMESTAMPTZ  (required)
   updated_at   TIMESTAMPTZ
 }
 
-fragment 'address fields' {
+fragment `address fields` {
   line1        STRING(200)  (required)
   line2        STRING(200)
   city         STRING(100)  (required)
@@ -203,18 +203,18 @@ fragment 'address fields' {
 
 **Step 2:** Import and use them in your integration file:
 
-```stm
-import { 'audit timestamps', 'address fields' } from "lib/common.stm"
+```satsuma
+import { `audit timestamps`, `address fields` } from "lib/common.stm"
 
 schema customer_target (note "Normalized customer table") {
   customer_id  UUID         (pk, required)
   name         VARCHAR(200) (required)
-  ...address fields
-  ...audit timestamps
+  ...`address fields`
+  ...`audit timestamps`
 }
 ```
 
-Now, if the address format changes (say, `postal_code` needs to be `STRING(30)` for international codes), you change it once in `common.stm` and every schema that spreads `'address fields'` picks up the change.
+Now, if the address format changes (say, `postal_code` needs to be `STRING(30)` for international codes), you change it once in `common.stm` and every schema that spreads `` `address fields` `` picks up the change.
 
 ---
 

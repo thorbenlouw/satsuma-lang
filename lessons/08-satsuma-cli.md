@@ -192,7 +192,7 @@ Imagine you've inherited a Satsuma workspace with 20 files you've never seen bef
    - What data quality issues are flagged (`//!`)?
    - What questions are unresolved (`//?`)?
 
-3. **Understand a specific mapping:** `satsuma mapping 'customer migration'`
+3. **Understand a specific mapping:** `satsuma mapping `customer migration``
    - What are the source and target?
    - How many arrows? What classifications?
 
@@ -215,7 +215,7 @@ Do one direct, non-agent walkthrough on the repo corpus:
 ```bash
 satsuma summary examples/
 satsuma schema country_codes
-satsuma mapping 'customer migration'
+satsuma mapping `customer migration`
 satsuma validate examples/
 satsuma lint examples/
 ```
