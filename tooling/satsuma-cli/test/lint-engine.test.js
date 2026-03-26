@@ -62,6 +62,7 @@ describe("lint: hidden-source-in-nl", () => {
     const diags = runLint(index, { select: ["hidden-source-in-nl"] });
     assert.equal(diags.length, 1);
     assert.equal(diags[0].rule, "hidden-source-in-nl");
+    assert.equal(diags[0].severity, "error");
     assert.equal(diags[0].fixable, true);
     assert.ok(diags[0].fix);
   });

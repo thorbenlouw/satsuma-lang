@@ -85,7 +85,7 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
           file: item.file,
           line: item.line + 1,
           column: item.column + offset + 1,
-          severity: "warning",
+          severity: "error",
           rule: "hidden-source-in-nl",
           message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,
           fixable: true,
