@@ -17,6 +17,10 @@ import { canonicalKey } from "./index-builder.js";
 
 const BACKTICK_RE = /`([^`]+)`/g;
 
+// @ref pattern: @identifier, @schema.field, @ns::schema.field, @`backtick`.field
+// Matches @ followed by a path of identifiers, dots, ::, and backtick segments.
+const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+
 export interface BacktickRef {
   ref: string;
   offset: number;
@@ -24,14 +28,35 @@ export interface BacktickRef {
 
 /**
  * Extract backtick-delimited references from a single NL string.
+ * Also extracts @ref mentions (preferred modern syntax).
  */
 export function extractBacktickRefs(text: string): BacktickRef[] {
   const refs: BacktickRef[] = [];
   let match;
+
+  // Extract @ref mentions (preferred)
+  AT_REF_RE.lastIndex = 0;
+  while ((match = AT_REF_RE.exec(text)) !== null) {
+    // Strip the leading @ and any backtick delimiters from segments
+    const rawRef = match[0].slice(1); // remove @
+    const ref = rawRef.replace(/`([^`]+)`/g, "$1");
+    refs.push({ ref, offset: match.index });
+  }
+
+  // Also extract backtick refs (backward compat, cosmetic in new code)
   BACKTICK_RE.lastIndex = 0;
   while ((match = BACKTICK_RE.exec(text)) !== null) {
-    refs.push({ ref: match[1]!, offset: match.index });
+    // Skip if this backtick ref overlaps with an already-found @ref
+    const matchIndex = match.index;
+    const alreadyFound = refs.some((r) => {
+      const rEnd = r.offset + r.ref.length + 1; // +1 for @
+      return matchIndex >= r.offset && matchIndex < rEnd;
+    });
+    if (!alreadyFound) {
+      refs.push({ ref: match[1]!, offset: match.index });
+    }
   }
+
   return refs;
 }
 
