@@ -35,14 +35,19 @@ Metadata blocks `( )` may span multiple lines for readability — especially whe
 
 ### 2.2 Strings and Quoting
 
-- **Double quotes** `" "` — natural language strings. Always double quotes. Escape inner double quotes with `\"`. Single quotes are free inside.
+- **Double quotes** `" "` — natural language strings. Always double quotes. Escape inner double quotes with `\"`.
 - **Triple double quotes** `""" """` — multiline natural language with Markdown support. No escaping needed for inner `"`. Use for notes with headings, bold, lists, or multi-paragraph content. Leading indentation from the content is preserved as-is.
-- **Backticks** `` ` ` `` — name references. Used for identifiers containing special characters (spaces, dots, hyphens) or for cross-referencing identifiers inside NL strings.
+- **Backticks** `` ` ` `` — identifiers and names that aren't bare-safe. Used for block labels containing special characters (spaces, dots, hyphens) and for field identifiers with special characters.
+- **`@` prefix** — structural cross-references in NL text. `@customers.email` references a schema field. Required inside NL strings for tooling to detect refs; optional but allowed everywhere else.
+
+**Two quoting rules:**
+- Backticks for names: bare names work when matching `[a-zA-Z_][a-zA-Z0-9_-]*`. Everything else gets backticks.
+- Double quotes for prose: NL content uses `"..."` or `"""..."""`.
 
 ```
-schema 'My Schema' { ... }           // name in single quotes (block label)
-`Lead_Source_Detail__c` STRING       // backtick for special-char identifiers
-"Look up `customer_id` in the dim"   // backtick reference inside NL
+schema `My Schema` { ... }           // backtick for name with spaces
+`Lead_Source_Detail__c` STRING       // backtick for special-char field identifier
+"Look up @customer_id in the dim"    // @ref inside NL string
 "Short note — single line"           // single-line string
 """                                  // multiline string with Markdown
 # Heading
@@ -54,12 +59,12 @@ Some **bold** text and a list:
 
 ### 2.3 Block Labels
 
-Block labels (the name after a keyword) use **single quotes** when they contain special characters, or are bare identifiers otherwise:
+Block labels (the name after a keyword) use **backticks** when they contain special characters, or are bare identifiers otherwise:
 
 ```
 schema customers { ... }
-schema 'order-headers-parquet' { ... }
-fragment 'US Address' { ... }
+schema `order-headers-parquet` { ... }
+fragment `US Address` { ... }
 ```
 
 ### 2.4 Comments
@@ -250,7 +255,7 @@ schema commerce_order (format xml, namespace ord "http://example.com/commerce/or
 A fragment is a reusable set of field declarations. Fragments are structural templates — they stamp out their fields wherever they are spread.
 
 ```
-fragment 'address fields' {
+fragment `address fields` {
   street_line_1   VARCHAR(200)
   street_line_2   VARCHAR(200)
   city            VARCHAR(100)
@@ -448,7 +453,7 @@ LAST_MOD_DATE -> updated_at {
 Use a `flatten` block inside a mapping to lift each element of a source list into its own output row:
 
 ```
-mapping 'order lines' {
+mapping `order lines` {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
@@ -469,7 +474,7 @@ The `flatten` block iterates the source list and produces one target row per ele
 Describe joins in natural language within the source block or as a top-level NL string:
 
 ```
-mapping 'opportunity enrichment' {
+mapping `opportunity enrichment` {
   source {
     `sfdc_opportunity`
     `sfdc_account`
@@ -485,7 +490,7 @@ mapping 'opportunity enrichment' {
 Use `note { }` at file top level or inside mapping blocks for contextual documentation:
 
 ```
-mapping 'customer migration' {
+mapping `customer migration` {
   note {
     "All timestamps assumed US Eastern unless otherwise noted.
      NULL handling: source NULLs preserved unless target has a stated default.
@@ -507,7 +512,7 @@ mapping 'customer migration' {
 Fragments declare reusable field sets for schemas:
 
 ```
-fragment 'audit fields' {
+fragment `audit fields` {
   created_at    TIMESTAMPTZ (required)
   updated_at    TIMESTAMPTZ
   created_by    VARCHAR(100)
@@ -529,11 +534,11 @@ schema users {
 Named transforms declare reusable transform logic for mapping pipelines:
 
 ```
-transform 'clean email' {
+transform `clean email` {
   "Trim whitespace, lowercase, validate RFC 5322 format, return null if invalid"
 }
 
-transform 'to utc date' {
+transform `to utc date` {
   parse("MM/DD/YYYY") | assume_utc | to_iso8601
 }
 ```
@@ -550,8 +555,8 @@ CREATED_DATE -> created_at { ...to utc date }
 Import fragments, transforms, or schemas from other files:
 
 ```
-import { 'address fields', 'audit fields' } from "lib/common.stm"
-import { 'currency rates' } from "lookups/finance.stm"
+import { `address fields`, `audit fields` } from "lib/common.stm"
+import { `currency rates` } from "lookups/finance.stm"
 ```
 
 Import syntax follows the pattern `import { <names> } from "<path>"`. Exact resolution semantics (relative paths, registries, etc.) are implementation-defined.
@@ -573,7 +578,7 @@ metric <name> <display_label>? (<metadata>) {
 }
 ```
 
-- **name** — bare identifier or single-quoted string.
+- **name** — bare identifier or backtick-quoted string.
 - **display_label** — optional quoted string giving the short business name (e.g. `"MRR"`). This is the label shown in dashboards and documentation.
 - **metadata** — required `( )` block describing how the metric is defined.
 - **body** — measure field declarations and notes. No mappings or arrows.
@@ -748,7 +753,7 @@ These are freely extensible. Common domain-specific tokens:
 ```
 // Satsuma v2 — Legacy Customer Migration
 
-import { 'address fields' } from "lib/common.stm"
+import { `address fields` } from "lib/common.stm"
 
 note {
   """
@@ -836,7 +841,7 @@ schema postgres_db (note "Normalized customer schema — PostgreSQL 16") {
 
 // --- Mapping ---
 
-mapping 'customer migration' {
+mapping `customer migration` {
   note {
     "Mapping assumptions:
      - All timestamps assumed US Eastern unless otherwise noted
@@ -1048,7 +1053,7 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
 
 // --- Mapping ---
 
-mapping 'edi to mfcs' {
+mapping `edi to mfcs` {
   source { `edi_desadv` }
   target { `mfcs_json` }
 
@@ -1223,7 +1228,7 @@ schema order_lines_parquet (format parquet, note "Curated order line dataset") {
 
 // --- Mapping: Order Headers ---
 
-mapping 'order headers' {
+mapping `order headers` {
   source { `commerce_order` }
   target { `order_headers_parquet` }
 
@@ -1269,7 +1274,7 @@ mapping 'order headers' {
 
 // --- Mapping: Order Lines (flattened) ---
 
-mapping 'order lines' {
+mapping `order lines` {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
@@ -1299,8 +1304,8 @@ mapping 'order lines' {
 ```
 // Satsuma v2 — Salesforce to Snowflake Pipeline
 
-import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
-import { 'currency rates' } from "lookups/finance.stm"
+import { `sfdc standard types` } from "lib/sfdc_fragments.stm"
+import { `currency rates` } from "lookups/finance.stm"
 
 note {
   """
@@ -1359,7 +1364,7 @@ schema snowflake_opps (note "FACT_OPPORTUNITIES — Snowflake Analytics") {
 
 // --- Mapping ---
 
-mapping 'opportunity ingestion' {
+mapping `opportunity ingestion` {
   source { `sfdc_opportunity` }
   target { `snowflake_opps` }
 
@@ -1419,6 +1424,6 @@ mapping 'opportunity ingestion' {
 | `when/else` clauses | `map { }` with conditions or NL | Simpler, more flexible |
 | `fallback` keyword | NL fallback description | Let the LLM interpret |
 | `[enum: {a, b}]` | `(enum {a, b})` | Braces for value sets, parens for metadata |
-| `note '''...'''` triple-quoted | `(note "...")` or `(note """...""")` | Notes are metadata; `"""` for Markdown |
+| `note '''...`''` triple-quoted | `(note "...")` or `(note """...""")` | Notes are metadata; `"""` for Markdown |
 | `integration { }` block | `note { """...""" }` block | Structured, consistent with delimiter rules |
 | `=> target` computed fields | `-> target` (no left side) | Consistent arrow syntax |
