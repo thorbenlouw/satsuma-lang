@@ -1,6 +1,6 @@
 ---
 id: f2v-5ssp
-status: open
+status: closed
 deps: []
 links: [f2v-06tg, f2v-9i2q]
 created: 2026-03-26T23:15:28Z
@@ -20,3 +20,9 @@ Visualize each blocks as nested boxes within the mapping area showing the iterat
 - Contained arrows render inside the scope box
 - Nested each blocks render as nested boxes
 
+
+## Notes
+
+**2026-03-26T23:28:21Z**
+
+each blocks tagged with scopeLabel on edges, rendered as ⟲ each label at edge midpoint in orange.

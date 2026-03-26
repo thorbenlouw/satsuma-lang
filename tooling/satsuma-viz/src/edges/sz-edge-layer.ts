@@ -131,6 +131,23 @@ export class SzEdgeLayer extends LitElement {
     .transform-card .step-sep {
       color: var(--sz-text-muted, #6B6560);
     }
+
+    .scope-label {
+      font-family: var(--sz-font-mono, monospace);
+      font-size: 9px;
+      font-weight: 600;
+      fill: var(--sz-text-muted, #6B6560);
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .scope-label.each {
+      fill: var(--sz-orange-dark, #D97726);
+    }
+
+    .scope-label.flatten {
+      fill: var(--sz-green, #5A9E6F);
+    }
   `;
 
   @property({ type: Array })
@@ -189,6 +206,15 @@ export class SzEdgeLayer extends LitElement {
             <circle class="gear-circle" r="9" />
             <text class="gear-icon" dy="0.5">&#9881;</text>
           </g>
+        `
+        : svg``}
+      ${edge.scopeLabel
+        ? svg`
+          <text
+            class="scope-label ${edge.scopeLabel}"
+            x=${mid.x}
+            y=${mid.y + (hasTransform ? 18 : 0)}
+          >${edge.scopeLabel === "each" ? "⟲ each" : "⤵ flatten"}</text>
         `
         : svg``}
     `;

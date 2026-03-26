@@ -1,6 +1,6 @@
 ---
 id: f2v-06tg
-status: open
+status: closed
 deps: []
 links: [f2v-5ssp]
 created: 2026-03-26T23:15:34Z
@@ -19,3 +19,9 @@ Visualize flatten blocks with an unnest icon and scope indicator showing which n
 - Scope indicator shows the source field being flattened
 - Contained arrows render inside the flatten scope
 
+
+## Notes
+
+**2026-03-26T23:28:21Z**
+
+flatten blocks tagged with scopeLabel on edges, rendered as ⤵ flatten label at edge midpoint in green.

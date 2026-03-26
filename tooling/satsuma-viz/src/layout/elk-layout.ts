@@ -39,11 +39,25 @@ export interface LayoutEdge {
   points: Array<{ x: number; y: number }>;
   /** Arrow metadata for rendering style */
   arrow: ArrowEntry;
+  /** Context label for each/flatten/source scope */
+  scopeLabel?: string;
+}
+
+export interface SourceBlockLayout {
+  /** Mapping ID this source block belongs to */
+  mappingId: string;
+  /** Schemas involved in the source block */
+  schemas: string[];
+  /** Join description text, if any */
+  joinDescription: string | null;
+  /** Filter expressions */
+  filters: string[];
 }
 
 export interface LayoutResult {
   nodes: Map<string, LayoutNode>;
   edges: LayoutEdge[];
+  sourceBlocks: SourceBlockLayout[];
   width: number;
   height: number;
 }
@@ -380,9 +394,34 @@ function extractLayout(
     });
   }
 
+  // Collect source blocks from the model
+  const sourceBlocks: SourceBlockLayout[] = [];
+  for (const ns of _model.namespaces) {
+    for (const m of ns.mappings) {
+      if (m.sourceBlock) {
+        sourceBlocks.push({
+          mappingId: m.id,
+          schemas: m.sourceBlock.schemas,
+          joinDescription: m.sourceBlock.joinDescription,
+          filters: m.sourceBlock.filters,
+        });
+      }
+    }
+  }
+
+  // Tag edges with scope labels from each/flatten context
+  for (const e of edges) {
+    if (e.id.includes(":each")) {
+      e.scopeLabel = "each";
+    } else if (e.id.includes(":flat:")) {
+      e.scopeLabel = "flatten";
+    }
+  }
+
   return {
     nodes,
     edges,
+    sourceBlocks,
     width: result.width ?? 800,
     height: result.height ?? 600,
   };
