@@ -1,6 +1,6 @@
 ---
 id: sc-i8k8
-status: open
+status: done
 deps: []
 links: []
 created: 2026-03-26T06:50:38Z
@@ -19,4 +19,12 @@ Tests should never depend on canonical example .stm files having validation erro
 - Any test asserting on warnings/errors from canonical examples migrated to dedicated fixtures
 - Canonical examples remain clean demonstration files with no test-required defects
 - All tests pass after migration
+
+## Notes
+
+**2026-03-26T12:00:00Z**
+
+Cause: Concern that tests might depend on canonical examples having validation errors or warnings, making examples serve double duty as error fixtures.
+
+Fix: Audited all 60+ references to EXAMPLES paths across integration.test.js, arrow-extract.test.js, format.test.js, bug-purge.test.js, and graph.test.js. Every test using canonical examples either (a) asserts clean validation (`no issues`, exit 0), (b) tests structural output (schema fields, arrow extraction, formatting), or (c) tests comment display features (//! //? appearing in output). All warning/error assertion tests already use dedicated fixtures in test/fixtures/ (parse-error.stm, metric-bad-source.stm, undefined-spread.stm, missing-import.stm, etc.). No remediation needed — the prior fix (sl-5dyc) was the last remaining case.
 
