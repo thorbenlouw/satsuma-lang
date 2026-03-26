@@ -400,6 +400,176 @@ describe("getFields", () => {
   });
 });
 
+describe("arrow field path indexing", () => {
+  it("indexes src_path field names from map_arrow", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { customers }
+  target { dim_customers }
+  email -> contact_email
+}`,
+    });
+    const srcRefs = idx.references.get("email");
+    assert.ok(srcRefs);
+    const arrowRefs = srcRefs.filter((r) => r.context === "arrow");
+    assert.ok(arrowRefs.length >= 1, "expected at least one arrow ref for email");
+  });
+
+  it("indexes tgt_path field names from map_arrow", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { customers }
+  target { dim_customers }
+  email -> contact_email
+}`,
+    });
+    const tgtRefs = idx.references.get("contact_email");
+    assert.ok(tgtRefs);
+    const arrowRefs = tgtRefs.filter((r) => r.context === "arrow");
+    assert.ok(arrowRefs.length >= 1, "expected at least one arrow ref for contact_email");
+  });
+
+  it("indexes field names from computed_arrow (no source)", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { customers }
+  target { dim_customers }
+  -> display_name { "Concat first + last" }
+}`,
+    });
+    const refs = idx.references.get("display_name");
+    assert.ok(refs);
+    const arrowRefs = refs.filter((r) => r.context === "arrow");
+    assert.ok(arrowRefs.length >= 1, "expected arrow ref for display_name");
+  });
+
+  it("indexes field names from nested_arrow children", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { orders }
+  target { dim_orders }
+  items -> line_items {
+    sku -> product_sku
+    qty -> quantity
+  }
+}`,
+    });
+    const skuRefs = (idx.references.get("sku") || []).filter((r) => r.context === "arrow");
+    assert.ok(skuRefs.length >= 1, "expected arrow ref for sku");
+    const qtyRefs = (idx.references.get("qty") || []).filter((r) => r.context === "arrow");
+    assert.ok(qtyRefs.length >= 1, "expected arrow ref for qty");
+    // Also the outer arrow fields
+    const itemsRefs = (idx.references.get("items") || []).filter((r) => r.context === "arrow");
+    assert.ok(itemsRefs.length >= 1, "expected arrow ref for items");
+  });
+
+  it("indexes field names from each_block", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { orders }
+  target { dim_orders }
+  each items -> line_items {
+    sku -> product_sku
+  }
+}`,
+    });
+    const itemsRefs = (idx.references.get("items") || []).filter((r) => r.context === "arrow");
+    assert.ok(itemsRefs.length >= 1, "expected arrow ref for items in each_block");
+    const skuRefs = (idx.references.get("sku") || []).filter((r) => r.context === "arrow");
+    assert.ok(skuRefs.length >= 1, "expected arrow ref for sku in each_block");
+  });
+
+  it("indexes field names from flatten_block", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { orders }
+  target { flat_items }
+  flatten items -> line_items {
+    sku -> product_sku
+  }
+}`,
+    });
+    const itemsRefs = (idx.references.get("items") || []).filter((r) => r.context === "arrow");
+    assert.ok(itemsRefs.length >= 1, "expected arrow ref for items in flatten_block");
+  });
+});
+
+describe("NL string reference indexing", () => {
+  it("indexes @refs in NL strings", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { customers }
+  target { dim }
+  -> display_name { "Use @FIRST_NM and @LAST_NM" }
+}`,
+    });
+    const firstRefs = (idx.references.get("FIRST_NM") || []).filter((r) => r.context === "arrow");
+    assert.ok(firstRefs.length >= 1, "expected arrow ref for @FIRST_NM");
+    const lastRefs = (idx.references.get("LAST_NM") || []).filter((r) => r.context === "arrow");
+    assert.ok(lastRefs.length >= 1, "expected arrow ref for @LAST_NM");
+  });
+
+  it("indexes @refs with backtick-delimited names", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "mapping test {\n  source { customers }\n  target { dim }\n  -> name { \"Use @`first name` here\" }\n}",
+    });
+    const refs = (idx.references.get("first name") || []).filter((r) => r.context === "arrow");
+    assert.ok(refs.length >= 1, "expected arrow ref for @`first name`");
+  });
+
+  it("indexes backtick refs in NL strings", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { customers }
+  target { dim }
+  -> notes { "Filter using \`profanity_list\` v3.2" }
+}`,
+    });
+    const refs = (idx.references.get("profanity_list") || []).filter((r) => r.context === "arrow");
+    assert.ok(refs.length >= 1, "expected arrow ref for backtick ref profanity_list");
+  });
+
+  it("indexes @refs in multiline NL strings", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping test {
+  source { customers }
+  target { dim }
+  -> address_id {
+    """
+    Create a record using @ADDR_LINE_1 and @CITY.
+    Normalize @STATE_PROV to 2-char code.
+    """
+  }
+}`,
+    });
+    const addrRefs = (idx.references.get("ADDR_LINE_1") || []).filter((r) => r.context === "arrow");
+    assert.ok(addrRefs.length >= 1, "expected arrow ref for @ADDR_LINE_1");
+    const stateRefs = (idx.references.get("STATE_PROV") || []).filter((r) => r.context === "arrow");
+    assert.ok(stateRefs.length >= 1, "expected arrow ref for @STATE_PROV");
+  });
+
+  it("does not double-index backtick inside @ref", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "mapping test {\n  source { customers }\n  target { dim }\n  -> name { \"Use @`first name` here\" }\n}",
+    });
+    // "first name" should appear exactly once (from the @ref), not twice
+    const refs = (idx.references.get("first name") || []).filter((r) => r.context === "arrow");
+    assert.equal(refs.length, 1, "backtick inside @ref should not be double-counted");
+  });
+});
+
+describe("transform spread indexing in arrows", () => {
+  it("indexes transform spread references in arrows", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "transform `clean email` {\n  trim | lowercase\n}\nmapping test {\n  source { customers }\n  target { dim }\n  email -> email { ...`clean email` }\n}",
+    });
+    const refs = idx.references.get("clean email");
+    assert.ok(refs);
+    const spreadRefs = refs.filter((r) => r.context === "spread");
+    assert.ok(spreadRefs.length >= 1, "expected spread ref for transform in arrow");
+  });
+});
+
 describe("re-indexing", () => {
   it("replaces old entries when re-indexing a file", () => {
     const idx = createWorkspaceIndex();
