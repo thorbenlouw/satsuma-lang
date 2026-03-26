@@ -76,7 +76,7 @@ schema commerce_session_parquet (format parquet, note "Session-level analytics d
 }
 
 // --- Mapping ---
-mapping 'session aggregation' (group_by session_id, on_error log, error_threshold 0.02) {
+mapping `session aggregation` (group_by session_id, on_error log, error_threshold 0.02) {
   source { `commerce_event_pb` }
   target { `commerce_session_parquet` }
 
@@ -106,15 +106,15 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
   }
 
   -> viewed_product_count {
-    "Count records in the group where `event_type` == 'product_view'."
+    "Count records in the group where `event_type` == `product_view`."
   }
 
   -> cart_add_count {
-    "Count records in the group where `event_type` == 'add_to_cart'."
+    "Count records in the group where `event_type` == `add_to_cart`."
   }
 
   -> purchase_event_count {
-    "Count records in the group where `event_type` == 'purchase'."
+    "Count records in the group where `event_type` == `purchase`."
   }
 
   event_type -> checkout_completed { map { purchase: true, _: false } | max }

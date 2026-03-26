@@ -298,7 +298,7 @@ function extractMappingNLRefs(mappingNode: SyntaxNode, namespace: string | null,
   const lbl = mappingNode.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   let mappingName = inner?.text ?? null;
-  if (inner?.type === "quoted_name") mappingName = mappingName!.slice(1, -1);
+  if (inner?.type === "backtick_name") mappingName = mappingName!.slice(1, -1);
 
   // For anonymous mappings, use row-based key that will match <anon>@file:row
   // The file portion will be filled in later by index-builder
@@ -316,7 +316,7 @@ function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | n
   const lbl = transformNode.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   let transformName = inner?.text ?? "";
-  if (inner?.type === "quoted_name") transformName = transformName.slice(1, -1);
+  if (inner?.type === "backtick_name") transformName = transformName.slice(1, -1);
 
   const pipeChain = transformNode.namedChildren.find((c) => c.type === "pipe_chain");
   if (!pipeChain) return;
@@ -379,7 +379,7 @@ function extractBlockNoteRefs(
   const lbl = blockNode.namedChildren.find((c) => c.type === "block_label");
   const inner = lbl?.namedChildren[0];
   let blockName = inner?.text ?? "";
-  if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
+  if (inner?.type === "backtick_name") blockName = blockName.slice(1, -1);
 
   // extractStandaloneNoteRefs prepends "note:" to the parentLabel, so we just pass
   // a type-prefixed block name so downstream can distinguish metric vs mapping notes.

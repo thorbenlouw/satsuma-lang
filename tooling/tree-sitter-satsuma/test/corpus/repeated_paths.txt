@@ -95,7 +95,7 @@ mapping {
 Mapping-level flatten metadata (legacy)
 ================================================================================
 
-mapping 'order lines' (flatten `Order.LineItems`) {
+mapping `order lines` (flatten `Order.LineItems`) {
   source { commerce_order }
   target { order_lines }
 }
@@ -105,7 +105,7 @@ mapping 'order lines' (flatten `Order.LineItems`) {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (metadata_block
       (tag_with_value
         (identifier)
@@ -123,7 +123,7 @@ mapping 'order lines' (flatten `Order.LineItems`) {
 Mapping-level group_by and on_error metadata
 ================================================================================
 
-mapping 'session aggregation' (group_by session_id, on_error log, error_threshold 0.02) {
+mapping `session aggregation` (group_by session_id, on_error log, error_threshold 0.02) {
   source { events }
   target { sessions }
 }
@@ -133,7 +133,7 @@ mapping 'session aggregation' (group_by session_id, on_error log, error_threshol
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (metadata_block
       (tag_with_value
         (identifier)

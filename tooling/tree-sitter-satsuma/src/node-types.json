@@ -46,11 +46,11 @@
       "required": true,
       "types": [
         {
-          "type": "identifier",
+          "type": "backtick_name",
           "named": true
         },
         {
-          "type": "quoted_name",
+          "type": "identifier",
           "named": true
         }
       ]
@@ -323,15 +323,15 @@
       "required": true,
       "types": [
         {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
         {
           "type": "qualified_name",
-          "named": true
-        },
-        {
-          "type": "quoted_name",
           "named": true
         }
       ]
@@ -1038,15 +1038,15 @@
       "required": true,
       "types": [
         {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
         {
           "type": "qualified_name",
-          "named": true
-        },
-        {
-          "type": "quoted_name",
           "named": true
         }
       ]
@@ -1354,10 +1354,6 @@
     "type": "question_comment",
     "named": true,
     "extra": true
-  },
-  {
-    "type": "quoted_name",
-    "named": true
   },
   {
     "type": "record",

@@ -93,11 +93,11 @@ schema dim_product (note "Product dimension — full refresh nightly") {
 
 // --- Mappings ---
 // Pattern 1: Upsert — insert new customers, update existing on match
-mapping 'customer upsert' (merge upsert, match_on customer_id) {
+mapping `customer upsert` (merge upsert, match_on customer_id) {
   note {
     "Daily upsert from CRM customer master. Existing customers are updated
      with the latest name, email, phone, and region. New customers are
-     inserted. Rows not present in today's extract are left untouched."
+     inserted. Rows not present in today`s extract are left untouched."
   }
 
   source { `crm_customers` }
@@ -112,7 +112,7 @@ mapping 'customer upsert' (merge upsert, match_on customer_id) {
 }
 
 // Pattern 2: Append — every event is a new row, no matching
-mapping 'purchase events' (merge append) {
+mapping `purchase events` (merge append) {
   note {
     "Real-time append from POS transaction stream. Every event produces a
      new row. No deduplication — the event_id primary key on the target
@@ -134,7 +134,7 @@ mapping 'purchase events' (merge append) {
 }
 
 // Pattern 3: Soft delete — flag deleted customers, preserve history
-mapping 'customer soft delete' (
+mapping `customer soft delete` (
   merge soft_delete,
   match_on customer_id,
   delete_flag is_deleted,
@@ -161,7 +161,7 @@ mapping 'customer soft delete' (
 }
 
 // Pattern 4: Full refresh — truncate and reload the product catalog
-mapping 'product catalog refresh' (merge full_refresh) {
+mapping `product catalog refresh` (merge full_refresh) {
   note {
     """
     Nightly full refresh from the product information management system.

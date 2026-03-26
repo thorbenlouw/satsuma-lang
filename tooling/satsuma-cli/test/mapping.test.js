@@ -126,7 +126,7 @@ describe("findMappingNode", () => {
       if (!lbl) continue;
       const inner = lbl.namedChildren[0];
       let nm = inner?.text ?? "";
-      if (inner?.type === "quoted_name") nm = nm.slice(1, -1);
+      if (inner?.type === "backtick_name") nm = nm.slice(1, -1);
       if (nm === name) return c;
     }
     return null;

@@ -159,7 +159,7 @@ function tryContext(node: SyntaxNode): NodeContext | null {
     // Handle identifiers and backtick_names that are inside source_ref, spread, etc.
     case "identifier":
     case "backtick_name":
-    case "quoted_name":
+    case "backtick_name":
     case "qualified_name":
     case "nl_string":
       // Let the parent handle it
@@ -368,7 +368,7 @@ function qualifiedNameText(qn: SyntaxNode): string {
 function spreadLabelText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
   if (qn) return qualifiedNameText(qn);
-  const quoted = child(node, "quoted_name");
+  const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   const ids = node.namedChildren.filter((c) => c.type === "identifier");
   if (ids.length > 0) return ids.map((i) => i.text).join(" ");
@@ -378,7 +378,7 @@ function spreadLabelText(node: SyntaxNode): string | null {
 function importNameText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
   if (qn) return qualifiedNameText(qn);
-  const quoted = child(node, "quoted_name");
+  const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   const id = child(node, "identifier");
   if (id) return id.text;

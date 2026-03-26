@@ -176,7 +176,7 @@ schema customer_360_view (
 }
 
 // --- Mapping: Customer 360 Assembly ---
-mapping 'customer 360 assembly' {
+mapping `customer 360 assembly` {
   note {
     """
     Joins CRM customer profiles to aggregated financial transaction data to
@@ -221,7 +221,7 @@ mapping 'customer 360 assembly' {
   crm_customers.acquisition_channel -> acquisition_channel { trim }
 
   -> account_status {
-    "If crm_customers.account_closure_date is null then 'active' else 'closed'"
+    "If crm_customers.account_closure_date is null then `active` else `closed`"
   }
 
   // Aggregated financial data

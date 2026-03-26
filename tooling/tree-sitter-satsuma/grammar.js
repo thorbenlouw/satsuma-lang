@@ -97,7 +97,7 @@ module.exports = grammar({
         $.import_path,
       ),
 
-    import_name: ($) => choice($.qualified_name, $.quoted_name, $.identifier),
+    import_name: ($) => choice($.qualified_name, $.backtick_name, $.identifier),
 
     // ns::identifier — used in imports
     qualified_name: ($) => seq($.identifier, "::", $.identifier),
@@ -334,7 +334,7 @@ module.exports = grammar({
     // part of a label (newline-sensitive in practice; the grammar uses a
     // type_expr lookahead via prec to disambiguate from field_decl).
     spread_label: ($) =>
-      choice($.qualified_name, $.quoted_name, $._spread_words),
+      choice($.qualified_name, $.backtick_name, $._spread_words),
 
     _spread_words: ($) =>
       prec.dynamic(-1, seq($.identifier, repeat($.identifier))),
@@ -520,7 +520,7 @@ module.exports = grammar({
 
     // ── Block label ───────────────────────────────────────────────────────
 
-    block_label: ($) => choice($.identifier, $.quoted_name),
+    block_label: ($) => choice($.identifier, $.backtick_name),
 
     // ── Metadata block ────────────────────────────────────────────────────
 
@@ -623,8 +623,6 @@ module.exports = grammar({
     // ── Lexical tokens ────────────────────────────────────────────────────
 
     identifier: (_) => /[a-zA-Z_][a-zA-Z0-9_-]*/,
-
-    quoted_name: (_) => /'(?:[^'\\]|\\.)*'/,
 
     backtick_name: (_) => /`(?:[^`\\]|\\.)*`/,
 

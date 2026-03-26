@@ -316,9 +316,9 @@ describe("Bug 3: metric source extraction", () => {
 // ── Bug 4: Suppress for schemas with unresolved spreads ──────────────────────
 
 function spreadLabel(name) {
-  // spread_label children: quoted_name for 'quoted', identifier for bare
+  // spread_label children: backtick_name for 'quoted', identifier for bare
   if (name.startsWith("'") || name.startsWith('"')) {
-    return n("spread_label", [n("quoted_name", [], name)]);
+    return n("spread_label", [n("backtick_name", [], name)]);
   }
   const ids = name.split(" ").map((w) => ident(w));
   return n("spread_label", ids);

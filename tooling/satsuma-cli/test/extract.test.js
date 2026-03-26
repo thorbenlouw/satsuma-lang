@@ -36,9 +36,9 @@ function ident(text, row = 0) {
   return n("identifier", [], text, row);
 }
 
-/** Convenience: build a quoted_name node. */
+/** Convenience: build a backtick_name node. */
 function quoted(inner, row = 0) {
-  return n("quoted_name", [], `'${inner}'`, row);
+  return n("backtick_name", [], `'${inner}'`, row);
 }
 
 /** Convenience: build an nl_string node. */

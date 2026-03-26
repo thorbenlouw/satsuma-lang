@@ -208,7 +208,7 @@ function findFragmentSpreads(rootNode: SyntaxNode, fragmentName: string): Array<
     const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let blockName = inner?.text ?? "";
-    if (inner?.type === "quoted_name") blockName = blockName.slice(1, -1);
+    if (inner?.type === "backtick_name") blockName = blockName.slice(1, -1);
     if (namespace) blockName = `${namespace}::${blockName}`;
 
     const body = topLevel.namedChildren.find((c) => c.type === "schema_body");
@@ -236,7 +236,7 @@ function walkForSpreads(bodyNode: SyntaxNode, fragmentName: string, blockName: s
       const lbl = c.namedChildren.find((x) => x.type === "spread_label" || x.type === "block_label");
       let sname = "";
       if (lbl) {
-        const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+        const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
         if (q) {
           sname = q.text.slice(1, -1);
         } else {
@@ -276,7 +276,7 @@ function findTransformRefs(rootNode: SyntaxNode, transformName: string): Array<{
       const lbl = c.namedChildren.find((x) => x.type === "block_label");
       const inner = lbl?.namedChildren[0];
       let mappingName = inner?.text ?? "";
-      if (inner?.type === "quoted_name") mappingName = mappingName.slice(1, -1);
+      if (inner?.type === "backtick_name") mappingName = mappingName.slice(1, -1);
       if (namespace) mappingName = `${namespace}::${mappingName}`;
 
       // Walk all pipe_step/token_call descendants
@@ -312,7 +312,7 @@ function walkForTransformCalls(node: SyntaxNode, transformName: string, mappingN
 
 function getSpreadName(lbl: SyntaxNode | undefined): string {
   if (!lbl) return "";
-  const q = lbl.namedChildren.find((x) => x.type === "quoted_name");
+  const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
   if (q) return q.text.slice(1, -1);
   return lbl.namedChildren
     .filter((x) => x.type === "identifier" || x.type === "qualified_name")

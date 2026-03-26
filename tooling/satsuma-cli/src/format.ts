@@ -434,7 +434,7 @@ function formatFragmentSpread(node: SyntaxNode, indent: number): string {
   if (!inner) return ind(indent) + "..." + label.text;
 
   // spread_label can be: quoted_name, qualified_name, or _spread_words (multiple identifiers)
-  if (inner.type === "quoted_name") {
+  if (inner.type === "backtick_name") {
     return ind(indent) + "..." + inner.text;
   }
   if (inner.type === "qualified_name") {

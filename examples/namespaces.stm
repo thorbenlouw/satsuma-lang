@@ -67,7 +67,7 @@ namespace warehouse (note "Data vault hub layer") {
   }
 
   // Cross-namespace mapping: POS stores into hub
-  mapping 'load hub_store' {
+  mapping `load hub_store` {
     source { `pos::stores` }
     target { `hub_store` }
 
@@ -78,7 +78,7 @@ namespace warehouse (note "Data vault hub layer") {
   }
 
   // Cross-namespace mapping: e-commerce customers into hub
-  mapping 'load hub_customer' {
+  mapping `load hub_customer` {
     source { `ecom::customers` }
     target { `hub_customer` }
 

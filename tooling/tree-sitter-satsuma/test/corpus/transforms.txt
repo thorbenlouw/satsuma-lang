@@ -2,20 +2,20 @@
 Empty transform body
 ================================================================================
 
-transform 'clean email' {}
+transform `clean email` {}
 
 --------------------------------------------------------------------------------
 
 (source_file
   (transform_block
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Single NL string pipe step
 ================================================================================
 
-transform 'clean email' {
+transform `clean email` {
   "Trim whitespace, lowercase, validate format"
 }
 
@@ -24,7 +24,7 @@ transform 'clean email' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -34,7 +34,7 @@ transform 'clean email' {
 Single token_call step
 ================================================================================
 
-transform 'normalize' {
+transform `normalize` {
   trim
 }
 
@@ -43,7 +43,7 @@ transform 'normalize' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -53,7 +53,7 @@ transform 'normalize' {
 Token call with arguments
 ================================================================================
 
-transform 'coerce' {
+transform `coerce` {
   coalesce("", null)
 }
 
@@ -62,7 +62,7 @@ transform 'coerce' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -74,7 +74,7 @@ transform 'coerce' {
 Multi-step pipe chain with token calls
 ================================================================================
 
-transform 'clean email' {
+transform `clean email` {
   trim | lowercase | validate_email
 }
 
@@ -83,7 +83,7 @@ transform 'clean email' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -99,7 +99,7 @@ transform 'clean email' {
 Pipe chain with NL string then token calls
 ================================================================================
 
-transform 'normalize phone' {
+transform `normalize phone` {
   "Strip non-digit chars, add country code prefix" | e164_format | validate
 }
 
@@ -108,7 +108,7 @@ transform 'normalize phone' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -124,7 +124,7 @@ transform 'normalize phone' {
 Map literal with string keys
 ================================================================================
 
-transform 'status map' {
+transform `status map` {
   map {
     "A": "active"
     "S": "suspended"
@@ -137,7 +137,7 @@ transform 'status map' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (map_literal
@@ -161,7 +161,7 @@ transform 'status map' {
 Map literal with identifier keys and wildcard
 ================================================================================
 
-transform 'channel map' {
+transform `channel map` {
   map {
     R: "retail"
     W: "wholesale"
@@ -174,7 +174,7 @@ transform 'channel map' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (map_literal
@@ -197,7 +197,7 @@ transform 'channel map' {
 Map literal with null key and default
 ================================================================================
 
-transform 'status normalize' {
+transform `status normalize` {
   map {
     null:    "unknown"
     default: "active"
@@ -210,7 +210,7 @@ transform 'status normalize' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (map_literal
@@ -231,7 +231,7 @@ transform 'status normalize' {
 Map literal with comparison keys
 ================================================================================
 
-transform 'tier map' {
+transform `tier map` {
   map {
     >= 1000: "platinum"
     >= 500:  "gold"
@@ -245,7 +245,7 @@ transform 'tier map' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (map_literal
@@ -273,7 +273,7 @@ transform 'tier map' {
 Map in pipe chain with preceding step
 ================================================================================
 
-transform 'lookup then normalize' {
+transform `lookup then normalize` {
   trim | map { A: "active", I: "inactive", _: "unknown" } | lowercase
 }
 
@@ -282,7 +282,7 @@ transform 'lookup then normalize' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -311,8 +311,8 @@ transform 'lookup then normalize' {
 Fragment spread as pipe step
 ================================================================================
 
-transform 'apply standard' {
-  trim | ...'email-normalization' | validate
+transform `apply standard` {
+  trim | ...`email-normalization` | validate
 }
 
 --------------------------------------------------------------------------------
@@ -320,7 +320,7 @@ transform 'apply standard' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text
@@ -328,7 +328,7 @@ transform 'apply standard' {
       (pipe_step
         (fragment_spread
           (spread_label
-            (quoted_name))))
+            (backtick_name))))
       (pipe_step
         (pipe_text
           (identifier))))))
@@ -337,7 +337,7 @@ transform 'apply standard' {
 Multiline pipe chain
 ================================================================================
 
-transform 'phone normalization' {
+transform `phone normalization` {
   "Strip non-digit characters and punctuation"
   | e164_format
   | validate_phone
@@ -348,7 +348,7 @@ transform 'phone normalization' {
 (source_file
   (transform_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (pipe_chain
       (pipe_step
         (pipe_text

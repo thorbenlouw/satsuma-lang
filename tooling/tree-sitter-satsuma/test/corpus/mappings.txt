@@ -74,7 +74,7 @@ mapping crm_to_warehouse (version 1) {
 Quoted mapping label
 ================================================================================
 
-mapping 'CRM to Warehouse' {
+mapping `CRM to Warehouse` {
   source { crm_customers }
   target { dim_customers }
 }
@@ -84,7 +84,7 @@ mapping 'CRM to Warehouse' {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (mapping_body
       (source_block
         (source_ref
@@ -268,7 +268,7 @@ mapping {
 Target-only mapping (no source block)
 ================================================================================
 
-mapping 'computed values' {
+mapping `computed values` {
   target { `computed_target` }
   -> id { uuid_v4() }
 }
@@ -278,7 +278,7 @@ mapping 'computed values' {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (mapping_body
       (target_block
         (source_ref
@@ -296,7 +296,7 @@ mapping 'computed values' {
 Source-only mapping (no target block)
 ================================================================================
 
-mapping 'source audit' {
+mapping `source audit` {
   source { `raw_events` }
   note { "Audit log, no target needed" }
 }
@@ -306,7 +306,7 @@ mapping 'source audit' {
 (source_file
   (mapping_block
     (block_label
-      (quoted_name))
+      (backtick_name))
     (mapping_body
       (source_block
         (source_ref

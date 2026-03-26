@@ -22,7 +22,7 @@ metric monthly_recurring_revenue "MRR" (
   source fact_subscriptions,
   grain monthly,
   slice {customer_segment, product_line, region},
-  filter "status = 'active' AND is_trial = false"
+  filter "status = `active` AND is_trial = false"
 ) {
   value  DECIMAL(14,2)  (measure additive)
 
@@ -48,7 +48,7 @@ metric churn_rate (
   note {
     """
     Churned customers in month M divided by active customers at start of month M.
-    A customer is churned when their subscription reaches `status = 'cancelled'`
+    A customer is churned when their subscription reaches `status = `cancelled``
     and `cancelled_at` falls within the reporting month.
     """
   }
@@ -92,7 +92,7 @@ metric pipeline_value "ARR Pipeline" (
   source fact_opportunities,
   grain weekly,
   slice {pipeline_stage, region, account_segment, close_quarter},
-  filter "pipeline_stage NOT IN ('closed_won', 'closed_lost')"
+  filter "pipeline_stage NOT IN (`closed_won`, `closed_lost`)"
 ) {
   arr_value           DECIMAL(18,2)  (measure additive)
   weighted_arr_value  DECIMAL(18,2) (
@@ -119,7 +119,7 @@ metric order_revenue (
 
   note {
     """
-    `gross_revenue` = sum of `total_amount` in the order's billing currency,
+    `gross_revenue` = sum of `total_amount` in the order`s billing currency,
     converted to USD at the daily spot rate from `currency_rates`.
 
     `net_revenue` = gross_revenue minus refunds and chargebacks recorded
@@ -135,7 +135,7 @@ metric cart_abandonment_rate (
   source {fact_sessions, fact_orders},
   grain daily,
   slice {order_channel, device_type, customer_segment},
-  filter "session_type = 'checkout'"
+  filter "session_type = `checkout'"
 ) {
   value  DECIMAL(5,4)  (measure non_additive)
 

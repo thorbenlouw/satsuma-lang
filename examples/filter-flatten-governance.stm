@@ -54,7 +54,7 @@ schema order_events (
   tag_ids       list_of INT     (classification "INTERNAL")
 
   // Filtered list: only include line items that are not cancelled.
-  // Items with status = 'cancelled' are excluded before any mapping runs.
+  // Items with status = `cancelled` are excluded before any mapping runs.
   line_items list_of record (filter item_status != "cancelled") {
     line_number  INT            (required)
     sku          STRING(30)     (required)
@@ -85,7 +85,7 @@ schema customer_profiles (
   consent_flags        list_of STRING (
     classification "RESTRICTED",
     retention "7y",
-    note "e.g. ['email_marketing', 'sms', 'third_party']"
+    note "e.g. [`email_marketing`, `sms`, `third_party`]"
   )
   opt_out_channels     list_of STRING  (classification "RESTRICTED")
 }
@@ -133,7 +133,7 @@ schema order_line_facts_parquet (
 }
 
 // --- Mapping 1: Order headers — multi-source filtered join ---
-mapping 'completed orders' {
+mapping `completed orders` {
   note {
     """
     Joins order events to customer profiles for demographic enrichment.
@@ -146,7 +146,7 @@ mapping 'completed orders' {
     `order_events`
     `customer_profiles`
     "Join on order_events.customer.customer_id = customer_profiles.customer_id
-     WHERE order_events.order_status = 'completed'"
+     WHERE order_events.order_status = `completed`"
   }
   target { `completed_orders_parquet` }
 
@@ -184,10 +184,10 @@ mapping 'completed orders' {
 // --- Mapping 2: Order lines — flatten nested list ---
 // flatten lifts each element of line_items into its own output row,
 // so downstream field arrows reference the flattened element directly.
-mapping 'order line facts' {
+mapping `order line facts` {
   note {
     "Produces one output row per non-cancelled line item. The filter on
-     line_items (item_status != 'cancelled') at the schema level means
+     line_items (item_status != `cancelled`) at the schema level means
      cancelled lines are already excluded before this mapping runs."
   }
 
@@ -213,7 +213,7 @@ mapping 'order line facts' {
 
   -> promo_code_count {
     "Count distinct values in line_items.discount_lines.discount_code
-     where discount_type = 'promo'"
+     where discount_type = `promo`"
   }
 
   -> ingest_timestamp { now_utc() }

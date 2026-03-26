@@ -25,14 +25,14 @@ schema customers {}
 Single-quoted block label
 ================================================================================
 
-schema 'order-headers-parquet' {}
+schema `order-headers-parquet` {}
 
 --------------------------------------------------------------------------------
 
 (source_file
   (schema_block
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Block label with metadata
@@ -58,27 +58,27 @@ schema events (pii, domain crm) {}
 Fragment block
 ================================================================================
 
-fragment 'US Address' {}
+fragment `US Address` {}
 
 --------------------------------------------------------------------------------
 
 (source_file
   (fragment_block
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Transform block
 ================================================================================
 
-transform 'clean email' {}
+transform `clean email` {}
 
 --------------------------------------------------------------------------------
 
 (source_file
   (transform_block
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Mapping block with label
@@ -196,14 +196,14 @@ note {
 Import declaration single name
 ================================================================================
 
-import { 'address fields' } from "lib/common.stm"
+import { `address fields` } from "lib/common.stm"
 
 --------------------------------------------------------------------------------
 
 (source_file
   (import_decl
     (import_name
-      (quoted_name))
+      (backtick_name))
     (import_path
       (nl_string))))
 
@@ -211,18 +211,18 @@ import { 'address fields' } from "lib/common.stm"
 Import declaration multiple names
 ================================================================================
 
-import { 'address fields', 'audit fields', 'id fields' } from "lib/common.stm"
+import { `address fields`, `audit fields`, `id fields` } from "lib/common.stm"
 
 --------------------------------------------------------------------------------
 
 (source_file
   (import_decl
     (import_name
-      (quoted_name))
+      (backtick_name))
     (import_name
-      (quoted_name))
+      (backtick_name))
     (import_name
-      (quoted_name))
+      (backtick_name))
     (import_path
       (nl_string))))
 
@@ -344,7 +344,7 @@ Multiple blocks in file
 
 schema customers {}
 schema orders {}
-fragment 'audit fields' {}
+fragment `audit fields` {}
 
 --------------------------------------------------------------------------------
 
@@ -357,7 +357,7 @@ fragment 'audit fields' {}
       (identifier)))
   (fragment_block
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Identifier with hyphen
@@ -389,14 +389,14 @@ schema fact_subscriptions_2024 {}
 Quoted name with spaces and special chars
 ================================================================================
 
-mapping 'CRM → Warehouse (v2)' {}
+mapping `CRM → Warehouse (v2)` {}
 
 --------------------------------------------------------------------------------
 
 (source_file
   (ERROR
     (block_label
-      (quoted_name))))
+      (backtick_name))))
 
 ================================================================================
 Keyword rejected as bare label (produces error node)

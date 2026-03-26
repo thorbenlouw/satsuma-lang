@@ -104,7 +104,7 @@ schema order_lines_parquet (format parquet, note "Curated order line dataset") {
 }
 
 // --- Mapping: Order Headers ---
-mapping 'order headers' {
+mapping `order headers` {
   source { `commerce_order` }
   target { `order_headers_parquet` }
 
@@ -159,7 +159,7 @@ mapping 'order headers' {
 }
 
 // --- Mapping: Order Lines (flattened) ---
-mapping 'order lines' {
+mapping `order lines` {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 

@@ -21,7 +21,7 @@ schema product_catalog (note "Product reference data") {
   category       STRING(100)
 }
 
-fragment 'address fields' {
+fragment `address fields` {
   line1        STRING(200)  (required)
   line2        STRING(200)
   city         STRING(100)  (required)
@@ -30,7 +30,7 @@ fragment 'address fields' {
   country      ISO-3166-a2  (required)
 }
 
-fragment 'audit columns' {
+fragment `audit columns` {
   created_at  TIMESTAMPTZ   (required)
   created_by  VARCHAR(100)  (required)
   updated_at  TIMESTAMPTZ

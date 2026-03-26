@@ -66,11 +66,11 @@
 (metric_block (block_label (identifier)) @type.definition)
 (namespace_block name: (identifier) @module)
 ; Quoted label (e.g. `schema 'order-headers'`)
-(schema_block (block_label (quoted_name)) @type.definition)
-(fragment_block (block_label (quoted_name)) @type.definition)
-(transform_block (block_label (quoted_name)) @function.definition)
-(mapping_block (block_label (quoted_name)) @function.definition)
-(metric_block (block_label (quoted_name)) @type.definition)
+(schema_block (block_label (backtick_name)) @type.definition)
+(fragment_block (block_label (backtick_name)) @type.definition)
+(transform_block (block_label (backtick_name)) @function.definition)
+(mapping_block (block_label (backtick_name)) @function.definition)
+(metric_block (block_label (backtick_name)) @type.definition)
 
 ; Metric display name string (the "MRR" label)
 (metric_block (nl_string) @string.special)
@@ -124,14 +124,14 @@
 ; ── Qualified names (ns::name) ──────────────────────────────────────────────
 (qualified_name (identifier) @module "::" @operator)
 
-(import_name (quoted_name) @string.special)
+(import_name (backtick_name) @string.special)
 (import_name (identifier) @variable)
 (import_path (nl_string) @string.path)
 
 ; ── Strings ───────────────────────────────────────────────────────────────────
 (nl_string) @string
 (multiline_string) @string.multiline
-(quoted_name) @string.special
+(backtick_name) @string.special
 
 ; ── Comments ─────────────────────────────────────────────────────────────────
 ; Order: most-specific first. //! and //? get distinct highlight groups so
@@ -146,4 +146,4 @@
 (fragment_spread
   (spread_label (identifier) @type))
 (fragment_spread
-  (spread_label (quoted_name) @type))
+  (spread_label (backtick_name) @type))

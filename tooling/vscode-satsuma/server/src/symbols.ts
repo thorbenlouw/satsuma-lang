@@ -227,6 +227,6 @@ function spreadLabelText(node: SyntaxNode): string | null {
   // spread_label can contain identifier, quoted_name, or qualified_name
   const inner = node.namedChildren[0];
   if (!inner) return node.text;
-  if (inner.type === "quoted_name") return inner.text.slice(1, -1);
+  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
   return inner.text;
 }

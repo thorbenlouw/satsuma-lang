@@ -103,7 +103,7 @@ schema mfcs_json (format json, note "MFCS Shipment Ingestion Format") {
 }
 
 // --- Mapping ---
-mapping 'edi to mfcs' {
+mapping `edi to mfcs` {
   source { `edi_desadv` }
   target { `mfcs_json` }
 
@@ -118,7 +118,7 @@ mapping 'edi to mfcs' {
   -> ShipmentHeader.asnType { "0" }  // default: ASN Shipment
 
   POReferences.REFNUM -> ShipmentHeader.toLocation {
-    "Extract PO number from `REFNUM` (digits before '/').
+    "Extract PO number from `REFNUM` (digits before `/`).
      Look up the PO in MFCS to determine the delivery location."
   }
 
