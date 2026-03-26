@@ -13,6 +13,7 @@ tooling/tree-sitter-satsuma/scripts/__pycache__
 tooling/satsuma-cli/src/**/*.js
 tooling/satsuma-cli/src/**/*.d.ts
 .worktrees/
+.claude/*.local.md
 
 **/*.vsix
 **/*.wasm
