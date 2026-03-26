@@ -63,10 +63,9 @@ schema customers (pii, required {
       (identifier))
     (tag_token
       (identifier))
-    (key_value_pair
-      (kv_key
-        (identifier))
-      (kv_braced_list
+    (tag_with_value
+      (identifier)
+      (value_text
         (identifier)
         (ERROR
           (identifier))))))
@@ -150,3 +149,4 @@ schema schema {
         (field_name
           (identifier))
         (type_expr)))))
+

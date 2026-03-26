@@ -119,14 +119,18 @@ namespace analytics {
   (namespace_block
     name: (identifier)
     (metric_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (metadata_block
-        (key_value_pair
-          (kv_key
-            (identifier))
-          (identifier)))
+        (tag_with_value
+          (identifier)
+          (value_text
+            (identifier))))
       (metric_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 metric with qualified source name
@@ -144,14 +148,20 @@ namespace analytics {
   (namespace_block
     name: (identifier)
     (metric_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (metadata_block
-        (key_value_pair
-          (kv_key
-            (identifier))
-          (qualified_name (identifier) (identifier))))
+        (tag_with_value
+          (identifier)
+          (value_text
+            (qualified_name
+              (identifier)
+              (identifier)))))
       (metric_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 metric with qualified sources in braced list
@@ -169,16 +179,23 @@ namespace analytics {
   (namespace_block
     name: (identifier)
     (metric_block
-      (block_label (identifier))
+      (block_label
+        (identifier))
       (metadata_block
-        (key_value_pair
-          (kv_key
-            (identifier))
-          (kv_braced_list
-            (qualified_name (identifier) (identifier))
-            (qualified_name (identifier) (identifier)))))
+        (tag_with_value
+          (identifier)
+          (value_text
+            (qualified_name
+              (identifier)
+              (identifier))
+            (qualified_name
+              (identifier)
+              (identifier)))))
       (metric_body
-        (field_decl (field_name (identifier)) (type_expr))))))
+        (field_decl
+          (field_name
+            (identifier))
+          (type_expr))))))
 
 ================================================================================
 empty namespace
@@ -498,3 +515,4 @@ namespace staging {
           (pipe_chain
             (pipe_step (token_call (identifier)))
             (pipe_step (token_call (identifier)))))))))
+

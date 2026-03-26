@@ -508,7 +508,7 @@ module.exports = grammar({
         $.enum_body,
         $.slice_body,
         $.note_tag,
-        $.key_value_pair,
+        $.tag_with_value,
         $.tag_token,
       ),
 
@@ -537,44 +537,36 @@ module.exports = grammar({
         choice($.multiline_string, $.nl_string),
       ),
 
-    key_value_pair: ($) => seq($.kv_key, $._kv_value),
+    // tag_with_value: identifier followed by greedy value tokens
+    tag_with_value: ($) => seq($.identifier, $.value_text),
 
-    kv_key: ($) => $.identifier,
-
-    _kv_value: ($) =>
-      choice(
-        $.nl_string,
-        $.multiline_string,
-        $.backtick_name,
-        $.kv_braced_list,
-        $.kv_comparison,
-        $.kv_ref_on,
-        $.kv_compound,
-        $.qualified_dotted_name,
-        $.dotted_name,
-        $.number_literal,
-        $.boolean_literal,
-        $.qualified_name,
-        $.identifier,
+    // value_text: greedy repeat of basic token types.
+    // Commas and ) naturally terminate it (not in the choice set).
+    value_text: ($) =>
+      repeat1(
+        choice(
+          $.nl_string,
+          $.multiline_string,
+          $.backtick_name,
+          $.qualified_dotted_name,
+          $.dotted_name,
+          $.qualified_name,
+          $.number_literal,
+          $.boolean_literal,
+          $.identifier,
+          $._comparison_op,
+          seq(
+            "{",
+            commaSep1(choice($.qualified_name, $.identifier)),
+            optional(","),
+            "}",
+          ),
+        ),
       ),
 
     // ns::identifier.field... — namespace-qualified dotted ref path
     qualified_dotted_name: ($) =>
       seq($.qualified_name, repeat1(seq(".", $.identifier))),
-
-    // Value forms: source {a, b}, slice {x, y} (inline braced list)
-    kv_braced_list: ($) =>
-      seq("{", commaSep1(choice($.qualified_name, $.identifier)), optional(","), "}"),
-
-    // Value form: FIELD == "literal" (comparison expression)
-    kv_comparison: ($) =>
-      seq($.identifier, $._comparison_op, choice($.nl_string, $.identifier, $.number_literal)),
-
-    // Value form: identifier "string" (compound value, e.g. namespace ord "uri")
-    kv_compound: ($) => seq($.identifier, $.nl_string),
-
-    // Value form: identifier "on" identifier (ref compound, e.g. ref dim_customer on customer_id)
-    kv_ref_on: ($) => seq($.identifier, "on", $.identifier),
 
     dotted_name: ($) =>
       prec.left(seq($.identifier, repeat1(seq(".", choice($.identifier, $.number_literal))))),

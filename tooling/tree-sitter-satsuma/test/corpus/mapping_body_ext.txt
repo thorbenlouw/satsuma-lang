@@ -51,19 +51,20 @@ mapping 'customer 360' {
         (source_ref
           (backtick_name)
           (metadata_block
-            (key_value_pair
-              (kv_key
-                (identifier))
-              (nl_string))))
+            (tag_with_value
+              (identifier)
+              (value_text
+                (nl_string)))))
         (source_ref
           (backtick_name)
           (metadata_block
-            (key_value_pair
-              (kv_key
-                (identifier))
-              (nl_string))))
+            (tag_with_value
+              (identifier)
+              (value_text
+                (nl_string)))))
         (source_ref
           (nl_string)))
       (target_block
         (source_ref
           (backtick_name))))))
+

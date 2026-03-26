@@ -61,10 +61,10 @@ schema customers (format parquet) {}
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))))
 
 ================================================================================
 Key-value pair with string value
@@ -97,14 +97,14 @@ schema events (pii, domain crm, format parquet) {}
     (metadata_block
       (tag_token
         (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))))
 
 ================================================================================
 Enum body
@@ -155,14 +155,14 @@ metric mrr (source fact_subscriptions, grain monthly, slice {customer_segment, p
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
       (slice_body
         (identifier)
         (identifier)))))
@@ -221,14 +221,14 @@ schema customers (
     (metadata_block
       (tag_token
         (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))))
 
 ================================================================================
 Trailing comma in metadata block
@@ -266,18 +266,18 @@ metric monthly_recurring_revenue "MRR" (
       (identifier))
     (nl_string)
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (nl_string)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string))))))
 
 ================================================================================
 Mapping with metadata
@@ -295,14 +295,14 @@ mapping crm_to_warehouse (version 2, author jsmith) {
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (number_literal))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (number_literal)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))
     (mapping_body
       (source_block
         (source_ref
@@ -337,12 +337,12 @@ schema salesforce (ref `Account`.id) {}
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (backtick_name))
-      (ERROR
-        (identifier)))))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (backtick_name)
+          (ERROR)
+          (identifier))))))
 
 ================================================================================
 Ref-on compound metadata
@@ -365,23 +365,23 @@ schema fact_sales (
     (metadata_block
       (tag_token
         (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (kv_braced_list
+      (tag_with_value
+        (identifier)
+        (value_text
           (identifier)
           (identifier)))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (kv_ref_on
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)
           (identifier)
           (identifier)))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (kv_ref_on
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)
           (identifier)
           (identifier)))
       (note_tag
         (nl_string)))))
+

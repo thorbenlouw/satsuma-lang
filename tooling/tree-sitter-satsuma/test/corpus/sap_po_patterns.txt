@@ -413,10 +413,10 @@ schema purchase_order (
     (block_label
       (identifier))
     (metadata_block
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
       (note_tag
         (nl_string)))
     (schema_body
@@ -480,9 +480,10 @@ schema purchase_order (
               (identifier))
             (type_expr)
             (metadata_block
-              (key_value_pair
-                (kv_key
-                  (identifier))
-                (number_literal))
+              (tag_with_value
+                (identifier)
+                (value_text
+                  (number_literal)))
               (note_tag
                 (nl_string)))))))))
+

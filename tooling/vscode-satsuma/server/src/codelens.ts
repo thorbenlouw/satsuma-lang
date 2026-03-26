@@ -121,7 +121,7 @@ function metricLens(node: SyntaxNode, range: Range): CodeLens {
 
   if (meta) {
     walkDescendants(meta, (n) => {
-      if (n.type === "key_value_pair") {
+      if (n.type === "tag_with_value") {
         const key = n.namedChildren[0];
         const val = n.namedChildren[1];
         if (key?.text === "source" && val) {

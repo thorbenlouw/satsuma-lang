@@ -79,10 +79,9 @@ schema order {
         (field_name
           (identifier))
         (metadata_block
-          (key_value_pair
-            (kv_key
-              (identifier))
-            (kv_comparison
+          (tag_with_value
+            (identifier)
+            (value_text
               (identifier)
               (nl_string))))
         (schema_body
@@ -290,3 +289,4 @@ schema order {
             (field_name
               (identifier))
             (type_expr)))))))
+

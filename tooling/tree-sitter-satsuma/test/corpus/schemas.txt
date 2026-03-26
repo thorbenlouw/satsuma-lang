@@ -507,14 +507,14 @@ schema events (pii, domain crm, format parquet) {
     (metadata_block
       (tag_token
         (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier))
-      (key_value_pair
-        (kv_key
-          (identifier))
-        (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier)))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (identifier))))
     (schema_body
       (field_decl
         (field_name
@@ -559,3 +559,4 @@ schema 'order-headers-parquet' {
         (metadata_block
           (tag_token
             (identifier)))))))
+
