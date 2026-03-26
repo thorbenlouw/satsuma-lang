@@ -23,6 +23,10 @@ jobs:
       - name: Install all packages
         run: npm run ci:all
 
+      - name: Build tree-sitter WASM (needed by CLI and VS Code)
+        working-directory: tooling/tree-sitter-satsuma
+        run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
+
       - name: Cache workspace
         uses: actions/cache/save@v5
         with:
@@ -32,6 +36,7 @@ jobs:
             tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
@@ -55,6 +60,7 @@ jobs:
             tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
@@ -83,6 +89,7 @@ jobs:
             tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
@@ -91,7 +98,7 @@ jobs:
         run: |
           mkdir -p ../../test-results
           npm run pretest
-          node --test \
+          node --import ./test/setup.js --test \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination=../../test-results/cli.xml \
             test/**/*.test.js
@@ -132,6 +139,7 @@ jobs:
             tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
@@ -195,6 +203,7 @@ jobs:
             tooling/satsuma-cli/src/generated
             tooling/tree-sitter-satsuma/node_modules
             tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
