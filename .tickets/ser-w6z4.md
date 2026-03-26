@@ -1,6 +1,6 @@
 ---
 id: ser-w6z4
-status: open
+status: closed
 deps: [ser-3g1j]
 links: []
 created: 2026-03-26T18:11:46Z
@@ -20,3 +20,14 @@ Acceptance:
 - Header shows mapped/total field count
 - Collapse/expand works
 
+
+## Notes
+
+**2026-03-26T22:35:31Z**
+
+## Notes
+
+**2026-03-26T19:10:00Z**
+
+Cause: Cards needed for visualization renderer.
+Fix: Implemented as part of ser-3g1j package setup — <satsuma-viz> root component and <sz-schema-card> with all field rendering, port dots, constraint badges, mapped/unmapped indicators, and collapse/expand (commit bb713d8)

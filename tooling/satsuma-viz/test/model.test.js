@@ -35,6 +35,11 @@ describe("@satsuma/viz bundle", () => {
     mod ??= await import("../dist/satsuma-viz.js");
     assert.equal(typeof mod.SzNavigateEvent, "function");
   });
+
+  it("exports SzEdgeLayer class", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    assert.equal(typeof mod.SzEdgeLayer, "function");
+  });
 });
 
 describe("VizModel fixture validation", () => {
