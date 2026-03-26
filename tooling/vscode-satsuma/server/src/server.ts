@@ -33,6 +33,7 @@ import { computeCompletions } from "./completion";
 import { computeCodeLenses } from "./codelens";
 import { prepareRename, computeRename } from "./rename";
 import { computeFormatting, initFormatting } from "./formatting";
+import { buildVizModel } from "./viz-model";
 
 // ---------- Connection setup ----------
 
@@ -311,6 +312,16 @@ connection.onRequest("satsuma/blockNames", () => {
     uri: entry.uri,
   }));
 });
+
+/** Return the VizModel for a document (for mapping visualization). */
+connection.onRequest(
+  "satsuma/vizModel",
+  (params: { uri: string }) => {
+    const tree = trees.get(params.uri);
+    if (!tree) return null;
+    return buildVizModel(params.uri, tree, wsIndex);
+  },
+);
 
 /** Return field locations for a schema/fragment (for coverage decorations). */
 connection.onRequest(
