@@ -110,6 +110,50 @@ export class SatsumaViz extends LitElement {
       padding: 48px;
       text-align: center;
     }
+
+    .file-notes {
+      margin: 16px 24px 0;
+      border-radius: var(--sz-card-radius, 8px);
+      background: var(--sz-card-bg, #fff);
+      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      box-shadow: var(--sz-card-shadow, 0 2px 8px rgba(45, 42, 38, 0.06));
+      overflow: hidden;
+    }
+
+    .file-notes-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sz-text, #2D2A26);
+    }
+
+    .file-notes-toggle:hover {
+      background: rgba(45, 42, 38, 0.03);
+    }
+
+    .file-notes-toggle .arrow {
+      font-size: 10px;
+      transition: transform 0.15s ease;
+    }
+
+    .file-notes-toggle .arrow[data-expanded] {
+      transform: rotate(90deg);
+    }
+
+    .file-note-item {
+      padding: 8px 12px 8px 34px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--sz-text, #2D2A26);
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-top: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+    }
   `;
 
   @property({ type: Object })
@@ -120,6 +164,9 @@ export class SatsumaViz extends LitElement {
 
   @state()
   private _layoutError = false;
+
+  @state()
+  private _fileNotesExpanded = false;
 
   @state()
   private _mappedFieldsBySchema = new Map<string, Set<string>>();
@@ -163,10 +210,37 @@ export class SatsumaViz extends LitElement {
 
     // If layout failed, fall back to simple flex layout
     if (this._layoutError || !this._layout) {
-      return this._renderFlexFallback(namespaces);
+      return html`
+        ${this._renderFileNotes()}
+        ${this._renderFlexFallback(namespaces)}
+      `;
     }
 
-    return this._renderPositioned(this._layout, namespaces);
+    return html`
+      ${this._renderFileNotes()}
+      ${this._renderPositioned(this._layout, namespaces)}
+    `;
+  }
+
+  private _renderFileNotes() {
+    if (!this.model || this.model.fileNotes.length === 0) return html``;
+
+    const notes = this.model.fileNotes;
+    return html`
+      <div class="file-notes">
+        <div class="file-notes-toggle" @click=${this._toggleFileNotes}>
+          <span class="arrow" ?data-expanded=${this._fileNotesExpanded}>&#9654;</span>
+          <span>&#128221; File Notes (${notes.length})</span>
+        </div>
+        ${this._fileNotesExpanded
+          ? notes.map((n) => html`<div class="file-note-item">${n.text}</div>`)
+          : ""}
+      </div>
+    `;
+  }
+
+  private _toggleFileNotes() {
+    this._fileNotesExpanded = !this._fileNotesExpanded;
   }
 
   private _renderPositioned(layout: LayoutResult, namespaces: NamespaceGroup[]) {

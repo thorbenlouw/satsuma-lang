@@ -1,6 +1,6 @@
 ---
 id: f2v-tj41
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T23:03:48Z
@@ -19,3 +19,9 @@ Add an editor title button (eye icon) that opens the mapping visualization besid
 - Clicking opens VizPanel beside the active editor
 - Icon uses appropriate codicon (e.g. eye)
 
+
+## Notes
+
+**2026-03-26T23:05:34Z**
+
+Already implemented — editor/title menu entry with eye icon exists in package.json lines 61-67, command has icon: $(eye) at line 50.
