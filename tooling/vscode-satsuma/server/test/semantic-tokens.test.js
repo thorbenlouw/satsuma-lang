@@ -276,4 +276,32 @@ describe("computeSemanticTokens", () => {
       "should include nlRef modifier in legend",
     );
   });
+
+  it("tokenizes @ref references inside nl_string as variable", () => {
+    const tree = parse(
+      'note { "Check @balance and @customers.email field." }',
+    );
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 2, "should have 2 variable tokens for @refs");
+    assert.equal(varTokens[0].length, "@balance".length);
+    assert.equal(varTokens[1].length, "@customers.email".length);
+
+    // Should have nlRef modifier
+    assert.equal(varTokens[0].mods & 16, 16, "@ref should have nlRef modifier");
+    assert.equal(varTokens[1].mods & 16, 16, "@ref should have nlRef modifier");
+  });
+
+  it("tokenizes @ref references inside multiline_string as variable", () => {
+    const tree = parse(
+      'note {\n  """\n  Sum @orders.total and @tax fields.\n  """\n}',
+    );
+    const tokens = decodeTokens(computeSemanticTokens(tree).data);
+
+    const varTokens = tokens.filter((t) => t.type === "variable");
+    assert.equal(varTokens.length, 2, "should have 2 variable tokens for @refs in multiline");
+    assert.equal(varTokens[0].length, "@orders.total".length);
+    assert.equal(varTokens[1].length, "@tax".length);
+  });
 });

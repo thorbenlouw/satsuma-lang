@@ -199,6 +199,7 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
 // ---------- NL reference extraction ----------
 
 const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
+const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 /** Unique identity for a CST node (by position). */
 function nodeId(node: SyntaxNode): string {
@@ -218,7 +219,8 @@ function collectNlRefNodes(root: SyntaxNode): Set<string> {
     const node = cursor.currentNode;
     if (node.type === "nl_string" || node.type === "multiline_string") {
       BACKTICK_REF_RE.lastIndex = 0;
-      if (BACKTICK_REF_RE.test(node.text)) {
+      AT_REF_RE.lastIndex = 0;
+      if (BACKTICK_REF_RE.test(node.text) || AT_REF_RE.test(node.text)) {
         result.add(nodeId(node));
       }
     }
@@ -258,20 +260,36 @@ function emitSplitStringTokens(
     if (text[i] === "\n") lineOffsets.push(i + 1);
   }
 
-  // Build segments: alternating string and ref parts
-  const segments: Segment[] = [];
-  let lastEnd = 0;
+  // Collect all ref spans (backtick and @ref), sorted by offset
+  const refSpans: Array<{ offset: number; length: number }> = [];
 
   BACKTICK_REF_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
-    // String part before this ref
-    if (match.index > lastEnd) {
-      segments.push({ offset: lastEnd, length: match.index - lastEnd, isRef: false });
+    refSpans.push({ offset: match.index, length: match[0].length });
+  }
+  AT_REF_RE.lastIndex = 0;
+  while ((match = AT_REF_RE.exec(text)) !== null) {
+    // Skip @refs that overlap with backtick refs (e.g. @`name`)
+    const overlaps = refSpans.some(
+      (s) => match!.index >= s.offset && match!.index < s.offset + s.length,
+    );
+    if (!overlaps) {
+      refSpans.push({ offset: match.index, length: match[0].length });
     }
-    // The backtick ref itself
-    segments.push({ offset: match.index, length: match[0].length, isRef: true });
-    lastEnd = match.index + match[0].length;
+  }
+  refSpans.sort((a, b) => a.offset - b.offset);
+
+  // Build segments: alternating string and ref parts
+  const segments: Segment[] = [];
+  let lastEnd = 0;
+
+  for (const span of refSpans) {
+    if (span.offset > lastEnd) {
+      segments.push({ offset: lastEnd, length: span.offset - lastEnd, isRef: false });
+    }
+    segments.push({ offset: span.offset, length: span.length, isRef: true });
+    lastEnd = span.offset + span.length;
   }
   // Trailing string part
   if (lastEnd < text.length) {

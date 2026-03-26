@@ -1,0 +1,409 @@
+================================================================================
+@ref bare identifier in bare pipe text
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> status { @shipments | uppercase }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (identifier))))
+          (pipe_step
+            (pipe_text
+              (identifier))))))))
+
+================================================================================
+@ref dotted field in bare pipe text
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> cost { @orders.price | round(2) }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (identifier)
+                (identifier))))
+          (pipe_step
+            (pipe_text
+              (identifier)
+              (number_literal))))))))
+
+================================================================================
+@ref namespace-qualified schema in bare pipe text
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> name { @vault::sat_contact | trim }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (identifier)
+                (identifier))))
+          (pipe_step
+            (pipe_text
+              (identifier))))))))
+
+================================================================================
+@ref namespace-qualified field in bare pipe text
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> email { @vault::sat_contact.email | trim }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (identifier)
+                (identifier)
+                (identifier))))
+          (pipe_step
+            (pipe_text
+              (identifier))))))))
+
+================================================================================
+@ref with backtick segment in bare pipe text
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> name { @`My Schema`.field_a | trim }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (backtick_name)
+                (identifier))))
+          (pipe_step
+            (pipe_text
+              (identifier))))))))
+
+================================================================================
+Multiple @refs in bare pipe text
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  a -> b { coalesce(0) | @src.fallback | round(2) }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (identifier)
+              (number_literal)))
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (identifier)
+                (identifier))))
+          (pipe_step
+            (pipe_text
+              (identifier)
+              (number_literal))))))))
+
+================================================================================
+@ref in metadata value text
+================================================================================
+
+schema orders {
+  customer_id STRING (ref @customers.id)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_with_value
+            (identifier)
+            (value_text
+              (at_ref
+                (identifier)
+                (identifier)))))))))
+
+================================================================================
+@ref namespace-qualified in metadata value text
+================================================================================
+
+schema orders {
+  customer_id STRING (ref @crm::customers.id)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)
+        (metadata_block
+          (tag_with_value
+            (identifier)
+            (value_text
+              (at_ref
+                (identifier)
+                (identifier)
+                (identifier)))))))))
+
+================================================================================
+@ref inside NL string is opaque to grammar
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> status { "Check @shipments for updates" }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (nl_string))))))))
+
+================================================================================
+@ref inside multiline string is opaque to grammar
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> score {
+    """
+    Derive score from @orders.total and
+    @customers.tenure using weighted average.
+    """
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (multiline_string))))))))
+
+================================================================================
+Escaped @ is not an @ref
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  -> email { "Contact user at \@company.com" }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (computed_arrow
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (nl_string))))))))
+
+================================================================================
+@ref mixed with other pipe text tokens
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  a -> b { @source.field coalesce(0) | round(2) }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (pipe_text
+              (at_ref
+                (identifier)
+                (identifier))
+              (identifier)
+              (number_literal)))
+          (pipe_step
+            (pipe_text
+              (identifier)
+              (number_literal))))))))
