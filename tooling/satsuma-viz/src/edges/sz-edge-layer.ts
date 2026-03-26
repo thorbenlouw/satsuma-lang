@@ -148,6 +148,33 @@ export class SzEdgeLayer extends LitElement {
     .scope-label.flatten {
       fill: var(--sz-green, #5A9E6F);
     }
+
+    /* Dimmed edges when highlighting a field */
+    :host([has-highlight]) .edge-path {
+      opacity: 0.15;
+      transition: opacity 0.15s ease, stroke-width 0.15s ease;
+    }
+
+    :host([has-highlight]) .edge-path.highlighted {
+      opacity: 1;
+      stroke-width: 3;
+    }
+
+    :host([has-highlight]) .gear-group {
+      opacity: 0.15;
+    }
+
+    :host([has-highlight]) .gear-group.highlighted {
+      opacity: 1;
+    }
+
+    :host([has-highlight]) .scope-label {
+      opacity: 0.15;
+    }
+
+    :host([has-highlight]) .scope-label.highlighted {
+      opacity: 1;
+    }
   `;
 
   @property({ type: Array })
@@ -159,8 +186,40 @@ export class SzEdgeLayer extends LitElement {
   @property({ type: Number })
   height = 600;
 
+  /** Schema ID of the hovered field's card */
+  @property({ type: String })
+  highlightSchema: string | null = null;
+
+  /** Field name currently hovered */
+  @property({ type: String })
+  highlightField: string | null = null;
+
   @state()
   private _expandedEdge: string | null = null;
+
+  override updated(changed: Map<string, unknown>) {
+    if (changed.has("highlightSchema") || changed.has("highlightField")) {
+      if (this.highlightSchema && this.highlightField) {
+        this.setAttribute("has-highlight", "");
+      } else {
+        this.removeAttribute("has-highlight");
+      }
+    }
+  }
+
+  private _isEdgeHighlighted(edge: LayoutEdge): boolean {
+    if (!this.highlightSchema || !this.highlightField) return false;
+
+    // Check if this edge connects to the highlighted field
+    const matchesSource =
+      edge.sourceNode === this.highlightSchema &&
+      edge.arrow.sourceFields.includes(this.highlightField);
+    const matchesTarget =
+      edge.targetNode === this.highlightSchema &&
+      edge.arrow.targetField === this.highlightField;
+
+    return matchesSource || matchesTarget;
+  }
 
   override render() {
     return html`
@@ -189,17 +248,18 @@ export class SzEdgeLayer extends LitElement {
 
     const mid = this._midpoint(edge.points);
     const hasTransform = edge.arrow.transform !== null;
+    const hl = this._isEdgeHighlighted(edge) ? "highlighted" : "";
 
     return svg`
       <path
-        class="edge-path ${cls}"
+        class="edge-path ${cls} ${hl}"
         d=${d}
         @click=${() => this._onEdgeClick(edge)}
       />
       ${hasTransform
         ? svg`
           <g
-            class="gear-group"
+            class="gear-group ${hl}"
             transform="translate(${mid.x}, ${mid.y})"
             @click=${(ev: Event) => { ev.stopPropagation(); this._toggleGear(edge.id); }}
           >
@@ -211,7 +271,7 @@ export class SzEdgeLayer extends LitElement {
       ${edge.scopeLabel
         ? svg`
           <text
-            class="scope-label ${edge.scopeLabel}"
+            class="scope-label ${edge.scopeLabel} ${hl}"
             x=${mid.x}
             y=${mid.y + (hasTransform ? 18 : 0)}
           >${edge.scopeLabel === "each" ? "⟲ each" : "⤵ flatten"}</text>
