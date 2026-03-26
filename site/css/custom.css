@@ -111,6 +111,7 @@ body { background-color: var(--cream); color: var(--charcoal); }
 .stm .constraint { color: #7C6BAE; }
 .stm .warning { color: #C45D22; font-weight: 600; }
 .stm .import-path { color: #6A8759; }
+.stm .at-ref { color: #2E7D6F; font-style: normal; font-weight: 500; }
 
 /* Role cards */
 .role-card {
