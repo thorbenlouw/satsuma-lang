@@ -43,14 +43,27 @@
       { "command": "satsuma.showArrows", "title": "Satsuma: Show Arrows for Field" },
       { "command": "satsuma.showGraph", "title": "Satsuma: Show Workspace Graph" },
       { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Trace Field Lineage" },
-      { "command": "satsuma.showCoverage", "title": "Satsuma: Show Mapping Coverage" }
+      { "command": "satsuma.showCoverage", "title": "Satsuma: Show Mapping Coverage" },
+      {
+        "command": "satsuma.showViz",
+        "title": "Satsuma: Show Mapping Visualization",
+        "icon": "$(eye)"
+      }
     ],
     "menus": {
       "commandPalette": [
         { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showArrows", "when": "editorLangId == satsuma" },
         { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma" },
-        { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" }
+        { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" },
+        { "command": "satsuma.showViz", "when": "editorLangId == satsuma" }
+      ],
+      "editor/title": [
+        {
+          "command": "satsuma.showViz",
+          "when": "editorLangId == satsuma",
+          "group": "navigation"
+        }
       ]
     },
     "semanticTokenModifiers": [

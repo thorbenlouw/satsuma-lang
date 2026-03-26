@@ -1,4 +1,5 @@
 const esbuild = require("esbuild");
+const path = require("path");
 
 const watch = process.argv.includes("--watch");
 
@@ -52,14 +53,29 @@ const webviewLineageConfig = {
   sourcemap: true,
 };
 
+/** @type {import("esbuild").BuildOptions} */
+const webviewVizConfig = {
+  entryPoints: ["src/webview/viz/viz.ts"],
+  bundle: true,
+  platform: "browser",
+  target: "es2022",
+  outfile: "dist/webview/viz/viz.js",
+  format: "iife",
+  sourcemap: true,
+  minify: true,
+  alias: {
+    "@satsuma/viz": path.resolve(__dirname, "../satsuma-viz/dist/satsuma-viz.js"),
+  },
+};
+
 // Copy static assets to dist
 const { copyFileSync, mkdirSync, existsSync } = require("fs");
-const path = require("path");
 
 function copyAssets() {
   const pairs = [
     ["src/webview/graph/graph.css", "dist/webview/graph/graph.css"],
     ["src/webview/lineage/lineage.css", "dist/webview/lineage/lineage.css"],
+    ["src/webview/viz/viz.css", "dist/webview/viz/viz.css"],
   ];
 
   // Copy WASM and highlights.scm into server/dist/ so the server can load them
@@ -93,6 +109,14 @@ async function build() {
     configs.push(webviewLineageConfig);
   } catch {
     // Lineage webview not yet created
+  }
+
+  // Only include viz config if the entry point exists
+  try {
+    require("fs").accessSync("src/webview/viz/viz.ts");
+    configs.push(webviewVizConfig);
+  } catch {
+    // Viz webview not yet created
   }
 
   if (watch) {

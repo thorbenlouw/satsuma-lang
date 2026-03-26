@@ -16,6 +16,7 @@ import { registerArrowsCommand } from "./commands/arrows";
 import { registerCoverageCommand } from "./commands/coverage";
 import { GraphPanel } from "./webview/graph/panel";
 import { LineagePanel } from "./webview/lineage/panel";
+import { VizPanel } from "./webview/viz/panel";
 
 let client: LanguageClient | undefined;
 
@@ -74,6 +75,15 @@ export function activate(context: ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("satsuma.showGraph", () => {
       GraphPanel.createOrShow(context.extensionUri, cliPath);
+    }),
+  );
+
+  // Mapping visualization webview
+  context.subscriptions.push(
+    vscode.commands.registerCommand("satsuma.showViz", () => {
+      if (client) {
+        VizPanel.createOrShow(context.extensionUri, client);
+      }
     }),
   );
 

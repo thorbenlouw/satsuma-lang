@@ -1,0 +1,199 @@
+import * as vscode from "vscode";
+import { join } from "path";
+import type { LanguageClient } from "vscode-languageclient/node";
+
+export class VizPanel {
+  static currentPanel: VizPanel | undefined;
+  private readonly panel: vscode.WebviewPanel;
+  private readonly extensionUri: vscode.Uri;
+  private readonly client: LanguageClient;
+  private disposables: vscode.Disposable[] = [];
+
+  static createOrShow(
+    extensionUri: vscode.Uri,
+    client: LanguageClient,
+  ): void {
+    if (VizPanel.currentPanel) {
+      VizPanel.currentPanel.panel.reveal(vscode.ViewColumn.Beside);
+      VizPanel.currentPanel.refresh();
+      return;
+    }
+
+    const panel = vscode.window.createWebviewPanel(
+      "satsumaViz",
+      "Satsuma: Mapping Visualization",
+      vscode.ViewColumn.Beside,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [
+          vscode.Uri.file(join(extensionUri.fsPath, "dist", "webview")),
+        ],
+      },
+    );
+
+    VizPanel.currentPanel = new VizPanel(panel, extensionUri, client);
+  }
+
+  private constructor(
+    panel: vscode.WebviewPanel,
+    extensionUri: vscode.Uri,
+    client: LanguageClient,
+  ) {
+    this.panel = panel;
+    this.extensionUri = extensionUri;
+    this.client = client;
+
+    this.panel.webview.html = this.getHtml();
+
+    // Handle messages from webview
+    this.panel.webview.onDidReceiveMessage(
+      (msg) => this.handleMessage(msg),
+      null,
+      this.disposables,
+    );
+
+    // Refresh on save
+    const saveWatcher = vscode.workspace.onDidSaveTextDocument((doc) => {
+      if (doc.fileName.endsWith(".stm")) {
+        this.refresh();
+      }
+    });
+    this.disposables.push(saveWatcher);
+
+    // Refresh when active editor changes to an .stm file
+    const editorWatcher = vscode.window.onDidChangeActiveTextEditor(
+      (editor) => {
+        if (editor?.document.languageId === "satsuma") {
+          this.refresh();
+        }
+      },
+    );
+    this.disposables.push(editorWatcher);
+
+    // Clean up on dispose
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+
+    // Initial data load
+    this.refresh();
+  }
+
+  async refresh(): Promise<void> {
+    // Get the active .stm document URI
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "satsuma") {
+      this.panel.webview.postMessage({
+        type: "error",
+        message: "Open a .stm file to see its mapping visualization",
+      });
+      return;
+    }
+
+    const uri = editor.document.uri.toString();
+
+    try {
+      const model = await this.client.sendRequest("satsuma/vizModel", { uri });
+      if (!model) {
+        this.panel.webview.postMessage({
+          type: "error",
+          message: "No visualization data available for this file",
+        });
+        return;
+      }
+
+      // Detect theme kind and send alongside model
+      const themeKind = vscode.window.activeColorTheme.kind;
+      const isDark =
+        themeKind === vscode.ColorThemeKind.Dark ||
+        themeKind === vscode.ColorThemeKind.HighContrast;
+
+      this.panel.webview.postMessage({
+        type: "vizModel",
+        payload: model,
+        isDark,
+      });
+    } catch (err) {
+      this.panel.webview.postMessage({
+        type: "error",
+        message: `Failed to load VizModel: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+  }
+
+  private handleMessage(message: {
+    type: string;
+    uri?: string;
+    line?: number;
+    character?: number;
+  }): void {
+    if (message.type === "navigate" && message.uri) {
+      const uri = vscode.Uri.parse(message.uri);
+      const line = message.line ?? 0;
+      const char = message.character ?? 0;
+      vscode.window.showTextDocument(uri, {
+        selection: new vscode.Range(line, char, line, char),
+      });
+    } else if (message.type === "refresh") {
+      this.refresh();
+    }
+  }
+
+  dispose(): void {
+    VizPanel.currentPanel = undefined;
+    this.panel.dispose();
+    for (const d of this.disposables) {
+      d.dispose();
+    }
+    this.disposables = [];
+  }
+
+  private getHtml(): string {
+    const vizScriptUri = this.panel.webview.asWebviewUri(
+      vscode.Uri.file(
+        join(
+          this.extensionUri.fsPath,
+          "dist",
+          "webview",
+          "viz",
+          "viz.js",
+        ),
+      ),
+    );
+    const styleUri = this.panel.webview.asWebviewUri(
+      vscode.Uri.file(
+        join(
+          this.extensionUri.fsPath,
+          "dist",
+          "webview",
+          "viz",
+          "viz.css",
+        ),
+      ),
+    );
+    const nonce = getNonce();
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+  <link rel="stylesheet" href="${styleUri}">
+  <title>Satsuma Mapping Visualization</title>
+</head>
+<body>
+  <div id="viz-root"></div>
+  <script nonce="${nonce}" src="${vizScriptUri}"></script>
+</body>
+</html>`;
+  }
+}
+
+function getNonce(): string {
+  let text = "";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; i < 32; i++) {
+    text += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return text;
+}
