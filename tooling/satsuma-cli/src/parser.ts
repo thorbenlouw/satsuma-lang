@@ -1,41 +1,46 @@
 /**
- * parser.ts — tree-sitter Satsuma v2 parser wrapper
+ * parser.ts — tree-sitter Satsuma v2 parser wrapper (WASM)
  *
- * Initialises the tree-sitter parser once and exposes a `parseFile` function
- * that reads a .stm file, parses it, and returns the tree together with any
- * parse error count.
- *
- * tree-sitter is a CJS package; we load it via createRequire so this ESM
- * module can import it without conversion.
+ * Uses web-tree-sitter (WASM) for fully portable parsing with no native
+ * compilation requirements.  The async initParser() must be awaited once
+ * at startup (in index.ts) before any parsing can occur.  After that,
+ * parseFile() and parseSource() are synchronous.
  */
 
-import { createRequire } from "module";
 import { readFileSync } from "fs";
+import { createRequire } from "module";
+import type { Parser } from "web-tree-sitter";
 import type { ParsedFile, SyntaxNode, Tree } from "./types.js";
 
 const require = createRequire(import.meta.url);
 
-interface TSParser {
-  setLanguage(lang: unknown): void;
-  parse(source: string): Tree;
+// ---------- WASM initialisation ----------
+
+let _parser: Parser | null = null;
+let _initPromise: Promise<void> | null = null;
+
+/**
+ * Initialise the WASM parser.  Must be awaited once before parseFile() or
+ * parseSource() is called.  Subsequent calls are no-ops.
+ */
+export function initParser(wasmPath: string): Promise<void> {
+  if (_initPromise) return _initPromise;
+  _initPromise = (async () => {
+    const TreeSitter = require("web-tree-sitter") as typeof import("web-tree-sitter");
+    await TreeSitter.Parser.init();
+    const lang = await TreeSitter.Language.load(wasmPath);
+    _parser = new TreeSitter.Parser();
+    _parser.setLanguage(lang);
+  })();
+  return _initPromise;
 }
 
-// Lazy-initialised — only required at first call so the module can be imported
-// in unit tests without needing a compiled native binding.
-let _parser: TSParser | null = null;
-
-function getParser(): TSParser {
-  if (_parser) return _parser;
-  // CJS interop — tree-sitter has no ESM or @types exports
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const Parser = require("tree-sitter");
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const STM = require("tree-sitter-satsuma");
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  _parser = new Parser() as TSParser;
-  _parser.setLanguage(STM);
+function getParser(): Parser {
+  if (!_parser) throw new Error("Parser not initialised — call initParser() first");
   return _parser;
 }
+
+// ---------- Public API (unchanged) ----------
 
 /**
  * Parse a single .stm file.
@@ -44,8 +49,9 @@ export function parseFile(filePath: string): ParsedFile {
   const src = readFileSync(filePath, "utf8");
   const parser = getParser();
   const tree = parser.parse(src);
-  const errorCount = countErrors(tree.rootNode);
-  return { filePath, src, tree, errorCount };
+  if (!tree) throw new Error(`parse returned null for ${filePath}`);
+  const errorCount = countErrors(tree.rootNode as unknown as SyntaxNode);
+  return { filePath, src, tree: tree as unknown as Tree, errorCount };
 }
 
 /**
@@ -54,8 +60,9 @@ export function parseFile(filePath: string): ParsedFile {
 export function parseSource(src: string): { src: string; tree: Tree; errorCount: number } {
   const parser = getParser();
   const tree = parser.parse(src);
-  const errorCount = countErrors(tree.rootNode);
-  return { src, tree, errorCount };
+  if (!tree) throw new Error("parse returned null");
+  const errorCount = countErrors(tree.rootNode as unknown as SyntaxNode);
+  return { src, tree: tree as unknown as Tree, errorCount };
 }
 
 /** Count ERROR nodes recursively in a tree node. */
