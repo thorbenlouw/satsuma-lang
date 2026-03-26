@@ -199,8 +199,7 @@ Expected workflow:
 - **After creating a new worktree**, run `npm run install:all` from the worktree
   root to install all dependencies, build the WASM parser, and compile the LSP
   server. Without this step, pre-commit hooks will fail on vscode-satsuma and
-  tree-sitter tests. **Sandboxed agents** cannot build native tree-sitter
-  bindings — ask the user to run `npm run install:all` outside the sandbox.
+  tree-sitter tests.
 - Read the relevant feature doc in `features/` before implementing planned work.
 - Inspect existing examples and docs before making syntax or tooling assumptions.
 - Keep changes scoped and directly tied to the current task.

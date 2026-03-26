@@ -1,0 +1,82 @@
+/* Satsuma Viz — Design Tokens
+ * Derived from the site design language.
+ * All colors are available as CSS custom properties on :host. */
+
+:host {
+  /* --- Backgrounds --- */
+  --sz-bg: #FFFAF5;
+  --sz-card-bg: #FFFFFF;
+  --sz-card-border: rgba(45, 42, 38, 0.08);
+  --sz-card-shadow: 0 2px 8px rgba(45, 42, 38, 0.06);
+  --sz-namespace-bg: #FFF3E8;
+  --sz-namespace-border: #F5E6D3;
+
+  /* --- Accents --- */
+  --sz-orange: #F2913D;
+  --sz-orange-dark: #D97726;
+  --sz-green: #5A9E6F;
+  --sz-violet: #8E5BB0;
+  --sz-warning: #C45D22;
+
+  /* --- Text --- */
+  --sz-text: #2D2A26;
+  --sz-text-muted: #6B6560;
+
+  /* --- Badges --- */
+  --sz-badge-bg: #FFF3E8;
+  --sz-badge-text: #D97726;
+  --sz-warning-bg: #FEF3CD;
+  --sz-warning-icon: #C45D22;
+  --sz-question-bg: #E8F0FE;
+  --sz-question-icon: #7C6BAE;
+
+  /* --- Arrows --- */
+  --sz-arrow-stroke: #D97726;
+  --sz-arrow-nl-stroke: #5A9E6F;
+  --sz-arrow-width: 2px;
+
+  /* --- Typography --- */
+  --sz-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --sz-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+
+  /* --- Spacing --- */
+  --sz-card-radius: 8px;
+  --sz-card-padding: 0;
+  --sz-field-height: 28px;
+  --sz-port-size: 8px;
+  --sz-badge-radius: 4px;
+
+  /* --- Layout --- */
+  --sz-card-min-width: 240px;
+  --sz-card-max-width: 380px;
+  --sz-card-gap: 40px;
+}
+
+/* --- Dark theme overrides --- */
+:host([theme="dark"]) {
+  --sz-bg: #1E1E1E;
+  --sz-card-bg: #252526;
+  --sz-card-border: rgba(255, 255, 255, 0.08);
+  --sz-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --sz-namespace-bg: #2D2520;
+  --sz-namespace-border: #3D3530;
+
+  --sz-orange: #F2A860;
+  --sz-orange-dark: #E89040;
+  --sz-green: #6DBF82;
+  --sz-violet: #A878C8;
+  --sz-warning: #E07040;
+
+  --sz-text: #D4D4D4;
+  --sz-text-muted: #9D9D9D;
+
+  --sz-badge-bg: #3D3020;
+  --sz-badge-text: #E89040;
+  --sz-warning-bg: #3D3520;
+  --sz-warning-icon: #E07040;
+  --sz-question-bg: #1E2838;
+  --sz-question-icon: #A08CC8;
+
+  --sz-arrow-stroke: #E89040;
+  --sz-arrow-nl-stroke: #6DBF82;
+}

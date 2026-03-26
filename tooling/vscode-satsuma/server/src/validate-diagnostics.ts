@@ -38,60 +38,65 @@ export async function runValidate(
   const filePath = fileURLToPath(fileUri);
 
   return new Promise((resolve) => {
-    execFile(
-      cliPath,
-      ["validate", "--json", filePath],
-      { timeout: 15_000 },
-      (_error, stdout, _stderr) => {
-        const result = new Map<string, Diagnostic[]>();
-        // Parse stdout even on non-zero exit (validate returns 2 on errors)
-        const raw = stdout.trim();
-        if (!raw) {
-          resolve(result);
-          return;
-        }
-
-        let entries: ValidateEntry[];
-        try {
-          entries = JSON.parse(raw);
-        } catch {
-          resolve(result);
-          return;
-        }
-
-        if (!Array.isArray(entries)) {
-          resolve(result);
-          return;
-        }
-
-        for (const entry of entries) {
-          const uri = pathToFileUri(entry.file);
-          // validate lines are 1-based; LSP is 0-based
-          const line = Math.max(0, entry.line - 1);
-          const col = Math.max(0, entry.column - 1);
-
-          const diag: Diagnostic = {
-            range: Range.create(
-              Position.create(line, col),
-              Position.create(line, col),
-            ),
-            severity: SEVERITY_MAP[entry.severity] ?? DiagnosticSeverity.Warning,
-            source: "satsuma-validate",
-            code: entry.rule,
-            message: entry.message,
-          };
-
-          const existing = result.get(uri);
-          if (existing) {
-            existing.push(diag);
-          } else {
-            result.set(uri, [diag]);
+    try {
+      execFile(
+        cliPath,
+        ["validate", "--json", filePath],
+        { timeout: 15_000 },
+        (_error, stdout, _stderr) => {
+          const result = new Map<string, Diagnostic[]>();
+          // Parse stdout even on non-zero exit (validate returns 2 on errors)
+          const raw = stdout.trim();
+          if (!raw) {
+            resolve(result);
+            return;
           }
-        }
 
-        resolve(result);
-      },
-    );
+          let entries: ValidateEntry[];
+          try {
+            entries = JSON.parse(raw);
+          } catch {
+            resolve(result);
+            return;
+          }
+
+          if (!Array.isArray(entries)) {
+            resolve(result);
+            return;
+          }
+
+          for (const entry of entries) {
+            const uri = pathToFileUri(entry.file);
+            // validate lines are 1-based; LSP is 0-based
+            const line = Math.max(0, entry.line - 1);
+            const col = Math.max(0, entry.column - 1);
+
+            const diag: Diagnostic = {
+              range: Range.create(
+                Position.create(line, col),
+                Position.create(line, col),
+              ),
+              severity: SEVERITY_MAP[entry.severity] ?? DiagnosticSeverity.Warning,
+              source: "satsuma-validate",
+              code: entry.rule,
+              message: entry.message,
+            };
+
+            const existing = result.get(uri);
+            if (existing) {
+              existing.push(diag);
+            } else {
+              result.set(uri, [diag]);
+            }
+          }
+
+          resolve(result);
+        },
+      );
+    } catch {
+      // Spawn can throw synchronously (EPERM, EACCES) — return empty map
+      resolve(new Map());
+    }
   });
 }
 

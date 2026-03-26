@@ -1,0 +1,24 @@
+{
+  "name": "@satsuma/viz",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Satsuma mapping visualization web component",
+  "type": "module",
+  "main": "dist/satsuma-viz.js",
+  "types": "src/satsuma-viz.ts",
+  "scripts": {
+    "build": "esbuild src/satsuma-viz.ts --bundle --format=esm --target=es2022 --outfile=dist/satsuma-viz.js --sourcemap --loader:.css=text",
+    "watch": "npm run build -- --watch",
+    "test": "node --test test/**/*.test.js",
+    "pretest": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@lit-labs/ssr": "^4.0.0",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.9.3"
+  }
+}
