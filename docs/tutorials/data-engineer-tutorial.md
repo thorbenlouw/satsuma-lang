@@ -80,7 +80,7 @@ Hub, satellite, and link tokens give an AI agent enough context to generate hash
 ### Merge strategy
 
 ```stm
-mapping 'load customers' (merge upsert, match_on customer_id) {
+mapping `load customers` (merge upsert, match_on customer_id) {
   source { `stg_customers` }
   target { `dim_customer` }
 
@@ -208,7 +208,7 @@ A Satsuma spec is also a test specification. The metadata tokens you already wri
 Beyond field metadata, the mapping arrows themselves imply tests:
 
 ```stm
-mapping 'load orders' (merge append) {
+mapping `load orders` (merge append) {
   source { `raw_orders` }
   target { `stg_orders` }
 
@@ -256,7 +256,7 @@ Good test data is hard to create manually. Satsuma specs contain enough semantic
 
 A value map is a complete enumeration of valid transformations. It doubles as a test fixture specification:
 
-```stm
+```satsuma
 region_code -> region_name {
   map {
     NA: "North America"
@@ -328,7 +328,7 @@ schema dim_customer (
   // fields...
 }
 
-mapping 'crm to dim' (merge upsert, match_on customer_id) {
+mapping `crm to dim` (merge upsert, match_on customer_id) {
   source { `stg_crm` }
   target { `dim_customer` }
   // arrows...
@@ -408,7 +408,7 @@ This is lightweight governance that runs as part of your normal review process.
 
 Natural-language transforms deserve special attention. When a spec contains:
 
-```stm
+```satsuma
 phone_nbr -> phone {
   "Extract all digits. If 11 digits starting with 1, treat as US.
    If 10 digits, assume US country code +1. Format as E.164.

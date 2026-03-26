@@ -123,7 +123,7 @@ mapping <name> (<metadata>) {
   src -> tgt                                 // direct
   src -> tgt { transform }                   // with transform
   src -> tgt { trim | lowercase }            // pipeline
-  src -> tgt { "NL transform description" }  // natural language
+  src -> tgt { "Derive from @src using NL" }  // natural language with @ref
   src1, src2 -> tgt { "multi-source" }       // multiple sources
   -> tgt { "computed, no source" }           // derived field
   -> tgt { now_utc() }                       // function
@@ -141,7 +141,7 @@ mapping <name> (<metadata>) {
     * N, / N, + N, - N
     map { src: "tgt", null: "default", _: "fallback" }
     map { < 1000: "low", < 5000: "mid", default: "high" }
-    "natural language transform description"
+    "NL description — use @field_name for refs"
 
   Array mapping:
   each src_arr -> tgt_arr {
@@ -189,17 +189,17 @@ note { """multiline **Markdown** content""" }
 (note "inline on a field or schema")       // in metadata parens
 // info   //! warning   //? question/todo
 
-## Backtick References & @ref in NL Strings (IMPORTANT)
-ALWAYS backtick field and schema names inside "..." NL strings:
-  -> total { "Sum `line_amount` grouped by `order_id`" }
-  (note "Derived from `customer.email` after dedup")
-This is NOT optional — tooling extracts backticked references for
+## @ref in NL Strings (IMPORTANT)
+ALWAYS use @ref for field and schema names inside "..." NL strings:
+  -> total { "Sum @line_amount grouped by @order_id" }
+  (note "Derived from @customer.email after dedup")
+This is NOT optional — tooling extracts @ref references for
 deterministic lineage tracing. Bare names in NL are invisible to tools.
 
-Use @ref for explicit cross-schema references in NL:
-  -> total { "Join with @ref `lookup_table` on `key`" }
-@ref marks schema references as structural sources; lint --fix
-auto-adds undeclared @ref schemas to the mapping source list.
+Backtick only segments with special characters:
+  "Look up @`order-headers`.status in the dim table"
+@ref schemas are structural sources; lint --fix auto-adds undeclared
+@ref schemas to the mapping source list.
 ```
 
 ---
@@ -268,7 +268,7 @@ Every arrow the CLI returns carries a classification from CST node types:
 | `[nl]` | NL string — extracted verbatim | Read it, interpret intent, judge correctness |
 | `[mixed]` | Both pipeline steps and NL | Review the NL portion |
 | `[none]` | Bare `src -> tgt`, no transform | None |
-| `[nl-derived]` | Implicit arrow from NL backtick ref | Synthetic — verify the referenced field exists |
+| `[nl-derived]` | Implicit arrow from NL `@ref` | Synthetic — verify the referenced field exists |
 
 ### How you compose workflows
 
@@ -315,7 +315,7 @@ When reporting results to humans, be transparent about which parts of your analy
 3. Define `schema` blocks with all fields, types, and metadata
 4. Add `fragment` blocks if you have reusable field sets
 5. Write the `mapping { }` block with source/target refs and all arrows
-6. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline — backtick any field or schema names referenced inside the NL string (e.g. `` "Sum `amount` grouped by `customer_id`" ``)
+6. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline — use `@ref` for any field or schema names referenced inside the NL string (e.g. `"Sum @amount grouped by @customer_id"`)
 7. Add `//!` warnings for known data quality issues
 8. Add `//?` for any open questions or ambiguities
 9. Add `(note "...")` metadata for persistent field-level documentation
@@ -357,8 +357,8 @@ When reporting results to humans, be transparent about which parts of your analy
 | Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
 | Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
 | Using `'single quotes'` for labels | Use `` `backtick quotes` `` — single quotes are not supported |
-| Writing field names bare in NL strings | Backtick field/schema references inside `"..."` strings — e.g. `"Sum \`order_total\` grouped by \`customer_id\`"`. This enables deterministic extraction by tooling. |
-| Referencing a schema in NL without declaring it | Schemas referenced in NL text must be in the mapping's `source { }` block. Use `satsuma lint --fix` to auto-add undeclared refs. |
+| Writing field names bare in NL strings | Use `@ref` for field/schema references inside `"..."` strings — e.g. `"Sum @order_total grouped by @customer_id"`. This enables deterministic extraction by tooling. |
+| Referencing a schema in NL without declaring it | `@ref` schemas in NL text must be in the mapping's `source { }` block. Use `satsuma lint --fix` to auto-add undeclared refs. |
 
 ---
 

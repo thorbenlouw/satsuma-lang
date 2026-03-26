@@ -174,17 +174,22 @@ available commands.
 ## Example
 
 ```stm
-note { "Customer sync — 1:1 mapping from CRM to data warehouse" }
+note { "Customer sync — legacy CRM to analytics warehouse" }
 
-schema crm (note "CRM System") {
-  id       INT           (pk)
-  email    STRING(255)   (pii)
-  status   CHAR(1)       (enum {A, I})
+schema crm (note "Legacy CRM — SQL Server 2008") {
+  CUST_ID     INT            (pk)
+  CUST_TYPE   CHAR(1)        (enum {R, B, G})  //! NULL means Retail
+  FIRST_NM    VARCHAR(100)
+  LAST_NM     VARCHAR(100)
+  EMAIL_ADDR  VARCHAR(255)   (pii)
+  STATUS      CHAR(1)        (enum {A, I})
 }
 
-schema warehouse (note "Analytics Model") {
+schema warehouse (note "Analytics Model — PostgreSQL 16") {
   customer_id   UUID         (pk, required)
-  email_address STRING(255)  (format email)
+  customer_type VARCHAR(20)  (enum {retail, business, government})
+  display_name  VARCHAR(200) (required)
+  email_address VARCHAR(255) (format email)
   is_active     BOOLEAN
 }
 
@@ -192,9 +197,18 @@ mapping {
   source { `crm` }
   target { `warehouse` }
 
-  id     -> customer_id   { uuid_v5("namespace", id) }
-  email  -> email_address { trim | lowercase | validate_email | null_if_invalid }
-  status -> is_active     { map { A: true, I: false } }
+  CUST_ID    -> customer_id   { uuid_v5("namespace", CUST_ID) }
+  EMAIL_ADDR -> email_address { trim | lowercase | validate_email | null_if_invalid }
+  STATUS     -> is_active     { map { A: true, I: false } }
+
+  CUST_TYPE -> customer_type {
+    map { R: "retail", B: "business", G: "government", null: "retail" }
+  }
+
+  -> display_name {
+    "If @CUST_TYPE is null or R, trim and concat @FIRST_NM + ' ' + @LAST_NM.
+     Otherwise 'UNKNOWN'."
+  }
 }
 ```
 
@@ -215,7 +229,7 @@ and 4 role-specific playbooks adapt it to how you actually work:
 | [03 — Writing Schemas from Imperfect Inputs](lessons/03-writing-schemas.md) | Drafting from DDL, JSON, Excel; preserving ambiguity |
 | [04 — Reuse, Imports, and Multi-File Thinking](lessons/04-reuse-and-imports.md) | Fragments, imports, workspace organization |
 | [05 — Mapping Blocks](lessons/05-mappings.md) | Arrows, transforms, value maps, multi-source mappings |
-| [06 — Natural Language Transforms](lessons/06-nl-transforms.md) | When to formalize vs. keep it natural, backtick references |
+| [06 — Natural Language Transforms](lessons/06-nl-transforms.md) | When to formalize vs. keep it natural, `@ref` references |
 | [07 — Nested Data, Arrays, and Complex Shapes](lessons/07-nested-mappings.md) | Dotted paths, array notation, nested arrow blocks |
 | [08 — The Satsuma CLI](lessons/08-satsuma-cli.md) | 16 commands as the agent's deterministic toolkit |
 | [09 — Human-Agent Workflows](lessons/09-agent-workflows.md) | Impact analysis, coverage checks, PII audits, change review |

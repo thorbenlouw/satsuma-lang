@@ -177,7 +177,7 @@ mapping {
   }
 
   -> display_name {
-    "If CUST_TYPE is 'R' or null, trim and concat FIRST_NM + ' ' + LAST_NM.
+    "If @CUST_TYPE is 'R' or null, trim and concat @FIRST_NM + ' ' + @LAST_NM.
      Otherwise 'UNKNOWN'."
   }
 

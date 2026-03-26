@@ -51,7 +51,7 @@ That's it. You've just read your first Satsuma file.
 
 Fields in a schema block follow a consistent pattern:
 
-```stm
+```satsuma
 field_name    DATA_TYPE    (metadata)
 ```
 
@@ -117,7 +117,7 @@ This is one of Satsuma's big wins over spreadsheets. Instead of a free-text cell
 
 When a source field uses codes that need translating to human-readable values, use a `map { }` block:
 
-```stm
+```satsuma
 CUST_TYPE -> customer_type {
   map {
     R: "retail"
@@ -134,7 +134,7 @@ This replaces the classic Excel approach of listing value mappings in a separate
 
 For tier assignments and other range conditions, the `map { }` block supports comparison operators:
 
-```stm
+```satsuma
 LOYALTY_POINTS -> loyalty_tier {
   map {
     < 1000:  "bronze"
@@ -151,7 +151,7 @@ Read it just as you'd read a business rule: *"If loyalty points are below 1,000,
 
 Not every target field has a direct source. Some are calculated from multiple inputs, some are constants. Omit the left side of the arrow to signal a **computed field**:
 
-```stm
+```satsuma
 -> display_name {
   "If CUST_TYPE is null or 'R', trim and concat FIRST_NM + ' ' + LAST_NM.
    Otherwise, trim COMPANY_NM."
@@ -166,7 +166,7 @@ The quoted string is a natural-language transform — more on those in a moment.
 
 When a preferred source field might be null, describe the fallback within the transform pipeline:
 
-```stm
+```satsuma
 LAST_MOD_DATE -> updated_at {
   parse("MM/DD/YYYY hh:mm:ss a") | to_utc
   | "If null, fall back to CREATED_DATE parsed as MM/DD/YYYY in UTC"
@@ -189,7 +189,7 @@ Satsuma has three kinds of comment, each carrying a different signal:
 
 The `//!` and `//?` variants aren't just cosmetic. Tooling can scan for them automatically and surface a count of unresolved questions or known risks — perfect for a BA tracking open items before sign-off.
 
-```stm
+```satsuma
 EMAIL_ADDR    VARCHAR(255)   (pii)           //! Not validated — contains garbage
 CREATED_DATE  VARCHAR(10)                    //! Stored as MM/DD/YYYY string
 STATE_PROV    VARCHAR(50)                    //? Should we normalise to 2-char codes?
@@ -245,7 +245,7 @@ A `note { }` at the top of the file documents the whole integration. One inside 
 
 Sometimes a transformation is too complex or context-dependent to express as a neat chain of functions. In Satsuma, a quoted string directly inside `{ }` is a **natural-language transform**:
 
-```stm
+```satsuma
 PHONE_NBR -> phone {
   "Extract all digits. If 11 digits starting with 1, treat as US.
    If 10 digits, assume US country code +1. Format as E.164.
@@ -258,7 +258,7 @@ This says to both the engineer and any AI tooling: *"This needs custom implement
 
 Natural language mixes seamlessly with parseable pipeline steps:
 
-```stm
+```satsuma
 NOTES -> notes {
   "Filter profanity using corporate word list v3.2, replacing matches with asterisks"
   | escape_html
@@ -272,19 +272,19 @@ This is enormously valuable for BAs. You can describe complex business logic in 
 
 ## Nested Structures: `record` and `list`
 
-Real data is rarely flat. Satsuma handles nested structures with two keywords:
+Real data is rarely flat. Satsuma handles nested structures with two keywords that follow the field name:
 
 - **`record`** — a single nested object (one instance per parent record)
-- **`list`** — a repeated nested object (zero or more instances per parent record)
+- **`list_of record`** — a repeated nested object (zero or more instances per parent record)
 
 ```stm
 schema order {
   order_id   STRING (pk)
-  record customer {
+  customer record {
     id     STRING
     email  STRING (pii)
   }
-  list line_items {
+  line_items list_of record {
     sku         STRING (required)
     quantity    INT
     unit_price  DECIMAL(12,2)
@@ -292,10 +292,10 @@ schema order {
 }
 ```
 
-Both keywords can be nested to any depth. In mapping arrows, `[]` signals array access and a `.` prefix means "relative to the current nesting context":
+Both keywords can be nested to any depth. Use `each` blocks in mappings to iterate over repeated structures, and a `.` prefix means "relative to the current nesting context":
 
-```stm
-LineItems[] -> .items[] {
+```satsuma
+each LineItems -> .items {
   .ITEMNO -> .item { trim }
   .QUANTITY -> .unitQuantity { "Divide by 10000 for 4 implied decimal places" }
 }
@@ -303,22 +303,24 @@ LineItems[] -> .items[] {
 
 ### Flatten: Exploding Arrays into Rows
 
-A common ETL pattern is taking a single source record with an array and producing one output row per array element. Satsuma makes this explicit with a `flatten` annotation on the mapping:
+A common ETL pattern is taking a single source record with an array and producing one output row per array element. Satsuma makes this explicit with a `flatten` block inside the mapping:
 
 ```stm
-mapping 'order lines' (flatten `Order.LineItems[]`) {
+mapping `order lines` {
   source { `commerce_order` }
   target { `order_lines_parquet` }
 
-  Order.OrderId -> order_id
-  Order.LineItems[].SKU -> sku { trim | uppercase }
-  Order.LineItems[].Quantity -> quantity
+  flatten Order.LineItems -> order_lines {
+    Order.OrderId -> order_id
+    .SKU -> sku { trim | uppercase }
+    .Quantity -> quantity
+  }
 }
 ```
 
-The `flatten` option on the mapping header tells the reader: *"For each element in `LineItems[]`, emit one target row. Parent-level fields like `OrderId` are repeated."*
+The `flatten` block tells the reader: *"For each element in `LineItems`, emit one target row. Parent-level fields like `OrderId` are repeated."*
 
-This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In Satsuma, it's a single option on the mapping header and the array path references make the grain of the target table completely unambiguous.
+This is one of those patterns that's notoriously difficult to express in a spreadsheet. You'd typically need a separate tab or a paragraph of explanation. In Satsuma, it's a dedicated block and the nested arrow paths make the grain of the target table completely unambiguous.
 
 ---
 
@@ -327,7 +329,7 @@ This is one of those patterns that's notoriously difficult to express in a sprea
 Enterprise integrations rarely involve just one source. When a mapping draws from multiple schemas, list them all in the `source { }` block and describe the join in natural language:
 
 ```stm
-mapping 'opportunity enrichment' {
+mapping `opportunity enrichment` {
   source {
     `sfdc_opportunity`
     `sfdc_account`
@@ -350,7 +352,7 @@ A **fragment** is a reusable set of fields:
 
 ```stm
 // lib/common.stm
-fragment 'address fields' {
+fragment `address fields` {
   street_line_1   VARCHAR(200)
   street_line_2   VARCHAR(200)
   city            VARCHAR(100)
@@ -363,36 +365,36 @@ fragment 'address fields' {
 Pull it into a schema using the spread operator (`...`):
 
 ```stm
-import { 'address fields' } from "lib/common.stm"
+import { `address fields` } from "lib/common.stm"
 
 schema customers {
   customer_id    UUID          (pk)
   display_name   VARCHAR(200)  (required)
-  ...address fields
+  ...`address fields`
 }
 ```
 
-The fields from `'address fields'` are inlined as if you'd typed them directly. When the address structure changes, you update it in one place.
+The fields from `` `address fields` `` are inlined as if you'd typed them directly. When the address structure changes, you update it in one place.
 
 ### Named Transforms
 
 A **named transform** is a reusable pipeline or natural-language step:
 
 ```stm
-transform 'clean email' {
+transform `clean email` {
   "Trim whitespace, lowercase, validate RFC 5322 format, return null if invalid"
 }
 
-transform 'to utc date' {
+transform `to utc date` {
   parse("MM/DD/YYYY") | assume_utc | to_iso8601
 }
 ```
 
 Spread them into mapping pipelines with `...`:
 
-```stm
-EMAIL_ADDR   -> email      { ...clean email }
-CREATED_DATE -> created_at { ...to utc date }
+```satsuma
+EMAIL_ADDR   -> email      { ...`clean email` }
+CREATED_DATE -> created_at { ...`to utc date` }
 ```
 
 ### Imports
@@ -400,8 +402,8 @@ CREATED_DATE -> created_at { ...to utc date }
 The `import` statement brings fragments, transforms, or schemas from other files into scope:
 
 ```stm
-import { 'address fields', 'audit fields' } from "lib/common.stm"
-import { 'currency rates' } from "lookups/finance.stm"
+import { `address fields`, `audit fields` } from "lib/common.stm"
+import { `currency rates` } from "lookups/finance.stm"
 ```
 
 This supports splitting large specifications across multiple files — one per source system, perhaps, or one per domain — while keeping each individual file focused and readable.
@@ -427,8 +429,8 @@ schema commerce_order (
 
 For fixed-length EDI, use `filter` in `( )` to restrict a list to matching elements:
 
-```stm
-list POReferences (filter REFQUAL == "ON") {
+```satsuma
+POReferences list_of record (filter REFQUAL == "ON") {
   REFQUAL   CHAR(3)
   REFNUM    CHAR(35)   // PO Number + "/" + Dissection No
 }
@@ -445,8 +447,8 @@ Here's a realistic Salesforce-to-Snowflake integration, the kind of mapping you 
 ```stm
 // Satsuma — Salesforce to Snowflake Pipeline
 
-import { 'sfdc standard types' } from "lib/sfdc_fragments.stm"
-import { 'currency rates' } from "lookups/finance.stm"
+import { `sfdc standard types` } from "lib/sfdc_fragments.stm"
+import { `currency rates` } from "lookups/finance.stm"
 
 note {
   """
@@ -502,7 +504,7 @@ schema snowflake_opps (note "FACT_OPPORTUNITIES — Snowflake Analytics") {
 
 // --- Mapping ---
 
-mapping 'opportunity ingestion' {
+mapping `opportunity ingestion` {
   source { `sfdc_opportunity` }
   target { `snowflake_opps` }
 
@@ -839,7 +841,7 @@ schema link_sale (
 Mappings into vault targets look like regular Satsuma mappings — the `hub`, `satellite`, and `link` tokens only affect the target schema's physical structure, not the mapping syntax:
 
 ```stm
-mapping 'sfdc to hub_customer' {
+mapping `sfdc to hub_customer` {
   source { `loyalty_sfdc` }
   target { `hub_customer` }
 
@@ -847,7 +849,7 @@ mapping 'sfdc to hub_customer' {
   -> record_source { "SFDC" }
 }
 
-mapping 'sfdc to sat_customer_demographics' {
+mapping `sfdc to sat_customer_demographics` {
   source { `loyalty_sfdc` }
   target { `sat_customer_demographics` }
 
@@ -894,8 +896,8 @@ The key takeaway: Satsuma's `( )` metadata system is extensible. Whether you're 
 | ------- | ------ | ------- |
 | Schema | `schema name { ... }` | Describes a system's data structure (source or target) |
 | Field | `name TYPE (metadata)` | One data element |
-| Nested object | `record name { ... }` | Single nested structure |
-| Repeated object | `list name { ... }` | Repeated nested structure |
+| Nested object | `name record { ... }` | Single nested structure |
+| Repeated object | `name list_of record { ... }` | Repeated nested structure |
 | Mapping block | `mapping name { source { } target { } ... }` | Defines transformations between schemas |
 | Direct mapping | `A -> B` | Source field maps to target field |
 | Transform pipeline | `A -> B { trim \| lowercase }` | Mapping with transformation steps |
@@ -910,8 +912,8 @@ The key takeaway: Satsuma's `( )` metadata system is extensible. Whether you're 
 | Fragment | `fragment name { ... }` | Reusable field set |
 | Named transform | `transform name { ... }` | Reusable pipeline logic |
 | Spread | `...fragment name` | Inline a fragment's fields or transform |
-| Import | `import { 'x' } from "file.stm"` | Bring definitions from another file |
-| Flatten | `mapping name (flatten \`Array[]\`) { ... }` | Explode array into one row per element |
+| Import | `` import { `x` } from "file.stm" `` | Bring definitions from another file |
+| Flatten | `flatten src -> tgt { ... }` | Explode array into one row per element |
 | Metric | `metric name "Label" (source ...) { ... }` | Business KPI definition |
 | Report / ML model | `schema name (report, source ...) { ... }` | Downstream consumer declaration |
 | Dimension | `schema name (dimension, scd 2, ...) { ... }` | Kimball dimension table |
