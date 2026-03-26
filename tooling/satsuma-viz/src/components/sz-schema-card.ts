@@ -1,7 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { SchemaCard, FieldEntry } from "../model.js";
-import { SzNavigateEvent, SzExpandLineageEvent } from "../satsuma-viz.js";
+import { SzNavigateEvent, SzExpandLineageEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
 
 @customElement("sz-schema-card")
 export class SzSchemaCard extends LitElement {
@@ -320,6 +320,11 @@ export class SzSchemaCard extends LitElement {
     `;
   }
 
+  private _onFieldHover(fieldName: string | null) {
+    const schemaId = this.schema?.qualifiedId ?? "";
+    this.dispatchEvent(new SzFieldHoverEvent(schemaId, fieldName));
+  }
+
   private _expandLineage(schemaId: string) {
     this.dispatchEvent(new SzExpandLineageEvent(schemaId));
   }
@@ -354,6 +359,8 @@ export class SzSchemaCard extends LitElement {
         class="field-row ${depth > 0 ? "nested" : ""}"
         style=${depth > 0 ? `padding-left: ${12 + depth * 20}px` : ""}
         @click=${() => this._navigate(f.location)}
+        @mouseenter=${() => this._onFieldHover(f.name)}
+        @mouseleave=${() => this._onFieldHover(null)}
         title=${f.name + ": " + f.type}
       >
         <span class="port ${isMapped ? "mapped" : "unmapped"}"></span>

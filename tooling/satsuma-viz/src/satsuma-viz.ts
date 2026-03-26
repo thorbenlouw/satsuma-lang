@@ -24,6 +24,17 @@ export class SzNavigateEvent extends Event {
   }
 }
 
+/** Field hover event — dispatched when a field row is hovered to highlight connected arrows. */
+export class SzFieldHoverEvent extends Event {
+  readonly schemaId: string;
+  readonly fieldName: string | null;
+  constructor(schemaId: string, fieldName: string | null) {
+    super("field-hover", { bubbles: true, composed: true });
+    this.schemaId = schemaId;
+    this.fieldName = fieldName;
+  }
+}
+
 /** Expand lineage event — dispatched when the user clicks an expand button on a schema card. */
 export class SzExpandLineageEvent extends Event {
   readonly schemaId: string;
@@ -557,6 +568,13 @@ export class SatsumaViz extends LitElement {
 
   private _zoomIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Currently hovered field for arrow highlighting. */
+  @state()
+  private _hoveredSchema: string | null = null;
+
+  @state()
+  private _hoveredField: string | null = null;
+
   /** Expanded cross-file models keyed by the schema that triggered expansion. */
   @state()
   private _expandedModels = new Map<string, VizModel[]>();
@@ -572,6 +590,14 @@ export class SatsumaViz extends LitElement {
   private _panStartY = 0;
   private _panStartPanX = 0;
   private _panStartPanY = 0;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener("field-hover", ((e: SzFieldHoverEvent) => {
+      this._hoveredSchema = e.schemaId;
+      this._hoveredField = e.fieldName;
+    }) as EventListener);
+  }
 
   override updated(changed: Map<string, unknown>) {
     if (changed.has("model") && this.model) {
@@ -1151,6 +1177,8 @@ export class SatsumaViz extends LitElement {
           .edges=${layout.edges}
           .width=${layout.width + 48}
           .height=${layout.height + 48}
+          .highlightSchema=${this._hoveredSchema}
+          .highlightField=${this._hoveredField}
         ></sz-edge-layer>
 
         <!-- Namespace bounding boxes -->

@@ -287,7 +287,20 @@ function countFields(fields: FieldEntry[]): number {
   return count;
 }
 
+interface EdgeMeta {
+  sourceNode: string;
+  targetNode: string;
+  sourceField: string;
+  targetField: string;
+  arrow: ArrowEntry;
+}
+
+/** Mapping from edge ID to arrow metadata — used by extractLayout to populate LayoutEdge fields. */
+const edgeMetaMap = new Map<string, EdgeMeta>();
+
 function addMappingEdges(mappings: MappingBlock[], edges: ElkEdge[]) {
+  edgeMetaMap.clear();
+
   for (const m of mappings) {
     const addArrowEdges = (arrows: ArrowEntry[], prefix: string) => {
       for (let i = 0; i < arrows.length; i++) {
@@ -296,11 +309,20 @@ function addMappingEdges(mappings: MappingBlock[], edges: ElkEdge[]) {
         const sourceNode = m.sourceRefs[0];
         if (!sourceNode) continue;
         const sourceField = a.sourceFields[0] ?? a.targetField;
+        const edgeId = `${prefix}:${i}`;
 
         edges.push({
-          id: `${prefix}:${i}`,
+          id: edgeId,
           sources: [`${sourceNode}:${sourceField}:src`],
           targets: [`${m.targetRef}:${a.targetField}:tgt`],
+        });
+
+        edgeMetaMap.set(edgeId, {
+          sourceNode,
+          targetNode: m.targetRef,
+          sourceField,
+          targetField: a.targetField,
+          arrow: a,
         });
       }
     };
@@ -376,14 +398,15 @@ function extractLayout(
       if (section.endPoint) points.push(section.endPoint);
     }
 
+    const meta = edgeMetaMap.get(e.id);
     edges.push({
       id: e.id,
-      sourceNode: "",
-      targetNode: "",
-      sourceField: "",
-      targetField: "",
+      sourceNode: meta?.sourceNode ?? "",
+      targetNode: meta?.targetNode ?? "",
+      sourceField: meta?.sourceField ?? "",
+      targetField: meta?.targetField ?? "",
       points,
-      arrow: {
+      arrow: meta?.arrow ?? {
         sourceFields: [],
         targetField: "",
         transform: null,
