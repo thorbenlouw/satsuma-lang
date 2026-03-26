@@ -1,20 +1,26 @@
 #!/usr/bin/env node
 /**
- * prebuild.js — Bakes AI-AGENT-REFERENCE.md into a TypeScript module
- * so the CLI can ship the content without a runtime file read.
+ * prebuild.js — Pre-build steps for the Satsuma CLI
+ *
+ * 1. Bakes AI-AGENT-REFERENCE.md into a TypeScript module so the CLI can
+ *    ship the content without a runtime file read.
+ * 2. Copies WASM files into dist/ so the CLI can load them at runtime.
  *
  * Run automatically via `npm run prebuild` (called before `tsc`).
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..", "..");
+const cliRoot = join(__dirname, "..");
+
+// ── Step 1: Bake AI-AGENT-REFERENCE.md ──
 
 const markdownPath = join(repoRoot, "AI-AGENT-REFERENCE.md");
-const outDir = join(__dirname, "..", "src", "generated");
+const outDir = join(cliRoot, "src", "generated");
 const outPath = join(outDir, "agent-reference.ts");
 
 const content = readFileSync(markdownPath, "utf8");
@@ -29,3 +35,30 @@ writeFileSync(
 );
 
 console.log("prebuild: baked AI-AGENT-REFERENCE.md → src/generated/agent-reference.ts");
+
+// ── Step 2: Copy WASM files into dist/ ──
+
+const distDir = join(cliRoot, "dist");
+mkdirSync(distDir, { recursive: true });
+
+const wasmFiles = [
+  {
+    src: join(repoRoot, "tooling", "tree-sitter-satsuma", "tree-sitter-satsuma.wasm"),
+    dest: join(distDir, "tree-sitter-satsuma.wasm"),
+    label: "tree-sitter-satsuma.wasm",
+  },
+  {
+    src: join(cliRoot, "node_modules", "web-tree-sitter", "tree-sitter.wasm"),
+    dest: join(distDir, "tree-sitter.wasm"),
+    label: "tree-sitter.wasm (runtime)",
+  },
+];
+
+for (const { src, dest, label } of wasmFiles) {
+  if (existsSync(src)) {
+    copyFileSync(src, dest);
+    console.log(`prebuild: copied ${label} → dist/`);
+  } else {
+    console.warn(`prebuild: WARNING — ${label} not found at ${src}`);
+  }
+}

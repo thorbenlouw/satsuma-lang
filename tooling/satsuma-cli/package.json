@@ -18,12 +18,11 @@
     "dev": "tsc --watch",
     "pretest": "npm run prebuild && tsc",
     "prepare": "npm run prebuild && tsc",
-    "test": "node --test test/**/*.test.js"
+    "test": "node --import ./test/setup.js --test test/**/*.test.js"
   },
   "dependencies": {
     "commander": "^14.0.3",
-    "tree-sitter": "^0.25.0",
-    "tree-sitter-satsuma": "file:../tree-sitter-satsuma"
+    "web-tree-sitter": "^0.25.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
