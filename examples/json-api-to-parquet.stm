@@ -113,7 +113,7 @@ mapping `order headers` {
   Order.Channel -> order_channel { trim | lowercase }
 
   Order.OrderTimestamp -> order_timestamp_utc {
-    "Parse ISO-8601 timestamp from the API. The `created_at` field is
+    "Parse ISO-8601 timestamp from the API. The created_at field is
      always UTC with a Z suffix. Output UTC timestamp."
   }
 
@@ -145,18 +145,18 @@ mapping `order headers` {
   Order.Totals.TotalAmount -> total_amount
 
   -> discount_codes {
-    "Collect `DiscountCode` values from the order discount entries, preserving source order.
+    "Collect @DiscountCode values from the order discount entries, preserving source order.
      Emit as a JSON array string. If no discounts, emit []."
   }
 
   -> discount_total {
-    "Sum `DiscountAmount` across the order discount entries for the current order.
+    "Sum @DiscountAmount across the order discount entries for the current order.
      If no discounts, emit 0.00."
   }
 
   Order.OrderMetadata -> order_metadata
 
-  -> line_count { "Count entries in `LineItems` for the current order." }
+  -> line_count { "Count entries in @LineItems for the current order." }
 
   -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
 }

@@ -1,5 +1,7 @@
-import { some_schema } from "nonexistent_file.stm"
+// Fixture for testing import-warning-on-stderr behavior
+import { things } from "nonexistent.stm"
 
-schema local_schema {
-  id INT
+schema example {
+  id INTEGER (pk)
+  name STRING
 }

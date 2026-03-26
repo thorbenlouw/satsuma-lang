@@ -71,12 +71,12 @@ mapping `opportunity ingestion` {
   Amount -> amount_raw { coalesce(0) }
 
   Amount -> amount_usd {
-    "Multiply by rate from `fx_spot_rates` lookup using CurrencyIsoCode"
+    "Multiply by rate from @fx_spot_rates lookup using CurrencyIsoCode"
     | round(2)
   }
 
   `ARR_Override__c` -> arr_value {
-    "Use `ARR_Override__c` if not null, otherwise fall back to `Amount`"
+    "Use @ARR_Override__c if not null, otherwise fall back to @Amount"
     | coalesce(0)
   }
 
@@ -93,7 +93,7 @@ mapping `opportunity ingestion` {
   }
 
   -> is_closed {
-    "True if StageName is `Closed_Won` or `Closed_Lost`, false otherwise."
+    "True if @StageName is Closed_Won or Closed_Lost, false otherwise."
   }
 
   CloseDate -> close_date

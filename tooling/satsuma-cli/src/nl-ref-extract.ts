@@ -331,7 +331,7 @@ function extractTransformNLRefs(transformNode: SyntaxNode, namespace: string | n
         const text = nlNode.type === "multiline_string"
           ? nlNode.text.slice(3, -3)
           : nlNode.text.slice(1, -1);
-        if (text.includes("`")) {
+        if (text.includes("`") || /@[a-zA-Z_`]/.test(text)) {
           results.push({
             text,
             mapping: `transform:${transformName}`,
@@ -418,7 +418,7 @@ function walkArrowsForNL(
           const text = inner.type === "multiline_string"
             ? inner.text.slice(3, -3)
             : inner.text.slice(1, -1);
-          if (text.includes("`")) {
+          if (text.includes("`") || /@[a-zA-Z_`]/.test(text)) {
             results.push({
               text,
               mapping: mappingName,
@@ -448,7 +448,7 @@ function walkArrowsForNL(
               const text = nlNode.type === "multiline_string"
                 ? nlNode.text.slice(3, -3)
                 : nlNode.text.slice(1, -1);
-              if (text.includes("`")) {
+              if (text.includes("`") || /@[a-zA-Z_`]/.test(text)) {
                 results.push({
                   text,
                   mapping: mappingName,

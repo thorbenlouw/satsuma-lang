@@ -82,6 +82,13 @@ schema crm_customers (
   }
 }
 
+// --- Lookup: Chart of Accounts ---
+schema chart_of_accounts (note "GL account reference data") {
+  account_code  STRING(20)   (pk)
+  account_name  STRING(100)
+  account_type  STRING(20)   (enum {asset, liability, equity, revenue, expense})
+}
+
 // --- Source: Finance Transactions ---
 schema finance_transactions (
   owner "finance-data-eng",
@@ -124,7 +131,7 @@ schema finance_transactions (
     country      CHAR(2)
   }
 
-  gl_account        STRING(20) (required, ref "chart_of_accounts.account_code")
+  gl_account        STRING(20) (required, ref @chart_of_accounts.account_code)
   cost_center       STRING(10) (
     note "Inherited from schema-level cost_center for per-row allocation overrides"
   )
@@ -184,8 +191,8 @@ mapping `customer 360 assembly` {
 
     ## Governance Flow
 
-    - **PII tokens** propagate from source to target: if a source field is `pii`,
-      the target field must also be marked `pii`.
+    - **PII tokens** propagate from source to target: if a source field is pii,
+      the target field must also be marked pii.
     - **Classification** takes the highest tier from any contributing source.
     - **Encryption and masking** requirements carry forward unchanged.
     - **Retention** on the target uses the shorter of the two source policies
@@ -196,7 +203,7 @@ mapping `customer 360 assembly` {
   source {
     `crm_customers`
     `finance_transactions`
-    "Left join on crm_customers.customer_id = finance_transactions.customer_id.
+    "Left join on @crm_customers.customer_id = @finance_transactions.customer_id.
      All CRM customers appear even if they have no transactions."
   }
   target { `customer_360_view` }
@@ -211,7 +218,7 @@ mapping `customer 360 assembly` {
   }
 
   -> full_name {
-    "Concatenate crm_customers.first_name and crm_customers.last_name with a
+    "Concatenate @crm_customers.first_name and @crm_customers.last_name with a
      single space separator. Trim whitespace. Null if both components are null."
   }
 
@@ -221,26 +228,26 @@ mapping `customer 360 assembly` {
   crm_customers.acquisition_channel -> acquisition_channel { trim }
 
   -> account_status {
-    "If crm_customers.account_closure_date is null then `active` else `closed`"
+    If @crm_customers.account_closure_date is null then "active" else "closed"
   }
 
   // Aggregated financial data
   -> total_transaction_amt {
-    "Sum of finance_transactions.amount where customer_id matches,
+    "Sum of @finance_transactions.amount where @customer_id matches,
      rounded to 2 decimal places. Null if no transactions."
   }
 
   -> transaction_count {
-    "Count of finance_transactions rows for this customer. Zero if no transactions."
+    "Count of @finance_transactions rows for this customer. Zero if no transactions."
   }
 
   -> last_transaction_date {
-    "Max of finance_transactions.transaction_date for this customer. Null if none."
+    "Max of @finance_transactions.transaction_date for this customer. Null if none."
   }
 
   -> last_activity_date {
     "Greatest of: last login timestamp from CRM (if available),
-     last_transaction_date, and last profile update timestamp.
+     @last_transaction_date, and last profile update timestamp.
      This field anchors the retention policy for the target schema."
   }
 

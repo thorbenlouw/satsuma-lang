@@ -66,20 +66,23 @@ mapping `crm to analytics` {
 }
 
 mapping `payments to analytics` {
-  source { `payment_gateway` }
+  source {
+    `payment_gateway`
+    `crm_system`
+  }
   target { `analytics_db` }
 
   amount -> total_spent {
-    "Sum all transactions where status = `completed`, grouped by customer_email.
-     Join to crm_system on email to resolve customer_id."
+    "Sum all transactions where @status = completed, grouped by @customer_email.
+     Join to @crm_system on @email to resolve @customer_id."
   }
 
   -> transaction_count {
-    "Count transactions where status = `completed`, per customer."
+    "Count transactions where @status = completed, per customer."
   }
 
   -> last_transaction_date {
-    "Max transaction timestamp where status = `completed`, per customer."
+    "Max transaction timestamp where @status = completed, per customer."
   }
 }
 
@@ -94,12 +97,12 @@ mapping `crm to notifications` {
   phone -> recipient_phone
 
   -> message_type {
-    "Set to `loyalty_update` if `loyalty_points` > 1000, otherwise null."
+    "Set to loyalty_update if @loyalty_points > 1000, otherwise null."
   }
 
   -> priority {
-    "Check `payment_gateway`: if any transaction has `payment_gateway.status` = `failed` for
-     this customer, set `high`. Otherwise `low`."
+    "Check @payment_gateway: if any transaction has @payment_gateway.status = failed for
+     this customer, set high. Otherwise low."
   }
 }
 
@@ -110,7 +113,7 @@ mapping `payments to notifications` {
   customer_email -> recipient_email
 
   transaction_id -> message_body {
-    "Format as `Transaction {`transaction_id`} completed successfully.`"
+    "Format as Transaction {@transaction_id} completed successfully."
   }
 }
 
@@ -122,5 +125,5 @@ mapping `inventory to reporting` {
   stock_level -> available_stock
   warehouse_location -> location
 
-  -> reorder_needed { "True if `stock_level` < 10, false otherwise." }
+  -> reorder_needed { "True if @stock_level < 10, false otherwise." }
 }

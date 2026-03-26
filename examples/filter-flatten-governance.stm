@@ -146,7 +146,7 @@ mapping `completed orders` {
     `order_events`
     `customer_profiles`
     "Join on order_events.customer.customer_id = customer_profiles.customer_id
-     WHERE order_events.order_status = `completed`"
+     WHERE @order_events.order_status = completed"
   }
   target { `completed_orders_parquet` }
 
@@ -187,7 +187,7 @@ mapping `completed orders` {
 mapping `order line facts` {
   note {
     "Produces one output row per non-cancelled line item. The filter on
-     line_items (item_status != `cancelled`) at the schema level means
+     @line_items (@item_status != cancelled) at the schema level means
      cancelled lines are already excluded before this mapping runs."
   }
 
@@ -213,7 +213,7 @@ mapping `order line facts` {
 
   -> promo_code_count {
     "Count distinct values in line_items.discount_lines.discount_code
-     where discount_type = `promo`"
+     where @discount_type = promo"
   }
 
   -> ingest_timestamp { now_utc() }

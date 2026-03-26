@@ -1,4 +1,5 @@
 // Satsuma v2 — Business Metrics
+import { fact_subscriptions, fact_orders, fact_opportunities, fact_sessions, dim_customer, dim_date, dim_stage } from "metric_sources.stm"
 
 note {
   """
@@ -48,8 +49,8 @@ metric churn_rate (
   note {
     """
     Churned customers in month M divided by active customers at start of month M.
-    A customer is churned when their subscription reaches `status = `cancelled``
-    and `cancelled_at` falls within the reporting month.
+    A customer is churned when their subscription reaches @status = cancelled
+    and @cancelled_at falls within the reporting month.
     """
   }
 }
@@ -65,8 +66,8 @@ metric customer_lifetime_value "CLV" (
   note {
     """
     Average revenue per customer over their entire tenure.
-    Calculated as: `total_revenue / months_active * expected_lifetime_months`.
-    Expected lifetime derived from cohort survival curves (see `dim_cohort_survival`).
+    Calculated as: @total_revenue / @months_active * @expected_lifetime_months.
+    Expected lifetime derived from cohort survival curves (see @dim_cohort_survival).
 
     **Note:** CLV is non-additive — do not sum across segments.
     Use a weighted average when rolling up cohorts.
@@ -84,7 +85,7 @@ metric conversion_rate (
   value  DECIMAL(5,4)  (measure non_additive)  // wins / total by stage
 
   note {
-    "Opportunities `closed_won` divided by total opportunities entering that stage."
+    "Opportunities closed_won divided by total opportunities entering that stage."
   }
 }
 
@@ -97,7 +98,7 @@ metric pipeline_value "ARR Pipeline" (
   arr_value           DECIMAL(18,2)  (measure additive)
   weighted_arr_value  DECIMAL(18,2) (
     measure additive,
-    note "`arr_value` * `probability` — use for forecast roll-ups"
+    note "@arr_value * @probability — use for forecast roll-ups"
   )
 
   note {
@@ -119,14 +120,14 @@ metric order_revenue (
 
   note {
     """
-    `gross_revenue` = sum of `total_amount` in the order`s billing currency,
-    converted to USD at the daily spot rate from `currency_rates`.
+    @gross_revenue = sum of @total_amount in the order's billing currency,
+    converted to USD at the daily spot rate from @currency_rates.
 
-    `net_revenue` = gross_revenue minus refunds and chargebacks recorded
-    in `fact_adjustments` for the same order_id.
+    @net_revenue = gross_revenue minus refunds and chargebacks recorded
+    in @fact_adjustments for the same order_id.
 
-    Orders with `is_gift = true` on all line items are excluded from
-    `avg_order_value` but included in `order_count`.
+    Orders with @is_gift = true on all line items are excluded from
+    @avg_order_value but included in @order_count.
     """
   }
 }

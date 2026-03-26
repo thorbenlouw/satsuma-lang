@@ -1,13 +1,25 @@
 // Satsuma v2 — SFDC Standard Fragments Library
 // Reusable field sets for common Salesforce objects
 
+schema User (note "Salesforce User object — minimal for ref resolution") {
+  Id    ID           (pk)
+  Name  STRING(255)
+}
+
+schema Account (
+  note "Salesforce Account object — minimal for ref resolution"
+) {
+  Id    ID           (pk)
+  Name  STRING(255)
+}
+
 fragment `sfdc standard types` {
   Id                ID           (pk, unique)
   Name              STRING(255)  (required)
   CreatedDate       DATETIME     (required)
-  CreatedById       ID           (ref `User.Id`)
+  CreatedById       ID           (ref @User.Id)
   LastModifiedDate  DATETIME     (required)
-  LastModifiedById  ID           (ref `User.Id`)
+  LastModifiedById  ID           (ref @User.Id)
   SystemModStamp    DATETIME     (required)
   IsDeleted         BOOLEAN      (default false)
 }
@@ -23,7 +35,7 @@ fragment `sfdc address` {
 }
 
 fragment `sfdc opportunity standard` {
-  AccountId                 ID              (ref `Account.Id`)
+  AccountId                 ID              (ref @Account.Id)
   Amount                    CURRENCY(18,2)
   CloseDate                 DATE            (required)
   StageName                 PICKLIST        (required)
@@ -36,7 +48,7 @@ fragment `sfdc opportunity standard` {
 
 fragment `sfdc account standard` {
   Type               PICKLIST
-  ParentId           ID        (ref `Account.Id`)
+  ParentId           ID        (ref @Account.Id)
   BillingAddress record {
     ...sfdc address
   }

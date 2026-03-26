@@ -3,7 +3,7 @@
 
 schema fact_subscriptions (note "Active and historical subscription records") {
   subscription_id  STRING(36)     (pk)
-  customer_id      STRING(36)     (ref dim_customer.customer_id)
+  customer_id      STRING(36)     (ref @dim_customer.customer_id)
   product_line     STRING(50)
   amount           DECIMAL(14,2)
   billing_period   STRING(10)     (enum {monthly, quarterly, annual})
@@ -14,7 +14,7 @@ schema fact_subscriptions (note "Active and historical subscription records") {
 
 schema fact_orders (note "Commerce order header records") {
   order_id       STRING(36)     (pk)
-  customer_id    STRING(36)     (ref dim_customer.customer_id)
+  customer_id    STRING(36)     (ref @dim_customer.customer_id)
   order_date     DATE
   order_channel  STRING(30)
   currency_code  ISO-4217

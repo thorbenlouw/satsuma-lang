@@ -67,8 +67,10 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] } = {}) {
 // ── sl-5dyc: Import warnings on stderr ────────────────────────────────────
 
 describe("sl-5dyc: import warnings go to stderr", () => {
+  const MISSING_IMPORT = resolve(import.meta.dirname, "fixtures", "missing-import.stm");
+
   it("--json stdout is valid JSON even with import warnings", async () => {
-    const { stdout, stderr } = await run("summary", "--json", resolve(EXAMPLES, "db-to-db.stm"));
+    const { stdout, stderr } = await run("summary", "--json", MISSING_IMPORT);
     // Warning should be on stderr
     assert.match(stderr, /warning.*import target/);
     // Stdout should be valid JSON
@@ -77,7 +79,7 @@ describe("sl-5dyc: import warnings go to stderr", () => {
   });
 
   it("graph --json stdout is valid JSON even with import warnings", async () => {
-    const { stdout, stderr } = await run("graph", "--json", resolve(EXAMPLES, "db-to-db.stm"));
+    const { stdout, stderr } = await run("graph", "--json", MISSING_IMPORT);
     assert.match(stderr, /warning.*import target/);
     const parsed = JSON.parse(stdout);
     assert.ok(parsed.version);

@@ -145,7 +145,7 @@ namespace vault (note "Data Vault 2.0 — hubs, links, and satellites") {
     source { `raw::crm_deals` }
     target { `link_contact_deal` }
 
-    -> link_hk { "MD5 hash of `contact_id` + `deal_id`" }
+    -> link_hk { "MD5 hash of @contact_id + @deal_id" }
     contact_id -> contact_hk { dv_hash_key }
     deal_id -> deal_hk { dv_hash_key }
   }
@@ -197,13 +197,13 @@ namespace mart (note "Business-facing dimensional models") {
     -> contact_sk { "Surrogate key via sequence generator" }
 
     -> full_name {
-      "Concatenate `first_name` and `last_name` from `vault::sat_contact_details`"
+      "Concatenate @first_name and @last_name from @vault::sat_contact_details"
     }
 
-    -> email { "Latest `email` from `vault::sat_contact_details` satellite" }
+    -> email { "Latest @email from @vault::sat_contact_details satellite" }
 
     -> company {
-      "Latest `company_name` from `vault::sat_contact_details` satellite"
+      "Latest @company_name from @vault::sat_contact_details satellite"
     }
   }
 
@@ -220,7 +220,7 @@ namespace mart (note "Business-facing dimensional models") {
     -> deal_sk { "Surrogate key via sequence generator" }
 
     -> contact_sk {
-      "Lookup via `vault::link_contact_deal` -> `vault::hub_contact` -> `dim_contact`"
+      "Lookup via @vault::link_contact_deal -> @vault::hub_contact -> @dim_contact"
     }
 
     -> deal_name {
@@ -229,7 +229,7 @@ namespace mart (note "Business-facing dimensional models") {
 
     -> amount_usd { "Convert deal amount to USD using daily FX rate" }
 
-    -> is_won { "True if `stage` = `closed_won`" }
+    -> is_won { "True if @stage = closed_won" }
 
     -> days_in_pipeline {
       "Difference in days between deal created date and close date"

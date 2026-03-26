@@ -123,10 +123,12 @@ mapping `cobol customer to avro event` {
 
   CUST_TYPE -> customer_type { map { R: "retail", B: "business" } }
 
-  -> display_name {
-    "If CUST_TYPE = `R`, trim and concatenate FIRST_NAME + ` ` + LAST_NAME.
-     If CUST_TYPE = `B`, use COMPANY_NAME trimmed.
-     This resolves the REDEFINES: PERSONAL_NAME vs BUSINESS_NAME."
+  CUST_TYPE, PERSONAL_NAME.FIRST_NAME, PERSONAL_NAME.LAST_NAME, BUSINESS_NAME.COMPANY_NAME -> display_name {
+    """
+     If @CUST_TYPE = "R", trim and concatenate @PERSONAL_NAME.FIRST_NAME + " " + @PERSONAL_NAME.LAST_NAME.
+     If @CUST_TYPE = "B", use @BUSINESS_NAME.COMPANY_NAME trimmed.
+     This resolves the REDEFINES: PERSONAL_NAME vs BUSINESS_NAME.
+     """
   }
 
   ADDRESS.STREET -> address.street { trim }
