@@ -1,5 +1,71 @@
 # Changelog
 
+## v0.3.0 — 2026-03-26
+
+### Language Simplification (Feature 22)
+
+- **`@ref` cross-references** — new `@schema`, `@schema.field`, and
+  `@ns::schema.field` syntax for referencing entities inside NL strings.
+  Replaces the need for backtick-only references; backticks remain supported.
+- **Grammar simplification** — collapsed 13 `kv_value` forms into greedy
+  `value_text`, replaced `token_call`/`arithmetic_step` with greedy `pipe_text`,
+  and simplified `map_key`/`map_value` with `repeat1`. Net reduction of ~150
+  grammar rules with zero loss of expressiveness.
+- **Backtick-only labels** — single-quoted block labels (`'name'`) removed from
+  the grammar. All multi-word labels now use backtick syntax (`` `name` ``).
+- **Multi-source arrows** — `a, b -> target` syntax for arrows with multiple
+  source fields. Grammar, extraction, canonicalization, and CLI output all
+  updated.
+
+### CLI
+
+- **`@ref` extraction** — `nl-refs`, `validate`, `lint`, `graph`, and `lineage`
+  commands all recognize `@ref` syntax alongside backtick references.
+- **Lineage follows `@ref` edges** — `satsuma lineage` traverses `nl_ref` edges
+  emitted by `graph`, providing full cross-reference lineage.
+- **`hidden-source-in-nl` auto-fix** — `satsuma lint --fix` can now insert
+  missing source declarations when an NL reference mentions an undeclared schema.
+  Severity raised from warning to error.
+- **Canonical output** — all commands emit namespace-qualified, canonical field
+  references (e.g. `ns::schema.field`) for consistent downstream consumption.
+- **30 bug fixes** across two bughunt rounds, including:
+  - Source block join NL extraction and `@ref` scanning
+  - Field-scoped `nl` queries now recurse into `each`/`flatten` blocks
+  - `graph --schema-only` no longer duplicates edges for namespaced mappings
+  - `validate` no longer false-warns when duplicate mapping names exist across files
+  - `classify` correctly detects mixed NL/structural pipe steps
+  - `mapping --compact --json` now strips transforms, notes, and metadata
+  - `lint` no longer flags backtick emphasis in file-level notes or dotted
+    sub-field paths of declared sources
+  - 3+ segment `@ref` paths (e.g. `@schema.record.subfield`) correctly resolve
+    through nested record structures
+  - Consistent `1`-indexed row numbers in all JSON output
+  - Formatter preserves blank lines between header and section comments
+- **845 CLI tests** (up from 679 in v0.1.0).
+
+### VS Code Extension
+
+- **`@ref` highlighting** — TextMate grammar updated with `@ref` token rules.
+- **LSP `@ref` support** — semantic tokens, go-to-definition, and diagnostics
+  for `@ref` cross-references.
+
+### Documentation
+
+- All examples, tutorials, convention guides, and spec updated for `@ref`
+  syntax and backtick-only labels.
+- New EDI convention guide (EDIFACT / ODETTE / TRADACOMS).
+- MARC21 convention example gaps closed.
+- Satsuma-to-Excel conversion skill added.
+- Site examples and stats refreshed for v2 syntax.
+
+### Infrastructure
+
+- `npm run install:all` builds WASM parser and LSP server in one step.
+- Integration tests run concurrently (24s down to 7.5s).
+- CI test reporting via JUnit XML.
+
+---
+
 ## v0.2.0 — 2026-03-24
 
 ### Formatter (`satsuma fmt`)
