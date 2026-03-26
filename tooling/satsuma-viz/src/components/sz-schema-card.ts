@@ -175,6 +175,49 @@ export class SzSchemaCard extends LitElement {
     .collapsed .label {
       display: none;
     }
+
+    .collapsed .notes-section {
+      display: none;
+    }
+
+    .notes-section {
+      border-top: 1px dashed var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      padding: 6px 12px;
+    }
+
+    .notes-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--sz-text-muted, #6B6560);
+      user-select: none;
+      padding: 2px 0;
+    }
+
+    .notes-toggle:hover {
+      color: var(--sz-text, #2D2A26);
+    }
+
+    .notes-toggle .arrow {
+      font-size: 10px;
+      transition: transform 0.15s ease;
+    }
+
+    .notes-toggle .arrow[data-expanded] {
+      transform: rotate(90deg);
+    }
+
+    .note-content {
+      font-family: var(--sz-font-sans, system-ui);
+      font-size: 12px;
+      color: var(--sz-text, #2D2A26);
+      line-height: 1.5;
+      padding: 4px 0 2px 22px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   `;
 
   @property({ type: Object })
@@ -187,12 +230,16 @@ export class SzSchemaCard extends LitElement {
   @state()
   private _collapsed = false;
 
+  @state()
+  private _notesExpanded = false;
+
   override render() {
     const s = this.schema;
     if (!s) return html``;
 
     const totalFields = this._countFields(s.fields);
     const mappedCount = this._countMapped(s.fields);
+    const hasNotes = s.notes.length > 0;
 
     return html`
       <div class=${this._collapsed ? "collapsed" : ""}>
@@ -209,8 +256,28 @@ export class SzSchemaCard extends LitElement {
         <div class="fields">
           ${s.fields.map((f) => this._renderField(f, 0))}
         </div>
+        ${hasNotes ? this._renderNotes(s.notes) : ""}
       </div>
     `;
+  }
+
+  private _renderNotes(notes: import("../model.js").NoteBlock[]) {
+    return html`
+      <div class="notes-section">
+        <div class="notes-toggle" @click=${this._toggleNotes}>
+          <span class="arrow" ?data-expanded=${this._notesExpanded}>&#9654;</span>
+          <span>&#128221; ${notes.length === 1 ? "Note" : `${notes.length} Notes`}</span>
+        </div>
+        ${this._notesExpanded
+          ? notes.map((n) => html`<div class="note-content">${n.text}</div>`)
+          : ""}
+      </div>
+    `;
+  }
+
+  private _toggleNotes(e: Event) {
+    e.stopPropagation();
+    this._notesExpanded = !this._notesExpanded;
   }
 
   private _renderField(f: FieldEntry, depth: number): TemplateResult {

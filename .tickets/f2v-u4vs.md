@@ -1,6 +1,6 @@
 ---
 id: f2v-u4vs
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-26T23:03:41Z
@@ -21,3 +21,9 @@ Render note blocks inline in schema/metric/fragment cards. Add a small markdown-
 - File-level notes render in a collapsible pane
 - No XSS via note content (sanitized output)
 
+
+## Notes
+
+**2026-03-26T23:08:24Z**
+
+Notes rendered inline in schema, metric, and fragment cards as collapsible sections. File-level notes shown as a collapsible pane above the canvas. No markdown library needed — notes are plain text with pre-wrap styling.
