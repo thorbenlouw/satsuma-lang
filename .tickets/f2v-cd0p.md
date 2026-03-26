@@ -1,6 +1,6 @@
 ---
 id: f2v-cd0p
-status: open
+status: closed
 deps: []
 links: [f2v-2wac]
 created: 2026-03-26T23:15:15Z
@@ -21,3 +21,9 @@ Implement a collapsible right-side panel that renders file-level note blocks as 
 - Pane collapsed by default if no file-level notes exist
 - Markdown sanitized to prevent XSS
 
+
+## Notes
+
+**2026-03-26T23:25:12Z**
+
+Right-side notes pane implemented as a 280px sidebar showing file notes and block-level comments grouped by severity (warnings first, then questions). Click a comment to navigate to source.
