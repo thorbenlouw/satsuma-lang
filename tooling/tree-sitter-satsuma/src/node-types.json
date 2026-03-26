@@ -1,5 +1,24 @@
 [
   {
+    "type": "at_ref",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backtick_name",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "backtick_path",
     "named": true,
     "fields": {},
@@ -776,6 +795,10 @@
       "required": false,
       "types": [
         {
+          "type": "at_ref",
+          "named": true
+        },
+        {
           "type": "backtick_name",
           "named": true
         },
@@ -1160,6 +1183,10 @@
       "required": false,
       "types": [
         {
+          "type": "at_ref",
+          "named": true
+        },
+        {
           "type": "backtick_name",
           "named": true
         },
@@ -1228,6 +1255,10 @@
   },
   {
     "type": "::",
+    "named": false
+  },
+  {
+    "type": "@",
     "named": false
   },
   {
