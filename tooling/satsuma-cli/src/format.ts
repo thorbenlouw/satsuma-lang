@@ -818,14 +818,8 @@ function formatPipeStep(node: SyntaxNode, source: string, indent: number): strin
   if (!inner) return "";
 
   switch (inner.type) {
-    case "nl_string":
+    case "pipe_text":
       return inner.text;
-    case "multiline_string":
-      return inner.text;
-    case "token_call":
-      return formatTokenCall(inner);
-    case "arithmetic_step":
-      return formatArithmeticStep(inner);
     case "map_literal":
       return formatMapLiteral(inner, source, indent);
     case "fragment_spread":
@@ -833,39 +827,6 @@ function formatPipeStep(node: SyntaxNode, source: string, indent: number): strin
     default:
       return inner.text;
   }
-}
-
-function formatTokenCall(node: SyntaxNode): string {
-  const name = findChild(node, "identifier");
-  if (!name) return node.text;
-
-  // Check for arguments
-  const hasParens = node.children.some(c => c.type === "(");
-  if (!hasParens) return name.text;
-
-  // Collect args
-  const args: string[] = [];
-  let inArgs = false;
-  for (const child of node.children) {
-    if (child.type === "(") { inArgs = true; continue; }
-    if (child.type === ")") break;
-    if (child.type === ",") continue;
-    if (inArgs && child.isNamed) {
-      args.push(child.text);
-    }
-  }
-
-  return name.text + "(" + args.join(", ") + ")";
-}
-
-function formatArithmeticStep(node: SyntaxNode): string {
-  // The operator (* / + -) is a hidden token, not a child node.
-  // Extract it from the node text: "* 100" or "/ 2" etc.
-  const num = findChild(node, "number_literal");
-  if (!num) return node.text;
-  // The operator is everything before the number in the node's source span
-  const opText = node.text.slice(0, node.text.indexOf(num.text)).trim();
-  return opText + " " + num.text;
 }
 
 function formatMapLiteral(node: SyntaxNode, source: string, indent: number): string {
@@ -1165,8 +1126,8 @@ function formatMetadataEntry(node: SyntaxNode, source: string): string {
       const id = findChild(node, "identifier");
       return id ? id.text : node.text;
     }
-    case "key_value_pair": {
-      return formatKeyValuePair(node, source);
+    case "tag_with_value": {
+      return formatTagWithValue(node);
     }
     case "note_tag": {
       return formatNoteTag(node, source);
@@ -1182,31 +1143,11 @@ function formatMetadataEntry(node: SyntaxNode, source: string): string {
   }
 }
 
-function formatKeyValuePair(node: SyntaxNode, _source: string): string {
-  const key = findChild(node, "kv_key");
-  const keyText = key ? key.children[0]?.text || key.text : "";
-
-  // Value is everything after the key
-  const valueParts: string[] = [];
-  let pastKey = false;
-  for (const child of node.children) {
-    if (child.type === "kv_key") { pastKey = true; continue; }
-    if (pastKey) {
-      if (child.type === "kv_braced_list") {
-        valueParts.push(formatKvBracedList(child));
-      } else if (child.type === "kv_comparison") {
-        valueParts.push(formatKvComparison(child));
-      } else if (child.type === "kv_compound") {
-        valueParts.push(formatKvCompound(child));
-      } else if (child.type === "kv_ref_on") {
-        valueParts.push(formatKvRefOn(child));
-      } else {
-        valueParts.push(child.text);
-      }
-    }
-  }
-
-  return keyText + " " + valueParts.join(" ");
+function formatTagWithValue(node: SyntaxNode): string {
+  const key = node.namedChildren[0]; // identifier
+  const val = node.namedChildren[1]; // value_text
+  if (!key) return node.text;
+  return val ? key.text + " " + val.text : key.text;
 }
 
 function formatNoteTag(node: SyntaxNode, _source: string): string {
@@ -1236,25 +1177,4 @@ function formatSliceBody(node: SyntaxNode): string {
   return "slice {" + items.join(", ") + "}";
 }
 
-function formatKvBracedList(node: SyntaxNode): string {
-  const items: string[] = [];
-  for (const child of node.children) {
-    if (child.type === "{" || child.type === "}" || child.type === ",") continue;
-    items.push(child.text);
-  }
-  return "{" + items.join(", ") + "}";
-}
 
-function formatKvComparison(node: SyntaxNode): string {
-  // The comparison operator (!=, ==, >=, etc.) is a hidden token.
-  // Use node.text directly and normalize whitespace.
-  return node.text.replace(/\s+/g, " ").trim();
-}
-
-function formatKvCompound(node: SyntaxNode): string {
-  return node.text.replace(/\s+/g, " ").trim();
-}
-
-function formatKvRefOn(node: SyntaxNode): string {
-  return node.text.replace(/\s+/g, " ").trim();
-}

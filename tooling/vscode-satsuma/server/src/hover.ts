@@ -75,8 +75,8 @@ function tryHover(node: SyntaxNode, tree: Tree): HoverResult | null {
     case "tgt_path":
       return hoverArrowPath(node);
 
-    case "token_call":
-      return hoverTokenCall(node);
+    case "pipe_text":
+      return hoverPipeText(node);
 
     case "schema_block":
     case "fragment_block":
@@ -309,11 +309,11 @@ function hoverArrowPath(node: SyntaxNode): HoverResult | null {
   };
 }
 
-function hoverTokenCall(node: SyntaxNode): HoverResult | null {
+function hoverPipeText(node: SyntaxNode): HoverResult | null {
   const name = child(node, "identifier");
   if (!name) return null;
   return {
-    markdown: `**transform function** \`${name.text}\``,
+    markdown: `**pipe text** \`${node.text}\``,
     node,
   };
 }

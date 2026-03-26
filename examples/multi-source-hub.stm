@@ -122,7 +122,5 @@ mapping 'inventory to reporting' {
   stock_level -> available_stock
   warehouse_location -> location
 
-  -> reorder_needed {
-    "True if `stock_level` < 10, false otherwise."
-  }
+  -> reorder_needed { "True if `stock_level` < 10, false otherwise." }
 }

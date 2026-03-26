@@ -27,7 +27,8 @@ transform 'clean email' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (nl_string)))))
+        (pipe_text
+          (nl_string))))))
 
 ================================================================================
 Single token_call step
@@ -45,7 +46,7 @@ transform 'normalize' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier))))))
 
 ================================================================================
@@ -64,7 +65,7 @@ transform 'coerce' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)
           (nl_string)
           (identifier))))))
@@ -85,13 +86,13 @@ transform 'clean email' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier))))))
 
 ================================================================================
@@ -110,12 +111,13 @@ transform 'normalize phone' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (nl_string))
+        (pipe_text
+          (nl_string)))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier))))))
 
 ================================================================================
@@ -280,7 +282,7 @@ transform 'lookup then normalize' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)))
       (pipe_step
         (map_literal
@@ -299,7 +301,7 @@ transform 'lookup then normalize' {
             (map_value
               (nl_string)))))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier))))))
 
 ================================================================================
@@ -318,14 +320,14 @@ transform 'apply standard' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)))
       (pipe_step
         (fragment_spread
           (spread_label
             (quoted_name))))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier))))))
 
 ================================================================================
@@ -346,10 +348,12 @@ transform 'phone normalization' {
       (quoted_name))
     (pipe_chain
       (pipe_step
-        (nl_string))
+        (pipe_text
+          (nl_string)))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier)))
       (pipe_step
-        (token_call
+        (pipe_text
           (identifier))))))
+

@@ -73,16 +73,18 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
       }
     } else if (c.type === "pipe_step") {
       const inner = c.namedChildren[0];
-      if (
-        inner &&
-        (inner.type === "nl_string" || inner.type === "multiline_string")
-      ) {
-        items.push({
-          text: stripDelimiters(inner.text, inner.type),
-          kind: "transform",
-          parent,
-          line: c.startPosition.row + 1,
-        });
+      if (inner?.type === "pipe_text") {
+        // Check if pipe_text contains NL strings
+        for (const kid of inner.namedChildren) {
+          if (kid.type === "nl_string" || kid.type === "multiline_string") {
+            items.push({
+              text: stripDelimiters(kid.text, kid.type),
+              kind: "transform",
+              parent,
+              line: c.startPosition.row + 1,
+            });
+          }
+        }
       }
     } else {
       let newParent = parent;

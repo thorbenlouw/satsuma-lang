@@ -115,9 +115,7 @@ mapping 'edi to mfcs' {
      if 203 parse as CCYYMMDDHHMM. Output format: YYYY-MM-DD."
   }
 
-  -> ShipmentHeader.asnType {
-    "0"
-  }  // default: ASN Shipment
+  -> ShipmentHeader.asnType { "0" }  // default: ASN Shipment
 
   POReferences.REFNUM -> ShipmentHeader.toLocation {
     "Extract PO number from `REFNUM` (digits before '/').

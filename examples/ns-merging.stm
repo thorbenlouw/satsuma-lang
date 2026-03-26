@@ -80,9 +80,7 @@ namespace staging (note "Cleaned and conformed staging area") {
     department -> department { clean_string }
     hire_date -> hire_date
 
-    -> is_active {
-      "True if no termination record exists in HR system"
-    }
+    -> is_active { "True if no termination record exists in HR system" }
   }
 
   // Map GL entries — joins to employees across merged namespace
@@ -131,9 +129,7 @@ namespace reporting (note "Executive reporting layer") {
 
     department -> department
 
-    -> fiscal_year {
-      "Extract year from `entry_date`"
-    }
+    -> fiscal_year { "Extract year from `entry_date`" }
 
     -> budget_amount {
       "Lookup from `source::finance_budgets` matching `department` and `fiscal_year`"
@@ -143,13 +139,9 @@ namespace reporting (note "Executive reporting layer") {
       "Sum of `amount` grouped by `department` and `fiscal_year`"
     }
 
-    -> variance {
-      "`budget_amount` minus `actual_spend`"
-    }
+    -> variance { "`budget_amount` minus `actual_spend`" }
 
-    -> variance_pct {
-      "`variance` divided by `budget_amount` times 100"
-    }
+    -> variance_pct { "`variance` divided by `budget_amount` times 100" }
 
     -> headcount {
       "Count distinct employees from `staging::stg_employees` for this `department`"

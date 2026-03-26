@@ -18,12 +18,14 @@ function extractMetaEntries(metaNode) {
   if (!metaNode) return [];
   const entries = [];
   for (const c of metaNode.namedChildren) {
-    if (c.type === "key_value_pair") {
-      const key = c.namedChildren.find((x) => x.type === "kv_key");
-      const val = c.namedChildren.find((x) => x !== key);
+    if (c.type === "tag_with_value") {
+      const key = c.namedChildren[0]; // identifier
+      const val = c.namedChildren[1]; // value_text
       if (key) {
         let valText = val?.text ?? "";
-        if (val?.type === "nl_string") valText = val.text.slice(1, -1);
+        // Strip quotes from nl_string values inside value_text
+        const firstChild = val?.namedChildren?.[0];
+        if (firstChild?.type === "nl_string") valText = firstChild.text.slice(1, -1);
         entries.push({ key: key.text, value: valText });
       }
     } else if (c.type === "tag_token") {
@@ -48,10 +50,9 @@ function formatMeta(entries) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("extractMetaEntries", () => {
-  it("extracts key_value_pair entries", () => {
-    const kvKey = n("kv_key", [], "grain");
-    const kvVal = ident("monthly");
-    const kv = n("key_value_pair", [kvKey, kvVal]);
+  it("extracts tag_with_value entries", () => {
+    const kvVal = n("value_text", [ident("monthly")], "monthly");
+    const kv = n("tag_with_value", [ident("grain"), kvVal]);
     const meta = n("metadata_block", [kv]);
 
     const entries = extractMetaEntries(meta);
@@ -61,9 +62,8 @@ describe("extractMetaEntries", () => {
   });
 
   it("strips nl_string quotes from values", () => {
-    const kvKey = n("kv_key", [], "filter");
-    const kvVal = n("nl_string", [], '"status = \'active\'"');
-    const kv = n("key_value_pair", [kvKey, kvVal]);
+    const kvVal = n("value_text", [n("nl_string", [], '"status = \'active\'"')], '"status = \'active\'"');
+    const kv = n("tag_with_value", [ident("filter"), kvVal]);
     const meta = n("metadata_block", [kv]);
 
     const entries = extractMetaEntries(meta);

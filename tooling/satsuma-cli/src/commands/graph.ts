@@ -481,13 +481,13 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
 
       if (record.classification === "structural" || record.classification === "mixed") {
         edge.transforms = record.steps
-          .filter((s) => s.type !== "nl_string" && s.type !== "multiline_string")
+          .filter((s) => s.type !== "pipe_text" || !s.text.startsWith('"'))
           .map((s) => s.text);
       }
 
       if ((record.classification === "nl" || record.classification === "mixed") && includeNl) {
         const nlSteps = record.steps.filter(
-          (s) => s.type === "nl_string" || s.type === "multiline_string",
+          (s) => s.type === "pipe_text" && (s.text.startsWith('"') || s.text.startsWith('"""')),
         );
         if (nlSteps.length > 0) {
           edge.nl_text = nlSteps.map((s) => s.text).join(" ");
@@ -504,7 +504,7 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
       // Track unresolved NL for the output section
       if (record.classification === "nl" || record.classification === "mixed") {
         const nlSteps = record.steps.filter(
-          (s) => s.type === "nl_string" || s.type === "multiline_string",
+          (s) => s.type === "pipe_text" && (s.text.startsWith('"') || s.text.startsWith('"""')),
         );
         if (nlSteps.length > 0) {
           unresolvedNl.push({

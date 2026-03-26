@@ -45,8 +45,8 @@ function fieldDecl(name, type, row = 0) {
 }
 
 function kvPair(key, valNode) {
-  const kvKey = n("kv_key", [ident(key)], key);
-  return n("key_value_pair", [kvKey, valNode]);
+  const valText = n("value_text", valNode.type === "value_text" ? valNode.namedChildren : [valNode], valNode.text);
+  return n("tag_with_value", [ident(key), valText]);
 }
 
 /** Build a minimal WorkspaceIndex for testing semantic warnings. */
@@ -285,12 +285,12 @@ describe("Bug 3: metric source extraction", () => {
   });
 
   it("extracts block-form metric sources", () => {
-    const bracedList = n("kv_braced_list", [
+    const valText = n("value_text", [
       ident("fact_subscriptions"),
       ident("dim_customer"),
     ], "{fact_subscriptions, dim_customer}");
     const meta = n("metadata_block", [
-      kvPair("source", bracedList),
+      n("tag_with_value", [ident("source"), valText]),
     ]);
     const body = n("metric_body", []);
     const block = n("metric_block", [blockLabel("churn_rate"), meta, body]);

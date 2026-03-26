@@ -322,7 +322,7 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
 
 ================================================================================
@@ -364,7 +364,7 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))))
       (map_arrow
         (src_path
@@ -375,8 +375,9 @@ mapping {
             (identifier)))
         (pipe_chain
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier)))
           (pipe_step
-            (token_call
+            (pipe_text
               (identifier))))))))
+

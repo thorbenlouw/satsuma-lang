@@ -108,7 +108,7 @@
 (backtick_name) @string.special
 
 ; ── Pipe chain tokens ─────────────────────────────────────────────────────────
-(token_call (identifier) @function.call)
+(pipe_text (identifier) @function.call)
 
 ; ── Map literal ───────────────────────────────────────────────────────────────
 (map_key (identifier) @constant)

@@ -89,9 +89,9 @@ function extractMetaEntries(metaNode: SyntaxNode | undefined): MetaEntry[] {
   if (!metaNode) return [];
   const entries: MetaEntry[] = [];
   for (const c of metaNode.namedChildren) {
-    if (c.type === "key_value_pair") {
-      const key = c.namedChildren.find((x) => x.type === "kv_key");
-      const val = c.namedChildren.find((x) => x.type !== "kv_key");
+    if (c.type === "tag_with_value") {
+      const key = c.namedChildren[0]; // identifier
+      const val = c.namedChildren[1]; // value_text
       if (key) {
         let valText = val?.text ?? "";
         const quoted = val?.type === "nl_string" || val?.type === "multiline_string";
