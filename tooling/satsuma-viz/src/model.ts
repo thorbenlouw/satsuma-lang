@@ -27,6 +27,8 @@ export interface SchemaCard {
   metadata: MetadataEntry[];
   location: SourceLocation;
   hasExternalLineage: boolean;
+  /** Fragment names spread into this schema */
+  spreads: string[];
 }
 
 export interface FieldEntry {
