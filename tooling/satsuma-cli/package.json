@@ -14,7 +14,7 @@
   "scripts": {
     "start": "node src/index.js",
     "prebuild": "node scripts/prebuild.js",
-    "postbuild": "chmod +x dist/index.js 2>/dev/null || true",
+    "postbuild": "node scripts/postbuild.js",
     "build": "npm run prebuild && tsc",
     "dev": "tsc --watch",
     "pretest": "npm run prebuild && tsc",
