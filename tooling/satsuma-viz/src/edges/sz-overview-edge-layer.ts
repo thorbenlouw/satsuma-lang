@@ -164,9 +164,9 @@ export class SzOverviewEdgeLayer extends LitElement {
 
     const d = this._buildCurvePath(edge.points);
     const cls = this._edgeColorClass(edge.mapping);
-    const mid = this._midpoint(edge.points);
+    const labelPos = this._labelAnchor(edge.points);
     const labelText = edge.mapping.id;
-    const labelWidth = Math.min(labelText.length * 6.5 + 16, 160);
+    const labelWidth = edge.labelWidth;
 
     return svg`
       <path
@@ -178,7 +178,7 @@ export class SzOverviewEdgeLayer extends LitElement {
       />
       <g
         class="mapping-label-group"
-        transform="translate(${mid.x}, ${mid.y})"
+        transform="translate(${labelPos.x}, ${labelPos.y})"
         @click=${() => this._onEdgeClick(edge)}
         @mouseenter=${(ev: MouseEvent) => this._onEdgeHover(edge.id, ev)}
         @mouseleave=${() => this._onEdgeLeave()}
@@ -249,6 +249,41 @@ export class SzOverviewEdgeLayer extends LitElement {
       };
     }
     return points[mid];
+  }
+
+  private _labelAnchor(
+    points: Array<{ x: number; y: number }>
+  ): { x: number; y: number } {
+    if (points.length < 2) return { x: 0, y: 0 };
+
+    let best:
+      | {
+          score: number;
+          length: number;
+          start: { x: number; y: number };
+          end: { x: number; y: number };
+        }
+      | null = null;
+
+    for (let i = 1; i < points.length; i++) {
+      const start = points[i - 1];
+      const end = points[i];
+      const dx = Math.abs(end.x - start.x);
+      const dy = Math.abs(end.y - start.y);
+      const length = Math.hypot(end.x - start.x, end.y - start.y);
+      const score = dx - dy * 0.5;
+
+      if (!best || score > best.score || (score === best.score && length > best.length)) {
+        best = { score, length, start, end };
+      }
+    }
+
+    if (!best) return this._midpoint(points);
+
+    return {
+      x: (best.start.x + best.end.x) / 2,
+      y: (best.start.y + best.end.y) / 2,
+    };
   }
 
   private _onEdgeClick(edge: OverviewEdge) {

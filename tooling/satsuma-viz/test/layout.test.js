@@ -434,4 +434,90 @@ describe("computeOverviewLayout", () => {
     assert.ok(result.width > 0, "Layout width should be positive");
     assert.ok(result.height > 0, "Layout height should be positive");
   });
+
+  it("widens overview nodes for longer schema names and metadata", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [
+          schema("src"),
+          {
+            ...schema(
+              "order_headers_parquet_with_a_long_name",
+              [field("id"), field("customer_id"), field("created_at")],
+            ),
+            metadata: [{ key: "format", value: "parquet" }],
+          },
+        ],
+        mappings: [],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+    const srcNode = result.nodes.find((n) => n.id === "src");
+    const longNode = result.nodes.find((n) => n.id === "order_headers_parquet_with_a_long_name");
+
+    assert.ok(srcNode, "Should have src node");
+    assert.ok(longNode, "Should have long-name node");
+    assert.ok(
+      longNode.width > srcNode.width,
+      `Long-name node width (${longNode.width}) should exceed short node width (${srcNode.width})`,
+    );
+  });
+
+  it("reserves horizontal space for long mapping labels", async () => {
+    const longMappingId = "normalize_and_curate_order_headers_for_reporting";
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [schema("src"), schema("tgt")],
+        mappings: [mapping(longMappingId, ["src"], "tgt", [arrow("id", "id")])],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+    const srcNode = result.nodes.find((n) => n.id === "src");
+    const tgtNode = result.nodes.find((n) => n.id === "tgt");
+
+    assert.ok(srcNode, "Should have src node");
+    assert.ok(tgtNode, "Should have tgt node");
+    assert.equal(result.edges.length, 1, "Should have one overview edge");
+    assert.ok(
+      result.edges[0].labelWidth >= 180,
+      `Long mapping label width (${result.edges[0].labelWidth}) should be preserved on the edge`,
+    );
+
+    const gap = tgtNode.x - (srcNode.x + srcNode.width);
+    assert.ok(
+      gap >= result.edges[0].labelWidth,
+      `Gap between nodes (${gap}) should fit label width (${result.edges[0].labelWidth})`,
+    );
+  });
+
+  it("ignores overview edges whose source ref does not resolve to a node", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [schema("src"), schema("tgt")],
+        mappings: [mapping("m1", ["src", "Join text that is not a schema"], "tgt", [arrow("id", "id")])],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+    assert.equal(result.edges.length, 1, "Should only keep the valid source-ref edge");
+    assert.equal(result.edges[0].sourceNode, "src");
+    assert.equal(result.edges[0].targetNode, "tgt");
+  });
 });
