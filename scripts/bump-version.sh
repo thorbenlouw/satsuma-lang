@@ -5,7 +5,7 @@
 #   ./scripts/bump-version.sh <new-version>
 #
 # Example:
-#   ./scripts/bump-version.sh 0.3.0
+#   ./scripts/bump-version.sh 0.4.0
 #
 # The canonical version lives in the repo-root VERSION file.
 # This script updates VERSION and propagates it to:
@@ -22,7 +22,7 @@ set -euo pipefail
 
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <new-version>" >&2
-  echo "Example: $0 0.3.0" >&2
+  echo "Example: $0 0.4.0" >&2
   exit 1
 fi
 

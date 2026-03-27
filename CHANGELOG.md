@@ -1,5 +1,43 @@
 # Changelog
 
+
+## v0.4.0 — 2026-03-27
+
+### Visual Mapping Workspace
+
+- New two-level visualisation in the VS Code extension: an overview mode with
+  compact schema cards and thick mapping arrows, plus a focused mapping-detail
+  view with source schemas, a central arrow table, and the target schema.
+- Mapping-detail hover now cross-highlights rows and fields in both directions,
+  making multi-schema joins and transforms much easier to inspect.
+- Added pan/zoom reset on overview-to-detail transitions, smoother fade
+  animation, a minimap, SVG export, mapping tooltips, and a cleaner toolbar.
+- Schema cards now render metadata pills and Markdown notes, and the layout no
+  longer fails when mappings reference missing ports.
+
+### VS Code Extension
+
+- Added the new visualisation panel backed by the `@satsuma/viz` web component
+  package and LSP-driven visual model extraction.
+- Registered `.satsuma` files alongside `.stm`, added file icons, and grouped
+  Satsuma commands coherently in the editor context menu.
+- Fixed `Find References` for arrow paths and backtick NL references.
+- Fixed bundled WASM runtime resolution so the packaged extension works
+  reliably outside the development environment.
+
+### CLI And Distribution
+
+- The CLI now ships as one universal release artifact built on WASM
+  `web-tree-sitter`, removing platform-specific release packaging.
+- Release packaging now builds the visualisation bundle before VSIX creation,
+  fixing the missing `@satsuma/viz` asset issue in GitHub Actions.
+- Install docs now reflect the single universal CLI package for all platforms.
+
+### Documentation
+
+- Added the Feature 23 Phase 5 visual redesign plan and updated release-facing
+  docs to reflect `v0.4.0` and the current manual release flow.
+
 ## v0.3.0 — 2026-03-26
 
 ### Language Simplification (Feature 22)
