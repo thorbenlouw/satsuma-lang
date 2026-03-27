@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "node16",
+    "moduleResolution": "node16",
+    "target": "es2022",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"]
+}

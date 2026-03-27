@@ -2,11 +2,14 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
+    "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "target": "es2022",
     "types": ["node"],
     "paths": {
-      "web-tree-sitter": ["./src/web-tree-sitter.d.ts"]
+      "web-tree-sitter": ["./src/web-tree-sitter.d.ts"],
+      "@satsuma/core": ["./node_modules/@satsuma/core/dist/index.d.ts"],
+      "@satsuma/core/format": ["./node_modules/@satsuma/core/dist/format.d.ts"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": true,
