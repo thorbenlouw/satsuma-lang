@@ -157,8 +157,20 @@ function buildElkGraph(
       addFragmentNodes(ns.fragments, children);
       addMetricNodes(ns.metrics, children);
     }
+  }
 
-    // Edges from mappings
+  // Build a set of all port IDs so we can validate edge endpoints
+  allPortIds = new Set<string>();
+  const collectPorts = (nodes: ElkNode[]) => {
+    for (const n of nodes) {
+      for (const p of n.ports) allPortIds.add(p.id);
+      if (n.children.length > 0) collectPorts(n.children);
+    }
+  };
+  collectPorts(children);
+
+  // Add edges after ports are collected (so missing-port validation works)
+  for (const ns of model.namespaces) {
     addMappingEdges(ns.mappings, edges);
   }
 
@@ -298,6 +310,9 @@ interface EdgeMeta {
 /** Mapping from edge ID to arrow metadata — used by extractLayout to populate LayoutEdge fields. */
 const edgeMetaMap = new Map<string, EdgeMeta>();
 
+/** Set of all port IDs added to the graph, used to validate edge endpoints. */
+let allPortIds = new Set<string>();
+
 function addMappingEdges(mappings: MappingBlock[], edges: ElkEdge[]) {
   edgeMetaMap.clear();
 
@@ -311,10 +326,16 @@ function addMappingEdges(mappings: MappingBlock[], edges: ElkEdge[]) {
         const sourceField = a.sourceFields[0] ?? a.targetField;
         const edgeId = `${prefix}:${i}`;
 
+        const srcPort = `${sourceNode}:${sourceField}:src`;
+        const tgtPort = `${m.targetRef}:${a.targetField}:tgt`;
+
+        // Skip edges with missing ports — ELK throws if a port doesn't exist
+        if (!allPortIds.has(srcPort) || !allPortIds.has(tgtPort)) continue;
+
         edges.push({
           id: edgeId,
-          sources: [`${sourceNode}:${sourceField}:src`],
-          targets: [`${m.targetRef}:${a.targetField}:tgt`],
+          sources: [srcPort],
+          targets: [tgtPort],
         });
 
         edgeMetaMap.set(edgeId, {
