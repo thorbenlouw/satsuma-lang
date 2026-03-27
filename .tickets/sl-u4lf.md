@@ -1,6 +1,6 @@
 ---
 id: sl-u4lf
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-26T13:55:13Z
@@ -18,3 +18,10 @@ Currently lineage is only available via command palette with manual schema selec
 2. Clicking a lineage code lens opens the lineage view without requiring manual input
 3. Context menu on fields in arrows offers Trace field lineage
 
+
+## Notes
+
+**2026-03-27T12:35:30Z**
+
+Cause: Lineage actions in the VS Code extension only existed as manual commands, so schema and field context at the cursor was not wired into code lenses or the field lineage webview.
+Fix: Added schema Lineage from/to code lenses plus a server-backed action-context request so commands can resolve schema and field paths directly from the cursor without manual input (commit 3fec60c).
