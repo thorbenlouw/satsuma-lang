@@ -16,7 +16,7 @@ Read the [Data Engineer Tutorial](docs/tutorials/data-engineer-tutorial.md) — 
 Read the [Integration Engineer Tutorial](docs/tutorials/integration-engineer-tutorial.md) — covers using Satsuma for ESBs, APIs, message queues, and iPaaS platforms.
 
 **How do I look up the full syntax?**
-Read the [language specification](SATSUMA-V2-SPEC.md). For a compact cheat sheet, see [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md) or run `satsuma agent-reference`.
+Read the [language specification](SATSUMA-V2-SPEC.md). For a compact reference, see [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md) or run `satsuma agent-reference`.
 
 **How do I see working examples?**
 Browse [examples/](examples/) — each `.stm` file is a self-contained, parser-validated example.

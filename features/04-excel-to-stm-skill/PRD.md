@@ -90,13 +90,13 @@ The file is structured as a system prompt with these sections:
 
 You are a Satsuma conversion specialist. The user will upload an Excel spreadsheet containing source-to-target data mapping definitions. Your job is to convert it into well-formed, idiomatic Satsuma files.
 
-#### 2. Satsuma Grammar — compact EBNF (~500 tokens)
+#### 2. Satsuma Grammar — compact EBNF
 
 Inlined verbatim from `AI-AGENT-REFERENCE.md` grammar section.
 
-#### 3. Satsuma Quick Reference / Cheat Sheet (~400 tokens)
+#### 3. Satsuma Conventions & Rules
 
-Inlined verbatim from `AI-AGENT-REFERENCE.md` cheat sheet section. Covers schema blocks, mapping blocks, transforms, tags, annotations, and other constructs.
+Inlined verbatim from `AI-AGENT-REFERENCE.md` conventions section. Covers metadata tokens, backtick quoting, namespace references, transforms, metric rules, consumer conventions, `@ref` usage, and comments.
 
 #### 4. Generation Workflow (~300 tokens)
 
@@ -332,7 +332,7 @@ Use `--no-confirm` to skip this gate (e.g., for scripted usage).
 ### Phase 2: Translate
 
 The Translate phase works from the confirmed discovery report. It loads Satsuma knowledge by reading:
-- `AI-AGENT-REFERENCE.md` — compact grammar + cheat sheet (~900 tokens)
+- `AI-AGENT-REFERENCE.md` — compact grammar + conventions reference
 - 1–2 canonical examples from `examples/` appropriate to the mapping's cardinality and complexity
 
 It does **not** receive raw Excel data upfront. When it needs specific cell values, it requests targeted ranges via `excel_tool.py range`.

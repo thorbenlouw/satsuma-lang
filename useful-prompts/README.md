@@ -10,7 +10,7 @@ Claude.ai) to work with Satsuma without installing any tooling.
 **Excel-to-Satsuma Conversion Specialist** — Upload this prompt alongside a
 mapping spreadsheet and the LLM will convert it into idiomatic Satsuma v2 files.
 
-The prompt includes the full Satsuma grammar, a quick reference cheat sheet,
+The prompt includes the full Satsuma grammar, a conventions reference,
 generation rules, worked examples, and a self-critique checklist. It produces
 Satsuma output with a confidence rating and flags ambiguities for human review.
 

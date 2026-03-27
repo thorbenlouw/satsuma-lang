@@ -168,7 +168,7 @@ First tagged release of the Satsuma language and toolchain.
   CRM-to-warehouse syncs, EDI/COBOL/XML/Protobuf format conversion, multi-source
   joins, metric definitions, namespace-based platform modelling, and governance
   filters.
-- **AI agent reference** — a compact (~900 token) grammar summary designed for
+- **AI agent reference** — a compact grammar and conventions summary designed for
   LLM prompts, also available via `satsuma agent-reference`.
 
 ### Tree-Sitter Parser

@@ -379,7 +379,7 @@ satsuma lineage --from legacy_sqlserver examples/   # trace data flow
 To set up an AI agent, print the built-in reference:
 
 ```bash
-satsuma agent-reference               # print grammar, cheat sheet, and CLI guide
+satsuma agent-reference               # print grammar, conventions, and CLI guide
 satsuma agent-reference > .github/copilot-instructions.md   # feed to Copilot
 ```
 
