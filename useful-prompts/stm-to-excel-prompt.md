@@ -12,34 +12,40 @@ The generated workbook is a **read-only snapshot** designed for review meetings,
 file             = { import_stmt | note_block | namespace | schema | fragment | transform | mapping | metric } ;
 
 import_stmt      = "import" "{" name_list "}" "from" STRING ;
+name_list        = name_ref {"," name_ref} ;
+name_ref         = label | label "::" label ;
 note_block       = "note" "{" (STRING | TRIPLESTRING) "}" ;
 
-namespace        = "namespace" IDENT "{" namespace_body "}" ;
+namespace        = "namespace" label ["(" metadata ")"] "{" namespace_body "}" ;
 schema           = "schema" label ["(" metadata ")"] "{" schema_body "}" ;
 fragment         = "fragment" label "{" schema_body "}" ;
-label            = IDENT | "'" ANY "'" ;
+label            = IDENT | BACKTICK_IDENT ;
 
 metadata         = meta_entry {"," meta_entry} ;
 meta_entry       = IDENT [value] | IDENT "{" enum_items "}" | "note" (STRING | TRIPLESTRING) ;
 
 schema_body      = { field_decl | spread | COMMENT } ;
 field_decl       = (IDENT | BACKTICK_IDENT) [type_expr] ["(" metadata ")"] ["{" schema_body "}"] ;
-type_expr        = TYPE ["(" params ")"] | "record" | "list_of" TYPE | "list_of" "record" ;
-spread           = "..." name ;
+type_expr        = TYPE ["(" params ")"] | "record" | "list_of" TYPE ["(" params ")"] | "list_of" "record" ;
+spread           = "..." label ;
 
 transform        = "transform" label "{" transform_body "}" ;
-transform_body   = { STRING | pipe_step {"|" pipe_step} } ;
+transform_body   = spread | pipe_step {"|" pipe_step} ;
+
+metric           = "metric" label [STRING] ["(" metric_meta ")"] "{" metric_body "}" ;
 
 mapping          = "mapping" [label] ["(" metadata ")"] "{" mapping_body "}" ;
 mapping_body     = { note_block | source_decl | target_decl | arrow | nested_arrow | each_block | flatten_block | COMMENT } ;
-source_decl      = "source" "{" ref_list "}" ;
-target_decl      = "target" "{" ref_list "}" ;
+source_decl      = "source" "{" { source_item } "}" ;
+source_item      = name_ref ["(" metadata ")"] | STRING ;
+target_decl      = "target" "{" name_ref ["(" metadata ")"] "}" ;
 
-arrow            = [field_path] "->" field_path ["(" metadata ")"] ["{" transform_body "}"] ;
-each_block       = "each" field_path "->" field_path "{" mapping_body "}" ;
-flatten_block    = "flatten" field_path "->" field_path "{" mapping_body "}" ;
+arrow            = [source_paths] "->" field_path ["(" metadata ")"] ["{" transform_body "}"] ;
+source_paths     = field_path {"," field_path} ;
+each_block       = "each" field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
+flatten_block    = "flatten" field_path "->" field_path ["(" metadata ")"] "{" mapping_body "}" ;
 
-pipe_step        = IDENT ["(" params ")"] | "map" "{" map_entries "}" | STRING ;
+pipe_step        = spread | IDENT ["(" params ")"] | ARITH NUMBER | "map" "{" map_entries "}" | STRING ;
 map_entries      = { map_key ":" value } ;
 ```
 

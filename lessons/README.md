@@ -104,7 +104,7 @@ Teaches learners how to approach an unfamiliar Satsuma file without becoming syn
 
 Shows how a human can provide spreadsheets, API docs, sample payloads, or database extracts and have the agent draft valid schema blocks. The lesson teaches what information the agent needs, how to review field names/types/metadata, and when to preserve ambiguity as a note instead of forcing false precision.
 
-It explicitly includes the Lite Excel-import workflow from [features/04-excel-to-stm-skill/excel-to-stm-prompt.md](../features/04-excel-to-stm-skill/excel-to-stm-prompt.md): survey the workbook, identify tab roles and column roles, generate Satsuma, then self-critique for coverage, types, and transform fidelity before the human approves the result.
+It explicitly includes the Lite Excel-import workflow from [useful-prompts/excel-to-stm-prompt.md](../useful-prompts/excel-to-stm-prompt.md): survey the workbook, identify tab roles and column roles, generate Satsuma, then self-critique for coverage, types, and transform fidelity before the human approves the result.
 
 **Covers:** drafting `schema` blocks from source materials, using metadata like `pk`, `required`, `pii`, `enum`, `format`, capturing caveats in `note`, choosing when to use quoted NL instead of invented pseudo-logic, review prompts for correcting agent-generated schemas, Excel-to-Satsuma with the workbook-survey -> column-role-detection -> generation -> self-critique approach.
 

@@ -7,7 +7,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 ## Setup
 
 1. Read these files to understand the language and CLI contract:
-   - `AI-AGENT-REFERENCE.md` — compact grammar and cheat sheet
+   - `AI-AGENT-REFERENCE.md` — compact grammar and conventions reference
    - `SATSUMA-CLI.md` — full CLI command reference
    - `SATSUMA-V2-SPEC.md` — authoritative language specification
 2. Read the `satsuma where-used --help` output.

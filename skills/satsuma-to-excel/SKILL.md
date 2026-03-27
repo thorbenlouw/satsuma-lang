@@ -2,7 +2,7 @@
 name: satsuma-to-excel
 description: Convert Satsuma .stm files into professional, stakeholder-ready Excel workbooks. Deterministic, parser-backed export using the satsuma CLI for structural extraction and openpyxl for workbook generation. Produces Overview, Issues, Mapping, Schema, and Lookup tabs with full styling.
 license: MIT
-compatibility: Requires Python 3.10+ and openpyxl. Requires satsuma CLI (npx satsuma).
+compatibility: Requires Python 3.10+ and openpyxl. Requires satsuma CLI.
 metadata:
   author: satsuma
   version: "1.0"
@@ -31,7 +31,7 @@ Supported options:
    ```
    Then prefix all `python3` commands with `skills/satsuma-to-excel/scripts/.venv/bin/python3`.
 
-2. **Check satsuma CLI**: Run `npx satsuma --version`. If it fails, the satsuma CLI is not available — stop and tell the user.
+2. **Check satsuma CLI**: Run `satsuma --version`. If it fails, the satsuma CLI is not available — stop and tell the user.
 
 3. **Validate input**: Check the `.stm` file(s) exist.
 

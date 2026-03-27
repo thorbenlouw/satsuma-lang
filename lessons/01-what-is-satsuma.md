@@ -173,13 +173,13 @@ That is enough to ground the rest of the course. The agent becomes an accelerato
 
 ## Setting Up Your AI Agent
 
-Before you start working with Satsuma, you need to teach your AI agent about the language and the CLI. Satsuma ships with a built-in command that outputs everything an agent needs — the grammar, a cheat sheet, CLI command reference, and workflow guidance:
+Before you start working with Satsuma, you need to teach your AI agent about the language and the CLI. Satsuma ships with a built-in command that outputs everything an agent needs — the grammar, conventions, CLI command reference, and workflow guidance:
 
 ```bash
 satsuma agent-reference
 ```
 
-This prints a compact reference document (~900 tokens of grammar + ~400 tokens of cheat sheet + CLI reference) designed to fit in an agent's system prompt or context window. How you use it depends on your agent:
+This prints a compact reference document (EBNF grammar + conventions + CLI reference) designed to fit in an agent's system prompt or context window. How you use it depends on your agent:
 
 ### GitHub Copilot (VS Code)
 

@@ -120,14 +120,9 @@ If `--dry-run` was specified, stop here after writing the discovery report.
 
 ### Load Satsuma Knowledge
 
-Read these files (use the Read tool):
-- `AI-AGENT-REFERENCE.md` — compact grammar and cheat sheet
-- Pick 1-2 example files from `examples/` that match the mapping's complexity:
-  - Simple 1:1: `examples/sfdc_to_snowflake.stm`
-  - Multi-source: `examples/multi-source-join.stm`
-  - Nested/list: `examples/filter-flatten-governance.stm`
-  - Lookups: `examples/db-to-db.stm`
-  - Fragments: `examples/common.stm`
+Run `satsuma agent-reference` to load the grammar, conventions, and CLI reference.
+Then pick 1-2 example `.stm` files from the workspace that match the mapping's complexity
+(1:1, multi-source, nested/list, lookups, fragments) to use as style references.
 
 ### Step 2.1 — Plan File Structure
 

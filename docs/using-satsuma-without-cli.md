@@ -50,8 +50,9 @@ and you can do that with any text editor and any LLM.
 
 Paste the compact grammar from
 [AI-AGENT-REFERENCE.md](../AI-AGENT-REFERENCE.md) into your system prompt or as
-the first message. It is roughly 900 tokens — small enough for any model. This
-gives the LLM the full syntax so it can generate and interpret Satsuma correctly.
+the first message. The portable grammar and conventions section is small enough
+for any model's context window. This gives the LLM the full syntax so it can
+generate and interpret Satsuma correctly.
 
 If you are using a web LLM with file upload, you can upload
 `AI-AGENT-REFERENCE.md` directly instead of pasting.
