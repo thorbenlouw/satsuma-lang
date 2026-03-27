@@ -285,6 +285,28 @@ export class SzSchemaCard extends LitElement {
       white-space: pre-wrap;
       word-break: break-word;
     }
+
+    /* Cross-highlighting */
+    :host([has-highlight]) .field-row {
+      opacity: 0.5;
+      transition: opacity 0.15s ease;
+    }
+
+    :host([has-highlight]) .field-row.hl {
+      opacity: 1;
+    }
+
+    :host([has-highlight]) .field-row.hl.hl-source {
+      background: rgba(242, 145, 61, 0.12);
+    }
+
+    :host([has-highlight]) .field-row.hl.hl-target {
+      background: rgba(90, 158, 111, 0.12);
+    }
+
+    :host([has-highlight]) .field-row.hl .field-name {
+      font-weight: 700;
+    }
   `;
 
   @property({ type: Object })
@@ -299,11 +321,30 @@ export class SzSchemaCard extends LitElement {
   @property({ type: Boolean })
   compact = false;
 
+  /** Set of field names to highlight (peach for source, green for target).
+   *  When non-empty, non-highlighted fields dim to ~50% opacity. */
+  @property({ type: Object })
+  highlightFields: Set<string> = new Set();
+
+  /** Highlight color: "source" for peach, "target" for green. */
+  @property({ type: String })
+  highlightColor: "source" | "target" | "" = "";
+
   @state()
   private _collapsed = false;
 
   @state()
   private _notesExpanded = false;
+
+  override updated(changed: Map<string, unknown>) {
+    if (changed.has("highlightFields")) {
+      if (this.highlightFields.size > 0) {
+        this.setAttribute("has-highlight", "");
+      } else {
+        this.removeAttribute("has-highlight");
+      }
+    }
+  }
 
   override render() {
     const s = this.schema;
@@ -393,10 +434,14 @@ export class SzSchemaCard extends LitElement {
     const hasWarning = f.comments.some((c) => c.kind === "warning");
     const hasQuestion = f.comments.some((c) => c.kind === "question");
     const hasPii = f.constraints.includes("pii");
+    const isHighlighted = this.highlightFields.has(f.name);
+    const hlClass = isHighlighted
+      ? `hl ${this.highlightColor === "target" ? "hl-target" : "hl-source"}`
+      : "";
 
     return html`
       <div
-        class="field-row ${depth > 0 ? "nested" : ""}"
+        class="field-row ${depth > 0 ? "nested" : ""} ${hlClass}"
         style=${depth > 0 ? `padding-left: ${12 + depth * 20}px` : ""}
         @click=${() => this._navigate(f.location)}
         @mouseenter=${() => this._onFieldHover(f.name)}

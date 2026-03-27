@@ -52,9 +52,27 @@ describe("@satsuma/viz bundle", () => {
     assert.equal(typeof mod.SzMappingDetail, "function");
   });
 
+  it("exports SzOverviewEdgeLayer class", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    assert.equal(typeof mod.SzOverviewEdgeLayer, "function");
+  });
+
+  it("exports SzOpenMappingEvent class", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    assert.equal(typeof mod.SzOpenMappingEvent, "function");
+  });
+
   it("exports computeOverviewLayout function", async () => {
     mod ??= await import("../dist/satsuma-viz.js");
     assert.equal(typeof mod.computeOverviewLayout, "function");
+  });
+
+  it("SzSchemaCard has highlightFields and highlightColor properties", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    const card = new mod.SzSchemaCard();
+    assert.ok(card.highlightFields instanceof Set, "highlightFields should be a Set");
+    assert.equal(card.highlightFields.size, 0, "highlightFields should default empty");
+    assert.equal(card.highlightColor, "", "highlightColor should default to empty string");
   });
 });
 

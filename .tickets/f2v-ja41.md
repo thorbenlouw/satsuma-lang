@@ -1,6 +1,6 @@
 ---
 id: f2v-ja41
-status: open
+status: closed
 deps: [f2v-iv1v]
 links: []
 created: 2026-03-27T07:13:30Z
@@ -22,3 +22,10 @@ Bidirectional hover highlighting in the mapping detail view. Hover a mapping tab
 - Non-highlighted fields dim to ~50% opacity
 - Highlight clears on mouse leave
 
+
+## Notes
+
+**2026-03-27T07:34:16Z**
+
+Cause: No cross-highlighting between the mapping table and schema cards.
+Fix: Added bidirectional hover highlighting to sz-mapping-detail. Table row hover highlights source fields (peach bg) and target field (green bg) in schema cards. Card field hover highlights matching table rows and connected field on the other side. Added highlightFields and highlightColor properties to sz-schema-card with CSS for dimming non-highlighted fields to 50% opacity.

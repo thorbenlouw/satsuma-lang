@@ -1,6 +1,6 @@
 ---
 id: f2v-ftbg
-status: open
+status: closed
 deps: [f2v-k3do]
 links: []
 created: 2026-03-27T07:12:58Z
@@ -21,3 +21,10 @@ Update or create a mode on the edge layer that renders thick (3-4px) curved arro
 - Hover shows tooltip with mapping summary
 - Orange for pipeline-heavy, green for NL-heavy mappings
 
+
+## Notes
+
+**2026-03-27T07:34:16Z**
+
+Cause: No overview-level edge rendering existed for schema-to-schema thick arrows.
+Fix: Created sz-overview-edge-layer component with thick (3px) curved Bezier arrows, mapping name labels at midpoints, click-to-open via SzOpenMappingEvent, hover tooltips with mapping summary and arrow count. Colors: orange for pipeline-heavy, green for NL-heavy, gray for bare mappings.
