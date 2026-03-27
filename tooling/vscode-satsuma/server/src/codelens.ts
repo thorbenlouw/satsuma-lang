@@ -51,7 +51,7 @@ function collectLenses(
 
   switch (node.type) {
     case "schema_block":
-      lenses.push(schemaLens(node, qualName, range, index));
+      lenses.push(...schemaLenses(node, qualName, range, index));
       break;
     case "fragment_block":
       lenses.push(fragmentLens(qualName, range, index));
@@ -70,12 +70,12 @@ function collectLenses(
 
 // ---------- Per-block-type lenses ----------
 
-function schemaLens(
+function schemaLenses(
   node: SyntaxNode,
   qualName: string,
   range: Range,
   index: WorkspaceIndex,
-): CodeLens {
+): CodeLens[] {
   const body = child(node, "schema_body");
   const fieldCount = body ? children(body, "field_decl").length : 0;
   const mappingCount = findMappingsUsing(index, qualName).length;
@@ -85,7 +85,25 @@ function schemaLens(
     title += ` | used in ${mappingCount} mapping(s)`;
   }
 
-  return { range, command: makeCommand(title) };
+  return [
+    {
+      range,
+      command: makeCommand(
+        "Lineage from",
+        "satsuma.showLineage",
+        { schemaName: qualName, direction: "from" },
+      ),
+    },
+    {
+      range,
+      command: makeCommand(
+        "Lineage to",
+        "satsuma.showLineage",
+        { schemaName: qualName, direction: "to" },
+      ),
+    },
+    { range, command: makeCommand(title) },
+  ];
 }
 
 function fragmentLens(
@@ -153,8 +171,14 @@ function transformLens(
 
 // ---------- Helpers ----------
 
-function makeCommand(title: string): Command {
-  return { title, command: "" };
+function makeCommand(
+  title: string,
+  command = "",
+  ...arguments_: unknown[]
+): Command {
+  return arguments_.length > 0
+    ? { title, command, arguments: arguments_ }
+    : { title, command };
 }
 
 function extractRefNames(body: SyntaxNode, blockType: string): string[] {

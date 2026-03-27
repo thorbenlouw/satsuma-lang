@@ -56,6 +56,8 @@ export interface NodeContext {
   /** For arrow field context: the source/target schemas of the enclosing mapping. */
   mappingSources?: string[];
   mappingTargets?: string[];
+  /** Raw path text for arrow and NL field contexts. */
+  rawPath?: string;
   /** The node we identified context from (for range info). */
   node: SyntaxNode;
 }
@@ -135,13 +137,15 @@ function tryContext(node: SyntaxNode): NodeContext | null {
 
     case "src_path": {
       const pathText = extractPathFieldName(node);
-      if (!pathText) return null;
+      const rawPath = extractPathText(node);
+      if (!pathText || !rawPath) return null;
       const mapping = findEnclosingMapping(node);
       return {
         kind: "arrow_source",
         name: pathText,
         namespace: ns,
         node,
+        rawPath,
         mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
         mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
       };
@@ -149,13 +153,15 @@ function tryContext(node: SyntaxNode): NodeContext | null {
 
     case "tgt_path": {
       const pathText = extractPathFieldName(node);
-      if (!pathText) return null;
+      const rawPath = extractPathText(node);
+      if (!pathText || !rawPath) return null;
       const mapping = findEnclosingMapping(node);
       return {
         kind: "arrow_target",
         name: pathText,
         namespace: ns,
         node,
+        rawPath,
         mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
         mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
       };
@@ -450,6 +456,11 @@ function extractPathFieldName(pathNode: SyntaxNode): string | null {
     return firstSegment.split("::").pop() ?? null;
   }
   return firstSegment;
+}
+
+function extractPathText(pathNode: SyntaxNode): string | null {
+  const text = pathNode.text.trim();
+  return text.length > 0 ? text : null;
 }
 
 /** Get schema names referenced in a mapping's source or target block. */

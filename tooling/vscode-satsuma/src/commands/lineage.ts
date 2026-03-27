@@ -1,6 +1,12 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient/node";
 import { runCli } from "./cli-runner";
+import { getEditorActionContext } from "./action-context";
+
+interface ShowLineageArgs {
+  schemaName?: string;
+  direction?: "from" | "to";
+}
 
 export function registerLineageCommand(
   context: vscode.ExtensionContext,
@@ -9,7 +15,15 @@ export function registerLineageCommand(
   outputChannel: vscode.OutputChannel,
 ): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand("satsuma.showLineage", async () => {
+    vscode.commands.registerCommand("satsuma.showLineage", async (args?: ShowLineageArgs) => {
+      const direction = args?.direction === "to" ? "to" : "from";
+      let selected = args?.schemaName;
+
+      if (!selected) {
+        const actionContext = await getEditorActionContext(client);
+        selected = actionContext.schemaName ?? undefined;
+      }
+
       // Get block names from the LSP server
       let names: Array<{ name: string; kind: string }>;
       try {
@@ -27,14 +41,16 @@ export function registerLineageCommand(
         return;
       }
 
-      const selected = await vscode.window.showQuickPick(schemaNames, {
-        placeHolder: "Select a schema to trace lineage from",
-      });
+      if (!selected) {
+        selected = await vscode.window.showQuickPick(schemaNames, {
+          placeHolder: `Select a schema to trace lineage ${direction}`,
+        });
+      }
       if (!selected) return;
 
       const result = await runCli(cliPath, [
         "lineage",
-        "--from",
+        `--${direction}`,
         selected,
         "--json",
       ]);
@@ -49,7 +65,7 @@ export function registerLineageCommand(
       try {
         const dag = JSON.parse(result.stdout);
         outputChannel.clear();
-        outputChannel.appendLine(`Lineage from ${selected}:`);
+        outputChannel.appendLine(`Lineage ${direction} ${selected}:`);
         outputChannel.appendLine("");
         if (dag.nodes) {
           for (const node of dag.nodes) {

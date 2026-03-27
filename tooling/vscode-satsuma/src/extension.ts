@@ -14,6 +14,7 @@ import { registerWarningsCommand } from "./commands/warnings";
 import { registerSummaryCommand } from "./commands/summary";
 import { registerArrowsCommand } from "./commands/arrows";
 import { registerCoverageCommand } from "./commands/coverage";
+import { getEditorActionContext } from "./commands/action-context";
 import { LineagePanel } from "./webview/lineage/panel";
 import { VizPanel } from "./webview/viz/panel";
 
@@ -84,17 +85,20 @@ export function activate(context: ExtensionContext): void {
 
   // Lineage webview
   context.subscriptions.push(
-    vscode.commands.registerCommand("satsuma.traceFieldLineage", async () => {
+    vscode.commands.registerCommand("satsuma.traceFieldLineage", async (args?: { fieldPath?: string }) => {
       const editor = vscode.window.activeTextEditor;
       if (!editor || editor.document.languageId !== "satsuma") return;
 
+      const actionContext = client
+        ? await getEditorActionContext(client)
+        : { schemaName: null, fieldPath: null };
       const word = editor.document.getText(
         editor.document.getWordRangeAtPosition(editor.selection.active),
       );
 
       const fieldPath = await vscode.window.showInputBox({
         prompt: "Enter field reference (schema.field)",
-        value: word?.includes(".") ? word : `${word ?? ""}.`,
+        value: args?.fieldPath ?? actionContext.fieldPath ?? (word?.includes(".") ? word : `${word ?? ""}.`),
         placeHolder: "customers.email",
       });
       if (!fieldPath) return;

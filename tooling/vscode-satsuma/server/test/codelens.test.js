@@ -34,8 +34,8 @@ describe("computeCodeLenses", () => {
       { "file:///a.stm": "schema customers {\n  id UUID (pk)\n  name VARCHAR\n  email VARCHAR\n}" },
       "file:///a.stm",
     );
-    assert.equal(result.length, 1);
-    assert.ok(result[0].command.title.includes("3 field(s)"));
+    assert.equal(result.length, 3);
+    assert.ok(result.some((lens) => lens.command.title.includes("3 field(s)")));
   });
 
   it("shows mapping count for schema used in mappings", () => {
@@ -47,8 +47,25 @@ describe("computeCodeLenses", () => {
       },
       "file:///a.stm",
     );
-    assert.equal(result.length, 1);
-    assert.ok(result[0].command.title.includes("used in 2 mapping(s)"));
+    assert.equal(result.length, 3);
+    assert.ok(result.some((lens) => lens.command.title.includes("used in 2 mapping(s)")));
+  });
+
+  it("adds clickable lineage actions for schemas", () => {
+    const result = lenses(
+      { "file:///a.stm": "schema customers {\n  id UUID\n}" },
+      "file:///a.stm",
+    );
+    const lineageFrom = result.find((lens) => lens.command.title === "Lineage from");
+    const lineageTo = result.find((lens) => lens.command.title === "Lineage to");
+
+    assert.ok(lineageFrom);
+    assert.equal(lineageFrom.command.command, "satsuma.showLineage");
+    assert.deepEqual(lineageFrom.command.arguments, [{ schemaName: "customers", direction: "from" }]);
+
+    assert.ok(lineageTo);
+    assert.equal(lineageTo.command.command, "satsuma.showLineage");
+    assert.deepEqual(lineageTo.command.arguments, [{ schemaName: "customers", direction: "to" }]);
   });
 
   it("shows spread count for fragments", () => {
@@ -143,8 +160,7 @@ mapping \`test\` {
       { "file:///a.stm": "schema customers {\n  id UUID\n}" },
       "file:///a.stm",
     );
-    assert.equal(result.length, 1);
-    // block_label "customers" is on line 0
+    assert.equal(result.length, 3);
     assert.equal(result[0].range.start.line, 0);
   });
 });
