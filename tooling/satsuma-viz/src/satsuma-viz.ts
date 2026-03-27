@@ -1,7 +1,8 @@
 import { LitElement, html, svg, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { VizModel, SourceLocation, NamespaceGroup } from "./model.js";
-import { computeLayout, type LayoutResult, type SourceBlockLayout } from "./layout/elk-layout.js";
+import type { VizModel, SourceLocation, NamespaceGroup, MappingBlock, SchemaCard } from "./model.js";
+import { computeLayout, computeOverviewLayout, type LayoutResult, type OverviewLayoutResult, type SourceBlockLayout } from "./layout/elk-layout.js";
+import { SzOpenMappingEvent } from "./edges/sz-overview-edge-layer.js";
 import tokens from "./tokens.css";
 
 export { VizModel } from "./model.js";
@@ -539,7 +540,16 @@ export class SatsumaViz extends LitElement {
   model: VizModel | null = null;
 
   @state()
+  private _viewMode: "overview" | "detail" = "overview";
+
+  @state()
   private _layout: LayoutResult | null = null;
+
+  @state()
+  private _overviewLayout: OverviewLayoutResult | null = null;
+
+  @state()
+  private _selectedMapping: MappingBlock | null = null;
 
   @state()
   private _layoutError = false;
@@ -599,11 +609,17 @@ export class SatsumaViz extends LitElement {
       this._hoveredSchema = e.schemaId;
       this._hoveredField = e.fieldName;
     }) as EventListener);
+    this.addEventListener("open-mapping", ((e: SzOpenMappingEvent) => {
+      this._selectedMapping = e.mapping;
+      this._viewMode = "detail";
+    }) as EventListener);
   }
 
   override updated(changed: Map<string, unknown>) {
     if (changed.has("model") && this.model) {
       this._expandedModels = new Map();
+      this._viewMode = "overview";
+      this._selectedMapping = null;
       this._runLayout();
     }
   }
@@ -635,6 +651,7 @@ export class SatsumaViz extends LitElement {
     if (!this.model) return;
 
     this._layout = null;
+    this._overviewLayout = null;
     this._layoutError = false;
 
     // Build a merged model that includes expanded cross-file schemas
@@ -644,7 +661,12 @@ export class SatsumaViz extends LitElement {
     this._mappedFieldsBySchema = this._buildMappedFieldsIndex();
 
     try {
-      this._layout = await computeLayout(mergedModel);
+      const [detail, overview] = await Promise.all([
+        computeLayout(mergedModel),
+        computeOverviewLayout(mergedModel),
+      ]);
+      this._layout = detail;
+      this._overviewLayout = overview;
     } catch {
       this._layoutError = true;
     }
@@ -708,8 +730,8 @@ export class SatsumaViz extends LitElement {
     const filtered = this._filterNamespaces(namespaces);
     const toggleClasses = `${this._schemaOnly ? "schema-only" : ""} ${!this._showNotes ? "hide-notes" : ""}`;
 
-    // If layout hasn't computed yet, show flex fallback
-    if (!this._layout && !this._layoutError) {
+    // If layout hasn't computed yet, show loading
+    if (!this._layout && !this._overviewLayout && !this._layoutError) {
       return html`
         ${this._renderToolbar(namespaces)}
         <div class="loading">Computing layout...</div>
@@ -717,7 +739,7 @@ export class SatsumaViz extends LitElement {
     }
 
     // If layout failed, fall back to simple flex layout
-    if (this._layoutError || !this._layout) {
+    if (this._layoutError || (!this._layout && !this._overviewLayout)) {
       return html`
         ${this._renderToolbar(namespaces)}
         <div class=${toggleClasses}>
@@ -727,6 +749,50 @@ export class SatsumaViz extends LitElement {
       `;
     }
 
+    // Detail view: show mapping detail with source/target schema cards
+    if (this._viewMode === "detail" && this._selectedMapping && this._layout) {
+      return html`
+        ${this._renderToolbar(namespaces)}
+        <div class=${toggleClasses}>
+          ${this._renderFileNotes()}
+          <div style="padding: 16px;">
+            ${this._renderMappingDetailView(this._selectedMapping)}
+          </div>
+        </div>
+      `;
+    }
+
+    // Overview mode: compact schema cards with thick mapping arrows
+    if (this._overviewLayout) {
+      return html`
+        ${this._renderToolbar(namespaces)}
+        ${this._renderBreadcrumbs()}
+        <div class=${toggleClasses}>
+          ${this._renderFileNotes()}
+          <div class="notes-pane-wrapper">
+            <div class="viewport"
+              @wheel=${this._onWheel}
+              @mousedown=${this._onMouseDown}
+              @mousemove=${this._onMouseMove}
+              @mouseup=${this._onMouseUp}
+              @mouseleave=${this._onMouseUp}
+            >
+              <div class="viewport-inner"
+                style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._zoom});"
+              >
+                ${this._renderOverview(this._overviewLayout, filtered)}
+              </div>
+              <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
+                ${Math.round(this._zoom * 100)}%
+              </div>
+              ${this._renderMinimap(this._overviewLayoutAsDetail())}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Fallback to detail layout if overview isn't available
     const allComments = this._collectAllComments();
     const hasComments = allComments.warnings.length > 0 || allComments.questions.length > 0;
     const hasFileNotes = this.model.fileNotes.length > 0;
@@ -748,12 +814,12 @@ export class SatsumaViz extends LitElement {
             <div class="viewport-inner"
               style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._zoom});"
             >
-              ${this._renderPositioned(this._layout, filtered)}
+              ${this._renderPositioned(this._layout!, filtered)}
             </div>
             <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
               ${Math.round(this._zoom * 100)}%
             </div>
-            ${this._renderMinimap(this._layout)}
+            ${this._renderMinimap(this._layout!)}
           </div>
           ${showPane ? this._renderNotesPane(allComments) : ""}
         </div>
@@ -764,17 +830,29 @@ export class SatsumaViz extends LitElement {
   private _renderToolbar(allNamespaces: NamespaceGroup[]) {
     const namedNs = allNamespaces.filter((ns) => ns.name);
     const hasNamespaces = namedNs.length > 0;
+    const inDetail = this._viewMode === "detail";
 
     return html`
       <div class="toolbar">
-        <span class="toolbar-title">&#9673; Mapping Viz</span>
+        ${inDetail
+          ? html`
+              <button class="toolbar-btn" @click=${this._backToOverview}
+                title="Back to overview">&#9664; Overview</button>
+              <div class="toolbar-sep"></div>
+              <span class="toolbar-title">${this._selectedMapping?.id ?? "Mapping Detail"}</span>
+            `
+          : html`<span class="toolbar-title">&#9673; Mapping Viz</span>`}
         <div class="toolbar-sep"></div>
-        <button
-          class="toolbar-btn"
-          ?data-active=${this._schemaOnly}
-          @click=${() => { this._schemaOnly = !this._schemaOnly; }}
-          title="Show only schema cards, hide arrows and transforms"
-        >Schema Only</button>
+        ${!inDetail
+          ? html`
+              <button
+                class="toolbar-btn"
+                ?data-active=${this._schemaOnly}
+                @click=${() => { this._schemaOnly = !this._schemaOnly; }}
+                title="Show only schema cards, hide arrows and transforms"
+              >Schema Only</button>
+            `
+          : ""}
         <button
           class="toolbar-btn"
           ?data-active=${this._showNotes}
@@ -782,10 +860,14 @@ export class SatsumaViz extends LitElement {
           title="Show or hide notes"
         >Show Notes</button>
         <div class="toolbar-sep"></div>
-        <button class="toolbar-btn" @click=${this._fit} title="Fit all content in viewport">Fit</button>
+        ${!inDetail
+          ? html`<button class="toolbar-btn" @click=${this._fit} title="Fit all content in viewport">Fit</button>`
+          : ""}
         <button class="toolbar-btn" @click=${this._refresh} title="Re-fetch visualization data">&#8635; Refresh</button>
-        <button class="toolbar-btn" @click=${this._exportSvg} title="Export as SVG">&#x21E9; Export</button>
-        ${hasNamespaces
+        ${!inDetail
+          ? html`<button class="toolbar-btn" @click=${this._exportSvg} title="Export as SVG">&#x21E9; Export</button>`
+          : ""}
+        ${hasNamespaces && !inDetail
           ? html`
               <div class="toolbar-sep"></div>
               <select
@@ -803,6 +885,11 @@ export class SatsumaViz extends LitElement {
         <div class="toolbar-spacer"></div>
       </div>
     `;
+  }
+
+  private _backToOverview() {
+    this._viewMode = "overview";
+    this._selectedMapping = null;
   }
 
   private _fit() {
@@ -953,6 +1040,161 @@ export class SatsumaViz extends LitElement {
           &#10005; Collapse all
         </button>
       </div>
+    `;
+  }
+
+  /** Render the overview: compact schema cards + thick overview edges. */
+  private _renderOverview(overview: OverviewLayoutResult, namespaces: NamespaceGroup[]) {
+    const nsBoxes = this._computeOverviewNamespaceBoxes(overview, namespaces);
+
+    return html`
+      <div class="canvas" style="width: ${overview.width + 48}px; height: ${overview.height + 48}px; padding: 24px;">
+        <!-- Overview SVG edge layer -->
+        <sz-overview-edge-layer
+          .edges=${overview.edges}
+          .width=${overview.width + 48}
+          .height=${overview.height + 48}
+        ></sz-overview-edge-layer>
+
+        <!-- Namespace bounding boxes -->
+        ${nsBoxes.map(
+          (box) => html`
+            <div
+              class="namespace-box"
+              style="left: ${box.x}px; top: ${box.y}px; width: ${box.w}px; height: ${box.h}px;"
+            >
+              <span class="namespace-label">${box.name}</span>
+            </div>
+          `
+        )}
+
+        <!-- Compact positioned cards -->
+        <div class="card-layer">
+          ${namespaces.flatMap((ns) => [
+            ...ns.schemas.map((s) => {
+              const node = overview.nodes.find((n) => n.id === s.qualifiedId);
+              if (!node) return html``;
+              return html`
+                <div class="positioned-card" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                  <sz-schema-card .schema=${s} compact></sz-schema-card>
+                </div>
+              `;
+            }),
+            ...ns.fragments.map((f) => {
+              const node = overview.nodes.find((n) => n.id === f.id);
+              if (!node) return html``;
+              return html`
+                <div class="positioned-card" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                  <sz-fragment-card .fragment=${f}></sz-fragment-card>
+                </div>
+              `;
+            }),
+            ...ns.metrics.map((m) => {
+              const node = overview.nodes.find((n) => n.id === m.qualifiedId);
+              if (!node) return html``;
+              return html`
+                <div class="positioned-card" style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                  <sz-metric-card .metric=${m}></sz-metric-card>
+                </div>
+              `;
+            }),
+          ])}
+        </div>
+      </div>
+    `;
+  }
+
+  /** Compute namespace bounding boxes from the overview layout. */
+  private _computeOverviewNamespaceBoxes(
+    overview: OverviewLayoutResult,
+    namespaces: NamespaceGroup[]
+  ): Array<{ name: string; x: number; y: number; w: number; h: number }> {
+    const boxes: Array<{ name: string; x: number; y: number; w: number; h: number }> = [];
+
+    for (const ns of namespaces) {
+      if (!ns.name) continue;
+
+      const ids = [
+        ...ns.schemas.map((s) => s.qualifiedId),
+        ...ns.fragments.map((f) => f.id),
+        ...ns.metrics.map((m) => m.qualifiedId),
+      ];
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let found = false;
+
+      for (const id of ids) {
+        const node = overview.nodes.find((n) => n.id === id);
+        if (!node) continue;
+        found = true;
+        minX = Math.min(minX, node.x);
+        minY = Math.min(minY, node.y);
+        maxX = Math.max(maxX, node.x + node.width);
+        maxY = Math.max(maxY, node.y + node.height);
+      }
+
+      if (found) {
+        const pad = 16;
+        boxes.push({
+          name: ns.name,
+          x: minX - pad,
+          y: minY - pad - 12,
+          w: maxX - minX + pad * 2,
+          h: maxY - minY + pad * 2 + 12,
+        });
+      }
+    }
+
+    return boxes;
+  }
+
+  /** Adapt overview layout to LayoutResult shape for minimap reuse. */
+  private _overviewLayoutAsDetail(): LayoutResult {
+    const ov = this._overviewLayout!;
+    const nodes = new Map<string, import("./layout/elk-layout.js").LayoutNode>();
+    for (const n of ov.nodes) {
+      nodes.set(n.id, n);
+    }
+    return { nodes, edges: [], sourceBlocks: [], width: ov.width, height: ov.height };
+  }
+
+  /** Render the mapping detail view with schema cards and arrow table. */
+  private _renderMappingDetailView(mapping: MappingBlock) {
+    if (!this.model) return html``;
+
+    // Find source and target schemas from the model
+    const allSchemas = this.model.namespaces.flatMap((ns) => ns.schemas);
+    const sourceSchemas = mapping.sourceRefs
+      .map((ref) => allSchemas.find((s) => s.qualifiedId === ref))
+      .filter((s): s is SchemaCard => s !== undefined);
+    const targetSchema = allSchemas.find((s) => s.qualifiedId === mapping.targetRef) ?? null;
+
+    // Build mapped fields for the detail view
+    const sourceMapped = new Map<string, Set<string>>();
+    const targetMapped = new Set<string>();
+    const collectArrows = (arrows: import("./model.js").ArrowEntry[]) => {
+      for (const a of arrows) {
+        targetMapped.add(a.targetField);
+        for (const sf of a.sourceFields) {
+          for (const sr of mapping.sourceRefs) {
+            if (!sourceMapped.has(sr)) sourceMapped.set(sr, new Set());
+            sourceMapped.get(sr)!.add(sf);
+          }
+        }
+      }
+    };
+    collectArrows(mapping.arrows);
+    for (const eb of mapping.eachBlocks) collectArrows(eb.arrows);
+    for (const fb of mapping.flattenBlocks) collectArrows(fb.arrows);
+
+    return html`
+      <sz-mapping-detail
+        .mapping=${mapping}
+        .sourceSchemas=${sourceSchemas}
+        .targetSchema=${targetSchema}
+        .sourceMappedFields=${sourceMapped}
+        .targetMappedFields=${targetMapped}
+      ></sz-mapping-detail>
     `;
   }
 
