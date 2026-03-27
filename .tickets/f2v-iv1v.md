@@ -1,6 +1,6 @@
 ---
 id: f2v-iv1v
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-27T07:13:21Z
@@ -25,3 +25,10 @@ New sz-mapping-detail component. Three columns: source schema cards (full fields
 - Click schema header navigates to schema source
 - Click mapping header navigates to mapping source
 
+
+## Notes
+
+**2026-03-27T07:27:20Z**
+
+Cause: No component existed for detailed mapping inspection with source/target context.
+Fix: Created sz-mapping-detail web component with three-column grid layout. Left: source schema cards with full fields. Center: mapping header (name, sources, targets, join, filters) and arrow table showing source fields, transforms, target fields. Right: target schema card. Pipeline transforms render monospace steps with | separators, NL transforms in italic green. Each/flatten blocks shown as labeled nested sections.
