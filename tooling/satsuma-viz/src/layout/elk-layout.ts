@@ -99,6 +99,19 @@ const OVERVIEW_PILL_CHAR_WIDTH = 6.1;
 const OVERVIEW_LABEL_CHAR_WIDTH = 6.8;
 const OVERVIEW_LABEL_PADDING = 18;
 const OVERVIEW_LABEL_MAX_WIDTH = 220;
+const FULL_TITLE_CHAR_WIDTH = 8.1;
+const FULL_META_CHAR_WIDTH = 6.3;
+const FULL_FIELD_CHAR_WIDTH = 7.2;
+const FULL_TYPE_CHAR_WIDTH = 6.6;
+const FULL_NOTE_CHAR_WIDTH = 6.5;
+const FULL_HEADER_BASE_WIDTH = 86;
+const FULL_FIELD_BASE_WIDTH = 92;
+const FULL_NOTES_TOGGLE_HEIGHT = 28;
+const FULL_NOTES_SECTION_CHROME = 14;
+const FULL_NOTE_LINE_HEIGHT = 18;
+const FULL_SPREAD_HEIGHT = 24;
+const FULL_META_ROW_HEIGHT = 20;
+const FULL_META_BASE_HEIGHT = 12;
 
 /** Height of the area above the fields list (header + optional label + optional metadata pills). */
 function preambleHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
@@ -151,6 +164,154 @@ function estimateCompactTextCardWidth(id: string): number {
   return clamp(Math.ceil(headerWidth), CARD_MIN_WIDTH, CARD_MAX_WIDTH);
 }
 
+function estimateLines(text: string, charsPerLine: number): number {
+  const segments = text
+    .split("\n")
+    .map((line) => Math.max(1, Math.ceil(line.trim().length / charsPerLine)));
+  return Math.max(1, segments.reduce((sum, lines) => sum + lines, 0));
+}
+
+function estimateNoteBlockHeight(text: string, expanded: boolean): number {
+  const base = FULL_NOTES_TOGGLE_HEIGHT + FULL_NOTES_SECTION_CHROME;
+  if (!expanded) return base;
+  return base + estimateLines(text, 34) * FULL_NOTE_LINE_HEIGHT;
+}
+
+function estimateSchemaWidth(schema: SchemaCard): number {
+  const spreads = schema.spreads ?? [];
+  const notes = schema.notes ?? [];
+  const titleWidth =
+    FULL_HEADER_BASE_WIDTH +
+    estimateTextWidth(schema.id, FULL_TITLE_CHAR_WIDTH) +
+    estimateTextWidth(`${countFields(schema.fields)}/${countFields(schema.fields)}`, OVERVIEW_COUNT_CHAR_WIDTH);
+
+  const labelWidth = schema.label
+    ? estimateTextWidth(schema.label, FULL_META_CHAR_WIDTH) + 48
+    : 0;
+
+  const pillWidth = schema.metadata
+    .filter((m) => m.key !== "note")
+    .reduce((max, m) => Math.max(max, estimateTextWidth(`${m.key} ${m.value}`, FULL_META_CHAR_WIDTH) + 48), 0);
+
+  const fieldWidth = measureFieldWidth(schema.fields);
+  const spreadWidth = spreads.reduce(
+    (max, spread) => Math.max(max, estimateTextWidth(`spreads ${spread}`, FULL_META_CHAR_WIDTH) + 48),
+    0,
+  );
+  const noteWidth = notes.reduce(
+    (max, note) => Math.max(max, estimateTextWidth(note.text.replace(/\s+/g, " ").trim(), FULL_NOTE_CHAR_WIDTH) + 56),
+    0,
+  );
+
+  return clamp(
+    Math.ceil(Math.max(titleWidth, labelWidth, pillWidth, fieldWidth, spreadWidth, noteWidth)),
+    CARD_MIN_WIDTH,
+    CARD_MAX_WIDTH,
+  );
+}
+
+function estimateMetricWidth(metric: MetricCard): number {
+  const notes = metric.notes ?? [];
+  const titleWidth = FULL_HEADER_BASE_WIDTH + estimateTextWidth(metric.id, FULL_TITLE_CHAR_WIDTH);
+  const metaTexts = [
+    metric.label ? `"${metric.label}"${metric.grain ? ` · grain: ${metric.grain}` : ""}` : "",
+    !metric.label && metric.grain ? `grain: ${metric.grain}` : "",
+    metric.slices.length > 0 ? `slice: ${metric.slices.join(", ")}` : "",
+  ].filter(Boolean);
+  const metaWidth = metaTexts.reduce(
+    (max, text) => Math.max(max, estimateTextWidth(text, FULL_META_CHAR_WIDTH) + 48),
+    0,
+  );
+  const fieldWidth = metric.fields.reduce(
+    (max, field) => Math.max(
+      max,
+      FULL_FIELD_BASE_WIDTH +
+        16 +
+        estimateTextWidth(field.name, FULL_FIELD_CHAR_WIDTH) +
+        estimateTextWidth(field.type, FULL_TYPE_CHAR_WIDTH),
+    ),
+    0,
+  );
+  const noteWidth = notes.reduce(
+    (max, note) => Math.max(max, estimateTextWidth(note.text.replace(/\s+/g, " ").trim(), FULL_NOTE_CHAR_WIDTH) + 56),
+    0,
+  );
+
+  return clamp(Math.ceil(Math.max(titleWidth, metaWidth, fieldWidth, noteWidth)), CARD_MIN_WIDTH, CARD_MAX_WIDTH);
+}
+
+function estimateFragmentWidth(fragment: FragmentCard): number {
+  const notes = fragment.notes ?? [];
+  const titleWidth =
+    FULL_HEADER_BASE_WIDTH +
+    estimateTextWidth(fragment.id, FULL_TITLE_CHAR_WIDTH) +
+    estimateTextWidth(`${fragment.fields.length} fields`, OVERVIEW_COUNT_CHAR_WIDTH);
+  const fieldWidth = fragment.fields.reduce(
+    (max, field) => Math.max(
+      max,
+      FULL_FIELD_BASE_WIDTH +
+        estimateTextWidth(field.name, FULL_FIELD_CHAR_WIDTH) +
+        estimateTextWidth(field.type, FULL_TYPE_CHAR_WIDTH),
+    ),
+    0,
+  );
+  const noteWidth = notes.reduce(
+    (max, note) => Math.max(max, estimateTextWidth(note.text.replace(/\s+/g, " ").trim(), FULL_NOTE_CHAR_WIDTH) + 56),
+    0,
+  );
+
+  return clamp(Math.ceil(Math.max(titleWidth, fieldWidth, noteWidth)), CARD_MIN_WIDTH, CARD_MAX_WIDTH);
+}
+
+function estimateMetricHeight(metric: MetricCard): number {
+  const notes = metric.notes ?? [];
+  const metaRows =
+    (metric.label ? 1 : 0) +
+    (!metric.label && metric.grain ? 1 : 0) +
+    (metric.slices.length > 0 ? 1 : 0);
+  const metaHeight = metaRows > 0 ? FULL_META_BASE_HEIGHT + metaRows * FULL_META_ROW_HEIGHT : 0;
+  const notesHeight = notes.reduce((sum, note) => sum + estimateNoteBlockHeight(note.text, false), 0);
+
+  return HEADER_HEIGHT + metaHeight + FIELDS_PADDING_TOP + metric.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM + notesHeight;
+}
+
+function estimateFragmentHeight(fragment: FragmentCard): number {
+  const notes = fragment.notes ?? [];
+  const notesHeight = notes.reduce((sum, note) => sum + estimateNoteBlockHeight(note.text, false), 0);
+  return HEADER_HEIGHT + FIELDS_PADDING_TOP + fragment.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM + notesHeight;
+}
+
+function estimateSchemaHeight(schema: SchemaCard): number {
+  const notes = schema.notes ?? [];
+  const spreads = schema.spreads ?? [];
+  const notesHeight = notes.reduce((sum, note) => sum + estimateNoteBlockHeight(note.text, true), 0);
+  const spreadsHeight = spreads.length * FULL_SPREAD_HEIGHT;
+  return (
+    preambleHeight(schema) +
+    FIELDS_PADDING_TOP +
+    countFields(schema.fields) * FIELD_HEIGHT +
+    FIELDS_PADDING_BOTTOM +
+    spreadsHeight +
+    notesHeight
+  );
+}
+
+function measureFieldWidth(fields: FieldEntry[], depth = 0): number {
+  return fields.reduce((max, field) => {
+    const constraintText = field.constraints.filter((c) => c !== "pii").join(" ");
+    const commentWidth = field.comments.length > 0 ? 32 : 0;
+    const width =
+      FULL_FIELD_BASE_WIDTH +
+      depth * 20 +
+      estimateTextWidth(field.name, FULL_FIELD_CHAR_WIDTH) +
+      estimateTextWidth(field.type, FULL_TYPE_CHAR_WIDTH) +
+      (constraintText ? estimateTextWidth(constraintText, FULL_META_CHAR_WIDTH) + 24 : 0) +
+      (field.constraints.includes("pii") ? 44 : 0) +
+      commentWidth;
+    const childWidth = field.children.length > 0 ? measureFieldWidth(field.children, depth + 1) : 0;
+    return Math.max(max, width, childWidth);
+  }, 0);
+}
 const elk = new ELK();
 
 /**
@@ -279,19 +440,14 @@ function addSchemaNodes(
   target: ElkNode[],
 ) {
   for (const s of schemas) {
+    const width = estimateSchemaWidth(s);
     const topOffset = preambleHeight(s) + FIELDS_PADDING_TOP;
-    const ports = buildFieldPorts(s.fields, s.qualifiedId, mappedFields, topOffset);
-    const fieldCount = countFields(s.fields);
-    const height =
-      preambleHeight(s) +
-      FIELDS_PADDING_TOP +
-      fieldCount * FIELD_HEIGHT +
-      FIELDS_PADDING_BOTTOM;
+    const ports = buildFieldPorts(s.fields, s.qualifiedId, mappedFields, topOffset, width);
 
     target.push({
       id: s.qualifiedId,
-      width: CARD_MIN_WIDTH,
-      height,
+      width,
+      height: estimateSchemaHeight(s),
       ports,
       children: [],
       edges: [],
@@ -301,13 +457,13 @@ function addSchemaNodes(
 
 function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[]) {
   for (const f of fragments) {
-    const ports = buildFieldPorts(f.fields, f.id, new Map());
-    const height = HEADER_HEIGHT + FIELDS_PADDING_TOP + f.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM;
+    const width = estimateFragmentWidth(f);
+    const ports = buildFieldPorts(f.fields, f.id, new Map(), HEADER_HEIGHT + FIELDS_PADDING_TOP, width);
 
     target.push({
       id: f.id,
-      width: CARD_MIN_WIDTH,
-      height,
+      width,
+      height: estimateFragmentHeight(f),
       ports,
       children: [],
       edges: [],
@@ -317,15 +473,10 @@ function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[]) {
 
 function addMetricNodes(metrics: MetricCard[], target: ElkNode[]) {
   for (const m of metrics) {
-    const hasMeta = m.label || m.grain || m.slices.length > 0;
-    const metaHeight = hasMeta ? LABEL_HEIGHT : 0;
-    const height =
-      HEADER_HEIGHT + metaHeight + FIELDS_PADDING_TOP + m.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM;
-
     target.push({
       id: m.qualifiedId,
-      width: CARD_MIN_WIDTH,
-      height,
+      width: estimateMetricWidth(m),
+      height: estimateMetricHeight(m),
       // Metrics have no outgoing ports
       ports: [],
       children: [],
@@ -339,6 +490,7 @@ function buildFieldPorts(
   nodeId: string,
   _mappedFields: Map<string, Set<string>>,
   topOffset = HEADER_HEIGHT + FIELDS_PADDING_TOP,
+  nodeWidth = CARD_MIN_WIDTH,
 ): ElkPort[] {
   const ports: ElkPort[] = [];
   let index = 0;
@@ -357,7 +509,7 @@ function buildFieldPorts(
       // Right port (target side)
       ports.push({
         id: `${nodeId}:${f.name}:tgt`,
-        x: CARD_MIN_WIDTH,
+        x: nodeWidth,
         y,
         width: 1,
         height: 1,

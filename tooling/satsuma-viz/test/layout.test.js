@@ -274,6 +274,77 @@ describe("computeLayout", () => {
     assert.ok(result.nodes.has("audit_fields"), "Should have fragment node");
   });
 
+  it("expands schema node height for report metadata, spreads, and notes", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [{
+          ...schema(
+            "branch_product_daily_as_is",
+            [field("branch_id"), field("branch_name"), field("effective_from", "DATE")],
+          ),
+          metadata: [{ key: "report", value: "" }, { key: "tool", value: "powerbi" }],
+          notes: [{ text: "Long report note that should reserve extra card height in the detailed lineage view.", isMultiline: false, location: loc }],
+          spreads: ["audit_fields"],
+        }],
+        mappings: [],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeLayout(model);
+    const node = result.nodes.get("branch_product_daily_as_is");
+
+    assert.ok(node, "Should have report schema node");
+    assert.ok(
+      node.height > 160,
+      `Report schema node height (${node.height}) should include notes and spread rows`,
+    );
+    assert.ok(
+      node.width >= 260,
+      `Report schema node width (${node.width}) should expand for report metadata/content`,
+    );
+  });
+
+  it("expands metric node dimensions for metadata and notes", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [],
+        mappings: [],
+        metrics: [{
+          id: "branch_product_revenue_variance",
+          qualifiedId: "branch_product_revenue_variance",
+          label: "Revenue Variance",
+          source: ["orders"],
+          grain: "daily",
+          slices: ["region", "branch", "product"],
+          filter: null,
+          fields: [
+            { name: "variance_amount", type: "DECIMAL(14,2)", measure: "additive", notes: [], location: loc },
+            { name: "variance_pct", type: "DECIMAL(9,4)", measure: "non_additive", notes: [], location: loc },
+          ],
+          notes: [{ text: "Used by operational reporting and downstream dashboards.", isMultiline: false, location: loc }],
+          comments: [],
+          location: loc,
+        }],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeLayout(model);
+    const node = result.nodes.get("branch_product_revenue_variance");
+
+    assert.ok(node, "Should have metric node");
+    assert.ok(node.height > 120, `Metric node height (${node.height}) should include meta and notes`);
+    assert.ok(node.width > 240, `Metric node width (${node.width}) should expand for long names/content`);
+  });
+
   it("produces positive dimensions for the overall layout", async () => {
     const model = {
       uri: "file:///test.stm",
