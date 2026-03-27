@@ -22,13 +22,21 @@ const TYPE_CAP = 14;
 export function format(tree: Tree, source: string): string {
   const result = formatSourceFile(tree.rootNode, source);
   // Ensure single trailing newline, no trailing blank lines
-  return result.replace(/\n*$/, "\n");
+  return trimTrailingNewlines(result) + "\n";
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function ind(level: number): string {
   return INDENT.repeat(level);
+}
+
+function trimTrailingNewlines(text: string): string {
+  let end = text.length;
+  while (end > 0 && text.charCodeAt(end - 1) === 10) {
+    end -= 1;
+  }
+  return text.slice(0, end);
 }
 
 function isComment(node: SyntaxNode): boolean {
@@ -1176,5 +1184,4 @@ function formatSliceBody(node: SyntaxNode): string {
   }
   return "slice {" + items.join(", ") + "}";
 }
-
 
