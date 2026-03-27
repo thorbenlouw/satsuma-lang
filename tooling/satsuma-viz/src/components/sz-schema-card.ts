@@ -172,7 +172,8 @@ export class SzSchemaCard extends LitElement {
       display: none;
     }
 
-    .collapsed .label {
+    .collapsed .label,
+    .collapsed .metadata-pills {
       display: none;
     }
 
@@ -206,6 +207,30 @@ export class SzSchemaCard extends LitElement {
       background: var(--sz-badge-bg, #FFF3E8);
       color: var(--sz-orange-dark, #D97726);
       border-color: var(--sz-orange-dark, #D97726);
+    }
+
+    .metadata-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 4px 12px 6px;
+      border-bottom: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+    }
+
+    .meta-pill {
+      font-family: var(--sz-font-sans, system-ui);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: var(--sz-badge-radius, 4px);
+      background: var(--sz-namespace-bg, #FFF3E8);
+      color: var(--sz-text-muted, #6B6560);
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    .meta-pill .meta-key {
+      color: var(--sz-orange-dark, #D97726);
     }
 
     .spread-indicator {
@@ -282,6 +307,7 @@ export class SzSchemaCard extends LitElement {
     const totalFields = this._countFields(s.fields);
     const mappedCount = this._countMapped(s.fields);
     const hasNotes = s.notes.length > 0;
+    const metaPills = s.metadata.filter((m) => m.key !== "note");
 
     return html`
       <div class=${this._collapsed ? "collapsed" : ""}>
@@ -295,6 +321,13 @@ export class SzSchemaCard extends LitElement {
           <span class="header-toggle" ?data-collapsed=${this._collapsed}>&#9660;</span>
         </div>
         ${s.label ? html`<div class="label">${s.label}</div>` : ""}
+        ${metaPills.length > 0
+          ? html`<div class="metadata-pills">
+              ${metaPills.map(
+                (m) => html`<span class="meta-pill"><span class="meta-key">${m.key}</span> ${m.value}</span>`
+              )}
+            </div>`
+          : ""}
         <div class="fields">
           ${s.fields.map((f) => this._renderField(f, 0))}
         </div>
