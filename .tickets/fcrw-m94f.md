@@ -1,6 +1,6 @@
 ---
 id: fcrw-m94f
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-27T10:30:47Z
@@ -20,3 +20,10 @@ CLI prebuild fails fast when required WASM assets are missing
 Packed satsuma-cli.tgz is verified to include dist/tree-sitter-satsuma.wasm and dist/web-tree-sitter.wasm
 Relevant CLI tests pass locally
 
+
+## Notes
+
+**2026-03-27T10:33:09Z**
+
+Cause: The release workflow packed the CLI without first generating tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm, and the CLI prebuild step only warned when the asset was missing.
+Fix: Build the parser WASM in the release job, fail prebuild if required WASM assets are absent, and verify the packed tarball contains both WASM files before upload. (commit ba53173)
