@@ -1,6 +1,6 @@
 ---
 id: f2v-l9x2
-status: open
+status: closed
 deps: [f2v-jd4t, f2v-iv1v]
 links: []
 created: 2026-03-27T07:15:04Z
@@ -21,3 +21,10 @@ Wire the view transitions between overview and mapping detail. Arrow click in ov
 - Pan/zoom resets on view transition
 - View transition is smooth (no flicker)
 
+
+## Notes
+
+**2026-03-27T07:42:21Z**
+
+Cause: View transitions between overview and detail needed pan/zoom reset and smooth animation.
+Fix: Added _resetPanZoom() called on both overview→detail and detail→overview transitions. Added fadeIn CSS animation (0.2s) on view-content wrapper for flicker-free transitions. All five ACs were mostly covered by Phase 5.4 — this ticket finishes the polish.

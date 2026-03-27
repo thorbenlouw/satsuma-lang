@@ -95,6 +95,16 @@ export class SatsumaViz extends LitElement {
       letter-spacing: 0.05em;
     }
 
+    /* View transition fade */
+    .view-content {
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
     /* Flexbox fallback when no layout computed yet */
     .flex-canvas {
       display: flex;
@@ -612,6 +622,7 @@ export class SatsumaViz extends LitElement {
     this.addEventListener("open-mapping", ((e: SzOpenMappingEvent) => {
       this._selectedMapping = e.mapping;
       this._viewMode = "detail";
+      this._resetPanZoom();
     }) as EventListener);
   }
 
@@ -753,7 +764,7 @@ export class SatsumaViz extends LitElement {
     if (this._viewMode === "detail" && this._selectedMapping && this._layout) {
       return html`
         ${this._renderToolbar(namespaces)}
-        <div class=${toggleClasses}>
+        <div class="${toggleClasses} view-content">
           ${this._renderFileNotes()}
           <div style="padding: 16px;">
             ${this._renderMappingDetailView(this._selectedMapping)}
@@ -767,7 +778,7 @@ export class SatsumaViz extends LitElement {
       return html`
         ${this._renderToolbar(namespaces)}
         ${this._renderBreadcrumbs()}
-        <div class=${toggleClasses}>
+        <div class="${toggleClasses} view-content">
           ${this._renderFileNotes()}
           <div class="notes-pane-wrapper">
             <div class="viewport"
@@ -890,6 +901,13 @@ export class SatsumaViz extends LitElement {
   private _backToOverview() {
     this._viewMode = "overview";
     this._selectedMapping = null;
+    this._resetPanZoom();
+  }
+
+  private _resetPanZoom() {
+    this._zoom = 1;
+    this._panX = 0;
+    this._panY = 0;
   }
 
   private _fit() {
