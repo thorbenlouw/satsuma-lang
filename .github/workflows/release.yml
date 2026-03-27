@@ -38,6 +38,10 @@ jobs:
         working-directory: .
         run: npm run ci:all
 
+      - name: Build WASM parser
+        working-directory: tooling/tree-sitter-satsuma
+        run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
+
       - name: Bundle for distribution
         shell: bash
         run: |
@@ -50,6 +54,7 @@ jobs:
 
           npm pack
           mv satsuma-cli-*.tgz satsuma-cli.tgz
+          node scripts/verify-pack.js
 
       - uses: actions/upload-artifact@v7
         with:
