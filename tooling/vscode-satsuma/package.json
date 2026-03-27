@@ -110,6 +110,8 @@
     }
   },
   "scripts": {
+    "build:core": "npm --prefix ../satsuma-core run build",
+    "prebuild": "npm run build:core",
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "build:server": "cd server && npm run build",
