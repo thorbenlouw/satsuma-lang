@@ -166,6 +166,9 @@ export class SzMetricCard extends LitElement {
   @property({ type: Object })
   metric: MetricCard | null = null;
 
+  @property({ type: Boolean })
+  compact = false;
+
   @state()
   private _collapsed = false;
 
@@ -175,6 +178,18 @@ export class SzMetricCard extends LitElement {
   override render() {
     const m = this.metric;
     if (!m) return html``;
+
+    if (this.compact) {
+      return html`
+        <div>
+          <div class="header" @click=${() => this._navigate(m.location)}>
+            <span class="header-icon">&#9670;</span>
+            <span class="header-name">${m.qualifiedId}</span>
+            <span class="header-toggle">&#9660;</span>
+          </div>
+        </div>
+      `;
+    }
 
     const hasMeta = m.label || m.grain || m.slices.length > 0;
     const hasNotes = m.notes.length > 0;

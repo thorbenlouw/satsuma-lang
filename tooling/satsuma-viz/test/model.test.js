@@ -32,9 +32,21 @@ describe("@satsuma/viz bundle", () => {
     assert.equal(typeof mod.SzMetricCard, "function");
   });
 
+  it("SzMetricCard has compact property defaulting to false", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    const card = new mod.SzMetricCard();
+    assert.equal(card.compact, false, "compact should default to false");
+  });
+
   it("exports SzFragmentCard class", async () => {
     mod ??= await import("../dist/satsuma-viz.js");
     assert.equal(typeof mod.SzFragmentCard, "function");
+  });
+
+  it("SzFragmentCard has compact property defaulting to false", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    const card = new mod.SzFragmentCard();
+    assert.equal(card.compact, false, "compact should default to false");
   });
 
   it("exports SzNavigateEvent class", async () => {
