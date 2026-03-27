@@ -59,6 +59,7 @@ export class SatsumaViz extends LitElement {
       background: var(--sz-bg);
       color: var(--sz-text);
       font-family: var(--sz-font-sans);
+      height: 100%;
       min-height: 100%;
       overflow: auto;
     }
@@ -102,6 +103,10 @@ export class SatsumaViz extends LitElement {
 
     /* View transition fade */
     .view-content {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
       animation: fadeIn 0.2s ease-out;
     }
 
@@ -386,6 +391,7 @@ export class SatsumaViz extends LitElement {
       display: flex;
       flex: 1;
       overflow: hidden;
+      min-height: 0;
     }
 
     .notes-pane-wrapper > .viewport {
@@ -620,9 +626,13 @@ export class SatsumaViz extends LitElement {
   private _panStartY = 0;
   private _panStartPanX = 0;
   private _panStartPanY = 0;
+  private readonly _handleWindowResize = () => {
+    this.requestUpdate();
+  };
 
   override connectedCallback() {
     super.connectedCallback();
+    window.addEventListener("resize", this._handleWindowResize);
     this.addEventListener("field-hover", ((e: SzFieldHoverEvent) => {
       this._hoveredSchema = e.schemaId;
       this._hoveredField = e.fieldName;
@@ -632,6 +642,11 @@ export class SatsumaViz extends LitElement {
       this._viewMode = "detail";
       this._resetPanZoom();
     }) as EventListener);
+  }
+
+  override disconnectedCallback() {
+    window.removeEventListener("resize", this._handleWindowResize);
+    super.disconnectedCallback();
   }
 
   override updated(changed: Map<string, unknown>) {
@@ -683,6 +698,7 @@ export class SatsumaViz extends LitElement {
     this._layout = null;
     this._overviewLayout = null;
     this._layoutError = false;
+    this._renderedNamespaceBoxes = [];
 
     // Build a merged model that includes expanded cross-file schemas
     const mergedModel = this._buildMergedModel();
@@ -920,10 +936,38 @@ export class SatsumaViz extends LitElement {
   }
 
   private _fit() {
-    this._zoom = 1;
-    this._panX = 0;
-    this._panY = 0;
-    this.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    const viewport = this.renderRoot?.querySelector?.(".viewport") as HTMLElement | null;
+    const canvas = this.renderRoot?.querySelector?.(".canvas") as HTMLElement | null;
+    if (!viewport || !canvas) {
+      this._resetPanZoom();
+      return;
+    }
+
+    const bounds = this._measureContentBounds(canvas);
+    if (!bounds) {
+      this._resetPanZoom();
+      return;
+    }
+
+    const viewportWidth = viewport.clientWidth;
+    const viewportHeight = viewport.clientHeight;
+    if (viewportWidth <= 0 || viewportHeight <= 0) {
+      this._resetPanZoom();
+      return;
+    }
+
+    const zoom = Math.min(
+      SatsumaViz.MAX_ZOOM,
+      Math.max(
+        SatsumaViz.MIN_ZOOM,
+        Math.min(viewportWidth / bounds.width, viewportHeight / bounds.height),
+      ),
+    );
+
+    this._zoom = zoom;
+    this._panX = (viewportWidth - bounds.width * zoom) / 2 - bounds.minX * zoom;
+    this._panY = (viewportHeight - bounds.height * zoom) / 2 - bounds.minY * zoom;
+    this._showZoomIndicator();
   }
 
   private _refresh() {
@@ -1113,7 +1157,7 @@ export class SatsumaViz extends LitElement {
               if (!node) return html``;
               return html`
                 <div class="positioned-card" data-node-id=${f.id} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-fragment-card .fragment=${f}></sz-fragment-card>
+                  <sz-fragment-card .fragment=${f} compact></sz-fragment-card>
                 </div>
               `;
             }),
@@ -1122,7 +1166,7 @@ export class SatsumaViz extends LitElement {
               if (!node) return html``;
               return html`
                 <div class="positioned-card" data-node-id=${m.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-metric-card .metric=${m}></sz-metric-card>
+                  <sz-metric-card .metric=${m} compact></sz-metric-card>
                 </div>
               `;
             }),
@@ -1658,6 +1702,50 @@ export class SatsumaViz extends LitElement {
     }
   }
 
+  private _measureContentBounds(canvas: HTMLElement): {
+    minX: number;
+    minY: number;
+    width: number;
+    height: number;
+  } | null {
+    const selectors = [
+      ".positioned-card",
+      ".namespace-box",
+      ".block-comment-badge",
+      ".source-block-label",
+      ".source-block-filter",
+    ];
+    const elements = selectors.flatMap((selector) =>
+      Array.from(canvas.querySelectorAll(selector)) as HTMLElement[]
+    );
+
+    if (elements.length === 0) {
+      const width = Math.max(canvas.scrollWidth, canvas.offsetWidth);
+      const height = Math.max(canvas.scrollHeight, canvas.offsetHeight);
+      if (width <= 0 || height <= 0) return null;
+      return { minX: 0, minY: 0, width, height };
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const el of elements) {
+      minX = Math.min(minX, el.offsetLeft);
+      minY = Math.min(minY, el.offsetTop);
+      maxX = Math.max(maxX, el.offsetLeft + el.offsetWidth);
+      maxY = Math.max(maxY, el.offsetTop + el.offsetHeight);
+    }
+
+    const padding = 24;
+    return {
+      minX: minX - padding,
+      minY: minY - padding,
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2,
+    };
+  }
   private _buildMappedFieldsIndex(): Map<string, Set<string>> {
     const index = new Map<string, Set<string>>();
     if (!this.model) return index;

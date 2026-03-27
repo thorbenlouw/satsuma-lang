@@ -162,6 +162,9 @@ export class SzFragmentCard extends LitElement {
   @property({ type: Object })
   fragment: FragmentCard | null = null;
 
+  @property({ type: Boolean })
+  compact = false;
+
   @state()
   private _collapsed = false;
 
@@ -171,6 +174,18 @@ export class SzFragmentCard extends LitElement {
   override render() {
     const fr = this.fragment;
     if (!fr) return html``;
+
+    if (this.compact) {
+      return html`
+        <div>
+          <div class="header" @click=${() => this._navigate(fr.location)}>
+            <span class="header-icon">&#9674;</span>
+            <span class="header-name">${fr.id}</span>
+            <span class="header-count">${fr.fields.length} fields</span>
+          </div>
+        </div>
+      `;
+    }
 
     const hasNotes = fr.notes.length > 0;
 

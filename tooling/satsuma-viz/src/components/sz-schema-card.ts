@@ -521,7 +521,6 @@ export class SzSchemaCard extends LitElement {
     const displayName = s.qualifiedId.includes("::") ? s.qualifiedId : s.id;
     const totalFields = this._countFields(s.fields);
     const metaPills = s.metadata.filter((m) => m.key !== "note");
-    const hasNotes = s.notes.length > 0;
     const isReport = this._isReport(s);
 
     return html`
@@ -538,7 +537,6 @@ export class SzSchemaCard extends LitElement {
               )}
             </div>`
           : ""}
-        ${hasNotes ? this._renderNotes(s.notes) : ""}
       </div>
     `;
   }
