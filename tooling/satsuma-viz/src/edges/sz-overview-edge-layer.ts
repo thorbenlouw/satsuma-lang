@@ -43,7 +43,6 @@ export class SzOverviewEdgeLayer extends LitElement {
       fill: none;
       stroke-width: 3;
       pointer-events: stroke;
-      cursor: pointer;
       transition: stroke-width 0.15s ease, opacity 0.15s ease;
     }
 
@@ -67,34 +66,24 @@ export class SzOverviewEdgeLayer extends LitElement {
       stroke: var(--sz-text-muted, #6B6560);
     }
 
-    .mapping-label-group {
-      pointer-events: all;
-      cursor: pointer;
+    .anchor-dot {
+      pointer-events: none;
     }
 
-    .mapping-label-bg {
-      fill: var(--sz-card-bg, #fff);
-      stroke: var(--sz-card-border, rgba(45, 42, 38, 0.08));
-      stroke-width: 1;
-      rx: 4;
+    .anchor-dot.pipeline {
+      fill: var(--sz-edge-pipeline, #D97726);
     }
 
-    .mapping-label-text {
-      font-family: var(--sz-font-sans, system-ui);
-      font-size: 10px;
-      font-weight: 600;
+    .anchor-dot.nl {
+      fill: var(--sz-edge-nl, #5A9E6F);
+    }
+
+    .anchor-dot.mixed {
+      fill: var(--sz-edge-pipeline, #D97726);
+    }
+
+    .anchor-dot.bare {
       fill: var(--sz-text-muted, #6B6560);
-      text-anchor: middle;
-      dominant-baseline: central;
-    }
-
-    .mapping-label-group:hover .mapping-label-bg {
-      fill: var(--sz-badge-bg, #FFF3E8);
-      stroke: var(--sz-orange-dark, #D97726);
-    }
-
-    .mapping-label-group:hover .mapping-label-text {
-      fill: var(--sz-orange-dark, #D97726);
     }
 
     /* Tooltip */
@@ -162,36 +151,20 @@ export class SzOverviewEdgeLayer extends LitElement {
   private _renderOverviewEdge(edge: OverviewEdge): SVGTemplateResult {
     if (edge.points.length < 2) return svg``;
 
-    const d = this._buildCurvePath(edge.points);
+    const d = this._buildRoutedPath(edge.points);
     const cls = this._edgeColorClass(edge.mapping);
-    const labelPos = this._labelAnchor(edge.points);
-    const labelText = edge.mapping.id;
-    const labelWidth = edge.labelWidth;
+    const first = edge.points[0];
+    const last = edge.points[edge.points.length - 1];
 
     return svg`
       <path
         class="overview-path ${cls}"
         d=${d}
-        @click=${() => this._onEdgeClick(edge)}
         @mouseenter=${(ev: MouseEvent) => this._onEdgeHover(edge.id, ev)}
         @mouseleave=${() => this._onEdgeLeave()}
       />
-      <g
-        class="mapping-label-group"
-        transform="translate(${labelPos.x}, ${labelPos.y})"
-        @click=${() => this._onEdgeClick(edge)}
-        @mouseenter=${(ev: MouseEvent) => this._onEdgeHover(edge.id, ev)}
-        @mouseleave=${() => this._onEdgeLeave()}
-      >
-        <rect
-          class="mapping-label-bg"
-          x=${-labelWidth / 2}
-          y="-10"
-          width=${labelWidth}
-          height="20"
-        />
-        <text class="mapping-label-text">${labelText}</text>
-      </g>
+      <circle class="anchor-dot ${cls}" cx=${first.x} cy=${first.y} r="3.5" />
+      <circle class="anchor-dot ${cls}" cx=${last.x} cy=${last.y} r="3.5" />
     `;
   }
 
@@ -219,75 +192,27 @@ export class SzOverviewEdgeLayer extends LitElement {
     return "bare";
   }
 
-  private _buildCurvePath(points: Array<{ x: number; y: number }>): string {
-    if (points.length === 2) {
-      const [p0, p1] = points;
-      const dx = (p1.x - p0.x) * 0.5;
-      return `M ${p0.x} ${p0.y} C ${p0.x + dx} ${p0.y}, ${p1.x - dx} ${p1.y}, ${p1.x} ${p1.y}`;
+  private _buildRoutedPath(points: Array<{ x: number; y: number }>): string {
+    if (points.length < 2) return "";
+    const [first, ...rest] = points;
+    if (rest.length === 1) {
+      return `M ${first.x} ${first.y} L ${rest[0].x} ${rest[0].y}`;
     }
-
-    const parts = [`M ${points[0].x} ${points[0].y}`];
-    for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const curr = points[i];
-      const dx = (curr.x - prev.x) * 0.4;
-      parts.push(
-        `C ${prev.x + dx} ${prev.y}, ${curr.x - dx} ${curr.y}, ${curr.x} ${curr.y}`
-      );
+    // Use cubic bezier for smooth horizontal-exit, vertical-mid, horizontal-enter routing
+    if (rest.length === 3) {
+      const [mid1, mid2, last] = rest;
+      const r = Math.min(20, Math.abs(mid1.y - mid2.y) / 2, Math.abs(mid1.x - first.x) / 2);
+      return [
+        `M ${first.x} ${first.y}`,
+        `L ${mid1.x - r} ${mid1.y}`,
+        `Q ${mid1.x} ${mid1.y} ${mid1.x} ${mid1.y + Math.sign(mid2.y - mid1.y) * r}`,
+        `L ${mid2.x} ${mid2.y - Math.sign(mid2.y - mid1.y) * r}`,
+        `Q ${mid2.x} ${mid2.y} ${mid2.x + r} ${mid2.y}`,
+        `L ${last.x} ${last.y}`,
+      ].join(" ");
     }
-    return parts.join(" ");
-  }
-
-  private _midpoint(
-    points: Array<{ x: number; y: number }>
-  ): { x: number; y: number } {
-    const mid = Math.floor(points.length / 2);
-    if (points.length % 2 === 0) {
-      return {
-        x: (points[mid - 1].x + points[mid].x) / 2,
-        y: (points[mid - 1].y + points[mid].y) / 2,
-      };
-    }
-    return points[mid];
-  }
-
-  private _labelAnchor(
-    points: Array<{ x: number; y: number }>
-  ): { x: number; y: number } {
-    if (points.length < 2) return { x: 0, y: 0 };
-
-    let best:
-      | {
-          score: number;
-          length: number;
-          start: { x: number; y: number };
-          end: { x: number; y: number };
-        }
-      | null = null;
-
-    for (let i = 1; i < points.length; i++) {
-      const start = points[i - 1];
-      const end = points[i];
-      const dx = Math.abs(end.x - start.x);
-      const dy = Math.abs(end.y - start.y);
-      const length = Math.hypot(end.x - start.x, end.y - start.y);
-      const score = dx - dy * 0.5;
-
-      if (!best || score > best.score || (score === best.score && length > best.length)) {
-        best = { score, length, start, end };
-      }
-    }
-
-    if (!best) return this._midpoint(points);
-
-    return {
-      x: (best.start.x + best.end.x) / 2,
-      y: (best.start.y + best.end.y) / 2,
-    };
-  }
-
-  private _onEdgeClick(edge: OverviewEdge) {
-    this.dispatchEvent(new SzOpenMappingEvent(edge.mapping));
+    // Fallback: straight segments
+    return [`M ${first.x} ${first.y}`, ...rest.map((p) => `L ${p.x} ${p.y}`)].join(" ");
   }
 
   private _onEdgeHover(edgeId: string, ev: MouseEvent) {

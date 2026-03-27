@@ -10,6 +10,8 @@ export class SzSchemaCard extends LitElement {
   static override styles = css`
     :host {
       display: block;
+      width: 100%;
+      box-sizing: border-box;
       min-width: var(--sz-card-min-width, 240px);
       max-width: var(--sz-card-max-width, 380px);
       border-radius: var(--sz-card-radius, 8px);
@@ -18,6 +20,11 @@ export class SzSchemaCard extends LitElement {
       box-shadow: var(--sz-card-shadow, 0 2px 8px rgba(45, 42, 38, 0.06));
       overflow: hidden;
       font-family: var(--sz-font-sans, system-ui);
+    }
+
+    :host([content-width]) {
+      width: max-content;
+      max-width: none;
     }
 
     .header {
@@ -45,8 +52,8 @@ export class SzSchemaCard extends LitElement {
       font-size: 14px;
       font-weight: 600;
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow: var(--sz-header-name-overflow, hidden);
+      text-overflow: var(--sz-header-name-overflow-mode, ellipsis);
       white-space: nowrap;
     }
 
@@ -112,9 +119,9 @@ export class SzSchemaCard extends LitElement {
       font-size: 12px;
       font-weight: 500;
       color: var(--sz-text, #2D2A26);
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      flex: var(--sz-field-name-flex, 1);
+      overflow: var(--sz-field-name-overflow, hidden);
+      text-overflow: var(--sz-field-name-overflow-mode, ellipsis);
       white-space: nowrap;
     }
 
@@ -326,6 +333,24 @@ export class SzSchemaCard extends LitElement {
     :host([has-highlight]) .field-row.hl .field-name {
       font-weight: 700;
     }
+
+    :host([content-width]) .field-row {
+      width: max-content;
+      min-width: 100%;
+    }
+
+    :host([content-width]) .header-name {
+      --sz-header-name-overflow: visible;
+      --sz-header-name-overflow-mode: clip;
+      min-width: max-content;
+    }
+
+    :host([content-width]) .field-name {
+      --sz-field-name-flex: 0 0 auto;
+      --sz-field-name-overflow: visible;
+      --sz-field-name-overflow-mode: clip;
+      min-width: max-content;
+    }
   `;
 
   @property({ type: Object })
@@ -339,6 +364,12 @@ export class SzSchemaCard extends LitElement {
    *  Shows namespace::name in header when schema has a namespace (qualifiedId contains ::). */
   @property({ type: Boolean })
   compact = false;
+
+  @property({ type: String, attribute: "namespace-label" })
+  namespaceLabel: string | null = null;
+
+  @property({ type: Boolean, attribute: "content-width", reflect: true })
+  contentWidth = false;
 
   /** Set of field names to highlight (peach for source, green for target).
    *  When non-empty, non-highlighted fields dim to ~50% opacity. */
@@ -367,6 +398,14 @@ export class SzSchemaCard extends LitElement {
 
   private _isReport(s: SchemaCard): boolean {
     return s.metadata.some((m) => m.key === "report" || m.key === "model");
+  }
+
+  private _renderNamespacePill() {
+    return this.namespaceLabel
+      ? html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
+          <span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
+        </div>`
+      : html``;
   }
 
   private _headerIcon(isReport: boolean) {
@@ -400,6 +439,7 @@ export class SzSchemaCard extends LitElement {
 
     return html`
       <div class=${this._collapsed ? "collapsed" : ""}>
+        ${this._renderNamespacePill()}
         <div class="header ${isReport ? "report" : ""}" @click=${this._onHeaderClick}>
           ${this._headerIcon(isReport)}
           <span class="header-name">${s.id}</span>
@@ -518,13 +558,14 @@ export class SzSchemaCard extends LitElement {
   }
 
   private _renderCompact(s: SchemaCard) {
-    const displayName = s.qualifiedId.includes("::") ? s.qualifiedId : s.id;
+    const displayName = s.id;
     const totalFields = this._countFields(s.fields);
     const metaPills = s.metadata.filter((m) => m.key !== "note");
     const isReport = this._isReport(s);
 
     return html`
       <div>
+        ${this._renderNamespacePill()}
         <div class="header ${isReport ? "report" : ""}" @click=${() => this._navigate(s.location)}>
           ${this._headerIcon(isReport)}
           <span class="header-name">${displayName}</span>

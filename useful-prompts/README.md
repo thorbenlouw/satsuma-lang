@@ -66,3 +66,17 @@ a balanced enterprise-ready security assessment.
 2. Paste or reference `useful-prompts/security-report-prompt.md` as your prompt.
 3. The agent will read source files, verify claims, and generate an updated report.
 4. Review the output and commit.
+
+### [satsuma-visual-style-prompt.md](satsuma-visual-style-prompt.md)
+
+**Satsuma Visual Style Prompt** — A reusable art direction prompt extracted from
+the `site/` codebase. It captures the website's colour palette, typography, UI
+surfaces, motion style, and overall brand feeling so you can generate matching
+mockups, social cards, diagrams, illustrations, or other visual assets.
+
+**How to use:**
+
+1. Open any capable image or design-oriented model.
+2. Paste or upload `satsuma-visual-style-prompt.md` as your prompt or style guide.
+3. Add your specific asset request after it, for example: "Generate a launch social card" or "Create a landing page hero illustration."
+4. Review the output against the existing `site/` look and adjust for the specific asset format.

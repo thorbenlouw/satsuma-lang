@@ -25,6 +25,8 @@ export interface LayoutNode {
   y: number;
   width: number;
   height: number;
+  kind?: "schema" | "metric" | "fragment" | "mapping";
+  hasNamespace?: boolean;
   /** Port positions keyed by field name */
   ports: Map<string, { x: number; y: number }>;
 }
@@ -69,8 +71,6 @@ export interface OverviewEdge {
   targetNode: string;
   /** Array of {x,y} points forming the routed edge path */
   points: Array<{ x: number; y: number }>;
-  /** Estimated label width used for spacing and rendering. */
-  labelWidth: number;
   /** The full MappingBlock this edge represents. */
   mapping: MappingBlock;
 }
@@ -97,8 +97,9 @@ const OVERVIEW_TITLE_CHAR_WIDTH = 8.2;
 const OVERVIEW_COUNT_CHAR_WIDTH = 6.3;
 const OVERVIEW_PILL_CHAR_WIDTH = 6.1;
 const OVERVIEW_LABEL_CHAR_WIDTH = 6.8;
-const OVERVIEW_LABEL_PADDING = 18;
-const OVERVIEW_LABEL_MAX_WIDTH = 220;
+const OVERVIEW_LABEL_PADDING = 76; // left 12 + right 40 + icon 16 + gap 8
+const OVERVIEW_LABEL_MAX_WIDTH = 420;
+const OVERVIEW_NAMESPACE_PILL_PADDING = 30; // left 12 + right padding + pill internal padding
 const FULL_TITLE_CHAR_WIDTH = 8.1;
 const FULL_META_CHAR_WIDTH = 6.3;
 const FULL_FIELD_CHAR_WIDTH = 7.2;
@@ -112,10 +113,14 @@ const FULL_NOTE_LINE_HEIGHT = 18;
 const FULL_SPREAD_HEIGHT = 24;
 const FULL_META_ROW_HEIGHT = 20;
 const FULL_META_BASE_HEIGHT = 12;
+const NAMESPACE_PILL_HEIGHT = 24;
 
 /** Height of the area above the fields list (header + optional label + optional metadata pills). */
-function preambleHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
-  let h = HEADER_HEIGHT;
+function preambleHeight(
+  schema: { label: string | null; metadata: Array<{ key: string; value: string }> },
+  hasNamespace = false,
+): number {
+  let h = HEADER_HEIGHT + (hasNamespace ? NAMESPACE_PILL_HEIGHT : 0);
   if (schema.label) h += LABEL_HEIGHT;
   const pills = schema.metadata.filter((m) => m.key !== "note");
   if (pills.length > 0) h += METADATA_PILLS_HEIGHT;
@@ -123,8 +128,11 @@ function preambleHeight(schema: { label: string | null; metadata: Array<{ key: s
 }
 
 /** Compact card height: header + optional label + optional pills + small padding. */
-function compactHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
-  return preambleHeight(schema) + FIELDS_PADDING_BOTTOM;
+function compactHeight(
+  schema: { label: string | null; metadata: Array<{ key: string; value: string }> },
+  hasNamespace = false,
+): number {
+  return preambleHeight(schema, hasNamespace) + FIELDS_PADDING_BOTTOM;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -135,16 +143,25 @@ function estimateTextWidth(text: string, charWidth: number): number {
   return text.length * charWidth;
 }
 
-function estimateOverviewLabelWidth(mappingId: string): number {
+function estimateOverviewLabelWidth(mappingId: string, namespaceName?: string | null): number {
+  const labelWidth = Math.ceil(estimateTextWidth(mappingId, OVERVIEW_LABEL_CHAR_WIDTH) + OVERVIEW_LABEL_PADDING);
+  // Namespace pill sits in its own row; take the wider of the two
+  const pillWidth = namespaceName
+    ? Math.ceil(estimateTextWidth(namespaceName, OVERVIEW_PILL_CHAR_WIDTH) + OVERVIEW_NAMESPACE_PILL_PADDING)
+    : 0;
   return clamp(
-    Math.ceil(estimateTextWidth(mappingId, OVERVIEW_LABEL_CHAR_WIDTH) + OVERVIEW_LABEL_PADDING),
-    48,
+    Math.max(labelWidth, pillWidth),
+    CARD_MIN_WIDTH,
     OVERVIEW_LABEL_MAX_WIDTH,
   );
 }
 
+function overviewMappingNodeId(namespaceName: string | null, mappingId: string): string {
+  return `mapping:${namespaceName ?? "_"}:${mappingId}`;
+}
+
 function estimateCompactSchemaWidth(schema: SchemaCard): number {
-  const displayName = schema.qualifiedId.includes("::") ? schema.qualifiedId : schema.id;
+  const displayName = schema.id;
   const countText = `${countFields(schema.fields)} fields`;
   const headerWidth =
     OVERVIEW_HEADER_BASE_WIDTH +
@@ -263,7 +280,7 @@ function estimateFragmentWidth(fragment: FragmentCard): number {
   return clamp(Math.ceil(Math.max(titleWidth, fieldWidth, noteWidth)), CARD_MIN_WIDTH, CARD_MAX_WIDTH);
 }
 
-function estimateMetricHeight(metric: MetricCard): number {
+function estimateMetricHeight(metric: MetricCard, hasNamespace = false): number {
   const notes = metric.notes ?? [];
   const metaRows =
     (metric.label ? 1 : 0) +
@@ -272,22 +289,22 @@ function estimateMetricHeight(metric: MetricCard): number {
   const metaHeight = metaRows > 0 ? FULL_META_BASE_HEIGHT + metaRows * FULL_META_ROW_HEIGHT : 0;
   const notesHeight = notes.reduce((sum, note) => sum + estimateNoteBlockHeight(note.text, false), 0);
 
-  return HEADER_HEIGHT + metaHeight + FIELDS_PADDING_TOP + metric.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM + notesHeight;
+  return (hasNamespace ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + metaHeight + FIELDS_PADDING_TOP + metric.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM + notesHeight;
 }
 
-function estimateFragmentHeight(fragment: FragmentCard): number {
+function estimateFragmentHeight(fragment: FragmentCard, hasNamespace = false): number {
   const notes = fragment.notes ?? [];
   const notesHeight = notes.reduce((sum, note) => sum + estimateNoteBlockHeight(note.text, false), 0);
-  return HEADER_HEIGHT + FIELDS_PADDING_TOP + fragment.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM + notesHeight;
+  return (hasNamespace ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_TOP + fragment.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM + notesHeight;
 }
 
-function estimateSchemaHeight(schema: SchemaCard): number {
+function estimateSchemaHeight(schema: SchemaCard, hasNamespace = false): number {
   const notes = schema.notes ?? [];
   const spreads = schema.spreads ?? [];
   const notesHeight = notes.reduce((sum, note) => sum + estimateNoteBlockHeight(note.text, true), 0);
   const spreadsHeight = spreads.length * FULL_SPREAD_HEIGHT;
   return (
-    preambleHeight(schema) +
+    preambleHeight(schema, hasNamespace) +
     FIELDS_PADDING_TOP +
     countFields(schema.fields) * FIELD_HEIGHT +
     FIELDS_PADDING_BOTTOM +
@@ -378,27 +395,9 @@ function buildElkGraph(
   const edges: ElkEdge[] = [];
 
   for (const ns of model.namespaces) {
-    if (ns.name) {
-      // Namespace → compound node
-      const nsChildren: ElkNode[] = [];
-      addSchemaNodes(ns.schemas, mappedFields, nsChildren);
-      addFragmentNodes(ns.fragments, nsChildren);
-      addMetricNodes(ns.metrics, nsChildren);
-
-      children.push({
-        id: `ns:${ns.name}`,
-        layoutOptions: {
-          "elk.padding": "[top=28,left=16,bottom=16,right=16]",
-        },
-        children: nsChildren,
-        ports: [],
-        edges: [],
-      });
-    } else {
-      addSchemaNodes(ns.schemas, mappedFields, children);
-      addFragmentNodes(ns.fragments, children);
-      addMetricNodes(ns.metrics, children);
-    }
+    addSchemaNodes(ns.schemas, mappedFields, children, !!ns.name);
+    addFragmentNodes(ns.fragments, children, !!ns.name);
+    addMetricNodes(ns.metrics, children, !!ns.name);
   }
 
   // Build a set of all port IDs so we can validate edge endpoints
@@ -427,7 +426,6 @@ function buildElkGraph(
       "elk.spacing.edgeNode": "20",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
       "elk.portConstraints": "FIXED_POS",
-      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
     },
     children,
     edges,
@@ -438,16 +436,17 @@ function addSchemaNodes(
   schemas: SchemaCard[],
   mappedFields: Map<string, Set<string>>,
   target: ElkNode[],
+  hasNamespace = false,
 ) {
   for (const s of schemas) {
     const width = estimateSchemaWidth(s);
-    const topOffset = preambleHeight(s) + FIELDS_PADDING_TOP;
+    const topOffset = preambleHeight(s, hasNamespace) + FIELDS_PADDING_TOP;
     const ports = buildFieldPorts(s.fields, s.qualifiedId, mappedFields, topOffset, width);
 
     target.push({
       id: s.qualifiedId,
       width,
-      height: estimateSchemaHeight(s),
+      height: estimateSchemaHeight(s, hasNamespace),
       ports,
       children: [],
       edges: [],
@@ -455,15 +454,21 @@ function addSchemaNodes(
   }
 }
 
-function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[]) {
+function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[], hasNamespace = false) {
   for (const f of fragments) {
     const width = estimateFragmentWidth(f);
-    const ports = buildFieldPorts(f.fields, f.id, new Map(), HEADER_HEIGHT + FIELDS_PADDING_TOP, width);
+    const ports = buildFieldPorts(
+      f.fields,
+      f.id,
+      new Map(),
+      (hasNamespace ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_TOP,
+      width,
+    );
 
     target.push({
       id: f.id,
       width,
-      height: estimateFragmentHeight(f),
+      height: estimateFragmentHeight(f, hasNamespace),
       ports,
       children: [],
       edges: [],
@@ -471,12 +476,12 @@ function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[]) {
   }
 }
 
-function addMetricNodes(metrics: MetricCard[], target: ElkNode[]) {
+function addMetricNodes(metrics: MetricCard[], target: ElkNode[], hasNamespace = false) {
   for (const m of metrics) {
     target.push({
       id: m.qualifiedId,
       width: estimateMetricWidth(m),
-      height: estimateMetricHeight(m),
+      height: estimateMetricHeight(m, hasNamespace),
       // Metrics have no outgoing ports
       ports: [],
       children: [],
@@ -624,17 +629,14 @@ function extractLayout(
         });
       }
 
-      // Only add non-namespace nodes
-      if (!n.id.startsWith("ns:")) {
-        nodes.set(n.id, {
-          id: n.id,
-          x,
-          y,
-          width: n.width ?? CARD_MIN_WIDTH,
-          height: n.height ?? 100,
-          ports,
-        });
-      }
+      nodes.set(n.id, {
+        id: n.id,
+        x,
+        y,
+        width: n.width ?? CARD_MIN_WIDTH,
+        height: n.height ?? 100,
+        ports,
+      });
 
       if (n.children && n.children.length > 0) {
         walkNodes(n.children, x, y);
@@ -713,13 +715,13 @@ function extractLayout(
 export async function computeOverviewLayout(model: VizModel): Promise<OverviewLayoutResult> {
   const children: ElkNode[] = [];
   const edges: ElkEdge[] = [];
+  const overviewNodeKinds = new Map<string, LayoutNode["kind"]>();
+  const overviewNodeHasNamespace = new Set<string>();
   const overviewEdgeMeta = new Map<string, {
     sourceNode: string;
     targetNode: string;
     mapping: MappingBlock;
-    labelWidth: number;
   }>();
-  let maxLabelWidth = 0;
   const nodeIds = new Set<string>();
 
   for (const ns of model.namespaces) {
@@ -727,10 +729,15 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
 
     for (const s of ns.schemas) {
       nodeIds.add(s.qualifiedId);
+      overviewNodeKinds.set(s.qualifiedId, "schema");
+      if (ns.name) overviewNodeHasNamespace.add(s.qualifiedId);
       nsNodes.push({
         id: s.qualifiedId,
         width: estimateCompactSchemaWidth(s),
-        height: compactHeight(s),
+        height: compactHeight(s, !!ns.name),
+        layoutOptions: {
+          "elk.layered.layerConstraint": "NONE",
+        },
         ports: [],
         children: [],
         edges: [],
@@ -739,10 +746,15 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
 
     for (const f of ns.fragments) {
       nodeIds.add(f.id);
+      overviewNodeKinds.set(f.id, "fragment");
+      if (ns.name) overviewNodeHasNamespace.add(f.id);
       nsNodes.push({
         id: f.id,
         width: estimateCompactTextCardWidth(f.id),
-        height: HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        layoutOptions: {
+          "elk.layered.layerConstraint": "NONE",
+        },
         ports: [],
         children: [],
         edges: [],
@@ -751,53 +763,72 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
 
     for (const m of ns.metrics) {
       nodeIds.add(m.qualifiedId);
+      overviewNodeKinds.set(m.qualifiedId, "metric");
+      if (ns.name) overviewNodeHasNamespace.add(m.qualifiedId);
       nsNodes.push({
         id: m.qualifiedId,
-        width: estimateCompactTextCardWidth(m.qualifiedId),
-        height: HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        width: estimateCompactTextCardWidth(m.id),
+        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        layoutOptions: {
+          "elk.layered.layerConstraint": "NONE",
+        },
         ports: [],
         children: [],
         edges: [],
       });
     }
 
-    if (ns.name) {
-      children.push({
-        id: `ns:${ns.name}`,
+    for (const m of ns.mappings) {
+      const mappingNodeId = overviewMappingNodeId(ns.name, m.id);
+      overviewNodeKinds.set(mappingNodeId, "mapping");
+      if (ns.name) overviewNodeHasNamespace.add(mappingNodeId);
+      nsNodes.push({
+        id: mappingNodeId,
+        width: estimateOverviewLabelWidth(m.id, ns.name),
+        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         layoutOptions: {
-          "elk.padding": "[top=28,left=16,bottom=16,right=16]",
+          "elk.layered.layerConstraint": "NONE",
         },
-        children: nsNodes,
         ports: [],
+        children: [],
         edges: [],
       });
-    } else {
-      children.push(...nsNodes);
     }
 
-    // One edge per mapping block
+    children.push(...nsNodes);
+
+    // Model mappings as intermediate nodes: sources -> mapping block -> target.
     for (const m of ns.mappings) {
-      const labelWidth = estimateOverviewLabelWidth(m.id);
-      maxLabelWidth = Math.max(maxLabelWidth, labelWidth);
+      const mappingNodeId = overviewMappingNodeId(ns.name, m.id);
       for (const sourceRef of m.sourceRefs) {
-        if (!nodeIds.has(sourceRef) || !nodeIds.has(m.targetRef)) continue;
-        const edgeId = `overview:${m.id}:${sourceRef}`;
+        if (!nodeIds.has(sourceRef)) continue;
+        const edgeId = `overview:${mappingNodeId}:in:${sourceRef}`;
         edges.push({
           id: edgeId,
           sources: [sourceRef],
-          targets: [m.targetRef],
+          targets: [mappingNodeId],
         });
         overviewEdgeMeta.set(edgeId, {
           sourceNode: sourceRef,
-          targetNode: m.targetRef,
+          targetNode: mappingNodeId,
           mapping: m,
-          labelWidth,
         });
       }
+
+      if (!nodeIds.has(m.targetRef)) continue;
+      const targetEdgeId = `overview:${mappingNodeId}:out:${m.targetRef}`;
+      edges.push({
+        id: targetEdgeId,
+        sources: [mappingNodeId],
+        targets: [m.targetRef],
+      });
+      overviewEdgeMeta.set(targetEdgeId, {
+        sourceNode: mappingNodeId,
+        targetNode: m.targetRef,
+        mapping: m,
+      });
     }
   }
-
-  const layerSpacing = Math.max(80, maxLabelWidth + 72);
 
   const elkGraph: ElkGraph = {
     id: "root",
@@ -805,11 +836,10 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
       "elk.algorithm": "layered",
       "elk.direction": "RIGHT",
       "elk.spacing.nodeNode": "40",
-      "elk.layered.spacing.nodeNodeBetweenLayers": String(layerSpacing),
+      "elk.layered.spacing.nodeNodeBetweenLayers": "96",
       "elk.spacing.edgeEdge": "20",
       "elk.spacing.edgeNode": "20",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
-      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
     },
     children,
     edges,
@@ -824,16 +854,21 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
       const x = (n.x ?? 0) + offsetX;
       const y = (n.y ?? 0) + offsetY;
 
-      if (!n.id.startsWith("ns:")) {
-        nodes.push({
-          id: n.id,
-          x,
-          y,
-          width: n.width ?? CARD_MIN_WIDTH,
-          height: n.height ?? (HEADER_HEIGHT + FIELDS_PADDING_BOTTOM),
-          ports: new Map(),
-        });
-      }
+      nodes.push({
+        id: n.id,
+        x,
+        y,
+        width: n.width ?? CARD_MIN_WIDTH,
+        height: n.height ?? (HEADER_HEIGHT + FIELDS_PADDING_BOTTOM),
+        kind: overviewNodeKinds.get(n.id)
+          ?? (n.id.startsWith("mapping:")
+            ? "mapping"
+            : nodeIds.has(n.id)
+              ? "schema"
+              : undefined),
+        hasNamespace: overviewNodeHasNamespace.has(n.id),
+        ports: new Map(),
+      });
 
       if (n.children && n.children.length > 0) {
         walkOverviewNodes(n.children, x, y);
@@ -854,14 +889,36 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
 
     const meta = overviewEdgeMeta.get(e.id);
     if (meta) {
-      overviewEdges.push({
-        id: e.id,
-        sourceNode: meta.sourceNode,
-        targetNode: meta.targetNode,
-        points,
-        labelWidth: meta.labelWidth,
-        mapping: meta.mapping,
-      });
+      const sourceNode = nodes.find((node) => node.id === meta.sourceNode);
+      const targetNode = nodes.find((node) => node.id === meta.targetNode);
+      if (sourceNode && targetNode) {
+        // Replace ELK's routing with clean horizontal-exit / horizontal-enter paths
+        const src = overviewVisualAnchor(sourceNode, "source");
+        const tgt = overviewVisualAnchor(targetNode, "target");
+        const midX = (src.x + tgt.x) / 2;
+        const cleanPoints = [
+          src,
+          { x: midX, y: src.y },
+          { x: midX, y: tgt.y },
+          tgt,
+        ];
+        overviewEdges.push({
+          id: e.id,
+          sourceNode: meta.sourceNode,
+          targetNode: meta.targetNode,
+          points: cleanPoints,
+          mapping: meta.mapping,
+        });
+      } else {
+        // Fallback: use ELK points as-is
+        overviewEdges.push({
+          id: e.id,
+          sourceNode: meta.sourceNode,
+          targetNode: meta.targetNode,
+          points,
+          mapping: meta.mapping,
+        });
+      }
     }
   }
 
@@ -871,6 +928,18 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     width: result.width ?? 800,
     height: result.height ?? 600,
   };
+}
+
+function overviewVisualAnchor(node: LayoutNode, side: "source" | "target"): { x: number; y: number } {
+  const x = side === "source" ? node.x + node.width : node.x;
+  const namespaceOffset = node.hasNamespace ? NAMESPACE_PILL_HEIGHT : 0;
+
+  if (node.kind === "mapping") {
+    // Center on the visual card area below the namespace pill
+    return { x, y: node.y + namespaceOffset + (node.height - namespaceOffset) / 2 };
+  }
+
+  return { x, y: node.y + namespaceOffset + HEADER_HEIGHT / 2 };
 }
 
 // ---- ELK type stubs (minimal) ----

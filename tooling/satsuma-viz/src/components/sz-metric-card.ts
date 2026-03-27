@@ -14,6 +14,8 @@ export class SzMetricCard extends LitElement {
   static override styles = css`
     :host {
       display: block;
+      width: 100%;
+      box-sizing: border-box;
       min-width: var(--sz-card-min-width, 240px);
       max-width: var(--sz-card-max-width, 380px);
       border-radius: var(--sz-card-radius, 8px);
@@ -169,11 +171,22 @@ export class SzMetricCard extends LitElement {
   @property({ type: Boolean })
   compact = false;
 
+  @property({ type: String, attribute: "namespace-label" })
+  namespaceLabel: string | null = null;
+
   @state()
   private _collapsed = false;
 
   @state()
   private _notesExpanded = false;
+
+  private _renderNamespacePill() {
+    return this.namespaceLabel
+      ? html`<div style="padding: 8px 12px 0; background: var(--sz-violet, #8E5BB0);">
+          <span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
+        </div>`
+      : html``;
+  }
 
   override render() {
     const m = this.metric;
@@ -182,9 +195,10 @@ export class SzMetricCard extends LitElement {
     if (this.compact) {
       return html`
         <div>
+          ${this._renderNamespacePill()}
           <div class="header" @click=${() => this._navigate(m.location)}>
             <span class="header-icon">&#9670;</span>
-            <span class="header-name">${m.qualifiedId}</span>
+            <span class="header-name">${m.id}</span>
             <span class="header-toggle">&#9660;</span>
           </div>
         </div>
@@ -196,6 +210,7 @@ export class SzMetricCard extends LitElement {
 
     return html`
       <div class=${this._collapsed ? "collapsed" : ""}>
+        ${this._renderNamespacePill()}
         <div class="header" @click=${this._onHeaderClick}>
           <span class="header-icon">&#9670;</span>
           <span class="header-name">${m.id}</span>
