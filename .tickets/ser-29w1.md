@@ -1,6 +1,6 @@
 ---
 id: ser-29w1
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-24T20:33:08Z
@@ -13,3 +13,10 @@ tags: [refactor, tech-debt]
 
 The LSP server's formatting.ts imports format() from satsuma-cli via an esbuild alias and a computed dynamic import path. This works but is fragile — the esbuild alias maps 'satsuma-fmt' to the CLI source, and tests use a runtime dynamic import to the CLI's dist/. A cleaner long-term approach: extract format() (and potentially other shared utilities like types.ts) into a new tooling/satsuma-core/ package that both satsuma-cli and vscode-satsuma depend on via npm workspace links. This eliminates the cross-package import hacks and makes the dependency explicit.
 
+
+## Notes
+
+**2026-03-27T14:39:37Z**
+
+Cause: The VS Code LSP formatter depended on a brittle cross-package import path and esbuild alias into satsuma-cli internals, which made package boundaries implicit and runtime resolution fragile.
+Fix: Extracted the shared formatter and supporting types into tooling/satsuma-core, updated satsuma-cli and vscode-satsuma to depend on it explicitly, and removed the alias-based import workaround. (commit 79c7b98)
