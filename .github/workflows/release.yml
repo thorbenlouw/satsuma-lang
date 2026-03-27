@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag to create (e.g. v0.3.0)"
+        description: "Version tag to create (e.g. v0.4.0)"
         required: true
         type: string
 
@@ -100,9 +100,38 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v6
+
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
+
+      - name: Extract release notes from changelog
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_TAG: ${{ inputs.version }}
+        run: |
+          node <<'NODE' > release-notes.md
+          const fs = require('fs');
+          const tag = process.env.RELEASE_TAG;
+          const text = fs.readFileSync('CHANGELOG.md', 'utf8');
+          const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const pattern = new RegExp(`^## ${escapeRegex(tag)} — .*\\n([\\s\\S]*?)(?=\\n## |$)`, 'm');
+          const match = text.match(pattern);
+
+          if (!match) {
+            console.error(`No changelog section found for ${tag}`);
+            process.exit(1);
+          }
+
+          const notes = match[1].trim();
+          if (!notes) {
+            console.error(`Changelog section for ${tag} is empty`);
+            process.exit(1);
+          }
+
+          process.stdout.write(`${notes}\n`);
+          NODE
 
       - name: Create tagged release
         if: github.event_name == 'workflow_dispatch'
@@ -113,7 +142,7 @@ jobs:
         run: |
           gh release create "$RELEASE_TAG" \
             --title "$RELEASE_TAG" \
-            --generate-notes \
+            --notes-file release-notes.md \
             satsuma-cli.tgz \
             vscode-satsuma.vsix
 
