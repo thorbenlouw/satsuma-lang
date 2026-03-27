@@ -23,6 +23,10 @@ jobs:
       - name: Install all packages
         run: npm run ci:all
 
+      - name: Build satsuma-core
+        working-directory: tooling/satsuma-core
+        run: npm run build
+
       - name: Build tree-sitter WASM (needed by CLI and VS Code)
         working-directory: tooling/tree-sitter-satsuma
         run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
@@ -43,6 +47,7 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-core/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -70,6 +75,7 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-core/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -102,6 +108,7 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-core/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -155,6 +162,7 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-core/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -222,6 +230,7 @@ jobs:
             tooling/satsuma-cli/node_modules
             tooling/satsuma-cli/src/generated
             tooling/satsuma-cli/dist
+            tooling/satsuma-core/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
