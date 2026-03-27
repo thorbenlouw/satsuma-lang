@@ -1,6 +1,6 @@
 # Feature 23 — Mapping Visualization
 
-> **Status: NOT STARTED**
+> **Status: Phase 1-4 complete, Phase 5 redesign in progress**
 
 ## Goal
 
@@ -491,6 +491,155 @@ Render a single `.stm` file as an interactive card-and-wire diagram.
 - [ ] Fragment spread indicators (dotted outline showing inlined fields)
 - [ ] Minimap for large diagrams
 - [ ] Export to SVG/PNG (headless render of current view)
+
+## Phase 5 — Two-Level View Redesign
+
+> Supersedes the field-level wiring approach from Phases 1-4. The existing VizModel, LSP integration, card components, and ELK layout engine are retained but the rendering is restructured into two distinct views.
+
+### Design Rationale
+
+The field-level Bezier wiring approach (Phase 1.3) produces visually cluttered diagrams for real-world files with 20+ fields per schema and multiple mappings. The redesign separates concerns: the **Graph Overview** shows the big picture (which schemas feed which, through which mappings), and the **Mapping Detail View** shows the transformation specifics for one mapping at a time.
+
+### View 1: Graph Overview (default)
+
+The default view is a schema-level lineage graph with no field-level detail.
+
+**Schema cards (compact mode):**
+- Header shows `namespace::name` when namespaced (e.g. `crm::customers`), bare name otherwise
+- Metadata pills below the header (owner, classification, retention, etc.)
+- Schema-level notes collapsed by default
+- NO field list, NO port dots, NO constraint badges
+- Click card header → navigate to source (`SzNavigateEvent`)
+
+**Mapping arrows (schema-level):**
+- One thick arrow per `MappingBlock`, connecting source schema(s) to target schema
+- Arrow label shows mapping name (truncated if long)
+- Arrow color: orange for pipeline-heavy mappings, green for NL-heavy
+- Click arrow → transition to Mapping Detail View for that mapping
+- Hover arrow → tooltip with mapping name, source→target, arrow count
+
+**Layout:**
+- ELK layered algorithm, direction RIGHT
+- No per-field ports — edges connect node-to-node (node center or dedicated edge ports)
+- Schemas in the same namespace grouped in a dashed bordered box with namespace label
+- Metrics positioned in rightmost layer
+- Fragments positioned near consuming schemas
+
+**Retained features:**
+- Toolbar (Schema Only toggle becomes less relevant but kept for hiding arrows)
+- Show Notes toggle, Fit, Refresh, Export, namespace filter
+- Pan/zoom with minimap
+- File-level notes pane
+- Cross-file lineage expansion (breadcrumbs)
+
+### View 2: Mapping Detail View
+
+Entered by clicking a mapping arrow in the Graph Overview. Shows a focused, detailed view of one mapping.
+
+**Layout (three-column):**
+- Left column: source schema card(s) with full field list
+- Center: mapping detail block (table layout)
+- Right column: target schema card with full field list
+
+**Mapping detail block (center):**
+
+Header section:
+- Mapping name (large, bold)
+- Source schemas listed (clickable → navigate)
+- Target schema listed (clickable → navigate)
+- Join description from `sourceBlock.joinDescription` (if present)
+- Filter expressions from `sourceBlock.filters` (if present)
+- Mapping-level notes and comments
+
+Arrow table:
+- Each row represents one `ArrowEntry`
+- Columns: source field(s) | transform | target field
+- Transform cell shows:
+  - Pipeline: monospace steps separated by `|`
+  - NL: italic green text
+  - Mixed: both
+  - Map: map block preview
+- Arrow-level metadata and comments shown inline
+- Each/flatten blocks shown as labeled nested sections with their own arrow rows
+- Click any row → navigate to arrow source location
+
+**Hover highlighting (no connectors):**
+- Hover a row in the mapping table → highlight the source field(s) in the left schema card(s) AND the target field in the right schema card
+- Hover a field in a source/target schema card → highlight the corresponding mapping table row(s) AND the connected field on the other side
+- Highlighting: bold field name + colored background (peach for source, light green for target)
+- Non-highlighted fields dim slightly (opacity 0.5)
+
+**Navigation:**
+- Back button (top-left) returns to Graph Overview
+- Click schema card header → navigate to schema source
+- Click mapping header → navigate to mapping source
+- Click arrow row → navigate to arrow source
+
+### Implementation Plan
+
+**5.1 Schema card compact mode**
+- Add a `compact` boolean property to `<sz-schema-card>`
+- When compact: hide fields, port dots, constraint badges, spread indicators, lineage buttons
+- Show: header (with `namespace::name` format), metadata pills, collapsible notes
+- Update header to display qualified name when namespace is present
+
+**5.2 Schema-level ELK layout**
+- Add a `computeOverviewLayout(model)` function to `elk-layout.ts`
+- Creates nodes without per-field ports (compact card height)
+- Creates one edge per MappingBlock (sourceRefs[0] → targetRef)
+- Returns `OverviewLayoutResult` with `LayoutNode[]` and `OverviewEdge[]`
+- `OverviewEdge` carries the full `MappingBlock` reference for click handling
+
+**5.3 Schema-level edge rendering**
+- New `<sz-overview-edges>` component (or mode on existing edge layer)
+- Renders thick (3-4px) curved arrows between schema nodes
+- Arrow label (mapping name) at midpoint
+- Click dispatches a new `SzOpenMappingEvent` with the MappingBlock
+- Hover shows tooltip
+
+**5.4 Graph Overview rendering in root component**
+- New view state: `_viewMode: "overview" | "mapping-detail"`
+- Default to "overview"
+- `_renderOverview()` method uses compact schema cards + overview edges
+- `_selectedMapping: MappingBlock | null` — set when an arrow is clicked
+
+**5.5 Mapping Detail component**
+- New `<sz-mapping-detail>` component in `components/`
+- Accepts: `MappingBlock`, source `SchemaCard[]`, target `SchemaCard`
+- Renders three-column layout: source cards | mapping table | target card
+- Mapping header with name, sources, targets, joins, filters
+- Arrow table with transform details
+- Each/flatten blocks as nested sections
+
+**5.6 Hover cross-highlighting in Mapping Detail**
+- `<sz-mapping-detail>` manages `_highlightedField: {schema: string, field: string} | null`
+- Passes to child schema cards as a property
+- Schema cards highlight matching fields (bold + colored bg) and dim others
+- Mapping table rows highlight when their source/target matches
+- Bidirectional: hover table row ↔ hover schema field
+
+**5.7 View transition wiring**
+- Arrow click in overview → sets `_viewMode = "mapping-detail"`, `_selectedMapping = mapping`
+- Back button in detail view → sets `_viewMode = "overview"`, `_selectedMapping = null`
+- Toolbar adapts: overview shows graph controls, detail shows back button + mapping name
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `satsuma-viz.ts` | Add view mode state, overview rendering, view transitions |
+| `sz-schema-card.ts` | Add `compact` property, qualified name display |
+| `elk-layout.ts` | Add `computeOverviewLayout()` for schema-level edges |
+| `sz-edge-layer.ts` | Add overview mode (thick arrows, labels, click-to-open) |
+| `model.ts` | No changes needed — existing types suffice |
+| `panel.ts` | No changes needed — existing message protocol suffices |
+| `viz.ts` | No changes needed |
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `components/sz-mapping-detail.ts` | Mapping detail view component |
 
 ## Success Criteria
 
