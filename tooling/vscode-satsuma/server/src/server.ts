@@ -32,6 +32,7 @@ import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
 import { computeCompletions } from "./completion";
 import { computeCodeLenses } from "./codelens";
+import { computeActionContext } from "./action-context";
 import { prepareRename, computeRename } from "./rename";
 import { computeFormatting, initFormatting } from "./formatting";
 import { buildVizModel } from "./viz-model";
@@ -353,6 +354,27 @@ connection.onRequest(
       uri: def.uri,
       line: f.range.start.line,
     }));
+  },
+);
+
+connection.onRequest(
+  "satsuma/actionContext",
+  (params: {
+    uri: string;
+    position: {
+      line: number;
+      character: number;
+    };
+  }) => {
+    const tree = trees.get(params.uri);
+    if (!tree) return { schemaName: null, fieldPath: null };
+    return computeActionContext(
+      tree,
+      params.position.line,
+      params.position.character,
+      params.uri,
+      wsIndex,
+    );
   },
 );
 

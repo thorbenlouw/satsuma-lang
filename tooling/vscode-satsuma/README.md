@@ -77,6 +77,7 @@ Semantic tokens from the LSP server override TextMate scopes for context-sensiti
 
 Inline annotations above blocks:
 
+- **Schema actions** — `Lineage from` and `Lineage to`
 - **Schema** — `N fields | used in M mappings`
 - **Mapping** — `source → target | N arrows`
 - **Fragment** — `spread in N places`
@@ -113,6 +114,7 @@ Nine commands available via `Ctrl+Shift+P`:
 
 `Satsuma: Trace Field Lineage` traces a field through the entire data pipeline:
 
+- Cursor-aware field inference for arrow paths and schema fields
 - Multi-hop chain tracing via `satsuma arrows`
 - Horizontal flow: `source.field → [transform] → target.field`
 - NL transforms displayed with distinct styling
