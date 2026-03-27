@@ -21,8 +21,15 @@ let _initPromise: Promise<void> | null = null;
 export function initParser(wasmPath: string): Promise<void> {
   if (_initPromise) return _initPromise;
   _initPromise = (async () => {
+    const path = require("path");
     const TreeSitter = require("web-tree-sitter") as typeof import("web-tree-sitter");
-    await TreeSitter.Parser.init();
+    // The runtime WASM (tree-sitter.wasm) is copied next to server.js during build.
+    // We must tell web-tree-sitter where to find it since esbuild bundling changes
+    // the default module-relative lookup path.
+    const runtimeWasm = path.join(path.dirname(wasmPath), "tree-sitter.wasm");
+    await TreeSitter.Parser.init({
+      locateFile: () => runtimeWasm,
+    });
     _language = await TreeSitter.Language.load(wasmPath);
     _parser = new TreeSitter.Parser();
     _parser.setLanguage(_language);
