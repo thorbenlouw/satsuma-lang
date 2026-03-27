@@ -26,6 +26,35 @@ const arrow = (source, target, transform = null) => ({
   location: loc,
 });
 
+/** Helper: minimal schema */
+const schema = (id, fields = [field("id")], qualifiedId = id) => ({
+  id,
+  qualifiedId,
+  kind: "schema",
+  label: null,
+  fields,
+  notes: [],
+  comments: [],
+  metadata: [],
+  location: loc,
+  hasExternalLineage: false,
+  spreads: [],
+});
+
+/** Helper: minimal mapping */
+const mapping = (id, sourceRefs, targetRef, arrows = []) => ({
+  id,
+  sourceRefs,
+  targetRef,
+  arrows,
+  eachBlocks: [],
+  flattenBlocks: [],
+  sourceBlock: null,
+  notes: [],
+  comments: [],
+  location: loc,
+});
+
 describe("computeLayout", () => {
   /** @type {typeof import("../dist/satsuma-viz.js").computeLayout} */
   let computeLayout;
@@ -274,6 +303,134 @@ describe("computeLayout", () => {
     };
 
     const result = await computeLayout(model);
+    assert.ok(result.width > 0, "Layout width should be positive");
+    assert.ok(result.height > 0, "Layout height should be positive");
+  });
+});
+
+describe("computeOverviewLayout", () => {
+  /** @type {typeof import("../dist/satsuma-viz.js").computeOverviewLayout} */
+  let computeOverviewLayout;
+
+  it("loads the overview layout function", async () => {
+    const mod = await import("../dist/satsuma-viz.js");
+    computeOverviewLayout = mod.computeOverviewLayout;
+    assert.equal(typeof computeOverviewLayout, "function");
+  });
+
+  it("produces compact nodes without ports", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [schema("src"), schema("tgt")],
+        mappings: [mapping("m1", ["src"], "tgt", [arrow("id", "id")])],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+
+    assert.ok(result.nodes.length >= 2, "Should have at least 2 nodes");
+    const srcNode = result.nodes.find(n => n.id === "src");
+    const tgtNode = result.nodes.find(n => n.id === "tgt");
+    assert.ok(srcNode, "Should have src node");
+    assert.ok(tgtNode, "Should have tgt node");
+    // Compact nodes have no ports
+    assert.equal(srcNode.ports.size, 0, "Overview nodes should have no ports");
+    assert.equal(tgtNode.ports.size, 0, "Overview nodes should have no ports");
+    // Compact card height: header (40) + padding (8) = 48
+    assert.equal(srcNode.height, 48, "Compact node should have header-only height");
+  });
+
+  it("creates one edge per mapping, not per arrow", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [
+          schema("src", [field("a"), field("b"), field("c")]),
+          schema("tgt", [field("x"), field("y"), field("z")]),
+        ],
+        mappings: [mapping("m1", ["src"], "tgt", [
+          arrow("a", "x"),
+          arrow("b", "y"),
+          arrow("c", "z"),
+        ])],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+
+    // One mapping with one source → one edge (not three)
+    assert.equal(result.edges.length, 1, "Should produce one edge per mapping source ref");
+    assert.equal(result.edges[0].sourceNode, "src");
+    assert.equal(result.edges[0].targetNode, "tgt");
+    assert.ok(result.edges[0].mapping, "Edge should carry the MappingBlock reference");
+    assert.equal(result.edges[0].mapping.id, "m1");
+  });
+
+  it("creates edges for multiple source refs", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [schema("s1"), schema("s2"), schema("tgt")],
+        mappings: [mapping("m1", ["s1", "s2"], "tgt", [arrow("id", "id")])],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+
+    // Two source refs → two edges
+    assert.equal(result.edges.length, 2, "Should produce one edge per source ref");
+    const sources = result.edges.map(e => e.sourceNode).sort();
+    assert.deepEqual(sources, ["s1", "s2"]);
+  });
+
+  it("uses namespace compound nodes for grouping", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: "crm",
+        schemas: [schema("customers", [field("id")], "crm::customers")],
+        mappings: [],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
+
+    const node = result.nodes.find(n => n.id === "crm::customers");
+    assert.ok(node, "Should have namespaced schema node");
+    // Namespace compound node should not appear in the output
+    assert.ok(!result.nodes.find(n => n.id === "ns:crm"), "No namespace node in output");
+  });
+
+  it("produces positive overall dimensions", async () => {
+    const model = {
+      uri: "file:///test.stm",
+      fileNotes: [],
+      namespaces: [{
+        name: null,
+        schemas: [schema("a")],
+        mappings: [],
+        metrics: [],
+        fragments: [],
+      }],
+    };
+
+    const result = await computeOverviewLayout(model);
     assert.ok(result.width > 0, "Layout width should be positive");
     assert.ok(result.height > 0, "Layout height should be positive");
   });

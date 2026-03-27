@@ -21,6 +21,12 @@ describe("@satsuma/viz bundle", () => {
     assert.equal(typeof mod.SzSchemaCard, "function");
   });
 
+  it("SzSchemaCard has compact property defaulting to false", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    const card = new mod.SzSchemaCard();
+    assert.equal(card.compact, false, "compact should default to false");
+  });
+
   it("exports SzMetricCard class", async () => {
     mod ??= await import("../dist/satsuma-viz.js");
     assert.equal(typeof mod.SzMetricCard, "function");
@@ -39,6 +45,16 @@ describe("@satsuma/viz bundle", () => {
   it("exports SzEdgeLayer class", async () => {
     mod ??= await import("../dist/satsuma-viz.js");
     assert.equal(typeof mod.SzEdgeLayer, "function");
+  });
+
+  it("exports SzMappingDetail class", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    assert.equal(typeof mod.SzMappingDetail, "function");
+  });
+
+  it("exports computeOverviewLayout function", async () => {
+    mod ??= await import("../dist/satsuma-viz.js");
+    assert.equal(typeof mod.computeOverviewLayout, "function");
   });
 });
 

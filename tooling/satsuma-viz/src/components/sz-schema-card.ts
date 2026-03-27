@@ -294,6 +294,11 @@ export class SzSchemaCard extends LitElement {
   @property({ type: Object })
   mappedFields: Set<string> = new Set();
 
+  /** Compact mode: hides fields, port dots, constraints, spread indicators, lineage buttons.
+   *  Shows namespace::name in header when schema has a namespace (qualifiedId contains ::). */
+  @property({ type: Boolean })
+  compact = false;
+
   @state()
   private _collapsed = false;
 
@@ -303,6 +308,8 @@ export class SzSchemaCard extends LitElement {
   override render() {
     const s = this.schema;
     if (!s) return html``;
+
+    if (this.compact) return this._renderCompact(s);
 
     const totalFields = this._countFields(s.fields);
     const mappedCount = this._countMapped(s.fields);
@@ -441,6 +448,34 @@ export class SzSchemaCard extends LitElement {
       count += this._countMapped(f.children);
     }
     return count;
+  }
+
+  private _renderCompact(s: SchemaCard) {
+    const displayName = s.qualifiedId.includes("::") ? s.qualifiedId : s.id;
+    const totalFields = this._countFields(s.fields);
+    const metaPills = s.metadata.filter((m) => m.key !== "note");
+    const hasNotes = s.notes.length > 0;
+
+    return html`
+      <div>
+        <div class="header" @click=${() => this._navigate(s.location)}>
+          <svg class="header-icon" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="1" y="2" width="14" height="12" rx="2" opacity="0.9"/>
+            <line x1="1" y1="6" x2="15" y2="6" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+          </svg>
+          <span class="header-name">${displayName}</span>
+          <span class="header-count">${totalFields} fields</span>
+        </div>
+        ${metaPills.length > 0
+          ? html`<div class="metadata-pills">
+              ${metaPills.map(
+                (m) => html`<span class="meta-pill"><span class="meta-key">${m.key}</span> ${m.value}</span>`
+              )}
+            </div>`
+          : ""}
+        ${hasNotes ? this._renderNotes(s.notes) : ""}
+      </div>
+    `;
   }
 
   private _onHeaderClick() {

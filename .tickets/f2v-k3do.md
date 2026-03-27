@@ -1,6 +1,6 @@
 ---
 id: f2v-k3do
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-27T07:12:50Z
@@ -21,3 +21,10 @@ Add computeOverviewLayout(model) to elk-layout.ts. Creates compact nodes without
 - Namespace compound nodes still used for grouping
 - No ELK errors from missing ports
 
+
+## Notes
+
+**2026-03-27T07:27:20Z**
+
+Cause: No schema-level (overview) layout engine existed — only field-level layout.
+Fix: Added computeOverviewLayout(model) to elk-layout.ts. Creates compact nodes (48px height, no ports), one edge per MappingBlock source ref. Returns OverviewLayoutResult with LayoutNode[] and OverviewEdge[] carrying MappingBlock reference.

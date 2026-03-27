@@ -12,8 +12,9 @@ export { SzSchemaCard } from "./components/sz-schema-card.js";
 export { SzMetricCard } from "./components/sz-metric-card.js";
 export { SzFragmentCard } from "./components/sz-fragment-card.js";
 export { SzEdgeLayer } from "./edges/sz-edge-layer.js";
-export { computeLayout } from "./layout/elk-layout.js";
-export type { LayoutResult, LayoutNode, LayoutEdge, SourceBlockLayout } from "./layout/elk-layout.js";
+export { SzMappingDetail } from "./components/sz-mapping-detail.js";
+export { computeLayout, computeOverviewLayout } from "./layout/elk-layout.js";
+export type { LayoutResult, LayoutNode, LayoutEdge, SourceBlockLayout, OverviewLayoutResult, OverviewEdge } from "./layout/elk-layout.js";
 
 /** Navigate event — dispatched when the user clicks a source-linked element. */
 export class SzNavigateEvent extends Event {

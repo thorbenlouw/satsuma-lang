@@ -62,6 +62,24 @@ export interface LayoutResult {
   height: number;
 }
 
+/** Edge in the overview layout: one per MappingBlock, linking sourceRefs to targetRef. */
+export interface OverviewEdge {
+  id: string;
+  sourceNode: string;
+  targetNode: string;
+  /** Array of {x,y} points forming the routed edge path */
+  points: Array<{ x: number; y: number }>;
+  /** The full MappingBlock this edge represents. */
+  mapping: MappingBlock;
+}
+
+export interface OverviewLayoutResult {
+  nodes: LayoutNode[];
+  edges: OverviewEdge[];
+  width: number;
+  height: number;
+}
+
 // Card dimension constants (px)
 const HEADER_HEIGHT = 40;
 const LABEL_HEIGHT = 24;
@@ -69,6 +87,7 @@ const FIELD_HEIGHT = 28;
 const CARD_PADDING_Y = 8; // top + bottom padding in fields area
 const CARD_MIN_WIDTH = 240;
 const PORT_Y_OFFSET = FIELD_HEIGHT / 2; // center of field row
+const COMPACT_CARD_HEIGHT = HEADER_HEIGHT + CARD_PADDING_Y; // header only, no fields
 
 const elk = new ELK();
 
@@ -466,6 +485,156 @@ function extractLayout(
     nodes,
     edges,
     sourceBlocks,
+    width: result.width ?? 800,
+    height: result.height ?? 600,
+  };
+}
+
+/**
+ * Compute a schema-level overview layout (no field ports).
+ * Creates compact nodes and one edge per MappingBlock.
+ */
+export async function computeOverviewLayout(model: VizModel): Promise<OverviewLayoutResult> {
+  const children: ElkNode[] = [];
+  const edges: ElkEdge[] = [];
+  const overviewEdgeMeta = new Map<string, { sourceNode: string; targetNode: string; mapping: MappingBlock }>();
+
+  for (const ns of model.namespaces) {
+    const nsNodes: ElkNode[] = [];
+
+    for (const s of ns.schemas) {
+      nsNodes.push({
+        id: s.qualifiedId,
+        width: CARD_MIN_WIDTH,
+        height: COMPACT_CARD_HEIGHT,
+        ports: [],
+        children: [],
+        edges: [],
+      });
+    }
+
+    for (const f of ns.fragments) {
+      nsNodes.push({
+        id: f.id,
+        width: CARD_MIN_WIDTH,
+        height: COMPACT_CARD_HEIGHT,
+        ports: [],
+        children: [],
+        edges: [],
+      });
+    }
+
+    for (const m of ns.metrics) {
+      nsNodes.push({
+        id: m.qualifiedId,
+        width: CARD_MIN_WIDTH,
+        height: COMPACT_CARD_HEIGHT,
+        ports: [],
+        children: [],
+        edges: [],
+      });
+    }
+
+    if (ns.name) {
+      children.push({
+        id: `ns:${ns.name}`,
+        layoutOptions: {
+          "elk.padding": "[top=28,left=16,bottom=16,right=16]",
+        },
+        children: nsNodes,
+        ports: [],
+        edges: [],
+      });
+    } else {
+      children.push(...nsNodes);
+    }
+
+    // One edge per mapping block
+    for (const m of ns.mappings) {
+      for (const sourceRef of m.sourceRefs) {
+        const edgeId = `overview:${m.id}:${sourceRef}`;
+        edges.push({
+          id: edgeId,
+          sources: [sourceRef],
+          targets: [m.targetRef],
+        });
+        overviewEdgeMeta.set(edgeId, {
+          sourceNode: sourceRef,
+          targetNode: m.targetRef,
+          mapping: m,
+        });
+      }
+    }
+  }
+
+  const elkGraph: ElkGraph = {
+    id: "root",
+    layoutOptions: {
+      "elk.algorithm": "layered",
+      "elk.direction": "RIGHT",
+      "elk.spacing.nodeNode": "40",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.spacing.edgeEdge": "20",
+      "elk.spacing.edgeNode": "20",
+      "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+    },
+    children,
+    edges,
+  };
+
+  const result = await elk.layout(elkGraph) as unknown as ElkLayoutResult;
+
+  // Extract positioned nodes
+  const nodes: LayoutNode[] = [];
+  const walkOverviewNodes = (elkNodes: ElkLayoutNode[], offsetX = 0, offsetY = 0) => {
+    for (const n of elkNodes) {
+      const x = (n.x ?? 0) + offsetX;
+      const y = (n.y ?? 0) + offsetY;
+
+      if (!n.id.startsWith("ns:")) {
+        nodes.push({
+          id: n.id,
+          x,
+          y,
+          width: n.width ?? CARD_MIN_WIDTH,
+          height: n.height ?? COMPACT_CARD_HEIGHT,
+          ports: new Map(),
+        });
+      }
+
+      if (n.children && n.children.length > 0) {
+        walkOverviewNodes(n.children, x, y);
+      }
+    }
+  };
+  walkOverviewNodes(result.children ?? []);
+
+  // Extract edge routes
+  const overviewEdges: OverviewEdge[] = [];
+  for (const e of (result as ElkLayoutResult).edges ?? []) {
+    const points: Array<{ x: number; y: number }> = [];
+    for (const section of e.sections ?? []) {
+      if (section.startPoint) points.push(section.startPoint);
+      if (section.bendPoints) points.push(...section.bendPoints);
+      if (section.endPoint) points.push(section.endPoint);
+    }
+
+    const meta = overviewEdgeMeta.get(e.id);
+    if (meta) {
+      overviewEdges.push({
+        id: e.id,
+        sourceNode: meta.sourceNode,
+        targetNode: meta.targetNode,
+        points,
+        mapping: meta.mapping,
+      });
+    }
+  }
+
+  return {
+    nodes,
+    edges: overviewEdges,
     width: result.width ?? 800,
     height: result.height ?? 600,
   };

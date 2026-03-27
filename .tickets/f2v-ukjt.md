@@ -1,6 +1,6 @@
 ---
 id: f2v-ukjt
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-27T07:12:43Z
@@ -20,3 +20,10 @@ Add a compact boolean property to sz-schema-card. When compact: hide fields, por
 - Metadata pills and notes still visible
 - Card height is significantly smaller than full mode
 
+
+## Notes
+
+**2026-03-27T07:27:20Z**
+
+Cause: No compact mode existed for schema cards needed by the overview graph.
+Fix: Added compact boolean property to sz-schema-card. When true, hides fields, port dots, constraints, spreads, lineage buttons. Shows namespace::name in header for namespaced schemas. Metadata pills and notes remain visible.
