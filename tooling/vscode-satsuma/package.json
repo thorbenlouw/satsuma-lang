@@ -69,11 +69,11 @@
         { "command": "satsuma.showViz", "when": "editorLangId == satsuma" }
       ],
       "editor/context": [
-        { "command": "satsuma.showViz", "when": "editorLangId == satsuma", "group": "satsuma@1" },
-        { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma", "group": "satsuma@2" },
-        { "command": "satsuma.showArrows", "when": "editorLangId == satsuma", "group": "satsuma@3" },
-        { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma", "group": "satsuma@4" },
-        { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma", "group": "satsuma@5" }
+        { "command": "satsuma.showViz", "when": "editorLangId == satsuma", "group": "satsuma" },
+        { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma", "group": "satsuma" },
+        { "command": "satsuma.showArrows", "when": "editorLangId == satsuma", "group": "satsuma" },
+        { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma", "group": "satsuma" },
+        { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma", "group": "satsuma" }
       ],
       "editor/title": [
         {
