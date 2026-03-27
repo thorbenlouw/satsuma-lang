@@ -31,3 +31,17 @@ for (const entry of requiredEntries) {
 }
 
 console.log("verify-pack: tarball contains CLI entrypoint and both WASM assets");
+
+// Verify the CLI entrypoint has the executable bit set inside the tarball.
+const verbose = execFileSync("tar", ["-tvf", tarballPath, "package/dist/index.js"], {
+  cwd: cliRoot,
+  encoding: "utf8",
+});
+if (!/^-rwx/.test(verbose)) {
+  throw new Error(
+    `verify-pack: dist/index.js is not executable in the tarball. ` +
+    `Permissions: ${verbose.split(/\s+/)[0]}`
+  );
+}
+
+console.log("verify-pack: dist/index.js has executable permission");
