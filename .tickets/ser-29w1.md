@@ -1,6 +1,6 @@
 ---
 id: ser-29w1
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-03-24T20:33:08Z

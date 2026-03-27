@@ -24,11 +24,6 @@ const serverConfig = {
   outfile: "server/dist/server.js",
   format: "cjs",
   sourcemap: true,
-  alias: {
-    // Resolve the shared formatter from the CLI package source.
-    // esbuild bundles the .ts file directly — no pre-build step needed.
-    "satsuma-fmt": "../satsuma-cli/src/format.ts",
-  },
 };
 
 /** @type {import("esbuild").BuildOptions} */
