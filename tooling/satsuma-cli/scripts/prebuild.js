@@ -60,6 +60,9 @@ for (const { src, dest, label } of wasmFiles) {
     copyFileSync(src, dest);
     console.log(`prebuild: copied ${label} → dist/`);
   } else {
-    console.warn(`prebuild: WARNING — ${label} not found at ${src}`);
+    throw new Error(
+      `prebuild: required ${label} not found at ${src}. ` +
+      "Build tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm before packaging the CLI.",
+    );
   }
 }

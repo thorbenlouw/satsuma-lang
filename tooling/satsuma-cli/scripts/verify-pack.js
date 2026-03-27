@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+import { execFileSync } from "child_process";
+import { existsSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const cliRoot = join(__dirname, "..");
+const tarballPath = join(cliRoot, "satsuma-cli.tgz");
+
+if (!existsSync(tarballPath)) {
+  throw new Error(`verify-pack: tarball not found at ${tarballPath}`);
+}
+
+const contents = execFileSync("tar", ["-tzf", tarballPath], {
+  cwd: cliRoot,
+  encoding: "utf8",
+});
+
+const requiredEntries = [
+  "package/dist/index.js",
+  "package/dist/tree-sitter-satsuma.wasm",
+  "package/dist/web-tree-sitter.wasm",
+];
+
+for (const entry of requiredEntries) {
+  if (!contents.includes(`${entry}\n`) && !contents.endsWith(entry)) {
+    throw new Error(`verify-pack: required tarball entry missing: ${entry}`);
+  }
+}
+
+console.log("verify-pack: tarball contains CLI entrypoint and both WASM assets");
