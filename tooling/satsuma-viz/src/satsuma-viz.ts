@@ -1,9 +1,11 @@
 import { LitElement, html, svg, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import type { VizModel, SourceLocation, NamespaceGroup, MappingBlock, SchemaCard } from "./model.js";
 import { computeLayout, computeOverviewLayout, type LayoutResult, type OverviewLayoutResult, type SourceBlockLayout } from "./layout/elk-layout.js";
 import { SzOpenMappingEvent } from "./edges/sz-overview-edge-layer.js";
 import tokens from "./tokens.css";
+import { renderMarkdown } from "./markdown.js";
 
 export { VizModel } from "./model.js";
 export type { NamespaceGroup } from "./model.js";
@@ -854,22 +856,12 @@ export class SatsumaViz extends LitElement {
             `
           : html`<span class="toolbar-title">&#9673; Mapping Viz</span>`}
         <div class="toolbar-sep"></div>
-        ${!inDetail
-          ? html`
-              <button
-                class="toolbar-btn"
-                ?data-active=${this._schemaOnly}
-                @click=${() => { this._schemaOnly = !this._schemaOnly; }}
-                title="Show only schema cards, hide arrows and transforms"
-              >Schema Only</button>
-            `
-          : ""}
         <button
           class="toolbar-btn"
           ?data-active=${this._showNotes}
           @click=${() => { this._showNotes = !this._showNotes; }}
-          title="Show or hide notes"
-        >Show Notes</button>
+          title="Show or hide file notes"
+        >Show File Notes</button>
         <div class="toolbar-sep"></div>
         ${!inDetail
           ? html`<button class="toolbar-btn" @click=${this._fit} title="Fit all content in viewport">Fit</button>`
@@ -1257,7 +1249,7 @@ export class SatsumaViz extends LitElement {
         ${fileNotes.length > 0
           ? html`
               <div class="notes-pane-section">File Notes</div>
-              ${fileNotes.map((n) => html`<div class="note-card">${n.text}</div>`)}
+              ${fileNotes.map((n) => html`<div class="note-card">${unsafeHTML(renderMarkdown(n.text))}</div>`)}
             `
           : ""}
         ${allComments.warnings.length > 0
@@ -1406,7 +1398,7 @@ export class SatsumaViz extends LitElement {
           <span>&#128221; File Notes (${notes.length})</span>
         </div>
         ${this._fileNotesExpanded
-          ? notes.map((n) => html`<div class="file-note-item">${n.text}</div>`)
+          ? notes.map((n) => html`<div class="file-note-item">${unsafeHTML(renderMarkdown(n.text))}</div>`)
           : ""}
       </div>
     `;

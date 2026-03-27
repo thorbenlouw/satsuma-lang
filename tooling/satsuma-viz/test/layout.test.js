@@ -341,8 +341,8 @@ describe("computeOverviewLayout", () => {
     // Compact nodes have no ports
     assert.equal(srcNode.ports.size, 0, "Overview nodes should have no ports");
     assert.equal(tgtNode.ports.size, 0, "Overview nodes should have no ports");
-    // Compact card height: header (40) + padding (8) = 48
-    assert.equal(srcNode.height, 48, "Compact node should have header-only height");
+    // Compact card height: header (40) + bottom-padding (4) = 44
+    assert.equal(srcNode.height, 44, "Compact node should have header-only height");
   });
 
   it("creates one edge per mapping, not per arrow", async () => {

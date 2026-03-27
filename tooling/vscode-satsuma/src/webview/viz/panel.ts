@@ -8,6 +8,8 @@ export class VizPanel {
   private readonly extensionUri: vscode.Uri;
   private readonly client: LanguageClient;
   private disposables: vscode.Disposable[] = [];
+  /** URI of the last successfully loaded .stm file — used by Refresh to reload without requiring focus. */
+  private _lastUri: string | undefined;
 
   static createOrShow(
     extensionUri: vscode.Uri,
@@ -79,17 +81,22 @@ export class VizPanel {
   }
 
   async refresh(): Promise<void> {
-    // Get the active .stm document URI
+    // Prefer last loaded URI so Refresh works even when the webview has focus
+    // and the .stm editor is no longer the active editor.
     const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== "satsuma") {
+    const activeUri =
+      editor?.document.languageId === "satsuma"
+        ? editor.document.uri.toString()
+        : undefined;
+    const uri = activeUri ?? this._lastUri;
+
+    if (!uri) {
       this.panel.webview.postMessage({
         type: "error",
         message: "Open a .stm file to see its mapping visualization",
       });
       return;
     }
-
-    const uri = editor.document.uri.toString();
 
     try {
       const model = await this.client.sendRequest("satsuma/vizModel", { uri });
@@ -100,6 +107,9 @@ export class VizPanel {
         });
         return;
       }
+
+      // Remember this URI so Refresh can reload it even without editor focus
+      this._lastUri = uri;
 
       // Detect theme kind and send alongside model
       const themeKind = vscode.window.activeColorTheme.kind;
