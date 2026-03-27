@@ -23,19 +23,7 @@ jobs:
 
   build:
     needs: [security]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux-x64
-          - os: ubuntu-24.04-arm
-            platform: linux-arm64
-          - os: macos-latest
-            platform: darwin-arm64
-          - os: windows-latest
-            platform: win32-x64
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: tooling/satsuma-cli
@@ -53,15 +41,7 @@ jobs:
       - name: Bundle for distribution
         shell: bash
         run: |
-          # Replace file: symlink with actual copy (includes prebuilt native addon)
-          rm -rf node_modules/tree-sitter-satsuma
-          cp -rf ../tree-sitter-satsuma node_modules/tree-sitter-satsuma
-
-          # Remove dev-only / non-runtime files from the bundled copy
-          rm -rf node_modules/tree-sitter-satsuma/{test,scripts,.beads,docs,queries,examples}
-          rm -rf node_modules/tree-sitter-satsuma/node_modules
-
-          # Bundle all dependencies into the tarball so consumers skip native compilation
+          # Bundle all dependencies into the tarball so consumers skip install
           node -e "
             const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
             pkg.bundleDependencies = true;
@@ -69,12 +49,12 @@ jobs:
           "
 
           npm pack
-          mv satsuma-cli-*.tgz satsuma-cli-${{ matrix.platform }}.tgz
+          mv satsuma-cli-*.tgz satsuma-cli.tgz
 
       - uses: actions/upload-artifact@v7
         with:
-          name: satsuma-cli-${{ matrix.platform }}
-          path: tooling/satsuma-cli/satsuma-cli-${{ matrix.platform }}.tgz
+          name: satsuma-cli
+          path: tooling/satsuma-cli/satsuma-cli.tgz
 
   vsix:
     needs: [security]
@@ -96,6 +76,10 @@ jobs:
       - name: Build WASM parser
         working-directory: tooling/tree-sitter-satsuma
         run: npx tree-sitter build --wasm
+
+      - name: Build satsuma-viz (needed by webview bundle)
+        working-directory: tooling/satsuma-viz
+        run: npm run build
 
       - name: Build and package .vsix
         run: |
@@ -130,7 +114,7 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --title "$RELEASE_TAG" \
             --generate-notes \
-            satsuma-cli-*.tgz \
+            satsuma-cli.tgz \
             vscode-satsuma.vsix
 
       - name: Update latest release
@@ -147,20 +131,7 @@ jobs:
 
           **Install CLI:**
           ```bash
-          # macOS (Apple Silicon)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-darwin-arm64.tgz
-
-          # macOS (Intel)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-darwin-x64.tgz
-
-          # Linux (x64)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-linux-x64.tgz
-
-          # Linux (ARM64)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-linux-arm64.tgz
-
-          # Windows (x64)
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-win32-x64.tgz
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli.tgz
           ```
 
           **Install VS Code Extension:**
@@ -174,5 +145,5 @@ jobs:
             --title "Latest build" \
             --notes-file notes.md \
             --prerelease \
-            satsuma-cli-*.tgz \
+            satsuma-cli.tgz \
             vscode-satsuma.vsix

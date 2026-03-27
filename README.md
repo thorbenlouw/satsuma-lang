@@ -150,15 +150,11 @@ For agent workflows specifically, the model is:
 
 ## Install the CLI
 
-Pre-built binaries are published on every merge to `main`. Install with npm
-(no local build required):
+A universal pre-built package is published on every merge to `main`. It uses
+WASM internally, so the same package works on macOS, Linux, and Windows:
 
 ```bash
-# macOS (Apple Silicon)
-npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-darwin-arm64.tgz
-
-# Linux (x64)
-npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli-linux-x64.tgz
+npm install -g https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/satsuma-cli.tgz
 ```
 
 This gives you the `satsuma` command on your PATH. Run `satsuma --help` to see
