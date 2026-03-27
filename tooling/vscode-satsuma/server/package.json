@@ -6,10 +6,11 @@
   "type": "commonjs",
   "main": "dist/server.js",
   "scripts": {
+    "prebuild": "npm --prefix ../../satsuma-core run build",
     "build": "esbuild src/server.ts --bundle --platform=node --target=node20 --outfile=dist/server.js --sourcemap",
     "watch": "npm run build -- --watch",
     "test": "node --test test/**/*.test.js",
-    "pretest": "tsc"
+    "pretest": "npm --prefix ../../satsuma-core run build && tsc"
   },
   "dependencies": {
     "@satsuma/core": "file:../../satsuma-core",
