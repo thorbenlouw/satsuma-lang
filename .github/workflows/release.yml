@@ -52,6 +52,7 @@ jobs:
             require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
+          chmod +x dist/index.js
           npm pack
           mv satsuma-cli-*.tgz satsuma-cli.tgz
           node scripts/verify-pack.js
