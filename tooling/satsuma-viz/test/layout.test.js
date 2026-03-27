@@ -184,7 +184,7 @@ describe("computeLayout", () => {
     assert.ok(result.edges.length >= 0, "Should have edges array");
   });
 
-  it("includes namespace compound nodes without adding them to result nodes", async () => {
+  it("keeps namespaced schemas as flat result nodes", async () => {
     const model = {
       uri: "file:///test.stm",
       fileNotes: [],
@@ -220,7 +220,7 @@ describe("computeLayout", () => {
     );
     assert.ok(
       !result.nodes.has("ns:crm"),
-      "Namespace compound node should NOT appear in result nodes"
+      "Namespace layout container should not exist in result nodes"
     );
   });
 
@@ -404,11 +404,13 @@ describe("computeOverviewLayout", () => {
 
     const result = await computeOverviewLayout(model);
 
-    assert.ok(result.nodes.length >= 2, "Should have at least 2 nodes");
+    assert.ok(result.nodes.length >= 3, "Should include schema nodes plus a mapping node");
     const srcNode = result.nodes.find(n => n.id === "src");
     const tgtNode = result.nodes.find(n => n.id === "tgt");
+    const mappingNode = result.nodes.find(n => n.id === "mapping:_:m1");
     assert.ok(srcNode, "Should have src node");
     assert.ok(tgtNode, "Should have tgt node");
+    assert.ok(mappingNode, "Should have a mapping node");
     // Compact nodes have no ports
     assert.equal(srcNode.ports.size, 0, "Overview nodes should have no ports");
     assert.equal(tgtNode.ports.size, 0, "Overview nodes should have no ports");
@@ -416,7 +418,7 @@ describe("computeOverviewLayout", () => {
     assert.equal(srcNode.height, 44, "Compact node should have header-only height");
   });
 
-  it("creates one edge per mapping, not per arrow", async () => {
+  it("creates source-to-mapping and mapping-to-target edges", async () => {
     const model = {
       uri: "file:///test.stm",
       fileNotes: [],
@@ -438,12 +440,10 @@ describe("computeOverviewLayout", () => {
 
     const result = await computeOverviewLayout(model);
 
-    // One mapping with one source → one edge (not three)
-    assert.equal(result.edges.length, 1, "Should produce one edge per mapping source ref");
-    assert.equal(result.edges[0].sourceNode, "src");
-    assert.equal(result.edges[0].targetNode, "tgt");
-    assert.ok(result.edges[0].mapping, "Edge should carry the MappingBlock reference");
-    assert.equal(result.edges[0].mapping.id, "m1");
+    assert.equal(result.edges.length, 2, "Should route through a mapping node");
+    assert.ok(result.edges.some((e) => e.sourceNode === "src" && e.targetNode === "mapping:_:m1"));
+    assert.ok(result.edges.some((e) => e.sourceNode === "mapping:_:m1" && e.targetNode === "tgt"));
+    assert.ok(result.edges.every((e) => e.mapping.id === "m1"));
   });
 
   it("creates edges for multiple source refs", async () => {
@@ -461,13 +461,16 @@ describe("computeOverviewLayout", () => {
 
     const result = await computeOverviewLayout(model);
 
-    // Two source refs → two edges
-    assert.equal(result.edges.length, 2, "Should produce one edge per source ref");
-    const sources = result.edges.map(e => e.sourceNode).sort();
-    assert.deepEqual(sources, ["s1", "s2"]);
+    assert.equal(result.edges.length, 3, "Two source inputs plus one target edge");
+    const inboundSources = result.edges
+      .filter((e) => e.targetNode === "mapping:_:m1")
+      .map(e => e.sourceNode)
+      .sort();
+    assert.deepEqual(inboundSources, ["s1", "s2"]);
+    assert.ok(result.edges.some((e) => e.sourceNode === "mapping:_:m1" && e.targetNode === "tgt"));
   });
 
-  it("uses namespace compound nodes for grouping", async () => {
+  it("keeps overview namespaced nodes in the flat output", async () => {
     const model = {
       uri: "file:///test.stm",
       fileNotes: [],
@@ -484,7 +487,6 @@ describe("computeOverviewLayout", () => {
 
     const node = result.nodes.find(n => n.id === "crm::customers");
     assert.ok(node, "Should have namespaced schema node");
-    // Namespace compound node should not appear in the output
     assert.ok(!result.nodes.find(n => n.id === "ns:crm"), "No namespace node in output");
   });
 
@@ -540,7 +542,7 @@ describe("computeOverviewLayout", () => {
     );
   });
 
-  it("reserves horizontal space for long mapping labels", async () => {
+  it("positions mapping nodes between source and target schemas", async () => {
     const longMappingId = "normalize_and_curate_order_headers_for_reporting";
     const model = {
       uri: "file:///test.stm",
@@ -556,20 +558,19 @@ describe("computeOverviewLayout", () => {
 
     const result = await computeOverviewLayout(model);
     const srcNode = result.nodes.find((n) => n.id === "src");
+    const mappingNode = result.nodes.find((n) => n.id === `mapping:_:${longMappingId}`);
     const tgtNode = result.nodes.find((n) => n.id === "tgt");
 
     assert.ok(srcNode, "Should have src node");
+    assert.ok(mappingNode, "Should have mapping node");
     assert.ok(tgtNode, "Should have tgt node");
-    assert.equal(result.edges.length, 1, "Should have one overview edge");
     assert.ok(
-      result.edges[0].labelWidth >= 180,
-      `Long mapping label width (${result.edges[0].labelWidth}) should be preserved on the edge`,
+      mappingNode.width >= 180,
+      `Long mapping node width (${mappingNode.width}) should expand for the mapping name`,
     );
-
-    const gap = tgtNode.x - (srcNode.x + srcNode.width);
     assert.ok(
-      gap >= result.edges[0].labelWidth,
-      `Gap between nodes (${gap}) should fit label width (${result.edges[0].labelWidth})`,
+      srcNode.x < mappingNode.x && mappingNode.x < tgtNode.x,
+      `Mapping node should be placed between source (${srcNode.x}) and target (${tgtNode.x})`,
     );
   });
 
@@ -587,8 +588,8 @@ describe("computeOverviewLayout", () => {
     };
 
     const result = await computeOverviewLayout(model);
-    assert.equal(result.edges.length, 1, "Should only keep the valid source-ref edge");
-    assert.equal(result.edges[0].sourceNode, "src");
-    assert.equal(result.edges[0].targetNode, "tgt");
+    assert.equal(result.edges.length, 2, "Should keep the valid inbound edge plus the mapping-to-target edge");
+    assert.ok(result.edges.some((e) => e.sourceNode === "src" && e.targetNode === "mapping:_:m1"));
+    assert.ok(result.edges.some((e) => e.sourceNode === "mapping:_:m1" && e.targetNode === "tgt"));
   });
 });

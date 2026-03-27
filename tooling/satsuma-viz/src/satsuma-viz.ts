@@ -55,13 +55,14 @@ export class SatsumaViz extends LitElement {
     ${unsafeCSS(tokens)}
 
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
       background: var(--sz-bg);
       color: var(--sz-text);
       font-family: var(--sz-font-sans);
       height: 100%;
       min-height: 100%;
-      overflow: auto;
+      overflow: hidden;
     }
 
     .canvas {
@@ -72,33 +73,52 @@ export class SatsumaViz extends LitElement {
 
     .card-layer {
       position: relative;
-      z-index: 20;
+      z-index: 10;
     }
 
     .positioned-card {
       position: absolute;
     }
 
-    .namespace-box {
-      position: absolute;
-      border: 2px dashed var(--sz-namespace-border);
-      background: var(--sz-namespace-bg);
-      border-radius: var(--sz-card-radius);
-      z-index: 0;
-      pointer-events: none;
+    .positioned-card.mapping-node {
+      cursor: pointer;
+      z-index: 25;
     }
 
-    .namespace-label {
-      position: absolute;
-      top: -10px;
-      left: 12px;
-      background: var(--sz-namespace-bg);
-      padding: 0 6px;
-      font-size: 11px;
+    .overview-mapping-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 44px;
+      padding: 0 40px 0 12px;
+      border-radius: var(--sz-card-radius, 8px);
+      background:
+        linear-gradient(135deg, rgba(16, 80, 104, 0.98), rgba(10, 53, 76, 0.98)),
+        linear-gradient(45deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+      border: 1px solid rgba(8, 36, 52, 0.35);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(10, 53, 76, 0.18);
+      font-size: 13px;
       font-weight: 600;
-      text-transform: uppercase;
-      color: var(--sz-text-muted);
-      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .overview-mapping-card:hover {
+      filter: brightness(1.03);
+    }
+
+    .overview-mapping-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.92;
+    }
+
+    .overview-mapping-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* View transition fade */
@@ -286,7 +306,24 @@ export class SatsumaViz extends LitElement {
     .viewport {
       overflow: hidden;
       flex: 1;
+      min-height: 0;
+      height: 100%;
       position: relative;
+      isolation: isolate;
+    }
+
+    .detail-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      /* Ensure scroll works within flex layout */
+      height: 0;
+    }
+
+    .detail-inner {
+      width: max-content;
+      min-width: 100%;
     }
 
     .viewport-inner {
@@ -392,6 +429,7 @@ export class SatsumaViz extends LitElement {
       flex: 1;
       overflow: hidden;
       min-height: 0;
+      position: relative;
     }
 
     .notes-pane-wrapper > .viewport {
@@ -801,8 +839,26 @@ export class SatsumaViz extends LitElement {
         ${this._renderToolbar(namespaces)}
         <div class="${toggleClasses} view-content">
           ${this._renderFileNotes()}
-          <div style="padding: 16px;">
-            ${this._renderMappingDetailView(this._selectedMapping)}
+          <div class="notes-pane-wrapper">
+            <div class="viewport"
+              @wheel=${this._onWheel}
+              @mousedown=${this._onMouseDown}
+              @mousemove=${this._onMouseMove}
+              @mouseup=${this._onMouseUp}
+              @mouseleave=${this._onMouseUp}
+            >
+              <div class="viewport-inner"
+                style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._zoom});"
+              >
+                <div class="detail-inner" style="padding: 16px;">
+                  ${this._renderMappingDetailView(this._selectedMapping)}
+                </div>
+              </div>
+              <div class="zoom-indicator ${this._zoomIndicatorVisible ? "visible" : ""}">
+                ${Math.round(this._zoom * 100)}%
+              </div>
+              ${this._renderMinimap(this._layout)}
+            </div>
           </div>
         </div>
       `;
@@ -1116,26 +1172,12 @@ export class SatsumaViz extends LitElement {
 
   /** Render the overview: compact schema cards + thick overview edges. */
   private _renderOverview(overview: OverviewLayoutResult, namespaces: NamespaceGroup[]) {
-    const nsBoxes = this._computeOverviewNamespaceBoxes(overview, namespaces);
-
     return html`
       <div class="canvas" style="width: ${overview.width + 48}px; height: ${overview.height + 48}px; padding: 24px;">
-        <!-- Namespace bounding boxes -->
-        ${nsBoxes.map(
-          (box) => html`
-            <div
-              class="namespace-box"
-              style="left: ${box.x}px; top: ${box.y}px; width: ${box.w}px; height: ${box.h}px;"
-            >
-              <span class="namespace-label">${box.name}</span>
-            </div>
-          `
-        )}
-
-        <!-- Overview SVG edge layer -->
+        <!-- Overview SVG edge layer (filtered to visible nodes) -->
         <sz-overview-edge-layer
-          style="left: 24px; top: 24px; z-index: 10;"
-          .edges=${overview.edges}
+          style="left: 24px; top: 0; z-index: 30;"
+          .edges=${this._filterOverviewEdges(overview.edges, namespaces)}
           .width=${overview.width}
           .height=${overview.height}
         ></sz-overview-edge-layer>
@@ -1148,7 +1190,7 @@ export class SatsumaViz extends LitElement {
               if (!node) return html``;
               return html`
                 <div class="positioned-card" data-node-id=${s.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-schema-card .schema=${s} compact></sz-schema-card>
+                  <sz-schema-card .schema=${s} .namespaceLabel=${ns.name} compact></sz-schema-card>
                 </div>
               `;
             }),
@@ -1157,7 +1199,7 @@ export class SatsumaViz extends LitElement {
               if (!node) return html``;
               return html`
                 <div class="positioned-card" data-node-id=${f.id} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-fragment-card .fragment=${f} compact></sz-fragment-card>
+                  <sz-fragment-card .fragment=${f} .namespaceLabel=${ns.name} compact></sz-fragment-card>
                 </div>
               `;
             }),
@@ -1166,7 +1208,37 @@ export class SatsumaViz extends LitElement {
               if (!node) return html``;
               return html`
                 <div class="positioned-card" data-node-id=${m.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-metric-card .metric=${m} compact></sz-metric-card>
+                  <sz-metric-card .metric=${m} .namespaceLabel=${ns.name} compact></sz-metric-card>
+                </div>
+              `;
+            }),
+            ...ns.mappings.map((m) => {
+              const mappingNodeId = this._overviewMappingNodeId(ns.name, m.id);
+              const node = overview.nodes.find((n) => n.id === mappingNodeId);
+              if (!node) return html``;
+              return html`
+                <div
+                  class="positioned-card mapping-node"
+                  data-node-id=${mappingNodeId}
+                  style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
+                  @click=${() => this._openOverviewMapping(m)}
+                >
+                  <div class="overview-mapping-card" title=${m.id}>
+                    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;">
+                      ${ns.name
+                        ? html`<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:#DCECF6;color:#0A354C;">${ns.name}</span>`
+                        : ""}
+                      <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                        <svg class="overview-mapping-icon" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M2 3h3v2H2v2l-2-3 2-3v2z" opacity="0.95"></path>
+                          <path d="M14 11h-3V9h3V7l2 3-2 3v-2z" opacity="0.95"></path>
+                          <path d="M4.5 5.5h7v1.5h-7z" opacity="0.78"></path>
+                          <path d="M4.5 9h7v1.5h-7z" opacity="0.78"></path>
+                        </svg>
+                        <span class="overview-mapping-name">${m.id}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               `;
             }),
@@ -1193,6 +1265,7 @@ export class SatsumaViz extends LitElement {
         ...ns.schemas.map((s) => s.qualifiedId),
         ...ns.fragments.map((f) => f.id),
         ...ns.metrics.map((m) => m.qualifiedId),
+        ...ns.mappings.map((m) => this._overviewMappingNodeId(ns.name, m.id)),
       ];
 
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1209,13 +1282,16 @@ export class SatsumaViz extends LitElement {
       }
 
       if (found) {
-        const pad = 16;
+        const padX = 0;
+        const padTop = 0;
+        const padBottom = 0;
+        const labelPad = 10;
         boxes.push({
           name: ns.name,
-          x: minX - pad,
-          y: minY - pad - 12,
-          w: maxX - minX + pad * 2,
-          h: maxY - minY + pad * 2 + 12,
+          x: minX - padX,
+          y: minY - padTop - labelPad,
+          w: maxX - minX + padX * 2,
+          h: maxY - minY + padTop + padBottom + labelPad,
         });
       }
     }
@@ -1233,16 +1309,41 @@ export class SatsumaViz extends LitElement {
     return { nodes, edges: [], sourceBlocks: [], width: ov.width, height: ov.height };
   }
 
+  private _overviewMappingNodeId(namespaceName: string | null, mappingId: string): string {
+    return `mapping:${namespaceName ?? "_"}:${mappingId}`;
+  }
+
+  private _openOverviewMapping(mapping: MappingBlock) {
+    this._selectedMapping = mapping;
+    this._viewMode = "detail";
+    this._resetPanZoom();
+  }
+
   /** Render the mapping detail view with schema cards and arrow table. */
+  /** Expand ...spread references by merging fragment fields into a schema copy. */
+  private _expandSpreads(schema: SchemaCard): SchemaCard {
+    if (!this.model || schema.spreads.length === 0) return schema;
+    const allFragments = this.model.namespaces.flatMap((ns) => ns.fragments);
+    const extraFields: import("./model.js").FieldEntry[] = [];
+    for (const spreadName of schema.spreads) {
+      const frag = allFragments.find((f) => f.id === spreadName);
+      if (frag) extraFields.push(...frag.fields);
+    }
+    if (extraFields.length === 0) return schema;
+    return { ...schema, fields: [...schema.fields, ...extraFields] };
+  }
+
   private _renderMappingDetailView(mapping: MappingBlock) {
     if (!this.model) return html``;
 
-    // Find source and target schemas from the model
+    // Find source and target schemas from the model, expanding spreads
     const allSchemas = this.model.namespaces.flatMap((ns) => ns.schemas);
     const sourceSchemas = mapping.sourceRefs
       .map((ref) => allSchemas.find((s) => s.qualifiedId === ref))
-      .filter((s): s is SchemaCard => s !== undefined);
+      .filter((s): s is SchemaCard => s !== undefined)
+      .map((s) => this._expandSpreads(s));
     const targetSchema = allSchemas.find((s) => s.qualifiedId === mapping.targetRef) ?? null;
+    const expandedTarget = targetSchema ? this._expandSpreads(targetSchema) : null;
 
     // Build mapped fields for the detail view
     const sourceMapped = new Map<string, Set<string>>();
@@ -1262,15 +1363,26 @@ export class SatsumaViz extends LitElement {
     for (const eb of mapping.eachBlocks) collectArrows(eb.arrows);
     for (const fb of mapping.flattenBlocks) collectArrows(fb.arrows);
 
+    const namespaceLabel = this._namespaceForMapping(mapping);
+
     return html`
       <sz-mapping-detail
         .mapping=${mapping}
         .sourceSchemas=${sourceSchemas}
-        .targetSchema=${targetSchema}
+        .targetSchema=${expandedTarget}
         .sourceMappedFields=${sourceMapped}
         .targetMappedFields=${targetMapped}
+        .namespaceLabel=${namespaceLabel}
       ></sz-mapping-detail>
     `;
+  }
+
+  private _namespaceForMapping(mapping: MappingBlock): string | null {
+    if (!this.model) return null;
+    for (const ns of this.model.namespaces) {
+      if (ns.mappings.includes(mapping)) return ns.name;
+    }
+    return null;
   }
 
   private _collectAllComments(): {
@@ -1452,6 +1564,22 @@ export class SatsumaViz extends LitElement {
     );
   }
 
+  /** Filter overview edges to only those whose source and target nodes are visible. */
+  private _filterOverviewEdges(
+    edges: import("./layout/elk-layout.js").OverviewEdge[],
+    visibleNamespaces: NamespaceGroup[],
+  ): import("./layout/elk-layout.js").OverviewEdge[] {
+    if (!this._nsFilter) return edges;
+    const visibleIds = new Set<string>();
+    for (const ns of visibleNamespaces) {
+      for (const s of ns.schemas) visibleIds.add(s.qualifiedId);
+      for (const f of ns.fragments) visibleIds.add(f.id);
+      for (const m of ns.metrics) visibleIds.add(m.qualifiedId);
+      for (const m of ns.mappings) visibleIds.add(this._overviewMappingNodeId(ns.name, m.id));
+    }
+    return edges.filter((e) => visibleIds.has(e.sourceNode) && visibleIds.has(e.targetNode));
+  }
+
   private _renderFileNotes() {
     if (!this.model || this.model.fileNotes.length === 0) return html``;
 
@@ -1474,9 +1602,6 @@ export class SatsumaViz extends LitElement {
   }
 
   private _renderPositioned(layout: LayoutResult, namespaces: NamespaceGroup[]) {
-    // Build namespace bounding boxes from child node positions
-    const nsBoxes = this._computeNamespaceBoxes(layout, namespaces);
-
     // Track which schema IDs came from expansions for animation
     const expandedIds = new Set<string>();
     for (const models of this._expandedModels.values()) {
@@ -1491,21 +1616,9 @@ export class SatsumaViz extends LitElement {
 
     return html`
       <div class="canvas" style="width: ${layout.width + 48}px; height: ${layout.height + 48}px; padding: 24px;">
-        <!-- Namespace bounding boxes -->
-        ${nsBoxes.map(
-          (box) => html`
-            <div
-              class="namespace-box"
-              style="left: ${box.x}px; top: ${box.y}px; width: ${box.w}px; height: ${box.h}px;"
-            >
-              <span class="namespace-label">${box.name}</span>
-            </div>
-          `
-        )}
-
         <!-- SVG edge layer (behind cards) -->
         <sz-edge-layer
-          style="left: 24px; top: 24px; z-index: 10;"
+          style="left: 24px; top: 0; z-index: 30;"
           .edges=${layout.edges}
           .width=${layout.width}
           .height=${layout.height}
@@ -1526,7 +1639,7 @@ export class SatsumaViz extends LitElement {
               const isExpanded = expandedIds.has(s.qualifiedId);
               const results = [html`
                 <div class="positioned-card ${isExpanded ? "expanded" : ""}" data-node-id=${s.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-schema-card .schema=${s} .mappedFields=${mapped}></sz-schema-card>
+                  <sz-schema-card .schema=${s} .mappedFields=${mapped} .namespaceLabel=${ns.name}></sz-schema-card>
                 </div>
               `];
               // Block-level comment badges
@@ -1549,7 +1662,7 @@ export class SatsumaViz extends LitElement {
               const isExpanded = expandedIds.has(f.id);
               return html`
                 <div class="positioned-card ${isExpanded ? "expanded" : ""}" data-node-id=${f.id} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-fragment-card .fragment=${f}></sz-fragment-card>
+                  <sz-fragment-card .fragment=${f} .namespaceLabel=${ns.name}></sz-fragment-card>
                 </div>
               `;
             }),
@@ -1559,7 +1672,7 @@ export class SatsumaViz extends LitElement {
               const isExpanded = expandedIds.has(m.qualifiedId);
               return html`
                 <div class="positioned-card ${isExpanded ? "expanded" : ""}" data-node-id=${m.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-metric-card .metric=${m}></sz-metric-card>
+                  <sz-metric-card .metric=${m} .namespaceLabel=${ns.name}></sz-metric-card>
                 </div>
               `;
             }),
@@ -1590,13 +1703,13 @@ export class SatsumaViz extends LitElement {
     return html`
       ${ns.schemas.map((s) => {
         const mapped = this._mappedFieldsBySchema.get(s.qualifiedId) ?? new Set();
-        return html`<sz-schema-card .schema=${s} .mappedFields=${mapped}></sz-schema-card>`;
+        return html`<sz-schema-card .schema=${s} .mappedFields=${mapped} .namespaceLabel=${ns.name}></sz-schema-card>`;
       })}
       ${ns.fragments.map(
-        (f) => html`<sz-fragment-card .fragment=${f}></sz-fragment-card>`
+        (f) => html`<sz-fragment-card .fragment=${f} .namespaceLabel=${ns.name}></sz-fragment-card>`
       )}
       ${ns.metrics.map(
-        (m) => html`<sz-metric-card .metric=${m}></sz-metric-card>`
+        (m) => html`<sz-metric-card .metric=${m} .namespaceLabel=${ns.name}></sz-metric-card>`
       )}
     `;
   }
@@ -1617,6 +1730,7 @@ export class SatsumaViz extends LitElement {
         ...ns.schemas.map((s) => s.qualifiedId),
         ...ns.fragments.map((f) => f.id),
         ...ns.metrics.map((m) => m.qualifiedId),
+        ...ns.mappings.map((m) => this._overviewMappingNodeId(ns.name, m.id)),
       ];
 
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1656,8 +1770,10 @@ export class SatsumaViz extends LitElement {
 
     const namespaces = this._filterNamespaces(this.model.namespaces);
     const boxes: Array<{ name: string; x: number; y: number; w: number; h: number }> = [];
-    const pad = 16;
-    const labelPad = 12;
+    const padX = 0;
+    const padTop = 0;
+    const padBottom = 0;
+    const labelPad = 10;
 
     for (const ns of namespaces) {
       if (!ns.name) continue;
@@ -1666,6 +1782,7 @@ export class SatsumaViz extends LitElement {
         ...ns.schemas.map((s) => s.qualifiedId),
         ...ns.fragments.map((f) => f.id),
         ...ns.metrics.map((m) => m.qualifiedId),
+        ...ns.mappings.map((m) => this._overviewMappingNodeId(ns.name, m.id)),
       ];
 
       let minX = Infinity;
@@ -1687,10 +1804,10 @@ export class SatsumaViz extends LitElement {
       if (found) {
         boxes.push({
           name: ns.name,
-          x: minX - pad,
-          y: minY - pad - labelPad,
-          w: maxX - minX + pad * 2,
-          h: maxY - minY + pad * 2 + labelPad,
+          x: minX - padX,
+          y: minY - padTop - labelPad,
+          w: maxX - minX + padX * 2,
+          h: maxY - minY + padTop + padBottom + labelPad,
         });
       }
     }

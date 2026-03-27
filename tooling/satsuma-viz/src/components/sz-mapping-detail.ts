@@ -9,6 +9,20 @@ import type {
 } from "../model.js";
 import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
 
+/** Strip namespace::schema prefix from a qualified field ref, returning just the field name. */
+function stripFieldQualifier(fieldRef: string): string {
+  const dotIdx = fieldRef.lastIndexOf(".");
+  return dotIdx >= 0 ? fieldRef.slice(dotIdx + 1) : fieldRef;
+}
+
+/** Check if a qualified field ref belongs to a given schema (by qualifiedId). */
+function fieldBelongsToSchema(fieldRef: string, schemaQualifiedId: string): boolean {
+  const dotIdx = fieldRef.lastIndexOf(".");
+  if (dotIdx < 0) return true; // unqualified field — could be any schema
+  const prefix = fieldRef.slice(0, dotIdx);
+  return prefix === schemaQualifiedId;
+}
+
 /**
  * Three-column mapping detail view.
  *
@@ -29,15 +43,17 @@ export class SzMappingDetail extends LitElement {
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr) minmax(280px, 1fr);
+      grid-template-columns: max-content max-content max-content;
       gap: 16px;
       align-items: start;
+      width: max-content;
+      min-width: 100%;
     }
 
-    /* Let schema cards fill the available column width without capping at 380px */
+    /* Let schema cards grow to their content width instead of truncating to the viewport. */
     .column sz-schema-card {
       --sz-card-max-width: none;
-      width: 100%;
+      width: max-content;
       box-sizing: border-box;
     }
 
@@ -45,6 +61,8 @@ export class SzMappingDetail extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: max-content;
+      min-width: 280px;
     }
 
     .column-header {
@@ -64,6 +82,8 @@ export class SzMappingDetail extends LitElement {
       border-radius: var(--sz-card-radius, 8px);
       box-shadow: var(--sz-card-shadow, 0 2px 8px rgba(45, 42, 38, 0.06));
       overflow: hidden;
+      width: max-content;
+      min-width: 100%;
     }
 
     .mapping-title {
@@ -84,10 +104,17 @@ export class SzMappingDetail extends LitElement {
 
     .mapping-meta {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 6px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+    }
+
+    .mapping-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-start;
     }
 
     .meta-tag {
@@ -96,6 +123,7 @@ export class SzMappingDetail extends LitElement {
       border-radius: 4px;
       background: var(--sz-badge-bg, #FFF3E8);
       color: var(--sz-text-muted, #6B6560);
+      max-width: 100%;
     }
 
     .meta-tag .label {
@@ -103,9 +131,17 @@ export class SzMappingDetail extends LitElement {
       font-weight: 500;
     }
 
+    .meta-tag.wrap {
+      max-width: 600px;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
     /* Arrow table */
     .arrow-table {
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       border-collapse: collapse;
     }
 
@@ -155,12 +191,37 @@ export class SzMappingDetail extends LitElement {
       font-size: 12px;
       font-weight: 500;
       color: var(--sz-text, #2D2A26);
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .source-ref-list {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      max-width: 280px;
+    }
+
+    .source-ref-item {
+      display: block;
+    }
+
+    .transform-cell {
+      width: 400px;
+      max-width: 400px;
+      min-width: 320px;
     }
 
     .transform-pipeline {
+      display: inline;
       font-family: var(--sz-font-mono, monospace);
       font-size: 11px;
       color: var(--sz-orange-dark, #D97726);
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .transform-pipeline .pipe {
@@ -169,9 +230,14 @@ export class SzMappingDetail extends LitElement {
     }
 
     .transform-nl {
+      display: inline-block;
       font-style: italic;
       font-size: 11px;
       color: var(--sz-green, #5A9E6F);
+      max-width: 400px;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .transform-bare {
@@ -236,6 +302,9 @@ export class SzMappingDetail extends LitElement {
   @property({ type: Object })
   targetMappedFields: Set<string> = new Set();
 
+  @property({ type: String, attribute: "namespace-label" })
+  namespaceLabel: string | null = null;
+
   /** Currently hovered arrow (from table row hover). */
   @state()
   private _hoveredArrow: ArrowEntry | null = null;
@@ -282,10 +351,20 @@ export class SzMappingDetail extends LitElement {
     if (!m) return result;
 
     if (this._hoveredArrow) {
-      // Highlight source fields of the hovered arrow in all source schemas
+      // Highlight source fields of the hovered arrow in all source schemas.
+      // Source fields may be qualified (e.g. "ns::schema.field"); extract the
+      // bare field name so it matches the schema card's field names, and also
+      // route each field to the correct source schema.
       for (const sr of m.sourceRefs) {
-        const fields = new Set(this._hoveredArrow.sourceFields);
-        result.set(sr, fields);
+        const fields = new Set<string>();
+        for (const sf of this._hoveredArrow.sourceFields) {
+          const bare = stripFieldQualifier(sf);
+          // Only highlight in the schema the field belongs to
+          if (fieldBelongsToSchema(sf, sr) || m.sourceRefs.length === 1) {
+            fields.add(bare);
+          }
+        }
+        if (fields.size > 0) result.set(sr, fields);
       }
     } else if (this._hoveredCardField && this._hoveredCardSchema) {
       // If a target field is hovered, find which source fields map to it
@@ -315,7 +394,7 @@ export class SzMappingDetail extends LitElement {
     if (!m) return new Set();
 
     if (this._hoveredArrow) {
-      return new Set([this._hoveredArrow.targetField]);
+      return new Set([stripFieldQualifier(this._hoveredArrow.targetField)]);
     }
 
     if (this._hoveredCardField && this._hoveredCardSchema) {
@@ -332,13 +411,13 @@ export class SzMappingDetail extends LitElement {
     return new Set();
   }
 
-  /** Find source fields that map to a given target field. */
+  /** Find source fields that map to a given target field (returns bare names). */
   private _findSourceFieldsForTarget(targetField: string, m: MappingBlock): Set<string> {
     const result = new Set<string>();
     const search = (arrows: ArrowEntry[]) => {
       for (const a of arrows) {
-        if (a.targetField === targetField) {
-          for (const sf of a.sourceFields) result.add(sf);
+        if (stripFieldQualifier(a.targetField) === targetField) {
+          for (const sf of a.sourceFields) result.add(stripFieldQualifier(sf));
         }
       }
     };
@@ -348,13 +427,13 @@ export class SzMappingDetail extends LitElement {
     return result;
   }
 
-  /** Find target fields that a given source field maps to. */
+  /** Find target fields that a given source field maps to (handles qualified refs). */
   private _findTargetFieldsForSource(sourceField: string, m: MappingBlock): Set<string> {
     const result = new Set<string>();
     const search = (arrows: ArrowEntry[]) => {
       for (const a of arrows) {
-        if (a.sourceFields.includes(sourceField)) {
-          result.add(a.targetField);
+        if (a.sourceFields.some((sf) => stripFieldQualifier(sf) === sourceField)) {
+          result.add(stripFieldQualifier(a.targetField));
         }
       }
     };
@@ -372,11 +451,11 @@ export class SzMappingDetail extends LitElement {
     const m = this.mapping!;
     // Source card field hovered → highlight rows where it's a source
     if (m.sourceRefs.includes(this._hoveredCardSchema)) {
-      return a.sourceFields.includes(this._hoveredCardField);
+      return a.sourceFields.some((sf) => stripFieldQualifier(sf) === this._hoveredCardField);
     }
     // Target card field hovered → highlight rows where it's the target
     if (this._hoveredCardSchema === m.targetRef) {
-      return a.targetField === this._hoveredCardField;
+      return stripFieldQualifier(a.targetField) === this._hoveredCardField;
     }
     return false;
   }
@@ -398,6 +477,7 @@ export class SzMappingDetail extends LitElement {
               .mappedFields=${this.sourceMappedFields.get(s.qualifiedId) ?? new Set()}
               .highlightFields=${sourceHL.get(s.qualifiedId) ?? new Set()}
               highlightColor="source"
+              content-width
             ></sz-schema-card>
           `)}
         </div>
@@ -416,6 +496,7 @@ export class SzMappingDetail extends LitElement {
                 .mappedFields=${this.targetMappedFields}
                 .highlightFields=${targetHL}
                 highlightColor="target"
+                content-width
               ></sz-schema-card>`
             : nothing}
         </div>
@@ -428,6 +509,11 @@ export class SzMappingDetail extends LitElement {
 
     return html`
       <div class="mapping-header">
+        ${this.namespaceLabel
+          ? html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
+              <span class="meta-tag" style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
+            </div>`
+          : nothing}
         <div class="mapping-title" @click=${() => this._navigate(m.location)}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
             <path d="M2 4h5l2 2h5v8H2V4z" opacity="0.9"/>
@@ -435,12 +521,26 @@ export class SzMappingDetail extends LitElement {
           ${m.id}
         </div>
         <div class="mapping-meta">
-          ${m.sourceRefs.map((s) => html`<span class="meta-tag"><span class="label">source</span> ${s}</span>`)}
-          <span class="meta-tag"><span class="label">target</span> ${m.targetRef}</span>
+          ${m.sourceRefs.map((s) => html`
+            <div class="mapping-meta-row">
+              <span class="meta-tag"><span class="label">source</span> ${s}</span>
+            </div>
+          `)}
+          <div class="mapping-meta-row">
+            <span class="meta-tag"><span class="label">target</span> ${m.targetRef}</span>
+          </div>
           ${sb?.joinDescription
-            ? html`<span class="meta-tag"><span class="label">join</span> ${sb.joinDescription}</span>`
+            ? html`
+                <div class="mapping-meta-row">
+                  <span class="meta-tag wrap"><span class="label">join</span> ${sb.joinDescription}</span>
+                </div>
+              `
             : nothing}
-          ${(sb?.filters ?? []).map((f) => html`<span class="meta-tag"><span class="label">filter</span> ${f}</span>`)}
+          ${(sb?.filters ?? []).map((f) => html`
+            <div class="mapping-meta-row">
+              <span class="meta-tag wrap"><span class="label">filter</span> ${f}</span>
+            </div>
+          `)}
         </div>
       </div>
     `;
@@ -478,9 +578,15 @@ export class SzMappingDetail extends LitElement {
         @mouseenter=${() => { this._hoveredArrow = a; this._hoveredCardField = null; }}
         @mouseleave=${() => { this._hoveredArrow = null; }}
       >
-        <td><span class="field-ref">${a.sourceFields.join(", ")}</span></td>
+        <td>
+          <div class="source-ref-list">
+            ${a.sourceFields.map((sourceField) => html`
+              <span class="field-ref source-ref-item">${sourceField}</span>
+            `)}
+          </div>
+        </td>
         <td><span class="arrow-icon">&#x2192;</span></td>
-        <td>${this._renderTransform(a)}</td>
+        <td class="transform-cell">${this._renderTransform(a)}</td>
         <td><span class="field-ref">${a.targetField}</span></td>
       </tr>
     `;
