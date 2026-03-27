@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing, type TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import type {
   MappingBlock,
   SchemaCard,
@@ -7,7 +7,7 @@ import type {
   EachBlock,
   FlattenBlock,
 } from "../model.js";
-import { SzNavigateEvent } from "../satsuma-viz.js";
+import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
 
 /**
  * Three-column mapping detail view.
@@ -15,6 +15,9 @@ import { SzNavigateEvent } from "../satsuma-viz.js";
  * Left:   source schema cards (full fields)
  * Center: mapping header + arrow table
  * Right:  target schema card (full fields)
+ *
+ * Supports bidirectional hover cross-highlighting between the arrow table
+ * and the schema cards.
  */
 @customElement("sz-mapping-detail")
 export class SzMappingDetail extends LitElement {
@@ -119,10 +122,25 @@ export class SzMappingDetail extends LitElement {
 
     .arrow-table tr {
       cursor: pointer;
+      transition: opacity 0.15s ease, background 0.15s ease;
     }
 
     .arrow-table tr:hover {
       background: rgba(45, 42, 38, 0.03);
+    }
+
+    /* Cross-highlighting on arrow rows */
+    :host([has-highlight]) .arrow-table tr.arrow-row {
+      opacity: 0.5;
+    }
+
+    :host([has-highlight]) .arrow-table tr.arrow-row.hl {
+      opacity: 1;
+      background: rgba(242, 145, 61, 0.08);
+    }
+
+    :host([has-highlight]) .arrow-table tr.arrow-row.hl .field-ref {
+      font-weight: 700;
     }
 
     .field-ref {
@@ -211,9 +229,157 @@ export class SzMappingDetail extends LitElement {
   @property({ type: Object })
   targetMappedFields: Set<string> = new Set();
 
+  /** Currently hovered arrow (from table row hover). */
+  @state()
+  private _hoveredArrow: ArrowEntry | null = null;
+
+  /** Field name hovered from a schema card (via field-hover event). */
+  @state()
+  private _hoveredCardField: string | null = null;
+
+  /** Schema ID of the card whose field is hovered. */
+  @state()
+  private _hoveredCardSchema: string | null = null;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener("field-hover", this._onFieldHover as EventListener);
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener("field-hover", this._onFieldHover as EventListener);
+  }
+
+  override updated(changed: Map<string, unknown>) {
+    if (changed.has("_hoveredArrow") || changed.has("_hoveredCardField")) {
+      if (this._hoveredArrow || this._hoveredCardField) {
+        this.setAttribute("has-highlight", "");
+      } else {
+        this.removeAttribute("has-highlight");
+      }
+    }
+  }
+
+  private _onFieldHover = ((e: SzFieldHoverEvent) => {
+    this._hoveredCardSchema = e.schemaId;
+    this._hoveredCardField = e.fieldName;
+    // Clear table row hover when card field is hovered
+    if (e.fieldName) this._hoveredArrow = null;
+  }) as EventListener;
+
+  /** Compute which source fields should be highlighted. */
+  private get _sourceHighlightFields(): Map<string, Set<string>> {
+    const result = new Map<string, Set<string>>();
+    const m = this.mapping;
+    if (!m) return result;
+
+    if (this._hoveredArrow) {
+      // Highlight source fields of the hovered arrow in all source schemas
+      for (const sr of m.sourceRefs) {
+        const fields = new Set(this._hoveredArrow.sourceFields);
+        result.set(sr, fields);
+      }
+    } else if (this._hoveredCardField && this._hoveredCardSchema) {
+      // If a target field is hovered, find which source fields map to it
+      if (this._hoveredCardSchema === m.targetRef) {
+        const matchingSourceFields = this._findSourceFieldsForTarget(
+          this._hoveredCardField, m
+        );
+        for (const sr of m.sourceRefs) {
+          result.set(sr, matchingSourceFields);
+        }
+      }
+      // If a source field is hovered, highlight it in its own card
+      else if (m.sourceRefs.includes(this._hoveredCardSchema)) {
+        result.set(
+          this._hoveredCardSchema,
+          new Set([this._hoveredCardField])
+        );
+      }
+    }
+
+    return result;
+  }
+
+  /** Compute which target fields should be highlighted. */
+  private get _targetHighlightFields(): Set<string> {
+    const m = this.mapping;
+    if (!m) return new Set();
+
+    if (this._hoveredArrow) {
+      return new Set([this._hoveredArrow.targetField]);
+    }
+
+    if (this._hoveredCardField && this._hoveredCardSchema) {
+      // If a source field is hovered, find which target fields it maps to
+      if (m.sourceRefs.includes(this._hoveredCardSchema)) {
+        return this._findTargetFieldsForSource(this._hoveredCardField, m);
+      }
+      // If target card field is hovered, highlight it
+      if (this._hoveredCardSchema === m.targetRef) {
+        return new Set([this._hoveredCardField]);
+      }
+    }
+
+    return new Set();
+  }
+
+  /** Find source fields that map to a given target field. */
+  private _findSourceFieldsForTarget(targetField: string, m: MappingBlock): Set<string> {
+    const result = new Set<string>();
+    const search = (arrows: ArrowEntry[]) => {
+      for (const a of arrows) {
+        if (a.targetField === targetField) {
+          for (const sf of a.sourceFields) result.add(sf);
+        }
+      }
+    };
+    search(m.arrows);
+    for (const eb of m.eachBlocks) search(eb.arrows);
+    for (const fb of m.flattenBlocks) search(fb.arrows);
+    return result;
+  }
+
+  /** Find target fields that a given source field maps to. */
+  private _findTargetFieldsForSource(sourceField: string, m: MappingBlock): Set<string> {
+    const result = new Set<string>();
+    const search = (arrows: ArrowEntry[]) => {
+      for (const a of arrows) {
+        if (a.sourceFields.includes(sourceField)) {
+          result.add(a.targetField);
+        }
+      }
+    };
+    search(m.arrows);
+    for (const eb of m.eachBlocks) search(eb.arrows);
+    for (const fb of m.flattenBlocks) search(fb.arrows);
+    return result;
+  }
+
+  /** Check if an arrow row should be highlighted. */
+  private _isArrowHighlighted(a: ArrowEntry): boolean {
+    if (this._hoveredArrow === a) return true;
+    if (!this._hoveredCardField || !this._hoveredCardSchema) return false;
+
+    const m = this.mapping!;
+    // Source card field hovered → highlight rows where it's a source
+    if (m.sourceRefs.includes(this._hoveredCardSchema)) {
+      return a.sourceFields.includes(this._hoveredCardField);
+    }
+    // Target card field hovered → highlight rows where it's the target
+    if (this._hoveredCardSchema === m.targetRef) {
+      return a.targetField === this._hoveredCardField;
+    }
+    return false;
+  }
+
   override render() {
     const m = this.mapping;
     if (!m) return html`<div>No mapping selected</div>`;
+
+    const sourceHL = this._sourceHighlightFields;
+    const targetHL = this._targetHighlightFields;
 
     return html`
       <div class="layout">
@@ -223,6 +389,8 @@ export class SzMappingDetail extends LitElement {
             <sz-schema-card
               .schema=${s}
               .mappedFields=${this.sourceMappedFields.get(s.qualifiedId) ?? new Set()}
+              .highlightFields=${sourceHL.get(s.qualifiedId) ?? new Set()}
+              highlightColor="source"
             ></sz-schema-card>
           `)}
         </div>
@@ -239,6 +407,8 @@ export class SzMappingDetail extends LitElement {
             ? html`<sz-schema-card
                 .schema=${this.targetSchema}
                 .mappedFields=${this.targetMappedFields}
+                .highlightFields=${targetHL}
+                highlightColor="target"
               ></sz-schema-card>`
             : nothing}
         </div>
@@ -292,8 +462,15 @@ export class SzMappingDetail extends LitElement {
   }
 
   private _renderArrowRow(a: ArrowEntry): TemplateResult {
+    const hl = this._isArrowHighlighted(a) ? "hl" : "";
+
     return html`
-      <tr @click=${() => this._navigate(a.location)}>
+      <tr
+        class="arrow-row ${hl}"
+        @click=${() => this._navigate(a.location)}
+        @mouseenter=${() => { this._hoveredArrow = a; this._hoveredCardField = null; }}
+        @mouseleave=${() => { this._hoveredArrow = null; }}
+      >
         <td><span class="field-ref">${a.sourceFields.join(", ")}</span></td>
         <td><span class="arrow-icon">&#x2192;</span></td>
         <td>${this._renderTransform(a)}</td>
