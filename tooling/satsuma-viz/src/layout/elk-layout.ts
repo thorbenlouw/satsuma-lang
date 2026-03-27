@@ -69,6 +69,8 @@ export interface OverviewEdge {
   targetNode: string;
   /** Array of {x,y} points forming the routed edge path */
   points: Array<{ x: number; y: number }>;
+  /** Estimated label width used for spacing and rendering. */
+  labelWidth: number;
   /** The full MappingBlock this edge represents. */
   mapping: MappingBlock;
 }
@@ -88,7 +90,15 @@ const FIELD_HEIGHT = 28;
 const FIELDS_PADDING_TOP = 4; // .fields { padding: 4px 0; }
 const FIELDS_PADDING_BOTTOM = 4;
 const CARD_MIN_WIDTH = 240;
+const CARD_MAX_WIDTH = 380;
 const PORT_Y_OFFSET = FIELD_HEIGHT / 2; // center of field row
+const OVERVIEW_HEADER_BASE_WIDTH = 72; // icon + gaps + padding
+const OVERVIEW_TITLE_CHAR_WIDTH = 8.2;
+const OVERVIEW_COUNT_CHAR_WIDTH = 6.3;
+const OVERVIEW_PILL_CHAR_WIDTH = 6.1;
+const OVERVIEW_LABEL_CHAR_WIDTH = 6.8;
+const OVERVIEW_LABEL_PADDING = 18;
+const OVERVIEW_LABEL_MAX_WIDTH = 220;
 
 /** Height of the area above the fields list (header + optional label + optional metadata pills). */
 function preambleHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
@@ -102,6 +112,43 @@ function preambleHeight(schema: { label: string | null; metadata: Array<{ key: s
 /** Compact card height: header + optional label + optional pills + small padding. */
 function compactHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
   return preambleHeight(schema) + FIELDS_PADDING_BOTTOM;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function estimateTextWidth(text: string, charWidth: number): number {
+  return text.length * charWidth;
+}
+
+function estimateOverviewLabelWidth(mappingId: string): number {
+  return clamp(
+    Math.ceil(estimateTextWidth(mappingId, OVERVIEW_LABEL_CHAR_WIDTH) + OVERVIEW_LABEL_PADDING),
+    48,
+    OVERVIEW_LABEL_MAX_WIDTH,
+  );
+}
+
+function estimateCompactSchemaWidth(schema: SchemaCard): number {
+  const displayName = schema.qualifiedId.includes("::") ? schema.qualifiedId : schema.id;
+  const countText = `${countFields(schema.fields)} fields`;
+  const headerWidth =
+    OVERVIEW_HEADER_BASE_WIDTH +
+    estimateTextWidth(displayName, OVERVIEW_TITLE_CHAR_WIDTH) +
+    estimateTextWidth(countText, OVERVIEW_COUNT_CHAR_WIDTH);
+
+  const pillWidths = schema.metadata
+    .filter((m) => m.key !== "note")
+    .map((m) => estimateTextWidth(`${m.key} ${m.value}`, OVERVIEW_PILL_CHAR_WIDTH) + 44);
+  const contentWidth = pillWidths.length > 0 ? Math.max(headerWidth, ...pillWidths) : headerWidth;
+
+  return clamp(Math.ceil(contentWidth), CARD_MIN_WIDTH, CARD_MAX_WIDTH);
+}
+
+function estimateCompactTextCardWidth(id: string): number {
+  const headerWidth = OVERVIEW_HEADER_BASE_WIDTH + estimateTextWidth(id, OVERVIEW_TITLE_CHAR_WIDTH);
+  return clamp(Math.ceil(headerWidth), CARD_MIN_WIDTH, CARD_MAX_WIDTH);
 }
 
 const elk = new ELK();
@@ -514,15 +561,23 @@ function extractLayout(
 export async function computeOverviewLayout(model: VizModel): Promise<OverviewLayoutResult> {
   const children: ElkNode[] = [];
   const edges: ElkEdge[] = [];
-  const overviewEdgeMeta = new Map<string, { sourceNode: string; targetNode: string; mapping: MappingBlock }>();
+  const overviewEdgeMeta = new Map<string, {
+    sourceNode: string;
+    targetNode: string;
+    mapping: MappingBlock;
+    labelWidth: number;
+  }>();
+  let maxLabelWidth = 0;
+  const nodeIds = new Set<string>();
 
   for (const ns of model.namespaces) {
     const nsNodes: ElkNode[] = [];
 
     for (const s of ns.schemas) {
+      nodeIds.add(s.qualifiedId);
       nsNodes.push({
         id: s.qualifiedId,
-        width: CARD_MIN_WIDTH,
+        width: estimateCompactSchemaWidth(s),
         height: compactHeight(s),
         ports: [],
         children: [],
@@ -531,9 +586,10 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     }
 
     for (const f of ns.fragments) {
+      nodeIds.add(f.id);
       nsNodes.push({
         id: f.id,
-        width: CARD_MIN_WIDTH,
+        width: estimateCompactTextCardWidth(f.id),
         height: HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         ports: [],
         children: [],
@@ -542,9 +598,10 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     }
 
     for (const m of ns.metrics) {
+      nodeIds.add(m.qualifiedId);
       nsNodes.push({
         id: m.qualifiedId,
-        width: CARD_MIN_WIDTH,
+        width: estimateCompactTextCardWidth(m.qualifiedId),
         height: HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         ports: [],
         children: [],
@@ -568,7 +625,10 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
 
     // One edge per mapping block
     for (const m of ns.mappings) {
+      const labelWidth = estimateOverviewLabelWidth(m.id);
+      maxLabelWidth = Math.max(maxLabelWidth, labelWidth);
       for (const sourceRef of m.sourceRefs) {
+        if (!nodeIds.has(sourceRef) || !nodeIds.has(m.targetRef)) continue;
         const edgeId = `overview:${m.id}:${sourceRef}`;
         edges.push({
           id: edgeId,
@@ -579,10 +639,13 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
           sourceNode: sourceRef,
           targetNode: m.targetRef,
           mapping: m,
+          labelWidth,
         });
       }
     }
   }
+
+  const layerSpacing = Math.max(80, maxLabelWidth + 72);
 
   const elkGraph: ElkGraph = {
     id: "root",
@@ -590,7 +653,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
       "elk.algorithm": "layered",
       "elk.direction": "RIGHT",
       "elk.spacing.nodeNode": "40",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.layered.spacing.nodeNodeBetweenLayers": String(layerSpacing),
       "elk.spacing.edgeEdge": "20",
       "elk.spacing.edgeNode": "20",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
@@ -644,6 +707,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
         sourceNode: meta.sourceNode,
         targetNode: meta.targetNode,
         points,
+        labelWidth: meta.labelWidth,
         mapping: meta.mapping,
       });
     }

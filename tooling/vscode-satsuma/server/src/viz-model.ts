@@ -1,7 +1,7 @@
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
 import type { WorkspaceIndex } from "./workspace-index";
-import { findReferences } from "./workspace-index";
+import { findReferences, resolveDefinition } from "./workspace-index";
 
 // ---------- VizModel interfaces ----------
 
@@ -242,7 +242,7 @@ function processTopLevelBlock(
       group.fragments.push(extractFragment(uri, node));
       break;
     case "mapping_block":
-      group.mappings.push(extractMapping(uri, node));
+      group.mappings.push(extractMapping(uri, node, namespace, wsIndex));
       break;
     case "metric_block":
       group.metrics.push(extractMetric(uri, node, namespace));
@@ -471,7 +471,29 @@ function extractConstraints(meta: SyntaxNode): string[] {
 
 // ---------- Mapping extraction ----------
 
-function extractMapping(uri: string, node: SyntaxNode): MappingBlock {
+function resolveMappingRef(
+  refName: string,
+  namespace: string | null,
+  wsIndex: WorkspaceIndex,
+): string {
+  const defs = resolveDefinition(wsIndex, refName, namespace);
+  const schemaDef = defs.find((d) => d.kind === "schema");
+  return schemaDef ? (namespace && !refName.includes("::") && schemaDef.namespace
+    ? `${schemaDef.namespace}::${refName}`
+    : refName.includes("::")
+      ? refName
+      : schemaDef.namespace
+        ? `${schemaDef.namespace}::${refName}`
+        : refName)
+    : refName;
+}
+
+function extractMapping(
+  uri: string,
+  node: SyntaxNode,
+  namespace: string | null,
+  wsIndex: WorkspaceIndex,
+): MappingBlock {
   const name = labelText(node) ?? "unknown";
   const body = child(node, "mapping_body");
 
@@ -488,15 +510,18 @@ function extractMapping(uri: string, node: SyntaxNode): MappingBlock {
       switch (ch.type) {
         case "source_block":
           sourceBlock = extractSourceBlock(ch);
-          for (const ref of children(ch, "source_ref")) {
-            const refName = sourceRefText(ref);
-            if (refName) sourceRefs.push(refName);
+          if (sourceBlock.schemas.length > 0) {
+            const resolvedSchemas = sourceBlock.schemas.map((ref) =>
+              resolveMappingRef(ref, namespace, wsIndex)
+            );
+            sourceBlock = { ...sourceBlock, schemas: resolvedSchemas };
+            sourceRefs.push(...resolvedSchemas);
           }
           break;
         case "target_block":
           for (const ref of children(ch, "source_ref")) {
             const refName = sourceRefText(ref);
-            if (refName) targetRef = refName;
+            if (refName) targetRef = resolveMappingRef(refName, namespace, wsIndex);
           }
           break;
         case "map_arrow":

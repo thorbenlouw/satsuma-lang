@@ -245,6 +245,50 @@ describe("mappings", () => {
     assert.equal(sb.joinDescription, "Join on a.id = b.id");
   });
 
+  it("resolves local namespaced mapping refs to qualified schema ids", () => {
+    const model = vizModel(
+      "namespace warehouse {\n" +
+      "  schema src { id INT }\n" +
+      "  schema tgt { id INT }\n" +
+      "  mapping m {\n" +
+      "    source { src }\n" +
+      "    target { tgt }\n" +
+      "    id -> id\n" +
+      "  }\n" +
+      "}",
+    );
+    const mapping = model.namespaces.find((ns) => ns.name === "warehouse").mappings[0];
+    assert.deepEqual(mapping.sourceRefs, ["warehouse::src"]);
+    assert.equal(mapping.targetRef, "warehouse::tgt");
+    assert.deepEqual(mapping.sourceBlock.schemas, ["warehouse::src"]);
+  });
+
+  it("falls back to global schema refs from inside namespaces", () => {
+    const model = vizModel(
+      "schema global_src { id INT }\n" +
+      "namespace warehouse {\n" +
+      "  schema tgt { id INT }\n" +
+      "  mapping m {\n" +
+      "    source { global_src }\n" +
+      "    target { tgt }\n" +
+      "    id -> id\n" +
+      "  }\n" +
+      "}",
+    );
+    const mapping = model.namespaces.find((ns) => ns.name === "warehouse").mappings[0];
+    assert.deepEqual(mapping.sourceRefs, ["global_src"]);
+    assert.equal(mapping.targetRef, "warehouse::tgt");
+  });
+
+  it("does not treat source join descriptions as source refs", () => {
+    const model = vizModel(
+      "schema a { id INT }\nschema b { id INT }\nschema t { id INT }\n" +
+      'mapping m {\n  source {\n    a\n    b\n    "Join on a.id = b.id"\n  }\n  target { t }\n  a.id -> id\n}',
+    );
+    const mapping = model.namespaces[0].mappings[0];
+    assert.deepEqual(mapping.sourceRefs, ["a", "b"]);
+  });
+
   it("extracts flatten blocks", () => {
     const model = vizModel(
       "schema s { items list_of record { sku STRING } }\n" +
