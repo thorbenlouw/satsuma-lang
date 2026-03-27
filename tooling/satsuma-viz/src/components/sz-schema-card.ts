@@ -1,7 +1,9 @@
 import { LitElement, html, css, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import type { SchemaCard, FieldEntry } from "../model.js";
-import { SzNavigateEvent, SzExpandLineageEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
+import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
+import { renderMarkdown } from "../markdown.js";
 
 @customElement("sz-schema-card")
 export class SzSchemaCard extends LitElement {
@@ -27,6 +29,10 @@ export class SzSchemaCard extends LitElement {
       color: #fff;
       cursor: pointer;
       user-select: none;
+    }
+
+    .header.report {
+      background: var(--sz-report, #4A90B8);
     }
 
     .header-icon {
@@ -181,35 +187,7 @@ export class SzSchemaCard extends LitElement {
       display: none;
     }
 
-    .lineage-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 4px;
-      padding: 4px 12px 6px;
-      border-top: 1px dashed var(--sz-card-border, rgba(45, 42, 38, 0.08));
-    }
-
-    .lineage-btn {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
-      border-radius: 4px;
-      background: transparent;
-      color: var(--sz-text-muted, #6B6560);
-      cursor: pointer;
-      font-size: 11px;
-      font-family: inherit;
-    }
-
-    .lineage-btn:hover {
-      background: var(--sz-badge-bg, #FFF3E8);
-      color: var(--sz-orange-dark, #D97726);
-      border-color: var(--sz-orange-dark, #D97726);
-    }
-
-    .metadata-pills {
+.metadata-pills {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
@@ -282,8 +260,49 @@ export class SzSchemaCard extends LitElement {
       color: var(--sz-text, #2D2A26);
       line-height: 1.5;
       padding: 4px 0 2px 22px;
-      white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .note-content p {
+      margin: 0 0 6px;
+    }
+
+    .note-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .note-content h1,
+    .note-content h2,
+    .note-content h3 {
+      font-size: 12px;
+      font-weight: 700;
+      margin: 6px 0 2px;
+    }
+
+    .note-content ul,
+    .note-content ol {
+      margin: 0 0 6px;
+      padding-left: 16px;
+    }
+
+    .note-content li {
+      margin: 1px 0;
+    }
+
+    .note-content code {
+      font-family: var(--sz-font-mono, monospace);
+      font-size: 11px;
+      background: rgba(45, 42, 38, 0.06);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .note-content strong {
+      font-weight: 700;
+    }
+
+    .note-content em {
+      font-style: italic;
     }
 
     /* Cross-highlighting */
@@ -334,7 +353,7 @@ export class SzSchemaCard extends LitElement {
   private _collapsed = false;
 
   @state()
-  private _notesExpanded = false;
+  private _notesExpanded = true;
 
   override updated(changed: Map<string, unknown>) {
     if (changed.has("highlightFields")) {
@@ -344,6 +363,27 @@ export class SzSchemaCard extends LitElement {
         this.removeAttribute("has-highlight");
       }
     }
+  }
+
+  private _isReport(s: SchemaCard): boolean {
+    return s.metadata.some((m) => m.key === "report" || m.key === "model");
+  }
+
+  private _headerIcon(isReport: boolean) {
+    if (isReport) {
+      // Chart/report icon
+      return html`<svg class="header-icon" viewBox="0 0 16 16" fill="currentColor">
+        <rect x="1" y="2" width="14" height="12" rx="2" opacity="0.9"/>
+        <rect x="4" y="8" width="2" height="4" rx="0.5" fill="rgba(255,255,255,0.6)"/>
+        <rect x="7" y="5" width="2" height="7" rx="0.5" fill="rgba(255,255,255,0.6)"/>
+        <rect x="10" y="7" width="2" height="5" rx="0.5" fill="rgba(255,255,255,0.6)"/>
+      </svg>`;
+    }
+    // Table/schema icon
+    return html`<svg class="header-icon" viewBox="0 0 16 16" fill="currentColor">
+      <rect x="1" y="2" width="14" height="12" rx="2" opacity="0.9"/>
+      <line x1="1" y1="6" x2="15" y2="6" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    </svg>`;
   }
 
   override render() {
@@ -356,14 +396,12 @@ export class SzSchemaCard extends LitElement {
     const mappedCount = this._countMapped(s.fields);
     const hasNotes = s.notes.length > 0;
     const metaPills = s.metadata.filter((m) => m.key !== "note");
+    const isReport = this._isReport(s);
 
     return html`
       <div class=${this._collapsed ? "collapsed" : ""}>
-        <div class="header" @click=${this._onHeaderClick}>
-          <svg class="header-icon" viewBox="0 0 16 16" fill="currentColor">
-            <rect x="1" y="2" width="14" height="12" rx="2" opacity="0.9"/>
-            <line x1="1" y1="6" x2="15" y2="6" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
-          </svg>
+        <div class="header ${isReport ? "report" : ""}" @click=${this._onHeaderClick}>
+          ${this._headerIcon(isReport)}
           <span class="header-name">${s.id}</span>
           <span class="header-count">${mappedCount}/${totalFields}</span>
           <span class="header-toggle" ?data-collapsed=${this._collapsed}>&#9660;</span>
@@ -385,18 +423,6 @@ export class SzSchemaCard extends LitElement {
             )
           : ""}
         ${hasNotes ? this._renderNotes(s.notes) : ""}
-        ${s.hasExternalLineage ? this._renderLineageButtons(s.qualifiedId) : ""}
-      </div>
-    `;
-  }
-
-  private _renderLineageButtons(qualifiedId: string) {
-    return html`
-      <div class="lineage-buttons">
-        <button class="lineage-btn" @click=${(e: Event) => { e.stopPropagation(); this._expandLineage(qualifiedId); }}
-          title="Expand cross-file lineage">
-          &#9664; upstream &middot; downstream &#9654;
-        </button>
       </div>
     `;
   }
@@ -404,10 +430,6 @@ export class SzSchemaCard extends LitElement {
   private _onFieldHover(fieldName: string | null) {
     const schemaId = this.schema?.qualifiedId ?? "";
     this.dispatchEvent(new SzFieldHoverEvent(schemaId, fieldName));
-  }
-
-  private _expandLineage(schemaId: string) {
-    this.dispatchEvent(new SzExpandLineageEvent(schemaId));
   }
 
   private _renderNotes(notes: import("../model.js").NoteBlock[]) {
@@ -418,7 +440,7 @@ export class SzSchemaCard extends LitElement {
           <span>&#128221; ${notes.length === 1 ? "Note" : `${notes.length} Notes`}</span>
         </div>
         ${this._notesExpanded
-          ? notes.map((n) => html`<div class="note-content">${n.text}</div>`)
+          ? notes.map((n) => html`<div class="note-content">${unsafeHTML(renderMarkdown(n.text))}</div>`)
           : ""}
       </div>
     `;
@@ -500,14 +522,12 @@ export class SzSchemaCard extends LitElement {
     const totalFields = this._countFields(s.fields);
     const metaPills = s.metadata.filter((m) => m.key !== "note");
     const hasNotes = s.notes.length > 0;
+    const isReport = this._isReport(s);
 
     return html`
       <div>
-        <div class="header" @click=${() => this._navigate(s.location)}>
-          <svg class="header-icon" viewBox="0 0 16 16" fill="currentColor">
-            <rect x="1" y="2" width="14" height="12" rx="2" opacity="0.9"/>
-            <line x1="1" y1="6" x2="15" y2="6" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
-          </svg>
+        <div class="header ${isReport ? "report" : ""}" @click=${() => this._navigate(s.location)}>
+          ${this._headerIcon(isReport)}
           <span class="header-name">${displayName}</span>
           <span class="header-count">${totalFields} fields</span>
         </div>

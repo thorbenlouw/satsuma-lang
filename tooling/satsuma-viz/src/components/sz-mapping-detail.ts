@@ -29,9 +29,16 @@ export class SzMappingDetail extends LitElement {
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(200px, 1fr) minmax(300px, 2fr) minmax(200px, 1fr);
+      grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr) minmax(280px, 1fr);
       gap: 16px;
       align-items: start;
+    }
+
+    /* Let schema cards fill the available column width without capping at 380px */
+    .column sz-schema-card {
+      --sz-card-max-width: none;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .column {

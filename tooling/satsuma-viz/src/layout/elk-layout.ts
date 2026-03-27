@@ -80,14 +80,29 @@ export interface OverviewLayoutResult {
   height: number;
 }
 
-// Card dimension constants (px)
+// Card dimension constants (px) — must match CSS in sz-schema-card.ts
 const HEADER_HEIGHT = 40;
-const LABEL_HEIGHT = 24;
+const LABEL_HEIGHT = 24;  // .label padding (4+6) + font ~14px
+const METADATA_PILLS_HEIGHT = 28; // .metadata-pills padding (4+6) + pill line ~17px + border 1px
 const FIELD_HEIGHT = 28;
-const CARD_PADDING_Y = 8; // top + bottom padding in fields area
+const FIELDS_PADDING_TOP = 4; // .fields { padding: 4px 0; }
+const FIELDS_PADDING_BOTTOM = 4;
 const CARD_MIN_WIDTH = 240;
 const PORT_Y_OFFSET = FIELD_HEIGHT / 2; // center of field row
-const COMPACT_CARD_HEIGHT = HEADER_HEIGHT + CARD_PADDING_Y; // header only, no fields
+
+/** Height of the area above the fields list (header + optional label + optional metadata pills). */
+function preambleHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
+  let h = HEADER_HEIGHT;
+  if (schema.label) h += LABEL_HEIGHT;
+  const pills = schema.metadata.filter((m) => m.key !== "note");
+  if (pills.length > 0) h += METADATA_PILLS_HEIGHT;
+  return h;
+}
+
+/** Compact card height: header + optional label + optional pills + small padding. */
+function compactHeight(schema: { label: string | null; metadata: Array<{ key: string; value: string }> }): number {
+  return preambleHeight(schema) + FIELDS_PADDING_BOTTOM;
+}
 
 const elk = new ELK();
 
@@ -217,13 +232,14 @@ function addSchemaNodes(
   target: ElkNode[],
 ) {
   for (const s of schemas) {
-    const ports = buildFieldPorts(s.fields, s.qualifiedId, mappedFields);
+    const topOffset = preambleHeight(s) + FIELDS_PADDING_TOP;
+    const ports = buildFieldPorts(s.fields, s.qualifiedId, mappedFields, topOffset);
     const fieldCount = countFields(s.fields);
     const height =
-      HEADER_HEIGHT +
-      (s.label ? LABEL_HEIGHT : 0) +
+      preambleHeight(s) +
+      FIELDS_PADDING_TOP +
       fieldCount * FIELD_HEIGHT +
-      CARD_PADDING_Y;
+      FIELDS_PADDING_BOTTOM;
 
     target.push({
       id: s.qualifiedId,
@@ -239,7 +255,7 @@ function addSchemaNodes(
 function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[]) {
   for (const f of fragments) {
     const ports = buildFieldPorts(f.fields, f.id, new Map());
-    const height = HEADER_HEIGHT + f.fields.length * FIELD_HEIGHT + CARD_PADDING_Y;
+    const height = HEADER_HEIGHT + FIELDS_PADDING_TOP + f.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM;
 
     target.push({
       id: f.id,
@@ -257,7 +273,7 @@ function addMetricNodes(metrics: MetricCard[], target: ElkNode[]) {
     const hasMeta = m.label || m.grain || m.slices.length > 0;
     const metaHeight = hasMeta ? LABEL_HEIGHT : 0;
     const height =
-      HEADER_HEIGHT + metaHeight + m.fields.length * FIELD_HEIGHT + CARD_PADDING_Y;
+      HEADER_HEIGHT + metaHeight + FIELDS_PADDING_TOP + m.fields.length * FIELD_HEIGHT + FIELDS_PADDING_BOTTOM;
 
     target.push({
       id: m.qualifiedId,
@@ -275,13 +291,14 @@ function buildFieldPorts(
   fields: FieldEntry[],
   nodeId: string,
   _mappedFields: Map<string, Set<string>>,
+  topOffset = HEADER_HEIGHT + FIELDS_PADDING_TOP,
 ): ElkPort[] {
   const ports: ElkPort[] = [];
   let index = 0;
 
   const walk = (fieldList: FieldEntry[], depth: number) => {
     for (const f of fieldList) {
-      const y = HEADER_HEIGHT + index * FIELD_HEIGHT + PORT_Y_OFFSET;
+      const y = topOffset + index * FIELD_HEIGHT + PORT_Y_OFFSET;
       // Left port (source side)
       ports.push({
         id: `${nodeId}:${f.name}:src`,
@@ -506,7 +523,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
       nsNodes.push({
         id: s.qualifiedId,
         width: CARD_MIN_WIDTH,
-        height: COMPACT_CARD_HEIGHT,
+        height: compactHeight(s),
         ports: [],
         children: [],
         edges: [],
@@ -517,7 +534,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
       nsNodes.push({
         id: f.id,
         width: CARD_MIN_WIDTH,
-        height: COMPACT_CARD_HEIGHT,
+        height: HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         ports: [],
         children: [],
         edges: [],
@@ -528,7 +545,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
       nsNodes.push({
         id: m.qualifiedId,
         width: CARD_MIN_WIDTH,
-        height: COMPACT_CARD_HEIGHT,
+        height: HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         ports: [],
         children: [],
         edges: [],
@@ -598,7 +615,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
           x,
           y,
           width: n.width ?? CARD_MIN_WIDTH,
-          height: n.height ?? COMPACT_CARD_HEIGHT,
+          height: n.height ?? (HEADER_HEIGHT + FIELDS_PADDING_BOTTOM),
           ports: new Map(),
         });
       }
