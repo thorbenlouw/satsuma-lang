@@ -177,11 +177,13 @@ export class SzFragmentCard extends LitElement {
   private _notesExpanded = false;
 
   private _renderNamespacePill() {
-    return this.namespaceLabel
-      ? html`<div style="padding: 8px 12px 0; background: var(--sz-green, #5A9E6F);">
+    if (this.namespaceLabel) {
+      return html`<div style="padding: 8px 12px 0; background: var(--sz-green, #5A9E6F);">
           <span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
-        </div>`
-      : html``;
+        </div>`;
+    }
+    if (this.compact) return html`<div style="height:24px;background:var(--sz-green, #5A9E6F);border-radius:var(--sz-card-radius, 8px) var(--sz-card-radius, 8px) 0 0;"></div>`;
+    return html``;
   }
 
   override render() {

@@ -42,48 +42,47 @@ export class SzOverviewEdgeLayer extends LitElement {
     .overview-path {
       fill: none;
       stroke-width: 3;
+      stroke: var(--sz-edge-default, #4A4744);
       pointer-events: stroke;
-      transition: stroke-width 0.15s ease, opacity 0.15s ease;
+      transition: stroke-width 0.15s ease, stroke 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+      opacity: 0.55;
     }
 
     .overview-path:hover {
       stroke-width: 5;
+      opacity: 1;
     }
 
-    .overview-path.pipeline {
+    .overview-path.highlighted {
       stroke: var(--sz-edge-pipeline, #D97726);
+      stroke-width: 4;
+      opacity: 1;
+      filter: drop-shadow(0 0 4px rgba(217, 119, 38, 0.4));
     }
 
-    .overview-path.nl {
-      stroke: var(--sz-edge-nl, #5A9E6F);
+    .overview-path.highlighted:hover {
+      stroke-width: 5;
     }
 
-    .overview-path.mixed {
-      stroke: var(--sz-edge-pipeline, #D97726);
-    }
-
-    .overview-path.bare {
-      stroke: var(--sz-text-muted, #6B6560);
+    /* Dim non-highlighted edges when any node is hovered */
+    .overview-path.dimmed {
+      opacity: 0.2;
     }
 
     .anchor-dot {
       pointer-events: none;
+      fill: var(--sz-edge-default, #4A4744);
+      opacity: 0.55;
+      transition: fill 0.15s ease, opacity 0.15s ease;
     }
 
-    .anchor-dot.pipeline {
+    .anchor-dot.highlighted {
       fill: var(--sz-edge-pipeline, #D97726);
+      opacity: 1;
     }
 
-    .anchor-dot.nl {
-      fill: var(--sz-edge-nl, #5A9E6F);
-    }
-
-    .anchor-dot.mixed {
-      fill: var(--sz-edge-pipeline, #D97726);
-    }
-
-    .anchor-dot.bare {
-      fill: var(--sz-text-muted, #6B6560);
+    .anchor-dot.dimmed {
+      opacity: 0.2;
     }
 
     /* Tooltip */
@@ -125,6 +124,10 @@ export class SzOverviewEdgeLayer extends LitElement {
   @property({ type: Number })
   height = 600;
 
+  /** Set of node IDs currently hovered — connected edges get highlighted. */
+  @property({ attribute: false })
+  highlightNodes: Set<string> = new Set();
+
   @state()
   private _hoveredEdge: string | null = null;
 
@@ -152,9 +155,14 @@ export class SzOverviewEdgeLayer extends LitElement {
     if (edge.points.length < 2) return svg``;
 
     const d = this._buildRoutedPath(edge.points);
-    const cls = this._edgeColorClass(edge.mapping);
     const first = edge.points[0];
     const last = edge.points[edge.points.length - 1];
+
+    const hasHighlight = this.highlightNodes.size > 0;
+    const connected = hasHighlight && (
+      this.highlightNodes.has(edge.sourceNode) || this.highlightNodes.has(edge.targetNode)
+    );
+    const cls = hasHighlight ? (connected ? "highlighted" : "dimmed") : "";
 
     return svg`
       <path
@@ -166,30 +174,6 @@ export class SzOverviewEdgeLayer extends LitElement {
       <circle class="anchor-dot ${cls}" cx=${first.x} cy=${first.y} r="3.5" />
       <circle class="anchor-dot ${cls}" cx=${last.x} cy=${last.y} r="3.5" />
     `;
-  }
-
-  /** Classify the mapping's dominant transform type for coloring. */
-  private _edgeColorClass(m: MappingBlock): string {
-    let pipeline = 0;
-    let nl = 0;
-    let bare = 0;
-
-    const countArrows = (arrows: typeof m.arrows) => {
-      for (const a of arrows) {
-        if (!a.transform) bare++;
-        else if (a.transform.kind === "nl") nl++;
-        else pipeline++;
-      }
-    };
-
-    countArrows(m.arrows);
-    for (const eb of m.eachBlocks) countArrows(eb.arrows);
-    for (const fb of m.flattenBlocks) countArrows(fb.arrows);
-
-    if (nl > pipeline && nl > bare) return "nl";
-    if (pipeline > 0) return "pipeline";
-    if (nl > 0) return "nl";
-    return "bare";
   }
 
   private _buildRoutedPath(points: Array<{ x: number; y: number }>): string {
