@@ -1,6 +1,55 @@
 # Changelog
 
 
+
+## v0.5.0 — 2026-03-28
+
+### VS Code Visualization — Schema Spread Resolution
+
+- Fragment spreads (`...ns::fragment`) are now fully pre-resolved at model-build
+  time. Every schema card in both the workspace overview and the mapping detail
+  view shows the complete, flat list of fields — including all inherited spread
+  fields — without any special spread indicators. Recursive fragment chains
+  (fragments that spread other fragments) are resolved iteratively until stable.
+- Fragment nodes no longer appear as separate cards in the overview graph.
+  Fragments are an authoring shorthand; the viz shows the resolved result.
+- Overview mapping arrows now always render for cross-namespace mappings. A
+  two-pass layout build ensures all schema node IDs are registered before edges
+  are created, fixing silent edge drops when a mapping's namespace was processed
+  before its source or target schema namespace.
+- Source and target schema cards in the mapping detail view now show all
+  spread-inherited fields alongside directly declared fields, so field-level
+  arrows connect correctly to every field in the card.
+
+### VS Code Extension
+
+- Added context-aware lineage actions: right-clicking a field or schema in a
+  `.stm` file now surfaces **Open Lineage View** and **Trace Field Lineage**
+  commands scoped to the entity under the cursor.
+
+### Shared `satsuma-core` Package
+
+- Extracted shared parser utilities, CST helpers, and the formatter into a new
+  `@satsuma/core` internal package consumed by both the CLI and the LSP server.
+  This removes duplicated parsing infrastructure and makes the formatter
+  available to all tooling without a circular dependency.
+- Fixed a regex backtracking issue in the formatter that caused catastrophic
+  slowdown on certain long NL strings.
+
+### CLI & Packaging
+
+- The CLI entry point now ships with the executable bit set, fixing
+  `permission denied` errors after `npm install -g` on Linux and macOS.
+- The release packaging step now fails fast if the WASM parser artifact is
+  missing, preventing silent broken releases.
+
+### Website
+
+- Added workspace overview and mapping detail screenshots to the VS Code
+  extension page, showing the interactive visualization in action.
+- Added a full-width workspace overview screenshot to the home page, placed
+  between the hero and the Problem/Solution sections.
+
 ## v0.4.0 — 2026-03-27
 
 ### Visual Mapping Workspace
