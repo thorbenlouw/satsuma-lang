@@ -111,6 +111,8 @@ export interface MetricFieldEntry {
 export interface FragmentCard {
   id: string;
   fields: FieldEntry[];
+  /** Fragment names spread into this fragment (resolved and stripped before the model is sent to the client). */
+  spreads: string[];
   notes: NoteBlock[];
   location: SourceLocation;
 }
@@ -198,7 +200,73 @@ export function buildVizModel(
     namespaces.push(ns);
   }
 
+  // Pre-resolve all fragment spreads into schema fields so the viz never sees
+  // spread placeholders or fragment nodes — spreads are an authoring shorthand only.
+  resolveAndStripSpreads(namespaces);
+
   return { uri, fileNotes, namespaces };
+}
+
+// ---------- Spread resolution ----------
+
+/**
+ * Pre-resolve all fragment spreads into schema fields, then strip fragment
+ * nodes from every namespace group.
+ *
+ * Resolution is cross-namespace (a schema in `src` can spread `common::frag`)
+ * and iterative (a fragment may itself spread another fragment). We repeat
+ * until no new fields are added, guarded by a cycle limit.
+ */
+function resolveAndStripSpreads(namespaces: NamespaceGroup[]): void {
+  // Build a flat fragment lookup across all namespaces.
+  // fragFields: id → direct fields (will be expanded iteratively)
+  // fragSpreads: id → names of other fragments it spreads
+  const fragFields = new Map<string, FieldEntry[]>();
+  const fragSpreads = new Map<string, string[]>();
+  for (const ns of namespaces) {
+    for (const f of ns.fragments) {
+      fragFields.set(f.id, [...f.fields]);
+      fragSpreads.set(f.id, [...f.spreads]);
+    }
+  }
+
+  // Iteratively expand fragment-level spreads (handles fragment-spreads-fragment chains).
+  // Repeat until stable, guarded by a cycle limit.
+  for (let pass = 0; pass < 20; pass++) {
+    let changed = false;
+    for (const [id, spreads] of fragSpreads) {
+      if (spreads.length === 0) continue;
+      const current = fragFields.get(id)!;
+      const currentNames = new Set(current.map((f) => f.name));
+      for (const spreadName of spreads) {
+        for (const field of fragFields.get(spreadName) ?? []) {
+          if (!currentNames.has(field.name)) {
+            current.push(field);
+            currentNames.add(field.name);
+            changed = true;
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+
+  // Expand schema spreads and clear the spreads list.
+  for (const ns of namespaces) {
+    for (const s of ns.schemas) {
+      if (s.spreads.length === 0) continue;
+      const extra: FieldEntry[] = [];
+      for (const spreadName of s.spreads) {
+        for (const field of fragFields.get(spreadName) ?? []) {
+          extra.push(field);
+        }
+      }
+      s.fields = [...s.fields, ...extra];
+      s.spreads = [];
+    }
+    // Fragments are resolved away — remove them so the viz never renders them.
+    ns.fragments = [];
+  }
 }
 
 // ---------- Top-level processing ----------
@@ -239,7 +307,7 @@ function processTopLevelBlock(
       group.schemas.push(extractSchema(uri, node, namespace, wsIndex));
       break;
     case "fragment_block":
-      group.fragments.push(extractFragment(uri, node));
+      group.fragments.push(extractFragment(uri, node, namespace));
       break;
     case "mapping_block":
       group.mappings.push(extractMapping(uri, node, namespace, wsIndex));
@@ -351,8 +419,8 @@ function extractSchema(
 
 function extractSpreads(body: SyntaxNode): string[] {
   const spreads: string[] = [];
-  for (const spreadNode of children(body, "spread_statement")) {
-    const name = labelText(spreadNode) ?? child(spreadNode, "identifier")?.text;
+  for (const spreadNode of children(body, "fragment_spread")) {
+    const name = child(spreadNode, "spread_label")?.text;
     if (name) spreads.push(name);
   }
   return spreads;
@@ -389,13 +457,15 @@ function checkExternalLineage(
 
 // ---------- Fragment extraction ----------
 
-function extractFragment(uri: string, node: SyntaxNode): FragmentCard {
-  const name = labelText(node) ?? "unknown";
+function extractFragment(uri: string, node: SyntaxNode, namespace: string | null): FragmentCard {
+  const localName = labelText(node) ?? "unknown";
+  const id = namespace ? `${namespace}::${localName}` : localName;
   const body = child(node, "schema_body");
 
   return {
-    id: name,
+    id,
     fields: body ? extractFieldEntries(uri, body) : [],
+    spreads: body ? extractSpreads(body) : [],
     notes: extractNotes(uri, node),
     location: nodeLocation(uri, node),
   };
