@@ -62,7 +62,7 @@ schema users {
       (fragment_spread
         (spread_label
           (identifier)
-          (identifier))))))
+          (continuation_word))))))
 
 ================================================================================
 Multi-word transform spread in arrow
@@ -116,8 +116,32 @@ schema events {
       (fragment_spread
         (spread_label
           (identifier)
-          (identifier)
-          (identifier))))))
+          (continuation_word)
+          (continuation_word))))))
+
+================================================================================
+Spread followed by field declaration on next line
+================================================================================
+
+schema s1 {
+  ...f
+  extra x
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (fragment_spread
+        (spread_label
+          (identifier)))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
 
 ================================================================================
 Numeric enum values

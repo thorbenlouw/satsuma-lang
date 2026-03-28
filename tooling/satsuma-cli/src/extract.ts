@@ -185,16 +185,20 @@ function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
 
 /**
  * Extract the text from a spread_label node.
- * spread_label → qualified_name | quoted_name | _spread_words (identifier+)
+ * spread_label → qualified_name | backtick_name | _spread_words
+ * _spread_words → identifier (continuation_word*)
+ * continuation_word is an external token that only matches same-line identifiers.
  */
 function spreadLabelText(labelNode: SyntaxNode): string {
   const qn = child(labelNode, "qualified_name");
   if (qn) return qualifiedNameText(qn)!;
   const q = child(labelNode, "backtick_name");
   if (q) return q.text.slice(1, -1);
-  // Multi-word or single-word: join all identifiers with spaces
-  const ids = children(labelNode, "identifier");
-  return ids.map((id) => id.text).join(" ");
+  // Multi-word or single-word: collect identifier + continuation_word children
+  const words = labelNode.namedChildren
+    .filter((c) => c.type === "identifier" || c.type === "continuation_word")
+    .map((c) => c.text);
+  return words.join(" ");
 }
 
 /**

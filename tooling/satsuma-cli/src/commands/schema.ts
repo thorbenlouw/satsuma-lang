@@ -170,7 +170,7 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
           sname = q.text;
         } else {
           sname = lbl.namedChildren
-            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+            .filter((x) => x.type === "identifier" || x.type === "continuation_word" || x.type === "qualified_name")
             .map((x) => x.text)
             .join(" ");
         }

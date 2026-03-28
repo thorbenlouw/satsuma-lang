@@ -340,9 +340,9 @@ schema salesforce (ref `Account`.id) {}
       (tag_with_value
         (identifier)
         (value_text
-          (backtick_name)
-          (ERROR)
-          (identifier))))))
+          (backtick_name)))
+      (ERROR
+        (continuation_word)))))
 
 ================================================================================
 Ref-on compound metadata

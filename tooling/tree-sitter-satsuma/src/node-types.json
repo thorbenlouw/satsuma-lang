@@ -1042,6 +1042,10 @@
           "named": true
         },
         {
+          "type": "continuation_word",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1273,6 +1277,10 @@
     "type": "comment",
     "named": true,
     "extra": true
+  },
+  {
+    "type": "continuation_word",
+    "named": true
   },
   {
     "type": "default",
