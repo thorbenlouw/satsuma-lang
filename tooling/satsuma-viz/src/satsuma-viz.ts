@@ -646,6 +646,10 @@ export class SatsumaViz extends LitElement {
   @state()
   private _hoveredField: string | null = null;
 
+  /** Currently hovered overview node for edge highlighting. */
+  @state()
+  private _hoveredOverviewNodes: Set<string> = new Set();
+
   /** Expanded cross-file models keyed by the schema that triggered expansion. */
   @state()
   private _expandedModels = new Map<string, VizModel[]>();
@@ -1180,6 +1184,7 @@ export class SatsumaViz extends LitElement {
           .edges=${this._filterOverviewEdges(overview.edges, namespaces)}
           .width=${overview.width}
           .height=${overview.height}
+          .highlightNodes=${this._hoveredOverviewNodes}
         ></sz-overview-edge-layer>
 
         <!-- Compact positioned cards -->
@@ -1189,7 +1194,9 @@ export class SatsumaViz extends LitElement {
               const node = overview.nodes.find((n) => n.id === s.qualifiedId);
               if (!node) return html``;
               return html`
-                <div class="positioned-card" data-node-id=${s.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                <div class="positioned-card" data-node-id=${s.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
+                  @mouseenter=${() => this._onOverviewNodeHover(s.qualifiedId)}
+                  @mouseleave=${() => this._onOverviewNodeLeave()}>
                   <sz-schema-card .schema=${s} .namespaceLabel=${ns.name} compact></sz-schema-card>
                 </div>
               `;
@@ -1198,7 +1205,9 @@ export class SatsumaViz extends LitElement {
               const node = overview.nodes.find((n) => n.id === f.id);
               if (!node) return html``;
               return html`
-                <div class="positioned-card" data-node-id=${f.id} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                <div class="positioned-card" data-node-id=${f.id} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
+                  @mouseenter=${() => this._onOverviewNodeHover(f.id)}
+                  @mouseleave=${() => this._onOverviewNodeLeave()}>
                   <sz-fragment-card .fragment=${f} .namespaceLabel=${ns.name} compact></sz-fragment-card>
                 </div>
               `;
@@ -1207,7 +1216,9 @@ export class SatsumaViz extends LitElement {
               const node = overview.nodes.find((n) => n.id === m.qualifiedId);
               if (!node) return html``;
               return html`
-                <div class="positioned-card" data-node-id=${m.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
+                <div class="positioned-card" data-node-id=${m.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
+                  @mouseenter=${() => this._onOverviewNodeHover(m.qualifiedId)}
+                  @mouseleave=${() => this._onOverviewNodeLeave()}>
                   <sz-metric-card .metric=${m} .namespaceLabel=${ns.name} compact></sz-metric-card>
                 </div>
               `;
@@ -1222,8 +1233,10 @@ export class SatsumaViz extends LitElement {
                   data-node-id=${mappingNodeId}
                   style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
                   @click=${() => this._openOverviewMapping(m)}
+                  @mouseenter=${() => this._onOverviewNodeHover(mappingNodeId)}
+                  @mouseleave=${() => this._onOverviewNodeLeave()}
                 >
-                  <div class="overview-mapping-card" title=${m.id}>
+                  <div class="overview-mapping-card" style="${!ns.name ? "padding-top:24px;" : ""}" title=${m.id}>
                     <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;">
                       ${ns.name
                         ? html`<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:#DCECF6;color:#0A354C;">${ns.name}</span>`
@@ -1236,6 +1249,7 @@ export class SatsumaViz extends LitElement {
                           <path d="M4.5 9h7v1.5h-7z" opacity="0.78"></path>
                         </svg>
                         <span class="overview-mapping-name">${m.id}</span>
+                        <span style="opacity:0.6;font-size:11px;font-weight:400;">${m.arrows.length + m.eachBlocks.reduce((s, b) => s + b.arrows.length, 0) + m.flattenBlocks.reduce((s, b) => s + b.arrows.length, 0)} &#8594;s</span>
                       </div>
                     </div>
                   </div>
@@ -1317,6 +1331,14 @@ export class SatsumaViz extends LitElement {
     this._selectedMapping = mapping;
     this._viewMode = "detail";
     this._resetPanZoom();
+  }
+
+  private _onOverviewNodeHover(nodeId: string) {
+    this._hoveredOverviewNodes = new Set([nodeId]);
+  }
+
+  private _onOverviewNodeLeave() {
+    this._hoveredOverviewNodes = new Set();
   }
 
   /** Render the mapping detail view with schema cards and arrow table. */

@@ -401,11 +401,18 @@ export class SzSchemaCard extends LitElement {
   }
 
   private _renderNamespacePill() {
-    return this.namespaceLabel
-      ? html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
+    if (this.namespaceLabel) {
+      return html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
           <span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
-        </div>`
-      : html``;
+        </div>`;
+    }
+    if (this.compact) {
+      const bg = this.schema && this._isReport(this.schema)
+        ? "var(--sz-report, #4A90B8)"
+        : "var(--sz-orange, #F2913D)";
+      return html`<div style="height:24px;background:${bg};border-radius:var(--sz-card-radius, 8px) var(--sz-card-radius, 8px) 0 0;"></div>`;
+    }
+    return html``;
   }
 
   private _headerIcon(isReport: boolean) {

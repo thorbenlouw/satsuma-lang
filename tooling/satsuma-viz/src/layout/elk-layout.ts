@@ -730,11 +730,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const s of ns.schemas) {
       nodeIds.add(s.qualifiedId);
       overviewNodeKinds.set(s.qualifiedId, "schema");
-      if (ns.name) overviewNodeHasNamespace.add(s.qualifiedId);
+      overviewNodeHasNamespace.add(s.qualifiedId);
       nsNodes.push({
         id: s.qualifiedId,
         width: estimateCompactSchemaWidth(s),
-        height: compactHeight(s, !!ns.name),
+        height: compactHeight(s, true),
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
@@ -747,11 +747,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const f of ns.fragments) {
       nodeIds.add(f.id);
       overviewNodeKinds.set(f.id, "fragment");
-      if (ns.name) overviewNodeHasNamespace.add(f.id);
+      overviewNodeHasNamespace.add(f.id);
       nsNodes.push({
         id: f.id,
         width: estimateCompactTextCardWidth(f.id),
-        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        height: NAMESPACE_PILL_HEIGHT + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
@@ -764,11 +764,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const m of ns.metrics) {
       nodeIds.add(m.qualifiedId);
       overviewNodeKinds.set(m.qualifiedId, "metric");
-      if (ns.name) overviewNodeHasNamespace.add(m.qualifiedId);
+      overviewNodeHasNamespace.add(m.qualifiedId);
       nsNodes.push({
         id: m.qualifiedId,
         width: estimateCompactTextCardWidth(m.id),
-        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        height: NAMESPACE_PILL_HEIGHT + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
@@ -781,11 +781,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const m of ns.mappings) {
       const mappingNodeId = overviewMappingNodeId(ns.name, m.id);
       overviewNodeKinds.set(mappingNodeId, "mapping");
-      if (ns.name) overviewNodeHasNamespace.add(mappingNodeId);
+      overviewNodeHasNamespace.add(mappingNodeId);
       nsNodes.push({
         id: mappingNodeId,
         width: estimateOverviewLabelWidth(m.id, ns.name),
-        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        height: NAMESPACE_PILL_HEIGHT + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
