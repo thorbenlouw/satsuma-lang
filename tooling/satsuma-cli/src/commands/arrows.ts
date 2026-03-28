@@ -177,14 +177,6 @@ Examples:
           const sourceSchemas = mapping?.sources ?? [];
           const targetSchemas = mapping?.targets ?? [];
 
-          // Determine which schema the source field belongs to
-          let sourceSchema: string;
-          if (sourceSchemas.includes(resolvedSchema.key)) {
-            sourceSchema = resolvedSchema.key;
-          } else {
-            sourceSchema = sourceSchemas[0] ?? resolvedSchema.key;
-          }
-
           // Determine which schema the target field belongs to
           let targetSchema: string;
           if (targetSchemas.includes(resolvedSchema.key)) {
@@ -206,9 +198,30 @@ Examples:
             return `${schema}.${path}`;
           };
 
+          // For multi-source arrows, find the actual schema that owns each source field
+          // rather than attributing all fields to the queried schema.
+          const resolveSourceField = (path: string): string => {
+            // Already fully qualified
+            const dotIdx = path.indexOf(".");
+            if (dotIdx > 0) {
+              const prefix = path.slice(0, dotIdx);
+              if (index.schemas.has(prefix)) return path;
+            }
+            // Search each source schema for a field matching path
+            for (const schemaKey of sourceSchemas) {
+              const s = index.schemas.get(schemaKey);
+              if (!s) continue;
+              const sSpread = expandEntityFields(s, s.namespace ?? null, index);
+              const allNames = [...s.fields, ...sSpread].map((f) => f.name);
+              if (allNames.includes(path)) return `${schemaKey}.${path}`;
+            }
+            // Fallback: use first source schema
+            return `${sourceSchemas[0] ?? resolvedSchema.key}.${path}`;
+          };
+
           const result: Record<string, unknown> = {
             mapping: qMapping ? canonicalKey(qMapping) : null,
-            source: a.sources.map((s) => canonicalKey(qualifyPath(s, sourceSchema) ?? s)).join(", "),
+            source: a.sources.length === 0 ? null : a.sources.map((s) => canonicalKey(resolveSourceField(s))).join(", "),
             target: a.target ? canonicalKey(qualifyPath(a.target, targetSchema) ?? a.target) : null,
             classification: a.classification,
             transform_raw: a.transform_raw,

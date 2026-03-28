@@ -120,7 +120,11 @@ Examples:
 }
 
 /**
- * Build a downstream DAG from a start node up to `maxDepth`.
+ * Build a downstream DAG from a start node up to `maxDepth` schema hops.
+ * depth increments only when reaching a schema or metric node, so --depth N
+ * means N schema-to-schema hops (each hop: schema → mapping → schema).
+ * Edges are only pushed when the child node will be within the depth limit,
+ * so no dangling references are emitted.
  * Returns {nodes: [...], edges: [{src, tgt}]}.
  */
 function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag {
@@ -132,15 +136,16 @@ function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag
     visitedNodes.add(node);
     const children = graph.edges.get(node) ?? new Set<string>();
     for (const child of children) {
-      dagEdges.push({ src: node, tgt: child });
-      dfs(child, depth + 1);
+      const childType = graph.nodes.get(child)?.type;
+      const nextDepth = (childType === "schema" || childType === "metric") ? depth + 1 : depth;
+      if (nextDepth <= maxDepth) {
+        dagEdges.push({ src: node, tgt: child });
+        dfs(child, nextDepth);
+      }
     }
   }
 
   dfs(start, 0);
-
-  // Ensure all edge-referenced nodes appear in the nodes list
-  for (const { tgt } of dagEdges) visitedNodes.add(tgt);
 
   return {
     nodes: [...visitedNodes].map((n) => ({ name: n, ...graph.nodes.get(n) })),
@@ -149,8 +154,9 @@ function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag
 }
 
 /**
- * Build the full upstream DAG from a target node up to `maxDepth`.
- * Walks reverse edges to collect all reachable upstream nodes and edges.
+ * Build the full upstream DAG from a target node up to `maxDepth` schema hops.
+ * Walks reverse edges; depth increments only when reaching a schema or metric node.
+ * Edges are only pushed when the parent node will be within the depth limit.
  * Returns {nodes: [...], edges: [{src, tgt}]}.
  */
 function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag {
@@ -171,15 +177,16 @@ function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag 
     visitedNodes.add(node);
     const parents = reverseEdges.get(node) ?? new Set<string>();
     for (const parent of parents) {
-      dagEdges.push({ src: parent, tgt: node });
-      dfs(parent, depth + 1);
+      const parentType = graph.nodes.get(parent)?.type;
+      const nextDepth = (parentType === "schema" || parentType === "metric") ? depth + 1 : depth;
+      if (nextDepth <= maxDepth) {
+        dagEdges.push({ src: parent, tgt: node });
+        dfs(parent, nextDepth);
+      }
     }
   }
 
   dfs(target, 0);
-
-  // Ensure all edge-referenced nodes appear in the nodes list
-  for (const { src } of dagEdges) visitedNodes.add(src);
 
   return {
     nodes: [...visitedNodes].map((n) => ({ name: n, ...graph.nodes.get(n) })),

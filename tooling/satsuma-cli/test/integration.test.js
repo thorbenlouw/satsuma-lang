@@ -869,13 +869,15 @@ describe("satsuma lineage", () => {
 
   it("--to --depth --json includes truncated upstream nodes (sl-lmcp)", async () => {
     const F = resolve(import.meta.dirname, "fixtures", "lineage-chain.stm");
-    const { stdout, code } = await run("lineage", "--to", "target_d", "--depth", "3", "--json", F);
+    // --depth 1 = 1 schema hop upstream from target_d (reaches intermediate_c)
+    const { stdout, code } = await run("lineage", "--to", "target_d", "--depth", "1", "--json", F);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.nodes.length > 1, "should have upstream nodes");
-    assert.ok(data.nodes.length < 7, "should be truncated, not full chain");
     const names = data.nodes.map((n) => n.name);
     assert.ok(names.includes("target_d"), "should include target");
+    assert.ok(names.includes("intermediate_c"), "should include 1-hop upstream schema");
+    assert.ok(!names.includes("source_a"), "should not include source_a (beyond depth)");
+    assert.ok(data.nodes.length < 7, "should be truncated, not full chain");
   });
 
   it("--json has no phantom note: node from NL refs (sc-nk3v)", async () => {
@@ -3189,17 +3191,24 @@ describe("satsuma graph: scalar list fields (sc-ebau)", () => {
   });
 });
 
-describe("satsuma graph: fragment fields (sl-yibt)", () => {
-  it("fragment nodes include fields in --json output", async () => {
+describe("satsuma graph: fragment fields (sl-yibt, sl-p0hz)", () => {
+  it("fragment nodes do NOT appear in --json nodes array (sl-p0hz)", async () => {
     const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const frags = data.nodes.filter((n) => n.kind === "fragment");
-    assert.ok(frags.length > 0, "should have fragment nodes");
-    for (const f of frags) {
-      assert.ok(Array.isArray(f.fields), `fragment '${f.id}' should have fields array`);
-      assert.ok(f.fields.length > 0, `fragment '${f.id}' should have non-empty fields`);
-    }
+    assert.equal(frags.length, 0, "fragment nodes must not appear in nodes[]");
+    // But stats.fragments still reports the count
+    assert.ok(data.stats.fragments > 0, "stats.fragments should still count fragments");
+  });
+
+  it("schema fields include spread-expanded fields in --json (sl-p0hz)", async () => {
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    // Find a schema that uses fragment spreads and verify its fields are expanded
+    const schemasWithFields = data.nodes.filter((n) => n.kind === "schema" && Array.isArray(n.fields) && n.fields.length > 0);
+    assert.ok(schemasWithFields.length > 0, "schema nodes should have non-empty fields");
   });
 });
 
@@ -3440,12 +3449,12 @@ describe("satsuma graph --json — fragment spread expansion (sl-t6lt)", () => {
     assert.ok(fieldNames.includes("street_line_1"), "should include street_line_1 from address fields");
   });
 
-  it("includes fragment spread edges", async () => {
+  it("no fragment_spread schema_edges (sl-p0hz: fragments are not graph nodes)", async () => {
     const { stdout, code } = await run("graph", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const graph = JSON.parse(stdout);
     const spreadEdges = graph.schema_edges.filter((e) => e.role === "fragment_spread");
-    assert.ok(spreadEdges.length > 0, "should have fragment_spread edges");
+    assert.equal(spreadEdges.length, 0, "fragment_spread edges must not appear (fragments are not nodes)");
   });
 });
 

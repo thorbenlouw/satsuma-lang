@@ -1,6 +1,6 @@
 ---
 id: sl-s8wi
-status: open
+status: closed
 deps: [sl-3ccy, sl-oeem]
 links: []
 created: 2026-03-28T18:41:08Z
@@ -41,3 +41,10 @@ The schema node fields array and the edge list should be internally consistent: 
 - schema node fields array and edges array are consistent: no field appears in an edge that is absent from its schema node's fields list
 - Related to sl-oeem (spread field resolution) and sl-hy8w (cross-namespace source query)
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: Three separate issues: grammar bug (sl-3ccy) made spread fields invisible, graph kept fragment nodes inconsistent with arrows validation, and multi-source attribution was wrong (sl-3rk9).
+Fix: Resolved by sl-3ccy (grammar), sl-p0hz (graph schema fields), and sl-3rk9 (multi-source). (commits c5c5bf6 and pending)

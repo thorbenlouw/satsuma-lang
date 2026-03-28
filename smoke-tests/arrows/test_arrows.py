@@ -221,12 +221,10 @@ def test_03_target_leaf():
 def test_03_lineage_combined():
     """
     arrows(s6.a) gives the two hops around s6.
-    lineage --from s1 with sufficient depth reaches all 11 schemas.
+    lineage --from s1 with default depth 10 reaches all 11 schemas.
 
-    NOTE: The default --depth 10 counts individual graph nodes (schema + mapping
-    nodes), not schema-to-schema hops.  A 10-schema chain has 21 nodes total
-    (11 schemas + 10 mappings), so reaching s11 from s1 requires --depth 20.
-    With the default depth, lineage --from s1 stops at s6.
+    --depth counts schema-to-schema hops. A 10-schema chain has 10 hops,
+    so the default depth of 10 is sufficient to see all 11 schemas.
     """
     arrows = arrows_cmd("s6.a", "03-ten-layers/fixture.stm")
     assert len(arrows) == 2
@@ -235,61 +233,48 @@ def test_03_lineage_combined():
     assert "::s7.a" in targets
     assert "::s6.a" in sources
 
-    # Default depth stops midway — only reaches s6 (5 schema hops = 10 node steps)
+    # Default depth 10 reaches all 11 schemas (10 schema hops)
     lin_default = lineage_cmd("s1", "03-ten-layers/fixture.stm", direction="from")
-    assert schema_names(lin_default) == {f"s{i}" for i in range(1, 7)}
+    assert schema_names(lin_default) == {f"s{i}" for i in range(1, 12)}
 
-    # With explicit depth the full chain is visible
-    lin_fwd = lineage_cmd("s1", "03-ten-layers/fixture.stm", direction="from", depth=20)
-    lin_rev = lineage_cmd("s11", "03-ten-layers/fixture.stm", direction="to", depth=20)
+    # Verify partial depth: depth=5 reaches exactly 6 schemas
+    lin_partial = lineage_cmd("s1", "03-ten-layers/fixture.stm", direction="from", depth=5)
+    assert schema_names(lin_partial) == {f"s{i}" for i in range(1, 7)}
 
-    assert schema_names(lin_fwd) == {f"s{i}" for i in range(1, 12)}
+    # Reverse: s11 traces back to s1
+    lin_rev = lineage_cmd("s11", "03-ten-layers/fixture.stm", direction="to")
     assert "s1" in schema_names(lin_rev)
     assert "s11" in schema_names(lin_rev)
 
 
 # ---------------------------------------------------------------------------
 # Case 04 — Multi-source: a, b -> c
-#
-# BUG: When querying arrows for a field in a multi-source arrow, the CLI
-# attributes ALL source fields to the queried field's own schema.
-# arrows(s1.a) → source="::s1.a, ::s1.b"  (b is in s2, not s1)
-# arrows(s2.b) → source="::s2.a, ::s2.b"  (a is in s1, not s2)
-# Correct behaviour: source should always be "::s1.a, ::s2.b".
 # ---------------------------------------------------------------------------
 
 def test_04_source_field():
-    """
-    Querying s1.a finds the multi-source arrow.
-    BUG: second source field is incorrectly attributed to s1 (::s1.b not ::s2.b).
-    """
+    """Querying s1.a finds the multi-source arrow with correct per-schema attribution."""
     arrows = arrows_cmd("s1.a", "04-multi-source/fixture.stm")
     assert len(arrows) == 1
     a = arrows[0]
     assert a["target"] == "::s3.c"
-    # Actual (buggy) attribution: both fields attributed to s1
-    assert a["source"] == "::s1.a, ::s1.b"  # BUG: should be "::s1.a, ::s2.b"
+    assert a["source"] == "::s1.a, ::s2.b"
 
 
 def test_04_second_source_field():
-    """
-    Querying s2.b finds the same arrow but attribution is reversed.
-    BUG: both fields are attributed to s2 (::s2.a not ::s1.a).
-    """
+    """Querying s2.b returns the same correct source list regardless of query side."""
     arrows = arrows_cmd("s2.b", "04-multi-source/fixture.stm")
     assert len(arrows) == 1
     a = arrows[0]
     assert a["target"] == "::s3.c"
-    # Actual (buggy) attribution: both fields attributed to s2
-    assert a["source"] == "::s2.a, ::s2.b"  # BUG: should be "::s1.a, ::s2.b"
+    assert a["source"] == "::s1.a, ::s2.b"
 
 
 def test_04_target():
-    """Querying by target uses first source schema for all fields."""
+    """Querying by target also returns correctly attributed sources."""
     arrows = arrows_cmd("s3.c", "04-multi-source/fixture.stm")
     assert len(arrows) == 1
     assert arrows[0]["target"] == "::s3.c"
-    assert arrows[0]["source"] == "::s1.a, ::s1.b"  # BUG: second should be ::s2.b
+    assert arrows[0]["source"] == "::s1.a, ::s2.b"
 
 
 def test_04_lineage_combined():
@@ -324,12 +309,12 @@ def test_04_lineage_combined():
 def test_05_derived_target():
     """
     s2.z is a no-source derived target with an NL body.
-    source is empty string; derived=True; classification="nl".
+    source is null (no source field); derived=True; classification="nl".
     """
     arrows = arrows_cmd("s2.z", "05-nl-ref/fixture.stm")
     assert len(arrows) == 1
     a = arrows[0]
-    assert a["source"] == ""
+    assert a["source"] is None
     assert a["target"] == "::s2.z"
     assert a["classification"] == "nl"
     assert a["derived"] is True
@@ -393,13 +378,11 @@ def test_06_cross_ns_spread_field_via_target():
     assert arrows[0]["target"] == "tgt::s2.id"
 
 
-def test_06_cross_ns_source_side_fails():
-    """
-    BUG: Querying arrows by source field in a cross-namespace mapping → exit 1.
-    The CLI cannot locate fields by schema when the schema is in a namespace
-    and is referenced from a global-scope mapping.
-    """
-    arrows_cmd("src::s1.a", "06-namespace/cross-ns.stm", expect_exit=1)
+def test_06_cross_ns_source_side():
+    """Querying arrows by source field in a cross-namespace mapping works correctly."""
+    arrows = arrows_cmd("src::s1.a", "06-namespace/cross-ns.stm")
+    assert len(arrows) >= 1
+    assert any(a["source"].startswith("src::s1") for a in arrows)
 
 
 def test_06_cross_ns_lineage_combined():
@@ -563,42 +546,31 @@ def test_08_lineage_combined():
 
 
 # ---------------------------------------------------------------------------
-# Case 09 — Spread: fragment spread fields are NOT resolved for arrow lookup
-#
-# BUG: arrows(s1.id) where id comes from ...f → exit 1.
-# The CLI does not expand fragment spreads when resolving field references.
-# Inline fields declared directly in the schema body do resolve normally.
+# Case 09 — Spread: fragment spread fields are first-class schema members
 # ---------------------------------------------------------------------------
 
-def test_09_spread_field_not_found():
-    """
-    BUG: Spread fields from ...f are invisible to the arrows command.
-    s1.id and s1.code come from the fragment spread — exit 1 for both.
-    """
-    arrows_cmd("s1.id", "09-spread/fixture.stm", expect_exit=1)
-    arrows_cmd("s1.code", "09-spread/fixture.stm", expect_exit=1)
+def test_09_spread_field_found():
+    """Spread fields from ...f are visible to the arrows command."""
+    arrows = arrows_cmd("s1.id", "09-spread/fixture.stm")
+    assert len(arrows) >= 1
+    assert any(a["source"] is not None and "s1.id" in a["source"] for a in arrows)
+
+    arrows = arrows_cmd("s1.code", "09-spread/fixture.stm")
+    assert len(arrows) >= 1
 
 
-def test_09_inline_field_after_spread_not_found():
+def test_09_inline_field_after_spread():
     """
-    BUG: The tree-sitter grammar consumes the field declaration that follows a
-    spread as part of the spread's fragment name.
-
-    `schema s1 { ...f\n  extra x }` is parsed as spreading a fragment called
-    'f extra x' rather than spreading 'f' and then declaring field 'extra'.
-    Consequently, `satsuma validate` reports "spreads undefined fragment 'f extra x'"
-    and the CLI cannot find 'extra' as a field of s1 → exit 1.
-
-    Correct behaviour: `...f` should spread fragment f; `extra x` should be a
-    separate field declaration.
+    Field declared after a spread on the next line is a distinct schema member.
+    `schema s1 { ...f\n  extra x }` — 'extra' is a direct field, not part of the spread.
     """
-    arrows_cmd("s1.extra", "09-spread/fixture.stm", expect_exit=1)
+    arrows = arrows_cmd("s1.extra", "09-spread/fixture.stm")
+    assert len(arrows) >= 1
 
 
 def test_09_lineage_combined():
     """
-    Despite the spread parser bug, schema-level lineage is unaffected —
-    the mapping still connects s1 to s2 at the schema level.
+    Schema-level lineage is correct: the mapping connects s1 to s2.
     """
     lin = lineage_cmd("s1", "09-spread/fixture.stm", direction="from")
     assert schema_names(lin) == {"s1", "s2"}

@@ -1,6 +1,6 @@
 ---
 id: sl-3rk9
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T18:35:36Z
@@ -36,3 +36,10 @@ The source field in the JSON output should always name the schema that actually 
 - satsuma arrows s3.c (target-side) returns the same correct source list
 - Smoke test test_04_source_field and test_04_second_source_field updated to assert corrected values
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: arrows.ts used a single sourceSchema (the queried schema) to qualify all source fields in multi-source arrows, instead of looking up which schema actually owns each field.
+Fix: Added resolveSourceField() that searches each mapping source schema's field list to find the actual owner. Falls back to first source schema. (commit pending)

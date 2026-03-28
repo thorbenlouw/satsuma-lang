@@ -216,24 +216,9 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
     });
   }
 
-  for (const [id, fragment] of index.fragments) {
-    if (nsFilter && fragment.namespace !== nsFilter) continue;
-    includedNodeIds.add(id);
-    const fragNode: Record<string, unknown> = {
-      id,
-      kind: "fragment",
-      namespace: fragment.namespace ?? null,
-      file: fragment.file,
-      line: fragment.row + 1,
-    };
-    if (!schemaOnly) {
-      fragNode.fields = fragment.fields.map((f) => ({
-        name: f.name,
-        type: f.isList && f.type ? `list_of ${f.type}` : (f.type ?? null),
-      }));
-    }
-    nodes.push(fragNode);
-  }
+  // Fragments are macro definitions — they do not appear as graph nodes.
+  // Their fields are expanded into the consuming schema's field list via
+  // expandEntityFields above. stats.fragments still reports the count.
 
   for (const [id, transform] of index.transforms) {
     if (nsFilter && transform.namespace !== nsFilter) continue;
@@ -249,22 +234,6 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
 
   // Build schema-level edges from the directed graph
   const schemaEdges = buildSchemaEdges(index, schemaGraph, includedNodeIds, nsFilter);
-
-  // Add fragment spread edges: fragment -> schema that spreads it
-  for (const [id, schema] of index.schemas) {
-    if (nsFilter && schema.namespace !== nsFilter) continue;
-    if (!schema.hasSpreads) continue;
-    for (const spreadName of (schema.spreads ?? [])) {
-      // Resolve fragment name in the schema's namespace context
-      const fragKey = [...index.fragments.keys()].find((k) => {
-        const bare = k.includes("::") ? k.split("::")[1] : k;
-        return bare === spreadName || k === spreadName;
-      });
-      if (fragKey && includedNodeIds.has(fragKey)) {
-        schemaEdges.push({ from: fragKey, to: id, role: "fragment_spread" });
-      }
-    }
-  }
 
   // Build field-level edges from arrow records
   let fieldEdges: FieldEdge[] = [];

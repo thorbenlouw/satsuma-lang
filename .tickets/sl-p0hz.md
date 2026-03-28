@@ -1,6 +1,6 @@
 ---
 id: sl-p0hz
-status: open
+status: closed
 deps: [sl-3ccy]
 links: []
 created: 2026-03-28T18:41:36Z
@@ -39,3 +39,10 @@ This is the correct mental model: a fragment is a named macro. ...f means 'paste
   - Spread resolution is recursive: ...f where f { ...g  a x } expands g first then a
   - Smoke tests updated: test_09_spread_field_not_found becomes test_09_spread_field_found
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: graph.ts explicitly added fragment nodes to nodes[] array and schema spread fields were not included in schema node field lists.
+Fix: Removed fragment node loop from graph.ts; fragments are now transparent macros expanded into consuming schema field lists. Fragment-spread schema_edges removed as fragments are no longer graph nodes. stats.fragments count preserved. (commit pending)

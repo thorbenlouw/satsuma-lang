@@ -773,8 +773,8 @@ function spreadLabelText(node: SyntaxNode): string | null {
   if (qn) return qualifiedNameText(qn);
   const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
-  // Multi-word spread: join all identifier children
-  const ids = node.namedChildren.filter((c) => c.type === "identifier");
+  // Multi-word spread: join identifier + continuation_word children (sl-3ccy)
+  const ids = node.namedChildren.filter((c) => c.type === "identifier" || c.type === "continuation_word");
   if (ids.length > 0) return ids.map((i) => i.text).join(" ");
   return node.text;
 }
