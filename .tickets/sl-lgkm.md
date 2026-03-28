@@ -1,6 +1,6 @@
 ---
 id: sl-lgkm
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T18:36:13Z
@@ -30,3 +30,10 @@ Either:
 (b) --depth semantics changed to count schema-to-schema hops only, with default 10 reaching 10 schema hops.
 - Smoke test test_03_lineage_combined updated to match corrected semantics
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: buildDownstream/buildUpstream in lineage.ts incremented depth on every node visit (including mappings), so schema hops required depth=2*N.
+Fix: Changed to only increment depth when visiting schema or metric nodes. Removed dangling-end edge pattern that leaked out-of-depth nodes into the result. (commit pending)

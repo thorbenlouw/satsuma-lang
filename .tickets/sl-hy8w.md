@@ -1,6 +1,6 @@
 ---
 id: sl-hy8w
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T18:35:46Z
@@ -33,3 +33,10 @@ The asymmetry means field lineage can only be traced right-to-left (target → s
 - Forward and reverse field-level queries are symmetric for cross-namespace mappings
 - Smoke test test_06_cross_ns_source_side_fails updated to expect exit 0 and assert the arrow
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: Grammar consumed cross-line identifier after spread as part of the spread name (sl-3ccy), making declared fields invisible to field validation in arrows.
+Fix: Auto-resolved by sl-3ccy grammar fix. (commit c5c5bf6)

@@ -1,6 +1,6 @@
 ---
 id: sl-cnc4
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T18:41:16Z
@@ -25,3 +25,10 @@ One of these should be the canonical representation. null is more semantically p
 - If empty string is preferred: graph updated to return "" instead of null
 - Documentation updated in SATSUMA-CLI.md
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: arrows.ts used .join(", ") on an empty sources array which produced "".
+Fix: Return null when sources is empty (source: a.sources.length === 0 ? null : ...). (commit pending)

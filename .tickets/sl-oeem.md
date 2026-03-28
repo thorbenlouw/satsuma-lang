@@ -1,6 +1,6 @@
 ---
 id: sl-oeem
-status: open
+status: closed
 deps: [sl-3ccy]
 links: []
 created: 2026-03-28T18:35:54Z
@@ -32,3 +32,10 @@ Spread fields should be first-class members of the schema for all CLI operations
 - satsuma fields s1 lists spread-sourced fields alongside inline fields
 - Smoke test test_09_spread_field_not_found updated to expect exit 0 and correct arrow
 
+
+## Notes
+
+**2026-03-28T19:31:45Z**
+
+Cause: Grammar consumed the next field declaration as part of the spread name (sl-3ccy). After the grammar fix, spread names parse correctly and expandEntityFields returns spread fields normally.
+Fix: Auto-resolved by sl-3ccy grammar fix. No additional changes needed. (commit c5c5bf6)

@@ -75,7 +75,9 @@ describe("satsuma graph --json", () => {
     assert.equal(data.stats.schemas, nodesByKind.schema ?? 0);
     assert.equal(data.stats.mappings, nodesByKind.mapping ?? 0);
     assert.equal(data.stats.metrics, nodesByKind.metric ?? 0);
-    assert.equal(data.stats.fragments, nodesByKind.fragment ?? 0);
+    // Fragments are not graph nodes (sl-p0hz) — stats.fragments counts them but they don't appear in nodes[]
+    assert.equal(nodesByKind.fragment ?? 0, 0, "fragment nodes must not appear in nodes[]");
+    assert.ok(data.stats.fragments >= 0, "stats.fragments should be a non-negative count");
     assert.equal(data.stats.transforms, nodesByKind.transform ?? 0);
     assert.equal(data.stats.arrows, data.edges.length);
   });
@@ -87,7 +89,8 @@ describe("satsuma graph --json", () => {
     assert.ok(kinds.has("schema"), "should have schema nodes");
     assert.ok(kinds.has("mapping"), "should have mapping nodes");
     assert.ok(kinds.has("metric"), "should have metric nodes");
-    assert.ok(kinds.has("fragment"), "should have fragment nodes");
+    // Fragments are not graph nodes (sl-p0hz); they are expanded into schema fields
+    assert.ok(!kinds.has("fragment"), "fragment nodes must not appear in nodes[]");
     assert.ok(kinds.has("transform"), "should have transform nodes");
   });
 
