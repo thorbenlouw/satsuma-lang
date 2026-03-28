@@ -1,0 +1,11 @@
+// Two source fields combine into one target — a, b -> c
+schema s1 { a x }
+schema s2 { b x }
+schema s3 { c x }
+
+mapping m {
+  source { s1, s2 }
+  target { s3 }
+
+  a, b -> c
+}

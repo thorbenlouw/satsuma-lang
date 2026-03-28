@@ -1,0 +1,26 @@
+// each block with .field relative-path syntax
+// The arrows command should resolve .name -> .label as
+// s1.items.name -> s2.rows.label
+schema s1 {
+  items list_of record {
+    name x
+    val  x
+  }
+}
+
+schema s2 {
+  rows list_of record {
+    label x
+    v     x
+  }
+}
+
+mapping m {
+  source { s1 }
+  target { s2 }
+
+  each items -> rows {
+    .name -> .label
+    .val  -> .v
+  }
+}

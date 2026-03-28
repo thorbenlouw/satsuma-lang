@@ -1,0 +1,18 @@
+// s2.a is a target in m1 and a source in m2 — the passthrough case
+schema s1 { a x }
+schema s2 { a x }
+schema s3 { a x }
+
+mapping m1 {
+  source { s1 }
+  target { s2 }
+
+  a -> a
+}
+
+mapping m2 {
+  source { s2 }
+  target { s3 }
+
+  a -> a
+}

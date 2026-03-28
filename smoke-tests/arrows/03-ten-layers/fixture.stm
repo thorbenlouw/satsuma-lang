@@ -1,0 +1,23 @@
+// Ten consecutive mappings — queries at source leaf, middle, and target leaf
+schema s1  { a x }
+schema s2  { a x }
+schema s3  { a x }
+schema s4  { a x }
+schema s5  { a x }
+schema s6  { a x }
+schema s7  { a x }
+schema s8  { a x }
+schema s9  { a x }
+schema s10 { a x }
+schema s11 { a x }
+
+mapping m1  { source { s1  } target { s2  } a -> a }
+mapping m2  { source { s2  } target { s3  } a -> a }
+mapping m3  { source { s3  } target { s4  } a -> a }
+mapping m4  { source { s4  } target { s5  } a -> a }
+mapping m5  { source { s5  } target { s6  } a -> a }
+mapping m6  { source { s6  } target { s7  } a -> a }
+mapping m7  { source { s7  } target { s8  } a -> a }
+mapping m8  { source { s8  } target { s9  } a -> a }
+mapping m9  { source { s9  } target { s10 } a -> a }
+mapping m10 { source { s10 } target { s11 } a -> a }
