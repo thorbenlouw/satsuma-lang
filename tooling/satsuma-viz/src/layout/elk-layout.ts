@@ -391,11 +391,19 @@ function buildElkGraph(
   model: VizModel,
   mappedFields: Map<string, Set<string>>,
 ): ElkGraph {
+  // Build fragment lookup for spread expansion in schema port generation
+  const fragmentsById = new Map<string, FieldEntry[]>();
+  for (const ns of model.namespaces) {
+    for (const f of ns.fragments) {
+      fragmentsById.set(f.id, f.fields);
+    }
+  }
+
   const children: ElkNode[] = [];
   const edges: ElkEdge[] = [];
 
   for (const ns of model.namespaces) {
-    addSchemaNodes(ns.schemas, mappedFields, children, !!ns.name);
+    addSchemaNodes(ns.schemas, mappedFields, children, !!ns.name, fragmentsById);
     addFragmentNodes(ns.fragments, children, !!ns.name);
     addMetricNodes(ns.metrics, children, !!ns.name);
   }
@@ -437,11 +445,15 @@ function addSchemaNodes(
   mappedFields: Map<string, Set<string>>,
   target: ElkNode[],
   hasNamespace = false,
+  fragmentsById: Map<string, FieldEntry[]> = new Map(),
 ) {
   for (const s of schemas) {
     const width = estimateSchemaWidth(s);
     const topOffset = preambleHeight(s, hasNamespace) + FIELDS_PADDING_TOP;
-    const ports = buildFieldPorts(s.fields, s.qualifiedId, mappedFields, topOffset, width);
+    // Expand spread fields so ports exist for arrow endpoints that reference them
+    const spreadFields = s.spreads.flatMap((name) => fragmentsById.get(name) ?? []);
+    const allFields = [...s.fields, ...spreadFields];
+    const ports = buildFieldPorts(allFields, s.qualifiedId, mappedFields, topOffset, width);
 
     target.push({
       id: s.qualifiedId,
@@ -724,6 +736,8 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
   }>();
   const nodeIds = new Set<string>();
 
+  // Pass 1: build all nodes and populate nodeIds before creating any edges.
+  // Edges reference nodes across namespaces, so all nodeIds must be known first.
   for (const ns of model.namespaces) {
     const nsNodes: ElkNode[] = [];
 
@@ -780,6 +794,7 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
 
     for (const m of ns.mappings) {
       const mappingNodeId = overviewMappingNodeId(ns.name, m.id);
+      nodeIds.add(mappingNodeId);
       overviewNodeKinds.set(mappingNodeId, "mapping");
       overviewNodeHasNamespace.add(mappingNodeId);
       nsNodes.push({
@@ -796,8 +811,10 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     }
 
     children.push(...nsNodes);
+  }
 
-    // Model mappings as intermediate nodes: sources -> mapping block -> target.
+  // Pass 2: create edges now that all nodeIds are populated.
+  for (const ns of model.namespaces) {
     for (const m of ns.mappings) {
       const mappingNodeId = overviewMappingNodeId(ns.name, m.id);
       for (const sourceRef of m.sourceRefs) {

@@ -131,14 +131,15 @@ describe("schemas", () => {
 // ---------- Fragments ----------
 
 describe("fragments", () => {
-  it("extracts fragment definitions", () => {
+  it("strips fragment nodes after spread resolution (fragments are authoring shorthand only)", () => {
     const model = vizModel(
       "fragment `audit fields` {\n  created_at TIMESTAMP\n  updated_at TIMESTAMP\n}",
     );
-    const ns = model.namespaces[0];
-    assert.equal(ns.fragments.length, 1);
-    assert.equal(ns.fragments[0].id, "audit fields");
-    assert.equal(ns.fragments[0].fields.length, 2);
+    // Fragment-only file: namespace group is omitted entirely (no schemas/mappings/metrics)
+    // or has an empty fragments array if it was included for other content.
+    for (const ns of model.namespaces) {
+      assert.equal(ns.fragments.length, 0);
+    }
   });
 });
 
@@ -519,4 +520,112 @@ describe("example file coverage", () => {
       }
     });
   }
+});
+
+// ---------- Fragment spread resolution ----------
+
+describe("fragment spreads", () => {
+  it("resolves cross-namespace spreads into schema fields", () => {
+    const src = `
+namespace common {
+  fragment common_fields {
+    a  x
+    b  x
+  }
+}
+namespace src {
+  schema s1 {
+    ...common::common_fields
+    c  x
+  }
+}
+`;
+    const model = vizModel(src);
+    const srcNs = model.namespaces.find((ns) => ns.name === "src");
+    const schema = srcNs.schemas.find((s) => s.qualifiedId === "src::s1");
+    // Spread fields (a, b) merged in; direct field (c) still present
+    const fieldNames = schema.fields.map((f) => f.name);
+    assert.ok(fieldNames.includes("a"), "spread field a should be resolved");
+    assert.ok(fieldNames.includes("b"), "spread field b should be resolved");
+    assert.ok(fieldNames.includes("c"), "direct field c should be present");
+    // spreads list cleared after resolution
+    assert.deepEqual(schema.spreads, []);
+  });
+
+  it("strips fragment nodes from namespace groups after resolution", () => {
+    const src = `
+namespace common {
+  fragment common_fields {
+    a  x
+    b  x
+  }
+}
+namespace src {
+  schema s1 {
+    ...common::common_fields
+    c  x
+  }
+}
+`;
+    const model = vizModel(src);
+    for (const ns of model.namespaces) {
+      assert.equal(ns.fragments.length, 0, `namespace ${ns.name} should have no fragments`);
+    }
+  });
+
+  it("resolves recursive spreads (fragment spreading another fragment)", () => {
+    const src = `
+namespace common {
+  fragment base_fields {
+    id  x
+    ts  x
+  }
+  fragment audit_fields {
+    ...common::base_fields
+    created_by  x
+  }
+}
+namespace src {
+  schema s1 {
+    ...common::audit_fields
+    name  x
+  }
+}
+`;
+    const model = vizModel(src);
+    const srcNs = model.namespaces.find((ns) => ns.name === "src");
+    const schema = srcNs.schemas[0];
+    const names = schema.fields.map((f) => f.name);
+    // Should contain fields from both fragments plus direct field
+    assert.ok(names.includes("id"), "base field id should be transitively resolved");
+    assert.ok(names.includes("ts"), "base field ts should be transitively resolved");
+    assert.ok(names.includes("created_by"), "audit field created_by should be resolved");
+    assert.ok(names.includes("name"), "direct field name should be present");
+  });
+
+  it("preserves direct fields alongside spread fields", () => {
+    const src = `
+namespace common {
+  fragment common_fields {
+    a  x
+    b  x
+    c  x
+  }
+}
+namespace src {
+  schema s1 {
+    ...common::common_fields
+    d  x
+    e  x
+    f  x
+  }
+}
+`;
+    const model = vizModel(src);
+    const srcNs = model.namespaces.find((ns) => ns.name === "src");
+    const schema = srcNs.schemas[0];
+    assert.equal(schema.fields.length, 6);
+    const names = schema.fields.map((f) => f.name);
+    assert.deepEqual(names.sort(), ["a", "b", "c", "d", "e", "f"]);
+  });
 });
