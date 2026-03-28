@@ -1,0 +1,25 @@
+// Cross-namespace arrows. s1 uses a global fragment spread.
+// Querying src::s1.id should work even though `id` comes from a spread.
+fragment gf { id x }
+
+namespace src {
+  schema s1 {
+    ...gf
+    a x
+  }
+}
+
+namespace tgt {
+  schema s2 {
+    id x
+    b  x
+  }
+}
+
+mapping m {
+  source { src::s1 }
+  target { tgt::s2 }
+
+  id -> id
+  a  -> b
+}

@@ -1,0 +1,22 @@
+// Dot-path arrows into nested record fields
+schema s1 {
+  p record {
+    a x
+    b x
+  }
+}
+
+schema s2 {
+  q record {
+    a x
+    b x
+  }
+}
+
+mapping m {
+  source { s1 }
+  target { s2 }
+
+  p.a -> q.a
+  p.b -> q.b
+}

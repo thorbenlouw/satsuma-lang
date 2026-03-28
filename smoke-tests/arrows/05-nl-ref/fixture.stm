@@ -1,0 +1,12 @@
+// Derived target with NL body referencing two source fields via @ref.
+// Querying s1.a or s1.b should produce nl-derived arrows pointing to s2.z.
+// Querying s2.z should produce an nl-classified arrow with no explicit source.
+schema s1 { a x  b x }
+schema s2 { z x }
+
+mapping m {
+  source { s1 }
+  target { s2 }
+
+  -> z { "derive from @s1.a scaled by @s1.b" }
+}

@@ -1,0 +1,23 @@
+// Pipe transform → structural classification
+// flatten block → structural classification
+// NL transform → nl classification
+schema s1 {
+  a     x
+  items list_of x
+  c     x
+}
+
+schema s2 {
+  b    x
+  flat x
+  d    x
+}
+
+mapping m {
+  source { s1 }
+  target { s2 }
+
+  a -> b { trim | uppercase }
+  flatten items -> flat {}
+  c -> d { "clean up @s1.c before writing" }
+}

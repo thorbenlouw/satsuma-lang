@@ -1,0 +1,9 @@
+schema s1 { a x }
+schema s2 { b x }
+
+mapping m {
+  source { s1 }
+  target { s2 }
+
+  a -> b
+}

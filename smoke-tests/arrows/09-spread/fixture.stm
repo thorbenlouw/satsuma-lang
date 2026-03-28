@@ -1,0 +1,28 @@
+// Fields from a fragment spread are still addressable as schema.field.
+// s1.id and s1.code come from the spread; s1.extra is declared directly.
+// All three should resolve to arrows just like non-spread fields.
+
+fragment f {
+  id    x
+  code  x
+}
+
+schema s1 {
+  ...f
+  extra x
+}
+
+schema s2 {
+  id     x
+  code   x
+  extra  x
+}
+
+mapping m {
+  source { s1 }
+  target { s2 }
+
+  id -> id
+  code -> code
+  extra -> extra
+}

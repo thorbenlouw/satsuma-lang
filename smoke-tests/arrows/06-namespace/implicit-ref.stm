@@ -1,0 +1,13 @@
+// Implicit schema ref: inside namespace ns the mapping refers to s1 and s2
+// without the ns:: qualifier. The arrows command should resolve them as ns::s1.a etc.
+namespace ns {
+  schema s1 { a x }
+  schema s2 { b x }
+
+  mapping m {
+    source { s1 }
+    target { s2 }
+
+    a -> b
+  }
+}
