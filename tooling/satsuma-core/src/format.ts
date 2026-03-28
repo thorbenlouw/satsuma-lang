@@ -448,8 +448,10 @@ function formatFragmentSpread(node: SyntaxNode, indent: number): string {
   if (inner.type === "qualified_name") {
     return ind(indent) + "..." + inner.text;
   }
-  // _spread_words: multiple identifiers
-  const words = label.children.filter(c => c.type === "identifier").map(c => c.text);
+  // _spread_words: identifier followed by zero or more continuation_words
+  const words = label.children
+    .filter(c => c.type === "identifier" || c.type === "continuation_word")
+    .map(c => c.text);
   return ind(indent) + "..." + words.join(" ");
 }
 

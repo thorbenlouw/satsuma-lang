@@ -9,15 +9,11 @@
 ;
 ; Update this file whenever grammar.js `conflicts` array is changed.
 
-1
+0
 
-; ── Conflict 1: _spread_words (self) ──────────────────────────────────────────
-; Context: spread_label inside schema_body or fragment body
-;
-; In `...audit columns`, after the first identifier the parser cannot tell
-; whether the next identifier continues the multi-word spread label or begins
-; a new construct.
-;
-; Resolution: GLR explores both continuations.
-;   prec.dynamic(-1) on _spread_words favours the shorter match so that
-;   a following field_decl is not swallowed into the spread.
+; ── No conflicts ──────────────────────────────────────────────────────────────
+; The spread/field_decl ambiguity is now resolved by the external scanner:
+; `continuation_word` (scanner.c) only matches an identifier that appears on
+; the SAME LINE as the preceding token.  This makes the grammar deterministic
+; without GLR — `...f\nextra x` unambiguously parses as spread "f" + field
+; "extra x", while `...audit columns` (same line) remains a two-word spread.

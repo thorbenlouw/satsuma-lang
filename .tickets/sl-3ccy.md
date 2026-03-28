@@ -1,6 +1,6 @@
 ---
 id: sl-3ccy
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T18:36:03Z
@@ -34,3 +34,12 @@ This means any schema that uses a spread and also declares additional fields aft
 - Corpus test added covering spread + inline field in same schema body
 - Smoke test test_09_inline_field_after_spread_not_found updated to expect exit 0
 
+
+## Notes
+
+**2026-03-28T19:07:32Z**
+
+2026-03-28T19:07:32Z
+
+Cause: tree-sitter grammar used prec.dynamic(-1) on _spread_words to disambiguate multi-word spreads from field_decl, but the GLR conflict declaration [$._spread_words] compared equal-priority branches so the parser greedily consumed cross-line identifiers into the spread name.
+Fix: added external scanner (scanner.c) with CONTINUATION_WORD token that only matches an identifier on the same line; changed _spread_words to seq($.identifier, repeat($.continuation_word)) so newlines terminate the spread. Updated all CST consumers to also collect continuation_word nodes alongside identifier nodes.

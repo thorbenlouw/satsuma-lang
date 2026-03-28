@@ -188,7 +188,7 @@ mapping \`a\` {
     const result = refs(
       {
         "file:///a.stm": "schema customers {\n  id UUID\n}",
-        "file:///b.stm": 'import { customers } from "a.stm"\nmapping \'x\' {\n  source { customers }\n  target { d }\n  id -> id\n}',
+        "file:///b.stm": 'import { customers } from "a.stm"\nmapping x {\n  source { customers }\n  target { d }\n  id -> id\n}',
       },
       "file:///a.stm",
       0,

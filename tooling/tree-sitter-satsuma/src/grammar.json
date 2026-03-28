@@ -976,24 +976,20 @@
       ]
     },
     "_spread_words": {
-      "type": "PREC_DYNAMIC",
-      "value": -1,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
             "type": "SYMBOL",
-            "name": "identifier"
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "identifier"
-            }
+            "name": "continuation_word"
           }
-        ]
-      }
+        }
+      ]
     },
     "_arrow_decl": {
       "type": "CHOICE",
@@ -2304,13 +2300,14 @@
       "name": "comment"
     }
   ],
-  "conflicts": [
-    [
-      "_spread_words"
-    ]
-  ],
+  "conflicts": [],
   "precedences": [],
-  "externals": [],
+  "externals": [
+    {
+      "type": "SYMBOL",
+      "name": "continuation_word"
+    }
+  ],
   "inline": [],
   "supertypes": [],
   "reserved": {}

@@ -241,7 +241,7 @@ function walkForSpreads(bodyNode: SyntaxNode, fragmentName: string, blockName: s
           sname = q.text.slice(1, -1);
         } else {
           sname = lbl.namedChildren
-            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
+            .filter((x) => x.type === "identifier" || x.type === "continuation_word" || x.type === "qualified_name")
             .map((x) => x.text)
             .join(" ");
         }

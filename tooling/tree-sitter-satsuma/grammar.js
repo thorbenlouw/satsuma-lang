@@ -37,13 +37,15 @@ module.exports = grammar({
 
   word: ($) => $.identifier,
 
-  conflicts: ($) => [
-    // Multi-word spread: after "...identifier", the next identifier could
-    // continue the spread label or start a new field_decl.  GLR explores
-    // both; prec.dynamic(-1) on _spread_words ensures field_decl wins
-    // when it produces a valid parse.
-    [$._spread_words],
+  externals: ($) => [
+    // CONTINUATION_WORD matches an identifier that follows on the SAME LINE as
+    // the preceding token (only horizontal whitespace between them).  Used in
+    // _spread_words so that multi-word spreads like `...audit columns` keep
+    // working while `...f\nextra x` is correctly parsed as spread "f" + field.
+    $.continuation_word,
   ],
+
+  conflicts: (_) => [],
 
   rules: {
     // ── Top-level ─────────────────────────────────────────────────────────
@@ -330,14 +332,14 @@ module.exports = grammar({
 
     // Multi-word spreads: ...audit fields, ...to utc date
     // Qualified spreads: ...ns::fragment_name
-    // The spread consumes identifiers until it hits a token that cannot be
-    // part of a label (newline-sensitive in practice; the grammar uses a
-    // type_expr lookahead via prec to disambiguate from field_decl).
+    // The spread consumes as many identifiers as appear on the SAME LINE.
+    // continuation_word is an external token that only matches when no newline
+    // appears between the previous token and the candidate identifier, so
+    // `...f\nextra x` correctly parses as spread "f" + field "extra x".
     spread_label: ($) =>
       choice($.qualified_name, $.backtick_name, $._spread_words),
 
-    _spread_words: ($) =>
-      prec.dynamic(-1, seq($.identifier, repeat($.identifier))),
+    _spread_words: ($) => seq($.identifier, repeat($.continuation_word)),
 
     // ── Arrow declarations ────────────────────────────────────────────────
     // Three arrow types share src_path -> tgt_path prefix.
