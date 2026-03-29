@@ -1,6 +1,6 @@
 ---
 id: sl-kuos
-status: open
+status: closed
 deps: [sl-sado]
 links: []
 created: 2026-03-29T18:49:44Z
@@ -38,3 +38,9 @@ CLI source files are NOT deleted yet — they still exist but should be refactor
 
 1. All 3 modules exist in satsuma-core/src/ with identical logic to CLI originals 2. All MetaEntry and ExtractedRecord types are defined in satsuma-core/src/types.ts 3. satsuma-core exports all new modules from index 4. satsuma-core builds and its own tests pass 5. CLI files for classify, canonical-ref, meta-extract become re-export shims (import from @satsuma/core, re-export) — no logic duplication 6. All existing CLI tests that cover classify.test.js pass unchanged
 
+
+## Notes
+
+**2026-03-29T20:31:58Z**
+
+Cause: classify, canonical-ref, meta-extract, and shared type definitions had no home in satsuma-core. Fix: Moved all three modules to satsuma-core/src/, extended types.ts with Classification/PipeStep/MetaEntry/FieldDecl, made CLI files into re-export shims, added 49 unit tests (49 pass). All 866 CLI tests still pass.

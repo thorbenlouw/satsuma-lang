@@ -21,6 +21,18 @@
     "./cst-utils": {
       "types": "./dist/cst-utils.d.ts",
       "default": "./dist/cst-utils.js"
+    },
+    "./classify": {
+      "types": "./dist/classify.d.ts",
+      "default": "./dist/classify.js"
+    },
+    "./canonical-ref": {
+      "types": "./dist/canonical-ref.d.ts",
+      "default": "./dist/canonical-ref.js"
+    },
+    "./meta-extract": {
+      "types": "./dist/meta-extract.d.ts",
+      "default": "./dist/meta-extract.js"
     }
   },
   "types": "./dist/index.d.ts",
