@@ -727,3 +727,82 @@ mapping enrich {
     assert.ok(!ids.includes("fx_spot_rates"), `fx_spot_rates should not appear when not in scope`);
   });
 });
+
+// ---------- NL @-ref resolution in TransformInfo.atRefs ----------
+
+describe("buildVizModel — NL @-ref resolution", () => {
+  it("populates atRefs for NL transform containing resolved @ref", () => {
+    const source = `
+schema exchange_rates { spot DECIMAL }
+schema transactions { amount DECIMAL converted DECIMAL }
+mapping convert_amount {
+  source { exchange_rates }
+  target { transactions }
+  -> converted { "Multiply @amount by @exchange_rates.spot" }
+}`;
+    const model = vizModel(source);
+    const arrow = model.namespaces[0].mappings[0].arrows[0];
+    assert.ok(arrow.transform, "expected a transform");
+    assert.equal(arrow.transform.kind, "nl");
+    assert.ok(Array.isArray(arrow.transform.atRefs), "expected atRefs array");
+    assert.ok(arrow.transform.atRefs.length >= 1, "expected at least one atRef");
+    const spotRef = arrow.transform.atRefs.find(r => r.ref === "exchange_rates.spot");
+    assert.ok(spotRef, "expected atRef for exchange_rates.spot");
+    assert.equal(spotRef.resolved, true);
+    assert.ok(spotRef.resolvedTo, "expected resolvedTo to be set");
+    assert.equal(spotRef.resolvedTo.kind, "field");
+  });
+
+  it("populates atRefs with resolved: false for unknown refs", () => {
+    const source = `
+schema src { id INT }
+schema tgt { result INT }
+mapping m {
+  source { src }
+  target { tgt }
+  -> result { "Derived from @bogus_unknown_field" }
+}`;
+    const model = vizModel(source);
+    const arrow = model.namespaces[0].mappings[0].arrows[0];
+    assert.ok(arrow.transform);
+    const ref = arrow.transform.atRefs?.find(r => r.ref === "bogus_unknown_field");
+    assert.ok(ref, "expected atRef entry for unknown ref");
+    assert.equal(ref.resolved, false);
+  });
+
+  it("does not populate atRefs for purely structural transforms", () => {
+    const source = `
+schema src { name STRING }
+schema tgt { label STRING }
+mapping m {
+  source { src }
+  target { tgt }
+  name -> label { trim | uppercase }
+}`;
+    const model = vizModel(source);
+    const arrow = model.namespaces[0].mappings[0].arrows[0];
+    assert.ok(arrow.transform);
+    assert.equal(arrow.transform.kind, "pipeline");
+    assert.ok(!arrow.transform.atRefs || arrow.transform.atRefs.length === 0,
+      "expected no atRefs for pipeline transform");
+  });
+
+  it("populates atRefs for mixed transform (NL + pipeline steps)", () => {
+    const source = `
+schema src { rate DECIMAL }
+schema tgt { result DECIMAL }
+mapping m {
+  source { src }
+  target { tgt }
+  -> result { "Use @rate as multiplier" | round(2) }
+}`;
+    const model = vizModel(source);
+    const arrow = model.namespaces[0].mappings[0].arrows[0];
+    assert.ok(arrow.transform);
+    assert.equal(arrow.transform.kind, "mixed");
+    assert.ok(Array.isArray(arrow.transform.atRefs));
+    const rateRef = arrow.transform.atRefs.find(r => r.ref === "rate");
+    assert.ok(rateRef, "expected atRef for rate");
+    assert.equal(rateRef.classification, "bare");
+  });
+});

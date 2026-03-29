@@ -2,6 +2,8 @@ import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { findReferences, resolveDefinition } from "./workspace-index";
+import type { RefClassification, DefinitionLookup } from "@satsuma/core";
+import { extractBacktickRefs, classifyRef, resolveRef } from "@satsuma/core";
 
 // ---------- VizModel interfaces ----------
 
@@ -65,11 +67,20 @@ export interface ArrowEntry {
   location: SourceLocation;
 }
 
+export interface ResolvedAtRef {
+  ref: string;
+  classification: RefClassification;
+  resolved: boolean;
+  resolvedTo: { kind: string; name: string } | null;
+}
+
 export interface TransformInfo {
   kind: "pipeline" | "nl" | "mixed" | "map";
   text: string;
   steps: string[];
   nlText: string | null;
+  /** Resolved @-refs extracted from NL transform text (present for nl/mixed kind). */
+  atRefs?: ResolvedAtRef[];
 }
 
 export interface EachBlock {
@@ -654,6 +665,56 @@ function extractConstraints(meta: SyntaxNode): string[] {
 
 // ---------- Mapping extraction ----------
 
+/** Build a DefinitionLookup from the LSP WorkspaceIndex for NL @-ref resolution. */
+function makeVizLookup(wsIndex: WorkspaceIndex): DefinitionLookup {
+  return {
+    hasSchema: (key) => (wsIndex.definitions.get(key)?.some((d) => d.kind === "schema") ?? false),
+    getSchema: (key) => {
+      const def = wsIndex.definitions.get(key)?.find((d) => d.kind === "schema");
+      if (!def) return null;
+      return { fields: def.fields.map((f) => ({ name: f.name, type: f.type ?? "" })), hasSpreads: false };
+    },
+    hasFragment: (key) => (wsIndex.definitions.get(key)?.some((d) => d.kind === "fragment") ?? false),
+    getFragment: (key) => {
+      const def = wsIndex.definitions.get(key)?.find((d) => d.kind === "fragment");
+      if (!def) return null;
+      return { fields: def.fields.map((f) => ({ name: f.name, type: f.type ?? "" })), hasSpreads: false };
+    },
+    hasTransform: (key) => (wsIndex.definitions.get(key)?.some((d) => d.kind === "transform") ?? false),
+    getMapping: () => null,
+    iterateSchemas: function* () {
+      for (const [key, defs] of wsIndex.definitions) {
+        const schemaDef = defs.find((d) => d.kind === "schema");
+        if (schemaDef) {
+          yield [key, { fields: schemaDef.fields.map((f) => ({ name: f.name, type: f.type ?? "" })), hasSpreads: false }] as [string, { fields: { name: string; type: string }[]; hasSpreads: boolean }];
+        }
+      }
+    },
+  };
+}
+
+/** Resolve NL @-refs in a transform against the workspace index. */
+function resolveTransformAtRefs(
+  transform: ReturnType<typeof extractTransform>,
+  sources: string[],
+  targets: string[],
+  namespace: string | null,
+  wsIndex: WorkspaceIndex,
+): ResolvedAtRef[] {
+  if (!transform.nlText) return [];
+  const lookup = makeVizLookup(wsIndex);
+  const ctx = { sources, targets, namespace };
+  return extractBacktickRefs(transform.nlText).map((br) => {
+    const resolution = resolveRef(br.ref, ctx, lookup);
+    return {
+      ref: br.ref,
+      classification: classifyRef(br.ref),
+      resolved: resolution.resolved,
+      resolvedTo: resolution.resolvedTo ?? null,
+    };
+  });
+}
+
 function resolveMappingRef(
   refName: string,
   namespace: string | null,
@@ -730,6 +791,15 @@ function extractMapping(
   for (const ch of node.namedChildren) {
     if (ch.type === "note_block") {
       notes.push(extractNoteBlock(uri, ch));
+    }
+  }
+
+  // Resolve NL @-refs in arrow transforms against the workspace index.
+  const targets = targetRef ? [targetRef] : [];
+  for (const arrow of arrows) {
+    if (arrow.transform && (arrow.transform.kind === "nl" || arrow.transform.kind === "mixed")) {
+      const atRefs = resolveTransformAtRefs(arrow.transform, sourceRefs, targets, namespace, wsIndex);
+      if (atRefs.length > 0) arrow.transform.atRefs = atRefs;
     }
   }
 

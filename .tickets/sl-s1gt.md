@@ -1,6 +1,6 @@
 ---
 id: sl-s1gt
-status: open
+status: closed
 deps: [sl-pxw5, sl-60gz]
 links: []
 created: 2026-03-29T18:51:45Z
@@ -53,3 +53,9 @@ The viz component (satsuma-viz/src/) does not need to change in this ticket — 
 4. Arrows with purely structural (non-NL) transforms have atRefs undefined or empty
 5. All existing LSP viz-model tests pass
 6. New test: buildVizModel with NL transform "@exchange_rates.spot" → transform.atRefs has one entry, resolved true, kind "field"
+
+## Notes
+
+**2026-03-29T20:59:28Z**
+
+**2026-03-29T21:15:00Z** Cause: VizModel arrows had no visibility into @-refs embedded in NL transforms. Fix: Added ResolvedAtRef interface and TransformInfo.atRefs? field; added makeVizLookup() to bridge WorkspaceIndex → DefinitionLookup; added post-processing in extractMapping() to resolve @-refs using extractBacktickRefs/resolveRef from @satsuma/core. Added 4 tests for resolved refs, unresolved refs, pipeline (no atRefs), and mixed transforms. All 291 LSP tests pass.
