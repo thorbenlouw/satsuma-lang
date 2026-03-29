@@ -1,6 +1,6 @@
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
-import type { WorkspaceIndex } from "./workspace-index";
+import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { findReferences, resolveDefinition } from "./workspace-index";
 
 // ---------- VizModel interfaces ----------
@@ -200,11 +200,124 @@ export function buildVizModel(
     namespaces.push(ns);
   }
 
+  // Inject stub SchemaCards for imported schemas referenced in mappings but not
+  // defined in this file. Without these stubs the ELK layout silently drops
+  // edges to/from imported schemas, making them invisible in the viz graph.
+  injectImportedSchemaStubs(namespaces, globalNs, wsIndex);
+
+  // If globalNs was not yet added but now has stubs, include it.
+  if (!namespaces.includes(globalNs) && globalNs.schemas.length > 0) {
+    namespaces.unshift(globalNs);
+  }
+
   // Pre-resolve all fragment spreads into schema fields so the viz never sees
   // spread placeholders or fragment nodes — spreads are an authoring shorthand only.
   resolveAndStripSpreads(namespaces);
 
   return { uri, fileNotes, namespaces };
+}
+
+// ---------- Imported schema stubs ----------
+
+/**
+ * For each mapping sourceRef/targetRef that is not already present as a schema
+ * in the model, look it up in wsIndex.definitions. If found (imported schema),
+ * create a stub SchemaCard so the overview graph renders the node and its edges.
+ *
+ * Stubs are added to globalNs (no namespace prefix) or the appropriate named
+ * namespace group, matching the namespace embedded in the qualifiedId.
+ */
+function injectImportedSchemaStubs(
+  namespaces: NamespaceGroup[],
+  globalNs: NamespaceGroup,
+  wsIndex: WorkspaceIndex,
+): void {
+  // Collect all qualifiedIds already present in the model.
+  const knownIds = new Set<string>();
+  for (const ns of namespaces) {
+    for (const s of ns.schemas) knownIds.add(s.qualifiedId);
+  }
+
+  // Collect all mapping refs (source + target) that need a node.
+  const needed = new Set<string>();
+  for (const ns of namespaces) {
+    for (const m of ns.mappings) {
+      for (const ref of m.sourceRefs) {
+        if (!knownIds.has(ref)) needed.add(ref);
+      }
+      if (m.targetRef && !knownIds.has(m.targetRef)) needed.add(m.targetRef);
+    }
+  }
+
+  for (const qualifiedId of needed) {
+    const defs = wsIndex.definitions.get(qualifiedId) ?? [];
+    const schemaDef = defs.find((d) => d.kind === "schema");
+    if (!schemaDef) continue; // Not found in scope — skip.
+
+    // Derive bare id (strip namespace prefix if present).
+    const colonIdx = qualifiedId.indexOf("::");
+    const bareId = colonIdx >= 0 ? qualifiedId.slice(colonIdx + 2) : qualifiedId;
+    const namespace = colonIdx >= 0 ? qualifiedId.slice(0, colonIdx) : null;
+
+    const stub: SchemaCard = {
+      id: bareId,
+      qualifiedId,
+      kind: "schema",
+      label: null,
+      fields: schemaDef.fields.map((fi) => fieldInfoToEntry(fi, schemaDef.uri)),
+      notes: [],
+      comments: [],
+      metadata: [],
+      location: {
+        uri: schemaDef.uri,
+        line: schemaDef.range.start.line,
+        character: schemaDef.range.start.character,
+      },
+      hasExternalLineage: true,
+      spreads: [],
+    };
+
+    // Place in the matching namespace group (or globalNs if none).
+    if (namespace) {
+      const existing = namespaces.find((n) => n.name === namespace);
+      if (existing) {
+        existing.schemas.push(stub);
+      } else {
+        // Namespace not yet in the model — create a group for it.
+        const newNs: NamespaceGroup = {
+          name: namespace,
+          schemas: [stub],
+          mappings: [],
+          metrics: [],
+          fragments: [],
+        };
+        namespaces.push(newNs);
+      }
+    } else {
+      globalNs.schemas.push(stub);
+    }
+    knownIds.add(qualifiedId);
+  }
+}
+
+/**
+ * Convert a FieldInfo (from the workspace index) to a FieldEntry (for the viz
+ * model). Constraints, notes, and comments are left empty for stub schemas.
+ */
+function fieldInfoToEntry(fi: FieldInfo, defUri: string): FieldEntry {
+  return {
+    name: fi.name,
+    type: fi.type ?? "",
+    constraints: [],
+    notes: [],
+    comments: [],
+    children: fi.children.map((c: FieldInfo) => fieldInfoToEntry(c, defUri)),
+    location: {
+      uri: defUri,
+      line: fi.range.start.line,
+      character: fi.range.start.character,
+    },
+  };
 }
 
 // ---------- Spread resolution ----------
