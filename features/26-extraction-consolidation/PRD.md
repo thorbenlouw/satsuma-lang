@@ -27,13 +27,28 @@ Beyond duplication, the LSP is missing functionality that exists only in the CLI
 
 As a result, the viz cannot show NL-derived edges, and the field-lineage panel in VS Code relies on shelling out to the CLI rather than using in-process logic.
 
+### Nested field handling is the sharpest edge of this problem
+
+Satsuma schemas support arbitrarily nested record and list-of-record fields. Every feature that works with fields — coverage, field lineage, viz model, completions, hover — must recurse through this tree correctly. As of March 2026, each component handles nesting independently and inconsistently:
+
+- **`satsuma-cli` `fields.ts`** — `filterUnmappedFields()` recurses correctly; a record field is kept with only its unmapped children if some are mapped
+- **`satsuma-cli` `extract.ts`** — `extractFieldTree()` fully recurses
+- **LSP `workspace-index.ts`** — `extractFields()` recurses correctly into `FieldInfo.children`
+- **LSP `viz-model.ts`** — `extractFieldEntries()` recurses correctly into `FieldEntry.children`
+- **LSP `coverage.ts`** (new, March 2026) — `buildFieldCoverage()` recurses via `FieldInfo.children`; arrow path collection in `collectBodyPaths()` handles `each_block` and `flatten_block` nesting
+- **LSP `fieldLocations` handler** — *does not recurse*; returns only top-level fields. Callers that relied on it for coverage saw no decorations on nested fields.
+
+That last item was a live bug: the coverage tool showed no decorations on nested fields because `fieldLocations` was flat. It was fixed in the same session by moving coverage computation into the LSP server where the full `FieldInfo` tree is available. But the fix is local to `coverage.ts` — the same `fieldLocations` handler is still used by other features and remains silently flat.
+
+The deeper issue: every time a new LSP feature touches fields, the author must independently implement (or forget to implement) the recursion. With a shared `satsuma-core` extraction module, nested field traversal is implemented once, with one set of tests, and all consumers get correct behavior by construction.
+
 ## Goal
 
 Establish `satsuma-core` as the single source of truth for all Satsuma AST extraction logic. Both the CLI and the LSP server become consumers of this shared module. The extraction code is written once, tested once, and updated once.
 
 ## Success Criteria
 
-1. `satsuma-core` exports a stable extraction API covering schemas, fields, mappings, arrows, metrics, fragments, spreads, and import entries.
+1. `satsuma-core` exports a stable extraction API covering schemas, fields (with full recursive nesting), mappings, arrows, metrics, fragments, spreads, and import entries.
 2. `satsuma-cli`'s extraction layer is deleted and replaced with calls to `satsuma-core`.
 3. The LSP server's `viz-model.ts` extraction layer is deleted and replaced with calls to `satsuma-core`.
 4. All existing CLI tests and LSP server tests continue to pass without modification to their assertions.
@@ -96,11 +111,13 @@ Move `child()`, `children()`, `labelText()`, `stringText()`, `allDescendants()` 
 
 Port the following from the CLI (the richer, more complete implementation) into `satsuma-core`:
 
-- `extractSchemas()` / `extractFields()`
-- `extractMappings()` / `extractArrows()`
+- `extractSchemas()` / `extractFields()` — must recurse into `record` and `list_of record` children, preserving depth and parent path
+- `extractMappings()` / `extractArrows()` — must handle `each_block` and `flatten_block` nesting, collecting paths at every level
 - `extractMetrics()`
 - `extractFragments()`
 - `expandSpreads()` / `expandEntityFields()` from `spread-expand.ts`
+
+The core field extraction API must expose the full nested `FieldNode` tree, not a flattened list. Callers that need a flat list can flatten themselves; callers that need paths (coverage, lineage, completions) can walk the tree with prefix accumulation. This is the key design constraint that prevents the `fieldLocations`-style footgun from recurring.
 
 The CLI's extraction is preferred as the base because it is more complete (has cycle detection in spread resolution, handles more edge cases, is more thoroughly tested with the fixture corpus).
 
@@ -143,6 +160,8 @@ After Phases 1–4:
 
 The following gaps are out of scope for this PRD but noted for future work:
 
+- **Fixing `satsuma/fieldLocations`** — the LSP handler currently returns only top-level fields (a flat list). It is used by code lens and any future feature that needs field positions. It should be updated to return the full nested tree, or replaced with a call to `satsuma-core`'s field extractor. Low-risk but should be done as part of Phase 2 while the extraction is being unified.
+
 - **Field-level lineage in the LSP** — `satsuma-cli/src/commands/field-lineage.ts` implements per-field upstream/downstream lineage. After Phase 4, this logic becomes available in `satsuma-core` and could be surfaced as a new LSP request handler and VS Code command. Tracked separately.
 
 - **Schema-level lineage in the LSP** — `satsuma-cli/src/commands/lineage.ts` traverses the schema dependency graph. Same opportunity post-Phase 4.
@@ -154,14 +173,16 @@ The following gaps are out of scope for this PRD but noted for future work:
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | CLI output format changes during migration | Low | High | Add a golden-output test that snapshots `graph --json` for all example files before migration begins |
-| LSP extraction subtly differs from CLI (e.g. spread handling) | Medium | Medium | Cross-check test comparing core extractor output against old CLI output on the full examples/ corpus |
+| LSP extraction subtly differs from CLI (e.g. spread handling, nesting depth) | Medium | Medium | Cross-check test comparing core extractor output against old CLI output on the full examples/ corpus; include deeply nested fixture |
 | NL resolver has latent bugs exposed by LSP context | Medium | Low | Port NL resolver tests before removing CLI's own copy; treat new failures as pre-existing bugs to fix |
 | satsuma-core becomes a monolithic extraction library | Low | Medium | Keep the module split fine-grained (one file per concern); don't merge `cst-utils`, `extract`, `nl-ref-extract` into a single file |
 
 ## Acceptance Tests
 
 1. `satsuma graph --json examples/` produces byte-for-byte identical output before and after the migration.
-2. All 261+ LSP server tests pass.
+2. All LSP server tests pass (278+ as of March 2026).
 3. All CLI integration tests pass.
 4. `buildVizModel` for `examples/sfdc_to_snowflake.stm` produces a `VizModel` where the `amount_usd` arrow's `transform` includes an NL-derived annotation referencing `fx_spot_rates`.
-5. `npm audit` reports no new high/critical vulnerabilities in any package.
+5. `satsuma/mappingCoverage` for a schema with `list_of record` fields returns entries for nested fields at every depth level.
+6. `satsuma/fieldLocations` returns the full nested field tree (not just top-level fields).
+7. `npm audit` reports no new high/critical vulnerabilities in any package.
