@@ -1,17 +1,15 @@
 import * as vscode from "vscode";
 import { join } from "path";
 import { LanguageClient } from "vscode-languageclient/node";
-import { runCli } from "./cli-runner";
 import { getEditorActionContext } from "./action-context";
 
 let mappedDecoration: vscode.TextEditorDecorationType | undefined;
 let unmappedDecoration: vscode.TextEditorDecorationType | undefined;
 let coverageBar: vscode.StatusBarItem | undefined;
-let _activeTargetUri: string | undefined;
 
 export function registerCoverageCommand(
   context: vscode.ExtensionContext,
-  cliPath: string,
+  _cliPath: string,
   client: LanguageClient,
 ): void {
   mappedDecoration = vscode.window.createTextEditorDecorationType({
@@ -40,106 +38,86 @@ export function registerCoverageCommand(
       if (!editor || editor.document.languageId !== "satsuma") return;
 
       const actionContext = await getEditorActionContext(client);
-      const { mappingName, targetSchema } = actionContext;
+      const { mappingName } = actionContext;
 
-      if (!mappingName || !targetSchema) {
+      if (!mappingName) {
         vscode.window.showWarningMessage(
           "Place cursor inside a named mapping block to show coverage.",
         );
         return;
       }
 
-      // Get unmapped fields via CLI
-      const result = await runCli(cliPath, [
-        "fields",
-        targetSchema,
-        "--unmapped-by",
-        mappingName,
-        "--json",
-      ]);
+      let coverageResult: {
+        schemas: Array<{
+          schemaId: string;
+          role: "source" | "target";
+          fields: Array<{ path: string; uri: string; line: number; mapped: boolean }>;
+        }>;
+      };
 
-      let unmappedFields: string[];
       try {
-        const fields = JSON.parse(result.stdout);
-        if (!Array.isArray(fields)) {
-          vscode.window.showWarningMessage("Unexpected CLI output format.");
-          return;
-        }
-        unmappedFields = fields.map((f: { name: string }) => f.name);
-      } catch {
-        vscode.window.showWarningMessage(
-          `Coverage failed: ${result.stderr.trim() || "unknown error"}`,
-        );
-        return;
-      }
-
-      // Get field locations from LSP
-      let fieldLocations: Array<{ name: string; uri: string; line: number }>;
-      try {
-        fieldLocations = await client.sendRequest("satsuma/fieldLocations", {
-          name: targetSchema,
+        coverageResult = await client.sendRequest("satsuma/mappingCoverage", {
+          uri: editor.document.uri.toString(),
+          mappingName,
         });
       } catch {
-        vscode.window.showWarningMessage("Could not locate target schema fields.");
+        vscode.window.showWarningMessage("Could not compute mapping coverage.");
         return;
       }
 
-      if (fieldLocations.length === 0) {
+      if (coverageResult.schemas.length === 0) {
         vscode.window.showInformationMessage(
-          `No fields found for schema '${targetSchema}'.`,
+          `No schemas found for mapping '${mappingName}'.`,
         );
         return;
       }
 
-      // Open the target schema file if not already open
-      const targetUri = fieldLocations[0]!.uri;
-      _activeTargetUri = targetUri;
-      const targetDoc = await vscode.workspace.openTextDocument(
-        vscode.Uri.parse(targetUri),
-      );
-      const targetEditor = await vscode.window.showTextDocument(
-        targetDoc,
-        { preserveFocus: true },
-      );
+      // Group fields by file URI so we make one showTextDocument call per file.
+      const byUri = new Map<string, {
+        mapped: vscode.DecorationOptions[];
+        unmapped: vscode.DecorationOptions[];
+      }>();
 
-      // Apply decorations
-      const unmappedSet = new Set(unmappedFields);
-      const mappedRanges: vscode.DecorationOptions[] = [];
-      const unmappedRanges: vscode.DecorationOptions[] = [];
-
-      for (const field of fieldLocations) {
-        const range = new vscode.Range(field.line, 0, field.line, 0);
-        if (unmappedSet.has(field.name)) {
-          unmappedRanges.push({
-            range,
-            hoverMessage: `**${field.name}** — unmapped`,
-          });
-        } else {
-          mappedRanges.push({
-            range,
-            hoverMessage: `**${field.name}** — mapped`,
-          });
+      for (const schema of coverageResult.schemas) {
+        const srcLabel = schema.role === "source" ? "used as source" : "mapped";
+        const tgtLabel = schema.role === "source" ? "not used as source" : "unmapped";
+        for (const f of schema.fields) {
+          if (!byUri.has(f.uri)) byUri.set(f.uri, { mapped: [], unmapped: [] });
+          const bucket = byUri.get(f.uri)!;
+          const range = new vscode.Range(f.line, 0, f.line, 0);
+          if (f.mapped) {
+            bucket.mapped.push({ range, hoverMessage: `**${f.path}** — ${srcLabel}` });
+          } else {
+            bucket.unmapped.push({ range, hoverMessage: `**${f.path}** — ${tgtLabel}` });
+          }
         }
       }
 
-      targetEditor.setDecorations(mappedDecoration!, mappedRanges);
-      targetEditor.setDecorations(unmappedDecoration!, unmappedRanges);
+      // Apply decorations to each affected file.
+      for (const [uri, { mapped, unmapped }] of byUri) {
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
+        const schemaEditor = await vscode.window.showTextDocument(doc, { preserveFocus: true });
+        schemaEditor.setDecorations(mappedDecoration!, mapped);
+        schemaEditor.setDecorations(unmappedDecoration!, unmapped);
+      }
 
-      // Update status bar
-      const total = fieldLocations.length;
-      const mapped = total - unmappedFields.length;
-      const pct = total > 0 ? Math.round((mapped / total) * 100) : 0;
-      coverageBar!.text = `$(check) Coverage: ${pct}%`;
-      coverageBar!.tooltip = `${mapped}/${total} fields mapped by '${mappingName}'`;
-      coverageBar!.show();
+      // Status bar: show target coverage %.
+      const targetSchema = coverageResult.schemas.find((s) => s.role === "target");
+      if (targetSchema) {
+        const total = targetSchema.fields.filter((f) => !f.path.includes(".")).length;
+        const mapped = targetSchema.fields.filter((f) => !f.path.includes(".") && f.mapped).length;
+        const pct = total > 0 ? Math.round((mapped / total) * 100) : 0;
+        coverageBar!.text = `$(check) Coverage: ${pct}%`;
+        coverageBar!.tooltip = `${mapped}/${total} target fields mapped by '${mappingName}'`;
+        coverageBar!.show();
+      }
     }),
   );
 
-  // Clear decorations when switching editors
+  // Clear decorations when switching editors.
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => {
       if (coverageBar) coverageBar.hide();
     }),
   );
 }
-

@@ -39,6 +39,7 @@ import { computeActionContext } from "./action-context";
 import { prepareRename, computeRename } from "./rename";
 import { computeFormatting, initFormatting } from "./formatting";
 import { buildVizModel } from "./viz-model";
+import { computeMappingCoverage } from "./coverage";
 
 // ---------- Connection setup ----------
 
@@ -363,6 +364,16 @@ connection.onRequest(
       uri: def.uri,
       line: f.range.start.line,
     }));
+  },
+);
+
+/** Return per-field coverage for both source and target schemas of a mapping. */
+connection.onRequest(
+  "satsuma/mappingCoverage",
+  (params: { uri: string; mappingName: string }) => {
+    const tree = trees.get(params.uri);
+    if (!tree) return { schemas: [] };
+    return computeMappingCoverage(params.uri, tree, params.mappingName, scopeIndex(params.uri));
   },
 );
 
