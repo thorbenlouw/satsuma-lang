@@ -129,7 +129,11 @@ async function render(payload: Payload): Promise<void> {
 
 function showError(message: string): void {
   const root = document.getElementById("schema-lineage-root")!;
-  root.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+  root.innerHTML = "";
+  const div = document.createElement("div");
+  div.className = "error-message";
+  div.textContent = message;
+  root.appendChild(div);
 }
 
 // ── Header ─────────────────────────────────────────────────────────────────
@@ -145,10 +149,12 @@ function buildHeader(payload: Payload): HTMLDivElement {
 
   const legend = document.createElement("div");
   legend.className = "legend";
-  legend.innerHTML = `
-    <span class="legend-pill schema">schema</span>
-    <span class="legend-pill mapping">mapping</span>
-  `;
+  for (const [cls, label] of [["schema", "schema"], ["mapping", "mapping"]] as const) {
+    const pill = document.createElement("span");
+    pill.className = `legend-pill ${cls}`;
+    pill.textContent = label;
+    legend.appendChild(pill);
+  }
   bar.appendChild(legend);
 
   return bar;
