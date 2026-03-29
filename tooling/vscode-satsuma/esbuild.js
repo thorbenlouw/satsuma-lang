@@ -52,6 +52,23 @@ const webviewVizConfig = {
   },
 };
 
+/** @type {import("esbuild").BuildOptions} */
+const webviewFieldLineageConfig = {
+  entryPoints: ["src/webview/field-lineage/field-lineage.ts"],
+  bundle: true,
+  platform: "browser",
+  target: "es2022",
+  outfile: "dist/webview/field-lineage/field-lineage.js",
+  format: "iife",
+  sourcemap: true,
+  alias: {
+    "elkjs/lib/elk.bundled.js": path.resolve(
+      __dirname,
+      "../satsuma-viz/node_modules/elkjs/lib/elk.bundled.js",
+    ),
+  },
+};
+
 // Copy static assets to dist
 const { copyFileSync, mkdirSync, existsSync } = require("fs");
 
@@ -59,6 +76,7 @@ function copyAssets() {
   const pairs = [
     ["src/webview/lineage/lineage.css", "dist/webview/lineage/lineage.css"],
     ["src/webview/viz/viz.css", "dist/webview/viz/viz.css"],
+    ["src/webview/field-lineage/field-lineage.css", "dist/webview/field-lineage/field-lineage.css"],
   ];
 
   // Copy WASM and highlights.scm into server/dist/ so the server can load them
@@ -100,6 +118,14 @@ async function build() {
     configs.push(webviewVizConfig);
   } catch {
     // Viz webview not yet created
+  }
+
+  // Only include field-lineage config if the entry point exists
+  try {
+    require("fs").accessSync("src/webview/field-lineage/field-lineage.ts");
+    configs.push(webviewFieldLineageConfig);
+  } catch {
+    // Field lineage webview not yet created
   }
 
   if (watch) {

@@ -1,6 +1,6 @@
 ---
 id: sc-rdrc
-status: open
+status: closed
 deps: [sc-aobl]
 links: []
 created: 2026-03-29T12:53:21Z
@@ -27,3 +27,12 @@ Create webview/field-lineage/field-lineage.ts and field-lineage.css. Use ELK.js 
 - Empty state shows a clear message when upstream and downstream are both empty
 - No layout thrash on re-centre (ELK re-runs cleanly on new data)
 
+
+## Notes
+
+**2026-03-29T13:11:21Z**
+
+**2026-03-29**
+
+Cause: Webview renderer needed for ELK-based field lineage panel — new file, no prior implementation.
+Fix: Created field-lineage.ts (ELK layered/RIGHT graph, Bezier SVG edges, field cards, breadcrumb toolbar) and field-lineage.css (sz-* design tokens, dark theme, classification colour coding). Updated esbuild.js with elkjs alias pointing to satsuma-viz/node_modules/elkjs.
