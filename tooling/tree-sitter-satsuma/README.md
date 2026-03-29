@@ -84,11 +84,9 @@ Whenever `grammar.js` is changed:
 2. Run `npm test` to verify all corpus tests pass.
 3. If the conflict count changes, update `CONFLICTS.expected` to match.
 
-The repo-local tree-sitter wrapper (`scripts/tree-sitter-local.sh`) keeps cache inside the repo so agent runs don't pollute `~/.cache/tree-sitter`:
-
 ```bash
-../../scripts/tree-sitter-local.sh generate
-../../scripts/tree-sitter-local.sh test
+tree-sitter generate --wasm
+tree-sitter test --wasm
 ```
 
 ## Grammar Conflicts

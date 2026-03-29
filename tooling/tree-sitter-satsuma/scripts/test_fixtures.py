@@ -11,25 +11,13 @@ from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PACKAGE_ROOT.parents[1]
-TREE_SITTER_LOCAL = REPO_ROOT / "scripts" / "tree-sitter-local.sh"
 FIXTURE_ROOT = PACKAGE_ROOT / "test" / "fixtures"
 EXAMPLES_ROOT = REPO_ROOT / "examples"
 
-
-def _has_c_compiler() -> bool:
-    try:
-        result = subprocess.run(
-            ["cc", "-x", "c", "-o", "/dev/null", "-"],
-            input=b"int main(){return 0;}",
-            capture_output=True,
-            timeout=5,
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
-
-
-USE_WASM = not _has_c_compiler()
+# Prefer the npm-local tree-sitter binary (always has --wasm support) over the
+# system one (e.g. Homebrew on macOS may not be compiled with the wasm feature).
+_LOCAL_BIN = PACKAGE_ROOT / "node_modules" / ".bin" / "tree-sitter"
+TREE_SITTER_BIN = str(_LOCAL_BIN) if _LOCAL_BIN.exists() else "tree-sitter"
 
 
 @dataclass(frozen=True)
@@ -103,20 +91,23 @@ def parse_fixture(fixture: Fixture) -> tuple[bool, str]:
         return False, f"source file does not exist: {fixture.source}"
 
     cmd = [
-        str(TREE_SITTER_LOCAL),
+        TREE_SITTER_BIN,
         "parse",
+        "--wasm",
         "-p",
         str(PACKAGE_ROOT),
         str(fixture.source),
     ]
-    if USE_WASM:
-        cmd.append("--wasm")
+    import os
+    env = os.environ.copy()
+    env["XDG_CACHE_HOME"] = str(REPO_ROOT / ".cache")
     result = subprocess.run(
         cmd,
         cwd=PACKAGE_ROOT,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
 
     # Filter out wrapper script info lines (Using ROOT_DIR, Using XDG_CACHE_HOME)

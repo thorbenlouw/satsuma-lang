@@ -744,6 +744,10 @@
         {
           "type": "SYMBOL",
           "name": "_scalar_field"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_typeless_field"
         }
       ]
     },
@@ -769,6 +773,19 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "_typeless_field": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "field_name"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "metadata_block"
         }
       ]
     },

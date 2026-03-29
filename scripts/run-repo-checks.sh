@@ -45,10 +45,19 @@ run_parallel "vscode-satsuma tests + LSP" \
   "npm --prefix tooling/vscode-satsuma run test:lsp"
 
 run_step "tree-sitter generate" npm --prefix tooling/tree-sitter-satsuma run generate
-if cc -x c -o /dev/null - <<< 'int main(){return 0;}' 2>/dev/null; then
-  run_step "tree-sitter corpus" bash -lc 'cd "$1/tooling/tree-sitter-satsuma" && "$1/scripts/tree-sitter-local.sh" test' -- "$ROOT_DIR"
+# tree-sitter test --wasm requires the CLI to be compiled with the wasm feature.
+# Gracefully skip if unavailable; JS integration tests cover the corpus via the
+# WASM parser already built by the previous generate step.
+_wasm_test_output="$(cd "$ROOT_DIR/tooling/tree-sitter-satsuma" && tree-sitter test --wasm 2>&1)" || _wasm_test_exit=$?
+if echo "$_wasm_test_output" | grep -q "does not include the wasm feature"; then
+  printf '[tree-sitter corpus] SKIP — tree-sitter-cli built without wasm feature (JS tests cover corpus)\n'
+elif [ "${_wasm_test_exit:-0}" -ne 0 ]; then
+  printf '%s\n' "$_wasm_test_output"
+  echo "FAIL: tree-sitter corpus (wasm)" >&2
+  exit 1
 else
-  run_step "tree-sitter corpus (wasm)" bash -lc 'cd "$1/tooling/tree-sitter-satsuma" && "$1/scripts/tree-sitter-local.sh" test --wasm' -- "$ROOT_DIR"
+  printf '[tree-sitter corpus (wasm)] OK\n'
+  printf '%s\n' "$_wasm_test_output"
 fi
 run_parallel "Python tests (tree-sitter + excel skill)" \
   "python3 -m pytest '$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/' -v" \

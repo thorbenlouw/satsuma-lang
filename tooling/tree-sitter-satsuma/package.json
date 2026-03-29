@@ -6,10 +6,10 @@
   "license": "MIT",
   "scripts": {
     "install": "echo 'Skipping native build — WASM only'",
-    "generate": "../../scripts/tree-sitter-local.sh generate",
-    "build": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm",
-    "test": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test",
-    "test:wasm": "../../scripts/tree-sitter-local.sh generate && ../../scripts/tree-sitter-local.sh test --wasm",
+    "generate": "tree-sitter generate",
+    "build": "tree-sitter generate && tree-sitter build --wasm . -o tree-sitter-satsuma.wasm",
+    "test": "tree-sitter generate && tree-sitter test",
+    "test:wasm": "tree-sitter generate && tree-sitter test --wasm",
     "smoke": "node scripts/smoke-check.js"
   },
   "devDependencies": {

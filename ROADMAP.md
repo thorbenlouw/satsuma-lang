@@ -90,3 +90,30 @@ These principles guide all future syntax and convention decisions:
 - **Natural language is the escape hatch** — for anything too complex or domain-specific to express in a piped transform chain, write intent in English and let the interpreter figure it out.
 - **Vocabulary tokens are the extension mechanism** — new semantics come from *convention* (token dictionaries) and *tooling* (linters, interpreters), not grammar changes.
 - **High bar for new keywords** — "Is this concept so fundamentally different from schema/fragment/mapping that using an existing keyword would confuse a BA reading the file?"
+
+---
+
+Better field level lineage commands 
+
+Split satsuma into
+
+satsuma field-lineage --from --to in_filename.stm 
+satsuma schema-lineage considers any mappings that use the schema as a source or target
+
+
+
+
+lieage anchor point is fully qualified field (or list subfield) lilke ns::schema.field.record.list.subfield
+
+If a simpler form is given we should try to resolve if it is unabiguoug is is OK (s.f or f) and if there si ONLY 1 possible resolution that is fine use it, but if ambiguous error
+
+Need MUCH better docs for the options in subcommands!
+
+ALL stm subcommands should operate on an entry-point FILE rather than a folder -- people can have project files that  just import all the relative bits they need
+
+file-level commands all DO follow imports to bring in context 
+
+imports can include ../../ paths (outside current dir)
+
+---
+self-mappings (same source and target schema) are OK -- we can use that to represent things like increments, and DON'T cause graph cycles.

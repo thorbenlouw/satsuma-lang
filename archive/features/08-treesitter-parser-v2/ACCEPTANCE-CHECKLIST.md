@@ -32,7 +32,7 @@ Status: ✅ — all 11 .stm files parse with 0 errors, valid JSON output
 
 Verify with tree-sitter query:
 ```bash
-../../scripts/tree-sitter-local.sh query queries/highlights.scm ../../examples/db-to-db.stm
+tree-sitter query queries/highlights.scm ../../examples/db-to-db.stm
 ```
 
 Required nodes (from PRD):
@@ -58,7 +58,7 @@ Status: ✅ (grammar structure verified, all required node types present)
 ## Criterion 3 — queries/highlights.scm provides correct highlighting
 
 ```bash
-../../scripts/tree-sitter-local.sh highlight ../../examples/db-to-db.stm
+tree-sitter highlight ../../examples/db-to-db.stm
 ```
 
 Verify:

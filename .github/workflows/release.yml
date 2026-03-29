@@ -40,7 +40,7 @@ jobs:
 
       - name: Build WASM parser
         working-directory: tooling/tree-sitter-satsuma
-        run: ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm
+        run: tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Bundle for distribution
         shell: bash

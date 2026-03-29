@@ -32,7 +32,7 @@
 - [x] Add Satsuma generation instructions to skill prompt (load `AI-AGENT-REFERENCE.md`, select canonical examples)
 - [x] Implement file structure planning (how many files, fragments, shared common file)
 - [x] Implement chunked row extraction and Satsuma generation (100 rows per chunk)
-- [x] Wire up tree-sitter validation (`scripts/tree-sitter-local.sh parse`)
+- [x] Wire up tree-sitter validation (`tree-sitter parse`)
 - [x] Add heuristic fallback validation when tree-sitter unavailable
 - [x] Support `--tabs` filtering
 - [ ] Test with single-tab 1:1 mappings, then multi-tab/multi-file

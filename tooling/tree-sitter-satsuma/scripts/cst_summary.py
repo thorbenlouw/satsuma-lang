@@ -14,7 +14,10 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[3]
-TREE_SITTER_LOCAL = ROOT / "scripts" / "tree-sitter-local.sh"
+# Prefer the npm-local tree-sitter binary (always has --wasm support) over the
+# system one (e.g. Homebrew on macOS may not be compiled with the wasm feature).
+_LOCAL_BIN = Path(__file__).resolve().parents[1] / "node_modules" / ".bin" / "tree-sitter"
+TREE_SITTER_BIN = str(_LOCAL_BIN) if _LOCAL_BIN.exists() else "tree-sitter"
 DEFAULT_GLOBS = (
     "examples/*.stm",
     "features/02-multi-schema/examples/**/*.stm",
@@ -326,37 +329,25 @@ def resolve_input_path(path: Path) -> Path:
     return cwd_candidate
 
 
-def _has_c_compiler() -> bool:
-    try:
-        result = subprocess.run(
-            ["cc", "-x", "c", "-o", "/dev/null", "-"],
-            input=b"int main(){return 0;}",
-            capture_output=True,
-            timeout=5,
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
-
-
-_USE_WASM = not _has_c_compiler()
-
-
 def parse_with_cli(path: Path) -> Node:
     cmd = [
-        str(TREE_SITTER_LOCAL),
+        TREE_SITTER_BIN,
         "parse",
+        "--wasm",
         "-p",
         str(ROOT / "tooling" / "tree-sitter-satsuma"),
         str(path),
     ]
-    if _USE_WASM:
-        cmd.append("--wasm")
+
+    import os
+    env = os.environ.copy()
+    env["XDG_CACHE_HOME"] = str(ROOT / ".cache")
     result = subprocess.run(
         cmd,
         check=False,
         capture_output=True,
         text=True,
+        env=env,
     )
     # tree-sitter returns non-zero when ERROR/MISSING nodes are present, but
     # still emits a valid (recovered) tree on stdout.  Only raise when there

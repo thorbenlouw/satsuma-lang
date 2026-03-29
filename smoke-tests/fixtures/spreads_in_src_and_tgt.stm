@@ -1,0 +1,46 @@
+note {
+  """
+  Demonstrate using spreads in source and target
+  Viz should expand the spreads in the mapping cards
+  """
+}
+
+namespace common {
+  fragment common_fields {
+    a  x
+    b  x
+    c  x
+  }
+}
+
+namespace src {
+  schema s1 {
+    ...common::common_fields
+    d  x
+    e  x
+    f  x
+  }
+}
+
+namespace tgt {
+  schema s1 {
+    ...common::common_fields
+    g  x
+    h  x
+    i  x
+  }
+}
+
+mapping with_spreads (
+  note "Implicitly all src and tgt fields from spreads should be shown!"
+) {
+  source { src::s1 }
+  target { tgt::s1 }
+
+  a -> a
+  b -> b
+  c -> c
+  d -> g
+  e -> h
+  f -> i
+}

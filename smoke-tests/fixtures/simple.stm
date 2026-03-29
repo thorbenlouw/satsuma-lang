@@ -1,0 +1,32 @@
+schema s1 {
+  a  x
+}
+
+schema s2 {
+  a  x
+}
+
+schema s3 {
+  a  x
+}
+
+mapping m1 {
+  source { s1 }
+  target { s2 }
+
+  a -> a
+}
+
+mapping m2 {
+  source { s2 }
+  target { s3 }
+
+  a -> a
+}
+
+mapping m3 {
+  source { s1 }
+  target { s3 }
+
+  a -> a
+}

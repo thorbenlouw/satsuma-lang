@@ -1,0 +1,51 @@
+schema s1 {
+    a list_of x
+    b list_of record {
+        b1 x
+        b2 x
+    }
+    c list_of record {
+        c1 x
+        list_of x
+    }
+    d record {
+        d1 x
+        d1 x
+        d1 list_of record {
+            d1a x
+            d1b x
+        }
+    }
+}
+
+schema s2 {
+   a x
+   b x
+   c x
+   d x
+}
+
+
+mapping m1 {
+  source { s1 }
+  target { s2 }
+
+  flatten a -> a {}
+}
+
+mapping m2 {
+  source { s1 }
+  target { s2 }
+
+  each a -> a {}
+}
+
+mapping m3 {
+    source { s1 }
+    target { s1 }
+    
+    each b -> b {
+        .b1 -> .b1
+        .b2 -> .b2
+    }
+}

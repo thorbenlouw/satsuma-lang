@@ -290,3 +290,70 @@ schema order {
               (identifier))
             (type_expr)))))))
 
+
+================================================================================
+Typeless field — name and metadata, no type
+================================================================================
+
+schema s {
+  PK_FIELD (pk, required)
+  typed_field STRING
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (metadata_block
+          (tag_token
+            (identifier))
+          (tag_token
+            (identifier))))
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Typeless fields mixed with spreads
+================================================================================
+
+fragment shared {
+  col_a STRING
+}
+
+schema t {
+  PK_FIELD (pk)
+  ...shared
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fragment_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr))))
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (metadata_block
+          (tag_token
+            (identifier))))
+      (fragment_spread
+        (spread_label
+          (identifier))))))

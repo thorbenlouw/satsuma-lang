@@ -113,3 +113,34 @@ describe("field-lineage anonymous mappings (sl-m44v)", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Typeless fields (NAME (metadata) without explicit type)
+// ---------------------------------------------------------------------------
+describe("field-lineage with typeless fields", () => {
+  const fixture = resolve(FIXTURES, "typeless-field-lineage.stm");
+
+  it("finds a typeless direct field before spreads in its schema", async () => {
+    const { stdout, code, stderr } = await run("field-lineage", "source_schema.PK_ID", fixture, "--json");
+    assert.equal(code, 0, `expected exit 0, got ${code}\n${stderr}`);
+    const data = JSON.parse(stdout);
+    assert.ok(
+      data.downstream.some((d) => d.field.includes("out_id")),
+      `expected out_id in downstream, got: ${JSON.stringify(data.downstream)}`,
+    );
+  });
+
+  it("resolves the typeless field without 'field not found' error", async () => {
+    const { code, stderr } = await run("field-lineage", "source_schema.PK_ID", fixture);
+    assert.equal(code, 0, `should not error on typeless field\n${stderr}`);
+    assert.ok(!stderr.includes("not found"), `got unexpected error: ${stderr}`);
+  });
+
+  it("spread fields are still accessible after typeless direct field", async () => {
+    const { stdout, code } = await run("fields", "source_schema", fixture);
+    assert.equal(code, 0);
+    assert.ok(stdout.includes("PK_ID"), "typeless direct field should appear in fields output");
+    assert.ok(stdout.includes("region"), "spread field should appear after typeless field");
+    assert.ok(stdout.includes("branch"), "spread field should appear after typeless field");
+  });
+});

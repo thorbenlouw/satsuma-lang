@@ -1,6 +1,6 @@
 ---
 id: sc-aobl
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-29T12:53:05Z
@@ -25,3 +25,12 @@ Replace webview/lineage/panel.ts with a new webview/field-lineage/panel.ts. The 
 - Navigate message from webview opens the correct file and line in the editor
 - All existing CLI integration paths (anonymous mappings, NL-derived edges) exercised in a manual smoke test
 
+
+## Notes
+
+**2026-03-29T13:05:14Z**
+
+**2026-03-29T13:05:14Z**
+
+Cause: n/a (new feature)
+Fix: Created src/webview/field-lineage/panel.ts — single CLI call, breadcrumb nav, setDepth/recenter/back/navigate message handlers. (commit pending)
