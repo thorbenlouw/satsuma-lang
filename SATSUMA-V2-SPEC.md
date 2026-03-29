@@ -559,7 +559,18 @@ import { `address fields`, `audit fields` } from "lib/common.stm"
 import { `currency rates` } from "lookups/finance.stm"
 ```
 
-Import syntax follows the pattern `import { <names> } from "<path>"`. Exact resolution semantics (relative paths, registries, etc.) are implementation-defined.
+Import syntax follows the pattern `import { <names> } from "<path>"`. Paths are resolved relative to the importing file. Imports are **not** re-exported: if file A imports `X` from file B, a third file C must import `X` directly from B (or from A only if A explicitly re-exports it).
+
+#### Import Scoping
+
+Satsuma uses **explicit import scoping**: a symbol is only in scope within a file if it appears in that file's import graph (directly imported or transitively reachable via imported files' own imports). Symbols that exist in the same workspace directory but are not reachable via imports are **not** in scope.
+
+Tooling must respect this boundary:
+- Navigation features (go-to-definition, find-references, completions, rename) resolve symbols only within the import-reachable file set of the active file.
+- A reference to a symbol that exists in the workspace but is not reachable via imports is a semantic error. Tooling should suggest the exact `import` statement needed to bring the symbol into scope.
+- The workspace visualisation and field-lineage traces start from a specific entry file and follow its import graph, not the entire directory tree.
+
+The entry file for platform-wide lineage analysis is the file that imports from all top-level pipeline files (see `CLAUDE.md` for the platform entry point pattern).
 
 ---
 

@@ -27,7 +27,10 @@ import {
   allBlockNames,
   resolveDefinition,
   findReferences,
+  getImportReachableUris,
+  createScopedIndex,
 } from "./workspace-index";
+import { computeMissingImportDiagnostics } from "./semantic-diagnostics";
 import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
 import { computeCompletions } from "./completion";
@@ -229,71 +232,77 @@ connection.onHover((params) => {
 });
 
 connection.onDefinition((params) => {
-  const tree = trees.get(params.textDocument.uri);
+  const uri = params.textDocument.uri;
+  const tree = trees.get(uri);
   if (!tree) return null;
   return computeDefinition(
     tree,
     params.position.line,
     params.position.character,
-    params.textDocument.uri,
-    wsIndex,
+    uri,
+    scopeIndex(uri),
   );
 });
 
 connection.onReferences((params) => {
-  const tree = trees.get(params.textDocument.uri);
+  const uri = params.textDocument.uri;
+  const tree = trees.get(uri);
   if (!tree) return [];
   return computeReferences(
     tree,
     params.position.line,
     params.position.character,
-    params.textDocument.uri,
-    wsIndex,
+    uri,
+    scopeIndex(uri),
     params.context.includeDeclaration,
   );
 });
 
 connection.onCompletion((params) => {
-  const tree = trees.get(params.textDocument.uri);
+  const uri = params.textDocument.uri;
+  const tree = trees.get(uri);
   if (!tree) return [];
   return computeCompletions(
     tree,
     params.position.line,
     params.position.character,
-    params.textDocument.uri,
-    wsIndex,
+    uri,
+    scopeIndex(uri),
   );
 });
 
 connection.onPrepareRename((params) => {
-  const tree = trees.get(params.textDocument.uri);
+  const uri = params.textDocument.uri;
+  const tree = trees.get(uri);
   if (!tree) return null;
   return prepareRename(
     tree,
     params.position.line,
     params.position.character,
-    params.textDocument.uri,
-    wsIndex,
+    uri,
+    scopeIndex(uri),
   );
 });
 
 connection.onRenameRequest((params) => {
-  const tree = trees.get(params.textDocument.uri);
+  const uri = params.textDocument.uri;
+  const tree = trees.get(uri);
   if (!tree) return null;
   return computeRename(
     tree,
     params.position.line,
     params.position.character,
-    params.textDocument.uri,
-    wsIndex,
+    uri,
+    scopeIndex(uri),
     params.newName,
   );
 });
 
 connection.onCodeLens((params) => {
-  const tree = trees.get(params.textDocument.uri);
+  const uri = params.textDocument.uri;
+  const tree = trees.get(uri);
   if (!tree) return [];
-  return computeCodeLenses(tree, params.textDocument.uri, wsIndex);
+  return computeCodeLenses(tree, uri, scopeIndex(uri));
 });
 
 connection.onDocumentFormatting((params) => {
@@ -321,7 +330,7 @@ connection.onRequest(
   (params: { uri: string }) => {
     const tree = trees.get(params.uri);
     if (!tree) return null;
-    return buildVizModel(params.uri, tree, wsIndex);
+    return buildVizModel(params.uri, tree, scopeIndex(params.uri));
   },
 );
 
@@ -387,13 +396,19 @@ function parseDocument(doc: TextDocument): Tree {
   return tree;
 }
 
-/** Send parse diagnostics merged with cached validate diagnostics. */
+/** Build a workspace index scoped to the import-reachable files of `uri`. */
+function scopeIndex(uri: string): WorkspaceIndex {
+  return createScopedIndex(wsIndex, getImportReachableUris(uri, wsIndex));
+}
+
+/** Send parse diagnostics merged with cached validate diagnostics and semantic (missing-import) diagnostics. */
 function sendMergedDiagnostics(uri: string, tree: Tree): void {
   const parseDiags = computeDiagnostics(tree);
   const validateDiags = validateDiagCache.get(uri) ?? [];
+  const missingImportDiags = computeMissingImportDiagnostics(tree, uri, wsIndex);
   connection.sendDiagnostics({
     uri,
-    diagnostics: [...parseDiags, ...validateDiags],
+    diagnostics: [...parseDiags, ...validateDiags, ...missingImportDiags],
   });
 }
 

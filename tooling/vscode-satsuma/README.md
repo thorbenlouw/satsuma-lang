@@ -43,23 +43,43 @@ TextMate grammar for all Satsuma constructs (keywords, types, metadata, strings,
 
 Semantic tokens from the LSP server override TextMate scopes for context-sensitive constructs (`source`/`target` as keyword vs. field name, `map` as keyword vs. identifier, vocabulary tokens, etc.).
 
+### Import-Scoped Symbol Resolution
+
+The extension respects Satsuma's explicit import semantics. A symbol (schema, fragment, mapping, transform, metric) is **only in scope in a file if it was explicitly imported** into that file (directly or transitively).
+
+All navigation and IntelliSense features are scoped to the **import graph rooted at the active file**:
+
+- Go-to-Definition only resolves symbols reachable from the current file's imports.
+- Completions only suggest symbols from reachable files.
+- Find References and Rename are scoped to the import-reachable file set.
+- The Workspace Graph and Field Lineage views show only the symbols and data flows reachable from the current file.
+
+If you reference a schema that exists in the workspace but has not been imported, the editor emits a `missing-import` error with the exact `import` statement needed to fix it:
+
+```
+'orders' is not imported. Add: import { orders } from "./orders.stm"
+```
+
+This mirrors how Satsuma the language works: unlike some IDEs that treat all files in a folder as globally visible, Satsuma requires explicit imports and the extension enforces this boundary.
+
 ### Diagnostics
 
 - **Parse errors** — red squiggles in real time as you type (tree-sitter ERROR/MISSING nodes).
+- **Missing import errors** — red squiggles when a schema/fragment/mapping is referenced but not reachable via `import` from the current file. Includes the exact import statement to add.
 - **Semantic warnings** — yellow squiggles on save via `satsuma validate` (undefined schemas, duplicate names, broken imports).
 - **Warning comments** (`//!`) — appear as warnings in the Problems panel.
 - **Question comments** (`//?`) — appear as information in the Problems panel.
 
 ### Navigation
 
-- **Go-to-Definition** (Ctrl+Click / F12) — jump from schema name in `source`/`target` to its definition, fragment spread to fragment block, import name to imported definition, import path to file.
-- **Find References** (Shift+F12) — find all usages of a schema, fragment, or transform across the workspace.
-- **Rename Symbol** (F2) — rename a schema, fragment, transform, or mapping across all files. Refuses duplicate names. Handles namespace-qualified references.
+- **Go-to-Definition** (Ctrl+Click / F12) — jump from schema name in `source`/`target` to its definition, fragment spread to fragment block, import name to imported definition, import path to file. Scoped to import-reachable symbols.
+- **Find References** (Shift+F12) — find all usages of a schema, fragment, or transform across the import-reachable file set.
+- **Rename Symbol** (F2) — rename a schema, fragment, transform, or mapping across all import-reachable files. Refuses duplicate names. Handles namespace-qualified references.
 
 ### IntelliSense
 
-- **Completions** — context-aware suggestions:
-  - Schema names inside `source { }` / `target { }`
+- **Completions** — context-aware suggestions scoped to the import-reachable file set:
+  - Schema names inside `source { }` / `target { }` (only imported schemas appear)
   - Fragment and transform names after `...`
   - Field names from source/target schemas in arrow paths
   - Metadata vocabulary tokens inside `( )` (pk, pii, scd, required, etc.)
