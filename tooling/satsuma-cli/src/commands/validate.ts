@@ -15,7 +15,7 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
-import { extractImports } from "../extract.js";
+import { extractImports } from "@satsuma/core";
 import { collectParseErrors, collectSemanticWarnings } from "../validate.js";
 import type { LintDiagnostic } from "../types.js";
 

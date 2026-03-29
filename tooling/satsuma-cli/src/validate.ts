@@ -15,7 +15,7 @@ import {
 import { resolveScopedEntityRef } from "./index-builder.js";
 import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
 import type { ArrowRecord, LintDiagnostic, SchemaRecord, SyntaxNode, WorkspaceIndex } from "./types.js";
-import type { MetaEntry } from "./meta-extract.js";
+import type { MetaEntry } from "@satsuma/core";
 
 /**
  * Compute convention-inferred field names for a schema based on its metadata tokens.

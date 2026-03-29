@@ -5,8 +5,8 @@
  * in-memory index with a cross-reference graph.
  */
 
-import { canonicalRef } from "./canonical-ref.js";
 import {
+  canonicalRef,
   extractSchemas,
   extractMetrics,
   extractMappings,
@@ -18,7 +18,7 @@ import {
   extractNamespaces,
   extractImports,
   extractNotes,
-} from "./extract.js";
+} from "@satsuma/core";
 import { extractNLRefData } from "./nl-ref-extract.js";
 import type {
   ArrowRecord,

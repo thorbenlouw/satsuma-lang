@@ -16,8 +16,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
-import { canonicalEntityName } from "../canonical-ref.js";
-import { extractMetadata } from "../meta-extract.js";
+import { canonicalEntityName, extractMetadata } from "@satsuma/core";
 import type { SyntaxNode, WorkspaceIndex, SchemaRecord } from "../types.js";
 
 export function register(program: Command): void {

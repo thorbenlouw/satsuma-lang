@@ -39,7 +39,7 @@ export interface FieldDecl {
   type: string;
   children?: FieldDecl[];
   isList?: boolean;
-  metadata?: import("./meta-extract.js").MetaEntry[];
+  metadata?: import("@satsuma/core").MetaEntry[];
   hasSpreads?: boolean;
   spreads?: string[];
 }
@@ -53,7 +53,7 @@ export interface SchemaRecord {
   file: string;
   row: number;
   namespace?: string;
-  blockMetadata?: import("./meta-extract.js").MetaEntry[];
+  blockMetadata?: import("@satsuma/core").MetaEntry[];
 }
 
 export interface MetricRecord {
@@ -122,7 +122,7 @@ export interface ArrowRecord {
   derived: boolean;
   line: number;
   file: string;
-  metadata?: import("./meta-extract.js").MetaEntry[];
+  metadata?: import("@satsuma/core").MetaEntry[];
 }
 
 export interface WarningRecord {

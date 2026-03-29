@@ -15,9 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
-import { extractMetadata } from "../meta-extract.js";
-import { canonicalEntityName } from "../canonical-ref.js";
-import { classifyTransform } from "../classify.js";
+import { extractMetadata, canonicalEntityName, classifyTransform } from "@satsuma/core";
 import type { SyntaxNode, MappingRecord } from "../types.js";
 
 export function register(program: Command): void {

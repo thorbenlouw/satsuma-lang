@@ -8,7 +8,7 @@
 import { readdir, stat } from "fs/promises";
 import { readFileSync, statSync } from "fs";
 import { join, dirname, extname, resolve } from "path";
-import { extractImports } from "./extract.js";
+import { extractImports } from "@satsuma/core";
 import { parseSource } from "./parser.js";
 
 /**
