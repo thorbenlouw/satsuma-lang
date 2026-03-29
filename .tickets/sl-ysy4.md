@@ -1,6 +1,6 @@
 ---
 id: sl-ysy4
-status: open
+status: closed
 deps: [sl-ikzl, sl-60gz]
 links: []
 created: 2026-03-29T18:51:26Z
@@ -28,3 +28,9 @@ Changes:
 
 1. satsuma/fieldLocations for a schema with list_of record children returns FieldLocation entries for all nested fields 2. Nested field paths use dotted notation (e.g. 'address.city') 3. All existing LSP server tests pass 4. New test in the LSP server test suite asserts nested field coverage via fieldLocations 5. Coverage decorations (via coverage.ts, which already handles nesting) remain unaffected
 
+
+## Notes
+
+**2026-03-29T20:54:26Z**
+
+**2026-03-29T21:05:00Z** Cause: fieldLocations handler used flat .map() over def.fields, missing all nested record fields. Fix: Replaced with a recursive collect() function that walks FieldInfo.children and builds dotted paths (e.g. address.city). Added field-locations.test.js with 9 new tests covering flat, nested record, list_of record, and unknown schema. All 287 LSP tests pass.
