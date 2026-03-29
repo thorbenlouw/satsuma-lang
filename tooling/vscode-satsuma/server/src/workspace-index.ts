@@ -1,6 +1,8 @@
 import {
   Range,
 } from "vscode-languageserver";
+import { fileURLToPath, pathToFileURL } from "url";
+import { resolve, dirname, relative } from "path";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText } from "./parser-utils";
 
@@ -56,6 +58,104 @@ export function createWorkspaceIndex(): WorkspaceIndex {
     imports: new Map(),
     indexedFiles: new Set(),
   };
+}
+
+/**
+ * Return the set of file URIs transitively reachable from `entryUri` via
+ * import declarations indexed in `index`. Always includes `entryUri` itself.
+ *
+ * Import path strings are resolved relative to the importing file's directory.
+ * Files not present in `index.indexedFiles` are silently skipped.
+ */
+export function getImportReachableUris(
+  entryUri: string,
+  index: WorkspaceIndex,
+): Set<string> {
+  const visited = new Set<string>();
+  const queue = [entryUri];
+
+  while (queue.length > 0) {
+    const uri = queue.pop()!;
+    if (visited.has(uri)) continue;
+    visited.add(uri);
+
+    const imports = index.imports.get(uri);
+    if (!imports) continue;
+
+    for (const imp of imports) {
+      if (!imp.pathText) continue;
+      const resolved = resolveImportUri(uri, imp.pathText);
+      if (resolved && index.indexedFiles.has(resolved) && !visited.has(resolved)) {
+        queue.push(resolved);
+      }
+    }
+  }
+
+  return visited;
+}
+
+/**
+ * Create a new WorkspaceIndex containing only entries whose file URI is in
+ * `reachableUris`. The original index is unchanged. Use this to scope
+ * resolution (completions, go-to-def, etc.) to the import graph of one file.
+ */
+export function createScopedIndex(
+  index: WorkspaceIndex,
+  reachableUris: Set<string>,
+): WorkspaceIndex {
+  const scoped = createWorkspaceIndex();
+
+  for (const uri of index.indexedFiles) {
+    if (reachableUris.has(uri)) scoped.indexedFiles.add(uri);
+  }
+
+  for (const [uri, entries] of index.imports) {
+    if (reachableUris.has(uri)) scoped.imports.set(uri, entries);
+  }
+
+  for (const [name, entries] of index.definitions) {
+    const filtered = entries.filter((e) => reachableUris.has(e.uri));
+    if (filtered.length > 0) scoped.definitions.set(name, filtered);
+  }
+
+  for (const [name, entries] of index.references) {
+    const filtered = entries.filter((e) => reachableUris.has(e.uri));
+    if (filtered.length > 0) scoped.references.set(name, filtered);
+  }
+
+  return scoped;
+}
+
+/**
+ * Build the suggested import statement for a name defined in `defUri`,
+ * as seen from `currentUri`.
+ */
+export function buildImportSuggestion(
+  currentUri: string,
+  name: string,
+  defUri: string,
+): string {
+  try {
+    const currentPath = fileURLToPath(currentUri);
+    const defPath = fileURLToPath(defUri);
+    const rel = relative(dirname(currentPath), defPath);
+    const relPath = rel.startsWith(".") ? rel : `./${rel}`;
+    return `import { ${name} } from "${relPath}"`;
+  } catch {
+    return `import { ${name} } from "..."`;
+  }
+}
+
+/** Resolve an import path relative to the importing file URI. Returns null on failure. */
+function resolveImportUri(importerUri: string, pathText: string): string | null {
+  try {
+    const importerPath = fileURLToPath(importerUri);
+    const importerDir = dirname(importerPath);
+    const resolved = resolve(importerDir, pathText);
+    return pathToFileURL(resolved).toString();
+  } catch {
+    return null;
+  }
 }
 
 /** Index (or re-index) a single file. Replaces any existing entries for the URI. */

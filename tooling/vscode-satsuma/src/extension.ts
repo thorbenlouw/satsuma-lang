@@ -84,8 +84,12 @@ export function activate(context: ExtensionContext): void {
   // Field Lineage webview (Phase 1 — ELK panel)
   context.subscriptions.push(
     vscode.commands.registerCommand("satsuma.traceFieldLineage", async (args?: { fieldPath?: string }) => {
-      const workspacePath =
-        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ".";
+      // Pass the active .stm file path so the CLI scopes the workspace via followImports.
+      // Fallback to workspace root only if no file is open (rare edge case).
+      const activeFilePath =
+        vscode.window.activeTextEditor?.document.uri.fsPath ??
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
+        ".";
 
       // Prefer: explicit arg > LSP actionContext > user input
       let fieldPath: string | undefined = args?.fieldPath;
@@ -113,7 +117,7 @@ export function activate(context: ExtensionContext): void {
       FieldLineagePanel.createOrShow(
         context.extensionUri,
         cliPath,
-        workspacePath,
+        activeFilePath,
         fieldPath,
       );
     }),

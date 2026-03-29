@@ -1,6 +1,6 @@
 ---
 id: sl-cpuf
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-29T15:53:26Z
@@ -56,3 +56,10 @@ A reference to a schema/fragment/mapping that exists in the workspace but is NOT
 - [ ] New test: file that references a schema from a sibling file without importing it gets a missing-import diagnostic
 - [ ] New test: field-lineage called from a file that imports metric_sources.stm correctly includes those schemas in the lineage graph
 
+## Notes
+
+**2026-03-29**
+
+Cause: The LSP server and VS Code extension features indexed all `.stm` files in the workspace folder recursively and treated every symbol as globally visible, violating Satsuma's explicit import semantics.
+
+Fix: (1) Added `getImportReachableUris(uri, index)` and `createScopedIndex(index, uris)` to `workspace-index.ts` — the global index is kept for fast file-watch indexing, but all resolution calls (completions, go-to-def, references, rename, code lens, viz model) now use a per-request scoped view filtered to the import-reachable file set. (2) Added `computeMissingImportDiagnostics` in `semantic-diagnostics.ts` — emits `missing-import` errors (with suggested import statement) for schema/fragment/mapping references that exist in the workspace but are not reachable via imports. (3) Fixed `satsuma.traceFieldLineage` in `extension.ts` to pass the active file path instead of the workspace root so the CLI's `followImports()` scopes the lineage correctly. (4) Documented the import-scoping model in `SATSUMA-V2-SPEC.md` (§5.3) and `tooling/vscode-satsuma/README.md`. 261/261 LSP tests pass.

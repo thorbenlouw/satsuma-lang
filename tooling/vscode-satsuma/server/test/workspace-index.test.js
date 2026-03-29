@@ -9,6 +9,8 @@ const {
   findReferences,
   allBlockNames,
   getFields,
+  getImportReachableUris,
+  createScopedIndex,
 } = require("../dist/workspace-index");
 
 before(async () => { await initTestParser(); });
@@ -580,5 +582,152 @@ describe("re-indexing", () => {
     indexFile(idx, "file:///a.stm", parse("schema new_name { id UUID }"));
     assert.equal(idx.definitions.get("old_name"), undefined);
     assert.ok(idx.definitions.get("new_name"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getImportReachableUris
+// ---------------------------------------------------------------------------
+
+describe("getImportReachableUris", () => {
+  it("returns only the entry URI when the file has no imports", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "schema customers { id UUID }",
+      "file:///b.stm": "schema orders { id UUID }",
+    });
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    assert.equal(reachable.size, 1);
+    assert.ok(reachable.has("file:///a.stm"));
+    assert.ok(!reachable.has("file:///b.stm"));
+  });
+
+  it("follows a direct import to include the imported file", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `import { customers } from "b.stm"\nschema orders { id UUID }`,
+      "file:///b.stm": "schema customers { id UUID }",
+    });
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    assert.equal(reachable.size, 2);
+    assert.ok(reachable.has("file:///a.stm"));
+    assert.ok(reachable.has("file:///b.stm"));
+  });
+
+  it("follows transitive imports", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `import { customers } from "b.stm"`,
+      "file:///b.stm": `import { addresses } from "c.stm"\nschema customers { id UUID }`,
+      "file:///c.stm": "schema addresses { street VARCHAR }",
+    });
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    assert.equal(reachable.size, 3);
+    assert.ok(reachable.has("file:///a.stm"));
+    assert.ok(reachable.has("file:///b.stm"));
+    assert.ok(reachable.has("file:///c.stm"));
+  });
+
+  it("handles import cycles without hanging", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `import { b_thing } from "b.stm"`,
+      "file:///b.stm": `import { a_thing } from "a.stm"\nschema b_thing { id UUID }`,
+    });
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    assert.equal(reachable.size, 2);
+    assert.ok(reachable.has("file:///a.stm"));
+    assert.ok(reachable.has("file:///b.stm"));
+  });
+
+  it("does not include files that exist in the index but are not imported", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `import { customers } from "b.stm"`,
+      "file:///b.stm": "schema customers { id UUID }",
+      "file:///c.stm": "schema invoices { id UUID }",
+    });
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    assert.ok(!reachable.has("file:///c.stm"));
+  });
+
+  it("silently skips imports to files not present in the index", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `import { missing } from "does-not-exist.stm"`,
+    });
+    // Should not throw, just return the entry file
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    assert.equal(reachable.size, 1);
+    assert.ok(reachable.has("file:///a.stm"));
+  });
+
+  it("resolves relative paths with subdirectory components", () => {
+    const idx = buildIndex({
+      "file:///project/pipelines/a.stm": `import { customers } from "../lib/common.stm"`,
+      "file:///project/lib/common.stm": "schema customers { id UUID }",
+    });
+    const reachable = getImportReachableUris("file:///project/pipelines/a.stm", idx);
+    assert.equal(reachable.size, 2);
+    assert.ok(reachable.has("file:///project/pipelines/a.stm"));
+    assert.ok(reachable.has("file:///project/lib/common.stm"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createScopedIndex
+// ---------------------------------------------------------------------------
+
+describe("createScopedIndex", () => {
+  it("scoped index contains only definitions from reachable files", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "schema customers { id UUID }",
+      "file:///b.stm": "schema orders { id UUID }",
+    });
+    const scoped = createScopedIndex(idx, new Set(["file:///a.stm"]));
+    assert.ok(scoped.definitions.has("customers"));
+    assert.ok(!scoped.definitions.has("orders"));
+  });
+
+  it("scoped index contains only references from reachable files", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `mapping m { source { customers } target { dim_customers } id -> id }`,
+      "file:///b.stm": `mapping n { source { invoices } target { dim_invoices } id -> id }`,
+    });
+    const scoped = createScopedIndex(idx, new Set(["file:///a.stm"]));
+    const custRefs = scoped.references.get("customers");
+    assert.ok(custRefs && custRefs.length > 0);
+    const invRefs = scoped.references.get("invoices");
+    assert.ok(!invRefs || invRefs.length === 0);
+  });
+
+  it("scoped index correctly tracks indexedFiles", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "schema customers { id UUID }",
+      "file:///b.stm": "schema orders { id UUID }",
+    });
+    const scoped = createScopedIndex(idx, new Set(["file:///a.stm"]));
+    assert.ok(scoped.indexedFiles.has("file:///a.stm"));
+    assert.ok(!scoped.indexedFiles.has("file:///b.stm"));
+  });
+
+  it("scoped index with all files equals the original index definitions", () => {
+    const idx = buildIndex({
+      "file:///a.stm": "schema customers { id UUID }",
+      "file:///b.stm": "schema orders { id UUID }",
+    });
+    const allUris = new Set(["file:///a.stm", "file:///b.stm"]);
+    const scoped = createScopedIndex(idx, allUris);
+    assert.ok(scoped.definitions.has("customers"));
+    assert.ok(scoped.definitions.has("orders"));
+  });
+
+  it("completions from a scoped index exclude symbols from non-imported files", () => {
+    // Simulates: a.stm imports b.stm but not c.stm.
+    // Completions for a.stm should see customers and orders, but not invoices.
+    const idx = buildIndex({
+      "file:///a.stm": `import { customers } from "b.stm"\nschema orders { id UUID }`,
+      "file:///b.stm": "schema customers { id UUID }",
+      "file:///c.stm": "schema invoices { id UUID }",
+    });
+    const reachable = getImportReachableUris("file:///a.stm", idx);
+    const scoped = createScopedIndex(idx, reachable);
+    assert.ok(scoped.definitions.has("customers"));
+    assert.ok(scoped.definitions.has("orders"));
+    assert.ok(!scoped.definitions.has("invoices"));
   });
 });
