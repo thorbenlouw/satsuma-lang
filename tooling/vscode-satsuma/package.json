@@ -51,7 +51,6 @@
       { "command": "satsuma.whereUsed", "title": "Satsuma: Where Used" },
       { "command": "satsuma.showWarnings", "title": "Satsuma: Show Warnings" },
       { "command": "satsuma.showSummary", "title": "Satsuma: Show Workspace Summary" },
-      { "command": "satsuma.showArrows", "title": "Satsuma: Show Arrows for Field" },
       { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Show Field Lineage" },
       { "command": "satsuma.showCoverage", "title": "Satsuma: Show Mapping Coverage" },
       {
@@ -63,7 +62,6 @@
     "menus": {
       "commandPalette": [
         { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma" },
-        { "command": "satsuma.showArrows", "when": "editorLangId == satsuma" },
         { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showViz", "when": "editorLangId == satsuma" }

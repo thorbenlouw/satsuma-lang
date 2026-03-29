@@ -12,7 +12,6 @@ import { registerLineageCommand } from "./commands/lineage";
 import { registerWhereUsedCommand } from "./commands/where-used";
 import { registerWarningsCommand } from "./commands/warnings";
 import { registerSummaryCommand } from "./commands/summary";
-import { registerArrowsCommand } from "./commands/arrows";
 import { registerCoverageCommand } from "./commands/coverage";
 import { getEditorActionContext } from "./commands/action-context";
 import { VizPanel } from "./webview/viz/panel";
@@ -70,7 +69,6 @@ export function activate(context: ExtensionContext): void {
   registerWhereUsedCommand(context, cliPath);
   registerWarningsCommand(context, cliPath);
   registerSummaryCommand(context, cliPath, outputChannel);
-  registerArrowsCommand(context, cliPath, outputChannel);
 
   registerCoverageCommand(context, cliPath, client);
 

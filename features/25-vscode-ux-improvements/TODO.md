@@ -32,7 +32,7 @@ Start with `sc-aobl` — everything else in Phase 1 is blocked on it.
 
 All Phase 2 work can start once Phase 1 (`sc-p8h0`) is closed.
 
-- [ ] **sc-cim8** — Delete `showArrows` command entirely
+- [x] **sc-cim8** — Delete `showArrows` command entirely
   - Remove `src/commands/arrows.ts`, registrations, and `package.json` entries
   - *(blocked by sc-p8h0)*
 
