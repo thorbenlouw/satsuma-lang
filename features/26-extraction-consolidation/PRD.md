@@ -1,6 +1,6 @@
 # Feature 26 — Extraction Consolidation: Eliminate CLI/LSP Duplication
 
-> **Status: Draft — not yet scheduled**
+> **Status: Scheduled — tickets created (sl-8pj3, sl-sado, sl-kuos, sl-ikzl, sl-fgqt, sl-pxw5, sl-n4wb, sl-60gz, sl-ysy4, sl-s1gt, sl-r5jk)**
 
 ## Problem
 
