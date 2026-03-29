@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { extractArrowRecords } from "#src/extract.js";
+import { extractArrowRecords } from "@satsuma/core";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EXAMPLES = resolve(__dirname, "../../../examples");
