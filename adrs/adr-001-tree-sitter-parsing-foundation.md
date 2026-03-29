@@ -1,7 +1,7 @@
 # ADR-001 — Tree-sitter as the Parsing Foundation
 
 **Status:** Accepted
-**Date:** 2024 (retrospective)
+**Date:** 2026-03 (retrospective)
 
 ## Context
 

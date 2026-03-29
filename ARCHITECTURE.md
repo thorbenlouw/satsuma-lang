@@ -10,106 +10,84 @@ See `adrs/` for the architectural decision records that explain the choices made
 
 The `tooling/` directory contains five npm packages:
 
-```
-tooling/
-├── tree-sitter-satsuma/   Grammar + parser artifacts
-├── satsuma-core/          Shared extraction + formatting library  ← foundation
-├── satsuma-cli/           CLI tool (16 commands)                  ← consumer of core
-├── vscode-satsuma/        VS Code extension + LSP server          ← consumer of core
-└── satsuma-viz/           React viz component (@satsuma/viz)      ← consumer of LSP
-```
+| Package | Role |
+|---------|------|
+| `tree-sitter-satsuma` | Grammar definition and compiled parser artifacts (WASM) |
+| `satsuma-core` | Shared extraction, formatting, and analysis library — the foundation |
+| `satsuma-cli` | CLI tool (16 commands); consumer of satsuma-core |
+| `vscode-satsuma` | VS Code extension + LSP server; consumer of satsuma-core |
+| `satsuma-viz` | React visualization component; consumer of LSP VizModel |
 
 ### Package Dependency Diagram
 
-```
-tree-sitter-satsuma
-        │
-        │ (WASM artifact: satsuma.wasm)
-        ▼
-satsuma-core  ◄────────────────────────────────────┐
-  (formatter, cst-utils, extract, spread-expand,    │
-   nl-ref, classify, canonical-ref, meta-extract)   │
-        │                                           │
-        ├──────────────────►  satsuma-cli           │
-        │                    (16 commands,           │
-        │                     WorkspaceIndex)        │
-        │                                           │
-        └──────────────────►  vscode-satsuma        │
-                              ├── LSP server ───────┘
-                              │   (VizModel, workspace-index,
-                              │    semantic tokens, completions, …)
-                              └── Extension host
-                                    │
-                                    ▼
-                               satsuma-viz
-                              (React component,
-                               renders VizModel)
+```mermaid
+graph TD
+  TS[tree-sitter-satsuma<br/><i>grammar + WASM artifact</i>]
+  CORE[satsuma-core<br/><i>formatter · cst-utils · extract<br/>spread-expand · nl-ref · types</i>]
+  CLI[satsuma-cli<br/><i>16 commands · WorkspaceIndex</i>]
+  LSP[vscode-satsuma/server<br/><i>VizModel · DefinitionIndex<br/>semantic tokens · completions · …</i>]
+  EXT[vscode-satsuma/client<br/><i>extension host</i>]
+  VIZ[satsuma-viz<br/><i>React component</i>]
+
+  TS -- "satsuma.wasm" --> CORE
+  TS -- "satsuma.wasm" --> CLI
+  TS -- "satsuma.wasm" --> LSP
+  CORE --> CLI
+  CORE --> LSP
+  LSP --> EXT
+  LSP -- "VizModel JSON" --> VIZ
 ```
 
-`satsuma-core` has no runtime dependencies on any other package in this repo. Both CLI and LSP depend on `satsuma-core` via `"@satsuma/core": "file:../satsuma-core"`.
+`satsuma-core` has no runtime dependencies on any other package in this repo. All consumers depend on it via `"@satsuma/core": "file:../satsuma-core"`.
 
 ---
 
 ## Data Flow
 
-```
-Source text (.stm file)
-        │
-        ▼ web-tree-sitter (WASM)
-  Concrete Syntax Tree (CST)
-  SyntaxNode tree (tree-sitter Node)
-        │
-        ▼ satsuma-core/extract.ts
-  Extracted records (per-file, no cross-file state):
-    ExtractedSchema[], ExtractedMapping[], ExtractedArrow[],
-    ExtractedMetric[], ExtractedFragment[], ExtractedImport[], …
-        │
-        ├──────────────────────────────►  satsuma-cli
-        │                                 index-builder.ts:
-        │                                 extractFileData() → FileData
-        │                                 buildIndex([FileData, …]) → WorkspaceIndex
-        │                                    │
-        │                                    ▼ CLI commands
-        │                                 graph --json, lineage, field-lineage,
-        │                                 validate, lint, nl, arrows, …
-        │
-        └──────────────────────────────►  vscode-satsuma/server
-                                          workspace-index.ts: indexFile() → DefinitionIndex
-                                          viz-model.ts: buildVizModel() → VizModel
-                                             │
-                                             ▼ LSP protocol
-                                          textDocument/definition, references,
-                                          completions, hover, rename, …
-                                          satsuma/mappingCoverage, fieldLocations, …
-                                             │
-                                             ▼ satsuma-viz
-                                          <MappingViz model={vizModel} />
+```mermaid
+flowchart TD
+  SRC[".stm source files"]
+  PARSE["web-tree-sitter (WASM)\nparse()"]
+  CST["Concrete Syntax Tree (CST)\nSyntaxNode tree"]
+  EXTRACT["satsuma-core/extract\nextractSchemas · extractMappings\nextractArrows · extractMetrics\nextractFragments · extractImports · …"]
+  RECORDS["Per-file extracted records\nExtractedSchema[] · ExtractedMapping[]\nExtractedArrow[] · ExtractedMetric[] · …"]
+
+  IDXB["satsuma-cli/index-builder\nextractFileData() + buildIndex()"]
+  WI["WorkspaceIndex\nfully resolved · multi-file"]
+  CMDS["CLI commands\ngraph · lineage · field-lineage\nvalidate · lint · nl-refs · …"]
+
+  WSIDX["vscode-satsuma/workspace-index\nindexFile()"]
+  DEFIDX["DefinitionIndex\ngo-to-def · find-refs · completions"]
+  VIZ["vscode-satsuma/viz-model\nbuildVizModel()"]
+  VIZM["VizModel\nrendered by satsuma-viz"]
+
+  SRC --> PARSE --> CST --> EXTRACT --> RECORDS
+  RECORDS --> IDXB --> WI --> CMDS
+  RECORDS --> WSIDX --> DEFIDX
+  RECORDS --> VIZ --> VIZM
 ```
 
 ---
 
 ## satsuma-core Module Structure `[post-F26]`
 
-```
-satsuma-core/src/
-├── index.ts          — Public re-exports of all modules
-├── types.ts          — All shared type definitions (SyntaxNode, Tree, FieldDecl,
-│                       ExtractedSchema, ExtractedMapping, ExtractedArrow, …)
-├── cst-utils.ts      — CST navigation helpers: child(), children(),
-│                       allDescendants(), labelText(), stringText(), entryText()
-├── classify.ts       — classifyTransform(), classifyArrow() → Classification
-├── canonical-ref.ts  — canonicalRef(ns, schema, field?) → "ns::schema.field"
-├── meta-extract.ts   — extractMetadata(node) → MetaEntry[]
-├── extract.ts        — extractSchemas(), extractMappings(), extractArrowRecords(),
-│                       extractMetrics(), extractFragments(), extractTransforms(),
-│                       extractImports(), extractNotes(), extractWarnings(),
-│                       extractQuestions(), extractNamespaces()
-│                       + public extractFieldTree() for recursive field access
-├── spread-expand.ts  — expandSpreads(), expandEntityFields(), collectFieldPaths()
-│                       Uses EntityFieldLookup callback (see ADR-005)
-├── nl-ref.ts         — extractBacktickRefs(), classifyRef()
-│                       Pure text functions — no index dependency (see ADR-006)
-└── format.ts         — format(tree, source) → formatted string (Feature 20)
+```mermaid
+graph LR
+  IDX["index.ts\n(re-exports all)"]
+  TYPES["types.ts\nSyntaxNode · Tree · FieldDecl\nExtracted* · NLRefData · AtRef\nMappingContext · Resolution · …"]
+  CST["cst-utils.ts\nchild · children\nallDescendants\nlabelText · stringText"]
+  CLS["classify.ts\nclassifyTransform\nclassifyArrow"]
+  CAN["canonical-ref.ts\ncanonicalRef()"]
+  META["meta-extract.ts\nextractMetadata()"]
+  EXT["extract.ts\nextractSchemas · extractMappings\nextractArrows · extractMetrics\nextractFragments · extractTransforms\nextractImports · extractNotes\nextractWarnings · extractQuestions\nextractNamespaces\nextractFieldTree (public)"]
+  SPR["spread-expand.ts\nEntityFieldLookup (callback)\nexpandSpreads\nexpandEntityFields\ncollectFieldPaths"]
+  NL["nl-ref.ts\nDefinitionLookup (callback)\nAtRef · RefClassification\nextractAtRefs · classifyRef\nresolveRef · resolveAllAtRefs\nextractNLRefData"]
+  FMT["format.ts\nformat(tree, source)"]
+
+  IDX --> TYPES & CST & CLS & CAN & META & EXT & SPR & NL & FMT
+  EXT --> CST & CLS & CAN & META & TYPES
+  SPR --> EXT & TYPES
+  NL --> SPR & TYPES
 ```
 
 ### Key Types
@@ -118,13 +96,16 @@ satsuma-core/src/
 |---|---|---|
 | `SyntaxNode` | `types.ts` | Abstract CST node interface (structurally matches web-tree-sitter `Node`) |
 | `Tree` | `types.ts` | Parsed tree with `rootNode: SyntaxNode` |
-| `FieldDecl` | `types.ts` | Recursive field declaration: `{ name, type, isList?, children?, spreads?, metadata? }` |
-| `ExtractedSchema` | `types.ts` | Schema block: name, namespace, fields (FieldDecl[]), spreads, metadata |
+| `FieldDecl` | `types.ts` | Recursive field: `{ name, type, isList?, children?, spreads?, metadata? }` |
+| `ExtractedSchema` | `types.ts` | Schema block: name, namespace, fields, spreads, metadata |
 | `ExtractedMapping` | `types.ts` | Mapping block: sourceRefs, targetRef, arrows |
 | `ExtractedArrow` | `types.ts` | Arrow: sourceFields, targetField, transform steps, classification |
 | `MetaEntry` | `types.ts` | Metadata entry union: tag, kv, enum, note, slice |
-| `EntityFieldLookup` | `spread-expand.ts` | Callback `(name, ns) => { fields, spreads? } \| null` |
-| `BacktickRef` | `nl-ref.ts` | `{ ref: string, offset: number }` from an NL string |
+| `AtRef` | `types.ts` | `{ ref: string, offset: number }` — a single @-ref extracted from NL text |
+| `NLRefData` | `types.ts` | All NL strings + @-refs for a file |
+| `Resolution` | `types.ts` | `{ resolved: boolean, resolvedTo: { kind, name } \| null }` |
+| `EntityFieldLookup` | `spread-expand.ts` | Callback for spread resolution: `(name, ns) => { fields } \| null` |
+| `DefinitionLookup` | `nl-ref.ts` | Callback for @-ref resolution: `(name, ns) => { kind, fields? } \| null` |
 
 ---
 
@@ -141,10 +122,10 @@ satsuma-cli/src/
 │   ├── lint.ts          — satsuma lint
 │   └── …
 ├── index-builder.ts     — extractFileData(), buildIndex() → WorkspaceIndex
-│                          Multi-file orchestration; wraps satsuma-core extractions
-├── nl-ref-extract.ts    — resolveRef(), resolveAllNLRefs(), extractNLRefData()
-│                          Resolution layer (needs WorkspaceIndex). Pure extraction
-│                          (extractBacktickRefs, classifyRef) imported from @satsuma/core
+│                          Wraps satsuma-core extractions; provides EntityFieldLookup
+│                          and DefinitionLookup factory functions for callbacks
+├── nl-ref-extract.ts    — makeDefinitionLookup(WorkspaceIndex): DefinitionLookup
+│                          Thin adapter; all logic is in satsuma-core/nl-ref
 ├── workspace.ts         — File discovery, parsing, index building for a workspace dir
 ├── graph-builder.ts     — Builds the graph data structure for satsuma graph
 ├── lint-engine.ts       — Lint rule evaluation
@@ -153,13 +134,13 @@ satsuma-cli/src/
 ```
 
 `WorkspaceIndex` (CLI-specific) holds fully resolved, multi-file semantic data:
-- `schemas: Map<string, SchemaRecord>` — all schemas, keyed by qualified name
-- `mappings: Map<string, MappingRecord>` — all mappings
-- `arrows: ArrowRecord[]` — all arrows across all files
-- `metrics: Map<string, MetricRecord>` — all metrics
-- `fragments: Map<string, FragmentRecord>` — all fragments
-- `nlRefData: NLRefData[]` — all NL strings with extracted refs
-- … (warnings, questions, notes, namespace metadata)
+- `schemas: Map<string, SchemaRecord>`
+- `mappings: Map<string, MappingRecord>`
+- `arrows: ArrowRecord[]`
+- `metrics: Map<string, MetricRecord>`
+- `fragments: Map<string, FragmentRecord>`
+- `nlRefData: NLRefData[]` ← type from satsuma-core
+- plus warnings, questions, notes, namespace metadata
 
 ---
 
@@ -170,33 +151,26 @@ vscode-satsuma/server/src/
 ├── server.ts            — LSP server entry: request handlers, lifecycle
 ├── parser-utils.ts      — initParser(), parseSource(), nodeRange()
 │                          CST helpers (child, children, etc.) imported from @satsuma/core
-├── workspace-index.ts   — indexFile(), DefinitionEntry, ReferenceEntry, ImportEntry
-│                          IDE-oriented index (definitions + references for go-to-def)
+├── workspace-index.ts   — indexFile() → DefinitionIndex
+│                          IDE-oriented: definitions + references for go-to-def
 │                          Import resolution: getImportReachableUris()
-├── viz-model.ts         — buildVizModel() → VizModel
-│                          Uses satsuma-core extraction + adds LSP-specific enrichment
-│                          (SourceLocation, comments, notes, metadata for rendering)
+├── viz-model.ts         — buildVizModel(tree, definitionIndex) → VizModel
+│                          Uses satsuma-core extraction + DefinitionLookup callback
+│                          for @-ref resolution; adds LSP-specific enrichment
+│                          (SourceLocation, comments, metadata for rendering)
 ├── coverage.ts          — computeMappingCoverage() → SchemaCoverageResult
-├── semantic-tokens.ts   — Semantic highlighting
-├── semantic-diagnostics.ts — Semantic validation
-├── hover.ts             — Hover information
-├── definition.ts        — Go-to-definition
-├── references.ts        — Find references
-├── completion.ts        — Completions
-├── symbols.ts           — Document/workspace symbols
-├── rename.ts            — Rename refactoring
-├── folding.ts           — Folding regions
-└── formatting.ts        — Document formatting (calls @satsuma/core format())
+├── semantic-tokens.ts, hover.ts, definition.ts, references.ts,
+│   completion.ts, symbols.ts, rename.ts, folding.ts, formatting.ts
 ```
 
 `VizModel` (LSP-specific) is the visualization data contract consumed by `@satsuma/viz`:
-- Enriched with source locations (for click-to-open)
-- Includes comments, notes, and metadata for rendering
-- Schema-scoped: one `VizModel` per file
+- Enriched with source locations (for click-to-open in editor)
+- Includes comments, notes, metadata for rendering
+- ArrowEntry.transform.atRefs: ResolvedAtRef[] — resolved @-refs from NL transform text
 
-`DefinitionEntry` / `ReferenceEntry` (LSP-specific) are the IDE index types:
-- Keyed by qualified name for O(1) go-to-definition
-- Flat: the IDE index is not a full semantic model
+`DefinitionIndex` (LSP-specific) is the IDE index:
+- `Map<string, DefinitionEntry[]>` — keyed by qualified name
+- `DefinitionEntry` has `{ uri, range, kind, namespace, fields? }` for schema/fragment entries
 
 ---
 
@@ -218,9 +192,36 @@ schema orders {
 }
 ```
 
-**Rule:** Any code that works with fields must recurse through the `FieldDecl.children` tree. `satsuma-core`'s `extractFieldTree()` returns the full recursive tree. Callers that need a flat list (e.g. for completion, coverage) call `collectFieldPaths()` from `spread-expand.ts` to flatten with dotted paths.
+**Rule:** Any code that works with fields must recurse through `FieldDecl.children`. Use `satsuma-core`'s public `extractFieldTree()` to get the full recursive tree. Use `collectFieldPaths()` from `spread-expand.ts` to flatten to dotted paths (e.g. `line_items.product_id`).
 
-The historical footgun (the `fieldLocations` LSP handler returning only top-level fields) was fixed in Feature 26 by routing through `extractFieldTree()`.
+The `fieldLocations` LSP handler was historically flat (only top-level fields). This was fixed in Feature 26 (ticket sl-ysy4) by routing through `extractFieldTree()`.
+
+---
+
+## Callback Abstractions
+
+Two callback interfaces decouple satsuma-core from consumer index types:
+
+```mermaid
+graph LR
+  subgraph satsuma-core
+    SPR["spread-expand\nEntityFieldLookup"]
+    NL["nl-ref\nDefinitionLookup"]
+  end
+  subgraph satsuma-cli
+    WI["WorkspaceIndex\nadapter closure"]
+  end
+  subgraph vscode-satsuma/server
+    DI["DefinitionIndex\nadapter closure"]
+  end
+
+  WI -- "implements" --> SPR
+  WI -- "implements" --> NL
+  DI -- "implements" --> SPR
+  DI -- "implements" --> NL
+```
+
+See ADR-005 (EntityFieldLookup) and ADR-006 (DefinitionLookup) for design rationale.
 
 ---
 
@@ -228,10 +229,11 @@ The historical footgun (the `fieldLocations` LSP handler returning only top-leve
 
 To add a new extraction consumer (e.g. a second language server, a linter, a code generator):
 
-1. Add a dependency on `@satsuma/core` in the new package
+1. Add a dependency on `@satsuma/core`
 2. Call `extractSchemas()`, `extractMappings()`, etc. on the tree root node
 3. For spread-aware field lists, implement `EntityFieldLookup` and call `expandSpreads()`
-4. For NL ref annotation, call `extractBacktickRefs()` on NL string text
+4. For NL @-ref extraction, call `extractAtRefs()` on NL string text
+5. For resolved @-ref data, implement `DefinitionLookup` and call `resolveRef()`
 
 No CLI or LSP code needs to be imported.
 
@@ -239,14 +241,14 @@ No CLI or LSP code needs to be imported.
 
 ## Test Strategy
 
-| Package | Test Location | Approach |
+| Package | Test location | Approach |
 |---|---|---|
-| `tree-sitter-satsuma` | `test/corpus/` | tree-sitter corpus tests (parse → CST assertions) |
-| `satsuma-core` | `test/*.test.js` | Unit tests against pure functions; no I/O |
+| `tree-sitter-satsuma` | `test/corpus/` | tree-sitter corpus tests (parse → CST shape assertions) |
+| `satsuma-core` | `test/*.test.js` | Unit tests against pure functions; no I/O, no WASM required |
 | `satsuma-cli` | `test/*.test.js` | Integration tests via CLI commands; golden snapshot for `graph --json` |
-| `vscode-satsuma/server` | `test/*.test.js` | Unit tests for LSP handlers + extraction adapters |
+| `vscode-satsuma/server` | `test/*.test.js` | Unit tests for LSP handlers and extraction adapters |
 
-The **golden snapshot** (`satsuma-cli/test/fixtures/golden-graph-output.json`) captures the output of `satsuma graph --json examples/` and is asserted byte-for-byte on every test run. This is the primary regression guard for CLI output correctness during and after the Feature 26 migration.
+The **golden snapshot** (`satsuma-cli/test/fixtures/golden-graph-output.json`) captures the output of `satsuma graph --json examples/` before any migration work begins (ticket sl-8pj3) and is asserted byte-for-byte on every test run. This is the primary regression guard for CLI output correctness throughout the Feature 26 migration.
 
 ---
 
