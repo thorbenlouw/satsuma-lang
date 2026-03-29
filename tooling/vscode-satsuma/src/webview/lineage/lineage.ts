@@ -28,7 +28,10 @@ function render(arrows: ArrowEntry[]): void {
   container.innerHTML = "";
 
   if (arrows.length === 0) {
-    container.innerHTML = '<div class="empty-message">No lineage found for this field.</div>';
+    const empty = document.createElement("div");
+    empty.className = "empty-message";
+    empty.textContent = "No lineage found for this field.";
+    container.appendChild(empty);
     return;
   }
 

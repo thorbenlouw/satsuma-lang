@@ -139,7 +139,11 @@ async function render(payload: Payload): Promise<void> {
 
 function showError(message: string): void {
   const root = document.getElementById("field-lineage-root")!;
-  root.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+  root.innerHTML = "";
+  const div = document.createElement("div");
+  div.className = "error-message";
+  div.textContent = message;
+  root.appendChild(div);
 }
 
 // ── ELK graph ──────────────────────────────────────────────────────────────
@@ -396,7 +400,7 @@ function buildToolbar(breadcrumb: string[]): HTMLDivElement {
   back.className = "toolbar-btn";
   back.title = "Go back";
   back.disabled = breadcrumb.length <= 1;
-  back.innerHTML = "&#8592;"; // ←
+  back.textContent = "\u2190"; // ←
   back.addEventListener("click", () => {
     vscode.postMessage({ type: "back" });
   });

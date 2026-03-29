@@ -257,10 +257,14 @@ jobs:
         working-directory: tooling/tree-sitter-satsuma
         run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
+      - name: Compile LSP server for tests
+        working-directory: tooling/vscode-satsuma/server
+        run: npx tsc
+
       - name: Run LSP server tests
         run: |
           mkdir -p ../../test-results
-          cd server && npm run pretest && node --test \
+          cd server && node --test \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination=../../../test-results/lsp.xml \
             test/**/*.test.js
