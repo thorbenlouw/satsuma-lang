@@ -74,7 +74,7 @@ describe("makeEntityRefResolver()", () => {
 describe("expandEntityFields()", () => {
   it("returns empty array for entity with no spreads", () => {
     const entity = { fields: [field("id")], hasSpreads: false };
-    const resolve = (ref, ns) => ref;
+    const resolve = (ref, _ns) => ref;
     const lookup = () => null;
     assert.deepEqual(expandEntityFields(entity, null, resolve, lookup), []);
   });

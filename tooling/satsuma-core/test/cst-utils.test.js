@@ -48,9 +48,6 @@ function nlStr(inner) {
   return n("nl_string", [], `"${inner}"`);
 }
 
-function multilineStr(inner) {
-  return n("multiline_string", [], `"""  ${inner}  """`);
-}
 
 function blockLabel(nameNode) {
   return n("block_label", [nameNode]);
