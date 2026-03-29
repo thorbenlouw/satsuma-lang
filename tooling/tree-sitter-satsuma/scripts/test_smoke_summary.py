@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parents[3]
 # ---------------------------------------------------------------------------
 
 EXPECTATIONS: dict[str, dict] = {
-    "examples/common.stm": {
+    "examples/lib/common.stm": {
         "parse_ok": True,
         "min_blocks": 5,
         "min_schema_members": 21,
@@ -46,7 +46,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 13,
         "block_types": {"fragment_block", "schema_block"},
     },
-    "examples/db-to-db.stm": {
+    "examples/db-to-db/pipeline.stm": {
         "parse_ok": True,
         "min_blocks": 4,
         "min_schema_members": 40,
@@ -57,7 +57,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 24,
         "block_types": {"import_decl", "mapping_block", "schema_block"},
     },
-    "examples/edi-to-json.stm": {
+    "examples/edi-to-json/pipeline.stm": {
         "parse_ok": True,
         "min_blocks": 3,
         "min_schema_members": 47,
@@ -68,7 +68,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 14,
         "block_types": {"mapping_block", "schema_block"},
     },
-    "examples/multi-source-hub.stm": {
+    "examples/multi-source/multi-source-hub.stm": {
         "parse_ok": True,
         "min_blocks": 11,
         "min_schema_members": 26,
@@ -79,7 +79,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 8,
         "block_types": {"mapping_block", "schema_block"},
     },
-    "examples/multi-source-join.stm": {
+    "examples/multi-source/multi-source-join.stm": {
         "parse_ok": True,
         "min_blocks": 5,
         "min_schema_members": 55,
@@ -90,7 +90,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 38,
         "block_types": {"import_decl", "schema_block"},
     },
-    "examples/protobuf-to-parquet.stm": {
+    "examples/protobuf-to-parquet/pipeline.stm": {
         "parse_ok": True,
         "min_blocks": 3,
         "min_schema_members": 41,
@@ -101,7 +101,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 32,
         "block_types": {"mapping_block", "schema_block"},
     },
-    "examples/xml-to-parquet.stm": {
+    "examples/xml-to-parquet/pipeline.stm": {
         "parse_ok": True,
         "min_blocks": 5,
         "min_schema_members": 61,
@@ -112,7 +112,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 48,
         "block_types": {"mapping_block", "schema_block"},
     },
-    "examples/sfdc_to_snowflake.stm": {
+    "examples/sfdc-to-snowflake/pipeline.stm": {
         "parse_ok": True,
         "min_blocks": 6,
         "min_schema_members": 26,
@@ -123,7 +123,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 19,
         "block_types": {"import_decl", "mapping_block", "schema_block"},
     },
-    "examples/metrics.stm": {
+    "examples/metrics-platform/metrics.stm": {
         "parse_ok": True,
         "min_blocks": 7,
         "min_schema_members": 14,
@@ -156,7 +156,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_annotations": 2,
         "block_types": {"schema_block"},
     },
-    "examples/cobol-to-avro.stm": {
+    "examples/cobol-to-avro/pipeline.stm": {
         "parse_ok": True,
         "min_blocks": 3,
         "min_schema_members": 39,
