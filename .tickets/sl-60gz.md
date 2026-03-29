@@ -1,6 +1,6 @@
 ---
 id: sl-60gz
-status: open
+status: closed
 deps: [sl-sado]
 links: []
 created: 2026-03-29T18:51:07Z
@@ -27,3 +27,9 @@ Also update the SyntaxNode/Tree type re-exports: parser-utils currently re-expor
 
 1. parser-utils.ts has no local definitions of child, children, labelText, stringText 2. Those 4 functions are imported from @satsuma/core 3. All other LSP server files that import from './parser-utils' continue to compile without changes 4. All 17 LSP server test files pass 5. VS Code extension builds (npm run compile in vscode-satsuma/) 6. No new dependencies added to vscode-satsuma/server/package.json beyond @satsuma/core (which is already there)
 
+
+## Notes
+
+**2026-03-29T20:48:39Z**
+
+**2026-03-29T20:48:00Z** Cause: LSP parser-utils.ts defined child/children/labelText/stringText locally, duplicating satsuma-core implementations. Fix: Replaced local implementations with wrapper functions importing from @satsuma/core, using 'as Node' casts to bridge the SyntaxNode (abstract) vs Node (concrete web-tree-sitter) type gap. All 280 LSP tests pass and extension builds cleanly.
