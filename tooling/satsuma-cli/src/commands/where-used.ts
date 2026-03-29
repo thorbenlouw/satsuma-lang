@@ -36,6 +36,12 @@ export function register(program: Command): void {
 Searches mappings (source/target refs), metrics (source refs), schemas
 (fragment spreads, ref metadata), and NL backtick references.
 
+JSON shape (--json):
+  {
+    "name": str,   # canonical name searched
+    "refs": [{"kind": "mapping"|"metric"|"schema"|"nl_ref", "name": str, "file": str, "row": int}, ...]
+  }
+
 Examples:
   satsuma where-used hub_customer                    # who references this schema?
   satsuma where-used audit_fields                    # where is this fragment spread?

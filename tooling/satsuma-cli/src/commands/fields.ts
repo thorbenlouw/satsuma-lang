@@ -32,6 +32,10 @@ export function register(program: Command): void {
 Looks up <name> in schemas first, then fragments, then metrics.
 Names can be namespace-qualified (e.g. pos::stores).
 
+JSON shape (--json): array of field objects
+  [{"name": str, "type": str | null}, ...]
+  With --unmapped-by: same shape, filtered to fields with no arrows in the named mapping.
+
 Examples:
   satsuma fields hub_customer                                    # list all fields
   satsuma fields hub_customer --with-meta                        # include tags

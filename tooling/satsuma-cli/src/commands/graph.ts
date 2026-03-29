@@ -82,7 +82,7 @@ export function register(program: Command): void {
     .option("--no-nl", "strip NL text from edges")
     .addHelpText("after", `
 Output modes (pick one):
-  --json          nodes, field-level edges, schema-level edges, warnings, unresolved NL
+  --json          full structured JSON (primary agent interface)
   --compact       flat schema-level adjacency list (minimal tokens)
   (default)       human-readable summary
 
@@ -90,6 +90,20 @@ Modifiers (combine with --json):
   --schema-only   drop field arrays and field-level edges (topology only)
   --no-nl         strip NL text from edges (smaller payload)
   --namespace     filter to nodes within a single namespace
+
+JSON shape (--json):
+  {
+    "version":   int,
+    "generated": str,   # ISO timestamp
+    "workspace": str,   # absolute path
+    "stats":     {"schemas": int, "mappings": int, "metrics": int, "fragments": int, "transforms": int, "arrows": int, "errors": int},
+    "nodes":     [{"id": str, "kind": "schema"|"mapping"|"metric"|"transform", "namespace": str|null, "file": str, "line": int, ...}, ...],
+    "edges":     [{"from": str|null, "to": str|null, "mapping": str, "classification": str, "file": str, "line": int, ...}, ...],
+    "schema_edges": [{"from": str, "to": str, "role": "source"|"target"|"metric_source"|"nl_ref"}, ...],
+    "warnings":  [{"text": str, "file": str, "line": int}, ...],
+    "unresolved_nl": [{"scope": str, "arrow": str, "text": str, "file": str, "line": int}, ...]
+  }
+  edges[].classification: "none" | "structural" | "nl" | "mixed" | "nl-derived"
 
 Examples:
   satsuma graph ./workspace --json                   # full graph

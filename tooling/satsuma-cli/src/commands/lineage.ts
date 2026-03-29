@@ -52,6 +52,14 @@ One of --from or --to is required (not both).
   --from  traces downstream: schema → mappings → target schemas → metrics
   --to    traces upstream: BFS path from any source back to the target
 
+JSON shape (--json):
+  {
+    "nodes": [{"name": str, "type": "schema"|"mapping"|"metric"|"transform", "file": str}, ...],
+    "edges": [{"src": str, "tgt": str}, ...]
+  }
+  Schema names: global schemas use bare names ("s1"), namespaced use qualified ("ns::s1").
+  Edge direction: src → tgt follows data flow (upstream → downstream).
+
 Examples:
   satsuma lineage --from hub_customer              # what does hub_customer feed?
   satsuma lineage --to mart_customer_360           # what feeds mart_customer_360?

@@ -280,6 +280,8 @@ The `satsuma` CLI is a deterministic structural extraction tool. It extracts fac
 
 Every command produces 100% correct results from structural analysis. There are no `impact`, `coverage`, `audit`, or `inventory` commands — those are workflows you compose from primitives, applying your own reasoning to the NL content the CLI surfaces.
 
+**Self-discovery:** Every command supports `--help` with its full flag list, JSON output shape, and examples. Run `satsuma <command> --help` to inspect any command without consulting external docs.
+
 ### Command reference
 
 ```bash
@@ -294,8 +296,13 @@ satsuma find --tag pii                       # fields carrying a metadata tag
 satsuma warnings                             # all //! and //? comments
 satsuma context "customer mapping"           # keyword-ranked block extraction (heuristic)
 
+# Field-level lineage — trace a single field upstream and downstream
+satsuma field-lineage loyalty_sfdc.LoyaltyTier --json     # full upstream + downstream chain
+satsuma field-lineage loyalty_sfdc.LoyaltyTier --upstream # only upstream (what feeds this field)
+satsuma field-lineage loyalty_sfdc.LoyaltyTier --downstream # only downstream (where this field flows)
+
 # Structural primitives — slice below block level
-satsuma arrows loyalty_sfdc.LoyaltyTier      # all arrows involving this field + classification
+satsuma arrows loyalty_sfdc.LoyaltyTier      # immediate arrows involving this field + classification
 satsuma nl "demographics to mart"            # NL content in a mapping
 satsuma nl mart_customer_360.email            # NL content on a specific field
 satsuma nl all path/to/workspace/             # all NL across the workspace
@@ -325,6 +332,27 @@ satsuma lint                                 # policy/convention checks (duplica
 satsuma lint --fix                           # apply safe deterministic fixes
 satsuma lint --json                          # structured lint diagnostics
 satsuma diff v1/ v2/                         # structural comparison of two snapshots
+```
+
+### field-lineage vs arrows
+
+`arrows <field>` returns the **immediate** arrows for a field (one hop).
+`field-lineage <field>` traverses the **full chain** — all the way upstream and downstream, following both declared arrows and NL-derived `@ref` references, in one call.
+
+```
+arrows loyalty_sfdc.LoyaltyTier --json        # immediate: [{source, target, classification}, ...]
+field-lineage loyalty_sfdc.LoyaltyTier --json # full: {field, upstream: [...], downstream: [...]}
+```
+
+Use `arrows` when you need classification details on a specific hop. Use `field-lineage` for impact analysis, PII audit, and coverage — anywhere you need the full reachability picture.
+
+JSON shape for `field-lineage --json`:
+```json
+{
+  "field":      "::schema.field",
+  "upstream":   [{"field": "::src.f", "via_mapping": "::m", "classification": "none"}, ...],
+  "downstream": [{"field": "::tgt.f", "via_mapping": "::m", "classification": "nl-derived"}, ...]
+}
 ```
 
 ### Transform classification

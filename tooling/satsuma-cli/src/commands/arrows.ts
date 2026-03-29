@@ -32,6 +32,19 @@ dot and the field name. Namespace-qualified names work (e.g. pos::stores.STORE_I
 
 Each arrow is classified: [structural], [nl], [mixed], [none], or [nl-derived].
 
+JSON shape (--json): array of arrow objects
+  [{
+    "mapping":        str,   # canonical mapping key, e.g. "::m" or "ns::m"
+    "source":         str | null,  # canonical field path, comma-sep for multi-source, null if derived
+    "target":         str | null,  # canonical field path
+    "classification": "none" | "structural" | "nl" | "mixed" | "nl-derived",
+    "transform_raw":  str,   # raw transform text (NL string, pipeline, or "(NL ref)")
+    "steps":          [{"type": str, "text": str}, ...],
+    "derived":        bool,  # true when no declared source field
+    "file":           str,
+    "line":           int
+  }, ...]
+
 Examples:
   satsuma arrows hub_customer.email                  # all arrows for this field
   satsuma arrows hub_customer.email --as-source      # only outbound arrows

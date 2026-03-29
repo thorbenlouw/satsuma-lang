@@ -35,6 +35,25 @@ export function register(program: Command): void {
     .option("--ignore <rules>", "skip listed rules (comma-separated)")
     .option("--quiet", "exit code only")
     .option("--rules", "list available lint rules and exit")
+    .addHelpText("after", `
+Rules:
+  hidden-source-in-nl  error    NL text references a schema not in the mapping's source/target list
+  unresolved-nl-ref    warning  Backtick/@ reference in NL does not resolve to any known identifier
+  duplicate-definition error    Named definition is declared more than once in a namespace
+
+JSON shape (--json):
+  {
+    "findings": [{"rule": str, "severity": str, "message": str, "file": str, "line": int, "fixable": bool}, ...],
+    "fixes":    [{"rule": str, "file": str, "description": str}, ...],
+    "summary":  {"files": int, "findings": int, "fixable": int, "fixed": int}
+  }
+
+Examples:
+  satsuma lint                               # check workspace conventions
+  satsuma lint --json                        # structured diagnostics
+  satsuma lint --fix                         # auto-fix fixable issues
+  satsuma lint --rules                       # list available rules
+  satsuma lint --select hidden-source-in-nl  # run one rule only`)
     .action(async (pathArg: string | undefined, opts: { json?: boolean; fix?: boolean; select?: string; ignore?: string; quiet?: boolean; rules?: boolean }) => {
       // --rules: list available rules and exit
       if (opts.rules) {

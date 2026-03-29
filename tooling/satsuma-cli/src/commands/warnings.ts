@@ -24,6 +24,19 @@ export function register(program: Command): void {
     .description("List warning or question comments in the workspace")
     .option("--questions", "show question comments (//?  ...) instead")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+JSON shape (--json):
+  {
+    "kind":  "warning" | "question",
+    "count": int,
+    "items": [{"text": str, "row": int, "file": str, "block": str, "blockType": str}, ...]
+  }
+
+Examples:
+  satsuma warnings                           # //! warnings in workspace
+  satsuma warnings --questions               # //? questions instead
+  satsuma warnings --json                    # structured output
+  satsuma warnings ./workspace --json        # specific directory`)
     .action(async (pathArg: string | undefined, opts: { questions?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

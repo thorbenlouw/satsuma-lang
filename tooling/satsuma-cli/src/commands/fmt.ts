@@ -28,6 +28,16 @@ export function register(program: Command): void {
     .option("--check", "exit 1 if any file would change (for CI)")
     .option("--diff", "print unified diff without writing")
     .option("--stdin", "read from stdin, write to stdout")
+    .addHelpText("after", `
+Formatting is opinionated and zero-config: consistent indentation, spacing,
+and ordering. Safe to run on any valid workspace — idempotent.
+
+Examples:
+  satsuma fmt ./workspace                    # format all .stm files in place
+  satsuma fmt file.stm                       # format a single file
+  satsuma fmt --check                        # CI mode — exit 1 if any file would change
+  satsuma fmt --diff file.stm                # show what would change without writing
+  cat file.stm | satsuma fmt --stdin         # pipe mode`)
     .action(async (
       pathArg: string | undefined,
       opts: { check?: boolean; diff?: boolean; stdin?: boolean }

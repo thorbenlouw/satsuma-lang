@@ -26,7 +26,8 @@ program
   .name("satsuma")
   .description(
     "Satsuma CLI — deterministic structural extraction for Satsuma workspaces.\n" +
-    "Extracts structural facts and delivers NL content verbatim. Does not interpret natural language.",
+    "Extracts structural facts and delivers NL content verbatim. Does not interpret natural language.\n\n" +
+    "Run `satsuma <command> --help` for detailed usage, flags, and JSON output shape for each command.",
   )
   .version(pkg.version)
   .showHelpAfterError(true);

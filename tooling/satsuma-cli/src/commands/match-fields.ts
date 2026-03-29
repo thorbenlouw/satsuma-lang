@@ -30,6 +30,13 @@ export function register(program: Command): void {
 Both --source and --target are required. Matching is case-insensitive with
 underscores, hyphens, and spaces normalized. Names can be namespace-qualified.
 
+JSON shape (--json):
+  {
+    "matched":    [{"source": str, "target": str}, ...],
+    "sourceOnly": [str, ...],   # fields in source with no match
+    "targetOnly": [str, ...]    # fields in target with no match
+  }
+
 Examples:
   satsuma match-fields --source crm --target warehouse
   satsuma match-fields --source pos::stores --target hub_store --matched-only

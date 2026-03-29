@@ -26,9 +26,23 @@ export function register(program: Command): void {
     .option("--json", "structured JSON output")
     .option("--unresolved", "show only unresolved references")
     .addHelpText("after", `
-Backtick references are \`field_name\` or \`schema.field\` inside "..." NL
-strings. Each ref is checked against the workspace index — "resolved" means
-the referenced field or schema exists, "unresolved" means it was not found.
+@ref or backtick references are @field_name, \`field_name\`, or \`schema.field\`
+inside "..." NL strings. Each ref is checked against the workspace index —
+"resolved" means the referenced field or schema exists, "unresolved" means
+it was not found.
+
+JSON shape (--json): array of ref objects
+  [{
+    "ref":            str,   # the reference text (without @ or backticks)
+    "classification": "bare" | "dotted-field" | "namespace-qualified-field" | "namespace-qualified-schema",
+    "resolved":       bool,
+    "resolvedTo":     {"kind": str, "name": str} | null,
+    "mapping":        str,
+    "targetField":    str | null,
+    "file":           str,
+    "line":           int,
+    "column":         int
+  }, ...]
 
 Examples:
   satsuma nl-refs ./workspace                        # all refs across workspace
