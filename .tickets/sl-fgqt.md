@@ -1,6 +1,6 @@
 ---
 id: sl-fgqt
-status: open
+status: closed
 deps: [sl-ikzl]
 links: []
 created: 2026-03-29T18:50:19Z
@@ -38,3 +38,9 @@ This is an ADR-worthy design decision — document it as ADR-007.
 
 1. satsuma-core/src/spread-expand.ts exists with EntityFieldLookup interface and all 4 functions 2. No import of WorkspaceIndex in satsuma-core 3. CLI spread-expand.ts becomes a re-export shim where exported functions pass through a CLI-specific adapter 4. All existing CLI validate.test.js and expand-spread-related tests pass 5. satsuma-core builds 6. Unit tests in satsuma-core/test/spread-expand.test.js verify: cycle detection, diamond spreads, nested spreads in record fields, missing fragment (returns empty)
 
+
+## Notes
+
+**2026-03-29T20:38:42Z**
+
+Cause: Fragment spread expansion was coupled to WorkspaceIndex, preventing reuse in satsuma-core. Fix: Created satsuma-core/src/spread-expand.ts with EntityRefResolver/SpreadEntityLookup callback abstraction (ADR-005); CLI shim wraps with WorkspaceIndex adapters. 70 core tests, 866 CLI tests pass.

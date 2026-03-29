@@ -1,0 +1,298 @@
+/**
+ * spread-expand.ts — Fragment spread expansion for Satsuma workspaces
+ *
+ * Resolves fragment spreads in schemas and fragments, inlining the fragment
+ * fields into the caller's field set. Handles transitive spreads, cycle
+ * detection, and diamond-shaped spread graphs.
+ *
+ * The `EntityFieldLookup` callback decouples this module from the concrete
+ * `WorkspaceIndex` type, allowing both the CLI and LSP to share this logic
+ * while providing their own index implementations (ADR-005).
+ */
+
+import type { FieldDecl } from "./types.js";
+
+// ── Public callback interface ─────────────────────────────────────────────────
+
+/**
+ * Resolve a potentially-unqualified entity name (schema or fragment) to its
+ * canonical key in the index. Returns null if the name cannot be resolved.
+ *
+ * Implementations should:
+ * 1. Return the key as-is if it already contains "::" and exists in the index.
+ * 2. Try `${currentNs}::${name}` if a current namespace is provided.
+ * 3. Try the unqualified name directly as a fallback.
+ */
+export type EntityRefResolver = (
+  ref: string,
+  currentNs: string | null,
+) => string | null;
+
+/**
+ * Look up a spread entity (schema or fragment) by its resolved canonical key.
+ * Returns null/undefined if not found.
+ */
+export type SpreadEntityLookup = (
+  key: string,
+) => SpreadEntity | null | undefined;
+
+export interface SpreadEntity {
+  fields: FieldDecl[];
+  hasSpreads: boolean;
+  spreads?: string[];
+  /** Source file path for diagnostic messages */
+  file?: string;
+  /** Start row for diagnostic messages */
+  row?: number;
+}
+
+export interface ExpandedField extends FieldDecl {
+  fromFragment?: string;
+}
+
+export interface SpreadDiagnostic {
+  file: string;
+  line: number;
+  column: number;
+  severity: string;
+  rule: string;
+  message: string;
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Recursively collect all valid dotted field paths from a field tree.
+ */
+export function collectFieldPaths(fields: FieldDecl[], prefix: string, paths: Set<string>): void {
+  for (const f of fields) {
+    const fullPath = prefix + f.name;
+    paths.add(fullPath);
+    if (f.children && f.children.length > 0) {
+      collectFieldPaths(f.children, fullPath + ".", paths);
+    }
+  }
+}
+
+/**
+ * Expand fragment spreads for a set of schema keys, adding fragment fields
+ * to the fieldPaths set. Returns true if any spread references an
+ * unresolvable fragment.
+ */
+export function expandSpreads(
+  schemaKeys: string[],
+  currentNs: string | null,
+  resolveRef: EntityRefResolver,
+  lookupFragment: SpreadEntityLookup,
+  fieldPaths: Set<string>,
+  diagnostics: SpreadDiagnostic[] = [],
+  lookupSchema?: SpreadEntityLookup,
+): boolean {
+  let hasUnresolved = false;
+  const visited = new Set<string>();
+
+  for (const key of schemaKeys) {
+    const schema = lookupSchema ? lookupSchema(key) : null;
+    if (!schema?.hasSpreads) continue;
+    if (!expandEntitySpreads(schema, currentNs, resolveRef, lookupFragment, fieldPaths, visited, diagnostics, [])) {
+      hasUnresolved = true;
+    }
+    // Also expand nested record-level spreads into fieldPaths
+    expandNestedFieldPaths(schema.fields, "", currentNs, resolveRef, lookupFragment, fieldPaths);
+  }
+  return hasUnresolved;
+}
+
+/**
+ * Walk the field tree and expand nested record-level spreads into the
+ * fieldPaths set with proper prefixing.
+ */
+function expandNestedFieldPaths(
+  fields: FieldDecl[],
+  prefix: string,
+  currentNs: string | null,
+  resolveRef: EntityRefResolver,
+  lookupFragment: SpreadEntityLookup,
+  fieldPaths: Set<string>,
+): void {
+  for (const field of fields) {
+    if (field.children && field.hasSpreads && field.spreads) {
+      const fieldPrefix = prefix + field.name + ".";
+      for (const spreadName of field.spreads) {
+        const resolvedKey = resolveRef(spreadName, currentNs);
+        if (!resolvedKey) continue;
+        const fragment = lookupFragment(resolvedKey);
+        if (!fragment) continue;
+        collectFieldPaths(fragment.fields, fieldPrefix, fieldPaths);
+      }
+    }
+    if (field.children) {
+      expandNestedFieldPaths(field.children, prefix + field.name + ".", currentNs, resolveRef, lookupFragment, fieldPaths);
+    }
+  }
+}
+
+/**
+ * Expand fragment spreads for a single entity (schema or fragment), returning
+ * the expanded field objects (not paths). Useful for commands that need the
+ * actual field objects rather than just path strings.
+ */
+export function expandEntityFields(
+  entity: SpreadEntity | null | undefined,
+  currentNs: string | null,
+  resolveRef: EntityRefResolver,
+  lookupFragment: SpreadEntityLookup,
+): ExpandedField[] {
+  const expandedFields: ExpandedField[] = [];
+  if (!entity?.hasSpreads) return expandedFields;
+
+  const visited = new Set<string>();
+  collectExpandedFields(entity, currentNs, resolveRef, lookupFragment, expandedFields, visited, []);
+  return expandedFields;
+}
+
+/**
+ * Recursively collect expanded field objects from fragment spreads.
+ */
+function collectExpandedFields(
+  entity: SpreadEntity,
+  currentNs: string | null,
+  resolveRef: EntityRefResolver,
+  lookupFragment: SpreadEntityLookup,
+  fields: ExpandedField[],
+  visited: Set<string>,
+  chain: string[],
+): void {
+  const spreads = entity.spreads ?? [];
+  if (spreads.length === 0) return;
+
+  const ancestors = new Set(chain);
+  for (const spreadName of spreads) {
+    const resolvedKey = resolveRef(spreadName, currentNs);
+    if (!resolvedKey) continue;
+    if (ancestors.has(resolvedKey)) continue; // cycle
+    if (visited.has(resolvedKey)) continue; // diamond
+    visited.add(resolvedKey);
+
+    const fragment = lookupFragment(resolvedKey);
+    if (!fragment) continue;
+
+    for (const f of fragment.fields) {
+      fields.push({ ...f, fromFragment: resolvedKey });
+    }
+
+    if (fragment.hasSpreads) {
+      collectExpandedFields(fragment, currentNs, resolveRef, lookupFragment, fields, visited, [...chain, resolvedKey]);
+    }
+  }
+}
+
+/**
+ * Recursively expand fragment spreads within nested record fields.
+ * Modifies field children in place, inserting fragment fields into the
+ * correct nesting level rather than hoisting to the schema level.
+ */
+export function expandNestedSpreads(
+  fields: FieldDecl[],
+  currentNs: string | null,
+  resolveRef: EntityRefResolver,
+  lookupFragment: SpreadEntityLookup,
+): void {
+  for (const field of fields) {
+    if (field.children) {
+      // First recurse into deeper levels
+      expandNestedSpreads(field.children, currentNs, resolveRef, lookupFragment);
+      // Then expand spreads at this level
+      if (field.hasSpreads && field.spreads) {
+        const expanded = expandEntityFields(
+          { fields: field.children, hasSpreads: true, spreads: field.spreads },
+          currentNs,
+          resolveRef,
+          lookupFragment,
+        );
+        field.children = [...field.children, ...expanded];
+        delete field.hasSpreads;
+        delete field.spreads;
+      }
+    }
+  }
+}
+
+/**
+ * Namespace-aware entity reference resolver. This is the standard
+ * implementation suitable for use with any `Map<string, unknown>` entity index.
+ *
+ * Resolution order:
+ * 1. Fully-qualified ref (contains "::") — check directly in map.
+ * 2. Namespace-qualified: `${currentNs}::${ref}` — check if map has it.
+ * 3. Unqualified fallback: check map for the bare ref.
+ */
+export function makeEntityRefResolver(entityMap: Map<string, unknown>): EntityRefResolver {
+  return (ref: string, currentNs: string | null): string | null => {
+    if (ref.includes("::")) {
+      return entityMap.has(ref) ? ref : null;
+    }
+    if (currentNs) {
+      const nsKey = `${currentNs}::${ref}`;
+      if (entityMap.has(nsKey)) return nsKey;
+    }
+    if (entityMap.has(ref)) return ref;
+    return null;
+  };
+}
+
+// ── Internal helper ───────────────────────────────────────────────────────────
+
+/**
+ * Recursively expand spreads for a schema or fragment, adding fragment fields
+ * to the fieldPaths set. Detects cycles and emits diagnostics for them.
+ */
+function expandEntitySpreads(
+  entity: SpreadEntity,
+  currentNs: string | null,
+  resolveRef: EntityRefResolver,
+  lookupFragment: SpreadEntityLookup,
+  fieldPaths: Set<string>,
+  expanded: Set<string>,
+  diagnostics: SpreadDiagnostic[],
+  chain: string[],
+): boolean {
+  const spreads = entity.spreads ?? [];
+  if (spreads.length === 0 && entity.hasSpreads) return false;
+  const ancestors = new Set(chain);
+  let allResolved = true;
+  for (const spreadName of spreads) {
+    const resolvedKey = resolveRef(spreadName, currentNs);
+    if (!resolvedKey) {
+      allResolved = false;
+      continue;
+    }
+    if (ancestors.has(resolvedKey)) {
+      const cycleStart = chain.indexOf(resolvedKey);
+      const cyclePath = [...chain.slice(cycleStart), resolvedKey];
+      diagnostics.push({
+        file: entity.file ?? "unknown",
+        line: entity.row != null ? entity.row + 1 : 1,
+        column: 1,
+        severity: "error",
+        rule: "circular-spread",
+        message: `Circular fragment spread detected: ${cyclePath.join(" → ")}`,
+      });
+      continue;
+    }
+    if (expanded.has(resolvedKey)) continue;
+    expanded.add(resolvedKey);
+    const fragment = lookupFragment(resolvedKey);
+    if (!fragment) {
+      allResolved = false;
+      continue;
+    }
+    collectFieldPaths(fragment.fields, "", fieldPaths);
+    if (fragment.hasSpreads) {
+      if (!expandEntitySpreads(fragment, currentNs, resolveRef, lookupFragment, fieldPaths, expanded, diagnostics, [...chain, resolvedKey])) {
+        allResolved = false;
+      }
+    }
+  }
+  return allResolved;
+}
