@@ -9,7 +9,7 @@ ANSI X12 is the dominant EDI standard in the United States, particularly for hea
 - **Implementation guide divergence** — the formal X12 standard and payer-specific implementation guides frequently disagree
 - **Segment/element/component addressing** — fields are identified by segment ID, element position, and sub-element position (e.g., `NM1-03` is the third element of the NM1 segment)
 
-The repo already has an EDIFACT example (`examples/edi-to-json.stm`). X12 conventions here focus on the differences: loop IDs, HL hierarchies, and qualifier resolution in a US healthcare context.
+The repo already has an EDIFACT example (`examples/edi-to-json/pipeline.stm`). X12 conventions here focus on the differences: loop IDs, HL hierarchies, and qualifier resolution in a US healthcare context.
 
 ## Metadata Conventions
 

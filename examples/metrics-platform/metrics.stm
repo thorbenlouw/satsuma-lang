@@ -1,5 +1,5 @@
 // Satsuma v2 — Business Metrics
-import { fact_subscriptions, fact_orders, fact_opportunities, fact_sessions, dim_customer, dim_date, dim_stage } from "metric_sources.stm"
+import { fact_subscriptions, fact_orders, fact_opportunities, fact_sessions, dim_customer, dim_date, dim_stage } from "./metric_sources.stm"
 
 note {
   """

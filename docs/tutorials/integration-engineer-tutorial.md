@@ -51,7 +51,7 @@ schema commerce_event_pb (
 }
 ```
 
-The `format`, `schema_registry`, and `tag` metadata tell both humans and AI agents exactly what they're working with. No guessing whether it's JSON or protobuf or XML. See the full example in the [Protobuf-to-Parquet example](../../examples/protobuf-to-parquet.stm).
+The `format`, `schema_registry`, and `tag` metadata tell both humans and AI agents exactly what they're working with. No guessing whether it's JSON or protobuf or XML. See the full example in the [Protobuf-to-Parquet example](../../examples/protobuf-to-parquet/pipeline.stm).
 
 ### Step 2: Describe the mapping logic
 
@@ -111,7 +111,7 @@ schema commerce_order (
 }
 ```
 
-The `namespace` declarations on the schema and `xpath` annotations on each field give an AI agent everything it needs to generate XPath expressions for a MuleSoft DataWeave transform or an XSLT stylesheet. See the full [XML-to-Parquet example](../../examples/xml-to-parquet.stm).
+The `namespace` declarations on the schema and `xpath` annotations on each field give an AI agent everything it needs to generate XPath expressions for a MuleSoft DataWeave transform or an XSLT stylesheet. See the full [XML-to-Parquet example](../../examples/xml-to-parquet/pipeline.stm).
 
 ### JSON with JSONPath
 
@@ -139,7 +139,7 @@ schema customer_master (
 }
 ```
 
-Positional layout, PIC clauses, packed-decimal encoding — all the details that make mainframe integrations painful are captured as metadata. See the full [COBOL-to-Avro example](../../examples/cobol-to-avro.stm).
+Positional layout, PIC clauses, packed-decimal encoding — all the details that make mainframe integrations painful are captured as metadata. See the full [COBOL-to-Avro example](../../examples/cobol-to-avro/pipeline.stm).
 
 ### EDI with Segment Filters
 
@@ -152,7 +152,7 @@ schema edi_desadv (format fixed-length) {
 }
 ```
 
-The `filter` metadata captures the qualifier-based segment selection that makes EDI mapping so tricky. See the full [EDI-to-JSON example](../../examples/edi-to-json.stm).
+The `filter` metadata captures the qualifier-based segment selection that makes EDI mapping so tricky. See the full [EDI-to-JSON example](../../examples/edi-to-json/pipeline.stm).
 
 ### Protobuf with Tag-Based References
 
@@ -167,7 +167,7 @@ schema commerce_event_pb (format protobuf) {
 }
 ```
 
-Protobuf field tags, schema registry references, and version metadata are all first-class. See the full [Protobuf-to-Parquet example](../../examples/protobuf-to-parquet.stm).
+Protobuf field tags, schema registry references, and version metadata are all first-class. See the full [Protobuf-to-Parquet example](../../examples/protobuf-to-parquet/pipeline.stm).
 
 The [schema format conventions](../conventions-for-schema-formats/README.md) directory documents conventions for dozens of additional formats — HL7, X12/HIPAA, ISO 8583, SWIFT MT, FIX Protocol, ASN.1, DICOM, and more.
 
@@ -456,7 +456,7 @@ The more integrations you document this way, the more value compounds. Your team
 - [Schema format conventions](../conventions-for-schema-formats/README.md) — metadata conventions for XML, JSON, COBOL, EDI, Protobuf, HL7, and more
 - [Using Satsuma without CLI](../using-satsuma-without-cli.md) — workflow for web LLMs without tooling
 - [CLI reference](../../SATSUMA-CLI.md) — the 16-command CLI for validation, extraction, and lineage
-- [XML-to-Parquet example](../../examples/xml-to-parquet.stm) — XML with namespaces and XPath
-- [EDI-to-JSON example](../../examples/edi-to-json.stm) — EDI 856 with segment filters and data gaps
-- [COBOL-to-Avro example](../../examples/cobol-to-avro.stm) — mainframe copybook to Kafka events
-- [Protobuf-to-Parquet example](../../examples/protobuf-to-parquet.stm) — protobuf with schema registry and aggregation
+- [XML-to-Parquet example](../../examples/xml-to-parquet/pipeline.stm) — XML with namespaces and XPath
+- [EDI-to-JSON example](../../examples/edi-to-json/pipeline.stm) — EDI 856 with segment filters and data gaps
+- [COBOL-to-Avro example](../../examples/cobol-to-avro/pipeline.stm) — mainframe copybook to Kafka events
+- [Protobuf-to-Parquet example](../../examples/protobuf-to-parquet/pipeline.stm) — protobuf with schema registry and aggregation

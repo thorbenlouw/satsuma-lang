@@ -72,10 +72,10 @@ schema crm_database (from dbml "schemas/crm.dbml", table "customers") {
 
 All convention documentation has been written. See [`features/21-convention-docs/PRD.md`](features/21-convention-docs/PRD.md) for the full plan.
 
-- **Merge / upsert strategy** — [`docs/conventions-for-merge-strategy/`](docs/conventions-for-merge-strategy/README.md) with canonical example [`examples/merge-strategies.stm`](examples/merge-strategies.stm)
-- **Governance tags** — [`docs/conventions-for-governance/`](docs/conventions-for-governance/README.md) with canonical example [`examples/governance.stm`](examples/governance.stm)
-- **JSON path** — [`docs/conventions-for-schema-formats/json/`](docs/conventions-for-schema-formats/json/conventions.md) with canonical example [`examples/json-api-to-parquet.stm`](examples/json-api-to-parquet.stm)
-- **Reports and ML models** — [`docs/conventions-for-reports-and-models/`](docs/conventions-for-reports-and-models/README.md) with canonical example [`examples/reports-and-models.stm`](examples/reports-and-models.stm)
+- **Merge / upsert strategy** — [`docs/conventions-for-merge-strategy/`](docs/conventions-for-merge-strategy/README.md) with canonical example [`examples/merge-strategies/pipeline.stm`](examples/merge-strategies/pipeline.stm)
+- **Governance tags** — [`docs/conventions-for-governance/`](docs/conventions-for-governance/README.md) with canonical example [`examples/filter-flatten-governance/governance.stm`](examples/filter-flatten-governance/governance.stm)
+- **JSON path** — [`docs/conventions-for-schema-formats/json/`](docs/conventions-for-schema-formats/json/conventions.md) with canonical example [`examples/json-api-to-parquet/pipeline.stm`](examples/json-api-to-parquet/pipeline.stm)
+- **Reports and ML models** — [`docs/conventions-for-reports-and-models/`](docs/conventions-for-reports-and-models/README.md) with canonical example [`examples/reports-and-models/pipeline.stm`](examples/reports-and-models/pipeline.stm)
 - **Data Engineer Tutorial** — [`docs/tutorials/data-engineer-tutorial.md`](docs/tutorials/data-engineer-tutorial.md)
 - **Integration Engineer Tutorial** — [`docs/tutorials/integration-engineer-tutorial.md`](docs/tutorials/integration-engineer-tutorial.md)
 

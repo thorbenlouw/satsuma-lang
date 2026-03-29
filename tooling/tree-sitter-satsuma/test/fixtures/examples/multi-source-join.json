@@ -1,4 +1,3 @@
 {
-  "source": "../../../../../examples/multi-source-join.stm",
-  "allow_error": true
+  "source": "../../../../../examples/multi-source/multi-source-join.stm"
 }

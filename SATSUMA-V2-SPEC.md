@@ -764,7 +764,7 @@ These are freely extensible. Common domain-specific tokens:
 ```
 // Satsuma v2 — Legacy Customer Migration
 
-import { `address fields` } from "lib/common.stm"
+import { `address fields` } from "../lib/common.stm"
 
 note {
   """

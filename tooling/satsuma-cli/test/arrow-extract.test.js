@@ -280,7 +280,7 @@ describe("extractArrowRecords against real examples", () => {
   });
 
   it("extracts all arrows from db-to-db.stm", () => {
-    const { tree } = parseFile(resolve(EXAMPLES, "db-to-db.stm"));
+    const { tree } = parseFile(resolve(EXAMPLES, "db-to-db/pipeline.stm"));
     const records = extractArrowRecords(tree.rootNode);
 
     // db-to-db.stm has 16 map_arrows + 3 computed_arrows = 19
@@ -324,7 +324,7 @@ describe("extractArrowRecords against real examples", () => {
   });
 
   it("extracts nested bare arrows without target contamination (sl-9uh0)", () => {
-    const { tree } = parseFile(resolve(EXAMPLES, "sap-po-to-mfcs.stm"));
+    const { tree } = parseFile(resolve(EXAMPLES, "sap-po-to-mfcs/pipeline.stm"));
     const records = extractArrowRecords(tree.rootNode);
 
     // Find child arrows of the each Items -> items block
@@ -348,7 +348,7 @@ describe("extractArrowRecords against real examples", () => {
   });
 
   it("extracts arrows from multi-source-hub.stm", () => {
-    const { tree } = parseFile(resolve(EXAMPLES, "multi-source-hub.stm"));
+    const { tree } = parseFile(resolve(EXAMPLES, "multi-source/multi-source-hub.stm"));
     const records = extractArrowRecords(tree.rootNode);
     assert.ok(records.length > 0, "should have arrows");
 

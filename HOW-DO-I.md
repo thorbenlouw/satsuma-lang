@@ -19,7 +19,7 @@ Read the [Integration Engineer Tutorial](docs/tutorials/integration-engineer-tut
 Read the [language specification](SATSUMA-V2-SPEC.md). For a compact reference, see [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md) or run `satsuma agent-reference`.
 
 **How do I see working examples?**
-Browse [examples/](examples/) — each `.stm` file is a self-contained, parser-validated example.
+Browse [examples/](examples/) — each scenario is a workspace subdirectory with one or more parser-validated `.stm` files.
 
 **How do I use Satsuma without the CLI?**
 See [Using Satsuma Without CLI](docs/using-satsuma-without-cli.md) — Satsuma files are readable documentation even without tooling.
@@ -80,10 +80,10 @@ Just use them — `( )` metadata accepts any vocabulary. Document your tokens in
 ## Schema Formats
 
 **How do I represent XML sources with XPath?**
-Use `(xpath "...")` on fields and records. See [examples/xml-to-parquet.stm](examples/xml-to-parquet.stm) for a full working example.
+Use `(xpath "...")` on fields and records. See [examples/xml-to-parquet/pipeline.stm](examples/xml-to-parquet/pipeline.stm) for a full working example.
 
 **How do I represent JSON API responses with JSONPath?**
-Use `(format json)` on the schema and `(jsonpath "$.path")` on fields. Guide: [JSON Path Conventions](docs/conventions-for-schema-formats/json/conventions.md) | Example: [json-api-to-parquet.stm](examples/json-api-to-parquet.stm)
+Use `(format json)` on the schema and `(jsonpath "$.path")` on fields. Guide: [JSON Path Conventions](docs/conventions-for-schema-formats/json/conventions.md) | Example: [json-api-to-parquet/pipeline.stm](examples/json-api-to-parquet/pipeline.stm)
 
 **How do I represent COBOL copybooks?**
 Use `(format copybook, encoding ebcdic)` with `(pic, offset, length)` tokens. Guide: [docs/conventions-for-schema-formats/cobol-copybook/](docs/conventions-for-schema-formats/cobol-copybook/conventions.md)
@@ -92,7 +92,7 @@ Use `(format copybook, encoding ebcdic)` with `(pic, offset, length)` tokens. Gu
 Each has a convention guide in [docs/conventions-for-schema-formats/](docs/conventions-for-schema-formats/README.md).
 
 **How do I represent Protobuf or EDI sources?**
-See [examples/protobuf-to-parquet.stm](examples/protobuf-to-parquet.stm) and [examples/edi-to-json.stm](examples/edi-to-json.stm).
+See [examples/protobuf-to-parquet/pipeline.stm](examples/protobuf-to-parquet/pipeline.stm) and [examples/edi-to-json/pipeline.stm](examples/edi-to-json/pipeline.stm).
 
 ---
 
@@ -157,7 +157,7 @@ This improves lineage tracing — `satsuma where-used` and `satsuma lineage` det
 ## Metrics
 
 **How do I define a business metric?**
-Use the `metric` keyword. See [examples/metrics.stm](examples/metrics.stm) for patterns.
+Use the `metric` keyword. See [examples/metrics-platform/metrics.stm](examples/metrics-platform/metrics.stm) for patterns.
 
 **How do I find where a metric is used?**
 Run `satsuma where-used <metric-name>` or `satsuma metric <name>` for extraction.

@@ -129,7 +129,7 @@ Use the `note` on the schema to identify which standard and version the message 
 
 ## Example
 
-The canonical example [`examples/edi-to-json.stm`](../../../examples/edi-to-json.stm) demonstrates all of these patterns in a real-world EDI 856 (DESADV) to warehouse JSON mapping:
+The canonical example [`examples/edi-to-json/pipeline.stm`](../../../examples/edi-to-json/pipeline.stm) demonstrates all of these patterns in a real-world EDI 856 (DESADV) to warehouse JSON mapping:
 
 - `filter` on `ShipmentRefs`, `POReferences`, and `Quantities` for qualifier selection
 - `each` for positional correlation between PO references and line items

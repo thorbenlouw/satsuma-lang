@@ -470,7 +470,7 @@ describe("lint: duplicate-definition", () => {
       {
         kind: "metric",
         name: "revenue",
-        file: "metrics.stm",
+        file: "metrics-platform/metrics.stm",
         row: 20,
         previousKind: "schema",
         previousFile: "schemas.stm",

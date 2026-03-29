@@ -386,7 +386,7 @@ describe("satsuma graph (slices)", () => {
   });
 
   it("nested arrow children have correct from/to (sl-6dt1, sl-9uh0)", async () => {
-    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "sap-po-to-mfcs.stm"));
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "sap-po-to-mfcs/pipeline.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
 

@@ -12,7 +12,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
    - `SATSUMA-V2-SPEC.md` — authoritative language specification
 2. Read the `satsuma metric --help` output.
 3. Review existing open bug tickets with `tk list` to avoid duplicating known issues.
-4. Explore `examples/metrics.stm` and `examples/metric_sources.stm` for existing metric definitions.
+4. Explore `examples/metrics.stm` and `examples/metrics-platform/metric_sources.stm` for existing metric definitions.
 
 ## What to test
 

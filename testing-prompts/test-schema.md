@@ -32,7 +32,7 @@ Test areas:
 - **Not found**: What happens when the schema name doesn't exist? Exit code?
 - **Ambiguous names**: Two schemas with the same name in different files or namespaces. What happens?
 - **Case sensitivity**: Is lookup case-sensitive? Should it be?
-- **Single file path**: `satsuma schema <name> examples/common.stm` — does the path argument work correctly?
+- **Single file path**: `satsuma schema <name> examples/lib/common.stm` — does the path argument work correctly?
 - **Backtick identifiers**: Fields using `` `field-with-dashes` `` syntax.
 
 ## Creating test fixtures

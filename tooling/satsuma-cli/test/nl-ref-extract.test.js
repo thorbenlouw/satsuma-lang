@@ -421,7 +421,7 @@ describe("resolveAllNLRefs", () => {
         mapping: "stage gl entries",
         namespace: "staging",
         targetField: "department",
-        file: "ns-merging.stm",
+        file: "namespaces/ns-merging.stm",
         line: 99,
         column: 6,
       }],

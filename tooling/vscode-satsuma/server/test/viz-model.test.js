@@ -512,11 +512,11 @@ describe("example file coverage", () => {
   const path = require("path");
   const examplesDir = path.resolve(__dirname, "../../../../examples");
 
-  // Only test files that exist and are top-level (not in subdirs)
+  // Test all .stm files found recursively under the examples directory
   let exampleFiles;
   try {
     exampleFiles = fs
-      .readdirSync(examplesDir)
+      .readdirSync(examplesDir, { recursive: true })
       .filter((f) => f.endsWith(".stm"));
   } catch {
     exampleFiles = [];

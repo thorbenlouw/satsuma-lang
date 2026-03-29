@@ -208,9 +208,9 @@ mapping {
 }
 ```
 
-For richer examples, see [examples/db-to-db.stm](examples/db-to-db.stm),
-[examples/edi-to-json.stm](examples/edi-to-json.stm),
-and [examples/multi-source-hub.stm](examples/multi-source-hub.stm).
+For richer examples, see [examples/db-to-db/pipeline.stm](examples/db-to-db/pipeline.stm),
+[examples/edi-to-json/pipeline.stm](examples/edi-to-json/pipeline.stm),
+and [examples/multi-source/multi-source-hub.stm](examples/multi-source/multi-source-hub.stm).
 
 ## Learn Satsuma
 

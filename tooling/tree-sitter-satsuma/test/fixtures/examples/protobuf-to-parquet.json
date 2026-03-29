@@ -1,4 +1,3 @@
 {
-  "source": "../../../../../examples/protobuf-to-parquet.stm",
-  "allow_error": true
+  "source": "../../../../../examples/protobuf-to-parquet/pipeline.stm"
 }

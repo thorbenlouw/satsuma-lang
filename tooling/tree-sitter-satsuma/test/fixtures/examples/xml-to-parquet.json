@@ -1,4 +1,3 @@
 {
-  "source": "../../../../../examples/xml-to-parquet.stm",
-  "allow_error": true
+  "source": "../../../../../examples/xml-to-parquet/pipeline.stm"
 }

@@ -316,7 +316,7 @@ describe("satsuma schema", () => {
   });
 
   it("--compact strips triple-quoted field notes (sl-vfbv)", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
     const { stdout, code } = await run("schema", "legacy_sqlserver", "--compact", DB);
     assert.equal(code, 0);
     assert.match(stdout, /PHONE_NBR/);
@@ -325,7 +325,7 @@ describe("satsuma schema", () => {
   });
 
   it("text output includes all schema-level metadata (sl-pq65)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("schema", "commerce_order", XML);
     assert.equal(code, 0);
     assert.match(stdout, /format xml/, "should include format metadata");
@@ -333,7 +333,7 @@ describe("satsuma schema", () => {
   });
 
   it("--json includes metadata array for schemas with metadata (sl-pq65)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("schema", "commerce_order", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -342,7 +342,7 @@ describe("satsuma schema", () => {
   });
 
   it("text output preserves record/list block-level metadata (sl-s8xn)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("schema", "commerce_order", XML);
     assert.equal(code, 0);
     assert.match(stdout, /Order record \(xpath/, "record block should show xpath metadata");
@@ -351,7 +351,7 @@ describe("satsuma schema", () => {
   });
 
   it("--json includes metadata on nested record/list fields (sl-s8xn)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("schema", "commerce_order", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -471,7 +471,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json includes note field when mapping has a note block (cbh-e01s)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("mapping", "completed orders", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -480,7 +480,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json omits note field when mapping has no note block (cbh-e01s)", async () => {
-    const HUB = resolve(EXAMPLES, "multi-source-hub.stm");
+    const HUB = resolve(EXAMPLES, "multi-source/multi-source-hub.stm");
     const { stdout, code } = await run("mapping", "crm to analytics", "--json", HUB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -548,7 +548,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json --compact omits transform text from arrows (sl-gqoy)", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
     const { stdout, code } = await run("mapping", "customer migration", "--json", "--compact", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -575,7 +575,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json includes transform body text on arrows (sl-ari1)", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
     const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -588,7 +588,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json includes classification field on arrows (sl-shwl)", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
     const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -603,7 +603,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json container arrows have hasTransform:false (sl-zfi0)", async () => {
-    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs.stm");
+    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs/pipeline.stm");
     const { stdout, code } = await run("mapping", "sap po to mfcs", "--json", SAP);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -617,7 +617,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json includes children for nested arrows (sl-wjb9)", async () => {
-    const COBOL = resolve(EXAMPLES, "cobol-to-avro.stm");
+    const COBOL = resolve(EXAMPLES, "cobol-to-avro/pipeline.stm");
     const { stdout, code } = await run("mapping", "cobol customer to avro event", "--json", COBOL);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -633,7 +633,7 @@ describe("satsuma mapping", () => {
   });
 
   it("text output shows child arrows inside nested blocks (sl-wjb9)", async () => {
-    const COBOL = resolve(EXAMPLES, "cobol-to-avro.stm");
+    const COBOL = resolve(EXAMPLES, "cobol-to-avro/pipeline.stm");
     const { stdout, code } = await run("mapping", "cobol customer to avro event", COBOL);
     assert.equal(code, 0);
     // Unified syntax uses "each PHONE_NUMBERS -> contact_info.phones" instead of bracket notation
@@ -649,7 +649,7 @@ describe("satsuma mapping", () => {
   });
 
   it("--json arrowCount excludes flatten/each containers (cbh-zdk3)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("mapping", "order line facts", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -736,7 +736,7 @@ describe("satsuma find", () => {
   });
 
   it("--json note metadata includes text value (sc-5s57)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -748,7 +748,7 @@ describe("satsuma find", () => {
   });
 
   it("--json schema-level entries include metadata array (sc-h1wv)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -881,7 +881,7 @@ describe("satsuma lineage", () => {
   });
 
   it("--json has no phantom note: node from NL refs (sc-nk3v)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("lineage", "--from", "order_events", FFG, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -938,7 +938,7 @@ describe("satsuma where-used", () => {
     const { stdout, code } = await run("where-used", "address fields", EXAMPLES);
     assert.equal(code, 0);
     assert.match(stdout, /Imported in/);
-    assert.match(stdout, /db-to-db\.stm/);
+    assert.match(stdout, /db-to-db\/pipeline\.stm/);
   });
 
   it("detects ref metadata references (sl-7yoa)", async () => {
@@ -998,7 +998,7 @@ describe("satsuma warnings", () => {
   });
 
   it("--json includes block context (sl-c7yn)", async () => {
-    const DB = resolve(EXAMPLES, "db-to-db.stm");
+    const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
     const { stdout, code } = await run("warnings", "--json", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1059,7 +1059,7 @@ describe("satsuma context", () => {
   });
 
   it("finds blocks containing language keywords like flatten and list_of (sc-rj24)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout: flattenOut, code: c1 } = await run("context", "flatten", FFG, "--json");
     assert.equal(c1, 0);
     const flattenData = JSON.parse(flattenOut);
@@ -1083,7 +1083,7 @@ describe("satsuma context", () => {
 // satsuma arrows
 // ---------------------------------------------------------------------------
 describe("satsuma arrows", () => {
-  const DB = resolve(EXAMPLES, "db-to-db.stm");
+  const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
 
   it("shows arrows for a source field", async () => {
     const { stdout, code } = await run("arrows", "legacy_sqlserver.CUST_ID", DB);
@@ -1187,7 +1187,7 @@ describe("satsuma arrows", () => {
   });
 
   it("--json source field uses actual source schema, not lookup schema (sl-531q)", async () => {
-    const SFDC = resolve(EXAMPLES, "sfdc_to_snowflake.stm");
+    const SFDC = resolve(EXAMPLES, "sfdc-to-snowflake/pipeline.stm");
     const { stdout, code } = await run("arrows", "snowflake_opps.opp_key", "--json", SFDC);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1216,7 +1216,7 @@ describe("satsuma arrows", () => {
   });
 
   it("text header shows correct count for nested field paths (sl-dvhm)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("arrows", "commerce_order.Order.Customer.Email", XML);
     assert.equal(code, 0);
     assert.match(stdout, /1 arrow/, "should show correct arrow count in header");
@@ -1245,7 +1245,7 @@ describe("satsuma arrows", () => {
     // with bare names (PHONE_TYPE), parent-prefixed, and schema-qualified paths
     const { parseFile } = await import("../dist/parser.js");
     const { buildIndex } = await import("../dist/index-builder.js");
-    const p = parseFile(resolve(EXAMPLES, "cobol-to-avro.stm"));
+    const p = parseFile(resolve(EXAMPLES, "cobol-to-avro/pipeline.stm"));
     const index = buildIndex([p]);
     // The bare leaf name should be in the index
     assert.ok(index.fieldArrows.has("PHONE_TYPE"), "should index bare PHONE_TYPE");
@@ -1258,7 +1258,7 @@ describe("satsuma arrows", () => {
 // satsuma fields
 // ---------------------------------------------------------------------------
 describe("satsuma fields", () => {
-  const DB = resolve(EXAMPLES, "db-to-db.stm");
+  const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
 
   it("lists all fields with types", async () => {
     const { stdout, code } = await run("fields", "legacy_sqlserver", DB);
@@ -1310,7 +1310,7 @@ describe("satsuma fields", () => {
   });
 
   it("--unmapped-by does not report nested list as unmapped", async () => {
-    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs.stm");
+    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs/pipeline.stm");
     const { stdout, code } = await run(
       "fields", "mfcs_purchase_order", "--unmapped-by", "sap po to mfcs", "--json", SAP,
     );
@@ -1369,7 +1369,7 @@ describe("satsuma fields", () => {
   });
 
   it("text output shows nested record/list children with indentation (sl-1ugo)", async () => {
-    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs.stm");
+    const SAP = resolve(EXAMPLES, "sap-po-to-mfcs/pipeline.stm");
     const { stdout, code } = await run("fields", "mfcs_purchase_order", SAP);
     assert.equal(code, 0);
     assert.match(stdout, /items\s+list/);
@@ -1386,7 +1386,7 @@ describe("satsuma fields", () => {
   });
 
   it("--with-meta --json includes tags on nested record/list child fields (sl-gf8d)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("fields", "commerce_order", "--with-meta", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1402,7 +1402,7 @@ describe("satsuma fields", () => {
 // satsuma nl
 // ---------------------------------------------------------------------------
 describe("satsuma nl", () => {
-  const DB = resolve(EXAMPLES, "db-to-db.stm");
+  const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
 
   it("extracts NL content from a mapping scope", async () => {
     const { stdout, code } = await run("nl", "customer migration", DB);
@@ -1488,7 +1488,7 @@ describe("satsuma nl", () => {
   });
 
   it("concatenated note strings are fully extracted (sl-gu24)", async () => {
-    const { stdout, code } = await run("nl", "cart_abandonment_rate", resolve(EXAMPLES, "metrics.stm"), "--json");
+    const { stdout, code } = await run("nl", "cart_abandonment_rate", resolve(EXAMPLES, "metrics-platform/metrics.stm"), "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const note = data.find((d) => d.kind === "note");
@@ -1543,7 +1543,7 @@ describe("satsuma nl", () => {
 // satsuma meta
 // ---------------------------------------------------------------------------
 describe("satsuma meta", () => {
-  const DB = resolve(EXAMPLES, "db-to-db.stm");
+  const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
 
   it("extracts schema metadata with note", async () => {
     const { stdout, code } = await run("meta", "legacy_sqlserver", DB);
@@ -1603,14 +1603,14 @@ describe("satsuma meta", () => {
   });
 
   it("extracts metadata from record/list blocks (sl-giss)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("meta", "commerce_order.Order", XML);
     assert.equal(code, 0);
     assert.match(stdout, /xpath/, "record block should show xpath metadata");
   });
 
   it("extracts metadata from nested list blocks (sl-giss)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("meta", "commerce_order.Discounts", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1618,7 +1618,7 @@ describe("satsuma meta", () => {
   });
 
   it("supports nested field paths schema.record.field (sl-bfue)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout, code } = await run("meta", "commerce_order.Order.OrderId", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1627,7 +1627,7 @@ describe("satsuma meta", () => {
   });
 
   it("disambiguates same-named fields via nested path (sl-bfue)", async () => {
-    const XML = resolve(EXAMPLES, "xml-to-parquet.stm");
+    const XML = resolve(EXAMPLES, "xml-to-parquet/pipeline.stm");
     const { stdout: s1 } = await run("meta", "commerce_order.Totals.TaxAmount", "--json", XML);
     const { stdout: s2 } = await run("meta", "commerce_order.LineItems.TaxAmount", "--json", XML);
     const d1 = JSON.parse(s1);
@@ -1656,7 +1656,7 @@ describe("satsuma meta", () => {
   });
 
   it("shows list_of prefix for scalar list fields (sc-5j7y)", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("meta", "order_events.promo_codes", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1676,7 +1676,7 @@ describe("satsuma meta", () => {
 // satsuma match-fields
 // ---------------------------------------------------------------------------
 describe("satsuma match-fields", () => {
-  const DB = resolve(EXAMPLES, "db-to-db.stm");
+  const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
 
   it("matches fields by normalized name (FirstName = first_name)", async () => {
     const { stdout, code } = await run(
@@ -1780,7 +1780,7 @@ describe("satsuma match-fields", () => {
 describe("satsuma validate", () => {
   it("valid workspace produces 0 errors", async () => {
     const { stdout, code } = await run(
-      "validate", resolve(EXAMPLES, "common.stm"),
+      "validate", resolve(EXAMPLES, "lib/common.stm"),
     );
     assert.equal(code, 0);
     assert.match(stdout, /no issues/i);
@@ -1796,7 +1796,7 @@ describe("satsuma validate", () => {
 
   it("--quiet returns exit code only", async () => {
     const { stdout, code } = await run(
-      "validate", "--quiet", resolve(EXAMPLES, "common.stm"),
+      "validate", "--quiet", resolve(EXAMPLES, "lib/common.stm"),
     );
     assert.equal(code, 0);
     assert.equal(stdout.trim(), "");
@@ -1928,7 +1928,7 @@ describe("satsuma validate", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma diff", () => {
   it("identical files produce empty diff", async () => {
-    const f = resolve(EXAMPLES, "common.stm");
+    const f = resolve(EXAMPLES, "lib/common.stm");
     const { stdout, code } = await run("diff", f, f);
     assert.equal(code, 0);
     assert.match(stdout, /no structural differences/i);
@@ -1937,8 +1937,8 @@ describe("satsuma diff", () => {
   it("different files show changes", async () => {
     const { stdout, code } = await run(
       "diff",
-      resolve(EXAMPLES, "db-to-db.stm"),
-      resolve(EXAMPLES, "common.stm"),
+      resolve(EXAMPLES, "db-to-db/pipeline.stm"),
+      resolve(EXAMPLES, "lib/common.stm"),
     );
     assert.equal(code, 0);
     // Should show added/removed schemas
@@ -1948,8 +1948,8 @@ describe("satsuma diff", () => {
   it("--json produces valid delta object", async () => {
     const { stdout, code } = await run(
       "diff", "--json",
-      resolve(EXAMPLES, "db-to-db.stm"),
-      resolve(EXAMPLES, "common.stm"),
+      resolve(EXAMPLES, "db-to-db/pipeline.stm"),
+      resolve(EXAMPLES, "lib/common.stm"),
     );
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -1962,8 +1962,8 @@ describe("satsuma diff", () => {
   it("--stat shows summary counts", async () => {
     const { stdout, code } = await run(
       "diff", "--stat",
-      resolve(EXAMPLES, "db-to-db.stm"),
-      resolve(EXAMPLES, "common.stm"),
+      resolve(EXAMPLES, "db-to-db/pipeline.stm"),
+      resolve(EXAMPLES, "lib/common.stm"),
     );
     assert.equal(code, 0);
     // Should show counts like "2 schemas added"
@@ -1973,8 +1973,8 @@ describe("satsuma diff", () => {
   it("--names-only lists changed block names", async () => {
     const { stdout, code } = await run(
       "diff", "--names-only",
-      resolve(EXAMPLES, "db-to-db.stm"),
-      resolve(EXAMPLES, "common.stm"),
+      resolve(EXAMPLES, "db-to-db/pipeline.stm"),
+      resolve(EXAMPLES, "lib/common.stm"),
     );
     assert.equal(code, 0);
     assert.ok(stdout.trim().length > 0);
@@ -2475,8 +2475,8 @@ describe("satsuma mapping (namespaces)", () => {
 // ---------------------------------------------------------------------------
 // Bug fix: arrows command (stm-sbgx) — schema qualifier respected
 // ---------------------------------------------------------------------------
-const NS_PLATFORM = resolve(EXAMPLES, "ns-platform.stm");
-const NS_MERGING = resolve(EXAMPLES, "ns-merging.stm");
+const NS_PLATFORM = resolve(EXAMPLES, "namespaces/ns-platform.stm");
+const NS_MERGING = resolve(EXAMPLES, "namespaces/ns-merging.stm");
 
 describe("satsuma arrows (namespace bugs)", () => {
   it("scopes arrows to the correct schema", async () => {
@@ -2737,7 +2737,7 @@ describe("satsuma nl-refs", () => {
   });
 
   it("extracts refs from db-to-db.stm with COUNTRY_CD backtick", async () => {
-    const dbFile = resolve(EXAMPLES, "db-to-db.stm");
+    const dbFile = resolve(EXAMPLES, "db-to-db/pipeline.stm");
     const { stdout, code } = await run("nl-refs", "--json", dbFile);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
@@ -3180,7 +3180,7 @@ describe("satsuma graph: schema_edges NL-referenced schemas (sl-n11t)", () => {
 
 describe("satsuma graph: scalar list fields (sc-ebau)", () => {
   it("--json shows list_of type for scalar list fields", async () => {
-    const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("graph", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
@@ -3193,7 +3193,7 @@ describe("satsuma graph: scalar list fields (sc-ebau)", () => {
 
 describe("satsuma graph: fragment fields (sl-yibt, sl-p0hz)", () => {
   it("fragment nodes do NOT appear in --json nodes array (sl-p0hz)", async () => {
-    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const frags = data.nodes.filter((n) => n.kind === "fragment");
@@ -3203,7 +3203,7 @@ describe("satsuma graph: fragment fields (sl-yibt, sl-p0hz)", () => {
   });
 
   it("schema fields include spread-expanded fields in --json (sl-p0hz)", async () => {
-    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "common.stm"));
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     // Find a schema that uses fragment spreads and verify its fields are expanded
@@ -3673,7 +3673,7 @@ describe("satsuma validate — duplicate mapping names (sl-04eg)", () => {
 // as a leaf name (e.g. nested_record.F from schema B is NOT schema_A.F).
 // ---------------------------------------------------------------------------
 describe("satsuma arrows — no leaf-name false positives across schemas", () => {
-  const FIXTURE = resolve(EXAMPLES, "filter-flatten-governance.stm");
+  const FIXTURE = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
 
   it("customer_profiles.customer_id has no arrows (join key, not arrow source)", async () => {
     const { stdout, stderr, code } = await run("arrows", "customer_profiles.customer_id", FIXTURE);

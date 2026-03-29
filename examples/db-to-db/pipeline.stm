@@ -1,5 +1,5 @@
 // Satsuma v2 — Legacy Customer Migration
-import { `address fields` } from "common.stm"
+import { `address fields` } from "../lib/common.stm"
 
 note {
   """

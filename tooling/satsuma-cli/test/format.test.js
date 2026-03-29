@@ -41,7 +41,7 @@ function structureOf(node) {
 // ── Corpus Round-Trip (Idempotency + Structural Equivalence) ─────────────────
 
 describe("corpus round-trip", () => {
-  const stmFiles = readdirSync(examplesDir).filter(f => f.endsWith(".stm"));
+  const stmFiles = readdirSync(examplesDir, { recursive: true }).filter(f => f.endsWith(".stm"));
 
   for (const file of stmFiles) {
     describe(`examples/${file}`, () => {
@@ -450,7 +450,7 @@ describe("edge cases", () => {
 // ── Golden Fixture Tests ─────────────────────────────────────────────────────
 
 describe("golden fixture round-trip (all corpus)", () => {
-  const stmFiles = readdirSync(examplesDir).filter(f => f.endsWith(".stm"));
+  const stmFiles = readdirSync(examplesDir, { recursive: true }).filter(f => f.endsWith(".stm"));
 
   for (const file of stmFiles) {
     it(`format(parse(examples/${file})) parses without errors`, () => {

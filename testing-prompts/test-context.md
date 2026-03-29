@@ -34,7 +34,7 @@ Test areas:
 - **`--compact` flag**: What gets omitted?
 - **Case sensitivity**: Is query matching case-insensitive?
 - **Cross-file results**: Results from multiple files. Correctly ranked?
-- **Single file**: `satsuma context "customer" examples/common.stm`.
+- **Single file**: `satsuma context "customer" examples/lib/common.stm`.
 - **Empty query**: What happens with an empty string?
 - **Special characters in query**: Queries with dots, backticks, quotes.
 
