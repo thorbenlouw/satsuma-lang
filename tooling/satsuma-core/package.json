@@ -41,6 +41,10 @@
     "./spread-expand": {
       "types": "./dist/spread-expand.d.ts",
       "default": "./dist/spread-expand.js"
+    },
+    "./nl-ref": {
+      "types": "./dist/nl-ref.d.ts",
+      "default": "./dist/nl-ref.js"
     }
   },
   "types": "./dist/index.d.ts",

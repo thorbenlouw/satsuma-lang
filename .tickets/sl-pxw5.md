@@ -1,6 +1,6 @@
 ---
 id: sl-pxw5
-status: open
+status: closed
 deps: [sl-ikzl, sl-fgqt]
 links: []
 created: 2026-03-29T18:50:35Z
@@ -64,3 +64,9 @@ sl-fgqt (spread-expand) must complete first because resolveRef uses expandEntity
 5. satsuma-core builds
 6. Golden snapshot test (sl-8pj3) still passes
 7. Unit tests in satsuma-core/test/nl-ref.test.js cover: @-ref extraction, @`backtick name` extraction, namespace-qualified ref classification, dotted-field classification, bare ref resolution (sources/targets context), namespace-qualified resolution, transform name resolution, unresolvable ref → resolved: false
+
+## Notes
+
+**2026-03-29T20:44:41Z**
+
+Cause: NL @-ref extraction/resolution was CLI-only, blocking LSP viz from showing NL-derived edges. Fix: Created satsuma-core/src/nl-ref.ts with DefinitionLookup callback abstraction (ADR-006); CLI shim wraps WorkspaceIndex. 85 core tests, 866 CLI tests pass.
