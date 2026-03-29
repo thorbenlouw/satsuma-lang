@@ -1,6 +1,5 @@
 // RetailCo International — Kimball Star Schema
 // Customer Dimension (Conformed)
-
 import { address_fields, pos_oracle, ecom_shopify } from "common.stm"
 
 note {
@@ -19,35 +18,33 @@ note {
   """
 }
 
-
 // --- Sources ---
-
 schema loyalty_sfdc (note "Salesforce Service Cloud — Loyalty CRM") {
-  ContactId           ID              (pk)
-  FirstName           STRING(100)     (required)
-  LastName            STRING(100)     (required)
-  Email               STRING(255)     (pii)
-  Phone               STRING(20)      (pii)
+  ContactId           ID           (pk)
+  FirstName           STRING(100)  (required)
+  LastName            STRING(100)  (required)
+  Email               STRING(255)  (pii)
+  Phone               STRING(20)   (pii)
   MailingStreet       STRING(200)
   MailingCity         STRING(100)
   MailingState        STRING(50)
   MailingPostalCode   STRING(20)
   MailingCountry      STRING(80)
-  LoyaltyTier         PICKLIST        (enum {Bronze, Silver, Gold, Platinum, Diamond})
+  LoyaltyTier         PICKLIST (enum {Bronze, Silver, Gold, Platinum, Diamond})
   LoyaltyPoints       INTEGER
-  AccountCreatedDate  DATE            (required)
+  AccountCreatedDate  DATE         (required)
   PreferredStoreId    STRING(20)
   OptInEmail          BOOLEAN
   OptInSMS            BOOLEAN
-  DateOfBirth         DATE            (pii)
-  Gender              PICKLIST        (enum {Male, Female, Non-binary, Undisclosed})
+  DateOfBirth         DATE         (pii)
+  Gender              PICKLIST (enum {Male, Female, Non-binary, Undisclosed})
 }
 
-
 // --- Target: Conformed Customer Dimension ---
-
 schema dim_customer (
-  dimension, conformed, scd 2,
+  dimension,
+  conformed,
+  scd 2,
   natural_key customer_id,
   track {email, phone, loyalty_tier, preferred_store_id, first_name, last_name},
   ignore {last_login_channel, lifetime_order_count, lifetime_spend},
@@ -57,32 +54,30 @@ schema dim_customer (
   during the ETL load.
   """
 ) {
-  customer_id          VARCHAR(50)     (required)         // Durable business key: SFDC ContactId
-  first_name           VARCHAR(100)
-  last_name            VARCHAR(100)
-  full_name            VARCHAR(200)
-  email                VARCHAR(255)    (pii)
-  phone                VARCHAR(20)     (pii)
-  date_of_birth        DATE            (pii)
-  gender               VARCHAR(20)
+  customer_id           VARCHAR(50)    (required)  // Durable business key: SFDC ContactId
+  first_name            VARCHAR(100)
+  last_name             VARCHAR(100)
+  full_name             VARCHAR(200)
+  email                 VARCHAR(255)   (pii)
+  phone                 VARCHAR(20)    (pii)
+  date_of_birth         DATE           (pii)
+  gender                VARCHAR(20)
   ...address_fields
-  loyalty_tier         VARCHAR(20)     (enum {bronze, silver, gold, platinum, diamond})
-  loyalty_points       INTEGER
-  preferred_store_id   VARCHAR(20)
-  member_since         DATE
-  opt_in_email         BOOLEAN         (default false)
-  opt_in_sms           BOOLEAN         (default false)
-  last_login_channel   VARCHAR(20)     (enum {store, online})
-  lifetime_order_count INTEGER         (default 0)
-  lifetime_spend       DECIMAL(14,2)   (default 0)
-  customer_segment     VARCHAR(30)
+  loyalty_tier          VARCHAR(20) (enum {bronze, silver, gold, platinum, diamond})
+  loyalty_points        INTEGER
+  preferred_store_id    VARCHAR(20)
+  member_since          DATE
+  opt_in_email          BOOLEAN        (default false)
+  opt_in_sms            BOOLEAN        (default false)
+  last_login_channel    VARCHAR(20)    (enum {store, online})
+  lifetime_order_count  INTEGER        (default 0)
+  lifetime_spend        DECIMAL(14,2)  (default 0)
+  customer_segment      VARCHAR(30)
 }
 
-
 // --- Mappings ---
-
 // Primary: SFDC is the golden source for customer attributes
-mapping 'sfdc to dim_customer' {
+mapping `sfdc to dim_customer` {
   source { `loyalty_sfdc` }
   target { `dim_customer` }
 
@@ -94,39 +89,39 @@ mapping 'sfdc to dim_customer' {
 
   ContactId -> customer_id
 
-  FirstName -> first_name              { trim | title_case }
-  LastName -> last_name                { trim | title_case }
+  FirstName -> first_name { trim | title_case }
+  LastName -> last_name { trim | title_case }
   -> full_name { "Trim and concat `FirstName` + ' ' + `LastName`, title case" }
 
-  Email -> email                       { trim | lowercase | validate_email | null_if_invalid }
-  Phone -> phone                       { trim | to_e164 }
+  Email -> email { trim | lowercase | validate_email | null_if_invalid }
+  Phone -> phone { trim | to_e164 }
   DateOfBirth -> date_of_birth
-  Gender -> gender                     { lowercase }
+  Gender -> gender { lowercase }
 
   // Address
-  MailingStreet -> address_line_1      { trim }
-  MailingCity -> city                   { trim | title_case }
+  MailingStreet -> address_line_1 { trim }
+  MailingCity -> city { trim | title_case }
   MailingState -> state_province {
     "Normalize to ISO 3166-2 subdivision code. Handle full names,
      abbreviations, and common misspellings."
   }
-  MailingPostalCode -> postal_code     { trim }
+  MailingPostalCode -> postal_code { trim }
   MailingCountry -> country_code {
     "Normalize to ISO 3166 alpha-2. Handle full names ('United States' -> 'US'),
      alpha-3 codes, and common variations."
   }
 
   // Loyalty
-  LoyaltyTier -> loyalty_tier          { lowercase }
+  LoyaltyTier -> loyalty_tier { lowercase }
   LoyaltyPoints -> loyalty_points
   PreferredStoreId -> preferred_store_id
   AccountCreatedDate -> member_since
-  OptInEmail -> opt_in_email           { coalesce(false) }
-  OptInSMS -> opt_in_sms              { coalesce(false) }
+  OptInEmail -> opt_in_email { coalesce(false) }
+  OptInSMS -> opt_in_sms { coalesce(false) }
 }
 
 // Supplementary: e-commerce behavioural data
-mapping 'shopify to dim_customer' {
+mapping `shopify to dim_customer` {
   source { `ecom_shopify` }
   target { `dim_customer` }
 
@@ -135,9 +130,9 @@ mapping 'shopify to dim_customer' {
      Customer matching is done on email address."
   }
 
-  //?  Customer matching: email-based join to SFDC ContactId.
-  //   What is the fallback if email doesn't match any SFDC record?
-  //   Create a new dim_customer row, or park in an exception queue?
+  //? Customer matching: email-based join to SFDC ContactId.
+  // What is the fallback if email doesn't match any SFDC record?
+  // Create a new dim_customer row, or park in an exception queue?
 
   orders_count -> lifetime_order_count
   total_spent -> lifetime_spend
@@ -145,8 +140,11 @@ mapping 'shopify to dim_customer' {
 }
 
 // Derived: cross-source computed fields
-mapping 'derived segments' {
-  source { `loyalty_sfdc`, `ecom_shopify` }
+mapping `derived segments` {
+  source {
+    `loyalty_sfdc`
+    `ecom_shopify`
+  }
   target { `dim_customer` }
 
   note {

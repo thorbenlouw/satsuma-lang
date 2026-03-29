@@ -57,7 +57,7 @@ schema sat_store_details (
 // --- Mappings ---
 
 // Hub
-mapping 'pos to hub_store' {
+mapping `pos to hub_store` {
   source { `pos_oracle` }
   target { `hub_store` }
 
@@ -66,8 +66,8 @@ mapping 'pos to hub_store' {
 }
 
 // Store details satellite
-mapping 'pos to sat_store_details' {
-  source { `pos_oracle` }
+mapping `pos to sat_store_details` {
+  source { `pos_oracle`, `store_region_map` }
   target { `sat_store_details` }
 
   STORE_NAME -> store_name             { trim | title_case }

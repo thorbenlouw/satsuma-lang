@@ -103,7 +103,7 @@ schema sat_inventory_levels (
 // --- Mappings ---
 
 // Link
-mapping 'wms to link_inventory' {
+mapping `wms to link_inventory` {
   source { `wms_manhattan` }
   target { `link_inventory` }
 
@@ -113,7 +113,7 @@ mapping 'wms to link_inventory' {
 }
 
 // Effectivity satellite — presence of a record means the relationship is active
-mapping 'wms to sat_inventory_effectivity' {
+mapping `wms to sat_inventory_effectivity` {
   source { `wms_manhattan` }
   target { `sat_inventory_effectivity` }
 
@@ -125,7 +125,7 @@ mapping 'wms to sat_inventory_effectivity' {
 }
 
 // Stock levels satellite
-mapping 'wms to sat_inventory_levels' {
+mapping `wms to sat_inventory_levels` {
   source { `wms_manhattan` }
   target { `sat_inventory_levels` }
 

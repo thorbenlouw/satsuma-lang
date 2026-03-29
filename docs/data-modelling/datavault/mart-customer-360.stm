@@ -90,14 +90,14 @@ schema mart_customer_360 (
 // --- Mappings ---
 
 // Primary: demographics from SFDC satellite
-mapping 'demographics to mart' {
+mapping `demographics to mart` {
   source { `sat_customer_demographics`, `hub_customer` }
   target { `mart_customer_360` }
 
   note {
     """
-    Join: `sat_customer_demographics.hub_customer_hk = hub_customer.hub_customer_hk`
-    Filter: `sat_customer_demographics.load_end_date IS NULL` (current version only)
+    Join: sat_customer_demographics.hub_customer_hk = hub_customer.hub_customer_hk
+    Filter: sat_customer_demographics.load_end_date IS NULL (current version only)
     """
   }
 
@@ -133,19 +133,19 @@ mapping 'demographics to mart' {
 }
 
 // Supplementary: online behaviour from Shopify satellite
-mapping 'online to mart' {
+mapping `online to mart` {
   source { `sat_customer_online` }
   target { `mart_customer_360` }
 
   note {
     """
     Left join: not all customers have online accounts.
-    Filter: `sat_customer_online.load_end_date IS NULL` (current version only)
+    Filter: sat_customer_online.load_end_date IS NULL (current version only)
     """
   }
 
   -> has_online_account {
-    "True if `sat_customer_online.hub_customer_hk` is not null, false otherwise."
+    "True if the customer has a row in sat_customer_online, false otherwise."
   }
 
   lifetime_order_count -> online_order_count   { coalesce(0) }
@@ -158,7 +158,7 @@ mapping 'online to mart' {
 }
 
 // Derived fields computed across both satellites
-mapping 'derived segments' {
+mapping `derived segments` {
   source { `hub_customer` }
   target { `mart_customer_360` }
 

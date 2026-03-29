@@ -2,94 +2,91 @@
 // Common: shared fragments, lookups, and transforms
 
 fragment address_fields {
-  address_line_1   VARCHAR(200)
-  address_line_2   VARCHAR(200)
-  city             VARCHAR(100)
-  state_province   VARCHAR(50)
-  postal_code      VARCHAR(20)
-  country_code     CHAR(2)
+  address_line_1  VARCHAR(200)
+  address_line_2  VARCHAR(200)
+  city            VARCHAR(100)
+  state_province  VARCHAR(50)
+  postal_code     VARCHAR(20)
+  country_code    CHAR(2)
 }
 
 fragment audit_columns {
-  etl_batch_id     BIGINT
-  loaded_at        TIMESTAMPTZ
+  etl_batch_id  BIGINT
+  loaded_at     TIMESTAMPTZ
 }
 
 schema store_region_map (note "Store ID to operating region") {
-  store_id      VARCHAR(20)   (pk)
-  region        VARCHAR(50)
-  country       CHAR(2)
-  timezone      VARCHAR(40)
+  store_id  VARCHAR(20)  (pk)
+  region    VARCHAR(50)
+  country   CHAR(2)
+  timezone  VARCHAR(40)
 }
 
 schema product_hierarchy (note "Merchandise hierarchy levels") {
-  category_code   VARCHAR(20)   (pk)
-  department      VARCHAR(100)
-  category        VARCHAR(100)
-  subcategory     VARCHAR(100)
+  category_code  VARCHAR(20)   (pk)
+  department     VARCHAR(100)
+  category       VARCHAR(100)
+  subcategory    VARCHAR(100)
 }
 
 schema channel_codes (note "Sales channel normalisation") {
-  source_system   VARCHAR(20)   (pk)
-  channel_code    VARCHAR(20)
-  channel_name    VARCHAR(50)
+  source_system  VARCHAR(20)  (pk)
+  channel_code   VARCHAR(20)
+  channel_name   VARCHAR(50)
 }
 
 // --- Shared source systems ---
-
 schema pos_oracle (note "Oracle Retail POS — master extract") {
-  // Transaction fields
-  TRANS_ID            BIGINT          (pk)
-  STORE_ID            VARCHAR(20)     (required)
-  REGISTER_ID         VARCHAR(10)
-  TRANS_DATE          DATE            (required)
-  TRANS_TIME          TIME
-  CUST_ID             INTEGER                              //! NULL for ~35% (non-loyalty purchases)
-  LOYALTY_CARD_NBR    VARCHAR(20)     (unique)             //! NULL for ~35% of transactions
-  LINE_NBR            INTEGER         (required)
-  SKU                 VARCHAR(18)     (required)
-  QTY                 INTEGER         (required)
-  UNIT_PRICE          DECIMAL(10,2)   (required)
-  DISCOUNT_AMT        DECIMAL(10,2)   (default 0)
-  TAX_AMT             DECIMAL(10,2)   (default 0)
-  PAYMENT_TYPE        CHAR(2)         (enum {CA, CC, DC, GC, AP, GP})
-  CASHIER_ID          VARCHAR(20)
-  VOID_FLAG           CHAR(1)         (enum {Y, N}, default N)
+  TRANS_ID           BIGINT         (pk)
+  STORE_ID           VARCHAR(20)    (required)
+  REGISTER_ID        VARCHAR(10)
+  TRANS_DATE         DATE           (required)
+  TRANS_TIME         TIME
+  CUST_ID            INTEGER  //! NULL for ~35% (non-loyalty purchases)
+  LOYALTY_CARD_NBR   VARCHAR(20)    (unique)  //! NULL for ~35% of transactions
+  LINE_NBR           INTEGER        (required)
+  SKU                VARCHAR(18)    (required)
+  QTY                INTEGER        (required)
+  UNIT_PRICE         DECIMAL(10,2)  (required)
+  DISCOUNT_AMT       DECIMAL(10,2)  (default 0)
+  TAX_AMT            DECIMAL(10,2)  (default 0)
+  PAYMENT_TYPE       CHAR(2)        (enum {CA, CC, DC, GC, AP, GP})
+  CASHIER_ID         VARCHAR(20)
+  VOID_FLAG          CHAR(1)        (enum {Y, N}, default N)
 
   // Store reference fields
-  STORE_NAME          VARCHAR(100)    (required)
-  STORE_FORMAT        VARCHAR(20)     (enum {FULL, OUTLET, EXPRESS, FLAGSHIP})
-  ADDR_LINE_1         VARCHAR(200)
-  ADDR_LINE_2         VARCHAR(200)
-  CITY                VARCHAR(100)
-  STATE_PROV          VARCHAR(50)
-  POSTAL_CD           VARCHAR(20)
-  COUNTRY_CD          CHAR(2)
-  PHONE_NBR           VARCHAR(20)
-  STORE_MGR           VARCHAR(100)
-  SQFT                INTEGER
-  OPEN_DATE           DATE
-  STATUS              CHAR(1)         (enum {A, T, C})     // Active/Temporary-closed/Closed
+  STORE_NAME         VARCHAR(100)   (required)
+  STORE_FORMAT       VARCHAR(20)    (enum {FULL, OUTLET, EXPRESS, FLAGSHIP})
+  ADDR_LINE_1        VARCHAR(200)
+  ADDR_LINE_2        VARCHAR(200)
+  CITY               VARCHAR(100)
+  STATE_PROV         VARCHAR(50)
+  POSTAL_CD          VARCHAR(20)
+  COUNTRY_CD         CHAR(2)
+  PHONE_NBR          VARCHAR(20)
+  STORE_MGR          VARCHAR(100)
+  SQFT               INTEGER
+  OPEN_DATE          DATE
+  STATUS             CHAR(1)        (enum {A, T, C})  // Active/Temporary-closed/Closed
 
   // Customer linkage fields
-  FIRST_PURCHASE_DT   DATE
+  FIRST_PURCHASE_DT  DATE
 }
 
 schema ecom_shopify (note "Shopify Plus — online platform") {
-  // Order fields
-  order_id            BIGINT          (pk)
+  order_id            BIGINT         (pk)
   customer_id         BIGINT
-  email               STRING(255)     (pii)
-  order_date          DATE            (required)
-  line_number         INTEGER         (required)
+  email               STRING(255)    (pii)
+  order_date          DATE           (required)
+  line_number         INTEGER        (required)
   variant_id          BIGINT
-  sku                 STRING(18)      (required)
-  quantity            INTEGER         (required)
-  unit_price          DECIMAL(10,2)   (required)
-  discount_amount     DECIMAL(10,2)   (default 0)
-  tax_amount          DECIMAL(10,2)   (default 0)
-  currency            CHAR(3)         (default USD)
-  fulfillment_status  STRING(20)      (enum {pending, shipped, delivered, returned})
+  sku                 STRING(18)     (required)
+  quantity            INTEGER        (required)
+  unit_price          DECIMAL(10,2)  (required)
+  discount_amount     DECIMAL(10,2)  (default 0)
+  tax_amount          DECIMAL(10,2)  (default 0)
+  currency            CHAR(3)        (default USD)
+  fulfillment_status  STRING(20) (enum {pending, shipped, delivered, returned})
   discount_code       STRING(50)
 
   // Customer fields
@@ -101,23 +98,21 @@ schema ecom_shopify (note "Shopify Plus — online platform") {
   total_spent         DECIMAL(12,2)
 }
 
-
 // --- Conformed dimensions ---
-
 schema dim_date (note "Conformed date dimension — one row per calendar day") {
-  date_key             DATE            (pk)
-  day_of_week          VARCHAR(10)
-  day_of_week_number   INTEGER
-  day_of_month         INTEGER
-  day_of_year          INTEGER
-  week_of_year         INTEGER
-  month_number         INTEGER
-  month_name           VARCHAR(10)
-  quarter_number       INTEGER
-  quarter_name         VARCHAR(2)
-  year                 INTEGER
-  is_weekend           BOOLEAN
-  is_holiday           BOOLEAN
-  fiscal_year          INTEGER
-  fiscal_quarter       INTEGER
+  date_key            DATE         (pk)
+  day_of_week         VARCHAR(10)
+  day_of_week_number  INTEGER
+  day_of_month        INTEGER
+  day_of_year         INTEGER
+  week_of_year        INTEGER
+  month_number        INTEGER
+  month_name          VARCHAR(10)
+  quarter_number      INTEGER
+  quarter_name        VARCHAR(2)
+  year                INTEGER
+  is_weekend          BOOLEAN
+  is_holiday          BOOLEAN
+  fiscal_year         INTEGER
+  fiscal_quarter      INTEGER
 }

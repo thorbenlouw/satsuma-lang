@@ -4,7 +4,7 @@
 // This file imports every schema in the Data Vault pipeline, providing a
 // single entry point for platform-wide lineage traversal:
 //
-//   stm lineage --from hub_customer .
+// stm lineage --from hub_customer .
 //
 // traces how customer data flows from source systems through the raw
 // vault (hubs, links, satellites) into information marts.
