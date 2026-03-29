@@ -1,6 +1,6 @@
 ---
 id: sl-sado
-status: open
+status: closed
 deps: [sl-8pj3]
 links: []
 created: 2026-03-29T18:49:28Z
@@ -28,3 +28,9 @@ Export all from satsuma-core/src/index.ts under a cst-utils subpath export as we
 
 1. satsuma-core/src/cst-utils.ts exists and exports all 6 functions 2. satsuma-core package.json adds a './cst-utils' export entry 3. satsuma-core/src/index.ts re-exports from cst-utils 4. Unit tests in satsuma-core/test/cst-utils.test.js verify each function against representative CST shapes 5. satsuma-core builds without errors (tsc) 6. No changes yet to CLI or LSP (consumers migrated in later tickets)
 
+
+## Notes
+
+**2026-03-29T20:28:48Z**
+
+Cause: CST helpers duplicated in CLI extract.ts and LSP parser-utils.ts with no shared code. Fix: Created satsuma-core/src/cst-utils.ts with child/children/allDescendants/labelText/stringText/entryText, added package export, 23 unit tests passing.

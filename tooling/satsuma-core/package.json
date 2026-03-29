@@ -17,12 +17,17 @@
     "./types": {
       "types": "./dist/types.d.ts",
       "default": "./dist/types.js"
+    },
+    "./cst-utils": {
+      "types": "./dist/cst-utils.d.ts",
+      "default": "./dist/cst-utils.js"
     }
   },
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc"
+    "prepare": "tsc",
+    "test": "node --test test/**/*.test.js"
   },
   "devDependencies": {
     "typescript": "^6.0.2"
