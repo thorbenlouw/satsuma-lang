@@ -46,6 +46,18 @@ export function register(program: Command): void {
 Searches all field metadata for the given tag token or key-value key.
 Common tags: pk, required, unique, pii, encrypt, indexed, measure, ref, enum.
 
+JSON shape (--json): array of match objects
+  [{
+    "blockType": "schema" | "metric" | "fragment",
+    "block":     str,   # block name
+    "field":     str,   # field name
+    "tag":       str,   # the matched tag token
+    "fieldType": str | null,
+    "metadata":  [str, ...],
+    "file":      str,
+    "line":      int
+  }, ...]
+
 Examples:
   satsuma find --tag pii                     # all PII-tagged fields
   satsuma find --tag measure --in metric     # measure fields in metrics only

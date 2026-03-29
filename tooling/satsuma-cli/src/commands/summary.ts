@@ -32,6 +32,24 @@ export function register(program: Command): void {
     .description("Summarise a Satsuma workspace or file")
     .option("--compact", "show names only")
     .option("--json", "output JSON")
+    .addHelpText("after", `
+JSON shape (--json):
+  {
+    "schemas":      [{"name": str, "file": str, "fieldCount": int, "note": str|null}, ...],
+    "metrics":      [{"name": str, "file": str}, ...],
+    "mappings":     [{"name": str, "file": str, "arrowCount": int, "sources": [str], "targets": [str]}, ...],
+    "fragments":    [{"name": str, "file": str}, ...],
+    "transforms":   [{"name": str, "file": str}, ...],
+    "fileCount":    int,
+    "warningCount": int,
+    "questionCount": int,
+    "totalErrors":  int
+  }
+
+Examples:
+  satsuma summary ./workspace            # human overview
+  satsuma summary ./workspace --json     # structured index
+  satsuma summary --compact              # names only`)
     .action(async (pathArg: string | undefined, opts: { compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

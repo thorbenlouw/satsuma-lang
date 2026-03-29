@@ -38,6 +38,12 @@ Scope formats:
 
 Names can be namespace-qualified (e.g. pos::stores).
 
+JSON shape (--json):
+  {
+    "scope":   str,
+    "entries": [{"key": str, "value": str | null, "raw": str}, ...]
+  }
+
 Examples:
   satsuma meta hub_customer                  # schema-level metadata
   satsuma meta hub_customer.email            # field-level metadata

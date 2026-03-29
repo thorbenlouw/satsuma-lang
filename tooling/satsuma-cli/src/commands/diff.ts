@@ -27,6 +27,15 @@ export function register(program: Command): void {
 Compares two Satsuma snapshots structurally (not text diff). Both <a> and
 <b> should be the same type — both files or both directories.
 
+JSON shape (--json):
+  {
+    "schemas":   {"added": [str], "removed": [str], "changed": [{"name": str, "changes": [...]}]},
+    "mappings":  {"added": [str], "removed": [str], "changed": [...]},
+    "metrics":   {"added": [str], "removed": [str], "changed": [...]},
+    "fragments": {"added": [str], "removed": [str], "changed": [...]},
+    "transforms":{"added": [str], "removed": [str], "changed": [...]}
+  }
+
 Examples:
   satsuma diff v1/pipeline.stm v2/pipeline.stm      # file-to-file
   satsuma diff old/ new/ --stat                      # directory summary

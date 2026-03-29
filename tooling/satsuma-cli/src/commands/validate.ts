@@ -26,6 +26,20 @@ export function register(program: Command): void {
     .option("--json", "structured JSON output")
     .option("--errors-only", "suppress warnings")
     .option("--quiet", "exit code only (0=clean, 2=errors)")
+    .addHelpText("after", `
+JSON shape (--json):
+  {
+    "findings": [{"severity": str, "message": str, "file": str, "line": int, "col": int}, ...],
+    "summary":  {"files": int, "errors": int, "warnings": int}
+  }
+
+Exit codes: 0 = clean, 2 = parse errors or semantic issues.
+
+Examples:
+  satsuma validate                           # validate workspace
+  satsuma validate ./path --json             # structured diagnostics
+  satsuma validate --quiet                   # exit code only
+  satsuma validate --errors-only             # suppress warnings`)
     .action(async (pathArg: string | undefined, opts: { json?: boolean; errorsOnly?: boolean; quiet?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

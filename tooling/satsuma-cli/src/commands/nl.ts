@@ -34,6 +34,15 @@ Scope formats:
   <schema.field>   NL on a specific field and arrows referencing it
   all              NL across the entire workspace
 
+JSON shape (--json): array of NL content objects
+  [{
+    "kind":      "note" | "warning" | "question" | "transform",
+    "scope":     str,   # block or field name
+    "text":      str,   # verbatim NL content
+    "file":      str,
+    "line":      int
+  }, ...]
+
 Examples:
   satsuma nl 'demographics to mart'          # NL in a mapping
   satsuma nl hub_customer                    # NL in a schema
