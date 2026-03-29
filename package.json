@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "clean:all": "rm -rf node_modules tooling/satsuma-cli/node_modules tooling/satsuma-core/node_modules tooling/tree-sitter-satsuma/node_modules tooling/satsuma-viz/node_modules tooling/vscode-satsuma/node_modules tooling/vscode-satsuma/server/node_modules",
-    "install:all": "npm install && npm --prefix tooling/satsuma-core install && npm --prefix tooling/tree-sitter-satsuma install && cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh build --wasm . -o tree-sitter-satsuma.wasm && cd ../.. && npm --prefix tooling/satsuma-cli install && npm --prefix tooling/satsuma-viz install && npm --prefix tooling/satsuma-viz run build && npm --prefix tooling/vscode-satsuma install && npm --prefix tooling/vscode-satsuma/server install && npm --prefix tooling/vscode-satsuma run build:server",
+    "install:all": "npm install && npm --prefix tooling/satsuma-core install && npm --prefix tooling/tree-sitter-satsuma install && cd tooling/tree-sitter-satsuma && tree-sitter build --wasm . -o tree-sitter-satsuma.wasm && cd ../.. && npm --prefix tooling/satsuma-cli install && npm --prefix tooling/satsuma-viz install && npm --prefix tooling/satsuma-viz run build && npm --prefix tooling/vscode-satsuma install && npm --prefix tooling/vscode-satsuma/server install && npm --prefix tooling/vscode-satsuma run build:server",
     "ci:all": "npm ci && npm ci --prefix tooling/satsuma-core && npm ci --prefix tooling/tree-sitter-satsuma && npm ci --ignore-scripts --prefix tooling/satsuma-cli && npm ci --prefix tooling/satsuma-viz && npm ci --prefix tooling/vscode-satsuma && npm ci --prefix tooling/vscode-satsuma/server",
     "reinstall": "npm run clean:all && npm run install:all",
     "lint": "npm run lint:js",

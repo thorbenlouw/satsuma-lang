@@ -1,0 +1,27 @@
+// Fixture: typeless fields (NAME (metadata) with no explicit type)
+// Tests that fields declared without a type but with metadata are correctly
+// indexed and traced in field-lineage.
+
+fragment shared_dims {
+  region STRING
+  branch STRING
+}
+
+schema source_schema {
+  PK_ID (pk, required)
+  label STRING
+  ...shared_dims
+}
+
+schema target_schema {
+  out_id STRING
+  out_label STRING
+}
+
+mapping `load data` {
+  source { `source_schema` }
+  target { `target_schema` }
+
+  PK_ID -> out_id
+  label -> out_label
+}

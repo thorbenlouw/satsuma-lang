@@ -163,7 +163,7 @@ Follow these rules strictly:
 
 After writing each `.stm` file, validate with tree-sitter:
 ```bash
-./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-satsuma <file.stm> --quiet
+tree-sitter parse --wasm -p tooling/tree-sitter-satsuma <file.stm> --quiet
 ```
 
 If it reports errors, fix them before proceeding. If tree-sitter is unavailable, perform heuristic checks:

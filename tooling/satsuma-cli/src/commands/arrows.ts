@@ -109,20 +109,36 @@ Examples:
       let arrows = findFieldArrows(qualifiedField, index);
 
       // Also search by bare field name (handles nested child fields indexed by leaf name)
-      // Only include arrows from mappings involving the resolved schema
+      // Only include arrows from mappings involving the resolved schema, and only
+      // when the arrow's source/target field path actually exists in the queried schema.
+      // This prevents false positives from leaf-name collisions across schemas.
       const leafName = fieldName.includes(".") ? fieldName.split(".").pop()! : fieldName;
       const seen = new Set(arrows.map((a) => `${a.mapping}:${a.namespace}:${a.sources.join(",")}:${a.target}:${a.line}`));
+      const schemaKey = resolvedSchema.key;
       for (const altKey of [fieldName, leafName]) {
         for (const a of findFieldArrows(altKey, index)) {
           const dedupKey = `${a.mapping}:${a.namespace}:${a.sources.join(",")}:${a.target}:${a.line}`;
           if (seen.has(dedupKey)) continue;
-          // Verify this arrow's mapping involves the queried schema
           const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
           const mapping = index.mappings.get(qMapping);
-          if (mapping && (mapping.sources.includes(resolvedSchema.key) || mapping.targets.includes(resolvedSchema.key))) {
-            seen.add(dedupKey);
-            arrows.push(a);
-          }
+          if (!mapping) continue;
+
+          // Verify the arrow's source or target field path exists in the queried schema's
+          // field tree. Strip any schema prefix before the lookup.
+          const pathExistsInSchema = (rawPath: string): boolean => {
+            const bare = rawPath.replace(/^\./, "");
+            const path = bare.startsWith(schemaKey + ".") ? bare.slice(schemaKey.length + 1) : bare;
+            return findFieldByPath(allFields, path) || collectAllFieldNames(allFields).includes(path);
+          };
+
+          const asSourceMatch = mapping.sources.includes(schemaKey) &&
+            a.sources.some((s) => pathExistsInSchema(s));
+          const asTargetMatch = mapping.targets.includes(schemaKey) &&
+            a.target != null && pathExistsInSchema(a.target);
+
+          if (!asSourceMatch && !asTargetMatch) continue;
+          seen.add(dedupKey);
+          arrows.push(a);
         }
       }
 

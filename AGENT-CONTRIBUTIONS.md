@@ -67,11 +67,6 @@ across every package, builds the tree-sitter WASM parser, and compiles the
 VS Code LSP server. Without this step, pre-commit hooks (`scripts/run-repo-checks.sh`)
 will fail on vscode-satsuma and tree-sitter tests.
 
-> **Sandboxed agents:** `npm run install:all` builds native tree-sitter bindings
-> which requires a C compiler and cannot run inside a sandbox. If you are running
-> in a sandboxed environment, ask the user to run `npm run install:all` from the
-> worktree root outside the sandbox before you begin work.
-
 ### Cleaning up worktrees
 
 After a PR is merged:
@@ -162,3 +157,6 @@ After PR is merged:
 
 - [ ] Remove the worktree: `git worktree remove .worktrees/<branch>`
 - [ ] Delete the local branch: `git branch -d <branch>`
+
+## Running tree-sitter CLI
+Always use --wasm flag to avoid the need for a C compiler and because we want to keep things platform portable.

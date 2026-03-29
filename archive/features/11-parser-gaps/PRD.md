@@ -26,7 +26,7 @@ As long as these gaps remain, downstream tooling will either reject valid Satsum
 
 ## Inventory Summary
 
-Example files scanned on 2026-03-18 with `./scripts/tree-sitter-local.sh parse`:
+Example files scanned on 2026-03-18 with `tree-sitter parse`:
 
 - Clean: `examples/common.stm`
 - Clean: `examples/lookups/finance.stm`

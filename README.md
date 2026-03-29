@@ -270,11 +270,6 @@ What exists today:
 - data modelling conventions for Kimball and Data Vault patterns with canonical examples
 - pre-built CLI release artifacts published on every merge to `main`
 
-What is not complete yet:
-
-- type checking
-- code generation
-
 ### Excel Conversion Tooling
 
 - **Excel → Satsuma**: A full [Agent Skill](skills/excel-to-satsuma/) with a Python CLI tool (`excel_tool.py`) and a Claude Code slash command (`/excel-to-satsuma`). The skill surveys the spreadsheet, generates idiomatic Satsuma with chunked extraction, and self-critiques the output. A [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is also available for zero-setup conversion.
@@ -324,7 +319,6 @@ If you are contributing tooling, start here:
 
 - Node.js 22+
 - Python 3.12+
-- C toolchain (Xcode Command Line Tools on macOS, `build-essential` on Linux)
 
 ### Setup
 
@@ -352,7 +346,7 @@ npm test                  # corpus tests + fixture tests + consumer tests + smok
 Individual test suites:
 
 ```bash
-../../scripts/tree-sitter-local.sh test   # corpus tests only
+tree-sitter test --wasm   # corpus tests only
 python3 scripts/test_fixtures.py          # example and recovery fixtures
 python3 scripts/test_cst_summary.py       # CST consumer unit tests
 python3 scripts/test_smoke_summary.py     # smoke test all examples

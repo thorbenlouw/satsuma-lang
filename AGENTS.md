@@ -103,25 +103,8 @@ Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
 - Invalid or recovery-sensitive behavior should include malformed input tests.
 - Avoid merging parser work that is only manually verified.
 
-## Running tree-sitter Commands
-
-Use the repo-local wrapper [`scripts/tree-sitter-local.sh`](scripts/tree-sitter-local.sh) for every Tree-sitter command. It sets `XDG_CACHE_HOME` to a repo-local cache directory and uses a repo-local config file so agent runs do not depend on `~/.cache/tree-sitter` or global parser config.
-
-Preferred forms:
-
-```bash
-./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-satsuma examples/common.stm --quiet
-./scripts/tree-sitter-local.sh parse -p tooling/tree-sitter-satsuma examples/common.stm
-cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh test
-cd tooling/tree-sitter-satsuma && ../../scripts/tree-sitter-local.sh generate
-```
-
-Agent requirements:
-
-- Do not call bare `tree-sitter ...` commands when the wrapper can be used.
-- Do not ask the user to run Tree-sitter commands just to work around cache/config path issues.
-- When adding scripts or docs, point them at the wrapper instead of the global CLI.
-- If a Tree-sitter command still fails after using the wrapper, report the concrete failure before falling back to a user handoff.
+## Running tree-sitter CLI
+Always use --wasm flag to avoid the need for a C compiler and because we want to keep things platform portable.
 
 ## Code Search with ast-grep
 

@@ -1,0 +1,31 @@
+schema s1 {
+    a record {
+        a1 x
+        b1 x
+        c1 record {
+            c1a x
+            c1b x
+        }
+    }
+}
+
+schema s2 {
+    a record {
+        a1 x
+        b1 x
+        c1 record {
+            c1a x
+            c1b x
+        }
+    }
+}
+
+mapping m1 {
+    source { s1 }
+    target { s2 }
+
+    a.a1 -> a.a1
+    a.b1 -> a.b1
+    a.c1.c1a -> a.c1.c1a
+    a.c1.c1b -> a.c1.c1b
+}

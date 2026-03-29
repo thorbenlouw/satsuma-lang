@@ -278,6 +278,8 @@ module.exports = grammar({
         $._list_of_scalar_field,
         // NAME TYPE (metadata)?  — original scalar field
         $._scalar_field,
+        // NAME (metadata)  — typeless field (type omitted, metadata required to disambiguate)
+        $._typeless_field,
       ),
 
     _scalar_field: ($) =>
@@ -285,6 +287,12 @@ module.exports = grammar({
         $.field_name,
         $.type_expr,
         optional($.metadata_block),
+      ),
+
+    _typeless_field: ($) =>
+      seq(
+        $.field_name,
+        $.metadata_block,
       ),
 
     _record_field: ($) =>

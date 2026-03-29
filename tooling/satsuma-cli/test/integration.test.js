@@ -3665,3 +3665,34 @@ describe("satsuma validate — duplicate mapping names (sl-04eg)", () => {
     assert.doesNotMatch(stdout, /field-not-in-schema/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// satsuma arrows — leaf-name false positive fix
+// A field F in schema A should not get arrows attributed to it just because
+// the mapping has schema A as a source and a *different* source field has F
+// as a leaf name (e.g. nested_record.F from schema B is NOT schema_A.F).
+// ---------------------------------------------------------------------------
+describe("satsuma arrows — no leaf-name false positives across schemas", () => {
+  const FIXTURE = resolve(EXAMPLES, "filter-flatten-governance.stm");
+
+  it("customer_profiles.customer_id has no arrows (join key, not arrow source)", async () => {
+    const { stdout, stderr, code } = await run("arrows", "customer_profiles.customer_id", FIXTURE);
+    // Must exit 1 (no arrows found) — not 0 with a false positive
+    assert.equal(code, 1, `expected exit 1 (no arrows), got ${code}\n${stdout}${stderr}`);
+    assert.match(stdout, /No arrows found/, "should report no arrows");
+  });
+
+  it("customer_profiles.acquisition_channel still has its arrow", async () => {
+    const { stdout, code } = await run("arrows", "customer_profiles.acquisition_channel", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /acquisition_channel/);
+    assert.match(stdout, /1 as source/);
+  });
+
+  it("order_events.customer.customer_id correctly shows arrows from the nested record", async () => {
+    const { stdout, code } = await run("arrows", "order_events.customer.customer_id", FIXTURE);
+    assert.equal(code, 0);
+    assert.match(stdout, /customer\.customer_id -> customer_id/);
+    assert.match(stdout, /2 as source/);
+  });
+});
