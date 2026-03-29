@@ -12,14 +12,10 @@ import {
   extractSchemas,
   extractMappings,
   extractFragments,
-  extractMetrics,
-  extractTransforms,
   extractImports,
   extractWarnings,
   extractQuestions,
-  extractNamespaces,
   extractFieldTree,
-  extractArrowRecords,
 } from "../dist/extract.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────

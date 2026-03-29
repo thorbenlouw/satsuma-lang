@@ -63,7 +63,7 @@ export function resolveRef(ref: string, mappingContext: MappingContext, index: W
  * Process pre-extracted NL ref data into fully resolved reference records.
  */
 export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
-  const nlRefData = (index.nlRefData ?? []) as NLRefData[];
+  const nlRefData: NLRefData[] = index.nlRefData ?? [];
   return _resolveAllNLRefs(nlRefData, makeLookup(index));
 }
 
