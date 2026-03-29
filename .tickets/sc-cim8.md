@@ -1,6 +1,6 @@
 ---
 id: sc-cim8
-status: open
+status: closed
 deps: [sc-p8h0]
 links: []
 created: 2026-03-29T12:53:52Z
@@ -20,3 +20,12 @@ Delete src/commands/arrows.ts. Remove all registrations of satsuma.showArrows fr
 - Extension compiles and activates cleanly
 - No remaining imports or references to showArrows in the codebase
 
+
+## Notes
+
+**2026-03-29T13:13:41Z**
+
+**2026-03-29**
+
+Cause: showArrows command was superseded by the new field-lineage ELK panel (sc-rdrc).
+Fix: Deleted src/commands/arrows.ts; removed import and registration from extension.ts; removed command declaration and commandPalette entry from package.json.
