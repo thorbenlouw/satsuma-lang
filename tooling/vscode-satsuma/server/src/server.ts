@@ -359,11 +359,16 @@ connection.onRequest(
     const defs = resolveDefinition(wsIndex, params.name, null);
     if (defs.length === 0) return [];
     const def = defs[0]!;
-    return def.fields.map((f) => ({
-      name: f.name,
-      uri: def.uri,
-      line: f.range.start.line,
-    }));
+    const result: { name: string; uri: string; line: number }[] = [];
+    function collect(fields: typeof def.fields, prefix: string): void {
+      for (const f of fields) {
+        const dotPath = prefix ? `${prefix}.${f.name}` : f.name;
+        result.push({ name: dotPath, uri: def.uri, line: f.range.start.line });
+        if (f.children.length > 0) collect(f.children, dotPath);
+      }
+    }
+    collect(def.fields, "");
+    return result;
   },
 );
 
