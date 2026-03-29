@@ -47,4 +47,4 @@ The schema node fields array and the edge list should be internally consistent: 
 **2026-03-28T19:31:45Z**
 
 Cause: Three separate issues: grammar bug (sl-3ccy) made spread fields invisible, graph kept fragment nodes inconsistent with arrows validation, and multi-source attribution was wrong (sl-3rk9).
-Fix: Resolved by sl-3ccy (grammar), sl-p0hz (graph schema fields), and sl-3rk9 (multi-source). (commits c5c5bf6 and pending)
+Fix: Resolved by sl-3ccy (grammar), sl-p0hz (graph schema fields), and sl-3rk9 (multi-source). (commits c5c5bf6 and dd09622)

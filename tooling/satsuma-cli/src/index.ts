@@ -61,6 +61,7 @@ const commands = [
   "commands/lint.js",
   "commands/agent-reference.js",
   "commands/fmt.js",
+  "commands/field-lineage.js",
 ];
 
 for (const cmd of commands) {

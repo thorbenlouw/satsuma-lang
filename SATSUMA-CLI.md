@@ -45,6 +45,7 @@ Fine-grained extraction — slice below block level to get specific arrows, NL c
 | Command | Operation | Example |
 |---|---|---|
 | `arrows <schema.field>` | All arrows involving a field, with transform classification | `satsuma arrows loyalty_sfdc.LoyaltyTier` |
+| `field-lineage <schema.field>` | Full upstream + downstream field lineage chain in one command | `satsuma field-lineage sat_customer_demographics.loyalty_tier --json` |
 | `nl <scope>` | NL content (notes, transforms, comments) in a scope | `satsuma nl "demographics to mart"` |
 | `meta <scope>` | Metadata entries for a block or field | `satsuma meta loyalty_sfdc.Email` |
 | `fields <schema>` | Field list with types and metadata | `satsuma fields sat_customer_demographics` |
@@ -120,6 +121,33 @@ Every arrow the CLI returns carries a classification derived from CST node types
 | `nl-derived` | Implicit arrow inferred from a backtick NL reference — not declared in any mapping |
 
 Derived arrows (no source field) are flagged separately. The first four classifications are mechanical CST checks — no string content is examined. `nl-derived` arrows are synthetic: they are created when a NL backtick reference (e.g., `` `schema.field` ``) resolves to a known field, and they carry `derived: true` with `transform_raw: "(NL ref)"`.
+
+## field-lineage
+
+`satsuma field-lineage <schema.field>` traces the full upstream and downstream lineage of a single field in one command, following both declared arrows and NL-derived references.
+
+```
+satsuma field-lineage sat_customer_demographics.loyalty_tier
+satsuma field-lineage sat_customer_demographics.loyalty_tier --upstream
+satsuma field-lineage sat_customer_demographics.loyalty_tier --downstream
+satsuma field-lineage sat_customer_demographics.loyalty_tier --json
+```
+
+JSON output shape:
+
+```json
+{
+  "field": "::schema.field",
+  "upstream":   [{ "field": "::src.f", "via_mapping": "::m", "classification": "none" }, ...],
+  "downstream": [{ "field": "::tgt.f", "via_mapping": "::m", "classification": "none" }, ...]
+}
+```
+
+Flags: `--upstream` (upstream chain only), `--downstream` (downstream chain only), `--depth <n>` (limit traversal depth, default 10), `--json` (structured output).
+
+Namespace-qualified fields work: `satsuma field-lineage pos::stores.STORE_ID --json`.
+
+Cycles are handled gracefully — each field is visited at most once. NL-derived references (`@schema.field` in transform strings) are followed as implicit lineage edges.
 
 ## Common Flags
 

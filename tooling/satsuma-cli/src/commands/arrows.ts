@@ -124,10 +124,24 @@ Examples:
 
       // Add NL-derived arrows for this field
       const nlRefs = resolveAllNLRefs(index);
+      const canonicalQualified = canonicalKey(qualifiedField);
       for (const nlRef of nlRefs) {
         if (!nlRef.resolved || !nlRef.resolvedTo) continue;
         const resolvedTo = nlRef.resolvedTo.name;
-        if (resolvedTo === qualifiedField || resolvedTo === `${resolvedSchema.key}.${fieldName}`) {
+        if (resolvedTo === canonicalQualified) {
+          // Skip if the queried field is already a declared source for the same
+          // arrow (e.g. `c -> d { "clean up @s1.c" }` — don't emit a duplicate
+          // nl-derived arrow on top of the existing declared one).
+          const nlMappingKey = nlRef.namespace
+            ? `${nlRef.namespace}::${nlRef.mapping}`
+            : nlRef.mapping;
+          const alreadyDeclared = arrows.some((a) => {
+            if (a.classification === "nl-derived") return false;
+            const aMappingKey = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+            return aMappingKey === nlMappingKey && a.target === nlRef.targetField;
+          });
+          if (alreadyDeclared) continue;
+
           // Use the fully resolved path as the source so cross-schema refs
           // are correctly attributed (sl-uk9q)
           arrows.push({
@@ -153,8 +167,13 @@ Examples:
         arrows = arrows.filter((a) => {
           const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
           const m = index.mappings.get(qMapping);
+          // For nl-derived arrows, sources may be fully-qualified canonical paths
+          // (e.g. "::s1.a") rather than bare field names — match both forms.
           return m?.sources.includes(resolvedSchema.key) &&
-            a.sources.some((s) => s === fieldName || s === leafName);
+            a.sources.some((s) =>
+              s === fieldName || s === leafName ||
+              s === canonicalQualified || s.endsWith(`.${fieldName}`)
+            );
         });
       } else if (opts.asTarget) {
         arrows = arrows.filter((a) => {
@@ -201,7 +220,9 @@ Examples:
           // For multi-source arrows, find the actual schema that owns each source field
           // rather than attributing all fields to the queried schema.
           const resolveSourceField = (path: string): string => {
-            // Already fully qualified
+            // Already in canonical form (::schema.field or ns::schema.field)
+            if (path.includes("::")) return path;
+            // Already fully qualified with a known schema prefix
             const dotIdx = path.indexOf(".");
             if (dotIdx > 0) {
               const prefix = path.slice(0, dotIdx);
