@@ -50,7 +50,7 @@ All Phase 2 work can start once Phase 1 (`sc-p8h0`) is closed.
   - Depth re-runs CLI; filter is client-side only
   - *(blocked by sc-rdrc)*
 
-- [ ] **sc-64j5** — Upgrade `showLineage` schema-level view to webview DAG
+- [x] **sc-64j5** — Upgrade `showLineage` schema-level view to webview DAG
   - Schema pills + mapping pills + ELK layout; replaces output channel
   - *(no blockers — independent)*
 

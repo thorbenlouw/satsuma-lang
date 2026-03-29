@@ -65,7 +65,7 @@ export function activate(context: ExtensionContext): void {
 
   // Register commands
   registerValidateCommand(context, cliPath);
-  registerLineageCommand(context, cliPath, client, outputChannel);
+  registerLineageCommand(context, cliPath, client);
   registerWhereUsedCommand(context, cliPath);
   registerWarningsCommand(context, cliPath);
   registerSummaryCommand(context, cliPath, outputChannel);

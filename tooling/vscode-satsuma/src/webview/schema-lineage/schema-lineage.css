@@ -1,0 +1,192 @@
+/* schema-lineage.css — Satsuma Schema Lineage webview styles */
+
+/* ── Token definitions ───────────────────────────────────────────────────── */
+
+:root {
+  --sz-bg: #FFFAF5;
+  --sz-card-bg: #FFFFFF;
+  --sz-card-border: rgba(45, 42, 38, 0.10);
+
+  --sz-orange: #F2913D;
+  --sz-orange-dark: #D97726;
+  --sz-mapping-bg: #3A3834;
+  --sz-mapping-bg-dark: #4A4844;
+
+  --sz-text: #2D2A26;
+  --sz-text-muted: #6B6560;
+  --sz-text-on-orange: #ffffff;
+  --sz-text-on-mapping: #E0D8D0;
+
+  --sz-arrow-stroke: #D97726;
+
+  --sz-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --sz-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+}
+
+body.dark {
+  --sz-bg: #1E1E1E;
+  --sz-card-bg: #252526;
+  --sz-card-border: rgba(255, 255, 255, 0.08);
+
+  --sz-orange: #F2A860;
+  --sz-orange-dark: #E89040;
+  --sz-mapping-bg: #4A4844;
+
+  --sz-text: #D4D4D4;
+  --sz-text-muted: #9D9D9D;
+
+  --sz-arrow-stroke: #E89040;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--sz-bg);
+  color: var(--sz-text);
+  font-family: var(--sz-font-sans);
+  font-size: 13px;
+}
+
+#schema-lineage-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Header bar ───────────────────────────────────────────────────────────── */
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--sz-card-border);
+  background: var(--sz-bg);
+  flex-shrink: 0;
+  min-height: 40px;
+}
+
+.header-title {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.legend-pill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.legend-pill.schema {
+  background: var(--sz-orange);
+  color: var(--sz-text-on-orange);
+}
+
+.legend-pill.mapping {
+  background: var(--sz-mapping-bg);
+  color: var(--sz-text-on-mapping);
+}
+
+/* ── Canvas ───────────────────────────────────────────────────────────────── */
+
+.canvas-wrap {
+  flex: 1;
+  overflow: auto;
+}
+
+.canvas {
+  position: relative;
+}
+
+/* ── Node pills ───────────────────────────────────────────────────────────── */
+
+.node-pill {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-family: var(--sz-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.15s;
+}
+
+.node-pill:hover {
+  filter: brightness(1.1);
+}
+
+.node-pill.schema {
+  background: var(--sz-orange);
+  color: var(--sz-text-on-orange);
+}
+
+.node-pill.mapping {
+  background: var(--sz-mapping-bg);
+  color: var(--sz-text-on-mapping);
+}
+
+/* ── SVG edges ────────────────────────────────────────────────────────────── */
+
+.edge-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.edge {
+  stroke: var(--sz-arrow-stroke);
+  stroke-width: 2;
+  fill: none;
+}
+
+.arrowhead {
+  fill: var(--sz-arrow-stroke);
+}
+
+/* ── Empty and error states ───────────────────────────────────────────────── */
+
+.empty-message,
+.error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 13px;
+  color: var(--sz-text-muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.error-message {
+  color: var(--sz-orange-dark);
+}
