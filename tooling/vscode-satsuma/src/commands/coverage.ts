@@ -15,14 +15,14 @@ export function registerCoverageCommand(
   client: LanguageClient,
 ): void {
   mappedDecoration = vscode.window.createTextEditorDecorationType({
-    gutterIconPath: join(context.extensionPath, "src", "icons", "mapped.svg"),
+    gutterIconPath: join(context.extensionPath, "icons", "mapped.svg"),
     gutterIconSize: "80%",
     overviewRulerColor: "#4caf50",
     overviewRulerLane: vscode.OverviewRulerLane.Left,
   });
 
   unmappedDecoration = vscode.window.createTextEditorDecorationType({
-    gutterIconPath: join(context.extensionPath, "src", "icons", "unmapped.svg"),
+    gutterIconPath: join(context.extensionPath, "icons", "unmapped.svg"),
     gutterIconSize: "80%",
     overviewRulerColor: "#f44336",
     overviewRulerLane: vscode.OverviewRulerLane.Left,
