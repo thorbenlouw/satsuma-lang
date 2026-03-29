@@ -45,11 +45,13 @@ interface NodePos {
 }
 
 type ClassificationFilter = "all" | "structural" | "nl" | "structural+nl-derived";
+type Direction = "both" | "upstream" | "downstream";
 
 // ── Session state (depth + filter persist across re-centres) ───────────────
 
 let sessionDepth = 3;
 let sessionFilter: ClassificationFilter = "all";
+let sessionDirection: Direction = "both";
 /** Full unfiltered payload from the last message — used for client-side re-filtering. */
 let lastPayload: Payload | null = null;
 
@@ -59,7 +61,7 @@ window.addEventListener("message", (event: MessageEvent) => {
   const msg = event.data as { type: string; payload?: Payload; message?: string };
   if (msg.type === "fieldLineageData" && msg.payload) {
     lastPayload = msg.payload;
-    render(applyFilter(msg.payload, sessionFilter));
+    render(applyFilters(msg.payload));
   } else if (msg.type === "error") {
     showError(msg.message ?? "Unknown error");
   }
@@ -76,17 +78,19 @@ function keepClassification(cls: string, filter: ClassificationFilter): boolean 
 }
 
 /**
- * Return a filtered copy of the payload.
- * Entries whose classification is excluded are removed.
- * If the focal node has no remaining edges, we still show it with an empty-state message.
+ * Apply both the direction selector and classification filter to a payload.
+ * Always works from the raw lastPayload so filters compose correctly.
  */
-function applyFilter(payload: Payload, filter: ClassificationFilter): Payload {
-  if (filter === "all") return payload;
-  return {
-    ...payload,
-    upstream: payload.upstream.filter((e) => keepClassification(e.classification, filter)),
-    downstream: payload.downstream.filter((e) => keepClassification(e.classification, filter)),
-  };
+function applyFilters(payload: Payload): Payload {
+  const upstream =
+    sessionDirection === "downstream"
+      ? []
+      : payload.upstream.filter((e) => keepClassification(e.classification, sessionFilter));
+  const downstream =
+    sessionDirection === "upstream"
+      ? []
+      : payload.downstream.filter((e) => keepClassification(e.classification, sessionFilter));
+  return { ...payload, upstream, downstream };
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
@@ -110,9 +114,9 @@ async function render(payload: Payload): Promise<void> {
     const empty = document.createElement("div");
     empty.className = "empty-message";
     empty.textContent =
-      sessionFilter === "all"
+      sessionFilter === "all" && sessionDirection === "both"
         ? "No upstream or downstream lineage found for this field."
-        : "No edges match the current classification filter.";
+        : "No edges match the current filter settings.";
     root.appendChild(empty);
     return;
   }
@@ -427,6 +431,35 @@ function buildToolbar(breadcrumb: string[]): HTMLDivElement {
   spacer.style.flex = "1";
   bar.appendChild(spacer);
 
+  // Direction toggle
+  const dirWrap = document.createElement("div");
+  dirWrap.className = "toolbar-control dir-toggle";
+
+  const dirOptions: Array<{ value: Direction; label: string; title: string }> = [
+    { value: "upstream",   label: "← Upstream",   title: "Show only upstream (where this field's data comes from)" },
+    { value: "both",       label: "↔ Both",        title: "Show both upstream and downstream" },
+    { value: "downstream", label: "Downstream →",  title: "Show only downstream (where this field's data goes to)" },
+  ];
+
+  for (const opt of dirOptions) {
+    const btn = document.createElement("button");
+    btn.className = `dir-btn${sessionDirection === opt.value ? " active" : ""}`;
+    btn.dataset["dir"] = opt.value;
+    btn.textContent = opt.label;
+    btn.title = opt.title;
+    btn.addEventListener("click", () => {
+      sessionDirection = opt.value as Direction;
+      dirWrap.querySelectorAll(".dir-btn").forEach((b) => {
+        (b as HTMLElement).classList.toggle("active", (b as HTMLElement).dataset["dir"] === opt.value);
+      });
+      if (lastPayload) {
+        render(applyFilters(lastPayload));
+      }
+    });
+    dirWrap.appendChild(btn);
+  }
+  bar.appendChild(dirWrap);
+
   // Depth slider
   const depthWrap = document.createElement("div");
   depthWrap.className = "toolbar-control";
@@ -487,7 +520,7 @@ function buildToolbar(breadcrumb: string[]): HTMLDivElement {
   select.addEventListener("change", () => {
     sessionFilter = select.value as ClassificationFilter;
     if (lastPayload) {
-      render(applyFilter(lastPayload, sessionFilter));
+      render(applyFilters(lastPayload));
     }
   });
   filterWrap.appendChild(select);

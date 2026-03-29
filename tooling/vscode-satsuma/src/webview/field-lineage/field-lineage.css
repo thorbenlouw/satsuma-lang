@@ -90,6 +90,40 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Direction toggle */
+.dir-toggle {
+  gap: 0;
+  border: 1px solid var(--sz-card-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.dir-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: none;
+  border-right: 1px solid var(--sz-card-border);
+  background: var(--sz-card-bg);
+  color: var(--sz-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+
+.dir-btn:last-child {
+  border-right: none;
+}
+
+.dir-btn:hover {
+  background: rgba(242, 145, 61, 0.08);
+  color: var(--sz-text);
+}
+
+.dir-btn.active {
+  background: var(--sz-orange);
+  color: #fff;
+}
+
 .toolbar-label {
   font-size: 11px;
   color: var(--sz-text-muted);
