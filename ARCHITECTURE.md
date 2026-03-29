@@ -1,6 +1,6 @@
 # Satsuma Tooling Architecture
 
-> **Note:** This document describes the target architecture after Feature 26 (Extraction Consolidation) is complete. Sections marked `[post-F26]` describe the state after migration; the rest reflects the current state as of March 2026.
+> Last updated: 2026-03-29 — Feature 26 (Extraction Consolidation) complete.
 
 See `adrs/` for the architectural decision records that explain the choices made here.
 
@@ -69,7 +69,7 @@ flowchart TD
 
 ---
 
-## satsuma-core Module Structure `[post-F26]`
+## satsuma-core Module Structure
 
 ```mermaid
 graph LR
