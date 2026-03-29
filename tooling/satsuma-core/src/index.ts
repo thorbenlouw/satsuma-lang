@@ -25,6 +25,24 @@ export {
   expandNestedSpreads,
   makeEntityRefResolver,
 } from "./spread-expand.js";
+export {
+  extractBacktickRefs,
+  classifyRef,
+  resolveRef,
+  extractNLRefData,
+  resolveAllNLRefs,
+  isSchemaInMappingSources,
+} from "./nl-ref.js";
+export type {
+  BacktickRef,
+  RefClassification,
+  Resolution,
+  MappingSourcesTargets,
+  DefinitionLookup,
+  NLRefDataItem,
+  NLRefDataItemNoFile,
+  ResolvedNLRef,
+} from "./nl-ref.js";
 export type {
   SpreadEntity,
   ExpandedField,
