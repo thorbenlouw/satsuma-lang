@@ -83,6 +83,40 @@ html, body {
   flex-shrink: 0;
 }
 
+.toolbar-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  color: var(--sz-text-muted);
+  white-space: nowrap;
+}
+
+.depth-slider {
+  width: 80px;
+  accent-color: var(--sz-orange);
+  cursor: pointer;
+}
+
+.cls-filter {
+  font-size: 11px;
+  border: 1px solid var(--sz-card-border);
+  border-radius: 4px;
+  background: var(--sz-card-bg);
+  color: var(--sz-text);
+  padding: 2px 6px;
+  cursor: pointer;
+  max-width: 160px;
+}
+
+.cls-filter:focus {
+  outline: 1px solid var(--sz-orange);
+}
+
 .toolbar-btn {
   display: inline-flex;
   align-items: center;

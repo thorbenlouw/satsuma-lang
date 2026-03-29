@@ -46,7 +46,7 @@ All Phase 2 work can start once Phase 1 (`sc-p8h0`) is closed.
 
 ## Phase 3 — Polish
 
-- [ ] **sc-0bj3** — Depth slider + classification filter in field lineage panel
+- [x] **sc-0bj3** — Depth slider + classification filter in field lineage panel
   - Depth re-runs CLI; filter is client-side only
   - *(blocked by sc-rdrc)*
 
