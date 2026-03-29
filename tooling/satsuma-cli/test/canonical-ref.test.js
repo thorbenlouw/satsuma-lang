@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { canonicalRef, canonicalEntityName } from "#src/canonical-ref.js";
+import { canonicalRef, canonicalEntityName } from "@satsuma/core";
 import { canonicalKey, resolveCanonicalKey } from "#src/index-builder.js";
 
 describe("canonicalRef", () => {

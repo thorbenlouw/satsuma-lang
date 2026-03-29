@@ -18,7 +18,7 @@ import {
   extractQuestions,
   extractNamespaces,
   extractImports,
-} from "#src/extract.js";
+} from "@satsuma/core";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
