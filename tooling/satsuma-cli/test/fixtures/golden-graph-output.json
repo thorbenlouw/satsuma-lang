@@ -8811,92 +8811,92 @@
   "warnings": [
     {
       "text": "some records have NULL",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 29
     },
     {
       "text": "not validated — contains garbage",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 33
     },
     {
       "text": "full names AND 2-char codes mixed",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 47
     },
     {
       "text": "stored as MM/DD/YYYY string",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 52
     },
     {
       "text": "MM/DD/YYYY HH:MM:SS AM/PM",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 53
     },
     {
       "text": "plaintext in legacy — SSN or EIN",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 54
     },
     {
       "text": "4 implied decimal places",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 58
     },
     {
       "text": "no source mapping",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 87
     },
     {
       "text": "no source mapping",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 88
     },
     {
       "text": "no source mapping",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 91
     },
     {
       "text": "DATA GAP: containers required but no source data",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 162
     },
     {
       "text": "stored as string, must cast to UUID",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 67
     },
     {
       "text": "ISO-8601 string",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 68
     },
     {
       "text": "requires MFCS supplier cross-reference",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 73
     },
     {
       "text": "requires site-to-location resolution",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 74
     },
     {
       "text": "requires material-to-item cross-reference",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 81
     },
     {
       "text": "ASSUMPTION: header ReceivingSite is authoritative for target location",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 106
     },
     {
       "text": "manual override used by Finance",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sfdc-to-snowflake/pipeline.stm",
+      "file": "/sfdc-to-snowflake/pipeline.stm",
       "line": 31
     }
   ],
@@ -8905,777 +8905,777 @@
       "scope": "mapping cobol customer to avro event",
       "arrow": "-> event_type",
       "text": "\"updated\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/cobol-to-avro/pipeline.stm",
+      "file": "/cobol-to-avro/pipeline.stm",
       "line": 119
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> distinct_event_types",
       "text": "\"Emit the distinct @event_type values as a JSON array string.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 103
     },
     {
       "scope": "mapping cobol customer to avro event",
       "arrow": "-> display_name",
       "text": "\"\"\"\n     If @CUST_TYPE = \"R\", trim and concatenate @PERSONAL_NAME.FIRST_NAME + \" \" + @PERSONAL_NAME.LAST_NAME.\n     If @CUST_TYPE = \"B\", use @BUSINESS_NAME.COMPANY_NAME trimmed.\n     This resolves the REDEFINES: PERSONAL_NAME vs BUSINESS_NAME.\n     \"\"\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/cobol-to-avro/pipeline.stm",
+      "file": "/cobol-to-avro/pipeline.stm",
       "line": 126
     },
     {
       "scope": "mapping customer migration",
       "arrow": "-> display_name",
       "text": "\"If @CUST_TYPE is null or R, trim and concat @FIRST_NM + ' ' + @LAST_NM.\n     Otherwise, trim @COMPANY_NM.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 122
     },
     {
       "scope": "mapping customer_enrichment",
       "arrow": "-> full_address",
       "text": "\"Format as @city, @state @zip\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-arrows.stm",
+      "file": "/multi-source/multi-source-arrows.stm",
       "line": 38
     },
     {
       "scope": "mapping cobol customer to avro event",
       "arrow": "-> address.country",
       "text": "\"US\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/cobol-to-avro/pipeline.stm",
+      "file": "/cobol-to-avro/pipeline.stm",
       "line": 138
     },
     {
       "scope": "mapping cobol customer to avro event",
       "arrow": "-> contact_info.phones.number",
       "text": "\"Extract digits. If 10 digits assume US +1. Format as E.164.\n         If unparseable, set null and log warning.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/cobol-to-avro/pipeline.stm",
+      "file": "/cobol-to-avro/pipeline.stm",
       "line": 148
     },
     {
       "scope": "mapping customer_enrichment",
       "arrow": "-> full_name",
       "text": "\"Concatenate with space separator\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-arrows.stm",
+      "file": "/multi-source/multi-source-arrows.stm",
       "line": 32
     },
     {
       "scope": "mapping customer_enrichment",
       "arrow": "-> contact_info",
       "text": "\"Format as @email (@phone)\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-arrows.stm",
+      "file": "/multi-source/multi-source-arrows.stm",
       "line": 35
     },
     {
       "scope": "mapping mart::build dim_contact",
       "arrow": "-> email",
       "text": "\"Latest @email from @vault::sat_contact_details satellite\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 203
     },
     {
       "scope": "mapping customer migration",
       "arrow": "-> phone",
       "text": "\"Extract all digits. If 11 digits starting with 1, treat as US.\n     If 10 digits, assume US country code +1. Format as E.164.\n     For other patterns, attempt to determine country from @COUNTRY_CD.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 134
     },
     {
       "scope": "mapping customer migration",
       "arrow": "-> address_id",
       "text": "\"Create a record in the addresses table using @ADDR_LINE_1, @ADDR_LINE_2,\n     @CITY, @STATE_PROV, @ZIP_POSTAL, @COUNTRY_CD. Normalize @STATE_PROV to\n     2-char code (handle full names). Deduplicate against existing addresses\n     by normalized street + zip. Return the UUID of the new or existing record.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 142
     },
     {
       "scope": "mapping customer migration",
       "arrow": "-> updated_at",
       "text": "\"If null, fall back to CREATED_DATE parsed as MM/DD/YYYY in UTC\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 170
     },
     {
       "scope": "mapping customer migration",
       "arrow": "-> notes",
       "text": "\"Filter profanity using corporate word list v3.2, replacing matches with asterisks\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/db-to-db/pipeline.stm",
+      "file": "/db-to-db/pipeline.stm",
       "line": 203
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.shipDate",
       "text": "\"Parse using sibling field @DATEFMT: if 102 parse as CCYYMMDD,\n     if 203 parse as CCYYMMDDHHMM. Output format: YYYY-MM-DD.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 113
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.asnType",
       "text": "\"0\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 118
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.toLocation",
       "text": "\"Extract PO number from @REFNUM (digits before /).\n     Look up the PO in MFCS to determine the delivery location.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 120
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.supplier",
       "text": "\"Validate supplier exists in MFCS PO table.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 125
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> supplier",
       "text": "\"Resolve SAP vendor number to MFCS supplier id using the approved\n       supplier cross-reference. Reject the document if no active MFCS\n       supplier exists for the vendor.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 113
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.asnDetails.containers",
       "text": "\"Required by MFCS schema but no source data available in EDI 856.\n     Options under discussion:\n     1. Populate with a single placeholder container per order\n     2. Request EDI 856 extension from suppliers\n     3. Derive from warehouse receiving logic\n     Blocked on: MFCS-2847\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 163
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.asnDetails.items.item",
       "text": "\"Retrieve MFCS item number using the supplier's traded code\n         from the MFCS supplier item cross-reference.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 145
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> items.item",
       "text": "\"Translate SAP material number to the MFCS item identifier using the\n         supplier-item or material cross-reference. Reject the line if no\n         active MFCS item can be resolved.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 150
     },
     {
       "scope": "mapping edi to mfcs",
       "arrow": "-> ShipmentHeader.asnDetails.items.unitQuantity",
       "text": "\"Divide by 10000 to account for 4 implied decimal places.\n       Then multiply by PO pack size from MFCS (Action A-504).\n       Pack size retrieved from MFCS PO line matching this item.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/edi-to-json/pipeline.stm",
+      "file": "/edi-to-json/pipeline.stm",
       "line": 155
     },
     {
       "scope": "mapping order_to_summary",
       "arrow": "-> net_total",
       "text": "\"Calculate: amount + tax - discount\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-arrows.stm",
+      "file": "/multi-source/multi-source-arrows.stm",
       "line": 71
     },
     {
       "scope": "mapping completed orders",
       "arrow": "-> active_line_count",
       "text": "\"Count elements in line_items (already filtered to exclude cancelled items at source)\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/filter-flatten-governance.stm",
+      "file": "/filter-flatten-governance/filter-flatten-governance.stm",
       "line": 177
     },
     {
       "scope": "mapping order line facts",
       "arrow": "-> line_total",
       "text": "\"Multiply line_items.unit_price by line_items.quantity, then add line_items.tax_amount\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/filter-flatten-governance.stm",
+      "file": "/filter-flatten-governance/filter-flatten-governance.stm",
       "line": 210
     },
     {
       "scope": "mapping purchase events",
       "arrow": "-> line_total",
       "text": "\"quantity * unit_price\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/merge-strategies/pipeline.stm",
+      "file": "/merge-strategies/pipeline.stm",
       "line": 131
     },
     {
       "scope": "mapping order line facts",
       "arrow": "-> promo_code_count",
       "text": "\"Count distinct values in line_items.discount_lines.discount_code\n     where @discount_type = promo\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/filter-flatten-governance.stm",
+      "file": "/filter-flatten-governance/filter-flatten-governance.stm",
       "line": 214
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> gross_merchandise_value",
       "text": "\"For each event, multiply @unit_price by @quantity,\n     sum within the event, then sum across the session group.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 122
     },
     {
       "scope": "mapping customer 360 assembly",
       "arrow": "-> full_name",
       "text": "\"Concatenate @crm_customers.first_name and @crm_customers.last_name with a\n     single space separator. Trim whitespace. Null if both components are null.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/governance.stm",
+      "file": "/filter-flatten-governance/governance.stm",
       "line": 220
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> full_name",
       "text": "\"Concat @crm_customers.first_name + ' ' + @crm_customers.last_name.\n     Trim whitespace. If both are null, use @company_name instead.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 138
     },
     {
       "scope": "mapping mart::build dim_contact",
       "arrow": "-> full_name",
       "text": "\"Concatenate @first_name and @last_name from @vault::sat_contact_details\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 199
     },
     {
       "scope": "mapping customer 360 assembly",
       "arrow": "-> total_transaction_amt",
       "text": "\"Sum of @finance_transactions.amount where @customer_id matches,\n     rounded to 2 decimal places. Null if no transactions.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/governance.stm",
+      "file": "/filter-flatten-governance/governance.stm",
       "line": 235
     },
     {
       "scope": "mapping customer 360 assembly",
       "arrow": "-> transaction_count",
       "text": "\"Count of @finance_transactions rows for this customer. Zero if no transactions.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/governance.stm",
+      "file": "/filter-flatten-governance/governance.stm",
       "line": 240
     },
     {
       "scope": "mapping payments to analytics",
       "arrow": "-> transaction_count",
       "text": "\"Count transactions where @status = completed, per customer.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 80
     },
     {
       "scope": "mapping customer 360 assembly",
       "arrow": "-> last_transaction_date",
       "text": "\"Max of @finance_transactions.transaction_date for this customer. Null if none.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/governance.stm",
+      "file": "/filter-flatten-governance/governance.stm",
       "line": 244
     },
     {
       "scope": "mapping payments to analytics",
       "arrow": "-> last_transaction_date",
       "text": "\"Max transaction timestamp where @status = completed, per customer.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 84
     },
     {
       "scope": "mapping customer 360 assembly",
       "arrow": "-> last_activity_date",
       "text": "\"Greatest of: last login timestamp from CRM (if available),\n     @last_transaction_date, and last profile update timestamp.\n     This field anchors the retention policy for the target schema.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/filter-flatten-governance/governance.stm",
+      "file": "/filter-flatten-governance/governance.stm",
       "line": 248
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> order_timestamp_utc",
       "text": "\"Parse ISO-8601 timestamp from the API. The created_at field is\n     always UTC with a Z suffix. Output UTC timestamp.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/json-api-to-parquet/pipeline.stm",
+      "file": "/json-api-to-parquet/pipeline.stm",
       "line": 115
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> order_timestamp_utc",
       "text": "\"Parse either ISO-8601 with timezone or local store time in\n     America/New_York depending on channel. Output UTC timestamp.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/xml-to-parquet/pipeline.stm",
+      "file": "/xml-to-parquet/pipeline.stm",
       "line": 114
     },
     {
       "scope": "mapping mart::build fact_revenue",
       "arrow": "-> amount_usd",
       "text": "\"Convert to USD using currency field and daily FX rate\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 252
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> discount_codes",
       "text": "\"Collect @DiscountCode values from the order discount entries, preserving source order.\n     Emit as a JSON array string. If no discounts, emit [].\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/json-api-to-parquet/pipeline.stm",
+      "file": "/json-api-to-parquet/pipeline.stm",
       "line": 147
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> discount_codes",
       "text": "\"Collect `DiscountCode` values from the order discount entries, preserving source order.\n     Emit as a JSON array string. If no discounts, emit [].\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/xml-to-parquet/pipeline.stm",
+      "file": "/xml-to-parquet/pipeline.stm",
       "line": 146
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> discount_total",
       "text": "\"Sum @DiscountAmount across the order discount entries for the current order.\n     If no discounts, emit 0.00.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/json-api-to-parquet/pipeline.stm",
+      "file": "/json-api-to-parquet/pipeline.stm",
       "line": 152
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> discount_total",
       "text": "\"Sum @DiscountAmount across the order discount entries for the current order.\n     If no discounts, emit 0.00.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/xml-to-parquet/pipeline.stm",
+      "file": "/xml-to-parquet/pipeline.stm",
       "line": 151
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> line_count",
       "text": "\"Count entries in @LineItems for the current order.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/json-api-to-parquet/pipeline.stm",
+      "file": "/json-api-to-parquet/pipeline.stm",
       "line": 159
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> line_count",
       "text": "\"Count @LineNumber entries for the current order.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/xml-to-parquet/pipeline.stm",
+      "file": "/xml-to-parquet/pipeline.stm",
       "line": 156
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> ingest_date",
       "text": "\"Truncate to UTC calendar date YYYY-MM-DD.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/json-api-to-parquet/pipeline.stm",
+      "file": "/json-api-to-parquet/pipeline.stm",
       "line": 161
     },
     {
       "scope": "mapping order headers",
       "arrow": "-> ingest_date",
       "text": "\"Truncate to UTC calendar date YYYY-MM-DD.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/xml-to-parquet/pipeline.stm",
+      "file": "/xml-to-parquet/pipeline.stm",
       "line": 158
     },
     {
       "scope": "mapping order lines",
       "arrow": "-> ingest_date",
       "text": "\"Truncate to UTC calendar date YYYY-MM-DD.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/json-api-to-parquet/pipeline.stm",
+      "file": "/json-api-to-parquet/pipeline.stm",
       "line": 187
     },
     {
       "scope": "mapping order lines",
       "arrow": "-> ingest_date",
       "text": "\"Truncate to UTC calendar date YYYY-MM-DD.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/xml-to-parquet/pipeline.stm",
+      "file": "/xml-to-parquet/pipeline.stm",
       "line": 184
     },
     {
       "scope": "mapping staging::stage employees",
       "arrow": "-> is_active",
       "text": "\"True if no termination record exists in HR system\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 83
     },
     {
       "scope": "mapping customer_enrichment",
       "arrow": "-> date_of_birth",
       "text": "\"Construct ISO-8601 date from year, month, day components\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-arrows.stm",
+      "file": "/multi-source/multi-source-arrows.stm",
       "line": 41
     },
     {
       "scope": "mapping payments to analytics",
       "arrow": "-> total_spent",
       "text": "\"Sum all transactions where @status = completed, grouped by @customer_email.\n     Join to @crm_system on @email to resolve @customer_id.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 75
     },
     {
       "scope": "mapping reporting::build budget vs actual",
       "arrow": "-> actual_spend",
       "text": "\"Sum of @amount grouped by @department and @fiscal_year\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 138
     },
     {
       "scope": "mapping crm to notifications",
       "arrow": "-> message_type",
       "text": "\"Set to loyalty_update if @loyalty_points > 1000, otherwise null.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 99
     },
     {
       "scope": "mapping crm to notifications",
       "arrow": "-> priority",
       "text": "\"Check @payment_gateway: if any transaction has @payment_gateway.status = failed for\n     this customer, set high. Otherwise low.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 103
     },
     {
       "scope": "mapping payments to notifications",
       "arrow": "-> message_body",
       "text": "\"Format as Transaction {@transaction_id} completed successfully.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 115
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> location",
       "text": "\"Resolve the business receiving site to an MFCS location id.\n       If no direct mapping exists, fall back to a plant-to-location mapping\n       approved by merchandising operations.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 120
     },
     {
       "scope": "mapping inventory to reporting",
       "arrow": "-> reorder_needed",
       "text": "\"True if @stock_level < 10, false otherwise.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-hub.stm",
+      "file": "/multi-source/multi-source-hub.stm",
       "line": 128
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> tenure_months",
       "text": "\"Calculate months between @crm_customers.signup_date and current_date.\n     Round down to nearest whole month.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 150
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> total_orders",
       "text": "\"Count of @order_transactions where @status = completed.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 156
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> total_revenue",
       "text": "\"Sum @order_transactions.total where @status = completed.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 158
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> total_refunds",
       "text": "\"Sum abs(@order_transactions.total) where @status = refunded.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 164
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> net_revenue",
       "text": "\"@total_revenue minus @total_refunds.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 170
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> avg_order_value",
       "text": "\"@total_revenue divided by @total_orders. Null if @total_orders = 0.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 172
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> first_order_date",
       "text": "\"Min @order_transactions.order_date where @status = completed.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 177
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> last_order_date",
       "text": "\"Max @order_transactions.order_date where @status = completed.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 181
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> preferred_channel",
       "text": "\"Mode of @order_transactions.channel where @status = completed.\n     If tied, prefer in order: web > mobile > api > pos.\n     Null if no orders.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 185
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> distinct_coupon_count",
       "text": "\"Count distinct non-null @order_transactions.coupon_code.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 191
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> tickets_last_12m",
       "text": "\"Count of @support_tickets (already filtered to last 12 months).\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 197
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> open_tickets",
       "text": "\"Count of @support_tickets where @status IN (open, in_progress).\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 202
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> avg_resolution_hours",
       "text": "\"Average hours between @support_tickets.created_at and @resolved_at\n     where @resolved_at is not null. Null if no resolved tickets.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 207
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> avg_csat_score",
       "text": "\"Average @support_tickets.csat_score where @csat_score is not null.\n     Null if no ratings.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 213
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> has_critical_ticket",
       "text": "\"True if any @support_tickets.priority = critical and\n     @status IN (open, in_progress). False otherwise.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 219
     },
     {
       "scope": "mapping customer 360",
       "arrow": "-> health_score",
       "text": "\"\"\"\n    Derive customer health based on multiple signals:\n    - **healthy**: is_active = true AND (last_order_date within 90 days\n      OR annual_contract_value > 0) AND open_tickets < 3\n      AND avg_csat_score >= 3.5\n    - **churning**: is_active = false OR last_order_date > 180 days ago\n      (and no active contract)\n    - **at_risk**: everything else — particularly customers with\n      high open ticket counts, critical tickets, or declining CSAT\n    \"\"\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/multi-source/multi-source-join.stm",
+      "file": "/multi-source/multi-source-join.stm",
       "line": 225
     },
     {
       "scope": "mapping staging::stage gl entries",
       "arrow": "-> department",
       "text": "\"Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 100
     },
     {
       "scope": "mapping staging::stage gl entries",
       "arrow": "-> employee_name",
       "text": "\"Lookup `full_name` from `source::hr_employees` using `posted_by` -> `employee_id`\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 104
     },
     {
       "scope": "mapping reporting::build budget vs actual",
       "arrow": "-> fiscal_year",
       "text": "\"Extract year from @entry_date\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 132
     },
     {
       "scope": "mapping reporting::build budget vs actual",
       "arrow": "-> budget_amount",
       "text": "\"Lookup from @source::finance_budgets matching @department and @fiscal_year\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 134
     },
     {
       "scope": "mapping reporting::build budget vs actual",
       "arrow": "-> variance",
       "text": "\"@budget_amount minus @actual_spend\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 142
     },
     {
       "scope": "mapping reporting::build budget vs actual",
       "arrow": "-> variance_pct",
       "text": "\"@variance divided by @budget_amount times 100\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 144
     },
     {
       "scope": "mapping reporting::build budget vs actual",
       "arrow": "-> headcount",
       "text": "\"Count distinct employees from @staging::stg_employees for this @department\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-merging.stm",
+      "file": "/namespaces/ns-merging.stm",
       "line": 146
     },
     {
       "scope": "mapping vault::load sat_contact",
       "arrow": "-> hash_diff",
       "text": "\"MD5 hash of `first_name`, `last_name`, `email`, `phone`, `company_name` for change detection\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 129
     },
     {
       "scope": "mapping vault::load link_contact_deal",
       "arrow": "-> link_hk",
       "text": "\"MD5 hash of @contact_id + @deal_id\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 148
     },
     {
       "scope": "mapping mart::build dim_contact",
       "arrow": "-> contact_sk",
       "text": "\"Surrogate key via sequence generator\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 197
     },
     {
       "scope": "mapping mart::build fact_deals",
       "arrow": "-> contact_sk",
       "text": "\"Lookup via @vault::link_contact_deal -> @vault::hub_contact -> @dim_contact\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 222
     },
     {
       "scope": "mapping mart::build fact_revenue",
       "arrow": "-> contact_sk",
       "text": "\"Join `erp_invoices.customer_code` to CRM contact via lookup table\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 246
     },
     {
       "scope": "mapping mart::build dim_contact",
       "arrow": "-> company",
       "text": "\"Latest @company_name from @vault::sat_contact_details satellite\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 205
     },
     {
       "scope": "mapping mart::build fact_deals",
       "arrow": "-> deal_sk",
       "text": "\"Surrogate key via sequence generator\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 220
     },
     {
       "scope": "mapping mart::build fact_deals",
       "arrow": "-> deal_name",
       "text": "\"From a future deal satellite if it existed — placeholder for future extension\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 226
     },
     {
       "scope": "mapping mart::build fact_deals",
       "arrow": "-> amount_usd",
       "text": "\"Convert deal amount to USD using daily FX rate\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 230
     },
     {
       "scope": "mapping opportunity ingestion",
       "arrow": "-> amount_usd",
       "text": "\"Multiply by rate from @fx_spot_rates lookup using CurrencyIsoCode\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sfdc-to-snowflake/pipeline.stm",
+      "file": "/sfdc-to-snowflake/pipeline.stm",
       "line": 73
     },
     {
       "scope": "mapping mart::build fact_deals",
       "arrow": "-> is_won",
       "text": "\"True if @stage = closed_won\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 232
     },
     {
       "scope": "mapping mart::build fact_deals",
       "arrow": "-> days_in_pipeline",
       "text": "\"Difference in days between deal created date and close date\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 234
     },
     {
       "scope": "mapping mart::build fact_revenue",
       "arrow": "-> revenue_sk",
       "text": "\"Surrogate key via sequence generator\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/namespaces/ns-platform.stm",
+      "file": "/namespaces/ns-platform.stm",
       "line": 244
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> session_start_utc",
       "text": "\"Parse the minimum timestamp in the group as UTC.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 86
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> session_end_utc",
       "text": "\"Parse the maximum timestamp in the group as UTC.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 90
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> viewed_product_count",
       "text": "\"Count records in the group where @event_type == product_view.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 108
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> cart_add_count",
       "text": "\"Count records in the group where @event_type == add_to_cart.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 112
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> purchase_event_count",
       "text": "\"Count records in the group where @event_type == purchase.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 116
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> total_discount_amount",
       "text": "\"Sum @discount_amt across all cart line elements in all events in the group.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 127
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> distinct_product_count",
       "text": "\"Count distinct `sku` values across all events in the session.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 131
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> top_category",
       "text": "\"Find the most frequent CartLines.category across the session.\n     Break ties by highest gross merchandise value.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 135
     },
     {
       "scope": "mapping session aggregation",
       "arrow": "-> session_quality",
       "text": "\"Classify the grouped session as:\n     purchaser if any purchase event exists;\n     engaged if there is any add_to_cart event;\n     browse if there are multiple product_view events;\n     otherwise bounce.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/protobuf-to-parquet/pipeline.stm",
+      "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 140
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> notBeforeDate",
       "text": "\"Take the earliest non-null requested delivery date across all lines.\n     If all line dates are null, fall back to @BEDAT.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 139
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> items.orderedQty",
       "text": "\"If @MEINS represents supplier packs or cases, convert to the target\n       stocking quantity using the MFCS supplier-item pack configuration.\n       Otherwise preserve the numeric quantity. Round to 4 decimal places.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 158
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> items.unitCost",
       "text": "\"If @PEINH is greater than 1, divide @NETPR by @PEINH to derive the\n       per-unit cost in document currency. Round to 4 decimal places.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 164
     },
     {
       "scope": "mapping sap po to mfcs",
       "arrow": "-> items.uom",
       "text": "\"Map SAP UOM values to the MFCS UOM vocabulary. Escalate any value\n         that cannot be resolved through the approved conversion table.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sap-po-to-mfcs/pipeline.stm",
+      "file": "/sap-po-to-mfcs/pipeline.stm",
       "line": 169
     },
     {
       "scope": "mapping opportunity ingestion",
       "arrow": "-> arr_value",
       "text": "\"Use @ARR_Override__c if not null, otherwise fall back to @Amount\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sfdc-to-snowflake/pipeline.stm",
+      "file": "/sfdc-to-snowflake/pipeline.stm",
       "line": 78
     },
     {
       "scope": "mapping opportunity ingestion",
       "arrow": "-> is_closed",
       "text": "\"True if @StageName is Closed_Won or Closed_Lost, false otherwise.\"",
-      "file": "/Users/thorben/dev/shared/satsuma-lang/examples/sfdc-to-snowflake/pipeline.stm",
+      "file": "/sfdc-to-snowflake/pipeline.stm",
       "line": 95
     }
   ]
