@@ -1,6 +1,6 @@
 ---
 id: sc-p8h0
-status: open
+status: closed
 deps: [sc-aobl, sc-rdrc, sc-4kdu]
 links: []
 created: 2026-03-29T12:53:45Z
@@ -20,3 +20,12 @@ Update package.json contributes section: (1) Change context menu when clause for
 - showArrows still appears in command palette (full removal is Phase 2)
 - Extension activates cleanly with no contribution errors in the extension host log
 
+
+## Notes
+
+**2026-03-29T13:11:31Z**
+
+**2026-03-29**
+
+Cause: Right-click menu still showed old 'showArrows' entry and command title was generic.
+Fix: Renamed traceFieldLineage title to 'Satsuma: Show Field Lineage'; removed showArrows from editor/context menu (kept in commandPalette so the command is still accessible — full removal tracked by sc-cim8).

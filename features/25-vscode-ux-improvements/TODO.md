@@ -6,25 +6,25 @@ Tickets created in `.tickets/`. Dependencies enforced via `tk dep`. See PRD.md f
 
 Start with `sc-aobl` — everything else in Phase 1 is blocked on it.
 
-- [ ] **sc-aobl** — New `FieldLineagePanel` host backed by `field-lineage` CLI
+- [x] **sc-aobl** — New `FieldLineagePanel` host backed by `field-lineage` CLI
   - Single `satsuma field-lineage <schema.field> <workspacePath> --json --depth <n>` call (no more hop loop)
   - Sends `{ field, upstream, downstream, breadcrumb, isDark }` to webview
   - Handles `recenter` / `navigate` messages from webview
   - *(no blockers)*
 
-- [ ] **sc-rdrc** — Field-lineage webview renderer (ELK layout + SVG edges + design tokens)
+- [x] **sc-rdrc** — Field-lineage webview renderer (ELK layout + SVG edges + design tokens)
   - ELK `layered` / `direction=RIGHT`, focal field pinned to centre layer
   - Node cards: orange header (schema) + monospace field row + muted `via_mapping` label
   - Edge colours by classification (orange / green / dashed-green / violet)
   - Breadcrumb toolbar with back navigation
   - *(blocked by sc-aobl)*
 
-- [ ] **sc-4kdu** — Remove input box from `traceFieldLineage`; use `actionContext` directly
+- [x] **sc-4kdu** — Remove input box from `traceFieldLineage`; use `actionContext` directly
   - No prompt when cursor is on a field
   - Quickpick fallback for command-palette use without field context
   - *(blocked by sc-aobl)*
 
-- [ ] **sc-p8h0** — `package.json` command surface cleanup for Phase 1
+- [x] **sc-p8h0** — `package.json` command surface cleanup for Phase 1
   - Rename context menu label; remove `showArrows` from right-click menu
   - *(blocked by sc-aobl, sc-rdrc, sc-4kdu)*
 

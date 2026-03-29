@@ -52,7 +52,7 @@
       { "command": "satsuma.showWarnings", "title": "Satsuma: Show Warnings" },
       { "command": "satsuma.showSummary", "title": "Satsuma: Show Workspace Summary" },
       { "command": "satsuma.showArrows", "title": "Satsuma: Show Arrows for Field" },
-      { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Trace Field Lineage" },
+      { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Show Field Lineage" },
       { "command": "satsuma.showCoverage", "title": "Satsuma: Show Mapping Coverage" },
       {
         "command": "satsuma.showViz",
@@ -71,7 +71,6 @@
       "editor/context": [
         { "command": "satsuma.showViz", "when": "editorLangId == satsuma", "group": "satsuma" },
         { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma", "group": "satsuma" },
-        { "command": "satsuma.showArrows", "when": "editorLangId == satsuma", "group": "satsuma" },
         { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma", "group": "satsuma" },
         { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma", "group": "satsuma" }
       ],

@@ -15,8 +15,8 @@ import { registerSummaryCommand } from "./commands/summary";
 import { registerArrowsCommand } from "./commands/arrows";
 import { registerCoverageCommand } from "./commands/coverage";
 import { getEditorActionContext } from "./commands/action-context";
-import { LineagePanel } from "./webview/lineage/panel";
 import { VizPanel } from "./webview/viz/panel";
+import { FieldLineagePanel } from "./webview/field-lineage/panel";
 
 let client: LanguageClient | undefined;
 
@@ -83,27 +83,41 @@ export function activate(context: ExtensionContext): void {
     }),
   );
 
-  // Lineage webview
+  // Field Lineage webview (Phase 1 — ELK panel)
   context.subscriptions.push(
     vscode.commands.registerCommand("satsuma.traceFieldLineage", async (args?: { fieldPath?: string }) => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || editor.document.languageId !== "satsuma") return;
+      const workspacePath =
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ".";
 
-      const actionContext = client
-        ? await getEditorActionContext(client)
-        : { schemaName: null, fieldPath: null };
-      const word = editor.document.getText(
-        editor.document.getWordRangeAtPosition(editor.selection.active),
-      );
+      // Prefer: explicit arg > LSP actionContext > user input
+      let fieldPath: string | undefined = args?.fieldPath;
 
-      const fieldPath = await vscode.window.showInputBox({
-        prompt: "Enter field reference (schema.field)",
-        value: args?.fieldPath ?? actionContext.fieldPath ?? (word?.includes(".") ? word : `${word ?? ""}.`),
-        placeHolder: "customers.email",
-      });
+      if (!fieldPath && client) {
+        const actionContext = await getEditorActionContext(client);
+        fieldPath = actionContext.fieldPath ?? undefined;
+      }
+
+      if (!fieldPath) {
+        // Command-palette fallback: prompt for the field
+        const editor = vscode.window.activeTextEditor;
+        const word = editor?.document.getText(
+          editor.document.getWordRangeAtPosition(editor.selection.active),
+        );
+        fieldPath = await vscode.window.showInputBox({
+          prompt: "Enter field reference (schema.field)",
+          value: word?.includes(".") ? word : `${word ?? ""}.`,
+          placeHolder: "customers.email",
+        });
+      }
+
       if (!fieldPath) return;
 
-      LineagePanel.createOrShow(context.extensionUri, cliPath, fieldPath);
+      FieldLineagePanel.createOrShow(
+        context.extensionUri,
+        cliPath,
+        workspacePath,
+        fieldPath,
+      );
     }),
   );
 }

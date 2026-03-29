@@ -1,6 +1,6 @@
 ---
 id: sc-4kdu
-status: open
+status: closed
 deps: [sc-aobl]
 links: []
 created: 2026-03-29T12:53:33Z
@@ -22,3 +22,12 @@ Update the satsuma.traceFieldLineage command registration in extension.ts. Inste
 - The fieldPath passed to FieldLineagePanel.createOrShow is namespace-qualified when the LSP provides it
 - Existing args?.fieldPath override still works for programmatic callers (viz integration)
 
+
+## Notes
+
+**2026-03-29T13:11:26Z**
+
+**2026-03-29**
+
+Cause: traceFieldLineage command required manual field input even when cursor was on a field, and pointed at old LineagePanel.
+Fix: Updated extension.ts to use FieldLineagePanel; removed showInputBox; uses LSP actionContext.fieldPath directly when available; falls back to showInputBox for command-palette invocation without field context.
