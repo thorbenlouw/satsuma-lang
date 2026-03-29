@@ -1,6 +1,6 @@
 ---
 id: sl-n4wb
-status: open
+status: closed
 deps: [sl-fgqt, sl-pxw5]
 links: []
 created: 2026-03-29T18:50:51Z
@@ -26,3 +26,9 @@ The CLI workspace.ts, commands/*.ts, lint-engine.ts, validate.ts, graph-builder.
 
 1. No extraction logic remains duplicated in satsuma-cli/src/ — all ext*() functions are imported from @satsuma/core 2. All 27 CLI test files pass 3. Golden snapshot test (from sl-8pj3) passes byte-for-byte 4. npm audit reports no new high/critical vulnerabilities 5. satsuma CLI binary works end-to-end: satsuma graph examples/ produces correct output 6. satsuma-cli package.json devDependencies unchanged (no new deps needed)
 
+
+## Notes
+
+**2026-03-29T20:52:20Z**
+
+**2026-03-29T20:56:00Z** Cause: Pure re-export shim files (classify.ts, canonical-ref.ts, meta-extract.ts, extract.ts) duplicated @satsuma/core exports and kept callers at arm's length. Fix: Updated all 12 CLI callers to import directly from @satsuma/core, deleted the 4 pure shim files, and updated dynamic import references in types.ts. All 866 CLI tests pass including golden snapshot.

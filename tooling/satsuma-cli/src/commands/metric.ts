@@ -15,7 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
-import { canonicalEntityName } from "../canonical-ref.js";
+import { canonicalEntityName } from "@satsuma/core";
 import type { SyntaxNode, MetricRecord } from "../types.js";
 
 export function register(program: Command): void {

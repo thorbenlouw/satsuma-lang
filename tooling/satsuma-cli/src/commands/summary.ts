@@ -18,7 +18,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
-import { canonicalEntityName } from "../canonical-ref.js";
+import { canonicalEntityName } from "@satsuma/core";
 import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
 function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: WorkspaceIndex): number {
