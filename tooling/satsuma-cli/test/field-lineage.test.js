@@ -1,0 +1,115 @@
+/**
+ * field-lineage.test.js — Tests for `satsuma field-lineage` command.
+ *
+ * Covers:
+ *   sl-nknd  --upstream --downstream together produces empty results
+ *   sl-m44v  Anonymous mappings not traced
+ */
+
+import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI = resolve(__dirname, "../dist/index.js");
+const FIXTURES = resolve(__dirname, "fixtures");
+
+function run(...args) {
+  return new Promise((resolve) => {
+    execFile("node", [CLI, ...args], { timeout: 15_000 }, (err, stdout, stderr) => {
+      resolve({
+        stdout: stdout ?? "",
+        stderr: stderr ?? "",
+        code: err ? err.code ?? 1 : 0,
+      });
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// sl-nknd: --upstream --downstream together should trace both directions
+// ---------------------------------------------------------------------------
+describe("field-lineage --upstream --downstream (sl-nknd)", () => {
+  it("produces same result as no direction flags when both are set", async () => {
+    // Use the chain fixture: source_a -> intermediate_b -> intermediate_c -> target_d
+    // intermediate_b.id has both upstream (source_a.id) and downstream (intermediate_c.id)
+    const chainFixture = resolve(FIXTURES, "lineage-chain.stm");
+    const { stdout: bothOut, code: bothCode } = await run(
+      "field-lineage", "intermediate_b.id", chainFixture, "--json", "--upstream", "--downstream",
+    );
+    assert.equal(bothCode, 0, `expected exit 0, got ${bothCode}\n${bothOut}`);
+    const both = JSON.parse(bothOut);
+    assert.ok(both.upstream.length > 0, "upstream should be non-empty when --upstream --downstream");
+    assert.ok(both.downstream.length > 0, "downstream should be non-empty when --upstream --downstream");
+
+    // Should match result with no direction flags
+    const { stdout: allOut } = await run("field-lineage", "intermediate_b.id", chainFixture, "--json");
+    const all = JSON.parse(allOut);
+    assert.deepEqual(both.upstream, all.upstream, "upstream should match no-flag result");
+    assert.deepEqual(both.downstream, all.downstream, "downstream should match no-flag result");
+  });
+
+  it("--upstream alone only returns upstream", async () => {
+    const chainFixture = resolve(FIXTURES, "lineage-chain.stm");
+    const { stdout, code } = await run("field-lineage", "intermediate_b.id", chainFixture, "--json", "--upstream");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.upstream.length > 0, "upstream should be non-empty");
+    assert.equal(data.downstream.length, 0, "downstream should be empty with --upstream only");
+  });
+
+  it("--downstream alone only returns downstream", async () => {
+    const chainFixture = resolve(FIXTURES, "lineage-chain.stm");
+    const { stdout, code } = await run("field-lineage", "intermediate_b.id", chainFixture, "--json", "--downstream");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.upstream.length, 0, "upstream should be empty with --downstream only");
+    assert.ok(data.downstream.length > 0, "downstream should be non-empty");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sl-m44v: anonymous mappings should be traced correctly
+// ---------------------------------------------------------------------------
+describe("field-lineage anonymous mappings (sl-m44v)", () => {
+  it("traces upstream through an anonymous mapping", async () => {
+    const fixture = resolve(FIXTURES, "anon-lineage.stm");
+    const { stdout, code } = await run("field-lineage", "invoices.total", fixture, "--json");
+    assert.equal(code, 0, `expected exit 0, got ${code}\n${stdout}`);
+    const data = JSON.parse(stdout);
+    assert.ok(data.upstream.length > 0, "upstream should contain orders.amount via anonymous mapping");
+    const upstreamFields = data.upstream.map((u) => u.field);
+    assert.ok(
+      upstreamFields.some((f) => f.includes("orders") && f.includes("amount")),
+      `expected ::orders.amount in upstream, got: ${JSON.stringify(upstreamFields)}`,
+    );
+  });
+
+  it("traces downstream through an anonymous mapping", async () => {
+    const fixture = resolve(FIXTURES, "anon-lineage.stm");
+    const { stdout, code } = await run("field-lineage", "orders.amount", fixture, "--json");
+    assert.equal(code, 0, `expected exit 0, got ${code}\n${stdout}`);
+    const data = JSON.parse(stdout);
+    assert.ok(data.downstream.length > 0, "downstream should contain invoices.total via anonymous mapping");
+    const downstreamFields = data.downstream.map((d) => d.field);
+    assert.ok(
+      downstreamFields.some((f) => f.includes("invoices") && f.includes("total")),
+      `expected ::invoices.total in downstream, got: ${JSON.stringify(downstreamFields)}`,
+    );
+  });
+
+  it("via_mapping references the anonymous mapping key", async () => {
+    const fixture = resolve(FIXTURES, "anon-lineage.stm");
+    const { stdout, code } = await run("field-lineage", "invoices.total", fixture, "--json");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.upstream.length > 0);
+    // The via_mapping should reference the anonymous mapping (contains <anon>)
+    assert.ok(
+      data.upstream.some((u) => u.via_mapping.includes("anon")),
+      `expected via_mapping to reference anonymous mapping, got: ${JSON.stringify(data.upstream)}`,
+    );
+  });
+});

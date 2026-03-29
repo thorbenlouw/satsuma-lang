@@ -1,0 +1,14 @@
+schema orders {
+  amount  decimal
+}
+
+schema invoices {
+  total  decimal
+}
+
+mapping {
+  source { orders }
+  target { invoices }
+
+  amount -> total { round(2) }
+}

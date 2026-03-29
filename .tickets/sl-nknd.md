@@ -1,6 +1,6 @@
 ---
 id: sl-nknd
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-29T09:00:47Z
@@ -28,3 +28,12 @@ Root cause: In field-lineage.ts:
 
 When both flags are provided, both evaluate to false, suppressing all traversal. The intended semantics should be: if both are set, treat as both enabled (same as neither set).
 
+
+## Notes
+
+**2026-03-29T11:39:32Z**
+
+**2026-03-29T11:39:32Z**
+
+Cause: doUpstream/doDownstream evaluated to false when both --upstream and --downstream were set, because each was the negation of the other flag.
+Fix: Changed to `opts.upstream || !opts.downstream` (and symmetric for downstream) so both-set means both-enabled. (commit pending)

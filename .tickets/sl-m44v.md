@@ -1,6 +1,6 @@
 ---
 id: sl-m44v
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-29T09:00:40Z
@@ -27,3 +27,12 @@ Root cause (traced): buildFieldEdgeGraph() in field-lineage.ts looks up the mapp
 
 Same bug affects all anonymous (unnamed) mappings. Named mappings work correctly.
 
+
+## Notes
+
+**2026-03-29T11:39:32Z**
+
+**2026-03-29T11:39:32Z**
+
+Cause: Arrow records inside anonymous mappings had mapping=null; buildIndex looked up "" in index.mappings which never matched <anon>@file:row keys.
+Fix: In buildIndex, resolve anonymous arrow records to their <anon>@file:row key by matching arrow line against mapping start rows. (commit pending)
