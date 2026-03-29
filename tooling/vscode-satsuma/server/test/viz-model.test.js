@@ -3,6 +3,8 @@ const assert = require("node:assert/strict");
 const { initTestParser, parse } = require("./helper");
 const {
   createWorkspaceIndex,
+  createScopedIndex,
+  getImportReachableUris,
   indexFile,
 } = require("../dist/workspace-index");
 const { buildVizModel } = require("../dist/viz-model");
@@ -27,6 +29,23 @@ function vizModelMulti(files, targetUri) {
     indexFile(idx, uri, tree);
   }
   return buildVizModel(targetUri, trees[targetUri], idx);
+}
+
+/**
+ * Like vizModelMulti but scopes the index to the import-reachable set of
+ * targetUri, matching the production behaviour in server.ts.
+ */
+function vizModelScoped(files, targetUri) {
+  const idx = createWorkspaceIndex();
+  const trees = {};
+  for (const [uri, source] of Object.entries(files)) {
+    const tree = parse(source);
+    trees[uri] = tree;
+    indexFile(idx, uri, tree);
+  }
+  const reachable = getImportReachableUris(targetUri, idx);
+  const scoped = createScopedIndex(idx, reachable);
+  return buildVizModel(targetUri, trees[targetUri], scoped);
 }
 
 // ---------- Basic structure ----------
@@ -627,5 +646,84 @@ namespace src {
     assert.equal(schema.fields.length, 6);
     const names = schema.fields.map((f) => f.name);
     assert.deepEqual(names.sort(), ["a", "b", "c", "d", "e", "f"]);
+  });
+});
+
+// ---------- Imported schema stubs ----------
+
+describe("imported schema stubs", () => {
+  const LOOKUP_URI = "file:///lookups/finance.stm";
+  const MAIN_URI = "file:///main.stm";
+
+  const LOOKUP_SRC = `schema fx_spot_rates {
+  currency_code VARCHAR
+  rate DECIMAL
+}`;
+
+  const MAIN_SRC = `import { fx_spot_rates } from "lookups/finance.stm"
+schema transactions { id INT amount DECIMAL currency VARCHAR }
+schema transactions_usd { id INT amount_usd DECIMAL }
+mapping enrich {
+  source { transactions fx_spot_rates }
+  target { transactions_usd }
+  id -> id
+  amount -> amount_usd { "multiply by rate" }
+}`;
+
+  it("injects a stub schema card for an imported source schema", () => {
+    const model = vizModelScoped(
+      { [LOOKUP_URI]: LOOKUP_SRC, [MAIN_URI]: MAIN_SRC },
+      MAIN_URI,
+    );
+    const ns = model.namespaces[0];
+    const ids = ns.schemas.map((s) => s.qualifiedId);
+    assert.ok(ids.includes("fx_spot_rates"), `expected fx_spot_rates in ${ids}`);
+  });
+
+  it("stub schema has hasExternalLineage = true", () => {
+    const model = vizModelScoped(
+      { [LOOKUP_URI]: LOOKUP_SRC, [MAIN_URI]: MAIN_SRC },
+      MAIN_URI,
+    );
+    const ns = model.namespaces[0];
+    const stub = ns.schemas.find((s) => s.qualifiedId === "fx_spot_rates");
+    assert.ok(stub);
+    assert.equal(stub.hasExternalLineage, true);
+  });
+
+  it("stub schema preserves fields from the imported definition", () => {
+    const model = vizModelScoped(
+      { [LOOKUP_URI]: LOOKUP_SRC, [MAIN_URI]: MAIN_SRC },
+      MAIN_URI,
+    );
+    const ns = model.namespaces[0];
+    const stub = ns.schemas.find((s) => s.qualifiedId === "fx_spot_rates");
+    assert.ok(stub);
+    const fieldNames = stub.fields.map((f) => f.name).sort();
+    assert.deepEqual(fieldNames, ["currency_code", "rate"]);
+  });
+
+  it("does not inject a stub when the schema is defined locally", () => {
+    const model = vizModelScoped(
+      { [LOOKUP_URI]: LOOKUP_SRC, [MAIN_URI]: MAIN_SRC },
+      MAIN_URI,
+    );
+    const ns = model.namespaces[0];
+    const localIds = ["transactions", "transactions_usd"];
+    for (const id of localIds) {
+      const count = ns.schemas.filter((s) => s.qualifiedId === id).length;
+      assert.equal(count, 1, `expected exactly one ${id} schema card`);
+    }
+  });
+
+  it("does not inject a stub for a schema not in scope (not imported)", () => {
+    // Build model WITHOUT indexing the lookup file — fx_spot_rates not in scope.
+    const onlyMainIdx = createWorkspaceIndex();
+    const mainTree = parse(MAIN_SRC);
+    indexFile(onlyMainIdx, MAIN_URI, mainTree);
+    const model = buildVizModel(MAIN_URI, mainTree, onlyMainIdx);
+    const ns = model.namespaces[0];
+    const ids = ns.schemas.map((s) => s.qualifiedId);
+    assert.ok(!ids.includes("fx_spot_rates"), `fx_spot_rates should not appear when not in scope`);
   });
 });
