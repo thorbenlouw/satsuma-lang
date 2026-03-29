@@ -49,6 +49,17 @@ export class SzExpandLineageEvent extends Event {
   }
 }
 
+/** Field lineage event — dispatched when the user clicks the lineage icon on a field row. */
+export class SzFieldLineageEvent extends Event {
+  readonly schemaId: string;
+  readonly fieldName: string;
+  constructor(schemaId: string, fieldName: string) {
+    super("field-lineage", { bubbles: true, composed: true });
+    this.schemaId = schemaId;
+    this.fieldName = fieldName;
+  }
+}
+
 @customElement("satsuma-viz")
 export class SatsumaViz extends LitElement {
   static override styles = css`

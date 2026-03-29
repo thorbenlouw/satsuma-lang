@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
 import { join } from "path";
 import type { LanguageClient } from "vscode-languageclient/node";
+import { FieldLineagePanel } from "../field-lineage/panel";
 
 export class VizPanel {
   static currentPanel: VizPanel | undefined;
   private readonly panel: vscode.WebviewPanel;
   private readonly extensionUri: vscode.Uri;
   private readonly client: LanguageClient;
+  private readonly cliPath: string;
   private disposables: vscode.Disposable[] = [];
   /** URI of the last successfully loaded .stm file — used by Refresh to reload without requiring focus. */
   private _lastUri: string | undefined;
@@ -14,6 +16,7 @@ export class VizPanel {
   static createOrShow(
     extensionUri: vscode.Uri,
     client: LanguageClient,
+    cliPath: string,
   ): void {
     if (VizPanel.currentPanel) {
       VizPanel.currentPanel.panel.reveal(vscode.ViewColumn.Beside);
@@ -34,15 +37,17 @@ export class VizPanel {
       },
     );
 
-    VizPanel.currentPanel = new VizPanel(panel, extensionUri, client);
+    VizPanel.currentPanel = new VizPanel(panel, extensionUri, client, cliPath);
   }
 
   private constructor(
     panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
     client: LanguageClient,
+    cliPath: string,
   ) {
     this.panel = panel;
+    this.cliPath = cliPath;
     this.extensionUri = extensionUri;
     this.client = client;
 
@@ -136,6 +141,7 @@ export class VizPanel {
     line?: number;
     character?: number;
     schemaId?: string;
+    fieldPath?: string;
     content?: string;
     format?: string;
   }): void {
@@ -150,6 +156,15 @@ export class VizPanel {
       this.refresh();
     } else if (message.type === "expandLineage" && message.schemaId) {
       this.expandLineage(message.schemaId);
+    } else if (message.type === "fieldLineage" && message.fieldPath) {
+      const workspacePath =
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ".";
+      FieldLineagePanel.createOrShow(
+        this.extensionUri,
+        this.cliPath,
+        workspacePath,
+        message.fieldPath,
+      );
     } else if (message.type === "export" && message.content) {
       this.exportSvg(message.content as string);
     }

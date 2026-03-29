@@ -76,7 +76,7 @@ export function activate(context: ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("satsuma.showViz", () => {
       if (client) {
-        VizPanel.createOrShow(context.extensionUri, client);
+        VizPanel.createOrShow(context.extensionUri, client, cliPath);
       }
     }),
   );

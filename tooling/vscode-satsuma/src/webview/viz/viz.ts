@@ -43,6 +43,15 @@ vizEl.addEventListener("expand-lineage", (ev: CustomEvent) => {
   }
 });
 
+// Listen for field-lineage events from schema card field rows
+vizEl.addEventListener("field-lineage", (ev: CustomEvent) => {
+  const schemaId = ev.schemaId ?? ev.detail?.schemaId;
+  const fieldName = ev.fieldName ?? ev.detail?.fieldName;
+  if (schemaId && fieldName) {
+    vscode.postMessage({ type: "fieldLineage", fieldPath: `${schemaId}.${fieldName}` });
+  }
+});
+
 // Receive messages from the extension host
 window.addEventListener("message", (event) => {
   const msg = event.data;
