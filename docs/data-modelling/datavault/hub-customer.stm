@@ -1,6 +1,5 @@
 // RetailCo International — Data Vault 2.0
 // Customer Hub + Satellites
-
 import { store_region_map, pos_oracle, ecom_shopify } from "common.stm"
 
 note {
@@ -23,33 +22,29 @@ note {
   """
 }
 
-
 // --- Sources ---
-
 schema loyalty_sfdc (note "Salesforce Service Cloud — Loyalty CRM") {
-  ContactId           ID              (pk)
-  FirstName           STRING(100)     (required)
-  LastName            STRING(100)     (required)
-  Email               STRING(255)     (pii)
-  Phone               STRING(20)      (pii)
+  ContactId           ID           (pk)
+  FirstName           STRING(100)  (required)
+  LastName            STRING(100)  (required)
+  Email               STRING(255)  (pii)
+  Phone               STRING(20)   (pii)
   MailingStreet       STRING(200)
   MailingCity         STRING(100)
   MailingState        STRING(50)
   MailingPostalCode   STRING(20)
   MailingCountry      STRING(80)
-  LoyaltyTier         PICKLIST        (enum {Bronze, Silver, Gold, Platinum, Diamond})
+  LoyaltyTier         PICKLIST (enum {Bronze, Silver, Gold, Platinum, Diamond})
   LoyaltyPoints       INTEGER
-  AccountCreatedDate  DATE            (required)
+  AccountCreatedDate  DATE         (required)
   PreferredStoreId    STRING(20)
   OptInEmail          BOOLEAN
   OptInSMS            BOOLEAN
-  DateOfBirth         DATE            (pii)
-  Gender              PICKLIST        (enum {Male, Female, Non-binary, Undisclosed})
+  DateOfBirth         DATE         (pii)
+  Gender              PICKLIST (enum {Male, Female, Non-binary, Undisclosed})
 }
 
-
 // --- Hub: Customer ---
-
 schema hub_customer (
   hub,
   business_key customer_id,
@@ -59,60 +54,54 @@ schema hub_customer (
   loyalty card and email matching respectively.
   """
 ) {
-  customer_id          VARCHAR(50)     (required)
+  customer_id  VARCHAR(50)  (required)
 }
 
-
 // --- Satellite: Customer Demographics (from SFDC) ---
-
 schema sat_customer_demographics (
   satellite,
   parent hub_customer,
   scd 2,
   note "Personal details and loyalty"
 ) {
-  first_name           VARCHAR(100)
-  last_name            VARCHAR(100)
-  email                VARCHAR(255)    (pii)
-  phone                VARCHAR(20)     (pii)
-  date_of_birth        DATE            (pii)
-  gender               VARCHAR(20)
-  address_line_1       VARCHAR(200)
-  city                 VARCHAR(100)
-  state_province       VARCHAR(50)
-  postal_code          VARCHAR(20)
-  country_code         CHAR(2)
-  loyalty_tier         VARCHAR(20)
-  loyalty_points       INTEGER
-  preferred_store_id   VARCHAR(20)
-  opt_in_email         BOOLEAN
-  opt_in_sms           BOOLEAN
+  first_name          VARCHAR(100)
+  last_name           VARCHAR(100)
+  email               VARCHAR(255)  (pii)
+  phone               VARCHAR(20)   (pii)
+  date_of_birth       DATE          (pii)
+  gender              VARCHAR(20)
+  address_line_1      VARCHAR(200)
+  city                VARCHAR(100)
+  state_province      VARCHAR(50)
+  postal_code         VARCHAR(20)
+  country_code        CHAR(2)
+  loyalty_tier        VARCHAR(20)
+  loyalty_points      INTEGER
+  preferred_store_id  VARCHAR(20)
+  opt_in_email        BOOLEAN
+  opt_in_sms          BOOLEAN
 }
 
-
 // --- Satellite: Customer Online Behaviour (from Shopify) ---
-
 schema sat_customer_online (
   satellite,
   parent hub_customer,
   scd 2,
   note "E-commerce behaviour metrics"
 ) {
-  shopify_customer_id  BIGINT                              // Preserve source system ID
-  email                VARCHAR(255)    (pii)               //! May differ from CRM email
-  first_name           VARCHAR(100)
-  last_name            VARCHAR(100)
-  lifetime_order_count INTEGER
-  lifetime_spend       DECIMAL(12,2)
-  last_order_at        TIMESTAMPTZ
-  account_created_at   TIMESTAMPTZ
+  shopify_customer_id   BIGINT  // Preserve source system ID
+  email                 VARCHAR(255)   (pii)  //! May differ from CRM email
+  first_name            VARCHAR(100)
+  last_name             VARCHAR(100)
+  lifetime_order_count  INTEGER
+  lifetime_spend        DECIMAL(12,2)
+  last_order_at         TIMESTAMPTZ
+  account_created_at    TIMESTAMPTZ
 }
 
-
 // --- Mappings ---
-
 // Hub loading from SFDC (golden source)
-mapping 'sfdc to hub_customer' {
+mapping `sfdc to hub_customer` {
   source { `loyalty_sfdc` }
   target { `hub_customer` }
 
@@ -121,7 +110,7 @@ mapping 'sfdc to hub_customer' {
 }
 
 // Hub loading from POS (via loyalty card match)
-mapping 'pos to hub_customer' {
+mapping `pos to hub_customer` {
   source { `pos_oracle` }
   target { `hub_customer` }
 
@@ -139,12 +128,12 @@ mapping 'pos to hub_customer' {
 }
 
 // Hub loading from Shopify (via email match)
-mapping 'shopify to hub_customer' {
+mapping `shopify to hub_customer` {
   source { `ecom_shopify` }
   target { `hub_customer` }
 
-  //?  What if a Shopify customer's email matches multiple SFDC contacts?
-  //   Current assumption: take the most recently modified SFDC record.
+  //? What if a Shopify customer's email matches multiple SFDC contacts?
+  // Current assumption: take the most recently modified SFDC record.
 
   email -> customer_id {
     "Match email to SFDC ContactId. If no match, create a new
@@ -154,38 +143,38 @@ mapping 'shopify to hub_customer' {
 }
 
 // Demographics satellite from SFDC
-mapping 'sfdc to sat_customer_demographics' {
+mapping `sfdc to sat_customer_demographics` {
   source { `loyalty_sfdc` }
   target { `sat_customer_demographics` }
 
-  FirstName -> first_name              { trim | title_case }
-  LastName -> last_name                { trim | title_case }
-  Email -> email                       { trim | lowercase | validate_email | null_if_invalid }
-  Phone -> phone                       { trim | to_e164 }
+  FirstName -> first_name { trim | title_case }
+  LastName -> last_name { trim | title_case }
+  Email -> email { trim | lowercase | validate_email | null_if_invalid }
+  Phone -> phone { trim | to_e164 }
   DateOfBirth -> date_of_birth
-  Gender -> gender                     { lowercase }
-  MailingStreet -> address_line_1      { trim }
-  MailingCity -> city                   { trim | title_case }
-  MailingState -> state_province       { "Normalize to ISO 3166-2 subdivision code." }
-  MailingPostalCode -> postal_code     { trim }
-  MailingCountry -> country_code       { "Normalize to ISO 3166 alpha-2 code." }
-  LoyaltyTier -> loyalty_tier          { lowercase }
+  Gender -> gender { lowercase }
+  MailingStreet -> address_line_1 { trim }
+  MailingCity -> city { trim | title_case }
+  MailingState -> state_province { "Normalize to ISO 3166-2 subdivision code." }
+  MailingPostalCode -> postal_code { trim }
+  MailingCountry -> country_code { "Normalize to ISO 3166 alpha-2 code." }
+  LoyaltyTier -> loyalty_tier { lowercase }
   LoyaltyPoints -> loyalty_points
   PreferredStoreId -> preferred_store_id
-  OptInEmail -> opt_in_email           { coalesce(false) }
-  OptInSMS -> opt_in_sms              { coalesce(false) }
+  OptInEmail -> opt_in_email { coalesce(false) }
+  OptInSMS -> opt_in_sms { coalesce(false) }
   -> record_source { "SFDC" }
 }
 
 // Online behaviour satellite from Shopify
-mapping 'shopify to sat_customer_online' {
+mapping `shopify to sat_customer_online` {
   source { `ecom_shopify` }
   target { `sat_customer_online` }
 
   customer_id -> shopify_customer_id
-  email -> email                       { trim | lowercase }
-  first_name -> first_name             { trim | title_case }
-  last_name -> last_name               { trim | title_case }
+  email -> email { trim | lowercase }
+  first_name -> first_name { trim | title_case }
+  last_name -> last_name { trim | title_case }
   orders_count -> lifetime_order_count
   total_spent -> lifetime_spend
   last_order_at -> last_order_at

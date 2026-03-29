@@ -1,6 +1,5 @@
 // RetailCo International — Data Vault 2.0
 // Sales Fact Information Mart
-
 import { link_sale, sat_sale_detail } from "link-sale.stm"
 import { hub_customer } from "hub-customer.stm"
 import { hub_product } from "hub-product.stm"
@@ -34,9 +33,7 @@ note {
   """
 }
 
-
 // --- Target: Sales Fact (Kimball-style mart) ---
-
 schema mart_fact_sales (
   fact,
   grain {transaction_id, line_number},
@@ -46,52 +43,52 @@ schema mart_fact_sales (
   ref dim_date.transaction_date,
   note "Denormalized transaction fact for analytics"
 ) {
-  // Keys
-  transaction_id       VARCHAR(30)     (required)
-  line_number          INTEGER         (required)
-  transaction_date     DATE            (required)
-  transaction_time     TIME
+  transaction_id    VARCHAR(30)    (required)
+  line_number       INTEGER        (required)
+  transaction_date  DATE           (required)
+  transaction_time  TIME
 
   // Dimension references (resolved from hub business keys)
-  customer_id          VARCHAR(50)                         //! NULL for anonymous POS purchases
-  sku                  VARCHAR(18)     (required)
-  store_id             VARCHAR(20)                         // NULL for online
+  customer_id       VARCHAR(50)  //! NULL for anonymous POS purchases
+  sku               VARCHAR(18)    (required)
+  store_id          VARCHAR(20)  // NULL for online
 
   // Degenerate dimensions
-  channel              VARCHAR(20)     (required, degenerate)
-  payment_type         VARCHAR(20)     (degenerate)
-  source_system        VARCHAR(100)    (degenerate)
+  channel           VARCHAR(20)    (required, degenerate)
+  payment_type      VARCHAR(20)    (degenerate)
+  source_system     VARCHAR(100)   (degenerate)
 
   // Measures
-  quantity             INTEGER         (required, measure additive)
-  unit_price           DECIMAL(10,2)   (required, measure non_additive)
-  gross_amount         DECIMAL(12,2)   (required, measure additive)
-  discount_amount      DECIMAL(10,2)   (default 0, measure additive)
-  tax_amount           DECIMAL(10,2)   (default 0, measure additive)
-  net_amount           DECIMAL(12,2)   (required, measure additive)
+  quantity          INTEGER        (required, measure additive)
+  unit_price        DECIMAL(10,2)  (required, measure non_additive)
+  gross_amount      DECIMAL(12,2)  (required, measure additive)
+  discount_amount   DECIMAL(10,2)  (default 0, measure additive)
+  tax_amount        DECIMAL(10,2)  (default 0, measure additive)
+  net_amount        DECIMAL(12,2)  (required, measure additive)
 
   // Vault lineage
-  link_sale_hk         CHAR(64)                            // Traceability back to vault
+  link_sale_hk      CHAR(64)  // Traceability back to vault
 }
 
-
 // --- Mapping ---
-
-mapping 'vault to mart_fact_sales' {
-  source { `link_sale`, `sat_sale_detail`, `hub_customer`, `hub_product`, `hub_store` }
-  target { `mart_fact_sales` }
+mapping `vault to mart_fact_sales` {
+  source {
+    link_sale
+    sat_sale_detail
+    hub_customer
+    hub_product
+    hub_store
+  }
+  target { mart_fact_sales }
 
   note {
     """
     Core join pattern:
-    ```
-    link_sale
-      JOIN sat_sale_detail ON link_sale_hk
-        WHERE load_end_date IS NULL
-      LEFT JOIN hub_customer ON hub_customer_hk
-      JOIN hub_product ON hub_product_hk
-      LEFT JOIN hub_store ON hub_store_hk
-    ```
+      link_sale
+        JOIN sat_sale_detail ON link_sale_hk WHERE load_end_date IS NULL
+        LEFT JOIN hub_customer ON hub_customer_hk
+        JOIN hub_product ON hub_product_hk
+        LEFT JOIN hub_store ON hub_store_hk
     Customer and store are LEFT JOINs because anonymous POS purchases
     have no customer, and online orders have no store.
     """

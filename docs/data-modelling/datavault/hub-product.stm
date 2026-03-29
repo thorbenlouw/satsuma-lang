@@ -93,7 +93,7 @@ schema sat_product_pricing (
 // --- Mappings ---
 
 // Hub
-mapping 'sap to hub_product' {
+mapping `sap to hub_product` {
   source { `merch_sap` }
   target { `hub_product` }
 
@@ -102,8 +102,8 @@ mapping 'sap to hub_product' {
 }
 
 // Attributes satellite
-mapping 'sap to sat_product_attributes' {
-  source { `merch_sap` }
+mapping `sap to sat_product_attributes` {
+  source { `merch_sap`, `product_hierarchy` }
   target { `sat_product_attributes` }
 
   MAKTX -> product_name               { trim | title_case }
@@ -130,7 +130,7 @@ mapping 'sap to sat_product_attributes' {
 }
 
 // Pricing satellite
-mapping 'sap to sat_product_pricing' {
+mapping `sap to sat_product_pricing` {
   source { `merch_sap` }
   target { `sat_product_pricing` }
 
@@ -138,16 +138,16 @@ mapping 'sap to sat_product_pricing' {
   WAERS -> currency_code
 
   UNIT_COST -> unit_cost_usd {
-    "Convert from source currency (WAERS) to USD using daily spot rate.
-     If WAERS is null, assume USD."
+    "Convert from source currency (@WAERS) to USD using daily spot rate.
+     If @WAERS is null, assume USD."
   }
 
   MSRP -> retail_price_usd {
-    "Convert from source currency (WAERS) to USD using daily spot rate."
+    "Convert from source currency (@WAERS) to USD using daily spot rate."
   }
 
   -> margin_pct {
-    "Calculate as (retail_price_usd - unit_cost_usd) / retail_price_usd * 100.
+    "Calculate as (@retail_price_usd - @unit_cost_usd) / @retail_price_usd * 100.
      Null if either price is null or zero."
   }
 

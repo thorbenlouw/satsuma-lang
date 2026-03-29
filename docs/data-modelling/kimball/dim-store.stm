@@ -1,6 +1,5 @@
 // RetailCo International — Kimball Star Schema
 // Store Dimension
-
 import { address_fields, pos_oracle } from "common.stm"
 import { store_region_map } from "common.stm"
 
@@ -20,66 +19,74 @@ note {
   """
 }
 
-
-
 // --- Target: Store Dimension ---
-
 schema dim_store (
-  dimension, scd 2,
+  dimension,
+  scd 2,
   natural_key store_id,
   track {store_manager, format, square_footage, status},
   note "Physical store dimension"
 ) {
-  store_id             VARCHAR(20)     (required)
-  store_name           VARCHAR(100)
-  format               VARCHAR(20)     (enum {full_line, outlet, express, flagship})
+  store_id        VARCHAR(20)   (required)
+  store_name      VARCHAR(100)
+  format          VARCHAR(20)   (enum {full_line, outlet, express, flagship})
   ...address_fields
-  phone                VARCHAR(20)
-  store_manager        VARCHAR(100)
-  square_footage       INTEGER
-  opened_date          DATE
-  region               VARCHAR(50)
-  country              CHAR(2)
-  timezone             VARCHAR(40)
-  status               VARCHAR(20)     (enum {active, temporarily_closed, closed})
-  is_active            BOOLEAN
+  phone           VARCHAR(20)
+  store_manager   VARCHAR(100)
+  square_footage  INTEGER
+  opened_date     DATE
+  region          VARCHAR(50)
+  country         CHAR(2)
+  timezone        VARCHAR(40)
+  status          VARCHAR(20)   (enum {active, temporarily_closed, closed})
+  is_active       BOOLEAN
 }
 
-
 // --- Mapping ---
-
-mapping 'pos to dim_store' {
-  source { `pos_oracle` }
+mapping `pos to dim_store` {
+  source {
+    `pos_oracle`
+    `store_region_map`
+  }
   target { `dim_store` }
 
   STORE_ID -> store_id
-  STORE_NAME -> store_name             { trim | title_case }
+  STORE_NAME -> store_name { trim | title_case }
 
   STORE_FORMAT -> format {
-    map { FULL: "full_line", OUTLET: "outlet", EXPRESS: "express", FLAGSHIP: "flagship" }
+    map {
+      FULL: "full_line"
+      OUTLET: "outlet"
+      EXPRESS: "express"
+      FLAGSHIP: "flagship"
+    }
   }
 
   // Address
-  ADDR_LINE_1 -> address_line_1        { trim }
-  ADDR_LINE_2 -> address_line_2        { trim }
-  CITY -> city                         { trim | title_case }
-  STATE_PROV -> state_province         { trim }
-  POSTAL_CD -> postal_code             { trim }
+  ADDR_LINE_1 -> address_line_1 { trim }
+  ADDR_LINE_2 -> address_line_2 { trim }
+  CITY -> city { trim | title_case }
+  STATE_PROV -> state_province { trim }
+  POSTAL_CD -> postal_code { trim }
   COUNTRY_CD -> country_code
 
-  PHONE_NBR -> phone                   { trim }
-  STORE_MGR -> store_manager           { trim | title_case }
+  PHONE_NBR -> phone { trim }
+  STORE_MGR -> store_manager { trim | title_case }
   SQFT -> square_footage
   OPEN_DATE -> opened_date
 
   // Region enrichment from lookup
-  STORE_ID -> region     { "Look up region from `store_region_map` using `STORE_ID`" }
-  STORE_ID -> country    { "Look up country from `store_region_map` using `STORE_ID`" }
-  STORE_ID -> timezone   { "Look up timezone from `store_region_map` using `STORE_ID`" }
-
-  STATUS -> status {
-    map { A: "active", T: "temporarily_closed", C: "closed" }
+  STORE_ID -> region {
+    "Look up region from `store_region_map` using `STORE_ID`"
   }
+  STORE_ID -> country {
+    "Look up country from `store_region_map` using `STORE_ID`"
+  }
+  STORE_ID -> timezone {
+    "Look up timezone from `store_region_map` using `STORE_ID`"
+  }
+
+  STATUS -> status { map { A: "active", T: "temporarily_closed", C: "closed" } }
 
   -> is_active { "True if `STATUS` is 'A', false otherwise" }
 }

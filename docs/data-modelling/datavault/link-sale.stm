@@ -70,7 +70,7 @@ schema sat_sale_detail (
 // --- Mappings ---
 
 // Link from POS
-mapping 'pos to link_sale' {
+mapping `pos to link_sale` {
   source { `pos_oracle` }
   target { `link_sale` }
 
@@ -89,7 +89,7 @@ mapping 'pos to link_sale' {
 }
 
 // Link from Shopify
-mapping 'shopify to link_sale' {
+mapping `shopify to link_sale` {
   source { `ecom_shopify` }
   target { `link_sale` }
 
@@ -107,7 +107,7 @@ mapping 'shopify to link_sale' {
 }
 
 // Transaction detail satellite from POS
-mapping 'pos to sat_sale_detail' {
+mapping `pos to sat_sale_detail` {
   source { `pos_oracle` }
   target { `sat_sale_detail` }
 
@@ -131,7 +131,7 @@ mapping 'pos to sat_sale_detail' {
 }
 
 // Transaction detail satellite from Shopify
-mapping 'shopify to sat_sale_detail' {
+mapping `shopify to sat_sale_detail` {
   source { `ecom_shopify` }
   target { `sat_sale_detail` }
 

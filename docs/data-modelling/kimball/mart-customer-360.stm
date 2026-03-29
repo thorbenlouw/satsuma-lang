@@ -1,6 +1,5 @@
 // RetailCo International — Kimball Star Schema
 // Customer 360 Mart
-
 import { dim_customer } from "dim-customer.stm"
 import { fact_sales } from "fact-sales.stm"
 
@@ -30,63 +29,59 @@ note {
   """
 }
 
-
 // --- Target: Customer 360 (enriched dimension) ---
-
 schema mart_customer_360 (
-  dimension, scd 1,
+  dimension,
+  scd 1,
   natural_key customer_id,
   note "Customer 360 with transaction aggregates"
 ) {
-  // Identity (from dim_customer)
-  customer_id          VARCHAR(50)     (required)
-  first_name           VARCHAR(100)
-  last_name            VARCHAR(100)
-  full_name            VARCHAR(200)
-  email                VARCHAR(255)    (pii)
-  phone                VARCHAR(20)     (pii)
-  date_of_birth        DATE            (pii)
-  gender               VARCHAR(20)
+  customer_id               VARCHAR(50)    (required)
+  first_name                VARCHAR(100)
+  last_name                 VARCHAR(100)
+  full_name                 VARCHAR(200)
+  email                     VARCHAR(255)   (pii)
+  phone                     VARCHAR(20)    (pii)
+  date_of_birth             DATE           (pii)
+  gender                    VARCHAR(20)
 
   // Address (from dim_customer)
-  city                 VARCHAR(100)
-  state_province       VARCHAR(50)
-  postal_code          VARCHAR(20)
-  country_code         CHAR(2)
+  city                      VARCHAR(100)
+  state_province            VARCHAR(50)
+  postal_code               VARCHAR(20)
+  country_code              CHAR(2)
 
   // Loyalty (from dim_customer)
-  loyalty_tier         VARCHAR(20)
-  loyalty_points       INTEGER
-  preferred_store_id   VARCHAR(20)
-  member_since         DATE
-  opt_in_email         BOOLEAN
-  opt_in_sms           BOOLEAN
+  loyalty_tier              VARCHAR(20)
+  loyalty_points            INTEGER
+  preferred_store_id        VARCHAR(20)
+  member_since              DATE
+  opt_in_email              BOOLEAN
+  opt_in_sms                BOOLEAN
 
   // Existing dim_customer fields
-  customer_segment     VARCHAR(30)
-  lifetime_order_count INTEGER
-  lifetime_spend       DECIMAL(14,2)
+  customer_segment          VARCHAR(30)
+  lifetime_order_count      INTEGER
+  lifetime_spend            DECIMAL(14,2)
 
   // Transaction aggregates (from fact_sales)
-  total_in_store_orders  INTEGER       (default 0)
-  total_online_orders    INTEGER       (default 0)
-  in_store_revenue       DECIMAL(14,2) (default 0)
-  online_revenue         DECIMAL(14,2) (default 0)
-  first_purchase_date    DATE
-  last_purchase_date     DATE
-  days_since_last_purchase INTEGER
-  avg_order_value        DECIMAL(10,2)
+  total_in_store_orders     INTEGER        (default 0)
+  total_online_orders       INTEGER        (default 0)
+  in_store_revenue          DECIMAL(14,2)  (default 0)
+  online_revenue            DECIMAL(14,2)  (default 0)
+  first_purchase_date       DATE
+  last_purchase_date        DATE
+  days_since_last_purchase  INTEGER
+  avg_order_value           DECIMAL(10,2)
 
   // Derived
-  primary_channel      VARCHAR(20)     (enum {in_store, online, omnichannel})
-  rfm_score            VARCHAR(3)                          // e.g., "543"
+  primary_channel           VARCHAR(20) (enum {in_store, online, omnichannel})
+  rfm_score                 VARCHAR(3)  // e.g., "543"
 }
 
-
 // --- Mappings ---
-
 // Dimension attributes — direct pass-through via import
-mapping 'dim to mart' {
+mapping `dim to mart` {
   source { `dim_customer` }
   target { `mart_customer_360` }
 
@@ -124,7 +119,7 @@ mapping 'dim to mart' {
 }
 
 // Transaction aggregates from fact_sales
-mapping 'fact to mart' {
+mapping `fact to mart` {
   source { `fact_sales` }
   target { `mart_customer_360` }
 
@@ -145,12 +140,8 @@ mapping 'fact to mart' {
   -> online_revenue {
     "SUM(`net_amount`) WHERE `channel` = 'online', grouped by `customer_id`"
   }
-  -> first_purchase_date {
-    "MIN(`transaction_date`) grouped by `customer_id`"
-  }
-  -> last_purchase_date {
-    "MAX(`transaction_date`) grouped by `customer_id`"
-  }
+  -> first_purchase_date { "MIN(`transaction_date`) grouped by `customer_id`" }
+  -> last_purchase_date { "MAX(`transaction_date`) grouped by `customer_id`" }
   -> days_since_last_purchase {
     "DATEDIFF(days, MAX(`transaction_date`), CURRENT_DATE)"
   }
