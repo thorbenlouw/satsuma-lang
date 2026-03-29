@@ -21,7 +21,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
-import { extractBacktickRefs, classifyRef, resolveRef } from "../nl-ref-extract.js";
+import { extractBacktickRefs, classifyRef, resolveRef, resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { WorkspaceIndex } from "../types.js";
 import type { FullGraph } from "../graph-builder.js";
 
@@ -566,6 +566,60 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
         }
       }
     }
+  }
+
+  // Add nl-derived field edges from NL @ref mentions.
+  // These represent implicit field lineage: `@schema.field` in a mapping
+  // transform body means that field is an implicit source for the target field.
+  const nlRefs = resolveAllNLRefs(index);
+  const nlSeen = new Set<string>();
+  for (const nlRef of nlRefs) {
+    if (!nlRef.resolved || !nlRef.resolvedTo || nlRef.resolvedTo.kind !== "field") continue;
+    if (!nlRef.targetField) continue; // skip notes without a target arrow
+
+    const mappingKey = nlRef.namespace
+      ? `${nlRef.namespace}::${nlRef.mapping}`
+      : nlRef.mapping;
+    const mapping = index.mappings.get(mappingKey);
+    if (!mapping) continue;
+
+    if (nsFilter) {
+      if (mapping.namespace !== nsFilter) {
+        const touchesNs = mapping.sources.some((s) => includedNodeIds.has(s)) ||
+          mapping.targets.some((t) => includedNodeIds.has(t));
+        if (!touchesNs) continue;
+      }
+    }
+
+    const sourceField = nlRef.resolvedTo.name; // already canonical, e.g. "::s1.a"
+    const rawTarget = qualifyField(nlRef.targetField, mapping.targets);
+    const targetField = canonicalKey(rawTarget);
+
+    // Skip if this is a self-reference (field references itself in its own transform)
+    if (sourceField === targetField) continue;
+
+    // Skip if the same source→target→mapping nl-derived edge was already emitted
+    const dedupKey = `${sourceField}|${targetField}|${mappingKey}`;
+    if (nlSeen.has(dedupKey)) continue;
+    nlSeen.add(dedupKey);
+
+    // Skip if there's already a declared (non-nl-derived) arrow with the same
+    // source→target in the same mapping (e.g. `c -> d { "@s1.c is processed" }`
+    // — c is already the declared source, no need for a duplicate nl-derived edge).
+    const alreadyCovered = edges.some(
+      (e) => e.from === sourceField && e.to === targetField &&
+             e.mapping === mappingKey && e.classification !== "nl-derived",
+    );
+    if (alreadyCovered) continue;
+
+    edges.push({
+      from: sourceField,
+      to: targetField,
+      mapping: mappingKey,
+      classification: "nl-derived",
+      file: nlRef.file,
+      line: nlRef.line + 1,
+    });
   }
 
   return { edges, unresolvedNl };

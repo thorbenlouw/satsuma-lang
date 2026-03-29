@@ -1,6 +1,6 @@
 ---
 id: sl-dkr7
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T21:35:07Z
@@ -28,3 +28,9 @@ Design decision (recorded 2026-03-28): An NL @ref mention in a mapping transform
 - satsuma arrows --as-source correctly includes nl-derived arrows for the queried field (fix canonical key comparison in direction filter)
 - Smoke tests covering each case
 
+## Notes
+
+**2026-03-29**
+
+Cause: Three separate bugs: (1) `arrows.ts` compared `resolvedTo` (canonical `::s1.a`) against `qualifiedField` (non-canonical `s1.a`), so nl-derived arrows were never found when querying a source field; (2) the `--as-source` filter checked bare field names against fully-qualified canonical sources; (3) `graph.ts buildFieldEdges()` only iterated `index.fieldArrows` and never synthesised nl-derived edges from `resolveAllNLRefs`.
+Fix: Normalised the comparison to use `canonicalKey(qualifiedField)` in arrows.ts; updated the `--as-source` filter to match canonical paths; added an nl-derived edge synthesis loop to `buildFieldEdges` with dedup logic to avoid emitting redundant edges when the field is already a declared source. Smoke tests updated and extended (test_05, test_01, test_02 field-lineage). (commit pending)

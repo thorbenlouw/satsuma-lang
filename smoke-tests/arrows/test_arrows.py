@@ -1,5 +1,5 @@
 """
-Smoke tests for `satsuma arrows` and `satsuma lineage`.
+Smoke tests for `satsuma arrows`, `satsuma lineage`, and `satsuma field-lineage`.
 
 Each case has:
   - Arrow tests: assert on the immediate arrows involving a field.
@@ -28,7 +28,13 @@ JSON shape for lineage --json:
     Node names for global schemas use bare names ("s1"); namespaced schemas use
     qualified names ("ns::s1").
 
-KNOWN BUGS documented inline — see tk tickets for each.
+JSON shape for field-lineage --json:
+    {
+      "field":      str,   # canonical field path, e.g. "::s2.a"
+      "upstream":   [...], # fields that feed into this field
+      "downstream": [...], # fields this field flows into
+    }
+    Each upstream/downstream entry: {"field": str, "via_mapping": str, "classification": str}
 """
 
 import json
@@ -68,6 +74,27 @@ def lineage_cmd(schema: str, fixture_rel: str, *, direction: str = "from", depth
     depth_flag = f" --depth {depth}" if depth is not None else ""
     result = _run_raw(f"lineage --{direction} {schema}{depth_flag}", fixture_rel, expect_exit=expect_exit)
     return result if result is not None else {"nodes": [], "edges": []}
+
+
+def field_lineage_cmd(
+    field: str,
+    fixture_rel: str,
+    *,
+    upstream: bool = False,
+    downstream: bool = False,
+    depth: int | None = None,
+    expect_exit: int = 0,
+) -> dict:
+    """Run `satsuma field-lineage <field> [--upstream] [--downstream] [--depth N] --json <fixture>`."""
+    flags = ""
+    if upstream:
+        flags += " --upstream"
+    if downstream:
+        flags += " --downstream"
+    if depth is not None:
+        flags += f" --depth {depth}"
+    result = _run_raw(f"field-lineage {field}{flags}", fixture_rel, expect_exit=expect_exit)
+    return result if result is not None else {"field": field, "upstream": [], "downstream": []}
 
 
 def schema_names(lin: dict) -> set[str]:
@@ -139,6 +166,35 @@ def test_01_lineage_combined():
     assert ("s1", "m") in lin_edges(lin_rev)
 
 
+def test_01_field_lineage():
+    """
+    field-lineage on the source field has no upstream and s2.b downstream.
+    field-lineage on the target field has s1.a upstream and no downstream.
+    """
+    fl_src = field_lineage_cmd("s1.a", "01-simple/fixture.stm")
+    assert fl_src["field"] == "::s1.a"
+    assert fl_src["upstream"] == []
+    assert len(fl_src["downstream"]) == 1
+    assert fl_src["downstream"][0]["field"] == "::s2.b"
+    assert fl_src["downstream"][0]["via_mapping"] == "::m"
+    assert fl_src["downstream"][0]["classification"] == "none"
+
+    fl_tgt = field_lineage_cmd("s2.b", "01-simple/fixture.stm")
+    assert fl_tgt["field"] == "::s2.b"
+    assert len(fl_tgt["upstream"]) == 1
+    assert fl_tgt["upstream"][0]["field"] == "::s1.a"
+    assert fl_tgt["downstream"] == []
+
+    # --upstream and --downstream flags filter correctly
+    fl_up = field_lineage_cmd("s2.b", "01-simple/fixture.stm", upstream=True)
+    assert len(fl_up["upstream"]) == 1
+    assert fl_up["downstream"] == []
+
+    fl_down = field_lineage_cmd("s1.a", "01-simple/fixture.stm", downstream=True)
+    assert len(fl_down["downstream"]) == 1
+    assert fl_down["upstream"] == []
+
+
 # ---------------------------------------------------------------------------
 # Case 02 — Both sides: field is target in one mapping, source in another
 # ---------------------------------------------------------------------------
@@ -186,6 +242,21 @@ def test_02_lineage_combined():
     assert "s1" in schema_names(lin_rev)
     assert ("s1", "m1") in lin_edges(lin_rev)
     assert ("m1", "s2") in lin_edges(lin_rev)
+
+
+def test_02_field_lineage():
+    """
+    s2.a is the passthrough field: upstream is s1.a, downstream is s3.a.
+    field-lineage resolves both directions in one call.
+    """
+    fl = field_lineage_cmd("s2.a", "02-both-sides/fixture.stm")
+    assert fl["field"] == "::s2.a"
+    assert len(fl["upstream"]) == 1
+    assert fl["upstream"][0]["field"] == "::s1.a"
+    assert fl["upstream"][0]["via_mapping"] == "::m1"
+    assert len(fl["downstream"]) == 1
+    assert fl["downstream"][0]["field"] == "::s3.a"
+    assert fl["downstream"][0]["via_mapping"] == "::m2"
 
 
 # ---------------------------------------------------------------------------
@@ -301,9 +372,11 @@ def test_04_lineage_combined():
 # ---------------------------------------------------------------------------
 # Case 05 — NL ref: -> z { "derive from @s1.a scaled by @s1.b" }
 #
-# The CLI does NOT synthesise nl-derived arrows when querying a field that
-# appears only inside an NL body via @ref.  The derived=true flag lives on
-# the explicitly declared "-> z {NL}" arrow itself.
+# NL @ref mentions are implicit field lineage edges (sl-dkr7).
+# s1.a and s1.b appear only inside the NL body via @ref — the CLI synthesises
+# nl-derived arrows for them.  The declared "-> z {NL}" arrow on s2.z has
+# no explicit source (derived=True, classification="nl"); the implicit
+# edges are separate nl-derived arrows on s1.a and s1.b.
 # ---------------------------------------------------------------------------
 
 def test_05_derived_target():
@@ -320,18 +393,33 @@ def test_05_derived_target():
     assert a["derived"] is True
 
 
-def test_05_no_arrow_for_nl_referenced_field():
+def test_05_nl_ref_source_arrows():
     """
-    s1.a and s1.b appear only inside the NL body via @ref.
-    The CLI does not surface nl-derived arrows for them — exit 1.
+    s1.a and s1.b are referenced via @ref in the NL body.
+    The CLI synthesises nl-derived arrows for each, pointing to s2.z.
     """
-    arrows_cmd("s1.a", "05-nl-ref/fixture.stm", expect_exit=1)
-    arrows_cmd("s1.b", "05-nl-ref/fixture.stm", expect_exit=1)
+    for field in ("s1.a", "s1.b"):
+        arrows = arrows_cmd(field, "05-nl-ref/fixture.stm")
+        assert len(arrows) == 1, f"Expected 1 nl-derived arrow for {field}, got {len(arrows)}"
+        a = arrows[0]
+        assert a["classification"] == "nl-derived"
+        assert a["derived"] is True
+        assert a["target"] == "::s2.z"
+        assert a["mapping"] == "::m"
+
+
+def test_05_nl_ref_as_source():
+    """--as-source correctly returns nl-derived arrows for @ref fields."""
+    arrows = arrows_cmd("s1.a", "05-nl-ref/fixture.stm", as_source=True)
+    assert len(arrows) == 1
+    assert arrows[0]["classification"] == "nl-derived"
+    assert arrows[0]["source"] == "::s1.a"
+    assert arrows[0]["target"] == "::s2.z"
 
 
 def test_05_lineage_combined():
     """
-    Schema-level: s1 → m → s2 (lineage works even when field-level arrows are absent).
+    Schema-level lineage is intact: s1 → m → s2.
     Cross-check: the arrow on s2.z is consistent with m being the bridge schema.
     """
     arrow = arrows_cmd("s2.z", "05-nl-ref/fixture.stm")[0]
@@ -340,20 +428,36 @@ def test_05_lineage_combined():
     lin_fwd = lineage_cmd("s1", "05-nl-ref/fixture.stm", direction="from")
     lin_rev = lineage_cmd("s2", "05-nl-ref/fixture.stm", direction="to")
 
-    # Even though @ref fields produce no arrows, schema-level lineage is intact
     assert {"s1", "s2"} == schema_names(lin_fwd)
     assert ("s1", "m") in lin_edges(lin_fwd)
     assert ("m", "s2") in lin_edges(lin_fwd)
-
     assert "s1" in schema_names(lin_rev)
 
 
+def test_05_field_lineage():
+    """
+    field-lineage s2.z traces both nl-derived upstream fields.
+    field-lineage s1.a shows s2.z as downstream.
+    """
+    fl_z = field_lineage_cmd("s2.z", "05-nl-ref/fixture.stm")
+    assert fl_z["field"] == "::s2.z"
+    upstream_fields = {u["field"] for u in fl_z["upstream"]}
+    assert "::s1.a" in upstream_fields
+    assert "::s1.b" in upstream_fields
+    assert all(u["classification"] == "nl-derived" for u in fl_z["upstream"])
+
+    fl_a = field_lineage_cmd("s1.a", "05-nl-ref/fixture.stm")
+    assert fl_a["field"] == "::s1.a"
+    assert fl_a["upstream"] == []
+    downstream_fields = {d["field"] for d in fl_a["downstream"]}
+    assert "::s2.z" in downstream_fields
+
+
 # ---------------------------------------------------------------------------
-# Case 06a — Cross-namespace arrow
+# Case 06a — Cross-namespace arrow (sl-hy8w fixed)
 #
-# BUG: Querying by source field in a cross-namespace mapping fails.
-# arrows(src::s1.a) → "Field 'a' not found in schema 'src::s1'" (exit 1).
-# Querying by target side works correctly.
+# Both source-side and target-side arrow queries work for cross-namespace
+# mappings. Spread fields are also reachable from either side (sl-oeem).
 # ---------------------------------------------------------------------------
 
 def test_06_cross_ns_target_side():

@@ -1,6 +1,6 @@
 ---
 id: sl-rs0e
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-28T18:36:26Z
@@ -52,3 +52,9 @@ This enables one-shot field lineage for agents doing impact analysis, PII audits
 - Documented in SATSUMA-CLI.md
 - Integration tests added to smoke-tests/arrows/
 
+## Notes
+
+**2026-03-29**
+
+Cause: No field-lineage command existed; agents had to compose multiple `arrows` calls to trace upstream/downstream chains.
+Fix: Implemented `satsuma field-lineage <schema.field>` in `tooling/satsuma-cli/src/commands/field-lineage.ts`. Builds a field-edge graph from both declared arrows (`index.fieldArrows`) and nl-derived references (`resolveAllNLRefs`), then BFS-traverses for upstream/downstream. Supports `--upstream`, `--downstream`, `--depth`, `--json`, namespace-qualified fields, and cycle detection. Documented in `SATSUMA-CLI.md`. Smoke tests added to `test_arrows.py` (test_01, test_02, test_05 field-lineage cases). (commit pending)
