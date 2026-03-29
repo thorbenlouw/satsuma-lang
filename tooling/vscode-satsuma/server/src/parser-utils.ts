@@ -8,6 +8,39 @@ import type { Parser, Language, Tree, Node } from "web-tree-sitter";
 export type SyntaxNode = Node;
 export type { Tree };
 
+// ---------- CST navigation helpers (delegating to satsuma-core) ----------
+//
+// feat/26/sl-60gz: logic lives in satsuma-core/src/cst-utils.ts; wrappers here
+// preserve the concrete `Node` type required by other LSP server code (which
+// uses nodeRange() and web-tree-sitter WASM APIs that need the full Node type).
+
+import {
+  child as _child,
+  children as _children,
+  labelText as _labelText,
+  stringText as _stringText,
+} from "@satsuma/core";
+
+/** First named child of the given type. */
+export function child(node: Node, type: string): Node | null {
+  return _child(node, type) as Node | null;
+}
+
+/** All named children of the given type. */
+export function children(node: Node, type: string): Node[] {
+  return _children(node, type) as Node[];
+}
+
+/** Extract the display text from a block_label node. */
+export function labelText(node: Node): string | null {
+  return _labelText(node);
+}
+
+/** Strip delimiters from an NL string or multiline string node. */
+export function stringText(node: Node | null | undefined): string | null {
+  return _stringText(node);
+}
+
 // ---------- tree-sitter initialisation (WASM) ----------
 
 let _parser: Parser | null = null;
@@ -61,32 +94,4 @@ export function nodeRange(node: Node): Range {
     Position.create(node.startPosition.row, node.startPosition.column),
     Position.create(node.endPosition.row, node.endPosition.column),
   );
-}
-
-/** First named child of the given type. */
-export function child(node: Node, type: string): Node | null {
-  return node.namedChildren.find((c) => c !== null && c.type === type) ?? null;
-}
-
-/** All named children of the given type. */
-export function children(node: Node, type: string): Node[] {
-  return node.namedChildren.filter((c): c is Node => c !== null && c.type === type);
-}
-
-/** Extract the display text from a block_label node. */
-export function labelText(node: Node): string | null {
-  const lbl = child(node, "block_label");
-  if (!lbl) return null;
-  const inner = lbl.namedChildren[0];
-  if (!inner) return null;
-  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
-  return inner.text;
-}
-
-/** Strip delimiters from an NL string or multiline string node. */
-export function stringText(node: Node | null | undefined): string | null {
-  if (!node) return null;
-  if (node.type === "multiline_string") return node.text.slice(3, -3).trim();
-  if (node.type === "nl_string") return node.text.slice(1, -1);
-  return node.text;
 }
