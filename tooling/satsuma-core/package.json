@@ -33,6 +33,10 @@
     "./meta-extract": {
       "types": "./dist/meta-extract.d.ts",
       "default": "./dist/meta-extract.js"
+    },
+    "./extract": {
+      "types": "./dist/extract.d.ts",
+      "default": "./dist/extract.js"
     }
   },
   "types": "./dist/index.d.ts",

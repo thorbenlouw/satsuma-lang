@@ -4,3 +4,30 @@ export { child, children, allDescendants, labelText, stringText, entryText } fro
 export { classifyTransform, classifyArrow } from "./classify.js";
 export { canonicalRef, canonicalEntityName } from "./canonical-ref.js";
 export { extractMetadata } from "./meta-extract.js";
+export {
+  extractFieldTree,
+  extractNamespaces,
+  extractSchemas,
+  extractMetrics,
+  extractMappings,
+  extractFragments,
+  extractTransforms,
+  extractNotes,
+  extractWarnings,
+  extractQuestions,
+  extractImports,
+  extractArrowRecords,
+} from "./extract.js";
+export type {
+  ExtractedNamespace,
+  ExtractedSchema,
+  ExtractedMetric,
+  ExtractedMapping,
+  ExtractedFragment,
+  ExtractedTransform,
+  ExtractedNote,
+  ExtractedWarning,
+  ExtractedQuestion,
+  ExtractedImport,
+  ExtractedArrow,
+} from "./extract.js";
