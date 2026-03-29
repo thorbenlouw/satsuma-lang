@@ -1,6 +1,6 @@
 ---
 id: sc-vwz0
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-29T12:54:17Z
@@ -21,3 +21,12 @@ src/commands/coverage.ts uses a hand-rolled regex (extractMappingInfo) to find t
 - LSP actionContext handler returns mappingName and targetSchema when cursor is inside a mapping block
 - Existing coverage decoration and status bar behaviour is unchanged
 
+
+## Notes
+
+**2026-03-29T13:16:43Z**
+
+**2026-03-29**
+
+Cause: coverage.ts used regex walking (extractMappingInfo) to find mappingName/targetSchema, which was fragile and duplicated logic that the CST already encodes.
+Fix: Extended ActionContext with mappingName/targetSchema; added inferMappingContext() in server/src/action-context.ts to walk the CST up to the enclosing mapping_block and extract the block_label and target_block schema. Deleted extractMappingInfo from coverage.ts; coverage command now reads from getEditorActionContext.

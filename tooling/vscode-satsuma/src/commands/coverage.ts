@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { join } from "path";
 import { LanguageClient } from "vscode-languageclient/node";
 import { runCli } from "./cli-runner";
+import { getEditorActionContext } from "./action-context";
 
 let mappedDecoration: vscode.TextEditorDecorationType | undefined;
 let unmappedDecoration: vscode.TextEditorDecorationType | undefined;
@@ -38,18 +39,15 @@ export function registerCoverageCommand(
       const editor = vscode.window.activeTextEditor;
       if (!editor || editor.document.languageId !== "satsuma") return;
 
-      // Find the mapping name and target schema from the document
-      const text = editor.document.getText();
-      const info = extractMappingInfo(text, editor.selection.active.line);
+      const actionContext = await getEditorActionContext(client);
+      const { mappingName, targetSchema } = actionContext;
 
-      if (!info) {
+      if (!mappingName || !targetSchema) {
         vscode.window.showWarningMessage(
-          "Place cursor inside a mapping block to show coverage.",
+          "Place cursor inside a named mapping block to show coverage.",
         );
         return;
       }
-
-      const { mappingName, targetSchema } = info;
 
       // Get unmapped fields via CLI
       const result = await runCli(cliPath, [
@@ -145,47 +143,3 @@ export function registerCoverageCommand(
   );
 }
 
-/** Extract mapping name and target schema from document text near cursor. */
-function extractMappingInfo(
-  text: string,
-  cursorLine: number,
-): { mappingName: string; targetSchema: string } | null {
-  const lines = text.split("\n");
-
-  // Walk backwards from cursor to find "mapping" keyword
-  let mappingName: string | null = null;
-  for (let i = cursorLine; i >= 0; i--) {
-    const match = lines[i]?.match(/^\s*mapping\s+(?:`([^`]+)`|(\S+))/);
-    if (match) {
-      mappingName = match[1] ?? match[2] ?? null;
-      break;
-    }
-  }
-  if (!mappingName) return null;
-
-  // Find target block within the mapping
-  let targetSchema: string | null = null;
-  let inMapping = false;
-  let braceDepth = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? "";
-    if (line.match(/^\s*mapping\s/)) {
-      inMapping = line.includes(mappingName);
-      braceDepth = 0;
-    }
-    if (inMapping) {
-      for (const ch of line) {
-        if (ch === "{") braceDepth++;
-        if (ch === "}") braceDepth--;
-      }
-      const targetMatch = line.match(/target\s*\{\s*(?:`([^`]+)`|(\S+))/);
-      if (targetMatch) {
-        targetSchema = targetMatch[1] ?? targetMatch[2] ?? null;
-      }
-      if (braceDepth <= 0 && i > cursorLine) break;
-    }
-  }
-
-  if (!targetSchema) return null;
-  return { mappingName, targetSchema };
-}

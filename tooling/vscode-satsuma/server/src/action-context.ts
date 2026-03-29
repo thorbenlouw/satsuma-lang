@@ -1,10 +1,13 @@
-import type { Tree } from "./parser-utils";
+import type { SyntaxNode, Tree } from "./parser-utils";
+import { child, children, labelText } from "./parser-utils";
 import { findNodeContext, type NodeContext } from "./definition";
 import type { WorkspaceIndex } from "./workspace-index";
 
 export interface ActionContext {
   schemaName: string | null;
   fieldPath: string | null;
+  mappingName: string | null;
+  targetSchema: string | null;
 }
 
 export function computeActionContext(
@@ -19,18 +22,69 @@ export function computeActionContext(
     column: character,
   });
   if (!node) {
-    return { schemaName: null, fieldPath: null };
+    return { schemaName: null, fieldPath: null, mappingName: null, targetSchema: null };
   }
 
   const ctx = findNodeContext(node);
+  const { mappingName, targetSchema } = inferMappingContext(node);
+
   if (!ctx) {
-    return { schemaName: null, fieldPath: null };
+    return { schemaName: null, fieldPath: null, mappingName, targetSchema };
   }
 
   return {
     schemaName: inferSchemaName(ctx),
     fieldPath: inferFieldPath(ctx),
+    mappingName,
+    targetSchema,
   };
+}
+
+/**
+ * Walk up the CST from the cursor node to find an enclosing named mapping_block,
+ * then extract the mapping name and the first target schema reference.
+ */
+function inferMappingContext(
+  node: SyntaxNode,
+): { mappingName: string | null; targetSchema: string | null } {
+  let current: SyntaxNode | null = node;
+  while (current) {
+    if (current.type === "mapping_block") {
+      const mappingName = labelText(current);
+      const targetSchema = extractTargetSchema(current);
+      return { mappingName, targetSchema };
+    }
+    current = current.parent;
+  }
+  return { mappingName: null, targetSchema: null };
+}
+
+function extractTargetSchema(mappingNode: SyntaxNode): string | null {
+  const body = child(mappingNode, "mapping_body");
+  if (!body) return null;
+  for (const item of body.namedChildren) {
+    if (item.type === "target_block") {
+      for (const ref of children(item, "source_ref")) {
+        const name = sourceRefText(ref);
+        if (name) return name;
+      }
+    }
+  }
+  return null;
+}
+
+function sourceRefText(ref: SyntaxNode): string | null {
+  const qn = child(ref, "qualified_name");
+  if (qn) {
+    const ids = qn.namedChildren.filter((c) => c.type === "identifier");
+    if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
+    if (ids.length === 1 && ids[0]) return ids[0].text;
+  }
+  const bn = child(ref, "backtick_name");
+  if (bn) return bn.text.slice(1, -1);
+  const id = child(ref, "identifier");
+  if (id) return id.text;
+  return null;
 }
 
 function inferSchemaName(ctx: NodeContext): string | null {
