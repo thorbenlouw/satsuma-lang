@@ -29,7 +29,7 @@ jobs:
 
       - name: Build tree-sitter WASM (needed by CLI and VS Code)
         working-directory: tooling/tree-sitter-satsuma
-        run: tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
+        run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Copy WASM into CLI dist (prebuild ran before WASM existed)
         working-directory: tooling/satsuma-cli
@@ -194,7 +194,7 @@ jobs:
           fi
 
       - name: Run corpus tests
-        run: tree-sitter test
+        run: node_modules/.bin/tree-sitter test
 
       - name: Install pytest
         run: pip install pytest
@@ -255,7 +255,7 @@ jobs:
 
       - name: Build tree-sitter WASM for LSP tests
         working-directory: tooling/tree-sitter-satsuma
-        run: tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
+        run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Run LSP server tests
         run: |

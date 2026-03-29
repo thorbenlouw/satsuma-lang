@@ -40,7 +40,7 @@ jobs:
 
       - name: Build WASM parser
         working-directory: tooling/tree-sitter-satsuma
-        run: tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
+        run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Bundle for distribution
         shell: bash
@@ -80,7 +80,7 @@ jobs:
 
       - name: Build WASM parser
         working-directory: tooling/tree-sitter-satsuma
-        run: npx tree-sitter build --wasm
+        run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Build satsuma-viz (needed by webview bundle)
         working-directory: tooling/satsuma-viz
