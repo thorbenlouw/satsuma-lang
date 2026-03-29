@@ -1,5 +1,5 @@
 // Satsuma v2 — Multi-Source Join: Customer 360 View
-import { `audit columns` } from "common.stm"
+import { `audit columns` } from "../lib/common.stm"
 
 note {
   """

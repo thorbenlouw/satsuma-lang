@@ -32,7 +32,7 @@ Test areas:
 - **No results**: Search for a tag that doesn't exist. Exit code? Output message?
 - **Multiple files**: Tag exists in multiple files. All found?
 - **Case sensitivity**: Is tag search case-sensitive? Should it be?
-- **Single file path**: Does `satsuma find --tag pii examples/common.stm` work?
+- **Single file path**: Does `satsuma find --tag pii examples/lib/common.stm` work?
 - **Special characters in tags**: Tags with hyphens, underscores, etc.
 - **`note` as metadata**: `(note "...")` on fields. Searchable by `note`?
 

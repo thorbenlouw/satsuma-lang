@@ -137,5 +137,5 @@ schema gl_transactions (
 
 ## Canonical Examples
 
-- **[`examples/filter-flatten-governance.stm`](../../examples/filter-flatten-governance.stm)** — demonstrates `classification`, `retention`, and `pii` tokens alongside filter and flatten idioms in a retail analytics pipeline.
-- **[`examples/governance.stm`](../../examples/governance.stm)** — a dedicated governance example modelling a customer-360 scenario with full ownership, stewardship, retention, compliance, classification, masking, encryption, and custom organisation-specific tokens.
+- **[`examples/filter-flatten-governance/filter-flatten-governance.stm`](../../examples/filter-flatten-governance/filter-flatten-governance.stm)** — demonstrates `classification`, `retention`, and `pii` tokens alongside filter and flatten idioms in a retail analytics pipeline.
+- **[`examples/filter-flatten-governance/governance.stm`](../../examples/filter-flatten-governance/governance.stm)** — a dedicated governance example modelling a customer-360 scenario with full ownership, stewardship, retention, compliance, classification, masking, encryption, and custom organisation-specific tokens.

@@ -1,4 +1,3 @@
 {
-  "source": "../../../../../examples/db-to-db.stm",
-  "allow_error": true
+  "source": "../../../../../examples/db-to-db/pipeline.stm"
 }

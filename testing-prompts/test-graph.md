@@ -35,7 +35,7 @@ Test areas:
 - **Import handling**: Cross-file imports correctly wired?
 - **Namespace-qualified names**: Nodes use correct namespace-qualified names?
 - **Empty workspace**: No `.stm` files. Output?
-- **Single file**: `satsuma graph examples/common.stm --json`.
+- **Single file**: `satsuma graph examples/lib/common.stm --json`.
 - **Large workspace**: Full `examples/` directory. Performance? Completeness?
 - **Disconnected nodes**: Schemas with no mappings. Present as isolated nodes?
 - **Self-referencing**: Mapping where source and target are the same schema.

@@ -157,4 +157,4 @@ mapping `price history upsert` (
 
 ## Canonical Example
 
-See [`examples/merge-strategies.stm`](../../examples/merge-strategies.stm) for a complete, parseable Satsuma file that demonstrates all four merge patterns in a single retail scenario.
+See [`examples/merge-strategies/pipeline.stm`](../../examples/merge-strategies/pipeline.stm) for a complete, parseable Satsuma file that demonstrates all four merge patterns in a single retail scenario.

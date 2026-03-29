@@ -27,7 +27,7 @@ describe("runValidate", () => {
     // Use the real satsuma CLI against a fixture with known warnings
     const fixtureDir = require("path").resolve(
       __dirname,
-      "../../../../examples/db-to-db.stm",
+      "../../../../examples/db-to-db/pipeline.stm",
     );
     const fixtureUri = "file://" + encodeURI(fixtureDir);
 
@@ -57,7 +57,7 @@ describe("runValidate", () => {
   it("returns diagnostics with correct severity mapping", async () => {
     const fixtureDir = require("path").resolve(
       __dirname,
-      "../../../../examples/db-to-db.stm",
+      "../../../../examples/db-to-db/pipeline.stm",
     );
     const fixtureUri = "file://" + encodeURI(fixtureDir);
 
@@ -84,7 +84,7 @@ describe("runValidate", () => {
     );
     // Pick a file that imports from another file
     const fixtureUri = "file://" + encodeURI(
-      require("path").join(examplesDir, "db-to-db.stm"),
+      require("path").join(examplesDir, "db-to-db/pipeline.stm"),
     );
 
     const result = await runValidate(fixtureUri, "satsuma");
@@ -103,7 +103,7 @@ describe("runValidate", () => {
   it("converts 1-based line/column to 0-based", async () => {
     const fixtureDir = require("path").resolve(
       __dirname,
-      "../../../../examples/db-to-db.stm",
+      "../../../../examples/db-to-db/pipeline.stm",
     );
     const fixtureUri = "file://" + encodeURI(fixtureDir);
 

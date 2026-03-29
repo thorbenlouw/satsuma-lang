@@ -3,9 +3,9 @@
 // Tests: namespace blocks, cross-namespace references, global definitions,
 // namespace-scoped metrics, fragment spreads across namespaces, imports,
 // multiple mappings between namespaces, and derived arrows.
-import { pos::stores, pos::transactions } from "namespaces.stm"
-import { ecom::orders, ecom::customers } from "namespaces.stm"
-import { warehouse::hub_store, warehouse::hub_customer } from "namespaces.stm"
+import { pos::stores, pos::transactions } from "./namespaces.stm"
+import { ecom::orders, ecom::customers } from "./namespaces.stm"
+import { warehouse::hub_store, warehouse::hub_customer } from "./namespaces.stm"
 
 note {
   """

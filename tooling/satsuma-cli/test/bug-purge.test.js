@@ -351,7 +351,7 @@ describe("sl-j8uk: filesystem errors exit code 2", () => {
 // ── sc-1ar0: mapping includes flatten/each arrows ─────────────────────────
 
 describe("sc-1ar0: mapping includes flatten/each block arrows", () => {
-  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
 
   it("--json arrows array includes flatten block with children", async () => {
     const { stdout, code } = await run("mapping", "order line facts", FFG, "--json");
@@ -380,7 +380,7 @@ describe("sc-1ar0: mapping includes flatten/each block arrows", () => {
 // ── sc-8g9a: validate no false-positive on flatten targets ────────────────
 
 describe("sc-8g9a: validate no false-positive field-not-in-schema on flatten", () => {
-  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
 
   it("does not emit field-not-in-schema for flatten inner arrows", async () => {
     const { stdout, stderr } = await run("validate", FFG);
@@ -393,7 +393,7 @@ describe("sc-8g9a: validate no false-positive field-not-in-schema on flatten", (
 // ── sc-7zt0: arrows --json no doubled schema on flatten targets ───────────
 
 describe("sc-7zt0: arrows --json no doubled schema name on flatten targets", () => {
-  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
 
   it("flatten child arrow target has single schema prefix", async () => {
     const { stdout, code } = await run("arrows", "order_events.line_items.sku", FFG, "--json");
@@ -414,7 +414,7 @@ describe("sc-7zt0: arrows --json no doubled schema name on flatten targets", () 
 // ── sc-a051: fields text shows list_of ────────────────────────────────────
 
 describe("sc-a051: fields text shows list_of for scalar list fields", () => {
-  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
 
   it("promo_codes shows list_of STRING", async () => {
     const { stdout, code } = await run("fields", "order_events", FFG);
@@ -431,7 +431,7 @@ describe("sc-a051: fields text shows list_of for scalar list fields", () => {
 // ── sc-q9c4: find --json includes fieldType for list_of record ────────────
 
 describe("sc-q9c4: find --json includes fieldType for list_of record fields", () => {
-  const FFG = resolve(EXAMPLES, "filter-flatten-governance.stm");
+  const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
 
   it("list_of record field has fieldType in JSON", async () => {
     const { stdout, code } = await run("find", "--tag", "filter", FFG, "--json");

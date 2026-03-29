@@ -128,4 +128,4 @@ The simplest useful report: `report`, `source`, a `note`, and a few fields. This
 
 ## Canonical Example
 
-See [`examples/reports-and-models.stm`](../../examples/reports-and-models.stm) for a full working Satsuma file demonstrating these conventions in context.
+See [`examples/reports-and-models/pipeline.stm`](../../examples/reports-and-models/pipeline.stm) for a full working Satsuma file demonstrating these conventions in context.

@@ -183,11 +183,11 @@ Recommended AST shape:
 
 The planned node inventory is grounded in the current example corpus:
 
-- [`examples/db-to-db.stm`](/Users/thorben/dev/personal/stm/examples/db-to-db.stm): schema fields, tags, mapping entries, pipelines, warnings
-- [`examples/edi-to-json.stm`](/Users/thorben/dev/personal/stm/examples/edi-to-json.stm): annotations, nested groups, array mappings, conditional logic
-- [`examples/xml-to-parquet.stm`](/Users/thorben/dev/personal/stm/examples/xml-to-parquet.stm): path-heavy mappings, nested data, notes
-- [`examples/multi-source-hub.stm`](/Users/thorben/dev/personal/stm/examples/multi-source-hub.stm): imports, multiple schemas, shared fragments
-- [`examples/protobuf-to-parquet.stm`](/Users/thorben/dev/personal/stm/examples/protobuf-to-parquet.stm): message/event-style structures and field options
+- [`examples/db-to-db/pipeline.stm`](/Users/thorben/dev/personal/stm/examples/db-to-db/pipeline.stm): schema fields, tags, mapping entries, pipelines, warnings
+- [`examples/edi-to-json/pipeline.stm`](/Users/thorben/dev/personal/stm/examples/edi-to-json/pipeline.stm): annotations, nested groups, array mappings, conditional logic
+- [`examples/xml-to-parquet/pipeline.stm`](/Users/thorben/dev/personal/stm/examples/xml-to-parquet/pipeline.stm): path-heavy mappings, nested data, notes
+- [`examples/multi-source/multi-source-hub.stm`](/Users/thorben/dev/personal/stm/examples/multi-source/multi-source-hub.stm): imports, multiple schemas, shared fragments
+- [`examples/protobuf-to-parquet/pipeline.stm`](/Users/thorben/dev/personal/stm/examples/protobuf-to-parquet/pipeline.stm): message/event-style structures and field options
 
 Multi-schema namespace and workspace node types are covered by:
 

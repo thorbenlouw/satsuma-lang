@@ -71,7 +71,7 @@ These belong in `" "` descriptions within mapping blocks, not forced into metada
 
 ## Example
 
-See [`examples/json-api-to-parquet.stm`](../../../examples/json-api-to-parquet.stm) for the canonical example covering:
+See [`examples/json-api-to-parquet/pipeline.stm`](../../../examples/json-api-to-parquet/pipeline.stm) for the canonical example covering:
 
 1. Simple field extraction (`$.order.order_id`)
 2. Nested object traversal (`$.order.customer.email`)

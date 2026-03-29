@@ -233,8 +233,8 @@ Now, if the address format changes (say, `postal_code` needs to be `STRING(30)` 
 
 Use the corpus files that actually ship with the repo:
 
-1. Open `examples/common.stm` and identify the reusable fragments.
-2. Open `examples/ns-platform.stm` and look for where shared definitions are reused.
+1. Open `examples/lib/common.stm` and identify the reusable fragments.
+2. Open `examples/namespaces/ns-platform.stm` and look for where shared definitions are reused.
 3. Notice that the file also contains namespace-qualified references. Treat those as an advanced extension on top of the same core ideas: named definitions, imports, reuse, and lineage.
 
 The goal here is not to master namespaces yet. The goal is to recognize reuse patterns in real files.

@@ -32,7 +32,7 @@ Test areas:
 - **Comments with special characters**: Unicode, quotes, backticks in comment text.
 - **Adjacent comments**: Multiple `//!` lines in a row. Each listed separately?
 - **Comment after metadata**: `field TYPE (pk) //? is this right`. Correctly parsed?
-- **Single file**: `satsuma warnings examples/common.stm`.
+- **Single file**: `satsuma warnings examples/lib/common.stm`.
 - **Long comment text**: Very long `//!` comments. Truncated or complete?
 
 ## Creating test fixtures

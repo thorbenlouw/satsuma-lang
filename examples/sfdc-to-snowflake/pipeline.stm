@@ -1,6 +1,6 @@
 // Satsuma v2 — Salesforce to Snowflake Pipeline
-import { `sfdc standard types` } from "lib/sfdc_fragments.stm"
-import { fx_spot_rates } from "lookups/finance.stm"
+import { `sfdc standard types` } from "../lib/sfdc_fragments.stm"
+import { fx_spot_rates } from "../lookups/finance.stm"
 
 note {
   """
