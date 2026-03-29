@@ -50,6 +50,9 @@ const webviewVizConfig = {
   alias: {
     "@satsuma/viz": path.resolve(__dirname, "../satsuma-viz/dist/satsuma-viz.js"),
   },
+  // satsuma-viz/dist/satsuma-viz.js is a GWT-compiled artifact that contains
+  // `n == -0` comparisons we cannot fix at source. Suppress the noise.
+  logOverride: { "equals-negative-zero": "silent" },
 };
 
 /** @type {import("esbuild").BuildOptions} */
