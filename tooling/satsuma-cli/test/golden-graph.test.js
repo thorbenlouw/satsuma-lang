@@ -55,7 +55,13 @@ function normalizeGraph(raw) {
   if (Array.isArray(obj.edges)) {
     obj.edges = obj.edges.map((e) => ({ ...e, file: normPath(e.file) }));
   }
-  return JSON.stringify(obj, null, 2);
+  if (Array.isArray(obj.warnings)) {
+    obj.warnings = obj.warnings.map((w) => ({ ...w, file: normPath(w.file) }));
+  }
+  if (Array.isArray(obj.unresolved_nl)) {
+    obj.unresolved_nl = obj.unresolved_nl.map((u) => ({ ...u, file: normPath(u.file) }));
+  }
+  return JSON.stringify(obj, null, 2) + "\n";
 }
 
 describe("satsuma graph --json golden snapshot", () => {
