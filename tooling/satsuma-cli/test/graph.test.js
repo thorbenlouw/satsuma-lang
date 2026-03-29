@@ -409,3 +409,53 @@ describe("satsuma graph (slices)", () => {
     assert.ok(txz.to.endsWith(".description"), `TXZ01 target should be .description, got ${txz.to}`);
   });
 });
+
+// ---------------------------------------------------------------------------
+// sl-riw5: anonymous mapping edges must have qualified field refs and non-empty mapping key
+// ---------------------------------------------------------------------------
+describe("satsuma graph (anonymous mapping edges, sl-riw5)", () => {
+  it("anonymous mapping edges have qualified from/to and non-empty mapping key", async () => {
+    const fixture = resolve(FIXTURES, "anon-lineage.stm");
+    const { stdout, code } = await run("graph", "--json", fixture);
+    assert.equal(code, 0, `expected exit 0, got ${code}\n${stdout}`);
+    const data = JSON.parse(stdout);
+
+    assert.ok(data.edges.length > 0, "should have field-level edges for anonymous mapping");
+
+    for (const edge of data.edges) {
+      // mapping key must not be empty
+      assert.ok(edge.mapping && edge.mapping.length > 0,
+        `edge mapping key should not be empty: ${JSON.stringify(edge)}`);
+
+      // from/to must be schema-qualified (contain a dot or :: prefix)
+      if (edge.from) {
+        assert.ok(
+          edge.from.includes(".") || edge.from.includes("::"),
+          `edge.from should be schema-qualified: ${edge.from}`,
+        );
+      }
+      if (edge.to) {
+        assert.ok(
+          edge.to.includes(".") || edge.to.includes("::"),
+          `edge.to should be schema-qualified: ${edge.to}`,
+        );
+      }
+    }
+
+    // The anonymous mapping node should appear in nodes[] with the <anon> key
+    const anonMapping = data.nodes.find((n) => n.kind === "mapping" && n.id.includes("<anon>"));
+    assert.ok(anonMapping, "should have an anonymous mapping node with <anon> in id");
+
+    // Edges should reference that anonymous mapping key
+    const anonEdge = data.edges.find((e) => e.mapping === anonMapping.id);
+    assert.ok(anonEdge, `should have an edge referencing anonymous mapping ${anonMapping.id}`);
+
+    // Specifically: orders.amount -> invoices.total
+    const amountToTotal = data.edges.find(
+      (e) => e.from && e.from.includes("orders") && e.from.includes("amount") &&
+             e.to && e.to.includes("invoices") && e.to.includes("total"),
+    );
+    assert.ok(amountToTotal,
+      `should have edge orders.amount -> invoices.total, got: ${JSON.stringify(data.edges)}`);
+  });
+});

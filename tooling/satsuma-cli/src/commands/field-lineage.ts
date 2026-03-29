@@ -113,9 +113,10 @@ Examples:
       // Build the field-level edge graph (declared + nl-derived)
       const edges = buildFieldEdgeGraph(index);
 
-      // Determine which directions to trace
-      const doUpstream = !opts.downstream; // upstream unless --downstream only
-      const doDownstream = !opts.upstream;  // downstream unless --upstream only
+      // Determine which directions to trace.
+      // If both flags are set (or neither), trace both directions.
+      const doUpstream = opts.upstream || !opts.downstream;
+      const doDownstream = opts.downstream || !opts.upstream;
 
       const upstream: Array<{ field: string; via_mapping: string; classification: string }> = [];
       const downstream: Array<{ field: string; via_mapping: string; classification: string }> = [];

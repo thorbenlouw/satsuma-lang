@@ -268,8 +268,29 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     for (const q of fileData.questions) {
       questions.push({ ...q, file: filePath });
     }
+    // Build a lookup of anonymous mapping rows for this file so we can
+    // resolve arrow records that belong to anonymous (unnamed) mappings.
+    // Anonymous mappings are stored in index.mappings under <anon>@file:row
+    // keys, but ArrowRecord.mapping is null for arrows inside them.
+    const anonMappingRows = fileData.mappings
+      .filter((m) => m.name === null)
+      .map((m) => m.row)
+      .sort((a, b) => a - b);
+
     for (const ar of fileData.arrowRecords) {
-      allArrowRecords.push({ ...ar, file: filePath } as ArrowRecord);
+      let resolvedMapping = ar.mapping;
+      if (resolvedMapping === null && anonMappingRows.length > 0) {
+        // Find the anonymous mapping that encloses this arrow: the last anon
+        // mapping whose start row is <= the arrow's line.
+        let parentRow: number | undefined;
+        for (const row of anonMappingRows) {
+          if (row <= ar.line) parentRow = row;
+        }
+        if (parentRow !== undefined) {
+          resolvedMapping = `<anon>@${filePath}:${parentRow}`;
+        }
+      }
+      allArrowRecords.push({ ...ar, mapping: resolvedMapping, file: filePath } as ArrowRecord);
     }
     if (fileData.nlRefData) {
       for (const nr of fileData.nlRefData) {

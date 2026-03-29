@@ -1,6 +1,6 @@
 ---
 id: sl-riw5
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-29T09:01:20Z
@@ -28,3 +28,12 @@ Root cause: buildFieldArrows() in index-builder.ts uses qualifiedKey(record.name
 
 This is the underlying cause of sl-m44v (field-lineage silent miss for anonymous mappings).
 
+
+## Notes
+
+**2026-03-29T11:39:32Z**
+
+**2026-03-29T11:39:32Z**
+
+Cause: Same root cause as sl-m44v — anonymous mapping key was empty string, so no mapping found, no sourceSchemas/targetSchemas, qualifyField returned bare names.
+Fix: Resolved at index-build time in buildIndex (same fix as sl-m44v). (commit pending)
