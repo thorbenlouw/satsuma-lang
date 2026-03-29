@@ -18,6 +18,20 @@ export {
   extractImports,
   extractArrowRecords,
 } from "./extract.js";
+export {
+  collectFieldPaths,
+  expandSpreads,
+  expandEntityFields,
+  expandNestedSpreads,
+  makeEntityRefResolver,
+} from "./spread-expand.js";
+export type {
+  SpreadEntity,
+  ExpandedField,
+  SpreadDiagnostic,
+  EntityRefResolver,
+  SpreadEntityLookup,
+} from "./spread-expand.js";
 export type {
   ExtractedNamespace,
   ExtractedSchema,

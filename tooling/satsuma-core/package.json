@@ -37,6 +37,10 @@
     "./extract": {
       "types": "./dist/extract.d.ts",
       "default": "./dist/extract.js"
+    },
+    "./spread-expand": {
+      "types": "./dist/spread-expand.d.ts",
+      "default": "./dist/spread-expand.js"
     }
   },
   "types": "./dist/index.d.ts",
