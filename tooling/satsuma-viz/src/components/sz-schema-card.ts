@@ -2,7 +2,7 @@ import { LitElement, html, css, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import type { SchemaCard, FieldEntry } from "../model.js";
-import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
+import { SzNavigateEvent, SzFieldHoverEvent, SzFieldLineageEvent } from "../satsuma-viz.js";
 import { renderMarkdown } from "../markdown.js";
 
 @customElement("sz-schema-card")
@@ -312,6 +312,32 @@ export class SzSchemaCard extends LitElement {
       font-style: italic;
     }
 
+    .lineage-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border: none;
+      border-radius: 3px;
+      background: transparent;
+      color: var(--sz-text-muted, #6B6560);
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+      opacity: 0;
+      transition: opacity 0.1s, background 0.1s;
+    }
+
+    .field-row:hover .lineage-btn {
+      opacity: 1;
+    }
+
+    .lineage-btn:hover {
+      background: rgba(242, 145, 61, 0.12);
+      color: var(--sz-orange-dark, #D97726);
+    }
+
     /* Cross-highlighting */
     :host([has-highlight]) .field-row {
       opacity: 0.5;
@@ -534,6 +560,17 @@ export class SzSchemaCard extends LitElement {
         ${hasQuestion
           ? html`<span class="comment-badge question" title=${this._commentText(f, "question")}>?</span>`
           : ""}
+        <button
+          class="lineage-btn"
+          title="Show field lineage"
+          @click=${(e: Event) => { e.stopPropagation(); this._onFieldLineage(f.name); }}
+        ><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="2" cy="6" r="1.5" fill="currentColor"/>
+          <circle cx="10" cy="3" r="1.5" fill="currentColor"/>
+          <circle cx="10" cy="9" r="1.5" fill="currentColor"/>
+          <line x1="3.5" y1="5.3" x2="8.5" y2="3.7" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="3.5" y1="6.7" x2="8.5" y2="8.3" stroke="currentColor" stroke-width="1.2"/>
+        </svg></button>
       </div>
       ${f.children.map((child) => this._renderField(child, depth + 1))}
     `;
@@ -594,6 +631,11 @@ export class SzSchemaCard extends LitElement {
     if (this.schema) {
       this._navigate(this.schema.location);
     }
+  }
+
+  private _onFieldLineage(fieldName: string) {
+    const schemaId = this.schema?.qualifiedId ?? this.schema?.id ?? "";
+    this.dispatchEvent(new SzFieldLineageEvent(schemaId, fieldName));
   }
 
   private _navigate(loc: import("../model.js").SourceLocation) {

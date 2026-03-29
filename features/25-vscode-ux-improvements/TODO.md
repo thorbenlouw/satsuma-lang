@@ -36,7 +36,7 @@ All Phase 2 work can start once Phase 1 (`sc-p8h0`) is closed.
   - Remove `src/commands/arrows.ts`, registrations, and `package.json` entries
   - *(blocked by sc-p8h0)*
 
-- [ ] **sc-358e** — Add "Trace Field Lineage" icon affordance to `sz-schema-card` field rows
+- [x] **sc-358e** — Add "Trace Field Lineage" icon affordance to `sz-schema-card` field rows
   - `sz-field-lineage` CustomEvent → `viz.ts` → `panel.ts` → `executeCommand`
   - *(blocked by sc-4kdu)*
 
