@@ -40,7 +40,7 @@ All Phase 2 work can start once Phase 1 (`sc-p8h0`) is closed.
   - `sz-field-lineage` CustomEvent → `viz.ts` → `panel.ts` → `executeCommand`
   - *(blocked by sc-4kdu)*
 
-- [ ] **sc-vwz0** — Fix `coverage.ts` regex mapping extraction → use LSP `actionContext`
+- [x] **sc-vwz0** — Fix `coverage.ts` regex mapping extraction → use LSP `actionContext`
   - Delete `extractMappingInfo`; add `mappingName`/`targetSchema` to LSP actionContext response
   - *(no blockers — independent)*
 

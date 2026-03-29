@@ -4,6 +4,8 @@ import { LanguageClient } from "vscode-languageclient/node";
 export interface EditorActionContext {
   schemaName: string | null;
   fieldPath: string | null;
+  mappingName: string | null;
+  targetSchema: string | null;
 }
 
 export async function getEditorActionContext(
@@ -11,7 +13,7 @@ export async function getEditorActionContext(
 ): Promise<EditorActionContext> {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document.languageId !== "satsuma") {
-    return { schemaName: null, fieldPath: null };
+    return { schemaName: null, fieldPath: null, mappingName: null, targetSchema: null };
   }
 
   try {
@@ -23,6 +25,6 @@ export async function getEditorActionContext(
       },
     });
   } catch {
-    return { schemaName: null, fieldPath: null };
+    return { schemaName: null, fieldPath: null, mappingName: null, targetSchema: null };
   }
 }
