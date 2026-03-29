@@ -1,7 +1,7 @@
 # ADR-007 — Formatter in satsuma-core
 
 **Status:** Accepted
-**Date:** 2025 (retrospective, Feature 20)
+**Date:** 2026-03 (retrospective, Feature 20)
 
 ## Context
 

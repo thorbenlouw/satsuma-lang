@@ -1,7 +1,7 @@
 # ADR-002 — WASM over Native Tree-Sitter Bindings
 
 **Status:** Accepted
-**Date:** 2025 (retrospective)
+**Date:** 2026-03 (retrospective)
 
 ## Context
 
