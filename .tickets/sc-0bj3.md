@@ -1,6 +1,6 @@
 ---
 id: sc-0bj3
-status: open
+status: closed
 deps: [sc-rdrc]
 links: []
 created: 2026-03-29T12:54:28Z
@@ -23,3 +23,12 @@ Add a toolbar to the FieldLineagePanel webview with: (1) A depth slider (range 1
 - Depth and filter values persist when re-centring on a new field (user's preference is remembered for the session)
 - Panel is still usable at minimum depth=1 (shows only direct upstream/downstream)
 
+
+## Notes
+
+**2026-03-29T13:28:32Z**
+
+**2026-03-29**
+
+Cause: Field lineage panel had no way to adjust depth or filter by classification.
+Fix: Added sessionDepth/sessionFilter module-level state; added depth slider (range 1-10, posts setDepth to extension) and classification filter dropdown (All/Structural/NL/Structural+NL-derived, applied client-side via applyFilter). Both persist across re-centres. CSS added --sz-* token styled controls.

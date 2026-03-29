@@ -44,16 +44,50 @@ interface NodePos {
   height: number;
 }
 
+type ClassificationFilter = "all" | "structural" | "nl" | "structural+nl-derived";
+
+// ── Session state (depth + filter persist across re-centres) ───────────────
+
+let sessionDepth = 3;
+let sessionFilter: ClassificationFilter = "all";
+/** Full unfiltered payload from the last message — used for client-side re-filtering. */
+let lastPayload: Payload | null = null;
+
 // ── Entry point ────────────────────────────────────────────────────────────
 
 window.addEventListener("message", (event: MessageEvent) => {
   const msg = event.data as { type: string; payload?: Payload; message?: string };
   if (msg.type === "fieldLineageData" && msg.payload) {
-    render(msg.payload);
+    lastPayload = msg.payload;
+    render(applyFilter(msg.payload, sessionFilter));
   } else if (msg.type === "error") {
     showError(msg.message ?? "Unknown error");
   }
 });
+
+// ── Classification filter ──────────────────────────────────────────────────
+
+function keepClassification(cls: string, filter: ClassificationFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "structural") return cls === "structural";
+  if (filter === "nl") return cls === "nl";
+  if (filter === "structural+nl-derived") return cls === "structural" || cls === "nl-derived";
+  return true;
+}
+
+/**
+ * Return a filtered copy of the payload.
+ * Entries whose classification is excluded are removed.
+ * If the focal node has no remaining edges, we still show it with an empty-state message.
+ */
+function applyFilter(payload: Payload, filter: ClassificationFilter): Payload {
+  if (filter === "all") return payload;
+  return {
+    ...payload,
+    upstream: payload.upstream.filter((e) => keepClassification(e.classification, filter)),
+    downstream: payload.downstream.filter((e) => keepClassification(e.classification, filter)),
+  };
+}
 
 // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -68,12 +102,17 @@ async function render(payload: Payload): Promise<void> {
 
   const hasNodes = payload.upstream.length > 0 || payload.downstream.length > 0;
 
+  const toolbar = buildToolbar(payload.breadcrumb);
+
   if (!hasNodes) {
     root.innerHTML = "";
-    root.appendChild(buildToolbar(payload.breadcrumb));
+    root.appendChild(toolbar);
     const empty = document.createElement("div");
     empty.className = "empty-message";
-    empty.textContent = "No upstream or downstream lineage found for this field.";
+    empty.textContent =
+      sessionFilter === "all"
+        ? "No upstream or downstream lineage found for this field."
+        : "No edges match the current classification filter.";
     root.appendChild(empty);
     return;
   }
@@ -90,7 +129,7 @@ async function render(payload: Payload): Promise<void> {
   const canvas = buildCanvas(laid, payload);
 
   root.innerHTML = "";
-  root.appendChild(buildToolbar(payload.breadcrumb));
+  root.appendChild(toolbar);
   root.appendChild(canvas);
 }
 
@@ -382,6 +421,77 @@ function buildToolbar(breadcrumb: string[]): HTMLDivElement {
     crumbs.appendChild(crumb);
   }
   bar.appendChild(crumbs);
+
+  // Spacer
+  const spacer = document.createElement("div");
+  spacer.style.flex = "1";
+  bar.appendChild(spacer);
+
+  // Depth slider
+  const depthWrap = document.createElement("div");
+  depthWrap.className = "toolbar-control";
+
+  const depthLabel = document.createElement("label");
+  depthLabel.className = "toolbar-label";
+  depthLabel.htmlFor = "depth-slider";
+  depthLabel.textContent = `Depth: ${sessionDepth}`;
+  depthWrap.appendChild(depthLabel);
+
+  const slider = document.createElement("input");
+  slider.id = "depth-slider";
+  slider.type = "range";
+  slider.min = "1";
+  slider.max = "10";
+  slider.value = String(sessionDepth);
+  slider.className = "depth-slider";
+  slider.title = `Lineage depth: ${sessionDepth}`;
+  slider.addEventListener("input", () => {
+    const d = Number(slider.value);
+    depthLabel.textContent = `Depth: ${d}`;
+    slider.title = `Lineage depth: ${d}`;
+  });
+  slider.addEventListener("change", () => {
+    const d = Number(slider.value);
+    sessionDepth = d;
+    vscode.postMessage({ type: "setDepth", depth: d });
+  });
+  depthWrap.appendChild(slider);
+  bar.appendChild(depthWrap);
+
+  // Classification filter
+  const filterWrap = document.createElement("div");
+  filterWrap.className = "toolbar-control";
+
+  const filterLabel = document.createElement("label");
+  filterLabel.className = "toolbar-label";
+  filterLabel.htmlFor = "cls-filter";
+  filterLabel.textContent = "Show:";
+  filterWrap.appendChild(filterLabel);
+
+  const select = document.createElement("select");
+  select.id = "cls-filter";
+  select.className = "cls-filter";
+  const filterOptions: Array<{ value: ClassificationFilter; label: string }> = [
+    { value: "all", label: "All" },
+    { value: "structural", label: "Structural only" },
+    { value: "nl", label: "NL only" },
+    { value: "structural+nl-derived", label: "Structural + NL-derived" },
+  ];
+  for (const opt of filterOptions) {
+    const el = document.createElement("option");
+    el.value = opt.value;
+    el.textContent = opt.label;
+    if (opt.value === sessionFilter) el.selected = true;
+    select.appendChild(el);
+  }
+  select.addEventListener("change", () => {
+    sessionFilter = select.value as ClassificationFilter;
+    if (lastPayload) {
+      render(applyFilter(lastPayload, sessionFilter));
+    }
+  });
+  filterWrap.appendChild(select);
+  bar.appendChild(filterWrap);
 
   return bar;
 }
