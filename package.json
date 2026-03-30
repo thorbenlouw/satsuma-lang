@@ -11,6 +11,9 @@
     "lint:js": "eslint .",
     "lint:md": "markdownlint-cli2"
   },
+  "overrides": {
+    "smol-toml": "^1.6.1"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
