@@ -1,6 +1,6 @@
 ---
 id: sl-ax50
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T06:38:25Z
@@ -25,3 +25,9 @@ These are domain rules, not implementation details. They are currently buried as
 - The function has a doc-comment explaining its role: given a schema type and convention, return the expected field names — and noting that the lists are opinionated approximations, not a full spec implementation
 - All existing validate tests pass
 
+
+## Notes
+
+**2026-03-30T09:39:45Z**
+
+Cause: getConventionFields() mixed rule definition and rule application in one body, with field names scattered as anonymous string literals — no structure, no citations, no approximation disclaimer. Fix: extracted five named constants (DV_HUB_FIELDS, DV_LINK_FIELDS, DV_SAT_FIELDS, KIMBALL_SCD_FIELDS, KIMBALL_FACT_FIELDS) above the function; rewrote the body to iterate those constants; added a section header with source citations and the approximation caveat; updated the function doc-comment. All 862 tests pass.

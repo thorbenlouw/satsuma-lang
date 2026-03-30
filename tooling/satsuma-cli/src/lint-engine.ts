@@ -121,6 +121,17 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
   return diagnostics;
 }
 
+/**
+ * Build a fix closure that inserts `schemaRef` into the `source { }` block of the
+ * named mapping. The fix is text-based: it walks source lines to locate the mapping,
+ * then finds the `source { ... }` line and appends the new ref.
+ *
+ * Algorithm:
+ *   1. Locate the mapping header by name (handles backtick, quoted, and bare labels).
+ *   2. Track brace depth to stay inside the mapping body and stop at its closing `}`.
+ *   3. Find the single-line `source { ... }` form and append `insertRef` to its list.
+ *   4. If the ref is already present (qualified or unqualified), return source unchanged.
+ */
 function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: string) => string {
   const nsIdx = mappingKey.indexOf("::");
   const displayName = nsIdx !== -1
@@ -142,6 +153,7 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i]!.trim();
 
+      // Step 1: find the mapping header — matches backtick, double-quoted, or bare label
       if (!inMapping) {
         const mappingRe = /^mapping\s+(?:`([^`]+)`|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
         const m = trimmed.match(mappingRe);
@@ -155,17 +167,20 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
         continue;
       }
 
+      // Step 2: track brace depth; stop when we exit the mapping body
       for (const ch of trimmed) {
         if (ch === "{") braceDepth++;
         else if (ch === "}") braceDepth--;
       }
       if (braceDepth <= 0) break;
 
+      // Step 3: find and rewrite the single-line `source { ref, ref }` form
+      // Matches: `source { ... }` where `...` is the comma-separated ref list
       const sourceLineRe = /^source\s*\{([^}]*)\}\s*$/;
       const sm = trimmed.match(sourceLineRe);
       if (sm) {
         const existing = sm[1]!.trim();
-        // Check both qualified and unqualified forms (with or without backticks)
+        // Step 4: skip if the ref is already present (qualified or unqualified)
         const existingRefs = existing.split(/\s*,\s*/).map((r) => r.replace(/^`|`$/g, ""));
         if (existingRefs.includes(schemaRef) || existingRefs.includes(insertRef)) return source;
         // Use backtick wrapping if existing entries use backticks, or always for spec compliance
@@ -186,6 +201,17 @@ function composeFixes(...fns: ((s: string) => string)[]): (s: string) => string 
   return (source: string): string => fns.reduce((s, fn) => fn(s), source);
 }
 
+/**
+ * Build a fix closure that prepends `schemaRef` to the source list of the arrow
+ * targeting `targetField` inside the named mapping. The fix is text-based.
+ *
+ * Algorithm (mirrors makeAddSourceFix for the mapping-location phase):
+ *   1. Locate the mapping header by name.
+ *   2. Track brace depth to stay inside the mapping body.
+ *   3. Find the arrow whose target matches `targetField` (bare or schema-qualified).
+ *   4. Prepend `insertRef` to the arrow's source list before the `->`.
+ *   5. If the ref is already present, return source unchanged.
+ */
 function makeAddArrowSourceFix(
   mappingKey: string,
   schemaRef: string,
@@ -205,7 +231,7 @@ function makeAddArrowSourceFix(
   if (mappingNs && matchTarget.startsWith(`${mappingNs}::`)) {
     matchTarget = matchTarget.slice(mappingNs.length + 2);
   }
-  // Also strip schema prefix — arrow target in source uses bare field name
+  // Also strip schema prefix — arrow targets in source use bare field names, not schema.field
   const dotIdx = matchTarget.indexOf(".");
   const bareTarget = dotIdx >= 0 ? matchTarget.slice(dotIdx + 1) : matchTarget;
 
@@ -217,6 +243,7 @@ function makeAddArrowSourceFix(
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i]!.trim();
 
+      // Step 1: find the mapping header — handles backtick, double-quoted, and bare labels
       if (!inMapping) {
         const mappingRe = /^mapping\s+(?:`([^`]+)`|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
         const m = trimmed.match(mappingRe);
@@ -230,30 +257,32 @@ function makeAddArrowSourceFix(
         continue;
       }
 
+      // Step 2: track brace depth; stop when we exit the mapping body
       for (const ch of trimmed) {
         if (ch === "{") braceDepth++;
         else if (ch === "}") braceDepth--;
       }
       if (braceDepth <= 0) break;
 
-      // Match arrow line: "src -> target" or "src1, src2 -> target"
+      // Step 3: match an arrow line — `src -> target` or `src1, src2 -> target { ... }`
+      // Captures: [1] source list, [2] target field, [3] optional trailing transform block
       const arrowMatch = trimmed.match(/^(.+?)\s*->\s*(.+?)(\s*\{.*)?$/);
       if (!arrowMatch) continue;
 
       const arrowTargetPart = arrowMatch[2]!.trim();
-      // Check if arrow target matches (with or without schema prefix)
+      // Match target by bare field name, ignoring any schema prefix or backticks
       const targetBare = arrowTargetPart.replace(/^`|`$/g, "");
       const targetDotIdx = targetBare.indexOf(".");
       const targetFieldOnly = targetDotIdx >= 0 ? targetBare.slice(targetDotIdx + 1) : targetBare;
 
       if (targetFieldOnly !== bareTarget && targetBare !== matchTarget) continue;
 
-      // Check if insertRef is already in the source list
+      // Step 5: skip if the ref is already in the source list
       const srcPart = arrowMatch[1]!.trim();
       const existingSrcs = srcPart.split(/\s*,\s*/).map((s) => s.replace(/^`|`$/g, ""));
       if (existingSrcs.some((s) => s === insertRef || s === schemaRef)) return source;
 
-      // Insert the schema before the ->
+      // Step 4: prepend the new schema ref before the `->`
       const indent = lines[i]!.match(/^(\s*)/)![1];
       const rest = arrowMatch[2]! + (arrowMatch[3] ?? "");
       lines[i] = `${indent}${srcPart}, ${insertRef} -> ${rest}`;
@@ -264,7 +293,13 @@ function makeAddArrowSourceFix(
   };
 }
 
-// Known pipeline function names from SATSUMA-V2-SPEC.md section 7.2
+// Pipeline function names from SATSUMA-V2-SPEC.md §7.2 (pipeline step catalog).
+// Used to suppress false-positive `unresolved-nl-ref` warnings: @ref tokens in NL
+// strings that match a known pipeline function name are skips — they are transform
+// instructions, not field or schema references.
+//
+// This list covers the commonly-used built-ins as of v2. It may not be exhaustive;
+// if a valid function triggers a warning, add it here and cite the spec section.
 const KNOWN_PIPELINE_FUNCTIONS = new Set([
   "trim", "lowercase", "uppercase", "coalesce", "round", "split", "first",
   "last", "to_utc", "to_iso8601", "parse", "null_if_empty", "null_if_invalid",
