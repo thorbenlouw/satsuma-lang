@@ -99,8 +99,8 @@ describe("extractSchemas", () => {
     assert.equal(result[0].note, "A note");
     assert.equal(result[0].row, 5);
     assert.deepEqual(result[0].fields, [
-      { name: "id", type: "INT" },
-      { name: "name", type: "VARCHAR(100)" },
+      { name: "id", type: "INT", startRow: 0, startColumn: 0 },
+      { name: "name", type: "VARCHAR(100)", startRow: 0, startColumn: 0 },
     ]);
   });
 

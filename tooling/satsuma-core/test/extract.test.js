@@ -20,7 +20,7 @@ import {
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
+function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = [], column = 0) {
   const allChildren = [
     ...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })),
     ...namedChildren.map(c => ({ ...c, isNamed: true })),
@@ -29,8 +29,8 @@ function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = [])
     type,
     text,
     isNamed: true,
-    startPosition: { row, column: 0 },
-    endPosition: { row, column: text.length },
+    startPosition: { row, column },
+    endPosition: { row, column: column + text.length },
     namedChildren,
     children: allChildren,
     parent: null,
@@ -50,10 +50,10 @@ function schemaBody(fields = []) {
   return n("schema_body", fields);
 }
 
-function fieldDecl(name, type, row = 0) {
+function fieldDecl(name, type, row = 0, column = 0) {
   const nameNode = n("field_name", [ident(name)]);
   const typeNode = n("type_expr", [], type);
-  return n("field_decl", [nameNode, typeNode], `${name} ${type}`, row);
+  return n("field_decl", [nameNode, typeNode], `${name} ${type}`, row, [], column);
 }
 
 // ── extractSchemas ────────────────────────────────────────────────────────────
@@ -163,6 +163,91 @@ describe("extractFieldTree()", () => {
     const result = extractFieldTree(body);
     assert.equal(result.hasSpreads, true);
     assert.deepEqual(result.spreads, ["audit_fields"]);
+  });
+});
+
+// ── Position data on FieldDecl ───────────────────────────────────────────────
+
+describe("FieldDecl position data", () => {
+  it("populates startRow and startColumn from the field_decl CST node", () => {
+    const body = schemaBody([fieldDecl("id", "INT", 3, 4), fieldDecl("name", "STRING", 4, 4)]);
+    const result = extractFieldTree(body);
+    assert.equal(result.fields[0].startRow, 3);
+    assert.equal(result.fields[0].startColumn, 4);
+    assert.equal(result.fields[1].startRow, 4);
+    assert.equal(result.fields[1].startColumn, 4);
+  });
+
+  it("defaults position to row 0 column 0 when mock uses defaults", () => {
+    const body = schemaBody([fieldDecl("x", "INT")]);
+    const result = extractFieldTree(body);
+    assert.equal(result.fields[0].startRow, 0);
+    assert.equal(result.fields[0].startColumn, 0);
+  });
+});
+
+// ── startColumn on Extracted* types ─────────────────────────────────────────
+
+describe("startColumn on Extracted types", () => {
+  it("extractSchemas includes startColumn from the schema_block node", () => {
+    const body = schemaBody([fieldDecl("id", "INT")]);
+    const schemaBlock = n("schema_block", [blockLabel("orders"), body], "", 5, [], 2);
+    const root = n("program", [schemaBlock]);
+
+    const result = extractSchemas(root);
+    assert.equal(result[0].row, 5);
+    assert.equal(result[0].startColumn, 2);
+  });
+
+  it("extractFragments includes startColumn from the fragment_block node", () => {
+    const body = schemaBody([fieldDecl("ts", "TIMESTAMP")]);
+    const fragBlock = n("fragment_block", [blockLabel("audit"), body], "", 10, [], 4);
+    const root = n("program", [fragBlock]);
+
+    const result = extractFragments(root);
+    assert.equal(result[0].row, 10);
+    assert.equal(result[0].startColumn, 4);
+  });
+
+  it("extractMappings includes startColumn from the mapping_block node", () => {
+    const srcRef = n("source_ref", [ident("src")], "src");
+    const srcBlock = n("source_block", [srcRef]);
+    const body = n("mapping_body", [srcBlock]);
+    const mappingBlock = n("mapping_block", [blockLabel("m"), body], "", 7, [], 6);
+    const root = n("program", [mappingBlock]);
+
+    const result = extractMappings(root);
+    assert.equal(result[0].row, 7);
+    assert.equal(result[0].startColumn, 6);
+  });
+
+  it("extractWarnings includes startColumn from the warning_comment node", () => {
+    const warning = n("warning_comment", [], "//! caution", 2, [], 8);
+    warning.parent = null;
+    const root = n("program", [warning]);
+    const result = extractWarnings(root);
+    assert.equal(result[0].row, 2);
+    assert.equal(result[0].startColumn, 8);
+  });
+
+  it("extractQuestions includes startColumn from the question_comment node", () => {
+    const question = n("question_comment", [], "//? why", 3, [], 4);
+    question.parent = null;
+    const root = n("program", [question]);
+    const result = extractQuestions(root);
+    assert.equal(result[0].row, 3);
+    assert.equal(result[0].startColumn, 4);
+  });
+
+  it("extractImports includes startColumn from the import_decl node", () => {
+    const importName = n("import_name", [ident("foo")]);
+    const strNode = n("nl_string", [], '"./bar.stm"');
+    const pathNode = n("import_path", [strNode]);
+    const importDecl = n("import_decl", [importName, pathNode], "", 0, [], 0);
+    const root = n("program", [importDecl]);
+
+    const result = extractImports(root);
+    assert.equal(result[0].startColumn, 0);
   });
 });
 

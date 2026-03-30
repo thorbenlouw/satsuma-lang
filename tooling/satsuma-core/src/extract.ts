@@ -46,7 +46,12 @@ function extractDirectFields(bodyNode: SyntaxNode): FieldDecl[] {
     let name = inner?.text ?? "";
     if (inner?.type === "backtick_name") name = name.slice(1, -1);
     const meta = extractMetadata(child(fd, "metadata_block"));
-    const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
+    const decl: FieldDecl = {
+      name,
+      type: typeNode?.text ?? "",
+      startRow: fd.startPosition.row,
+      startColumn: fd.startPosition.column,
+    };
     if (meta.length > 0) decl.metadata = meta;
     return decl;
   });
@@ -86,6 +91,8 @@ export function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
           type: "record",
           isList,
           children: nested.fields,
+          startRow: c.startPosition.row,
+          startColumn: c.startPosition.column,
         };
         if (meta.length > 0) decl.metadata = meta;
         if (nested.hasSpreads) {
@@ -103,11 +110,18 @@ export function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
             type: "record",
             isList: isList || undefined,
             children: [],
+            startRow: c.startPosition.row,
+            startColumn: c.startPosition.column,
           };
           if (meta.length > 0) decl.metadata = meta;
           fields.push(decl);
         } else {
-          const decl: FieldDecl = { name, type: typeNode?.text ?? "" };
+          const decl: FieldDecl = {
+            name,
+            type: typeNode?.text ?? "",
+            startRow: c.startPosition.row,
+            startColumn: c.startPosition.column,
+          };
           if (isList) decl.isList = true;
           if (meta.length > 0) decl.metadata = meta;
           fields.push(decl);
@@ -210,7 +224,10 @@ function collectFromNamespaces(rootNode: SyntaxNode, nodeType: string): Namespac
 export interface ExtractedNamespace {
   name: string | null;
   note: string | null;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
 }
 
 /**
@@ -225,7 +242,7 @@ export function extractNamespaces(rootNode: SyntaxNode): ExtractedNamespace[] {
     const noteStr = noteTag
       ? stringText(noteTag.namedChildren.find((c) => c.type === "nl_string" || c.type === "multiline_string"))
       : null;
-    return { name, note: noteStr, row: node.startPosition.row };
+    return { name, note: noteStr, row: node.startPosition.row, startColumn: node.startPosition.column };
   });
 }
 
@@ -236,7 +253,10 @@ export interface ExtractedSchema {
   fields: FieldDecl[];
   hasSpreads: boolean;
   spreads: string[];
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
   blockMetadata?: MetaEntry[];
 }
 
@@ -262,6 +282,7 @@ export function extractSchemas(rootNode: SyntaxNode): ExtractedSchema[] {
       hasSpreads: fieldTree.hasSpreads,
       spreads: fieldTree.spreads,
       row: node.startPosition.row,
+      startColumn: node.startPosition.column,
     };
     if (blockMeta.length > 0) result.blockMetadata = blockMeta;
     return result;
@@ -276,7 +297,10 @@ export interface ExtractedMetric {
   grain: string | null;
   slices: string[];
   fields: FieldDecl[];
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
 }
 
 /**
@@ -328,7 +352,7 @@ export function extractMetrics(rootNode: SyntaxNode): ExtractedMetric[] {
 
     const body = child(node, "metric_body");
     const fields = body ? extractDirectFields(body) : [];
-    return { name, namespace, displayName, sources, grain, slices, fields, row: node.startPosition.row };
+    return { name, namespace, displayName, sources, grain, slices, fields, row: node.startPosition.row, startColumn: node.startPosition.column };
   });
 }
 
@@ -338,7 +362,10 @@ export interface ExtractedMapping {
   sources: string[];
   targets: string[];
   arrowCount: number;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
 }
 
 /**
@@ -379,7 +406,7 @@ export function extractMappings(rootNode: SyntaxNode): ExtractedMapping[] {
       namespace && !t.includes("::") ? `${namespace}::${t}` : t,
     );
 
-    return { name, namespace, sources, targets: qualifiedTargets, arrowCount, row: node.startPosition.row };
+    return { name, namespace, sources, targets: qualifiedTargets, arrowCount, row: node.startPosition.row, startColumn: node.startPosition.column };
   });
 }
 
@@ -389,7 +416,10 @@ export interface ExtractedFragment {
   fields: FieldDecl[];
   hasSpreads: boolean;
   spreads: string[];
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
 }
 
 /**
@@ -407,6 +437,7 @@ export function extractFragments(rootNode: SyntaxNode): ExtractedFragment[] {
       hasSpreads: fieldTree.hasSpreads,
       spreads: fieldTree.spreads,
       row: node.startPosition.row,
+      startColumn: node.startPosition.column,
     };
   });
 }
@@ -415,7 +446,10 @@ export interface ExtractedTransform {
   name: string | null;
   body: string | null;
   namespace: string | null;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
 }
 
 /**
@@ -429,6 +463,7 @@ export function extractTransforms(rootNode: SyntaxNode): ExtractedTransform[] {
       body: pipeChain ? pipeChain.text : null,
       namespace,
       row: node.startPosition.row,
+      startColumn: node.startPosition.column,
     };
   });
 }
@@ -454,7 +489,10 @@ function findParentBlock(node: SyntaxNode): { name: string | null; blockType: st
 
 export interface ExtractedNote {
   text: string;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
   parent: string | null;
   namespace: string | null;
 }
@@ -476,6 +514,7 @@ export function extractNotes(rootNode: SyntaxNode): ExtractedNote[] {
         results.push({
           text: extractNoteText(c),
           row: c.startPosition.row,
+          startColumn: c.startPosition.column,
           parent: null,
           namespace,
         });
@@ -506,6 +545,7 @@ function collectNotesInBlock(
       results.push({
         text: extractNoteText(c),
         row: c.startPosition.row,
+        startColumn: c.startPosition.column,
         parent: parentName,
         namespace,
       });
@@ -516,6 +556,7 @@ function collectNotesInBlock(
           results.push({
             text: extractNoteText(inner),
             row: inner.startPosition.row,
+            startColumn: inner.startPosition.column,
             parent: parentName,
             namespace,
           });
@@ -539,7 +580,10 @@ function extractNoteText(noteNode: SyntaxNode): string {
 
 export interface ExtractedWarning {
   text: string;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
   parent: string | null;
   parentType: string | null;
 }
@@ -553,6 +597,7 @@ export function extractWarnings(rootNode: SyntaxNode): ExtractedWarning[] {
     return {
       text: node.text.replace(/^\/\/!\s*/, ""),
       row: node.startPosition.row,
+      startColumn: node.startPosition.column,
       parent: name,
       parentType: blockType,
     };
@@ -561,7 +606,10 @@ export function extractWarnings(rootNode: SyntaxNode): ExtractedWarning[] {
 
 export interface ExtractedQuestion {
   text: string;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
   parent: string | null;
   parentType: string | null;
 }
@@ -575,6 +623,7 @@ export function extractQuestions(rootNode: SyntaxNode): ExtractedQuestion[] {
     return {
       text: node.text.replace(/^\/\/\?\s*/, ""),
       row: node.startPosition.row,
+      startColumn: node.startPosition.column,
       parent: name,
       parentType: blockType,
     };
@@ -584,7 +633,10 @@ export function extractQuestions(rootNode: SyntaxNode): ExtractedQuestion[] {
 export interface ExtractedImport {
   names: string[];
   path: string | null;
+  /** 0-indexed row from CST startPosition. */
   row: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
 }
 
 /**
@@ -608,7 +660,7 @@ export function extractImports(rootNode: SyntaxNode): ExtractedImport[] {
       ? stringText(pathNode.namedChildren[0])
       : null;
 
-    return { names, path: pathStr, row: node.startPosition.row };
+    return { names, path: pathStr, row: node.startPosition.row, startColumn: node.startPosition.column };
   });
 }
 
@@ -656,7 +708,10 @@ export interface ExtractedArrow {
   steps: PipeStep[];
   classification: Classification;
   derived: boolean;
+  /** 0-indexed row from CST startPosition (named "line" for historical reasons). */
   line: number;
+  /** 0-indexed column from CST startPosition. */
+  startColumn: number;
   metadata?: MetaEntry[];
 }
 
@@ -769,6 +824,7 @@ function extractSingleArrow(
     classification,
     derived,
     line: arrow.startPosition.row,
+    startColumn: arrow.startPosition.column,
   };
 
   if (metadata && metadata.length > 0) {
