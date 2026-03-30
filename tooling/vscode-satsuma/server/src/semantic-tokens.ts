@@ -5,7 +5,7 @@ import {
   SemanticTokensLegend,
 } from "vscode-languageserver";
 import type { Tree, Query } from "web-tree-sitter";
-import { getLanguage } from "./parser-utils";
+import { getLanguage, createQuery } from "./parser-utils";
 import type { SyntaxNode } from "./parser-utils";
 
 // ---------- Legend ----------
@@ -115,8 +115,7 @@ function getHighlightsQuery(): Query {
   if (_query) return _query;
   if (!_highlightsSource) throw new Error("highlights.scm not loaded — call setHighlightsSource() first");
   const language = getLanguage();
-  const TreeSitter = require("web-tree-sitter") as typeof import("web-tree-sitter");
-  _query = new TreeSitter.Query(language, _highlightsSource);
+  _query = createQuery(language, _highlightsSource);
   return _query;
 }
 
