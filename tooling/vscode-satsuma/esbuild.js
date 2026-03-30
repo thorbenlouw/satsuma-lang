@@ -17,7 +17,7 @@ const clientConfig = {
 
 /** @type {import("esbuild").BuildOptions} */
 const serverConfig = {
-  entryPoints: ["server/src/server.ts"],
+  entryPoints: ["../satsuma-lsp/src/server.ts"],
   bundle: true,
   platform: "node",
   target: "node20",
@@ -119,8 +119,10 @@ function copyAssets() {
     [path.join(treeSitterDir, "tree-sitter-satsuma.wasm"), "server/dist/tree-sitter-satsuma.wasm"],
     [path.join(treeSitterDir, "queries/highlights.scm"), "server/dist/highlights.scm"],
     // web-tree-sitter runtime WASM — loaded by the web-tree-sitter module at init
-    // web-tree-sitter 0.26+ renamed tree-sitter.wasm → web-tree-sitter.wasm
-    ["server/node_modules/web-tree-sitter/web-tree-sitter.wasm", "server/dist/tree-sitter.wasm"],
+    // web-tree-sitter 0.26+ renamed tree-sitter.wasm → web-tree-sitter.wasm.
+    // The WASM file lives in satsuma-lsp's node_modules since the server was
+    // extracted into its own package (ADR-021).
+    ["../satsuma-lsp/node_modules/web-tree-sitter/web-tree-sitter.wasm", "server/dist/tree-sitter.wasm"],
   );
 
   for (const [src, dst] of pairs) {

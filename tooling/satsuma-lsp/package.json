@@ -1,20 +1,23 @@
 {
-  "name": "satsuma-language-server",
+  "name": "@satsuma/lsp",
   "version": "0.6.0",
   "private": true,
-  "description": "Satsuma Language Server",
+  "description": "Satsuma Language Server — standalone LSP for the Satsuma data mapping language",
   "type": "commonjs",
   "main": "dist/server.js",
+  "bin": {
+    "satsuma-lsp": "bin/satsuma-lsp.js"
+  },
   "scripts": {
-    "prebuild": "npm --prefix ../../satsuma-core run build",
+    "prebuild": "npm --prefix ../satsuma-core run build",
     "build": "esbuild src/server.ts --bundle --platform=node --target=node20 --outfile=dist/server.js --sourcemap --banner:js='var __import_meta_url = require(\"url\").pathToFileURL(__filename).href;' --define:import.meta.url=__import_meta_url",
     "watch": "npm run build -- --watch",
     "test": "node --test test/**/*.test.js",
-    "pretest": "npm --prefix ../../satsuma-core run build && tsc"
+    "pretest": "npm --prefix ../satsuma-core run build && tsc"
   },
   "dependencies": {
-    "@satsuma/core": "file:../../satsuma-core",
-    "@satsuma/viz-model": "file:../../satsuma-viz-model",
+    "@satsuma/core": "file:../satsuma-core",
+    "@satsuma/viz-model": "file:../satsuma-viz-model",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12",
     "web-tree-sitter": "^0.26.7"

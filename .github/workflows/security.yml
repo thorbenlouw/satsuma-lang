@@ -35,7 +35,7 @@ jobs:
         run: |
           set +e
           failed=0
-          for dir in . tooling/satsuma-cli tooling/tree-sitter-satsuma tooling/vscode-satsuma tooling/vscode-satsuma/server; do
+          for dir in . tooling/satsuma-cli tooling/tree-sitter-satsuma tooling/satsuma-lsp tooling/vscode-satsuma; do
             echo "::group::npm audit — $dir"
             cd "$GITHUB_WORKSPACE/$dir"
             npm audit --omit=dev --audit-level=high 2>&1

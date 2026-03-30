@@ -108,11 +108,11 @@
     "prebuild": "npm run build:core",
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
-    "build:server": "cd server && npm run build",
+    "build:server": "cd ../satsuma-lsp && npm run build",
     "test": "npm run test:fixtures && npm run test:golden",
     "test:fixtures": "npx vscode-tmgrammar-test -g syntaxes/satsuma.tmLanguage.json 'test/fixtures/*.stm'",
     "test:golden": "npx vscode-tmgrammar-test -g syntaxes/satsuma.tmLanguage.json 'test/golden/*.stm'",
-    "test:lsp": "cd server && npm test",
+    "test:lsp": "cd ../satsuma-lsp && npm test",
     "validate:manifest": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json OK')\"",
     "validate:grammar": "node -e \"const g=JSON.parse(require('fs').readFileSync('syntaxes/satsuma.tmLanguage.json','utf8')); if(!g.scopeName)throw new Error('missing scopeName'); console.log('grammar OK, scopeName='+g.scopeName)\"",
     "validate": "npm run validate:manifest && npm run validate:grammar",
@@ -120,6 +120,7 @@
     "package": "npm run build && npx @vscode/vsce package --no-dependencies -o vscode-satsuma.vsix"
   },
   "dependencies": {
+    "@satsuma/lsp": "file:../satsuma-lsp",
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {

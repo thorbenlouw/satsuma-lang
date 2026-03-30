@@ -55,7 +55,7 @@ run_step "satsuma fmt --check examples" node tooling/satsuma-cli/dist/index.js f
 run_step "vscode-satsuma validate" npm --prefix tooling/vscode-satsuma run validate
 run_parallel "vscode-satsuma tests + LSP" \
   "npm --prefix tooling/vscode-satsuma test" \
-  "npm --prefix tooling/vscode-satsuma run test:lsp"
+  "npm --prefix tooling/satsuma-lsp test"
 
 run_step "tree-sitter generate" npm --prefix tooling/tree-sitter-satsuma run generate
 # tree-sitter test --wasm requires the CLI to be compiled with the wasm feature.

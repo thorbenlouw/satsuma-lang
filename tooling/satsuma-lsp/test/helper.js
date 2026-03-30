@@ -12,7 +12,7 @@ const { initParser, getParser, getLanguage } = require("@satsuma/core");
 
 const WASM_PATH = path.resolve(
   __dirname,
-  "../../../tree-sitter-satsuma/tree-sitter-satsuma.wasm",
+  "../../tree-sitter-satsuma/tree-sitter-satsuma.wasm",
 );
 
 /** Initialise the WASM parser.  Must be awaited once before parse() is called. */
