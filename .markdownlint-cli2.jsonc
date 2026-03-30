@@ -1,12 +1,37 @@
 {
   "config": {
     "default": true,
-    "MD013": false,
-    "MD033": false
+
+    // Disabled: too noisy or not applicable to this repo's style
+    "MD013": false,   // line-length — long lines are common in docs
+    "MD033": false,   // no-inline-html — HTML in markdown is used in the site
+    "MD041": false,   // first-line-heading — README starts with a logo image
+    "MD060": false,   // table-column-style — compact tables are used throughout
+    "MD032": false,   // blanks-around-lists — pre-existing style throughout docs
+    "MD031": false,   // blanks-around-fences — pre-existing style throughout docs
+    "MD040": false,   // fenced-code-language — many code blocks are unlabelled prose
+    "MD022": false,   // blanks-around-headings — pre-existing style throughout docs
+    "MD029": false,   // ol-prefix — ordered list numbering style varies
+    "MD036": false,   // no-emphasis-as-heading — used in ticket/notes files
+    "MD026": false,   // no-trailing-punctuation — used in some heading styles
+    "MD012": false,   // no-multiple-blanks — pre-existing style throughout docs
+    "MD004": false,   // ul-style — mixed bullet styles in existing docs
+    "MD058": false,   // blanks-around-tables — pre-existing style
+    "MD009": false,   // no-trailing-spaces — too noisy across existing content
+    "MD038": false,   // no-space-in-code — intentional in formatted command/output examples
+
+    // Allow duplicate headings when they appear under different parent headings
+    // (e.g. "VS Code Extension" appears in multiple CHANGELOG release sections)
+    "MD024": { "siblings_only": true }
   },
   "globs": [
     "**/*.md",
+    // Exclude auto-generated or tool-managed directories
     "!archive/**",
-    "!**/node_modules/**"
+    "!**/node_modules/**",
+    "!.tickets/**",
+    "!.claude/**",
+    "!site/_site/**",
+    "!site/satsuma-diaries/**"
   ]
 }

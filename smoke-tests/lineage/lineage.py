@@ -1,4 +1,3 @@
-import json
 import os
 import subprocess
 
@@ -25,4 +24,4 @@ def test_left_from_leaf():
     Lineage left from a leaf field in a schema should report just the leaf
     """
     cmd = "satsuma lineage --format json --from s1.a lineage/simple.stm"
-    data = run_satsuma_command(cmd)
+    run_satsuma_command(cmd)

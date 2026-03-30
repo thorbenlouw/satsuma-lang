@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -28,7 +27,6 @@ from openpyxl.styles import (
     Alignment,
     Border,
     Font,
-    NamedStyle,
     PatternFill,
     Side,
 )
@@ -395,8 +393,8 @@ def collect_data(
     # 1. Graph — primary data source
     graph = _run_satsuma_json(["graph", "--json", path])
 
-    # 2. Summary — for stats
-    summary = _run_satsuma_json(["summary", "--json", path])
+    # 2. Summary — reserved for future stats; result unused for now
+    _run_satsuma_json(["summary", "--json", path])
 
     # 3. NL — for integration note
     nl_items = _run_satsuma_json(["nl", "all", "--json", path])
@@ -801,7 +799,6 @@ def create_overview_tab(ws: Worksheet, data: WorkbookData) -> None:
         toc_entries.append((tab_name, f"Mapping: {src} \u2192 {tgt}"))
 
     for s in data.schemas:
-        prefix = "Tgt" if s.role == "target" else "Src"
         tab_name = _schema_tab_name(s)
         toc_entries.append((tab_name, f"{s.role.title()} schema: {len(s.fields)} fields"))
 
@@ -1028,16 +1025,14 @@ def create_schema_tab(ws: Worksheet, schema: SchemaInfo) -> None:
     header_row = start_row
     _set_header_row(ws, header_row, headers)
 
-    # Track fragments for grouping
+    # Track the current fragment name to detect transitions between fragment groups.
     current_fragment: str | None = None
-    fragment_start_row: int | None = None
 
     row = header_row + 1
     for idx, f in enumerate(schema.fields, 1):
         # Fragment grouping: if this field has a fragment origin different from previous
         if f.fragment_origin and f.fragment_origin != current_fragment:
             current_fragment = f.fragment_origin
-            fragment_start_row = row
 
         ws.cell(row=row, column=1, value=idx).font = FONT_DATA
         ws.cell(row=row, column=2, value=f.name).font = FONT_DATA
@@ -1085,7 +1080,6 @@ def create_schema_tab(ws: Worksheet, schema: SchemaInfo) -> None:
 
         if not f.fragment_origin and current_fragment:
             current_fragment = None
-            fragment_start_row = None
 
         row += 1
 

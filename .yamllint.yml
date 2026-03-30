@@ -1,0 +1,15 @@
+---
+# yamllint configuration for satsuma-lang.
+# Mirrors the style used in the existing GitHub Actions workflows.
+extends: default
+
+rules:
+  line-length:
+    max: 160           # long run: blocks are unavoidable in CI YAML
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    forbid: false
+  document-start: disable   # existing YAML files don't use --- and that's fine

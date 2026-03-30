@@ -16,10 +16,12 @@ import pytest
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent.parent
 
-# Import the module under test by adding its directory to sys.path
-import sys
+# Import the module under test by adding its directory to sys.path first.
+# The sys import and stm_to_excel import must follow the path manipulation,
+# so E402 (module-level import not at top) is expected here.
+import sys  # noqa: E402
 sys.path.insert(0, str(SCRIPT_DIR))
-import stm_to_excel
+import stm_to_excel  # noqa: E402
 
 
 # ── Transform translation unit tests ────────────────────────────────────

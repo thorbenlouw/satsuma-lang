@@ -201,7 +201,7 @@ One rule: **backslash escapes the next character.** Applies identically inside b
 | `` \` `` | Literal `` ` `` | Inside `` `...` `` |
 | `\@` | Literal `@` | Inside NL strings (prevents `@` from starting a ref) |
 | `\\` | Literal `\` | Everywhere |
-| `\n`, `\t`, etc. | Literal `n`, `t`, etc. (no special sequences) |
+| `\n`, `\t`, etc. | Literal `n`, `t`, etc. (no special sequences) | Everywhere |
 
 `\@` is needed for the rare case where `@` appears in NL prose but should not be treated as a structural reference (e.g., email addresses). In practice this is uncommon — `@` followed by something that doesn't match an identifier is already inert.
 

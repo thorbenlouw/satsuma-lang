@@ -354,7 +354,7 @@ def parse_with_cli(path: Path) -> Node:
     # is no usable tree output at all.
     # Filter out wrapper script info lines
     stdout = "\n".join(
-        l for l in result.stdout.splitlines() if not l.startswith("Using ")
+        line for line in result.stdout.splitlines() if not line.startswith("Using ")
     )
     if not stdout.strip():
         raise RuntimeError(

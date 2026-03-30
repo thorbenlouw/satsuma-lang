@@ -35,7 +35,7 @@ Block-level extraction — retrieve whole blocks or workspace-level summaries.
 | `find --tag <token>` | Fields carrying a metadata tag | `satsuma find --tag pii` |
 | `lineage --from/--to <schema>` | Schema-level graph traversal | `satsuma lineage --from loyalty_sfdc` |
 | `where-used <name>` | All references to a schema, fragment, or transform | `satsuma where-used hub_product` |
-| `warnings` | All `//!` and `//? ` comments across the workspace | `satsuma warnings` |
+| `warnings` | All `//!` and `//?` comments across the workspace | `satsuma warnings` |
 | `context <query>` | Keyword-ranked block extraction (heuristic) | `satsuma context "customer mapping"` |
 
 ### Structural Primitives

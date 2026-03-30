@@ -91,6 +91,13 @@ jobs:
             tooling/vscode-satsuma/server/node_modules
           key: workspace-${{ github.sha }}
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python lint tools
+        run: pip install yamllint ruff
+
       - run: npm run lint
 
   satsuma-cli:
