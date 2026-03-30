@@ -16,7 +16,7 @@ Each entry links to the ticket(s) where the behavior was discovered.
 6. [Path Continuation Dots](#6-path-continuation-dots-must-not-cross-newlines)
 7. [Schema-Qualified Path Prefixing](#7-schema-qualified-paths-must-not-be-double-prefixed)
 8. [Anonymous Mapping Keys](#8-anonymous-mappings-use-anonfilerow-keys)
-9. [NL Refs Are Not Sources](#9-nl-backtick-references-are-not-structural-sources)
+9. [NL Refs Are Not Sources](#9-nl-ref-references-are-not-structural-sources)
 10. [Lint --fix Quoting](#10-lint---fix-must-match-existing-quoting-style)
 11. [Recursive Field Rendering](#11-nested-fields-must-be-recursively-rendered)
 12. [Metric Block Context](#12-metric-blocks-are-first-class-citizens)
@@ -141,14 +141,14 @@ Mappings without a name are indexed as `<anon>@filepath:row`. All commands that 
 
 ---
 
-## 9. NL Backtick References Are Not Structural Sources
+## 9. NL @ref References Are Not Structural Sources
 
 **Tickets:** sl-n11t, cbh-h0or
 **Resolved by:** Feature 22 Phase 5 (lsp-ah6m, lsp-d4yk, lsp-4hai)
 
 ~~When a mapping's NL text references a schema via backtick, that reference must **not** be promoted to a structural source edge in the graph or lineage.~~
 
-**Updated policy (Feature 22):** NL backtick references to schemas now produce `nl_ref` edges in `schema_edges` and are traversed by `lineage`. This is safe because `hidden-source-in-nl` is now an error (not a warning), ensuring all NL-referenced schemas are explicitly declared. The `nl_ref` role distinguishes these from declared `source`/`target` edges. The original phantom lineage bug (cbh-y5og) was caused by treating NL refs as `source` edges — the new approach uses a distinct edge role.
+**Updated policy (Feature 22):** NL `@ref` references to schemas now produce `nl_ref` edges in `schema_edges` and are traversed by `lineage`. This is safe because `hidden-source-in-nl` is now an error (not a warning), ensuring all NL-referenced schemas are explicitly declared. The `nl_ref` role distinguishes these from declared `source`/`target` edges. The original phantom lineage bug (cbh-y5og) was caused by treating NL refs as `source` edges — the new approach uses a distinct edge role.
 
 ---
 
@@ -203,14 +203,14 @@ Child arrows inside nested blocks must also include their parent path prefix (e.
 
 **Tickets:** sl-2x93
 
-The `arrows` command can return a fifth classification value: `nl-derived`, for implicit arrows inferred from NL backtick references. This is in addition to the four documented values (`structural`, `nl`, `mixed`, `none`). Any consumer switching on classification values must handle this case.
+The `arrows` command can return a fifth classification value: `nl-derived`, for implicit arrows inferred from NL `@ref` references. This is in addition to the four documented values (`structural`, `nl`, `mixed`, `none`). Any consumer switching on classification values must handle this case.
 
 Transform classification is purely mechanical CST analysis — it does not interpret semantics. The categories are:
 - `structural`: deterministic pipe chain, no NL
 - `nl`: NL-only transform body
 - `mixed`: pipe chain + NL annotation
 - `none`: bare arrow with no transform body
-- `nl-derived`: implicit arrow inferred from NL backtick reference (undocumented until sl-2x93)
+- `nl-derived`: implicit arrow inferred from NL `@ref` (undocumented until sl-2x93)
 
 ---
 
@@ -218,7 +218,7 @@ Transform classification is purely mechanical CST analysis — it does not inter
 
 **Tickets:** sl-3dd2, sl-xrc8
 
-`nl-refs` and lint must walk standalone `note { }` and `transform { }` blocks, not just schema/mapping/metric bodies. Standalone notes get a pseudo-mapping key of `"note:"` — resolving backtick refs in them requires special handling since they have no parent schema context.
+`nl-refs` and lint must walk standalone `note { }` and `transform { }` blocks, not just schema/mapping/metric bodies. Standalone notes get a pseudo-mapping key of `"note:"` — resolving `@ref`s in them requires special handling since they have no parent schema context.
 
 ---
 
@@ -281,7 +281,7 @@ Similarly, `hub`/`satellite`/`link` vocabulary tokens imply hash keys, record so
 
 **Tickets:** sl-izap, stm-6gh9
 
-`import { name } from "file.stm"` declarations must be detected as references by `where-used`. Import references are a distinct reference type alongside arrow sources, arrow targets, NL backtick references, and metric source declarations.
+`import { name } from "file.stm"` declarations must be detected as references by `where-used`. Import references are a distinct reference type alongside arrow sources, arrow targets, NL `@ref` references, and metric source declarations.
 
 Note: the parser initially lacked grammar support for import declarations entirely — they are spec-backed and used heavily in examples but were a late addition to the grammar.
 
@@ -307,7 +307,7 @@ When constructing dotted field paths for nested record/list fields in graph outp
 
 **Tickets:** sl-5erh
 
-When computing column offsets for backtick references inside NL strings, the offset must account for the opening quote character. Off-by-one column values break IDE go-to-definition and highlight features.
+When computing column offsets for `@ref` references inside NL strings, the offset must account for the `@` character. Off-by-one column values break IDE go-to-definition and highlight features.
 
 ---
 
@@ -347,7 +347,7 @@ Fragment spreads (`...fragment_name`) are one of the most pervasive sources of i
 - **validate**: must not flag spread fields as "not in schema"
 - **find**: must match spread fields (but must report them at the consuming schema's location, not the fragment definition's location)
 - **meta**: must look into spread fields for metadata queries
-- **nl-refs**: must resolve backtick refs against expanded fields
+- **nl-refs**: must resolve `@ref`s against expanded fields
 - **where-used**: must detect spreads as references to the fragment
 
 Additional complexities:
@@ -377,7 +377,7 @@ The `lineage --from` command was also found to emit unqualified target schema na
 
 **Tickets:** (recent commits on fix/cli-bug-batch-3)
 
-Backtick references in NL strings can use deeply nested dotted paths like `` `CdtTrfTxInf.PmtId.UETR` `` or `` `PID.DateOfBirth` ``. These must resolve to nested record fields, not just schema.field pairs. The `nl-refs` and `arrows` commands must support arbitrary depth in path resolution.
+`@ref` references in NL strings can use deeply nested dotted paths like `@CdtTrfTxInf.PmtId.UETR` or `@PID.DateOfBirth`. These must resolve to nested record fields, not just schema.field pairs. The `nl-refs` and `arrows` commands must support arbitrary depth in path resolution.
 
 Additionally, NL content must never be silently truncated — if a triple-quoted string contains 500 characters of text, all 500 characters must appear in output.
 
@@ -469,7 +469,7 @@ This is the inverse of requirement #3 — backticks must be preserved in *output
 
 **Tickets:** (discovered during NL extraction work)
 
-NL strings containing escape sequences (`\"`, `\\`) must be unescaped during extraction. Raw escapes in extracted NL text confuse downstream consumers and break backtick-reference resolution (a `` `ref` `` preceded by `\"` won't parse correctly if the escape isn't resolved first).
+NL strings containing escape sequences (`\"`, `\\`) must be unescaped during extraction. Raw escapes in extracted NL text confuse downstream consumers and break `@ref` resolution (an `@ref` preceded by `\"` won't parse correctly if the escape isn't resolved first).
 
 ---
 
@@ -612,4 +612,4 @@ The CLI provides only deterministic structural extraction — no NL interpretati
 **Tickets:** sl-n11t, cbh-h0or
 **Updated by:** Feature 22 Phase 5
 
-Backtick references in NL are syntactic/structural extracts, not validated semantic links. The CLI extracts them mechanically. The agent decides what they mean. ~~Promoting them to structural declarations breaks the graph and lineage.~~ Since Feature 22, NL backtick refs produce `nl_ref` edges (distinct from `source`/`target` edges) in graph and lineage. This is safe because `hidden-source-in-nl` is now an error, guaranteeing all NL-referenced schemas are declared.
+`@ref` references in NL are syntactic/structural extracts, not validated semantic links. The CLI extracts them mechanically. The agent decides what they mean. ~~Promoting them to structural declarations breaks the graph and lineage.~~ Since Feature 22, NL `@ref`s produce `nl_ref` edges (distinct from `source`/`target` edges) in graph and lineage. This is safe because `hidden-source-in-nl` is now an error, guaranteeing all NL-referenced schemas are declared.

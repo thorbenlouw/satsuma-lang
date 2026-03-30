@@ -310,7 +310,7 @@ satsuma meta loyalty_sfdc.Email              # metadata entries (tags, type, con
 satsuma fields sat_customer_demographics     # field list with types
 satsuma fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
 satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
-satsuma nl-refs path/to/workspace/ --json    # extract @ref/backtick references from NL text
+satsuma nl-refs path/to/workspace/ --json    # extract @ref references from NL text
 
 # Workspace graph — full topology in one call
 satsuma graph path/to/workspace/ --json      # complete semantic graph (nodes, edges, field-level flow)

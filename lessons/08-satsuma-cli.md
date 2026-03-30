@@ -88,7 +88,7 @@ If `validate` reports errors, the file is broken. Fix these first.
 
 **`lint`** checks conventions:
 - `hidden-source-in-nl` — NL text references a schema not declared in the mapping's source/target list
-- `unresolved-nl-ref` — a backtick identifier in NL that can't be resolved
+- `unresolved-nl-ref` — an `@ref` in NL that can't be resolved to a known identifier
 - `duplicate-definition` — two definitions with the same name
 
 Lint warnings are advisory. They might indicate real problems or acceptable patterns.
@@ -112,7 +112,7 @@ When the agent runs `satsuma arrows`, each arrow is annotated with its transform
 | `[nl]` | Natural language | Agent interprets the intent |
 | `[mixed]` | Pipeline + NL | Agent interprets NL, validates pipeline |
 | `[none]` | Direct mapping, no transform | Passthrough — nothing to interpret |
-| `[nl-derived]` | Implicit from backtick ref in NL | Agent traces the lineage dependency |
+| `[nl-derived]` | Implicit from `@ref` in NL | Agent traces the lineage dependency |
 
 This classification helps the agent decide how to handle each arrow: structural transforms can be checked for correctness, while NL transforms need interpretation and human review.
 
@@ -156,7 +156,7 @@ For more complex questions, the agent chains commands:
 **"Trace the impact of changing the `CUST_ID` field":**
 1. `satsuma arrows legacy_sqlserver.CUST_ID` — find all arrows that use `CUST_ID`
 2. `satsuma lineage --from legacy_sqlserver` — see where data flows downstream
-3. `satsuma nl` — check NL transforms that reference `CUST_ID` via backticks
+3. `satsuma nl` — check NL transforms that reference `@CUST_ID` via @ref
 
 **"Are there any unmapped target fields?":**
 1. `satsuma fields <target_schema> --unmapped-by '<mapping>'` — list target fields not covered by a specific mapping

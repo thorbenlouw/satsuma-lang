@@ -82,7 +82,7 @@ satsuma lint .
 Fix validation errors before proceeding. These mean the file is structurally broken.
 
 **`lint`** catches:
-- Backtick references in NL that don't match declared fields
+- `@ref` markers in NL that don't match declared fields
 - Duplicate definitions
 - Convention violations
 

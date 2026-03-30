@@ -38,10 +38,10 @@ mapping {
 Three types of block, and you can already see the entire story:
 
 1. **`schema`** — describes the structure of a data source or target. Every system, whether a database table, JSON API, XML message, or flat file, uses this same keyword.
-2. **`mapping`** — ties schemas together. Its `source { }` and `target { }` sub-blocks identify which schemas are being mapped, using backtick references. Arrow declarations follow.
+2. **`mapping`** — ties schemas together. Its `source { }` and `target { }` sub-blocks identify which schemas are being mapped by name. Arrow declarations follow.
 3. **`->`** — the heart of Satsuma. Read it as *"maps to"* or *"becomes"*.
 
-The backtick references (`` `old_system` ``, `` `new_system` ``) inside the mapping block point to the schemas defined above.
+The schema names (`` `old_system` ``, `` `new_system` ``) inside the mapping block point to the schemas defined above. Backtick quoting is needed only when a name contains characters outside `[a-z0-9_]`; simple snake_case names can be written without backticks.
 
 That's it. You've just read your first Satsuma file.
 

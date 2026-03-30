@@ -173,7 +173,7 @@ Shows every downstream consumer, helping you assess:
 satsuma arrows crm_customers.email
 ```
 
-Shows exactly how a specific field flows through the system — what transforms are applied, where it lands, whether it's referenced in NL transforms via backticks.
+Shows exactly how a specific field flows through the system — what transforms are applied, where it lands, whether it's referenced in NL transforms via `@ref` markers.
 
 ---
 

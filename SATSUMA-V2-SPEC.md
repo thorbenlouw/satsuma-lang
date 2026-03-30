@@ -289,7 +289,7 @@ mapping <name> {
 }
 ```
 
-The `source` and `target` sub-blocks use backtick references to previously declared schemas (or declare them inline). The mapping name is optional.
+The `source` and `target` sub-blocks reference previously declared schemas by name (optionally backtick-quoted when the name contains special characters). The mapping name is optional.
 
 ### 4.2 Arrow Declarations
 

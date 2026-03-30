@@ -34,7 +34,7 @@ export function register(program: Command): void {
     .option("--json", "output JSON")
     .addHelpText("after", `
 Searches mappings (source/target refs), metrics (source refs), schemas
-(fragment spreads, ref metadata), and NL backtick references.
+(fragment spreads, ref metadata), and NL @ref references.
 
 JSON shape (--json):
   {
@@ -171,7 +171,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
     }
   }
 
-  // NL backtick references — find references inside NL transform bodies
+  // NL @ref references — find references inside NL transform bodies
   const nlRefs = resolveAllNLRefs(index);
   const seenNLRefs = new Set<string>();
   const cName = canonicalKey(name);

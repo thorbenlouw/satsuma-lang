@@ -200,7 +200,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
   for (const [name, e] of index.fragments) scoreEntry(name, "fragment", e);
   for (const [name, e] of index.transforms) scoreEntry(name, "transform", e);
 
-  // Boost mappings that contain NL backtick refs matching query terms
+  // Boost mappings that contain NL @ref markers matching query terms
   if (index.nlRefData) {
     // Group NL ref data by mapping key
     const nlByMapping = new Map<string, typeof index.nlRefData>();
@@ -211,7 +211,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
     }
 
     for (const [mappingKey, items] of nlByMapping) {
-      // Collect all backtick ref texts for this mapping
+      // Collect all @ref texts for this mapping
       const refTexts: string[] = [];
       for (const item of items) {
         for (const { ref } of extractAtRefs(item.text)) {

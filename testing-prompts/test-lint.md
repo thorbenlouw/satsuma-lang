@@ -20,7 +20,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 Known lint rules (from SATSUMA-CLI.md):
 - `hidden-source-in-nl` (warning, fixable) — NL text references a schema not in the mapping's source/target list
-- `unresolved-nl-ref` (warning, not fixable) — Backtick reference in NL does not resolve to any known identifier
+- `unresolved-nl-ref` (warning, not fixable) — `@ref` in NL does not resolve to any known identifier
 - `duplicate-definition` (error, not fixable) — Named definition declared more than once in a namespace
 
 Test areas:

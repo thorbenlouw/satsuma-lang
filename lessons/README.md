@@ -130,7 +130,7 @@ Introduces mapping blocks as the heart of the language. The learner focuses on e
 
 This is the most important conceptual lesson. It teaches why natural-language transforms are not a weakness in Satsuma but a deliberate design choice. Learners practice giving the agent business-rule prose, asking it to turn that intent into well-placed Satsuma NL blocks or structural pipelines where appropriate, and reviewing whether the result preserves meaning. The lesson also covers how agents should reason about NL blocks surfaced by the CLI.
 
-**Covers:** transform bodies, structural pipelines, NL transforms, mixed transforms, when to formalize vs when to keep intent in quotes, backtick references inside NL, how agents interpret NL while the CLI only extracts it verbatim, review techniques for ambiguous business rules.
+**Covers:** transform bodies, structural pipelines, NL transforms, mixed transforms, when to formalize vs when to keep intent in quotes, `@ref` markers inside NL, how agents interpret NL while the CLI only extracts it verbatim, review techniques for ambiguous business rules.
 
 ---
 

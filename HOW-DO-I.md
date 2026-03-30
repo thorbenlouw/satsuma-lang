@@ -135,25 +135,25 @@ Use the [Excel-to-Satsuma skill](skills/excel-to-satsuma/) or the [lite system p
 **How do I generate an Excel workbook from a Satsuma file?**
 Use the [Satsuma-to-Excel lite prompt](useful-prompts/stm-to-excel-prompt.md) with any web LLM.
 
-**How do I extract all natural-language strings and find un-backticked schema references?**
+**How do I extract all natural-language strings and find schema references missing @ref?**
 Use the CLI to extract NL content and cross-reference it with known schema names. This is an agent workflow — give your AI agent these instructions:
 
 ```
 1. Run `satsuma summary <dir>` to get all schema names in the workspace.
 2. Run `satsuma nl <mapping-name>` to extract all NL strings from a mapping.
 3. For each NL string, check whether it mentions a schema name from step 1
-   without backtick quoting. If "loyalty_sfdc" appears as plain text in a
-   NL transform instead of `loyalty_sfdc`, flag it.
-4. Suggest edits that backtick-quote the references so `satsuma lineage`
+   without an @ref prefix. If "loyalty_sfdc" appears as plain text in a
+   NL transform instead of @loyalty_sfdc, flag it.
+4. Suggest edits that add @ref so `satsuma lineage`
    and `satsuma where-used` can trace them.
 
 Example: if a NL transform says:
   "Look up rate from currency rates using CurrencyIsoCode"
-and `currency rates` is a known schema, suggest changing it to:
-  "Look up rate from `currency rates` using CurrencyIsoCode"
+and `currency_rates` is a known schema, suggest changing it to:
+  "Look up rate from @currency_rates using @CurrencyIsoCode"
 ```
 
-This improves lineage tracing — `satsuma where-used` and `satsuma lineage` detect backtick-quoted references inside NL strings but cannot trace unquoted plain-text mentions.
+This improves lineage tracing — `satsuma where-used` and `satsuma lineage` detect `@ref` references inside NL strings but cannot trace unquoted plain-text mentions.
 
 ---
 
