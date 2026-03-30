@@ -22,12 +22,7 @@
  *   3. There is no teardown — the singleton lives for the process lifetime.
  */
 
-import { createRequire } from "module";
 import type { Parser, Language } from "web-tree-sitter";
-
-// createRequire is needed because web-tree-sitter is a CommonJS package.
-// ESM cannot use a top-level static import for it.
-const _require = createRequire(import.meta.url);
 
 // ── Singleton state ─────────────────────────────────────────────────────────
 
@@ -75,7 +70,13 @@ export function initParser(wasmPath: string, options?: ParserInitOptions): Promi
   if (_initPromise) return _initPromise;
 
   _initPromise = (async () => {
-    const TreeSitter = _require("web-tree-sitter") as typeof import("web-tree-sitter");
+    // Dynamic import works from both native ESM (satsuma-core) and esbuild CJS
+    // bundles (vscode server), where it is lowered to require(). A top-level
+    // static import or createRequire(import.meta.url) cannot be used because
+    // import.meta is unavailable in CJS output and causes a load-time crash.
+    const { default: TreeSitter } = await import("web-tree-sitter") as {
+      default: typeof import("web-tree-sitter");
+    };
     await TreeSitter.Parser.init(
       options?.locateFile ? { locateFile: options.locateFile } : undefined,
     );
