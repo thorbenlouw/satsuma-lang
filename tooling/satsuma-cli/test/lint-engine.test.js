@@ -49,7 +49,7 @@ describe("lint: hidden-source-in-nl", () => {
         targets: ["staging::stg_gl"],
       }],
       nlRefData: [{
-        text: "Lookup `department` from `source::hr_employees`",
+        text: "Lookup @department from @source::hr_employees",
         mapping: "stage gl",
         namespace: "staging",
         targetField: "department",
@@ -80,7 +80,7 @@ describe("lint: hidden-source-in-nl", () => {
         targets: ["staging::stg_gl"],
       }],
       nlRefData: [{
-        text: "Copy from `source::finance_gl`",
+        text: "Copy from @source::finance_gl",
         mapping: "stage gl",
         namespace: "staging",
         targetField: "department",
@@ -114,7 +114,7 @@ describe("lint: hidden-source-in-nl", () => {
         targets: ["staging::stg_gl"],
       }],
       nlRefData: [{
-        text: "Lookup from `source::hr_employees`",
+        text: "Lookup from @source::hr_employees",
         mapping: "stage gl",
         namespace: null,
         targetField: "department",
@@ -143,7 +143,7 @@ describe("lint: hidden-source-in-nl", () => {
       "  target { staging::stg_gl }",
       "",
       "  finance_gl.posted_by -> stg_gl.department {",
-      '    "Lookup from `source::hr_employees`"',
+      '    "Lookup from @source::hr_employees"',
       "  }",
       "}",
     ].join("\n");
@@ -160,7 +160,7 @@ describe("lint: hidden-source-in-nl", () => {
         targets: ["staging::stg_gl"],
       }],
       nlRefData: [{
-        text: "Lookup from `source::hr_employees`",
+        text: "Lookup from @source::hr_employees",
         mapping: "stage gl",
         namespace: null,
         targetField: "stg_gl.department",
@@ -191,7 +191,7 @@ describe("lint: hidden-source-in-nl", () => {
       "  target { staging::stg_gl }",
       "",
       "  note {",
-      '    "Lookup from `source::hr_employees`"',
+      '    "Lookup from @source::hr_employees"',
       "  }",
       "}",
     ].join("\n");
@@ -208,7 +208,7 @@ describe("lint: hidden-source-in-nl", () => {
         targets: ["staging::stg_gl"],
       }],
       nlRefData: [{
-        text: "Lookup from `source::hr_employees`",
+        text: "Lookup from @source::hr_employees",
         mapping: "stage gl",
         namespace: null,
         targetField: null,
@@ -246,7 +246,7 @@ describe("lint: hidden-source-in-nl", () => {
         targets: ["staging::stg_gl"],
       }],
       nlRefData: [{
-        text: "Lookup from `source::hr_employees`",
+        text: "Lookup from @source::hr_employees",
         mapping: "stage gl",
         namespace: null,
         targetField: "department",
@@ -335,7 +335,7 @@ describe("lint: hidden-source-in-nl", () => {
 // ── unresolved-nl-ref ──────────────────────────────────────────────────────
 
 describe("lint: unresolved-nl-ref", () => {
-  it("flags unresolved backtick reference", () => {
+  it("flags unresolved @ref", () => {
     const index = makeIndex({
       schemas: [
         { name: "source::orders", fields: [{ name: "order_id" }] },
@@ -348,7 +348,7 @@ describe("lint: unresolved-nl-ref", () => {
         targets: ["staging::stg_orders"],
       }],
       nlRefData: [{
-        text: "Lookup from `nonexistent_thing`",
+        text: "Lookup from @nonexistent_thing",
         mapping: "stage orders",
         namespace: "staging",
         targetField: "order_id",
@@ -377,7 +377,7 @@ describe("lint: unresolved-nl-ref", () => {
         targets: ["staging::stg_orders"],
       }],
       nlRefData: [{
-        text: "Copy `order_id` from source",
+        text: "Copy @order_id from source",
         mapping: "stage orders",
         namespace: "staging",
         targetField: "order_id",
@@ -397,7 +397,7 @@ describe("lint: unresolved-nl-ref", () => {
         { name: "source::orders", fields: [{ name: "order_id" }] },
       ],
       nlRefData: [{
-        text: "The `flatten` transform is used for `pii` compliance",
+        text: "The @flatten transform is used for @pii compliance",
         mapping: "note:",
         namespace: null,
         targetField: null,
@@ -417,7 +417,7 @@ describe("lint: unresolved-nl-ref", () => {
         { name: "source::orders", fields: [{ name: "order_id" }] },
       ],
       nlRefData: [{
-        text: "Lookup from `nonexistent_thing`",
+        text: "Lookup from @nonexistent_thing",
         mapping: "note:source::orders",
         namespace: null,
         targetField: null,
@@ -548,7 +548,7 @@ describe("lint engine: rule filtering", () => {
         targets: ["staging::stg_orders"],
       }],
       nlRefData: [{
-        text: "Lookup from `nonexistent_thing`",
+        text: "Lookup from @nonexistent_thing",
         mapping: "stage orders",
         namespace: "staging",
         targetField: "order_id",
@@ -580,7 +580,7 @@ describe("lint diagnostic shape", () => {
         targets: ["staging::stg_orders"],
       }],
       nlRefData: [{
-        text: "Lookup from `nonexistent_thing`",
+        text: "Lookup from @nonexistent_thing",
         mapping: "stage orders",
         namespace: "staging",
         targetField: "order_id",

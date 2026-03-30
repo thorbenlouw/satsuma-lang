@@ -127,7 +127,7 @@ namespace vault (note "Data Vault 2.0 — hubs, links, and satellites") {
     company_name -> company_name { trim }
 
     -> hash_diff {
-      "MD5 hash of `first_name`, `last_name`, `email`, `phone`, `company_name` for change detection"
+      "MD5 hash of @first_name, @last_name, @email, @phone, @company_name for change detection"
     }
   }
 
@@ -244,7 +244,7 @@ namespace mart (note "Business-facing dimensional models") {
     -> revenue_sk { "Surrogate key via sequence generator" }
 
     -> contact_sk {
-      "Join `erp_invoices.customer_code` to CRM contact via lookup table"
+      "Join @erp_invoices.customer_code to CRM contact via lookup table"
     }
 
     invoice_id -> invoice_id

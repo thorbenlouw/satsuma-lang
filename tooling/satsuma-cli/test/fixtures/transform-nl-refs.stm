@@ -10,11 +10,11 @@ schema data_out {
 }
 
 transform build_fullname {
-  "Concatenate `first_name` and `last_name` with a space"
+  "Concatenate @first_name and @last_name with a space"
 }
 
 transform region_lookup {
-  "Map `region_code` to full region name using standard mapping"
+  "Map @region_code to full region name using standard mapping"
 }
 
 mapping `transform block test` {

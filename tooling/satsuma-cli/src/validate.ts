@@ -3,11 +3,11 @@
  *
  * Structural checks: CST ERROR/MISSING nodes from tree-sitter.
  * Semantic checks: undefined references, duplicates, field mismatches,
- * NL backtick reference validation.
+ * NL @ref validation.
  */
 
 import {
-  extractBacktickRefs,
+  extractAtRefs,
   classifyRef,
   resolveRef,
   isSchemaInMappingSources,
@@ -250,10 +250,10 @@ export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[]
     }
   }
 
-  // Check NL backtick references
+  // Check NL @refs
   if (index.nlRefData) {
     for (const item of index.nlRefData) {
-      const refs = extractBacktickRefs(item.text);
+      const refs = extractAtRefs(item.text);
       const mappingKey = item.namespace
         ? `${item.namespace}::${item.mapping}`
         : item.mapping;

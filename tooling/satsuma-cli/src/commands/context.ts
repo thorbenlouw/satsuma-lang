@@ -22,7 +22,7 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
-import { extractBacktickRefs } from "../nl-ref-extract.js";
+import { extractAtRefs } from "../nl-ref-extract.js";
 import { extractNLContent } from "../nl-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
 import type { WorkspaceIndex, ParsedFile, SyntaxNode, FieldDecl } from "../types.js";
@@ -214,7 +214,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
       // Collect all backtick ref texts for this mapping
       const refTexts: string[] = [];
       for (const item of items) {
-        for (const { ref } of extractBacktickRefs(item.text)) {
+        for (const { ref } of extractAtRefs(item.text)) {
           refTexts.push(ref);
         }
       }

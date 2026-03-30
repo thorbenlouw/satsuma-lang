@@ -1,7 +1,7 @@
 /**
  * nl-refs.ts — `satsuma nl-refs` command
  *
- * Extracts and lists all backtick-delimited references from NL blocks
+ * Extracts and lists all @ref references from NL blocks
  * in transform bodies. Shows each reference with its classification,
  * resolution status, containing mapping, and source location.
  *
@@ -21,12 +21,12 @@ import type { ResolvedNLRef } from "../nl-ref-extract.js";
 export function register(program: Command): void {
   program
     .command("nl-refs [path]")
-    .description("Extract backtick references from NL transform bodies")
+    .description("Extract @ref references from NL transform bodies")
     .option("--mapping <name>", "scope to a specific mapping")
     .option("--json", "structured JSON output")
     .option("--unresolved", "show only unresolved references")
     .addHelpText("after", `
-@ref or backtick references are @field_name, \`field_name\`, or \`schema.field\`
+@ref references are @field_name, @schema.field, or @ns::schema.field
 inside "..." NL strings. Each ref is checked against the workspace index —
 "resolved" means the referenced field or schema exists, "unresolved" means
 it was not found.
@@ -86,7 +86,7 @@ Examples:
       }
 
       if (refs.length === 0) {
-        console.log("No NL backtick references found.");
+        console.log("No NL @ref references found.");
         process.exit(1);
       }
 
@@ -95,7 +95,7 @@ Examples:
 }
 
 function printDefault(refs: ResolvedNLRef[]): void {
-  console.log(`NL backtick references (${refs.length} total):`);
+  console.log(`NL @ref references (${refs.length} total):`);
   console.log();
 
   // Group by mapping

@@ -7024,7 +7024,7 @@
       "classification": "nl",
       "file": "/namespaces/ns-merging.stm",
       "line": 100,
-      "nl_text": "\"Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`\"",
+      "nl_text": "\"Lookup @department from @source::hr_employees using @posted_by -> @employee_id\"",
       "derived": true
     },
     {
@@ -7088,7 +7088,7 @@
       "classification": "nl",
       "file": "/namespaces/ns-merging.stm",
       "line": 104,
-      "nl_text": "\"Lookup `full_name` from `source::hr_employees` using `posted_by` -> `employee_id`\"",
+      "nl_text": "\"Lookup @full_name from @source::hr_employees using @posted_by -> @employee_id\"",
       "derived": true
     },
     {
@@ -7197,7 +7197,7 @@
       "classification": "nl",
       "file": "/namespaces/ns-platform.stm",
       "line": 129,
-      "nl_text": "\"MD5 hash of `first_name`, `last_name`, `email`, `phone`, `company_name` for change detection\"",
+      "nl_text": "\"MD5 hash of @first_name, @last_name, @email, @phone, @company_name for change detection\"",
       "derived": true
     },
     {
@@ -7267,7 +7267,7 @@
       "classification": "nl",
       "file": "/namespaces/ns-platform.stm",
       "line": 246,
-      "nl_text": "\"Join `erp_invoices.customer_code` to CRM contact via lookup table\"",
+      "nl_text": "\"Join @erp_invoices.customer_code to CRM contact via lookup table\"",
       "derived": true
     },
     {
@@ -7516,7 +7516,7 @@
       "classification": "nl",
       "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 131,
-      "nl_text": "\"Count distinct `sku` values across all events in the session.\"",
+      "nl_text": "\"Count distinct @sku values across all events in the session.\"",
       "derived": true
     },
     {
@@ -9436,14 +9436,14 @@
     {
       "scope": "mapping staging::stage gl entries",
       "arrow": "-> department",
-      "text": "\"Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`\"",
+      "text": "\"Lookup @department from @source::hr_employees using @posted_by -> @employee_id\"",
       "file": "/namespaces/ns-merging.stm",
       "line": 100
     },
     {
       "scope": "mapping staging::stage gl entries",
       "arrow": "-> employee_name",
-      "text": "\"Lookup `full_name` from `source::hr_employees` using `posted_by` -> `employee_id`\"",
+      "text": "\"Lookup @full_name from @source::hr_employees using @posted_by -> @employee_id\"",
       "file": "/namespaces/ns-merging.stm",
       "line": 104
     },
@@ -9485,7 +9485,7 @@
     {
       "scope": "mapping vault::load sat_contact",
       "arrow": "-> hash_diff",
-      "text": "\"MD5 hash of `first_name`, `last_name`, `email`, `phone`, `company_name` for change detection\"",
+      "text": "\"MD5 hash of @first_name, @last_name, @email, @phone, @company_name for change detection\"",
       "file": "/namespaces/ns-platform.stm",
       "line": 129
     },
@@ -9513,7 +9513,7 @@
     {
       "scope": "mapping mart::build fact_revenue",
       "arrow": "-> contact_sk",
-      "text": "\"Join `erp_invoices.customer_code` to CRM contact via lookup table\"",
+      "text": "\"Join @erp_invoices.customer_code to CRM contact via lookup table\"",
       "file": "/namespaces/ns-platform.stm",
       "line": 246
     },
@@ -9618,7 +9618,7 @@
     {
       "scope": "mapping session aggregation",
       "arrow": "-> distinct_product_count",
-      "text": "\"Count distinct `sku` values across all events in the session.\"",
+      "text": "\"Count distinct @sku values across all events in the session.\"",
       "file": "/protobuf-to-parquet/pipeline.stm",
       "line": 131
     },

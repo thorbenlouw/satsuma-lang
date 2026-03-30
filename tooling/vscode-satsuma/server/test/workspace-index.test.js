@@ -519,18 +519,6 @@ describe("NL string reference indexing", () => {
     assert.ok(refs.length >= 1, "expected arrow ref for @`first name`");
   });
 
-  it("indexes backtick refs in NL strings", () => {
-    const idx = buildIndex({
-      "file:///a.stm": `mapping test {
-  source { customers }
-  target { dim }
-  -> notes { "Filter using \`profanity_list\` v3.2" }
-}`,
-    });
-    const refs = (idx.references.get("profanity_list") || []).filter((r) => r.context === "arrow");
-    assert.ok(refs.length >= 1, "expected arrow ref for backtick ref profanity_list");
-  });
-
   it("indexes @refs in multiline NL strings", () => {
     const idx = buildIndex({
       "file:///a.stm": `mapping test {
@@ -550,14 +538,6 @@ describe("NL string reference indexing", () => {
     assert.ok(stateRefs.length >= 1, "expected arrow ref for @STATE_PROV");
   });
 
-  it("does not double-index backtick inside @ref", () => {
-    const idx = buildIndex({
-      "file:///a.stm": "mapping test {\n  source { customers }\n  target { dim }\n  -> name { \"Use @`first name` here\" }\n}",
-    });
-    // "first name" should appear exactly once (from the @ref), not twice
-    const refs = (idx.references.get("first name") || []).filter((r) => r.context === "arrow");
-    assert.equal(refs.length, 1, "backtick inside @ref should not be double-counted");
-  });
 });
 
 describe("transform spread indexing in arrows", () => {

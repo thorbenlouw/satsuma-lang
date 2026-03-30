@@ -198,7 +198,6 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
 
 // ---------- NL reference extraction ----------
 
-const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
 const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 /** Unique identity for a CST node (by position). */
@@ -218,9 +217,8 @@ function collectNlRefNodes(root: SyntaxNode): Set<string> {
   do {
     const node = cursor.currentNode;
     if (node.type === "nl_string" || node.type === "multiline_string") {
-      BACKTICK_REF_RE.lastIndex = 0;
       AT_REF_RE.lastIndex = 0;
-      if (BACKTICK_REF_RE.test(node.text) || AT_REF_RE.test(node.text)) {
+      if (AT_REF_RE.test(node.text)) {
         result.add(nodeId(node));
       }
     }
@@ -260,23 +258,13 @@ function emitSplitStringTokens(
     if (text[i] === "\n") lineOffsets.push(i + 1);
   }
 
-  // Collect all ref spans (backtick and @ref), sorted by offset
+  // Collect all @ref spans, sorted by offset
   const refSpans: Array<{ offset: number; length: number }> = [];
 
-  BACKTICK_REF_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
-  while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
-    refSpans.push({ offset: match.index, length: match[0].length });
-  }
   AT_REF_RE.lastIndex = 0;
   while ((match = AT_REF_RE.exec(text)) !== null) {
-    // Skip @refs that overlap with backtick refs (e.g. @`name`)
-    const overlaps = refSpans.some(
-      (s) => match!.index >= s.offset && match!.index < s.offset + s.length,
-    );
-    if (!overlaps) {
-      refSpans.push({ offset: match.index, length: match[0].length });
-    }
+    refSpans.push({ offset: match.index, length: match[0].length });
   }
   refSpans.sort((a, b) => a.offset - b.offset);
 

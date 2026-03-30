@@ -12,6 +12,6 @@ mapping `data load` {
   target { `output` }
 
   id -> id {
-    "Look up `hidden_lookup` code for enrichment"
+    "Look up @hidden_lookup code for enrichment"
   }
 }

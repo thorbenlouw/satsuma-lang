@@ -14,5 +14,5 @@ schema main_target {
 mapping {
   source { `main_source` }
   target { `main_target` }
-  status -> status_label { "Look up `hidden_lookup` to convert status code to label" }
+  status -> status_label { "Look up @hidden_lookup to convert status code to label" }
 }

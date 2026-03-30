@@ -26,7 +26,7 @@ export {
   makeEntityRefResolver,
 } from "./spread-expand.js";
 export {
-  extractBacktickRefs,
+  extractAtRefs,
   classifyRef,
   resolveRef,
   extractNLRefData,
@@ -34,7 +34,7 @@ export {
   isSchemaInMappingSources,
 } from "./nl-ref.js";
 export type {
-  BacktickRef,
+  AtRef,
   RefClassification,
   Resolution,
   MappingSourcesTargets,

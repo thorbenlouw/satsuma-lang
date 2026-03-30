@@ -655,7 +655,6 @@ function extractArrowFieldName(pathNode: SyntaxNode): string | null {
   return firstSegment || null;
 }
 
-const NL_BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
 const NL_AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 function indexNlRefs(
@@ -687,33 +686,7 @@ function indexNlRefs(
       });
     }
 
-    // Index backtick refs (only those NOT already covered by @ref)
-    NL_BACKTICK_REF_RE.lastIndex = 0;
-    while ((match = NL_BACKTICK_REF_RE.exec(text)) !== null) {
-      const refName = match[1]!;
-      // Skip if this backtick ref overlaps with an @ref already indexed
-      const matchStart = match.index;
-      if (isInsideAtRef(text, matchStart)) continue;
-
-      const range = offsetToRange(text, match.index, match[0].length, startRow, startCol);
-      addReference(index, refName, {
-        uri,
-        range,
-        name: refName,
-        context: "arrow",
-      });
-    }
   });
-}
-
-/** Check if a position in the text falls inside an @ref match. */
-function isInsideAtRef(text: string, offset: number): boolean {
-  NL_AT_REF_RE.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = NL_AT_REF_RE.exec(text)) !== null) {
-    if (offset >= m.index && offset < m.index + m[0].length) return true;
-  }
-  return false;
 }
 
 /** Convert an offset within a node's text to an LSP Range. */

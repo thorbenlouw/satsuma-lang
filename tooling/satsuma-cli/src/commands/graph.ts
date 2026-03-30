@@ -21,7 +21,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
-import { extractBacktickRefs, classifyRef, resolveRef, resolveAllNLRefs } from "../nl-ref-extract.js";
+import { extractAtRefs, classifyRef, resolveRef, resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { WorkspaceIndex } from "../types.js";
 import type { FullGraph } from "../graph-builder.js";
 
@@ -404,7 +404,7 @@ function buildSchemaEdges(index: WorkspaceIndex, _schemaGraph: FullGraph, includ
 }
 
 /**
- * Extract index-key-format schema names referenced via backtick refs in NL text.
+ * Extract index-key-format schema names referenced via @refs in NL text.
  * Filters out schemas already in the mapping's declared sources/targets (those
  * are already covered by the standard source/target edges).
  */
@@ -413,7 +413,7 @@ function extractNlSchemaRefs(
   mappingContext: { sources: string[]; targets: string[]; namespace: string | null },
   index: WorkspaceIndex,
 ): string[] {
-  const refs = extractBacktickRefs(text);
+  const refs = extractAtRefs(text);
   const schemas: string[] = [];
   const allDeclared = new Set([...mappingContext.sources, ...mappingContext.targets]);
 

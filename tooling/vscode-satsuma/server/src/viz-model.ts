@@ -3,7 +3,7 @@ import { nodeRange, child, children, labelText, stringText } from "./parser-util
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { findReferences, resolveDefinition } from "./workspace-index";
 import type { RefClassification, DefinitionLookup } from "@satsuma/core";
-import { extractBacktickRefs, classifyRef, resolveRef } from "@satsuma/core";
+import { extractAtRefs, classifyRef, resolveRef } from "@satsuma/core";
 
 // ---------- VizModel interfaces ----------
 
@@ -704,7 +704,7 @@ function resolveTransformAtRefs(
   if (!transform.nlText) return [];
   const lookup = makeVizLookup(wsIndex);
   const ctx = { sources, targets, namespace };
-  return extractBacktickRefs(transform.nlText).map((br) => {
+  return extractAtRefs(transform.nlText).map((br) => {
     const resolution = resolveRef(br.ref, ctx, lookup);
     return {
       ref: br.ref,

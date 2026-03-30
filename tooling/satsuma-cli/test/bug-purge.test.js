@@ -191,7 +191,7 @@ describe("sl-04pv: hidden-source-in-nl fires on bare and dotted refs", () => {
         targets: ["tgt"],
       }],
       nlRefData: [{
-        text: "Look up `hidden` to get the code",
+        text: "Look up @hidden to get the code",
         mapping: "test",
         namespace: null,
         targetField: "id",
@@ -219,7 +219,7 @@ describe("sl-04pv: hidden-source-in-nl fires on bare and dotted refs", () => {
         targets: ["tgt"],
       }],
       nlRefData: [{
-        text: "Use `hidden.code` for the value",
+        text: "Use @hidden.code for the value",
         mapping: "test",
         namespace: null,
         targetField: "id",
@@ -246,7 +246,7 @@ describe("sl-04pv: hidden-source-in-nl fires on bare and dotted refs", () => {
         targets: ["tgt"],
       }],
       nlRefData: [{
-        text: "Copy `src.id` value",
+        text: "Copy @src.id value",
         mapping: "test",
         namespace: null,
         targetField: "id",
@@ -277,7 +277,7 @@ describe("sl-80jy: unresolved-nl-ref no false positive on dotted-field", () => {
         targets: ["tgt"],
       }],
       nlRefData: [{
-        text: "Use `hidden.code` for the value",
+        text: "Use @hidden.code for the value",
         mapping: "test",
         namespace: null,
         targetField: "id",
@@ -303,7 +303,7 @@ describe("sl-80jy: unresolved-nl-ref no false positive on dotted-field", () => {
         targets: ["tgt"],
       }],
       nlRefData: [{
-        text: "Use `nonexistent.field` for the value",
+        text: "Use @nonexistent.field for the value",
         mapping: "test",
         namespace: null,
         targetField: "id",

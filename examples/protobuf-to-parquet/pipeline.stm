@@ -129,7 +129,7 @@ mapping `session aggregation` (group_by session_id, on_error log, error_threshol
   }
 
   -> distinct_product_count {
-    "Count distinct `sku` values across all events in the session."
+    "Count distinct @sku values across all events in the session."
   }
 
   -> top_category {

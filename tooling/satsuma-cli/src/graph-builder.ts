@@ -4,7 +4,7 @@
  * Shared by `satsuma lineage` and `satsuma graph` commands.
  */
 
-import { extractBacktickRefs, classifyRef, resolveRef } from "./nl-ref-extract.js";
+import { extractAtRefs, classifyRef, resolveRef } from "./nl-ref-extract.js";
 import type { WorkspaceIndex } from "./types.js";
 
 export interface GraphNode {
@@ -71,7 +71,7 @@ export function buildFullGraph(index: WorkspaceIndex): FullGraph {
       if (!mapping) continue;
 
       const allDeclared = new Set([...(mapping.sources ?? []), ...(mapping.targets ?? [])]);
-      const refs = extractBacktickRefs(item.text);
+      const refs = extractAtRefs(item.text);
       const mappingContext = {
         sources: mapping.sources ?? [],
         targets: mapping.targets ?? [],

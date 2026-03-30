@@ -2690,10 +2690,10 @@ describe("satsuma fields --unmapped-by (namespace bugs)", () => {
 // satsuma nl-refs
 // ---------------------------------------------------------------------------
 describe("satsuma nl-refs", () => {
-  it("extracts backtick references from ns-merging.stm", async () => {
+  it("extracts @refs from ns-merging.stm", async () => {
     const { stdout, code } = await run("nl-refs", NS_MERGING);
     assert.equal(code, 0);
-    assert.match(stdout, /NL backtick references/);
+    assert.match(stdout, /NL @ref references/);
     assert.match(stdout, /source::hr_employees/);
     assert.match(stdout, /department/);
     assert.match(stdout, /posted_by/);
@@ -2742,15 +2742,15 @@ describe("satsuma nl-refs", () => {
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
     const countryCd = refs.find((r) => r.ref === "COUNTRY_CD");
-    assert.ok(countryCd, "should find COUNTRY_CD backtick ref");
+    assert.ok(countryCd, "should find COUNTRY_CD @ref");
   });
 
-  it("extracts backtick refs from standalone transform blocks", async () => {
+  it("extracts @refs from standalone transform blocks", async () => {
     const fixture = resolve(import.meta.dirname, "fixtures", "transform-nl-refs.stm");
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    assert.equal(refs.length, 3, "should find 3 backtick refs");
+    assert.equal(refs.length, 3, "should find 3 @refs");
     const refNames = refs.map((r) => r.ref).sort();
     assert.deepStrictEqual(refNames, ["first_name", "last_name", "region_code"]);
   });
@@ -2776,12 +2776,12 @@ describe("satsuma nl-refs", () => {
     assert.match(stdout, /region_code/);
   });
 
-  it("extracts backtick refs from note blocks inside mappings (sl-z57o)", async () => {
+  it("extracts @refs from note blocks inside mappings (sl-z57o)", async () => {
     const fixture = resolve(import.meta.dirname, "fixtures", "note-nl-refs.stm");
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    assert.equal(refs.length, 4, "should find 4 backtick refs (3 from note + 1 from arrow)");
+    assert.equal(refs.length, 4, "should find 4 @refs (3 from note + 1 from arrow)");
     const noteRefs = refs.filter((r) => r.targetField === null);
     assert.equal(noteRefs.length, 3, "3 refs should come from the note block (no targetField)");
     const refNames = noteRefs.map((r) => r.ref).sort();
@@ -2793,7 +2793,7 @@ describe("satsuma nl-refs", () => {
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    assert.equal(refs.length, 4, "should find 4 backtick refs");
+    assert.equal(refs.length, 4, "should find 4 @refs");
     // First two refs are on the first line of the multiline string (line 15, 1-indexed)
     assert.equal(refs[0].line, 15, "first ref should be on line 15");
     assert.equal(refs[1].line, 15, "second ref should be on line 15");
@@ -2858,7 +2858,7 @@ describe("satsuma where-used (NL refs)", () => {
 
   const NOTE_WU = resolve(import.meta.dirname, "fixtures", "note-where-used.stm");
 
-  it("finds NL backtick refs in standalone note blocks", async () => {
+  it("finds NL @refs in standalone note blocks", async () => {
     const { stdout, code } = await run("where-used", "product", "--json", NOTE_WU);
     assert.equal(code, 0);
     const result = JSON.parse(stdout);
@@ -2867,7 +2867,7 @@ describe("satsuma where-used (NL refs)", () => {
     assert.ok(nlRefs.some((r) => r.name.startsWith("note:")), "should have note: mapping key");
   });
 
-  it("finds NL backtick refs in metric note blocks", async () => {
+  it("finds NL @refs in metric note blocks", async () => {
     const { stdout, code } = await run("where-used", "orders", "--json", NOTE_WU);
     assert.equal(code, 0);
     const result = JSON.parse(stdout);

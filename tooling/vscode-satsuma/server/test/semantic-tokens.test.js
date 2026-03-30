@@ -187,57 +187,12 @@ describe("computeSemanticTokens", () => {
     );
   });
 
-  it("tokenizes backtick references inside nl_string as variable", () => {
-    const tree = parse(
-      'note { "This maps `src_accounts` to `tgt_accounts`." }',
-    );
-    const tokens = decodeTokens(computeSemanticTokens(tree).data);
-
-    const varTokens = tokens.filter((t) => t.type === "variable");
-    assert.equal(varTokens.length, 2, "should have 2 variable tokens for backtick refs");
-    assert.equal(varTokens[0].length, "`src_accounts`".length);
-    assert.equal(varTokens[1].length, "`tgt_accounts`".length);
-
-    // The string should be split — string parts before/between/after the refs
-    const stringTokens = tokens.filter(
-      (t) => t.type === "string" && t.line === 0 && t.col >= 7,
-    );
-    assert.ok(
-      stringTokens.length >= 2,
-      `should have string segments between refs, got ${stringTokens.length}`,
-    );
-  });
-
-  it("tokenizes backtick references inside multiline_string as variable", () => {
-    const tree = parse(
-      'note {\n  """\n  Check `balance` and `status` fields.\n  """\n}',
-    );
-    const tokens = decodeTokens(computeSemanticTokens(tree).data);
-
-    const varTokens = tokens.filter((t) => t.type === "variable");
-    assert.equal(varTokens.length, 2, "should have 2 variable tokens in multiline string");
-    assert.equal(varTokens[0].length, "`balance`".length);
-    assert.equal(varTokens[1].length, "`status`".length);
-  });
-
-  it("does not emit variable tokens for strings without backtick refs", () => {
+  it("does not emit variable tokens for strings without @refs", () => {
     const tree = parse('note { "No refs here." }');
     const tokens = decodeTokens(computeSemanticTokens(tree).data);
 
     const varTokens = tokens.filter((t) => t.type === "variable");
     assert.equal(varTokens.length, 0, "should have no variable tokens");
-  });
-
-  it("handles backtick refs on note block with multiple nl_strings", () => {
-    const tree = parse(
-      'note {\n  "First `alpha` ref."\n  "Second `beta` ref."\n}',
-    );
-    const tokens = decodeTokens(computeSemanticTokens(tree).data);
-
-    const varTokens = tokens.filter((t) => t.type === "variable");
-    assert.equal(varTokens.length, 2, "one ref per line");
-    // Check they're on different lines
-    assert.notEqual(varTokens[0].line, varTokens[1].line);
   });
 
   it("has a valid legend with standard token types", () => {
@@ -250,9 +205,9 @@ describe("computeSemanticTokens", () => {
     assert.ok(semanticTokensLegend.tokenTypes.includes("property"));
   });
 
-  it("applies nlRef modifier to backtick references in nl_string", () => {
+  it("applies nlRef modifier to @refs in nl_string", () => {
     const tree = parse(
-      'note { "Check `balance` field." }',
+      'note { "Check @balance field." }',
     );
     const tokens = decodeTokens(computeSemanticTokens(tree).data);
 
