@@ -12,8 +12,10 @@ import {
   entryText,
   extractMetadata,
   classifyTransform,
+  expandEntityFields,
+  makeEntityRefResolver,
 } from "@satsuma/core";
-import type { MetaEntry, Classification } from "@satsuma/core";
+import type { MetaEntry, Classification, FieldDecl, SpreadEntity } from "@satsuma/core";
 
 // ---------- VizModel protocol types (from shared package) ----------
 
@@ -234,65 +236,88 @@ function fieldInfoToEntry(fi: FieldInfo, defUri: string): FieldEntry {
 }
 
 // ---------- Spread resolution ----------
+//
+// Delegates to core's expandEntityFields() for the actual spread expansion,
+// using callbacks built from the viz model's namespace data. After expansion,
+// fragment entries are stripped from the model — spreads are an authoring
+// shorthand only.
 
 /**
  * Pre-resolve all fragment spreads into schema fields, then strip fragment
  * nodes from every namespace group.
  *
  * Resolution is cross-namespace (a schema in `src` can spread `common::frag`)
- * and iterative (a fragment may itself spread another fragment). We repeat
- * until no new fields are added, guarded by a cycle limit.
+ * and transitive (a fragment may itself spread another fragment). Core's
+ * expandEntityFields() handles cycle detection and diamond-shaped graphs.
  */
 function resolveAndStripSpreads(namespaces: NamespaceGroup[]): void {
-  // Build a flat fragment lookup across all namespaces.
-  // fragFields: id → direct fields (will be expanded iteratively)
-  // fragSpreads: id → names of other fragments it spreads
-  const fragFields = new Map<string, FieldEntry[]>();
-  const fragSpreads = new Map<string, string[]>();
+  // Build a flat entity lookup for spread resolution across all namespaces.
+  const entityMap = new Map<string, SpreadEntity>();
   for (const ns of namespaces) {
     for (const f of ns.fragments) {
-      fragFields.set(f.id, [...f.fields]);
-      fragSpreads.set(f.id, [...f.spreads]);
+      entityMap.set(f.id, fragmentToSpreadEntity(f));
+    }
+    for (const s of ns.schemas) {
+      entityMap.set(s.qualifiedId, schemaToSpreadEntity(s));
     }
   }
 
-  // Iteratively expand fragment-level spreads (handles fragment-spreads-fragment chains).
-  // Repeat until stable, guarded by a cycle limit.
-  for (let pass = 0; pass < 20; pass++) {
-    let changed = false;
-    for (const [id, spreads] of fragSpreads) {
-      if (spreads.length === 0) continue;
-      const current = fragFields.get(id)!;
-      const currentNames = new Set(current.map((f) => f.name));
-      for (const spreadName of spreads) {
-        for (const field of fragFields.get(spreadName) ?? []) {
-          if (!currentNames.has(field.name)) {
-            current.push(field);
-            currentNames.add(field.name);
-            changed = true;
-          }
-        }
-      }
-    }
-    if (!changed) break;
-  }
+  const resolveRef = makeEntityRefResolver(entityMap);
+  const lookupFragment = (key: string) => entityMap.get(key) ?? null;
 
-  // Expand schema spreads and clear the spreads list.
+  // Expand schema spreads using core and append resulting fields.
   for (const ns of namespaces) {
     for (const s of ns.schemas) {
       if (s.spreads.length === 0) continue;
-      const extra: FieldEntry[] = [];
-      for (const spreadName of s.spreads) {
-        for (const field of fragFields.get(spreadName) ?? []) {
-          extra.push(field);
-        }
-      }
-      s.fields = [...s.fields, ...extra];
+      const spreadEntity = schemaToSpreadEntity(s);
+      const expanded = expandEntityFields(spreadEntity, null, resolveRef, lookupFragment);
+      const extraFields: FieldEntry[] = expanded.map((ef) => expandedFieldToEntry(ef));
+      s.fields = [...s.fields, ...extraFields];
       s.spreads = [];
     }
     // Fragments are resolved away — remove them so the viz never renders them.
     ns.fragments = [];
   }
+}
+
+/** Convert a FragmentCard to core's SpreadEntity interface for spread expansion. */
+function fragmentToSpreadEntity(f: FragmentCard): SpreadEntity {
+  return {
+    fields: f.fields.map(fieldEntryToDecl),
+    hasSpreads: f.spreads.length > 0,
+    spreads: f.spreads,
+  };
+}
+
+/** Convert a SchemaCard to core's SpreadEntity interface for spread expansion. */
+function schemaToSpreadEntity(s: SchemaCard): SpreadEntity {
+  return {
+    fields: s.fields.map(fieldEntryToDecl),
+    hasSpreads: s.spreads.length > 0,
+    spreads: s.spreads,
+  };
+}
+
+/** Convert a viz FieldEntry to core's FieldDecl for spread expansion input. */
+function fieldEntryToDecl(fe: FieldEntry): FieldDecl {
+  return {
+    name: fe.name,
+    type: fe.type,
+    children: fe.children.map(fieldEntryToDecl),
+  };
+}
+
+/** Convert a core ExpandedField (FieldDecl) back to a viz FieldEntry for display. */
+function expandedFieldToEntry(decl: FieldDecl): FieldEntry {
+  return {
+    name: decl.name,
+    type: decl.type,
+    constraints: [],
+    notes: [],
+    comments: [],
+    children: (decl.children ?? []).map(expandedFieldToEntry),
+    location: { uri: "", line: 0, character: 0 },
+  };
 }
 
 // ---------- Top-level processing ----------

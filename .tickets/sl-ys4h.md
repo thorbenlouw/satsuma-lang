@@ -1,6 +1,6 @@
 ---
 id: sl-ys4h
-status: open
+status: closed
 deps: [sl-z6ps]
 links: [sl-4afx]
 created: 2026-03-30T18:24:05Z
