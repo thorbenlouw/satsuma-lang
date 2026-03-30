@@ -11,8 +11,9 @@ import {
   fieldNameText as coreFieldNameText,
   entryText,
   extractMetadata,
+  classifyTransform,
 } from "@satsuma/core";
-import type { MetaEntry } from "@satsuma/core";
+import type { MetaEntry, Classification } from "@satsuma/core";
 
 // ---------- VizModel protocol types (from shared package) ----------
 
@@ -782,40 +783,42 @@ function extractComputedArrow(uri: string, node: SyntaxNode): ArrowEntry {
   };
 }
 
+/**
+ * Extract transform info from a pipe_chain node.
+ *
+ * Uses core's classifyTransform() for the base classification, then refines
+ * "structural" to "map" when a map_literal is present (a viz-only distinction
+ * for rendering map blocks differently from pipeline transforms).
+ */
 function extractTransform(pipeChain: SyntaxNode): TransformInfo {
+  const pipeSteps = children(pipeChain, "pipe_step");
+
+  // Core classification: structural | nl | mixed | none
+  const coreKind = classifyTransform(pipeSteps);
+
+  // Extract NL text and pipeline step texts for the TransformInfo payload
   let nlText: string | null = null;
-  let hasNl = false;
-  let hasPipeline = false;
   let hasMap = false;
   const steps: string[] = [];
 
-  for (const step of children(pipeChain, "pipe_step")) {
-    // Each pipe_step contains pipe_text or map_literal
-    const mapLit = child(step, "map_literal");
-    if (mapLit) {
+  for (const step of pipeSteps) {
+    if (child(step, "map_literal")) {
       hasMap = true;
       continue;
     }
-
     const pipeText = child(step, "pipe_text");
     if (pipeText) {
-      // pipe_text can contain nl_string, identifier, or func_call
       const nl = child(pipeText, "nl_string") ?? child(pipeText, "multiline_string");
       if (nl) {
-        hasNl = true;
         nlText = stringText(nl);
       } else {
-        hasPipeline = true;
         steps.push(pipeText.text);
       }
     }
   }
 
-  let kind: TransformInfo["kind"];
-  if (hasMap) kind = "map";
-  else if (hasNl && hasPipeline) kind = "mixed";
-  else if (hasNl) kind = "nl";
-  else kind = "pipeline";
+  // Map core classification to viz TransformInfo.kind
+  const kind = coreClassificationToVizKind(coreKind, hasMap);
 
   return {
     kind,
@@ -823,6 +826,27 @@ function extractTransform(pipeChain: SyntaxNode): TransformInfo {
     steps,
     nlText,
   };
+}
+
+/**
+ * Map core's Classification enum to viz TransformInfo.kind.
+ *
+ * Core "structural" is refined to "map" when a map_literal is present,
+ * since the viz renders map blocks with a distinct visual style.
+ * Core "none" (bare copy arrow) maps to "pipeline" in the viz.
+ */
+function coreClassificationToVizKind(
+  coreKind: Classification,
+  hasMap: boolean,
+): TransformInfo["kind"] {
+  if (hasMap) return "map";
+  switch (coreKind) {
+    case "structural": return "pipeline";
+    case "nl":         return "nl";
+    case "mixed":      return "mixed";
+    case "none":       return "pipeline";
+    case "nl-derived": return "nl";
+  }
 }
 
 function extractEachBlock(uri: string, node: SyntaxNode): EachBlock {
