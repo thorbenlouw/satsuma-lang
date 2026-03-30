@@ -1,6 +1,6 @@
 ---
 id: sl-bq7u
-status: open
+status: closed
 deps: [sl-y666, sl-4asu, sl-qe6b, sl-bdg6, sl-1myj, sl-pcgg]
 links: []
 created: 2026-03-30T06:29:46Z
@@ -29,3 +29,11 @@ Child tickets (in rough dependency order):
 - @satsuma/viz-model is the single source of truth for VizModel types
 - No 'keep in sync' comments remain in the codebase
 
+
+## Notes
+
+**2026-03-30T13:15:00Z**
+
+Cause: Multiple pieces of logic were duplicated across satsuma-cli, vscode-satsuma/server, and satsuma-viz with no shared home.
+
+Fix: All six child tickets completed — string-utils, parser singleton, parse-errors, coverage path utility, VizModel types (in @satsuma/viz-model), and semantic validation — all now have canonical implementations in @satsuma/core (or @satsuma/viz-model). No "keep in sync" comments remain.
