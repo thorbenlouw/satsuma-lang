@@ -10,7 +10,9 @@ import {
   sourceRefText as coreSourceRefText,
   fieldNameText as coreFieldNameText,
   entryText,
+  extractMetadata,
 } from "@satsuma/core";
+import type { MetaEntry } from "@satsuma/core";
 
 // ---------- VizModel protocol types (from shared package) ----------
 
@@ -1118,31 +1120,48 @@ function extractComments(uri: string, node: SyntaxNode): CommentEntry[] {
 }
 
 // ---------- Metadata extraction ----------
+//
+// Delegates to core's extractMetadata() for CST parsing, then maps the
+// rich MetaEntry discriminated union to the viz model's flat {key, value}
+// MetadataEntry shape.
 
-function extractMetadataEntries(meta: SyntaxNode): MetadataEntry[] {
-  const entries: MetadataEntry[] = [];
-  for (const ch of meta.namedChildren) {
-    if (ch.type === "tag_token") {
-      const text = ch.namedChildren[0]?.text ?? ch.text;
-      entries.push({ key: text, value: "" });
-    } else if (ch.type === "tag_with_value") {
-      const key = ch.namedChildren[0];
-      const val = ch.namedChildren[1];
-      if (key) {
-        entries.push({
-          key: key.text,
-          value: val ? stripQuotes(val.text) : "",
-        });
-      }
-    } else if (ch.type === "note_tag") {
-      const str = child(ch, "nl_string") ?? child(ch, "multiline_string");
-      entries.push({
-        key: "note",
-        value: str ? (stringText(str) ?? "") : "",
-      });
+/**
+ * Map core's MetaEntry[] to the viz model's flat MetadataEntry[] shape.
+ *
+ * Mapping rules:
+ * - tag  → {key: tagName, value: ""}
+ * - kv   → {key: keyName, value: valueText}
+ * - note → {key: "note", value: noteText}
+ * - enum → {key: "enum", value: "val1 | val2 | ..."} (joined for display)
+ * - slice → skipped (handled separately by metric metadata extraction)
+ */
+function metaEntriesToViz(entries: MetaEntry[]): MetadataEntry[] {
+  const result: MetadataEntry[] = [];
+  for (const entry of entries) {
+    switch (entry.kind) {
+      case "tag":
+        result.push({ key: entry.tag, value: "" });
+        break;
+      case "kv":
+        result.push({ key: entry.key, value: entry.value });
+        break;
+      case "note":
+        result.push({ key: "note", value: entry.text });
+        break;
+      case "enum":
+        result.push({ key: "enum", value: entry.values.join(" | ") });
+        break;
+      case "slice":
+        // Slices are handled separately by extractMetricMetadata
+        break;
     }
   }
-  return entries;
+  return result;
+}
+
+/** Extract metadata from a metadata_block CST node as viz MetadataEntry[]. */
+function extractMetadataEntries(meta: SyntaxNode): MetadataEntry[] {
+  return metaEntriesToViz(extractMetadata(meta));
 }
 
 // ---------- Text helpers ----------
