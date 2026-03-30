@@ -190,7 +190,7 @@ metadata, import, namespace) is extracted from the CST in exactly one place:
 call core's extractors and adapt the output to their needs.
 
 This prevents behavioural drift between tools. A grammar change that renames a
-CST node type requires a single fix in core. See ADR-003 and ADR-010.
+CST node type requires a single fix in core. See ADR-003 and ADR-020.
 
 ### 4. Decouple via callbacks, not shared index types
 

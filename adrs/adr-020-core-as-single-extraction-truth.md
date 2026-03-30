@@ -1,4 +1,4 @@
-# ADR-010 — Core as the Single Extraction Truth, Consumers as Thin Wiring
+# ADR-020 — Core as the Single Extraction Truth, Consumers as Thin Wiring
 
 **Status:** Accepted
 **Date:** 2026-03-30
