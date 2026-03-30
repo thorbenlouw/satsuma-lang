@@ -152,10 +152,18 @@ function qualifiedNameText(node: SyntaxNode | null): string | null {
 /**
  * Extract a source_ref name, handling qualified_name (ns::name) in addition
  * to backtick_name, identifier, and nl_string.
+ *
+ * ERROR-node recovery: when the user is mid-edit (e.g. `from Foo` with no
+ * trailing comma yet), tree-sitter may wrap the partially-parsed source_ref
+ * in an ERROR node rather than producing a clean source_ref. Walking the
+ * ERROR node's named children lets us recover any already-typed identifier
+ * or qualified_name, so extraction continues to work during live editing.
  */
 function sourceRefNameNs(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
   if (node.type === "ERROR") {
+    // Recover from a partially-parsed source_ref by inspecting children
+    // that were successfully parsed before the error was detected.
     for (const c of node.namedChildren) {
       const result = sourceRefNameNs(c);
       if (result) return result;
@@ -277,6 +285,12 @@ export interface ExtractedMetric {
 export function extractMetrics(rootNode: SyntaxNode): ExtractedMetric[] {
   return collectFromNamespaces(rootNode, "metric_block").map(({ node, namespace }) => {
     const name = labelText(node);
+    // A metric_block's CST named children are ordered: identifier, nl_string?,
+    // metadata_block?, metric_body. The optional nl_string (or multiline_string)
+    // between the identifier and the metadata_block is the human-readable
+    // display name. We find it by selecting the first string node whose
+    // position in namedChildren comes before the metadata_block — this guards
+    // against accidentally picking up strings that appear inside the body.
     const displayNameNode = node.namedChildren.find(
       (c) => (c.type === "nl_string" || c.type === "multiline_string") &&
         node.namedChildren.indexOf(c) < node.namedChildren.findIndex((x) => x.type === "metadata_block"),

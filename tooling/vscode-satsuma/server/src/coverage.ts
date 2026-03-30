@@ -116,6 +116,17 @@ function collectBodyPaths(
 /**
  * Recursively collect paths from an each_block.
  * Arrows inside an each_block are relative to the iteration field.
+ *
+ * Nullability contract for outerSrcBase / outerTgtBase:
+ *   null     — no enclosing each_block has established a base path yet; this
+ *               is the top-level call for this each_block, so paths from the
+ *               block's own src_path/tgt_path become the new base.
+ *   non-null — an enclosing each_block already established a prefix; paths in
+ *               this nested block are qualified relative to that prefix via
+ *               qualify(outerBase, localPath).
+ *
+ * Recursive call sites pass srcBase/tgtBase (the base resolved for this level)
+ * as the outer values for any nested each_blocks found within this node.
  */
 function collectEachPaths(
   node: SyntaxNode,

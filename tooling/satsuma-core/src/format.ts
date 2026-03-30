@@ -14,6 +14,11 @@
 import type { SyntaxNode, Tree } from "./types.js";
 
 const INDENT = "  ";
+
+// Column-alignment widths for name and type in formatted field declarations.
+// Fields are laid out as:   <name padded to NAME_CAP>  <type padded to TYPE_CAP>  <metadata>
+// These values match the canonical example corpus. Changing them will reformat
+// every field declaration across all Satsuma files — treat as a breaking style change.
 const NAME_CAP = 24;
 const TYPE_CAP = 14;
 
@@ -154,8 +159,24 @@ function formatSourceFile(root: SyntaxNode, source: string): string {
   return parts.join("");
 }
 
+// Blank-line rules between top-level constructs.
+//
+// Returning "\n"   = no blank line  (end current line, start next immediately)
+// Returning "\n\n" = one blank line (one empty line separating the two items)
+//
+// Rules, by (predecessor, successor) pair:
+//   import   → import:   no blank line  (imports form a dense block)
+//   header†  → header†:  preserve source (blank only if source had one)
+//   header†  → import:   no blank line  (header flows into imports)
+//   header†  → block:    one blank line (header ends, content begins)
+//   comment  → non-comment: no blank line  (comment belongs to what follows)
+//   non-comment → comment: one blank line  (section-break before next comment)
+//   comment  → comment:  no blank line  (consecutive comments stay together)
+//   block    → block:    one blank line  (all other top-level blocks)
+//
+// † "header" = comment appearing before any non-comment construct.
 function topLevelSep(prev: SyntaxNode, curr: SyntaxNode, seenNonComment: boolean): string {
-  // Import → Import: no blank line
+  // import → import: no blank line
   if (isImport(prev) && isImport(curr)) return "\n";
 
   // File header comments (before any non-comment)
@@ -164,20 +185,20 @@ function topLevelSep(prev: SyntaxNode, curr: SyntaxNode, seenNonComment: boolean
       // Preserve blank line between header comments when source had one
       return hasBlankBetween(prev, curr) ? "\n\n" : "\n";
     }
-    if (isImport(curr)) return "\n";        // header → imports: 0 blank lines
-    return "\n\n";                          // header → first block: 1 blank line
+    if (isImport(curr)) return "\n";        // header → imports: no blank line
+    return "\n\n";                          // header → first block: one blank line
   }
 
-  // Comment → non-comment: pull tight
+  // comment → non-comment: pull tight (comment annotates what follows)
   if (isComment(prev) && !isComment(curr)) return "\n";
 
-  // Non-comment → comment: 1 blank line (section break)
+  // non-comment → comment: one blank line (section break before comment)
   if (!isComment(prev) && isComment(curr)) return "\n\n";
 
-  // Comment → comment (between blocks): no blank line
+  // comment → comment (between blocks): no blank line
   if (isComment(prev) && isComment(curr)) return "\n";
 
-  // Block → Block (any combination): 1 blank line
+  // block → block (any combination): one blank line
   return "\n\n";
 }
 

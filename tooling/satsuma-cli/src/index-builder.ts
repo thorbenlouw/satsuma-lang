@@ -268,10 +268,19 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     for (const q of fileData.questions) {
       questions.push({ ...q, file: filePath });
     }
-    // Build a lookup of anonymous mapping rows for this file so we can
-    // resolve arrow records that belong to anonymous (unnamed) mappings.
-    // Anonymous mappings are stored in index.mappings under <anon>@file:row
-    // keys, but ArrowRecord.mapping is null for arrows inside them.
+    // Associate arrows with anonymous (unnamed) mappings by source position.
+    //
+    // Named mappings: ArrowRecord.mapping carries the mapping name, so we key
+    // directly from it. Anonymous mappings have no name — ArrowRecord.mapping
+    // is null — so we can't use a name-based lookup.
+    //
+    // Positional strategy: anonymous mappings are stored under synthetic keys
+    // like `<anon>@<file>:<startRow>`. To find which anonymous mapping owns an
+    // arrow, we sort the anon mapping start rows and scan for the last one whose
+    // row is ≤ the arrow's row. This works because arrows in the source file
+    // always appear after (below) the mapping block header they belong to, and
+    // before the next mapping's header — so "the last anon mapping that started
+    // above me" is the correct parent.
     const anonMappingRows = fileData.mappings
       .filter((m) => m.name === null)
       .map((m) => m.row)
@@ -280,8 +289,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     for (const ar of fileData.arrowRecords) {
       let resolvedMapping = ar.mapping;
       if (resolvedMapping === null && anonMappingRows.length > 0) {
-        // Find the anonymous mapping that encloses this arrow: the last anon
-        // mapping whose start row is <= the arrow's line.
+        // Walk sorted rows to find the last anon mapping start at or before this arrow.
         let parentRow: number | undefined;
         for (const row of anonMappingRows) {
           if (row <= ar.line) parentRow = row;
@@ -374,6 +382,19 @@ export function resolveIndexKey<T>(name: string, entityMap: Map<string, T>): { k
 
 /**
  * Build a field-level arrow index from arrow records.
+ *
+ * Dual-key indexing strategy: each arrow is indexed under multiple key forms
+ * so that callers can look up arrows regardless of how they refer to a field.
+ *
+ * For a field "address.city" on source schema "crm::customers", we add:
+ *   - "crm::customers.address.city"  (fully-qualified canonical form)
+ *   - "customers.address.city"       (schema-prefixed bare form)
+ *   - "address.city"                 (bare path as written in the arrow)
+ *   - "city"                         (leaf field name, for nested path lookups)
+ *
+ * This allows @ref resolution (which uses canonical keys), coverage checks
+ * (which use bare paths), and hover/go-to-definition (which may use either)
+ * to all share the same index without each needing their own traversal.
  */
 function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, MappingRecord>): Map<string, ArrowRecord[]> {
   const index = new Map<string, ArrowRecord[]>();
