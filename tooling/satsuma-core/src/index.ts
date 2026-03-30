@@ -1,3 +1,4 @@
+export { capitalize, normalizeName } from "./string-utils.js";
 export { format } from "./format.js";
 export type { SyntaxNode, Tree, Classification, PipeStep, MetaEntry, MetaEntryTag, MetaEntryKV, MetaEntryEnum, MetaEntryNote, MetaEntrySlice, FieldDecl } from "./types.js";
 export { child, children, allDescendants, labelText, stringText, entryText } from "./cst-utils.js";

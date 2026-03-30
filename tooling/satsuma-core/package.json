@@ -45,6 +45,10 @@
     "./nl-ref": {
       "types": "./dist/nl-ref.d.ts",
       "default": "./dist/nl-ref.js"
+    },
+    "./string-utils": {
+      "types": "./dist/string-utils.d.ts",
+      "default": "./dist/string-utils.js"
     }
   },
   "types": "./dist/index.d.ts",

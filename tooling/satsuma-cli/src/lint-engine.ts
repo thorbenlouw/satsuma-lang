@@ -7,6 +7,7 @@
  * whose `apply` function rewrites source text deterministically.
  */
 
+import { capitalize } from "@satsuma/core";
 import {
   extractAtRefs,
   classifyRef,
@@ -369,10 +370,6 @@ function checkDuplicateDefinition(index: WorkspaceIndex): LintDiagnostic[] {
   }
 
   return diagnostics;
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ── Engine ─────────────────────────────────────────────────────────────────

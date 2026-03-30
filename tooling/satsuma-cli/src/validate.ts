@@ -6,6 +6,7 @@
  * NL @ref validation.
  */
 
+import { capitalize } from "@satsuma/core";
 import {
   extractAtRefs,
   classifyRef,
@@ -550,6 +551,3 @@ function resolveFieldPath(path: string, schemaNames: string[], index: WorkspaceI
   return false;
 }
 
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
