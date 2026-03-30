@@ -14,6 +14,10 @@ import {
   labelText,
   stringText,
   entryText,
+  qualifiedNameText,
+  sourceRefText,
+  fieldNameText,
+  walkDescendants,
 } from "../dist/cst-utils.js";
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
@@ -223,5 +227,113 @@ describe("entryText()", () => {
 
   it("returns null for undefined input", () => {
     assert.equal(entryText(undefined), null);
+  });
+});
+
+// ── qualifiedNameText() ─────────────────────────────────────────────────────
+
+describe("qualifiedNameText()", () => {
+  it("extracts ns::name from a qualified_name node with two identifiers", () => {
+    const qn = n("qualified_name", [ident("crm"), ident("customers")], "crm::customers");
+    assert.equal(qualifiedNameText(qn), "crm::customers");
+  });
+
+  it("returns null when qualified_name has fewer than two identifiers", () => {
+    const qn = n("qualified_name", [ident("solo")], "solo");
+    assert.equal(qualifiedNameText(qn), null);
+  });
+
+  it("returns null for non-qualified_name node type", () => {
+    assert.equal(qualifiedNameText(ident("plain")), null);
+  });
+
+  it("returns null for null input", () => {
+    assert.equal(qualifiedNameText(null), null);
+  });
+
+  it("returns null for undefined input", () => {
+    assert.equal(qualifiedNameText(undefined), null);
+  });
+});
+
+// ── sourceRefText() ─────────────────────────────────────────────────────────
+
+describe("sourceRefText()", () => {
+  it("extracts identifier text from a source_ref with an identifier child", () => {
+    const ref = n("source_ref", [ident("orders")], "orders");
+    assert.equal(sourceRefText(ref), "orders");
+  });
+
+  it("extracts qualified name from a source_ref with a qualified_name child", () => {
+    const qn = n("qualified_name", [ident("crm"), ident("orders")], "crm::orders");
+    const ref = n("source_ref", [qn], "crm::orders");
+    assert.equal(sourceRefText(ref), "crm::orders");
+  });
+
+  it("strips backticks from a source_ref with a backtick_name child", () => {
+    const ref = n("source_ref", [backtick("my entity")], "`my entity`");
+    assert.equal(sourceRefText(ref), "my entity");
+  });
+
+  it("strips quotes from a source_ref with an nl_string child", () => {
+    const ref = n("source_ref", [nlStr("string ref")], '"string ref"');
+    assert.equal(sourceRefText(ref), "string ref");
+  });
+
+  it("returns null for null input", () => {
+    assert.equal(sourceRefText(null), null);
+  });
+});
+
+// ── fieldNameText() ─────────────────────────────────────────────────────────
+
+describe("fieldNameText()", () => {
+  it("returns plain identifier text from a field_name node", () => {
+    const fn = n("field_name", [ident("amount")], "amount");
+    assert.equal(fieldNameText(fn), "amount");
+  });
+
+  it("strips backticks from a backtick_name child of field_name", () => {
+    const fn = n("field_name", [backtick("field with spaces")], "`field with spaces`");
+    assert.equal(fieldNameText(fn), "field with spaces");
+  });
+
+  it("returns the node text when field_name has no named children", () => {
+    const fn = { ...n("field_name", [], "bare"), namedChildren: [] };
+    assert.equal(fieldNameText(fn), "bare");
+  });
+
+  it("returns null for null input", () => {
+    assert.equal(fieldNameText(null), null);
+  });
+});
+
+// ── walkDescendants() ───────────────────────────────────────────────────────
+
+describe("walkDescendants()", () => {
+  it("visits all named descendants depth-first", () => {
+    const leaf1 = ident("a");
+    const leaf2 = ident("b");
+    const mid = n("field_decl", [leaf1], "f");
+    const root = n("schema_body", [mid, leaf2]);
+    const visited = [];
+    walkDescendants(root, (node) => visited.push(node.text));
+    // depth-first: mid, leaf1 (inside mid), leaf2
+    assert.deepEqual(visited, ["f", "a", "b"]);
+  });
+
+  it("handles empty children without error", () => {
+    const root = n("root", []);
+    const visited = [];
+    walkDescendants(root, (node) => visited.push(node.text));
+    assert.deepEqual(visited, []);
+  });
+
+  it("skips null entries in namedChildren", () => {
+    const leaf = ident("x");
+    const root = { ...n("root", []), namedChildren: [null, leaf] };
+    const visited = [];
+    walkDescendants(root, (node) => visited.push(node.text));
+    assert.deepEqual(visited, ["x"]);
   });
 });

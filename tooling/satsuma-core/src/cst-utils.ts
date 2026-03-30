@@ -75,3 +75,63 @@ export function entryText(node: SyntaxNode | null | undefined): string | null {
   if (node.type === "nl_string") return node.text.slice(1, -1);
   return node.text; // identifier
 }
+
+/**
+ * Extract the namespace::name text from a qualified_name CST node.
+ * Returns null if the node is missing or has fewer than two identifier children.
+ *
+ * A qualified_name node in the Satsuma grammar has the form:
+ *   identifier "::" identifier
+ * e.g. `crm::customers` → "crm::customers".
+ */
+export function qualifiedNameText(node: SyntaxNode | null | undefined): string | null {
+  if (!node || node.type !== "qualified_name") return null;
+  const ids = node.namedChildren.filter((c) => c.type === "identifier");
+  if (ids.length < 2 || !ids[0] || !ids[1]) return null;
+  return `${ids[0].text}::${ids[1].text}`;
+}
+
+/**
+ * Extract the text from a source_ref CST node, handling all child variants:
+ * qualified_name (ns::name), backtick_name, identifier, and nl_string.
+ *
+ * Returns null for empty or unrecognized source_ref content.
+ */
+export function sourceRefText(node: SyntaxNode | null | undefined): string | null {
+  if (!node) return null;
+  const qn = child(node, "qualified_name");
+  if (qn) return qualifiedNameText(qn);
+  const bn = child(node, "backtick_name");
+  if (bn) return bn.text.slice(1, -1);
+  const id = child(node, "identifier");
+  if (id) return id.text;
+  const ns = child(node, "nl_string");
+  if (ns) return ns.text.slice(1, -1);
+  return null;
+}
+
+/**
+ * Extract the display name from a field_name CST node.
+ * Strips backtick delimiters when the inner node is a backtick_name.
+ */
+export function fieldNameText(node: SyntaxNode | null | undefined): string | null {
+  if (!node) return null;
+  const inner = node.namedChildren[0];
+  if (!inner) return node.text;
+  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
+  return inner.text;
+}
+
+/**
+ * Walk all named descendants of a node depth-first, calling `fn` on each.
+ * This is the generic callback-based traversal — use `allDescendants` when
+ * you only need nodes of a specific type.
+ */
+export function walkDescendants(node: SyntaxNode, fn: (n: SyntaxNode) => void): void {
+  for (const ch of node.namedChildren) {
+    if (ch !== null) {
+      fn(ch);
+      walkDescendants(ch, fn);
+    }
+  }
+}

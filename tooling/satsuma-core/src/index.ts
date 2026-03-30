@@ -19,7 +19,7 @@ export { addPathAndPrefixes } from "./coverage.js";
 export type { FieldCoverageEntry, SchemaCoverageResult, MappingCoverageResult } from "./coverage.js";
 export { format } from "./format.js";
 export type { SyntaxNode, Tree, Classification, PipeStep, MetaEntry, MetaEntryTag, MetaEntryKV, MetaEntryEnum, MetaEntryNote, MetaEntrySlice, FieldDecl } from "./types.js";
-export { child, children, allDescendants, labelText, stringText, entryText } from "./cst-utils.js";
+export { child, children, allDescendants, labelText, stringText, entryText, qualifiedNameText, sourceRefText, fieldNameText, walkDescendants } from "./cst-utils.js";
 export { classifyTransform, classifyArrow } from "./classify.js";
 export { canonicalRef, canonicalEntityName, resolveScopedEntityRef } from "./canonical-ref.js";
 export { extractMetadata } from "./meta-extract.js";

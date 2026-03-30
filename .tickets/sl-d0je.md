@@ -1,6 +1,6 @@
 ---
 id: sl-d0je
-status: open
+status: closed
 deps: [sl-via3, sl-z6ps]
 links: [sl-o4by]
 created: 2026-03-30T18:23:17Z

@@ -4,7 +4,13 @@ import {
 import { fileURLToPath, pathToFileURL } from "url";
 import { resolve, dirname, relative } from "path";
 import type { SyntaxNode, Tree } from "./parser-utils";
-import { nodeRange, child, children, labelText } from "./parser-utils";
+import { nodeRange, child, children, labelText, walkDescendants } from "./parser-utils";
+import {
+  sourceRefText as coreSourceRefText,
+  qualifiedNameText as coreQualifiedNameText,
+  fieldNameText as coreFieldNameText,
+  entryText,
+} from "@satsuma/core";
 
 // ---------- Data structures ----------
 
@@ -409,37 +415,15 @@ function indexImport(index: WorkspaceIndex, uri: string, node: SyntaxNode): void
 
   const names: string[] = [];
   for (const nameNode of importNames) {
-    const qn = child(nameNode, "qualified_name");
-    if (qn) {
-      const parts = qn.namedChildren.filter((c) => c.type === "identifier");
-      if (parts.length >= 2 && parts[0] && parts[1]) {
-        names.push(`${parts[0].text}::${parts[1].text}`);
-      }
-    } else {
-      const inner = nameNode.namedChildren[0];
-      if (inner?.type === "backtick_name") {
-        names.push(inner.text.slice(1, -1));
-      } else if (inner) {
-        names.push(inner.text);
-      }
-    }
+    const text = importNameText(nameNode);
+    if (text) names.push(text);
   }
 
-  // Extract the path text
+  // Extract the import path text using core's entryText for delimiter stripping
   let pathText = "";
   if (importPath) {
     const inner = importPath.namedChildren[0];
-    if (inner?.type === "nl_string") {
-      pathText = inner.text.slice(1, -1);
-    } else if (inner) {
-      pathText = inner.text;
-    } else {
-      // import_path is an alias for nl_string, so the node itself might be nl_string
-      pathText = importPath.text;
-      if (pathText.startsWith('"') && pathText.endsWith('"')) {
-        pathText = pathText.slice(1, -1);
-      }
-    }
+    pathText = entryText(inner ?? importPath) ?? "";
   }
 
   const entry: ImportEntry = {
@@ -812,28 +796,25 @@ function extractFields(body: SyntaxNode | null): FieldInfo[] {
 }
 
 // ---------- Text extraction helpers ----------
+//
+// These delegate to @satsuma/core cst-utils for the standard CST text
+// extraction logic. Only LSP-specific adapters (importNameText, spreadLabelText,
+// extractArrowFullPath) remain here because they handle grammar forms or
+// multi-word patterns not needed by the general-purpose core helpers.
 
+/** Extract text from a source_ref node. Delegates to core sourceRefText. */
 function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  if (id) return id.text;
-  const ns = child(ref, "nl_string");
-  if (ns) return ns.text.slice(1, -1);
-  return null;
+  return coreSourceRefText(ref);
 }
 
-function qualifiedNameText(qn: SyntaxNode): string {
-  const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-  if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-  return qn.text;
-}
-
+/**
+ * Extract import name text from an import_name node.
+ * Handles qualified_name (ns::name), backtick_name, and identifier children.
+ * LSP-specific: import_name nodes are only relevant for workspace indexing.
+ */
 function importNameText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
+  if (qn) return coreQualifiedNameText(qn);
   const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   const id = child(node, "identifier");
@@ -841,22 +822,24 @@ function importNameText(node: SyntaxNode): string | null {
   return null;
 }
 
+/**
+ * Extract text from a spread_label node, handling multi-word spreads.
+ * Multi-word spreads use identifier + continuation_word children (sl-3ccy).
+ * LSP-specific: the core spread extractor in extract.ts has its own version.
+ */
 function spreadLabelText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
+  if (qn) return coreQualifiedNameText(qn);
   const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
-  // Multi-word spread: join identifier + continuation_word children (sl-3ccy)
-  const ids = node.namedChildren.filter((c) => c.type === "identifier" || c.type === "continuation_word");
-  if (ids.length > 0) return ids.map((i) => i.text).join(" ");
+  const ids = node.namedChildren.filter((c: SyntaxNode) => c.type === "identifier" || c.type === "continuation_word");
+  if (ids.length > 0) return ids.map((i: SyntaxNode) => i.text).join(" ");
   return node.text;
 }
 
+/** Extract field name text. Delegates to core fieldNameText. */
 function fieldNameText(nameNode: SyntaxNode): string | null {
-  const inner = nameNode.namedChildren[0];
-  if (!inner) return nameNode.text;
-  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
-  return inner.text;
+  return coreFieldNameText(nameNode);
 }
 
 // ---------- Internal helpers ----------
@@ -881,9 +864,3 @@ function addReference(
   index.references.set(name, existing);
 }
 
-function walkDescendants(node: SyntaxNode, fn: (n: SyntaxNode) => void): void {
-  for (const ch of node.namedChildren) {
-    fn(ch);
-    walkDescendants(ch, fn);
-  }
-}

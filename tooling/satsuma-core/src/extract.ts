@@ -9,7 +9,7 @@
 import { canonicalRef } from "./canonical-ref.js";
 import { classifyTransform, classifyArrow } from "./classify.js";
 import { extractMetadata } from "./meta-extract.js";
-import { child, children, allDescendants, labelText, stringText, entryText } from "./cst-utils.js";
+import { child, children, allDescendants, labelText, stringText, entryText, qualifiedNameText, sourceRefText as cstSourceRefText } from "./cst-utils.js";
 import type { Classification, FieldDecl, MetaEntry, PipeStep, SyntaxNode } from "./types.js";
 
 // ── Internal field tree ────────────────────────────────────────────────────
@@ -141,6 +141,7 @@ export function extractFieldTree(bodyNode: SyntaxNode): FieldTree {
 
 /**
  * Extract the text from a spread_label node.
+ * Handles qualified_name, backtick_name, and multi-word (identifier + continuation_word) forms.
  */
 function spreadLabelText(labelNode: SyntaxNode): string {
   const qn = child(labelNode, "qualified_name");
@@ -154,30 +155,16 @@ function spreadLabelText(labelNode: SyntaxNode): string {
 }
 
 /**
- * Extract the text from a qualified_name node (ns::identifier).
- */
-function qualifiedNameText(node: SyntaxNode | null): string | null {
-  if (!node || node.type !== "qualified_name") return null;
-  const ids = children(node, "identifier");
-  if (ids.length < 2) return null;
-  return `${ids[0]!.text}::${ids[1]!.text}`;
-}
-
-/**
- * Extract a source_ref name, handling qualified_name (ns::name) in addition
- * to backtick_name, identifier, and nl_string.
+ * Extract a source_ref name with ERROR-node recovery for live editing.
  *
- * ERROR-node recovery: when the user is mid-edit (e.g. `from Foo` with no
- * trailing comma yet), tree-sitter may wrap the partially-parsed source_ref
- * in an ERROR node rather than producing a clean source_ref. Walking the
- * ERROR node's named children lets us recover any already-typed identifier
- * or qualified_name, so extraction continues to work during live editing.
+ * Delegates to cst-utils sourceRefText for well-formed source_ref nodes,
+ * but adds ERROR-node recovery: when tree-sitter wraps a partially-parsed
+ * source_ref in an ERROR node during mid-edit, we walk the ERROR node's
+ * named children to recover any already-typed identifier or qualified_name.
  */
 function sourceRefNameNs(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
   if (node.type === "ERROR") {
-    // Recover from a partially-parsed source_ref by inspecting children
-    // that were successfully parsed before the error was detected.
     for (const c of node.namedChildren) {
       const result = sourceRefNameNs(c);
       if (result) return result;
@@ -185,12 +172,7 @@ function sourceRefNameNs(node: SyntaxNode | null | undefined): string | null {
     return null;
   }
   if (node.type !== "source_ref") return entryText(node);
-  for (const c of node.namedChildren) {
-    if (c.type === "qualified_name") return qualifiedNameText(c);
-    if (c.type === "backtick_name") return c.text.slice(1, -1);
-    if (c.type === "identifier") return c.text;
-  }
-  return null;
+  return cstSourceRefText(node);
 }
 
 interface NamespaceCollected {

@@ -38,6 +38,7 @@ import {
   children as _children,
   labelText as _labelText,
   stringText as _stringText,
+  walkDescendants as _walkDescendants,
 } from "@satsuma/core";
 
 /** First named child of the given type. */
@@ -58,6 +59,11 @@ export function labelText(node: Node): string | null {
 /** Strip delimiters from an NL string or multiline string node. */
 export function stringText(node: Node | null | undefined): string | null {
   return _stringText(node);
+}
+
+/** Walk all named descendants depth-first, calling fn on each. */
+export function walkDescendants(node: Node, fn: (n: Node) => void): void {
+  _walkDescendants(node, fn as (n: import("@satsuma/core").SyntaxNode) => void);
 }
 
 // ---------- Parsing ─────────────────────────────────────────────────────────
