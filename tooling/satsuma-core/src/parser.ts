@@ -74,9 +74,12 @@ export function initParser(wasmPath: string, options?: ParserInitOptions): Promi
     // bundles (vscode server), where it is lowered to require(). A top-level
     // static import or createRequire(import.meta.url) cannot be used because
     // import.meta is unavailable in CJS output and causes a load-time crash.
-    const { default: TreeSitter } = await import("web-tree-sitter") as {
-      default: typeof import("web-tree-sitter");
-    };
+    //
+    // web-tree-sitter's CJS build exposes Parser, Language, etc. as named
+    // exports with no default export. The fallback (mod.default ?? mod) handles
+    // both that case and future ESM builds that may add a default.
+    const mod = await import("web-tree-sitter");
+    const TreeSitter = (mod.default ?? mod) as unknown as typeof import("web-tree-sitter");
     await TreeSitter.Parser.init(
       options?.locateFile ? { locateFile: options.locateFile } : undefined,
     );
