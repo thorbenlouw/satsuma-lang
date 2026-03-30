@@ -1,4 +1,4 @@
-/* global marked */
+/* global marked, DOMPurify */
 /* diaries.js — client-side diary reader
  *
  * Each diary entry is a small JSON file at satsuma-diaries/content/{date}.json,
@@ -49,7 +49,9 @@
       .then(function (data) {
         // Strip the "# The Satsuma Diaries" H1 — the page already has a title
         const body = data.markdown.replace(/^# The Satsuma Diaries\n/, "");
-        contentEl.innerHTML = marked.parse(body);
+        // Sanitize before assigning to innerHTML to prevent XSS from
+        // unexpected content in fetched JSON (defence-in-depth).
+        contentEl.innerHTML = DOMPurify.sanitize(marked.parse(body));
         showState("content");
         contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
       })
