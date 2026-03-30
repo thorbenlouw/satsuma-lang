@@ -10,9 +10,9 @@ assignee: Thorben Louw
 parent: sl-jvwu
 tags: [lsp]
 ---
-# Extract satsuma-lsp package from vscode-satsuma/server (ADR-011)
+# Extract satsuma-lsp package from vscode-satsuma/server (ADR-021)
 
-Move vscode-satsuma/server/ into a new top-level package at tooling/satsuma-lsp/. See ADR-011 for the full rationale.
+Move vscode-satsuma/server/ into a new top-level package at tooling/satsuma-lsp/. See ADR-021 for the full rationale.
 
 **Work:**
 1. Create tooling/satsuma-lsp/ with package.json (@satsuma/lsp), tsconfig.json, and build config.

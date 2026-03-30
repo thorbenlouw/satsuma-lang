@@ -1,7 +1,8 @@
-# ADR-011 — Extract satsuma-lsp as an Editor-Agnostic Package
+# ADR-021 — Extract satsuma-lsp as an Editor-Agnostic Package
 
 **Status:** Accepted
 **Date:** 2026-03-30
+**Extends:** ADR-010 (LSP Server Architecture — noted the server is "theoretically reusable by Neovim, Emacs, or any LSP client"; this ADR makes that reuse practical)
 
 ## Context
 
@@ -26,7 +27,7 @@ IntelliJ user cannot use the language server without installing the VSCode
 extension's npm package, which carries unnecessary VSCode client dependencies
 and extension manifest configuration.
 
-Additionally, the ongoing core consolidation work (ADR-010) targets the LSP
+Additionally, the ongoing core consolidation work (ADR-020) targets the LSP
 server's extraction logic. Having the server in its own package with its own
 test suite makes this migration cleaner — changes to the LSP's wiring layer
 don't require building or testing the VSCode extension.
@@ -113,7 +114,7 @@ args = ["satsuma-lsp", "--stdio"]
 - Any LSP-capable editor gets Satsuma support without VSCode.
 - The LSP server has its own test suite, build, and release cycle — decoupled
   from VSCode extension packaging.
-- The core consolidation migration (ADR-010) targets a cleaner, standalone
+- The core consolidation migration (ADR-020) targets a cleaner, standalone
   package rather than a nested directory inside an extension.
 - Future tooling (web-based editor, CI validation service) can embed the LSP
   server programmatically.

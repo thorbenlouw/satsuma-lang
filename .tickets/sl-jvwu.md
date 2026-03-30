@@ -9,9 +9,9 @@ priority: 1
 assignee: Thorben Louw
 tags: [core, lsp, cli]
 ---
-# epic: Complete core extraction consolidation (ADR-010)
+# epic: Complete core extraction consolidation (ADR-020)
 
-Consolidate all CST extraction logic into satsuma-core so that CLI and LSP are thin consumers that only wire callbacks and adapt output shapes. See ADR-010 for the full rationale.
+Consolidate all CST extraction logic into satsuma-core so that CLI and LSP are thin consumers that only wire callbacks and adapt output shapes. See ADR-020 for the full rationale.
 
 ## Acceptance Criteria
 
