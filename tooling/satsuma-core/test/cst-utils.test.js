@@ -153,13 +153,39 @@ describe("labelText()", () => {
 // ── stringText() ─────────────────────────────────────────────────────────────
 
 describe("stringText()", () => {
-  it("strips nl_string delimiters", () => {
+  it("strips nl_string delimiters from a simple string", () => {
     assert.equal(stringText(nlStr("hello world")), "hello world");
   });
 
-  it("strips multiline_string delimiters and trims whitespace", () => {
+  it("returns empty string for an empty nl_string", () => {
+    const empty = n("nl_string", [], '""');
+    assert.equal(stringText(empty), "");
+  });
+
+  it("unescapes escaped double quotes in nl_string", () => {
+    // nl_string raw text includes the backslash-quote sequence from the source
+    const node = n("nl_string", [], '"she said \\"hello\\""');
+    assert.equal(stringText(node), 'she said "hello"');
+  });
+
+  it("unescapes escaped backslashes in nl_string", () => {
+    const node = n("nl_string", [], '"path\\\\to\\\\file"');
+    assert.equal(stringText(node), "path\\to\\file");
+  });
+
+  it("unescapes mixed escaped quotes and backslashes in nl_string", () => {
+    const node = n("nl_string", [], '"a\\\\\\"b"');
+    assert.equal(stringText(node), 'a\\"b');
+  });
+
+  it("strips multiline_string delimiters and trims whitespace (no escape handling)", () => {
     const ms = n("multiline_string", [], '"""  trimmed  """');
     assert.equal(stringText(ms), "trimmed");
+  });
+
+  it("preserves backslash sequences in multiline_string (raw syntax)", () => {
+    const ms = n("multiline_string", [], '"""has \\"quotes\\" inside"""');
+    assert.equal(stringText(ms), 'has \\"quotes\\" inside');
   });
 
   it("returns raw text for other node types", () => {

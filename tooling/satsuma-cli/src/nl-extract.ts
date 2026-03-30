@@ -6,6 +6,7 @@
  * Each item includes raw text, position type, and parent block/field context.
  */
 
+import { stringText } from "@satsuma/core";
 import type { SyntaxNode } from "./types.js";
 
 export interface NLItem {
@@ -22,12 +23,6 @@ export function extractNLContent(node: SyntaxNode, parent: string | null = null)
   const items: NLItem[] = [];
   walkNL(node, parent, items);
   return items;
-}
-
-function stripDelimiters(text: string, type: string): string {
-  if (type === "multiline_string") return text.slice(3, -3).trim();
-  if (type === "nl_string") return text.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-  return text;
 }
 
 function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void {
@@ -51,7 +46,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         (x) => x.type === "nl_string" || x.type === "multiline_string",
       );
       if (strNodes.length > 0) {
-        const text = strNodes.map((s) => stripDelimiters(s.text, s.type)).join("\n");
+        const text = strNodes.map((s) => stringText(s) ?? "").join("\n");
         items.push({
           text,
           kind: "note",
@@ -65,7 +60,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
       for (const sc of c.namedChildren) {
         if (sc.type === "nl_string" || sc.type === "multiline_string") {
           items.push({
-            text: stripDelimiters(sc.text, sc.type),
+            text: stringText(sc) ?? "",
             kind: "note",
             parent,
             line: sc.startPosition.row + 1,
@@ -74,7 +69,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
           for (const inner of sc.namedChildren) {
             if (inner.type === "nl_string" || inner.type === "multiline_string") {
               items.push({
-                text: stripDelimiters(inner.text, inner.type),
+                text: stringText(inner) ?? "",
                 kind: "note",
                 parent,
                 line: inner.startPosition.row + 1,
@@ -90,7 +85,7 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         for (const kid of inner.namedChildren) {
           if (kid.type === "nl_string" || kid.type === "multiline_string") {
             items.push({
-              text: stripDelimiters(kid.text, kid.type),
+              text: stringText(kid) ?? "",
               kind: "transform",
               parent,
               line: c.startPosition.row + 1,
