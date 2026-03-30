@@ -3,7 +3,14 @@ import { nodeRange, child, children, labelText, stringText } from "./parser-util
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { findReferences, resolveDefinition } from "./workspace-index";
 import type { DefinitionLookup } from "@satsuma/core";
-import { extractAtRefs, classifyRef, resolveRef } from "@satsuma/core";
+import {
+  extractAtRefs,
+  classifyRef,
+  resolveRef,
+  sourceRefText as coreSourceRefText,
+  fieldNameText as coreFieldNameText,
+  entryText,
+} from "@satsuma/core";
 
 // ---------- VizModel protocol types (from shared package) ----------
 
@@ -607,20 +614,27 @@ function resolveTransformAtRefs(
   });
 }
 
+/**
+ * Resolve a schema reference name to its fully-qualified form by looking up
+ * the workspace index. If the schema is defined within a namespace and the ref
+ * is bare (no :: prefix), qualifies it with the definition's namespace.
+ * Returns the original refName if no matching schema definition is found.
+ */
 function resolveMappingRef(
   refName: string,
   namespace: string | null,
   wsIndex: WorkspaceIndex,
 ): string {
+  // Already fully qualified — return as-is
+  if (refName.includes("::")) return refName;
+
   const defs = resolveDefinition(wsIndex, refName, namespace);
   const schemaDef = defs.find((d) => d.kind === "schema");
-  return schemaDef ? (namespace && !refName.includes("::") && schemaDef.namespace
+  if (!schemaDef) return refName;
+
+  // Qualify with the definition's namespace if it has one
+  return schemaDef.namespace
     ? `${schemaDef.namespace}::${refName}`
-    : refName.includes("::")
-      ? refName
-      : schemaDef.namespace
-        ? `${schemaDef.namespace}::${refName}`
-        : refName)
     : refName;
 }
 
@@ -1132,7 +1146,25 @@ function extractMetadataEntries(meta: SyntaxNode): MetadataEntry[] {
 }
 
 // ---------- Text helpers ----------
+//
+// Standard text extraction is delegated to @satsuma/core cst-utils.
+// Only nodeLocation() and pathText() remain here as viz-specific helpers.
 
+/** Extract text from a source_ref node. Delegates to core sourceRefText. */
+function sourceRefText(ref: SyntaxNode): string | null {
+  return coreSourceRefText(ref);
+}
+
+/** Extract field name text. Delegates to core fieldNameText. */
+function fieldNameText(nameNode: SyntaxNode): string | null {
+  return coreFieldNameText(nameNode);
+}
+
+/**
+ * Extract path text from a src_path or tgt_path node, stripping backtick
+ * delimiters. This is viz-specific because it handles the raw path node
+ * directly (not a source_ref or field_name node).
+ */
 function pathText(node: SyntaxNode): string {
   const text = node.text;
   if (text.startsWith("`") && text.endsWith("`")) {
@@ -1141,29 +1173,11 @@ function pathText(node: SyntaxNode): string {
   return text;
 }
 
-function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) {
-    const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-    if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-    return qn.text;
-  }
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  if (id) return id.text;
-  const ns = child(ref, "nl_string");
-  if (ns) return ns.text.slice(1, -1);
-  return null;
-}
-
-function fieldNameText(nameNode: SyntaxNode): string | null {
-  const inner = nameNode.namedChildren[0];
-  if (!inner) return nameNode.text;
-  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
-  return inner.text;
-}
-
+/**
+ * Strip surrounding quote delimiters from a text value.
+ * Delegates to core stringText for nl_string nodes; for plain text values
+ * (e.g. from value_text nodes), strips quotes manually.
+ */
 function stripQuotes(text: string): string {
   if ((text.startsWith('"') && text.endsWith('"')) ||
       (text.startsWith("'") && text.endsWith("'"))) {
@@ -1172,6 +1186,11 @@ function stripQuotes(text: string): string {
   return text;
 }
 
+/**
+ * Convert a CST node's start position to a SourceLocation for the viz model.
+ * This is the only helper that cannot move to core — it creates a SourceLocation
+ * (a viz-model type) that combines a file URI with a line/character position.
+ */
 function nodeLocation(uri: string, node: SyntaxNode): SourceLocation {
   return {
     uri,

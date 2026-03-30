@@ -1,6 +1,6 @@
 ---
 id: sl-i2k9
-status: open
+status: closed
 deps: [sl-via3, sl-z6ps]
 links: [sl-4afx]
 created: 2026-03-30T18:24:49Z
