@@ -96,11 +96,30 @@ export type MetaEntry = MetaEntryTag | MetaEntryKV | MetaEntryEnum | MetaEntryNo
 // ── Extracted record shapes ─────────────────────────────────────────────────
 
 export interface FieldDecl {
+  /** The field name as written in source (backtick quoting stripped). */
   name: string;
+  /** The type expression text (e.g. "INT", "STRING"), or "record" for nested record fields. */
   type: string;
+  /** Nested field declarations for record-typed fields. */
   children?: FieldDecl[];
+  /** True when the field is declared with the `list_of` keyword. */
   isList?: boolean;
+  /** Metadata entries from an inline metadata block on this field. */
   metadata?: MetaEntry[];
+  /** True when any child position contains a fragment spread. */
   hasSpreads?: boolean;
+  /** Names of fragments spread into this field's record body. */
   spreads?: string[];
+  /**
+   * 0-indexed row of the field_decl node's start position in the source file.
+   * Sourced from `node.startPosition.row` in the CST. Present when the field
+   * was extracted from a parsed CST (always set by extractFieldTree).
+   */
+  startRow?: number;
+  /**
+   * 0-indexed column of the field_decl node's start position in the source file.
+   * Sourced from `node.startPosition.column` in the CST. Present when the field
+   * was extracted from a parsed CST (always set by extractFieldTree).
+   */
+  startColumn?: number;
 }
