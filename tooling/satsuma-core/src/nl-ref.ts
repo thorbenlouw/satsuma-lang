@@ -172,6 +172,11 @@ function hasField(fields: FieldDecl[], name: string): boolean {
 
 /**
  * Check if a dotted path resolves to a nested field within a field tree.
+ *
+ * Tries two strategies in order:
+ *  1. matchPath — treat the path as anchored from the root of the field tree.
+ *  2. searchNestedPath — search for the path starting from any nested record
+ *     field, to handle refs that omit leading path segments.
  */
 function hasNestedFieldPath(fields: FieldDecl[], path: string): boolean {
   const segments = path.split(".");
@@ -179,6 +184,11 @@ function hasNestedFieldPath(fields: FieldDecl[], path: string): boolean {
   return searchNestedPath(fields, segments);
 }
 
+/**
+ * Walk the field tree following each segment of the path in order.
+ * Returns true only if every segment resolves at its expected nesting level
+ * (i.e., the path is anchored at the top of the given field list).
+ */
 function matchPath(fields: FieldDecl[], segments: string[]): boolean {
   let current = fields;
   for (let i = 0; i < segments.length; i++) {
@@ -193,6 +203,11 @@ function matchPath(fields: FieldDecl[], segments: string[]): boolean {
   return true;
 }
 
+/**
+ * Recursively search all record fields for a subtree where matchPath succeeds.
+ * Used when the ref omits a leading path component (e.g., writing "city"
+ * instead of "address.city") — we descend into record children to find a match.
+ */
 function searchNestedPath(fields: FieldDecl[], segments: string[]): boolean {
   for (const f of fields) {
     if (f.children) {
@@ -217,7 +232,28 @@ function hasFieldWithSpreads(schema: SchemaLike, fieldName: string, lookup: Defi
 }
 
 /**
- * Resolve a single ref against the lookup.
+ * Resolve a single @ref string to a concrete definition in the workspace index.
+ *
+ * Resolution cases (tried in order):
+ *
+ *  Case 1 — namespace-qualified schema ref (e.g. "crm::customers"):
+ *    Looked up directly in schemas/fragments/transforms by qualified key.
+ *
+ *  Case 2 — namespace-qualified field ref (e.g. "crm::customers.account_id"):
+ *    Split at the first "." after "::"; the left side is the schema ref, the
+ *    right side is the field path. Resolved against that schema's field tree.
+ *
+ *  Case 3 — dotted-field ref (e.g. "customers.account_id" or "address.city"):
+ *    First, the prefix before the first "." is matched against schema names in
+ *    the mapping context (sources + targets). If a match is found, the suffix
+ *    is resolved as a field on that schema. If no match is found, a second pass
+ *    searches the entire workspace (see the fallback comment inside the branch).
+ *
+ *  Case 4 — bare identifier (e.g. "account_id"):
+ *    Searched as a field name on each schema in the mapping context. Falls back
+ *    to a workspace-wide field search when the mapping context has no schemas.
+ *    Then tried as a schema/fragment/transform name (with namespace prefix if
+ *    the mapping is inside a namespace block).
  */
 export function resolveRef(ref: string, mappingContext: MappingContext, lookup: DefinitionLookup): Resolution {
   const classification = classifyRef(ref);
@@ -270,7 +306,12 @@ export function resolveRef(ref: string, mappingContext: MappingContext, lookup: 
       }
     }
 
-    // Fall back to workspace-wide search if no mapping context provides the schema
+    // Workspace-wide fallback: the dotted ref's schema name didn't match any
+    // source or target in the mapping context (e.g. the ref is in a note block
+    // with no mapping context, or it refers to an intermediate schema that
+    // isn't listed as a source/target). Search all schemas in the workspace so
+    // the ref can still resolve — the cost is a broader match surface, but
+    // false positives are unlikely given the requirement to also match the field.
     if (lookup.iterateSchemas) {
       for (const [key, schema] of lookup.iterateSchemas()) {
         const nsIdx = key.indexOf("::");

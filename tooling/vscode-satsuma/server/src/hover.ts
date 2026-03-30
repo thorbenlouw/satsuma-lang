@@ -2,6 +2,11 @@ import { Hover, MarkupKind } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
 
+// Maximum number of fields shown in a schema/fragment hover preview.
+// Beyond this cap the hover becomes too tall to be useful in the editor;
+// a "… N more" line is appended instead.
+const MAX_HOVER_FIELDS = 8;
+
 /**
  * Compute hover information for the node at the given position.
  *
@@ -107,6 +112,7 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
   const lines: string[] = [];
 
   switch (node.type) {
+    // --- Schema / Fragment hover ---
     case "schema_block":
     case "fragment_block": {
       lines.push(`**${blockType}** \`${name}\``);
@@ -115,8 +121,8 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
         const fields = children(body, "field_decl");
         const spreads = children(body, "fragment_spread");
         lines.push(`${fields.length} field(s)${spreads.length > 0 ? `, ${spreads.length} spread(s)` : ""}`);
-        // Show field summary (first 8 fields)
-        const fieldSummary = fields.slice(0, 8).map((f) => {
+        // Show a preview of the first MAX_HOVER_FIELDS fields; truncate the rest.
+        const fieldSummary = fields.slice(0, MAX_HOVER_FIELDS).map((f) => {
           const fn = child(f, "field_name");
           const te = child(f, "type_expr");
           const meta = collectMetadata(f);
@@ -128,13 +134,14 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
         if (fieldSummary.length > 0) {
           lines.push("", ...fieldSummary);
         }
-        if (fields.length > 8) {
-          lines.push(`- *…${fields.length - 8} more*`);
+        if (fields.length > MAX_HOVER_FIELDS) {
+          lines.push(`- *…${fields.length - MAX_HOVER_FIELDS} more*`);
         }
       }
       break;
     }
 
+    // --- Mapping hover ---
     case "mapping_block": {
       lines.push(`**mapping** \`${name}\``);
       const body = child(node, "mapping_body");
@@ -151,6 +158,7 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
       break;
     }
 
+    // --- Transform hover ---
     case "transform_block": {
       lines.push(`**transform** \`${name}\``);
       // Transform body is a pipe_chain (not a named "transform_body")
@@ -164,6 +172,7 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
       break;
     }
 
+    // --- Metric hover ---
     case "metric_block": {
       lines.push(`**metric** \`${name}\``);
       const displayLabel = child(node, "nl_string");
@@ -177,6 +186,7 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
       break;
     }
 
+    // --- Namespace hover ---
     case "namespace_block": {
       const nsName = node.childForFieldName("name");
       lines.push(`**namespace** \`${nsName?.text ?? name}\``);
@@ -187,6 +197,7 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
       break;
     }
 
+    // --- Note hover ---
     case "note_block": {
       lines.push("**note**");
       const nlStr = child(node, "nl_string");
@@ -358,7 +369,10 @@ function backtickText(node: SyntaxNode): string | null {
   return null;
 }
 
-/** Built-in tag descriptions for hover. */
+// Tag descriptions shown in hover tooltips when the cursor is on a metadata tag.
+// Source: SATSUMA-V2-SPEC.md §Metadata Tags. This list covers the tags defined
+// in the spec; it is intentionally exhaustive for spec-defined tags but does
+// not attempt to cover arbitrary user-defined custom tags.
 const TAG_DESCRIPTIONS: Record<string, string> = {
   pk: "Primary key — uniquely identifies each record",
   pii: "Personally identifiable information — requires special handling",
