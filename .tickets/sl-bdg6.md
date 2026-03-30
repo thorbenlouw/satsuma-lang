@@ -45,11 +45,22 @@ Phase 4 — wire up CLI unmapped subcommand (separate ticket is fine):
 
 ## Acceptance Criteria
 
+**Correctness**
 - FieldCoverageEntry, SchemaCoverageResult, MappingCoverageResult defined in satsuma-core and exported
-- addPathAndPrefixes() and collectArrowPaths() in satsuma-core, tested in satsuma-core/test/coverage.test.js
+- addPathAndPrefixes() and collectArrowPaths() in satsuma-core
 - vscode coverage.ts imports types from @satsuma/core (no local duplicates)
 - CLI getMappedFieldNames() uses same path normalisation as vscode ([] stripped + prefix expansion)
 - CLI and vscode return identical mapped/unmapped answers for the same mapping on the examples/ corpus
 - All existing CLI and vscode coverage/fields tests still pass
 - Coverage parity verified: run satsuma fields --unmapped-by <mapping> and compare to vscode gutter for at least one example
+
+**Code quality**
+- coverage.ts is literate: a module-level comment explains the coverage model (what "covered" means for source vs target paths, how each_block and flatten_block scoping works); each exported function has a doc-comment that describes its contract, not just its signature
+- Types are self-documenting: every field on FieldCoverageEntry, SchemaCoverageResult, MappingCoverageResult has a brief inline comment explaining what it represents and how consumers use it
+
+**Tests**
+- satsuma-core/test/coverage.test.js is the canonical suite; any coverage tests previously spread across CLI and vscode packages that tested the same path logic are consolidated here and removed from the consumer packages
+- Each test case has a leading comment explaining *which coverage rule* it validates and *why that rule matters* (e.g. "addPathAndPrefixes must register all ancestor prefixes — coverage checks fire on partial paths like 'address' even when the arrow targets 'address.city'")
+- Cases cover the boundary conditions: flat arrow, dotted path, array-notation path, each_block scoping, flatten_block scoping, overlapping source and target fields
+- No two tests validate the same invariant at the same level of abstraction
 

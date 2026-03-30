@@ -56,6 +56,36 @@ When making changes or answering questions about syntax, semantics, or supported
 - Use the example corpus as golden fixtures whenever possible.
 - Document any ambiguity, unsupported syntax, or recovery behavior near the implementation.
 
+## Code Readability
+
+Write code in the spirit of Literate Programming: code should read as a clear explanation of *what* it does and *why*, not just a sequence of instructions for the machine.
+
+- **Module-level comments** — every non-trivial module should open with a brief comment explaining its purpose, what it owns, and what it does not own. A reader skimming the file should understand its role in the system within the first five lines.
+- **Function doc-comments** — exported functions must have a doc-comment that states the contract (inputs, outputs, and any invariants), not just a restatement of the name. Private helpers need a comment only when their intent is non-obvious.
+- **Type comments** — exported types and their fields should carry inline comments explaining what each field represents and how consumers use it. Type declarations are part of the public contract and should be as readable as prose.
+- **Section comments** — group logically related code with a short header comment. This is especially important in modules with multiple distinct responsibilities (e.g. a validation module that checks duplicates, then missing refs, then field alignment — each group deserves a label).
+- **No orphan comments** — do not leave TODO/FIXME comments without a ticket reference. If something is intentionally deferred, link the ticket (`// see sl-xxxx`). Remove comments that describe what the code used to do.
+
+## Testing Expectations
+
+- Every task must end with the relevant automated tests run locally and passing before picking up the next task.
+- Each task implementation must expand or update test coverage to match the behavior it adds or changes.
+- Keep the repo commit hooks installed and passing; they should block commits when required validation or tests fail.
+- New parser or tooling work must include targeted tests and fixture coverage.
+- Valid syntax changes should add or update canonical examples or corpus fixtures.
+- Invalid or recovery-sensitive behavior should include malformed input tests.
+- Avoid merging parser work that is only manually verified.
+
+### Test quality standards
+
+Tests should be high-value and low-inertia. A test suite is an asset only when the cost of maintaining it is lower than the cost of not having it.
+
+- **Every test must have a purpose comment.** Each `it()`/`test()` block must open with a comment (or use the description string itself) explaining *why* this case exists and *what property* it validates — not just a restatement of what the code does. A future reader must understand at a glance whether a failing test represents a regression or an outdated expectation.
+- **No redundant tests.** When consolidating logic into a shared module, consolidate the tests too. Do not keep tests in consumer packages that merely re-test the same behaviour already covered in the core module's test suite. Test each invariant once, at the right level of abstraction.
+- **Test inputs should be minimal.** Use the smallest Satsuma snippet that exercises the case. Avoid copying full example files into test fixtures unless the whole-file structure is what is under test.
+- **No smoke tests.** Do not write tests that only verify a function returns without throwing, or that a known-valid input produces a non-null result. Every assertion should validate a specific, meaningful property of the output.
+- **Name cases by behaviour, not by implementation.** Prefer `"reports a diagnostic when the same schema name appears in two files"` over `"duplicate schema test"`. The description should be a falsifiable statement about the system.
+
 ## Security
 
 CI runs `npm audit` and `gitleaks` secret scanning on every PR. Before pushing,
@@ -92,16 +122,6 @@ HOMEBREW_NO_AUTO_UPDATE=1 brew ...
 ```
 
 Prefer these forms over prompt-prone variants such as plain `cp`, `mv`, or `rm`.
-
-## Testing Expectations
-
-- Every task must end with the relevant automated tests run locally and passing before picking up the next task.
-- Each task implementation must expand or update test coverage to match the behavior it adds or changes.
-- Keep the repo commit hooks installed and passing; they should block commits when required validation or tests fail.
-- New parser or tooling work must include targeted tests and fixture coverage.
-- Valid syntax changes should add or update canonical examples or corpus fixtures.
-- Invalid or recovery-sensitive behavior should include malformed input tests.
-- Avoid merging parser work that is only manually verified.
 
 ## Running tree-sitter CLI
 Always use --wasm flag to avoid the need for a C compiler and because we want to keep things platform portable.
