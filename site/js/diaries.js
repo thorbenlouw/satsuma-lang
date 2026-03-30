@@ -49,9 +49,12 @@
       .then(function (data) {
         // Strip the "# The Satsuma Diaries" H1 — the page already has a title
         const body = data.markdown.replace(/^# The Satsuma Diaries\n/, "");
-        // Sanitize before assigning to innerHTML to prevent XSS from
-        // unexpected content in fetched JSON (defence-in-depth).
-        contentEl.innerHTML = DOMPurify.sanitize(marked.parse(body));
+        // Render via a DOM fragment rather than innerHTML to satisfy the
+        // Semgrep insecure-document-method rule. DOMPurify.sanitize with
+        // RETURN_DOM_FRAGMENT returns a DocumentFragment we can append
+        // directly, so no raw HTML is ever assigned to .innerHTML.
+        const fragment = DOMPurify.sanitize(marked.parse(body), { RETURN_DOM_FRAGMENT: true });
+        contentEl.replaceChildren(fragment);
         showState("content");
         contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
       })
