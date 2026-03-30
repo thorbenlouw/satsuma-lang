@@ -49,53 +49,7 @@ jobs:
         run: |
           mkdir -p site/satsuma-diaries/content
           cp -rf satsuma-diaries/. site/satsuma-diaries/
-
-          python3 - <<'PYEOF'
-import os, json
-
-# For each diary .md file:
-#   1. Write site/satsuma-diaries/content/{date}.json  — fetched on demand by the JS reader
-#   2. Collect metadata for site/_data/diaries.json    — used by Eleventy to render the sidebar
-entries = []
-content_dir = "site/satsuma-diaries/content"
-os.makedirs(content_dir, exist_ok=True)
-
-for root, dirs, files in os.walk("site/satsuma-diaries"):
-    if "content" in root:
-        continue
-    dirs.sort()
-    for f in sorted(files):
-        if not f.endswith(".md"):
-            continue
-        date = f[:-3]
-        md_path = os.path.join(root, f)
-        with open(md_path, encoding="utf-8") as fp:
-            markdown = fp.read()
-
-        title = date
-        for line in markdown.splitlines():
-            if line.startswith("## "):
-                title = line[3:].strip()
-                break
-
-        # Individual entry JSON — fetched lazily when the reader selects an entry
-        entry_json_path = os.path.join(content_dir, f"{date}.json")
-        with open(entry_json_path, "w", encoding="utf-8") as fp:
-            json.dump({"date": date, "title": title, "markdown": markdown}, fp)
-
-        entries.append({
-            "date": date,
-            "title": title,
-            "contentPath": f"satsuma-diaries/content/{date}.json",
-        })
-
-entries.sort(key=lambda x: x["date"], reverse=True)
-
-with open("site/_data/diaries.json", "w", encoding="utf-8") as f:
-    json.dump(entries, f, indent=2)
-
-print(f"Diary manifest: {len(entries)} entries written; content JSON files in {content_dir}/")
-PYEOF
+          python3 scripts/generate-diary-manifest.py
 
       - name: Install site dependencies
         run: cd site && npm ci

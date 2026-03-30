@@ -33,6 +33,15 @@ run_parallel() {
 
 cd "$ROOT_DIR"
 
+# Verify Python lint tools are available before running any checks.
+# Install with: pip install yamllint ruff
+for tool in yamllint ruff; do
+  if ! command -v "$tool" &>/dev/null; then
+    echo "ERROR: '$tool' not found. Install it with: pip install $tool" >&2
+    exit 1
+  fi
+done
+
 run_step "repo lint" npm run lint
 
 run_parallel "satsuma-core + satsuma-viz-model tests" \

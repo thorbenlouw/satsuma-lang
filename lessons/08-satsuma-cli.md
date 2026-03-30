@@ -192,7 +192,7 @@ Imagine you've inherited a Satsuma workspace with 20 files you've never seen bef
    - What data quality issues are flagged (`//!`)?
    - What questions are unresolved (`//?`)?
 
-3. **Understand a specific mapping:** `satsuma mapping `customer migration``
+3. **Understand a specific mapping:** `satsuma mapping 'customer migration'`
    - What are the source and target?
    - How many arrows? What classifications?
 

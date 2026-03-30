@@ -111,9 +111,9 @@ def parse_fixture(fixture: Fixture) -> tuple[bool, str]:
     )
 
     # Filter out wrapper script info lines (Using ROOT_DIR, Using XDG_CACHE_HOME)
-    tree_lines = [l for l in result.stdout.splitlines() if not l.startswith("Using ")]
+    tree_lines = [line for line in result.stdout.splitlines() if not line.startswith("Using ")]
     tree = "\n".join(tree_lines).strip()
-    diag_lines = [l for l in result.stderr.splitlines() if not l.startswith("Using ")]
+    diag_lines = [line for line in result.stderr.splitlines() if not line.startswith("Using ")]
     diagnostics = "\n".join(diag_lines).strip()
     combined = "\n".join(part for part in (tree, diagnostics) if part)
 

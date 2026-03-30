@@ -2,7 +2,7 @@
 """Generate diverse test spreadsheets for Excel-to-Satsuma lite prompt testing."""
 
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 import os
 
