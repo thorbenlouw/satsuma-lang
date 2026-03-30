@@ -1,6 +1,6 @@
 # Satsuma Tooling Architecture
 
-> Last updated: 2026-03-29 — Feature 26 (Extraction Consolidation) complete.
+> Last updated: 2026-03-30 — Epic sl-bq7u (Consolidation): added `satsuma-viz-model` shared package; moved coverage types, parse-errors, parser singleton, string-utils, and semantic validation into `satsuma-core`.
 
 See `adrs/` for the architectural decision records that explain the choices made here.
 
@@ -13,19 +13,21 @@ The `tooling/` directory contains five npm packages:
 | Package | Role |
 |---------|------|
 | `tree-sitter-satsuma` | Grammar definition and compiled parser artifacts (WASM) |
-| `satsuma-core` | Shared extraction, formatting, and analysis library — the foundation |
+| `satsuma-core` | Shared extraction, formatting, validation, and analysis library — the foundation |
+| `satsuma-viz-model` | Shared VizModel protocol contract — types for the LSP→viz JSON payload |
 | `satsuma-cli` | CLI tool (16 commands); consumer of satsuma-core |
-| `vscode-satsuma` | VS Code extension + LSP server; consumer of satsuma-core |
-| `satsuma-viz` | React visualization component; consumer of LSP VizModel |
+| `vscode-satsuma` | VS Code extension + LSP server; consumer of satsuma-core and satsuma-viz-model |
+| `satsuma-viz` | React visualization component; consumer of satsuma-viz-model |
 
 ### Package Dependency Diagram
 
 ```mermaid
 graph TD
   TS[tree-sitter-satsuma<br/><i>grammar + WASM artifact</i>]
-  CORE[satsuma-core<br/><i>formatter · cst-utils · extract<br/>spread-expand · nl-ref · types</i>]
+  CORE[satsuma-core<br/><i>formatter · cst-utils · extract · validate<br/>coverage · parser · spread-expand · nl-ref · types</i>]
+  VIZM[satsuma-viz-model<br/><i>VizModel protocol types</i>]
   CLI[satsuma-cli<br/><i>16 commands · WorkspaceIndex</i>]
-  LSP[vscode-satsuma/server<br/><i>VizModel · DefinitionIndex<br/>semantic tokens · completions · …</i>]
+  LSP[vscode-satsuma/server<br/><i>DefinitionIndex · buildVizModel<br/>semantic tokens · completions · …</i>]
   EXT[vscode-satsuma/client<br/><i>extension host</i>]
   VIZ[satsuma-viz<br/><i>React component</i>]
 
@@ -34,11 +36,13 @@ graph TD
   TS -- "satsuma.wasm" --> LSP
   CORE --> CLI
   CORE --> LSP
+  VIZM --> LSP
+  VIZM --> VIZ
   LSP --> EXT
   LSP -- "VizModel JSON" --> VIZ
 ```
 
-`satsuma-core` has no runtime dependencies on any other package in this repo. All consumers depend on it via `"@satsuma/core": "file:../satsuma-core"`.
+`satsuma-core` and `satsuma-viz-model` have no runtime dependencies on any other package in this repo. All consumers depend on satsuma-core via `"@satsuma/core": "file:../satsuma-core"` and on satsuma-viz-model via `"@satsuma/viz-model": "file:../satsuma-viz-model"`.
 
 ---
 
@@ -77,17 +81,23 @@ graph LR
   TYPES["types.ts\nSyntaxNode · Tree · FieldDecl\nExtracted* · NLRefData · AtRef\nMappingContext · Resolution · …"]
   CST["cst-utils.ts\nchild · children\nallDescendants\nlabelText · stringText"]
   CLS["classify.ts\nclassifyTransform\nclassifyArrow"]
-  CAN["canonical-ref.ts\ncanonicalRef()"]
+  CAN["canonical-ref.ts\ncanonicalRef()\nresolveScopedEntityRef()"]
   META["meta-extract.ts\nextractMetadata()"]
   EXT["extract.ts\nextractSchemas · extractMappings\nextractArrows · extractMetrics\nextractFragments · extractTransforms\nextractImports · extractNotes\nextractWarnings · extractQuestions\nextractNamespaces\nextractFieldTree (public)"]
   SPR["spread-expand.ts\nEntityFieldLookup (callback)\nexpandSpreads\nexpandEntityFields\ncollectFieldPaths"]
   NL["nl-ref.ts\nDefinitionLookup (callback)\nAtRef · RefClassification\nextractAtRefs · classifyRef\nresolveRef · resolveAllAtRefs\nextractNLRefData"]
   FMT["format.ts\nformat(tree, source)"]
+  STR["string-utils.ts\ncapitalize · truncate\nformatList · …"]
+  PAR["parser.ts\ninitParser() singleton\nparseSource()"]
+  PE["parse-errors.ts\ncollectParseErrors()\nParseError"]
+  COV["coverage.ts\nFieldCoverageEntry\nSchemaCoverageResult\naddPathAndPrefixes()"]
+  VAL["validate.ts\nSemanticIndex · SemanticDiagnostic\ncollectSemanticDiagnostics()"]
 
-  IDX --> TYPES & CST & CLS & CAN & META & EXT & SPR & NL & FMT
+  IDX --> TYPES & CST & CLS & CAN & META & EXT & SPR & NL & FMT & STR & PAR & PE & COV & VAL
   EXT --> CST & CLS & CAN & META & TYPES
   SPR --> EXT & TYPES
   NL --> SPR & TYPES
+  VAL --> CAN & TYPES
 ```
 
 ### Key Types
@@ -106,6 +116,11 @@ graph LR
 | `Resolution` | `types.ts` | `{ resolved: boolean, resolvedTo: { kind, name } \| null }` |
 | `EntityFieldLookup` | `spread-expand.ts` | Callback for spread resolution: `(name, ns) => { fields } \| null` |
 | `DefinitionLookup` | `nl-ref.ts` | Callback for @-ref resolution: `(name, ns) => { kind, fields? } \| null` |
+| `SemanticIndex` | `validate.ts` | Minimal structural interface accepted by `collectSemanticDiagnostics`; satisfied by CLI `WorkspaceIndex` |
+| `SemanticDiagnostic` | `validate.ts` | `{ file, line, column, severity, rule, message }` — one semantic warning or error |
+| `FieldCoverageEntry` | `coverage.ts` | `{ path, mapped: boolean }` — coverage status for one field path |
+| `SchemaCoverageResult` | `coverage.ts` | Per-schema list of `FieldCoverageEntry` records |
+| `ParseError` | `parse-errors.ts` | `{ file, line, column, message }` — structural error from tree-sitter ERROR/MISSING nodes |
 
 ---
 
@@ -129,8 +144,9 @@ satsuma-cli/src/
 ├── workspace.ts         — File discovery, parsing, index building for a workspace dir
 ├── graph-builder.ts     — Builds the graph data structure for satsuma graph
 ├── lint-engine.ts       — Lint rule evaluation
-├── validate.ts          — Validation logic
-└── parser.ts            — initParser(), parseFile() wrappers
+├── validate.ts          — Thin adapter: maps SemanticDiagnostic[] → LintDiagnostic[]
+│                          All validation logic lives in satsuma-core/validate
+└── parser.ts            — initParser(), parseFile() wrappers (delegates to satsuma-core/parser)
 ```
 
 `WorkspaceIndex` (CLI-specific) holds fully resolved, multi-file semantic data:
@@ -158,12 +174,13 @@ vscode-satsuma/server/src/
 │                          Uses satsuma-core extraction + DefinitionLookup callback
 │                          for @-ref resolution; adds LSP-specific enrichment
 │                          (SourceLocation, comments, metadata for rendering)
+│                          VizModel types re-exported from @satsuma/viz-model
 ├── coverage.ts          — computeMappingCoverage() → SchemaCoverageResult
 ├── semantic-tokens.ts, hover.ts, definition.ts, references.ts,
 │   completion.ts, symbols.ts, rename.ts, folding.ts, formatting.ts
 ```
 
-`VizModel` (LSP-specific) is the visualization data contract consumed by `@satsuma/viz`:
+`VizModel` is the visualization data contract consumed by `@satsuma/viz`. Its types are defined in `@satsuma/viz-model` and re-exported by both the LSP server (`viz-model.ts`) and `satsuma-viz` (`model.ts`). The LSP server:
 - Enriched with source locations (for click-to-open in editor)
 - Includes comments, notes, metadata for rendering
 - ArrowEntry.transform.atRefs: ResolvedAtRef[] — resolved @-refs from NL transform text
