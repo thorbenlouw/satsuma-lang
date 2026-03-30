@@ -53,7 +53,7 @@ interface MappingContext {
 }
 
 /**
- * Resolve a single backtick reference against the workspace index.
+ * Resolve a single @ref against the workspace index.
  */
 export function resolveRef(ref: string, mappingContext: MappingContext, index: WorkspaceIndex): Resolution {
   return _resolveRef(ref, mappingContext, makeLookup(index));

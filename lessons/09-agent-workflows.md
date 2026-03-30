@@ -20,14 +20,14 @@ The pattern is always the same:
 
 1. Run `satsuma arrows legacy_sqlserver.CUST_ID` to find all arrows that reference this field.
 2. Run `satsuma lineage --from legacy_sqlserver` to see which downstream schemas are affected.
-3. Run `satsuma nl` to find NL transforms that reference `` `CUST_ID` `` in backticks — these are implicit dependencies.
+3. Run `satsuma nl` to find NL transforms that reference `@CUST_ID` via `@ref` — these are implicit dependencies.
 
 **Agent response (example):**
 
 > `CUST_ID` is used in 3 arrows:
 > - `CUST_ID -> customer_id` — generates a UUID via `uuid_v5()`. Changing the format would change all generated UUIDs.
 > - `CUST_ID -> legacy_customer_id` — direct mapping. Type change may require target column update.
-> - Backtick reference in `display_name` NL transform — used to check customer type. Logic depends on `CUST_TYPE`, not `CUST_ID` directly.
+> - `@ref` reference in `display_name` NL transform — used to check customer type. Logic depends on `CUST_TYPE`, not `CUST_ID` directly.
 >
 > Downstream impact: `postgres_db` is the only direct target. No further downstream schemas reference `postgres_db`.
 
@@ -183,7 +183,7 @@ When the agent says "this PII field is unencrypted," that's a fact from the meta
 ## Key Takeaways
 
 1. The agent composes CLI commands into workflows that answer business questions.
-2. Impact analysis traces field-level arrows, schema-level lineage, and NL backtick references.
+2. Impact analysis traces field-level arrows, schema-level lineage, and NL `@ref` references.
 3. Coverage checks compare target fields against incoming arrows.
 4. PII audits trace sensitive data flow and check for encryption.
 5. Structural diffs understand Satsuma semantics — reformats don't show as changes.

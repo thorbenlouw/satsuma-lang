@@ -98,14 +98,14 @@ Operations that check or compare workspace structure.
 
 `validate` checks **structural correctness**: parse errors, undefined references, missing schemas. It answers "is this workspace well-formed?"
 
-`lint` checks **policy and conventions**: duplicate definitions, hidden schema dependencies in NL text, unresolved NL backtick references. It answers "does this workspace follow best practices?" Some lint rules support `--fix` for safe, deterministic autofix.
+`lint` checks **policy and conventions**: duplicate definitions, hidden schema dependencies in NL text, unresolved NL `@ref` references. It answers "does this workspace follow best practices?" Some lint rules support `--fix` for safe, deterministic autofix.
 
 Flags: `--json` (structured output), `--fix` (apply safe fixes), `--select <rules>` / `--ignore <rules>` (filter rules), `--quiet` (exit code only), `--rules` (list available rules).
 
 | Rule | Severity | Fixable | Description |
 |---|---|---|---|
 | `hidden-source-in-nl` | error | yes | NL text references a schema not in the mapping's source/target list |
-| `unresolved-nl-ref` | warning | no | Backtick reference in NL does not resolve to any known identifier |
+| `unresolved-nl-ref` | warning | no | `@ref` in NL does not resolve to any known identifier |
 | `duplicate-definition` | error | no | Named definition is declared more than once in a namespace |
 
 ## Transform Classification
@@ -118,9 +118,9 @@ Every arrow the CLI returns carries a classification derived from CST node types
 | `nl` | Transform is a natural-language string — extracted verbatim for agent interpretation |
 | `mixed` | Both pipeline steps and NL strings |
 | `none` | No transform body (bare `src -> tgt`) |
-| `nl-derived` | Implicit arrow inferred from a backtick NL reference — not declared in any mapping |
+| `nl-derived` | Implicit arrow inferred from an `@ref` in NL — not declared in any mapping |
 
-Derived arrows (no source field) are flagged separately. The first four classifications are mechanical CST checks — no string content is examined. `nl-derived` arrows are synthetic: they are created when a NL backtick reference (e.g., `` `schema.field` ``) resolves to a known field, and they carry `derived: true` with `transform_raw: "(NL ref)"`.
+Derived arrows (no source field) are flagged separately. The first four classifications are mechanical CST checks — no string content is examined. `nl-derived` arrows are synthetic: they are created when an NL `@ref` (e.g., `@schema.field`) resolves to a known field, and they carry `derived: true` with `transform_raw: "(NL ref)"`.
 
 ## field-lineage
 

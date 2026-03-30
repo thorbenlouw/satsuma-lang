@@ -32,7 +32,7 @@ const tokenModifiers: string[] = [
   SemanticTokenModifiers.declaration,   // 1
   SemanticTokenModifiers.readonly,      // 2
   SemanticTokenModifiers.defaultLibrary,// 3
-  "nlRef",                              // 4 — backtick reference inside NL string
+  "nlRef",                              // 4 — @ref inside NL string
 ];
 
 export const semanticTokensLegend: SemanticTokensLegend = {
@@ -131,7 +131,7 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
   const query = getHighlightsQuery();
   const captures = query.captures(tree.rootNode);
 
-  // Pre-scan: identify nl_string/multiline_string nodes that contain backtick refs.
+  // Pre-scan: identify nl_string/multiline_string nodes that contain @refs.
   // These need split tokenisation instead of a single string token.
   const nlRefNodes = collectNlRefNodes(tree.rootNode);
 
@@ -157,7 +157,7 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    // For NL strings with backtick refs, emit split tokens instead of one big string.
+    // For NL strings with @refs, emit split tokens instead of one big string.
     if (nlRefNodes.has(nodeId(node))) {
       emitSplitStringTokens(node, builder);
       continue;
@@ -207,7 +207,7 @@ function nodeId(node: SyntaxNode): string {
 
 /**
  * Pre-scan the tree and return the set of nodeId()s for nl_string and
- * multiline_string nodes that contain at least one backtick reference.
+ * multiline_string nodes that contain at least one @ref.
  */
 function collectNlRefNodes(root: SyntaxNode): Set<string> {
   const result = new Set<string>();
@@ -237,11 +237,11 @@ function collectNlRefNodes(root: SyntaxNode): Set<string> {
 interface Segment {
   offset: number;    // byte offset within node text
   length: number;
-  isRef: boolean;    // true = backtick ref (variable), false = string
+  isRef: boolean;    // true = @ref (variable), false = string
 }
 
 /**
- * For an nl_string or multiline_string that contains backtick refs,
+ * For an nl_string or multiline_string that contains @refs,
  * emit interleaved string and variable tokens instead of one big string token.
  */
 function emitSplitStringTokens(

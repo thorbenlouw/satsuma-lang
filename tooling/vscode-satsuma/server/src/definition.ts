@@ -24,7 +24,7 @@ export function computeDefinition(
   });
   if (!node) return null;
 
-  // Check if cursor is on a backtick reference inside an NL string
+  // Check if cursor is on an @ref inside an NL string
   const nlRef = tryNlRefContext(node, line, character);
   if (nlRef) return resolveContext(nlRef, uri, index);
 
@@ -488,7 +488,7 @@ function getMappingSchemaRefs(
 const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 /**
- * Check if the cursor is on a backtick or @ref reference inside an NL string.
+ * Check if the cursor is on an @ref reference inside an NL string.
  * Returns a NodeContext with kind "nl_ref" if so.
  */
 function tryNlRefContext(

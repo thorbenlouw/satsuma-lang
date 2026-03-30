@@ -38,7 +38,7 @@ export function register(program: Command): void {
     .addHelpText("after", `
 Rules:
   hidden-source-in-nl  error    NL text references a schema not in the mapping's source/target list
-  unresolved-nl-ref    warning  Backtick/@ reference in NL does not resolve to any known identifier
+  unresolved-nl-ref    warning  @ reference in NL does not resolve to any known identifier
   duplicate-definition error    Named definition is declared more than once in a namespace
 
 JSON shape (--json):

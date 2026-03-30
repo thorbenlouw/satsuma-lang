@@ -122,7 +122,7 @@ export function extractAtRefs(text: string): AtRef[] {
 // ── Classification ────────────────────────────────────────────────────────────
 
 /**
- * Classify a backtick reference by its syntactic form.
+ * Classify an @ref by its syntactic form.
  */
 export function classifyRef(ref: string): RefClassification {
   if (ref.includes("::")) {

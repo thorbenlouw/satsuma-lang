@@ -46,7 +46,7 @@ The agent combines this with metadata checks to produce a PII flow audit:
 
 - **PII flowing to unencrypted targets** — compliance risk.
 - **PII fields without the `pii` tag** — the field might be sensitive but not marked (e.g., phone numbers, addresses).
-- **PII in NL transforms** — if an NL transform references PII fields via backticks, the implementation must handle those fields appropriately.
+- **PII in NL transforms** — if an NL transform references PII fields via `@ref` markers, the implementation must handle those fields appropriately.
 
 ---
 
@@ -94,7 +94,7 @@ This is a deterministic, parser-backed lineage statement. It's not a manual entr
 
 ### NL transforms and compliance judgments
 
-When a transform is `[nl]` or `[mixed]`, the lineage is still traceable (backtick references create `[nl-derived]` arrows), but the transform logic requires interpretation. For governance purposes:
+When a transform is `[nl]` or `[mixed]`, the lineage is still traceable (`@ref` markers create `[nl-derived]` arrows), but the transform logic requires interpretation. For governance purposes:
 
 - **Structural transforms** can be verified mechanically against the implementation.
 - **NL transforms** require human review to confirm the implementation matches the intent.
