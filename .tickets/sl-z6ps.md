@@ -1,6 +1,6 @@
 ---
 id: sl-z6ps
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T18:36:07Z
@@ -43,3 +43,12 @@ Move vscode-satsuma/server/ into a new top-level package at tooling/satsuma-lsp/
 - All tests pass in both packages
 - Root install:all script updated
 
+
+## Notes
+
+**2026-03-30T19:10:48Z**
+
+**2026-03-30T20:15:00Z**
+
+Cause: The LSP server lived inside vscode-satsuma/server/, coupling it to the VS Code extension and preventing standalone use by other editors.
+Fix: Extracted server into tooling/satsuma-lsp/ as @satsuma/lsp package with its own package.json, tsconfig.json, build config, and bin entry (satsuma-lsp --stdio). Updated vscode-satsuma esbuild.js to bundle from the new location, updated CI, root install:all, security workflow, and pre-commit checks. All 293 LSP tests and all vscode-satsuma TextMate tests pass.

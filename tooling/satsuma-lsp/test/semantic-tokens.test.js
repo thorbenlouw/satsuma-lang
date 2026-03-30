@@ -12,11 +12,11 @@ const {
 
 const WASM_PATH = path.resolve(
   __dirname,
-  "../../../tree-sitter-satsuma/tree-sitter-satsuma.wasm",
+  "../../tree-sitter-satsuma/tree-sitter-satsuma.wasm",
 );
 const HIGHLIGHTS_PATH = path.resolve(
   __dirname,
-  "../../../tree-sitter-satsuma/queries/highlights.scm",
+  "../../tree-sitter-satsuma/queries/highlights.scm",
 );
 
 before(async () => {

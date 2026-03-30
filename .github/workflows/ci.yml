@@ -57,7 +57,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
   lint:
@@ -88,7 +88,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
       - uses: actions/setup-python@v6
@@ -131,7 +131,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Run CLI tests
@@ -188,7 +188,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Generate parser
@@ -259,7 +259,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Validate manifest and grammar
@@ -280,15 +280,16 @@ jobs:
         run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Compile LSP server for tests
-        working-directory: tooling/vscode-satsuma/server
+        working-directory: tooling/satsuma-lsp
         run: npx tsc
 
       - name: Run LSP server tests
+        working-directory: tooling/satsuma-lsp
         run: |
           mkdir -p ../../test-results
-          cd server && node --test \
+          node --test \
             --test-reporter=spec --test-reporter-destination=stdout \
-            --test-reporter=junit --test-reporter-destination=../../../test-results/lsp.xml \
+            --test-reporter=junit --test-reporter-destination=../../test-results/lsp.xml \
             test/**/*.test.js
 
       - name: Upload test results
@@ -329,7 +330,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
       - name: Pack tarball
@@ -369,7 +370,7 @@ jobs:
             tooling/tree-sitter-satsuma/build
             tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
             tooling/vscode-satsuma/node_modules
-            tooling/vscode-satsuma/server/node_modules
+            tooling/satsuma-lsp/node_modules
           key: workspace-${{ github.sha }}
 
       - uses: actions/setup-python@v6

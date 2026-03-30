@@ -533,7 +533,7 @@ describe("source locations", () => {
 describe("example file coverage", () => {
   const fs = require("fs");
   const path = require("path");
-  const examplesDir = path.resolve(__dirname, "../../../../examples");
+  const examplesDir = path.resolve(__dirname, "../../../examples");
 
   // Test all .stm files found recursively under the examples directory
   let exampleFiles;
