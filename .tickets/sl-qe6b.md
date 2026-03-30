@@ -1,6 +1,6 @@
 ---
 id: sl-qe6b
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-03-30T06:29:09Z
@@ -42,3 +42,10 @@ Remove the duplicated walk implementations from validate.ts and diagnostics.ts.
 - Cases cover: clean parse tree returns empty array, single top-level ERROR node, MISSING node inserted mid-parse, ERROR and MISSING nodes nested inside valid structure
 - Tests are written against real parsed Satsuma source snippets, not mock SyntaxNode objects — validates end-to-end fidelity
 
+
+## Notes
+
+**2026-03-30T07:03:41Z**
+
+Cause: ERROR/MISSING CST walk was duplicated in satsuma-cli/validate.ts (collectParseErrors/walkErrors) and vscode-satsuma/server/diagnostics.ts (walkErrors), with differing recursion strategies.
+Fix: created satsuma-core/src/parse-errors.ts with collectParseErrors(tree) returning ParseErrorEntry[]; CLI commands/validate.ts maps to LintDiagnostic inline; LSP diagnostics.ts maps to vscode.Diagnostic inline. Canonical tests in satsuma-core/test/parse-errors.test.js. (commit pending)

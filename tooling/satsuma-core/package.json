@@ -53,6 +53,10 @@
     "./parser": {
       "types": "./dist/parser.d.ts",
       "default": "./dist/parser.js"
+    },
+    "./parse-errors": {
+      "types": "./dist/parse-errors.d.ts",
+      "default": "./dist/parse-errors.js"
     }
   },
   "types": "./dist/index.d.ts",

@@ -5,47 +5,33 @@ import {
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange } from "./parser-utils";
+import { collectParseErrors } from "@satsuma/core";
 
 /**
  * Produce LSP diagnostics from a tree-sitter parse tree.
  *
- * - ERROR / MISSING nodes → Error severity
+ * - ERROR / MISSING nodes → Error severity (via collectParseErrors from @satsuma/core)
  * - warning_comment (//!) → Warning severity
  * - question_comment (//?…) → Information severity
  */
 export function computeDiagnostics(tree: Tree): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
-  walkErrors(tree.rootNode, diagnostics);
+
+  // Map core's ParseErrorEntry[] to LSP Diagnostic[].
+  for (const e of collectParseErrors(tree)) {
+    diagnostics.push({
+      range: {
+        start: { line: e.startRow, character: e.startColumn },
+        end: { line: e.endRow, character: e.endColumn },
+      },
+      severity: DiagnosticSeverity.Error,
+      source: "satsuma",
+      message: e.message,
+    });
+  }
+
   walkComments(tree.rootNode, diagnostics);
   return diagnostics;
-}
-
-/** Recursively collect ERROR and MISSING nodes. */
-function walkErrors(node: SyntaxNode, out: Diagnostic[]): void {
-  if (node.type === "ERROR") {
-    out.push({
-      range: nodeRange(node),
-      severity: DiagnosticSeverity.Error,
-      source: "satsuma",
-      message: "Syntax error",
-    });
-    // Don't recurse into ERROR children — the parent ERROR is enough context
-    return;
-  }
-
-  if (node.isMissing) {
-    out.push({
-      range: nodeRange(node),
-      severity: DiagnosticSeverity.Error,
-      source: "satsuma",
-      message: `Expected ${node.type}`,
-    });
-    return;
-  }
-
-  for (const child of node.namedChildren) {
-    walkErrors(child, out);
-  }
 }
 
 /** Collect //! and //? comments as diagnostics. */
