@@ -1,0 +1,109 @@
+/**
+ * parser.ts — Singleton WASM parser for Satsuma.
+ *
+ * Owns the single Parser and Language instance shared across all commands or
+ * LSP handlers within a process.  Callers must await initParser() once at
+ * startup before any call to getParser() or getLanguage().
+ *
+ * Why a singleton?  web-tree-sitter's WASM module initialisation is async and
+ * expensive (~50 ms).  Keeping one parser instance and re-using it for every
+ * parse call avoids re-paying that cost per file.
+ *
+ * Why in @satsuma/core?  initParser() used to be duplicated in satsuma-cli and
+ * vscode-satsuma/server with nearly identical logic.  Moving it here gives
+ * both consumers a single tested implementation, and makes the parser
+ * available to future tools that import @satsuma/core without CLI or LSP deps.
+ *
+ * Singleton lifecycle:
+ *   1. Call initParser(wasmPath) once.  It is idempotent — subsequent calls
+ *      return the same Promise and leave the parser unchanged.
+ *   2. After the Promise resolves, getParser() and getLanguage() are safe to
+ *      call synchronously from anywhere in the same process.
+ *   3. There is no teardown — the singleton lives for the process lifetime.
+ */
+
+import { createRequire } from "module";
+import type { Parser, Language } from "web-tree-sitter";
+
+// createRequire is needed because web-tree-sitter is a CommonJS package.
+// ESM cannot use a top-level static import for it.
+const _require = createRequire(import.meta.url);
+
+// ── Singleton state ─────────────────────────────────────────────────────────
+
+let _parser: Parser | null = null;
+let _language: Language | null = null;
+
+// Stored so that re-entrant calls to initParser() return the same Promise
+// instead of starting a second initialisation race.
+let _initPromise: Promise<void> | null = null;
+
+// ── Public options type ─────────────────────────────────────────────────────
+
+/**
+ * Options for initParser().
+ */
+export interface ParserInitOptions {
+  /**
+   * Override how web-tree-sitter locates its own runtime WASM
+   * (web-tree-sitter.wasm / tree-sitter.wasm).
+   *
+   * Needed when the consumer bundles with esbuild or another bundler that
+   * changes the module-relative path web-tree-sitter would compute by default.
+   * Pass a function that returns the absolute path to the runtime WASM for the
+   * given filename argument (web-tree-sitter always calls it with "tree-sitter.wasm").
+   *
+   * Example (LSP server, esbuild CJS bundle):
+   *   locateFile: () => path.join(serverDir, "tree-sitter.wasm")
+   */
+  locateFile?: (name: string) => string;
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
+/**
+ * Initialise the WASM parser with the Satsuma grammar.
+ *
+ * Must be awaited once before getParser() or getLanguage() are called.
+ * Subsequent calls are no-ops — they return the same Promise that is already
+ * in flight or already resolved.
+ *
+ * @param wasmPath  Absolute path to tree-sitter-satsuma.wasm.
+ * @param options   Optional overrides (see ParserInitOptions).
+ */
+export function initParser(wasmPath: string, options?: ParserInitOptions): Promise<void> {
+  if (_initPromise) return _initPromise;
+
+  _initPromise = (async () => {
+    const TreeSitter = _require("web-tree-sitter") as typeof import("web-tree-sitter");
+    await TreeSitter.Parser.init(
+      options?.locateFile ? { locateFile: options.locateFile } : undefined,
+    );
+    _language = await TreeSitter.Language.load(wasmPath);
+    _parser = new TreeSitter.Parser();
+    _parser.setLanguage(_language);
+  })();
+
+  return _initPromise;
+}
+
+/**
+ * Return the initialised Parser instance.
+ * Throws if initParser() has not been awaited.
+ */
+export function getParser(): Parser {
+  if (!_parser) throw new Error("Parser not initialised — call initParser() first");
+  return _parser;
+}
+
+/**
+ * Return the loaded Language instance.
+ * Throws if initParser() has not been awaited.
+ *
+ * Consumers that need to run tree-sitter Queries (e.g. for semantic tokens)
+ * use this to construct a Query against the grammar's node types.
+ */
+export function getLanguage(): Language {
+  if (!_language) throw new Error("Language not loaded — call initParser() first");
+  return _language;
+}

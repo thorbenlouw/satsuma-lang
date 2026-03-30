@@ -49,6 +49,10 @@
     "./string-utils": {
       "types": "./dist/string-utils.d.ts",
       "default": "./dist/string-utils.js"
+    },
+    "./parser": {
+      "types": "./dist/parser.d.ts",
+      "default": "./dist/parser.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -57,7 +61,11 @@
     "prepare": "tsc",
     "test": "node --test test/**/*.test.js"
   },
+  "dependencies": {
+    "web-tree-sitter": "^0.26.7"
+  },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "typescript": "^6.0.2"
   }
 }

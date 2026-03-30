@@ -1,3 +1,18 @@
+/**
+ * parser-utils.ts — LSP-specific parser helpers and CST navigation wrappers.
+ *
+ * The parser singleton (initParser / getParser / getLanguage) lives in
+ * @satsuma/core and is re-exported here so existing server.ts callers need not
+ * change their import paths.
+ *
+ * LSP callers pass a locateFile option to initParser() so that esbuild's CJS
+ * bundle can find the web-tree-sitter runtime WASM (tree-sitter.wasm) next to
+ * the bundled server.js, rather than at the module-relative default path.
+ *
+ * This module also wraps cst-utils functions from @satsuma/core to preserve
+ * the concrete Node type used by other LSP server code.
+ */
+
 import {
   Range,
   Position,
@@ -7,6 +22,10 @@ import type { Parser, Language, Tree, Node } from "web-tree-sitter";
 // Re-export web-tree-sitter types under the names the rest of the server uses.
 export type SyntaxNode = Node;
 export type { Tree };
+
+// Re-export the singleton lifecycle from core.
+export { initParser, getParser, getLanguage } from "@satsuma/core";
+export type { ParserInitOptions } from "@satsuma/core";
 
 // ---------- CST navigation helpers (delegating to satsuma-core) ----------
 //
@@ -41,47 +60,12 @@ export function stringText(node: Node | null | undefined): string | null {
   return _stringText(node);
 }
 
-// ---------- tree-sitter initialisation (WASM) ----------
+// ---------- Parsing ─────────────────────────────────────────────────────────
 
-let _parser: Parser | null = null;
-let _language: Language | null = null;
-let _initPromise: Promise<void> | null = null;
-
-/**
- * Initialise the WASM parser.  Must be awaited once before getParser() is
- * called.  Subsequent calls are no-ops.
- */
-export function initParser(wasmPath: string): Promise<void> {
-  if (_initPromise) return _initPromise;
-  _initPromise = (async () => {
-    const path = require("path");
-    const TreeSitter = require("web-tree-sitter") as typeof import("web-tree-sitter");
-    // The runtime WASM (tree-sitter.wasm) is copied next to server.js during build.
-    // We must tell web-tree-sitter where to find it since esbuild bundling changes
-    // the default module-relative lookup path.
-    const runtimeWasm = path.join(path.dirname(wasmPath), "tree-sitter.wasm");
-    await TreeSitter.Parser.init({
-      locateFile: () => runtimeWasm,
-    });
-    _language = await TreeSitter.Language.load(wasmPath);
-    _parser = new TreeSitter.Parser();
-    _parser.setLanguage(_language);
-  })();
-  return _initPromise;
-}
-
-export function getParser(): Parser {
-  if (!_parser) throw new Error("Parser not initialised — call initParser() first");
-  return _parser;
-}
-
-export function getLanguage(): Language {
-  if (!_language) throw new Error("Language not loaded — call initParser() first");
-  return _language;
-}
+import { getParser as _getParser } from "@satsuma/core";
 
 export function parseSource(source: string): Tree {
-  const tree = getParser().parse(source);
+  const tree = _getParser().parse(source);
   if (!tree) throw new Error("parse returned null");
   return tree;
 }
@@ -95,3 +79,7 @@ export function nodeRange(node: Node): Range {
     Position.create(node.endPosition.row, node.endPosition.column),
   );
 }
+
+// Silence unused import warnings for type-only imports from web-tree-sitter.
+// Parser and Language are used by callers importing these re-exported types.
+export type { Parser, Language };

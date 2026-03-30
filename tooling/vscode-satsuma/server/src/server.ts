@@ -64,11 +64,15 @@ let workspaceFolders: string[] = [];
 // ---------- Initialisation ----------
 
 connection.onInitialize(async (params): Promise<InitializeResult> => {
-  // Initialise WASM parser — the .wasm and highlights.scm live next to server.js
+  // Initialise WASM parser — the .wasm and highlights.scm live next to server.js.
+  // locateFile tells web-tree-sitter where to find its own runtime WASM
+  // (tree-sitter.wasm), which esbuild places next to server.js rather than at
+  // the module-relative default path.
   const serverDir = __dirname;
   const wasmPath = path.join(serverDir, "tree-sitter-satsuma.wasm");
+  const runtimeWasm = path.join(serverDir, "tree-sitter.wasm");
   const highlightsPath = path.join(serverDir, "highlights.scm");
-  await initParser(wasmPath);
+  await initParser(wasmPath, { locateFile: () => runtimeWasm });
   await initFormatting();
   try {
     setHighlightsSource(fs.readFileSync(highlightsPath, "utf-8"));

@@ -1,49 +1,25 @@
 /**
  * parser.ts — tree-sitter Satsuma v2 parser wrapper (WASM)
  *
- * Uses web-tree-sitter (WASM) for fully portable parsing with no native
- * compilation requirements.  The async initParser() must be awaited once
- * at startup (in index.ts) before any parsing can occur.  After that,
- * parseFile() and parseSource() are synchronous.
+ * The singleton parser lifecycle (initParser / getParser / getLanguage) lives
+ * in @satsuma/core/parser and is re-exported from here so existing CLI callers
+ * need not change their import paths.
+ *
+ * This module adds the CLI-specific file-I/O helpers (parseFile, parseSource)
+ * that have no place in the shared core.
  */
 
+export { initParser, getParser, getLanguage } from "@satsuma/core";
+import { getParser } from "@satsuma/core";
 import { readFileSync } from "fs";
-import { createRequire } from "module";
-import type { Parser } from "web-tree-sitter";
 import type { ParsedFile, SyntaxNode, Tree } from "./types.js";
 
-const require = createRequire(import.meta.url);
-
-// ---------- WASM initialisation ----------
-
-let _parser: Parser | null = null;
-let _initPromise: Promise<void> | null = null;
-
-/**
- * Initialise the WASM parser.  Must be awaited once before parseFile() or
- * parseSource() is called.  Subsequent calls are no-ops.
- */
-export function initParser(wasmPath: string): Promise<void> {
-  if (_initPromise) return _initPromise;
-  _initPromise = (async () => {
-    const TreeSitter = require("web-tree-sitter") as typeof import("web-tree-sitter");
-    await TreeSitter.Parser.init();
-    const lang = await TreeSitter.Language.load(wasmPath);
-    _parser = new TreeSitter.Parser();
-    _parser.setLanguage(lang);
-  })();
-  return _initPromise;
-}
-
-function getParser(): Parser {
-  if (!_parser) throw new Error("Parser not initialised — call initParser() first");
-  return _parser;
-}
-
-// ---------- Public API (unchanged) ----------
+// ── CLI file-I/O helpers ────────────────────────────────────────────────────
 
 /**
  * Parse a single .stm file.
+ * Reads the file synchronously and returns a ParsedFile with the source,
+ * tree, and ERROR node count for quick validity checks.
  */
 export function parseFile(filePath: string): ParsedFile {
   const src = readFileSync(filePath, "utf8");
