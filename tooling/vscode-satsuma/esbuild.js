@@ -24,6 +24,27 @@ const serverConfig = {
   outfile: "server/dist/server.js",
   format: "cjs",
   sourcemap: true,
+  // Consolidate all web-tree-sitter imports onto the CJS build.
+  //
+  // Without this alias, esbuild bundles two separate instances:
+  //   1. The ESM build (from satsuma-core/node_modules) — picked up via
+  //      satsuma-core's dynamic `await import("web-tree-sitter")`.  esbuild
+  //      stubs `import.meta` as `{}` when converting ESM→CJS, so the ESM
+  //      module calls `createRequire(undefined)` at init and crashes with
+  //      "The argument 'filename' must be … Received undefined".
+  //   2. The CJS build (from server/node_modules) — used by the semantic-
+  //      token helpers via require("web-tree-sitter").
+  //
+  // Aliasing the package name to the concrete .cjs file forces both usages
+  // to the same CJS instance, avoiding the crash and ensuring the Language
+  // object produced by initParser is compatible with Query objects created
+  // by the semantic-token helpers.
+  alias: {
+    "web-tree-sitter": path.resolve(
+      __dirname,
+      "server/node_modules/web-tree-sitter/web-tree-sitter.cjs",
+    ),
+  },
 };
 
 /** @type {import("esbuild").BuildOptions} */
