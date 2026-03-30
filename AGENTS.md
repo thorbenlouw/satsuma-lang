@@ -58,13 +58,18 @@ When making changes or answering questions about syntax, semantics, or supported
 
 ## Code Readability
 
-Write code in the spirit of Literate Programming: code should read as a clear explanation of *what* it does and *why*, not just a sequence of instructions for the machine.
+**The satsuma-lang tooling is intended to be a teaching example** — the kind of codebase a developer can read to learn how to build a tree-sitter-backed language toolchain well. Every file should meet that bar. When in doubt, ask: *would a capable developer unfamiliar with this system understand what this code does, why it exists, and how it fits the whole — just by reading it?*
 
-- **Module-level comments** — every non-trivial module should open with a brief comment explaining its purpose, what it owns, and what it does not own. A reader skimming the file should understand its role in the system within the first five lines.
-- **Function doc-comments** — exported functions must have a doc-comment that states the contract (inputs, outputs, and any invariants), not just a restatement of the name. Private helpers need a comment only when their intent is non-obvious.
-- **Type comments** — exported types and their fields should carry inline comments explaining what each field represents and how consumers use it. Type declarations are part of the public contract and should be as readable as prose.
-- **Section comments** — group logically related code with a short header comment. This is especially important in modules with multiple distinct responsibilities (e.g. a validation module that checks duplicates, then missing refs, then field alignment — each group deserves a label).
-- **No orphan comments** — do not leave TODO/FIXME comments without a ticket reference. If something is intentionally deferred, link the ticket (`// see sl-xxxx`). Remove comments that describe what the code used to do.
+Write code in the spirit of Literate Programming and Clean Code: code should read as a clear explanation of *what* it does and *why*, not just a sequence of instructions for the machine. Functions should be small and focused. Names should communicate intent. Business rules should be visible, not buried.
+
+- **Module-level comments** — every non-trivial module must open with a comment explaining its purpose, what it owns, and what it does not own. A reader skimming the file should understand its role in the system within the first five lines.
+- **Function doc-comments** — exported functions must have a doc-comment that states the contract (inputs, outputs, invariants). Private helpers need a comment only when their intent is non-obvious. A doc-comment that merely restates the function name adds noise — say something a reader couldn't infer from the signature alone.
+- **Type comments** — exported types and their fields must carry inline comments explaining what each field represents and how consumers use it. Type declarations are part of the public contract and should read as prose.
+- **Section comments** — group logically related code with a short header comment. Modules with multiple distinct responsibilities (e.g. a validation module checking duplicates, then missing refs, then field alignment) must label each section.
+- **Named constants over magic values** — raw strings, numbers, regex literals, and array indices with non-obvious meaning must be extracted to named constants with a comment explaining the value and its source. `slice(0, 8)` with no comment is not acceptable; `slice(0, MAX_PREVIEW_FIELDS)` with a comment is.
+- **Small functions** — functions over ~40 lines are a signal to decompose or add sectional comments explaining the algorithm. Long functions that mix concerns must be refactored.
+- **Business rules must be visible** — domain rules (e.g. Data Vault naming conventions, known pipeline function names, formatter column caps) must be clearly labelled as rules, with a comment citing their source or rationale. They must not be buried as anonymous magic values.
+- **No orphan comments** — do not leave TODO/FIXME comments without a ticket reference. Link deferred work (`// see sl-xxxx`). Remove comments that describe what the code used to do.
 
 ## Testing Expectations
 
