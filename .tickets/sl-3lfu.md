@@ -1,6 +1,6 @@
 ---
 id: sl-3lfu
-status: open
+status: closed
 deps: [sl-u31z, sl-teg4, sl-ax50, sl-yml8, sl-i9pt, sl-ueij, sl-yumm, sl-yjga, sl-hnbv]
 links: []
 created: 2026-03-30T06:39:43Z

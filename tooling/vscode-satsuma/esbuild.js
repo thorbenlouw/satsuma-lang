@@ -24,6 +24,18 @@ const serverConfig = {
   outfile: "server/dist/server.js",
   format: "cjs",
   sourcemap: true,
+  // web-tree-sitter uses import.meta.url internally (for createRequire and
+  // WASM file location). esbuild replaces import.meta with {} in CJS bundles,
+  // making import.meta.url → undefined and crashing at runtime. The banner
+  // injects a CJS-compatible shim so the bundled code gets a real URL.
+  banner: {
+    js: [
+      `var __import_meta_url = require("url").pathToFileURL(__filename).href;`,
+    ].join("\n"),
+  },
+  define: {
+    "import.meta.url": "__import_meta_url",
+  },
 };
 
 /** @type {import("esbuild").BuildOptions} */

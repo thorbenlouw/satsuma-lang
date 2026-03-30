@@ -24,7 +24,7 @@ export type SyntaxNode = Node;
 export type { Tree };
 
 // Re-export the singleton lifecycle from core.
-export { initParser, getParser, getLanguage } from "@satsuma/core";
+export { initParser, getParser, getLanguage, createQuery } from "@satsuma/core";
 export type { ParserInitOptions } from "@satsuma/core";
 
 // ---------- CST navigation helpers (delegating to satsuma-core) ----------

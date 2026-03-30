@@ -22,12 +22,17 @@
  *   3. There is no teardown — the singleton lives for the process lifetime.
  */
 
-import type { Parser, Language } from "web-tree-sitter";
+import type { Parser, Language, Query } from "web-tree-sitter";
 
 // ── Singleton state ─────────────────────────────────────────────────────────
 
 let _parser: Parser | null = null;
 let _language: Language | null = null;
+
+// Retained so that createQuery() can construct Query instances from the same
+// WASM module that Parser.init() loaded — avoiding the duplicate-module
+// problem that occurs when consumers bundle web-tree-sitter separately.
+let _TreeSitter: typeof import("web-tree-sitter") | null = null;
 
 // Stored so that re-entrant calls to initParser() return the same Promise
 // instead of starting a second initialisation race.
@@ -80,6 +85,7 @@ export function initParser(wasmPath: string, options?: ParserInitOptions): Promi
     // both that case and future ESM builds that may add a default.
     const mod = await import("web-tree-sitter");
     const TreeSitter = (mod.default ?? mod) as unknown as typeof import("web-tree-sitter");
+    _TreeSitter = TreeSitter;
     await TreeSitter.Parser.init(
       options?.locateFile ? { locateFile: options.locateFile } : undefined,
     );
@@ -110,4 +116,17 @@ export function getParser(): Parser {
 export function getLanguage(): Language {
   if (!_language) throw new Error("Language not loaded — call initParser() first");
   return _language;
+}
+
+/**
+ * Create a tree-sitter Query from a highlights source string.
+ *
+ * Uses the same WASM module instance that initParser() loaded, avoiding the
+ * duplicate-module problem that occurs when consumers import web-tree-sitter
+ * separately (esbuild bundles ESM and CJS copies as distinct modules, each
+ * with its own uninitialised WASM state).
+ */
+export function createQuery(language: Language, source: string): Query {
+  if (!_TreeSitter) throw new Error("Parser not initialised — call initParser() first");
+  return new _TreeSitter.Query(language, source);
 }
