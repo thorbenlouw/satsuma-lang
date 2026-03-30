@@ -2,6 +2,7 @@
  * cst-query.ts — Namespace-aware CST lookup helpers.
  */
 
+import { labelText } from "@satsuma/core";
 import type { SyntaxNode } from "./types.js";
 
 interface QualifiedName {
@@ -16,14 +17,6 @@ function splitQualifiedName(name: string): QualifiedName {
     namespace: name.slice(0, idx),
     localName: name.slice(idx + 2),
   };
-}
-
-export function getBlockName(node: SyntaxNode): string | null {
-  const lbl = node.namedChildren.find((c) => c.type === "block_label");
-  const inner = lbl?.namedChildren[0];
-  if (!inner) return null;
-  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
-  return inner.text;
 }
 
 export function findBlockNode(rootNode: SyntaxNode, nodeType: string, qualifiedName: string): SyntaxNode | null {
@@ -47,7 +40,7 @@ export function findBlockNode(rootNode: SyntaxNode, nodeType: string, qualifiedN
     }
 
     if (namespace) continue;
-    if (c.type === nodeType && getBlockName(c) === localName) return c;
+    if (c.type === nodeType && labelText(c) === localName) return c;
   }
 
   return null;
@@ -67,7 +60,7 @@ function findBlockByRow(rootNode: SyntaxNode, nodeType: string, targetRow: numbe
 
 function findBlockNodeInContainer(containerNode: SyntaxNode, nodeType: string, localName: string): SyntaxNode | null {
   for (const c of containerNode.namedChildren) {
-    if (c.type === nodeType && getBlockName(c) === localName) return c;
+    if (c.type === nodeType && labelText(c) === localName) return c;
   }
   return null;
 }

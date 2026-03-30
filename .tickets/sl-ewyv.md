@@ -1,6 +1,6 @@
 ---
 id: sl-ewyv
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T18:22:44Z
@@ -33,3 +33,10 @@ getBlockName() appears twice in the CLI: as a private function in nl-extract.ts 
 - All callers use core labelText()
 - No redundant tests for block name extraction in CLI
 
+
+## Notes
+
+**2026-03-30T18:45:55Z**
+
+Cause: getBlockName() was duplicated in cst-query.ts (exported) and nl-extract.ts (private), both identical to core's labelText().
+Fix: Deleted both copies, imported labelText from @satsuma/core in cst-query.ts, nl-extract.ts, and commands/nl.ts. getFieldName() in nl-extract.ts was checked — it navigates to field_name child first, which entryText() does not do (entryText works on the node directly), so it remains as-is. Note: context.ts still has its own getBlockName() that additionally handles qualified_name — this is out of scope as it has different logic than the simple labelText(). All 862 CLI tests pass.
