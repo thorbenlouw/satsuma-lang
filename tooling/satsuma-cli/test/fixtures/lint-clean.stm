@@ -16,11 +16,11 @@ namespace staging {
     target { staging::stg_orders }
 
     orders.order_id -> stg_orders.order_id {
-      "Copy `order_id` directly"
+      "Copy @order_id directly"
     }
 
     orders.amount -> stg_orders.amount {
-      "Copy `amount` from `source::orders`"
+      "Copy @amount from @source::orders"
     }
   }
 }

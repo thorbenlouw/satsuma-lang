@@ -22,11 +22,11 @@ namespace staging {
     target { staging::stg_gl_entries }
 
     finance_gl.posted_by -> stg_gl_entries.department {
-      "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`"
+      "Lookup @department from @source::hr_employees using @posted_by -> @employee_id"
     }
 
     finance_gl.amount -> stg_gl_entries.amount {
-      "Enrich `amount` using `nonexistent_fx_rates` for currency conversion"
+      "Enrich @amount using @nonexistent_fx_rates for currency conversion"
     }
   }
 }

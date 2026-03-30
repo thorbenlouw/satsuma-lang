@@ -23,5 +23,5 @@ mapping `build dim_customer` {
   target { dim_customer }
 
   id -> id
-  -> signup_date { "Earliest date from `crm_accounts` or `web_profiles`" }
+  -> signup_date { "Earliest date from @crm_accounts or @web_profiles" }
 }

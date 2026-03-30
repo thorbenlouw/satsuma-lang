@@ -16,11 +16,11 @@ namespace staging {
     target { staging::stg_orders }
 
     orders.order_id -> stg_orders.order_id {
-      "Copy `order_id` directly"
+      "Copy @order_id directly"
     }
 
     orders.customer_id -> stg_orders.customer_name {
-      "Lookup `customer_name` from `nonexistent_schema` using `customer_id`"
+      "Lookup @customer_name from @nonexistent_schema using @customer_id"
     }
   }
 }

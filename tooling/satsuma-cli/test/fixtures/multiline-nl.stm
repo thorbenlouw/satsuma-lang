@@ -12,8 +12,8 @@ mapping `name merge` {
   target { tgt_data }
 
   first_name, last_name -> full_name {
-    """Concatenate `first_name` and `last_name`
+    """Concatenate @first_name and @last_name
     with proper capitalization.
-    Handle NULL `first_name` by using `last_name` only."""
+    Handle NULL @first_name by using @last_name only."""
   }
 }

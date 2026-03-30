@@ -15,7 +15,7 @@ namespace crm {
     target { hub_account }
 
     name -> name {
-      "Copy from `contacts` email field"
+      "Copy from @contacts email field"
     }
   }
 }

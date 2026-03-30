@@ -8,7 +8,7 @@
  */
 
 import {
-  extractBacktickRefs,
+  extractAtRefs,
   classifyRef,
   resolveRef,
   isSchemaInMappingSources,
@@ -26,7 +26,7 @@ export const RULES: LintRule[] = [
   },
   {
     id: "unresolved-nl-ref",
-    description: "NL backtick reference does not resolve",
+    description: "NL @ref does not resolve",
     check: checkUnresolvedNlRef,
   },
   {
@@ -43,7 +43,7 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
   if (!index.nlRefData) return diagnostics;
 
   for (const item of index.nlRefData) {
-    const refs = extractBacktickRefs(item.text);
+    const refs = extractAtRefs(item.text);
     const mappingKey = item.namespace
       ? `${item.namespace}::${item.mapping}`
       : item.mapping;
@@ -282,7 +282,7 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
     // positives — mirrors the suppression already present in validate.ts.
     if (item.mapping === "note:") continue;
 
-    const refs = extractBacktickRefs(item.text);
+    const refs = extractAtRefs(item.text);
     const mappingKey = item.namespace
       ? `${item.namespace}::${item.mapping}`
       : item.mapping;

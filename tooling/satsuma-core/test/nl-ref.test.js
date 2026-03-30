@@ -5,38 +5,33 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  extractBacktickRefs,
+  extractAtRefs,
   classifyRef,
   resolveRef,
   resolveAllNLRefs,
 } from "../dist/nl-ref.js";
 
-// ── extractBacktickRefs ───────────────────────────────────────────────────────
+// ── extractAtRefs ─────────────────────────────────────────────────────────────
 
-describe("extractBacktickRefs()", () => {
+describe("extractAtRefs()", () => {
   it("extracts @ref mentions", () => {
-    const refs = extractBacktickRefs("Sum @amount grouped by @order_id");
-    assert.deepEqual(refs.map(r => r.ref), ["amount", "order_id"]);
-  });
-
-  it("extracts backtick refs", () => {
-    const refs = extractBacktickRefs("Sum `amount` grouped by `order_id`");
+    const refs = extractAtRefs("Sum @amount grouped by @order_id");
     assert.deepEqual(refs.map(r => r.ref), ["amount", "order_id"]);
   });
 
   it("extracts @ns::schema.field refs", () => {
-    const refs = extractBacktickRefs("Join @crm::customers.id to @dim_customer.customer_id");
+    const refs = extractAtRefs("Join @crm::customers.id to @dim_customer.customer_id");
     assert.deepEqual(refs.map(r => r.ref), ["crm::customers.id", "dim_customer.customer_id"]);
   });
 
-  it("does not double-extract overlapping @ref and backtick", () => {
-    const refs = extractBacktickRefs("@`order-id` value");
+  it("handles @`backtick-name` refs", () => {
+    const refs = extractAtRefs("@`order-id` value");
     assert.equal(refs.length, 1);
     assert.equal(refs[0].ref, "order-id");
   });
 
   it("returns empty for text with no refs", () => {
-    const refs = extractBacktickRefs("plain text with no references");
+    const refs = extractAtRefs("plain text with no references");
     assert.deepEqual(refs, []);
   });
 });

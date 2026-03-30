@@ -98,11 +98,11 @@ namespace staging (note "Cleaned and conformed staging area") {
     amount -> amount
 
     -> department {
-      "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`"
+      "Lookup @department from @source::hr_employees using @posted_by -> @employee_id"
     }
 
     -> employee_name {
-      "Lookup `full_name` from `source::hr_employees` using `posted_by` -> `employee_id`"
+      "Lookup @full_name from @source::hr_employees using @posted_by -> @employee_id"
     }
   }
 }

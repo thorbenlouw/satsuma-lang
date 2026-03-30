@@ -9,7 +9,7 @@ schema orders {
 }
 
 note {
-  "The `product` schema is the canonical source of truth for all product data."
+  "The @product schema is the canonical source of truth for all product data."
 }
 
 metric order_count (
@@ -19,7 +19,7 @@ metric order_count (
   value  INTEGER
 
   note {
-    "Count of `orders` placed per day. See `product` for product details."
+    "Count of @orders placed per day. See @product for product details."
   }
 }
 

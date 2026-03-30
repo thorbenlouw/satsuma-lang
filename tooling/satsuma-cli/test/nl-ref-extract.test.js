@@ -1,29 +1,29 @@
 /**
- * nl-ref-extract.test.js — Tests for NL backtick reference extraction utility
+ * nl-ref-extract.test.js — Tests for NL @ref extraction utility
  */
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  extractBacktickRefs,
+  extractAtRefs,
   classifyRef,
   resolveRef,
   isSchemaInMappingSources,
   resolveAllNLRefs,
 } from "#src/nl-ref-extract.js";
 
-// ── extractBacktickRefs ─────────────────────────────────────────────────────
+// ── extractAtRefs ────────────────────────────────────────────────────────────
 
-describe("extractBacktickRefs", () => {
-  it("extracts a single backtick reference", () => {
-    const refs = extractBacktickRefs("Lookup `department` from employees");
+describe("extractAtRefs", () => {
+  it("extracts a single @ref", () => {
+    const refs = extractAtRefs("Lookup @department from employees");
     assert.equal(refs.length, 1);
     assert.equal(refs[0].ref, "department");
   });
 
-  it("extracts multiple backtick references", () => {
-    const refs = extractBacktickRefs(
-      "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`",
+  it("extracts multiple @refs", () => {
+    const refs = extractAtRefs(
+      "Lookup @department from @source::hr_employees using @posted_by -> @employee_id",
     );
     assert.equal(refs.length, 4);
     assert.deepEqual(refs.map((r) => r.ref), [
@@ -34,20 +34,20 @@ describe("extractBacktickRefs", () => {
     ]);
   });
 
-  it("returns empty array for text without backticks", () => {
-    const refs = extractBacktickRefs("No references here");
+  it("returns empty array for text without @refs", () => {
+    const refs = extractAtRefs("No references here");
     assert.equal(refs.length, 0);
   });
 
   it("returns empty array for empty string", () => {
-    const refs = extractBacktickRefs("");
+    const refs = extractAtRefs("");
     assert.equal(refs.length, 0);
   });
 
   it("captures correct offsets", () => {
-    const refs = extractBacktickRefs("abc `foo` xyz `bar`");
+    const refs = extractAtRefs("abc @foo xyz @bar");
     assert.equal(refs[0].offset, 4);
-    assert.equal(refs[1].offset, 14);
+    assert.equal(refs[1].offset, 13);
   });
 });
 
@@ -417,7 +417,7 @@ describe("resolveAllNLRefs", () => {
       transforms: new Map(),
       fragments: new Map(),
       nlRefData: [{
-        text: "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`",
+        text: "Lookup @department from @source::hr_employees using @posted_by -> @employee_id",
         mapping: "stage gl entries",
         namespace: "staging",
         targetField: "department",

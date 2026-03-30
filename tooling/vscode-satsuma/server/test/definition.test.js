@@ -232,53 +232,6 @@ mapping \`test\` {
     assert.equal(loc.range.start.line, 4); // email_addr field in tgt schema
   });
 
-  it("jumps from backtick ref in NL string to block definition", () => {
-    // Line 6: "  -> display { "Look up \`customers\` table" }"
-    //                         ^col15            ^col24 = start of `customers`
-    const result = definition(
-      {
-        "file:///a.stm": `schema customers {
-  id UUID
-}
-mapping \`test\` {
-  source { customers }
-  target { dim }
-  -> display { "Look up \`customers\` table" }
-}`,
-      },
-      "file:///a.stm",
-      6,
-      26, // cursor inside backtick ref `customers` (col 15 + offset 11)
-    );
-    assert.ok(result, "Expected definition for backtick ref");
-    const loc = Array.isArray(result) ? result[0] : result;
-    assert.equal(loc.range.start.line, 0); // schema customers on line 0
-  });
-
-  it("jumps from backtick ref in NL string to schema field", () => {
-    // Line 7: "  -> full_name { "Concat \`customer_id\` with name" }"
-    //                           ^col17           ^col26 = start of `customer_id`
-    const result = definition(
-      {
-        "file:///a.stm": `schema src {
-  customer_id UUID (pk)
-  name VARCHAR
-}
-mapping \`test\` {
-  source { src }
-  target { dim }
-  -> full_name { "Concat \`customer_id\` with name" }
-}`,
-      },
-      "file:///a.stm",
-      7,
-      28, // cursor inside backtick ref `customer_id` (col 17 + offset 11)
-    );
-    assert.ok(result, "Expected definition for field backtick ref");
-    const loc = Array.isArray(result) ? result[0] : result;
-    assert.equal(loc.range.start.line, 1); // customer_id field on line 1
-  });
-
   it("jumps from @ref in NL string to block definition", () => {
     // Line 6: "  -> display { "Look up @customers table" }"
     const result = definition(

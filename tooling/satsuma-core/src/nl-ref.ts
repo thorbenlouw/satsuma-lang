@@ -1,9 +1,9 @@
 /**
- * nl-ref.ts — Extract and resolve @ref / backtick references from NL strings
+ * nl-ref.ts — Extract and resolve @ref references from NL strings
  *
- * Parses NL strings inside transform pipe steps for @ref and backtick-delimited
- * references (e.g., `@source_schema`, `@schema.field`), classifies them,
- * and optionally resolves them against a DefinitionLookup callback.
+ * Parses NL strings inside transform pipe steps for @ref references
+ * (e.g., `@source_schema`, `@schema.field`, `@ns::schema.field`),
+ * classifies them, and optionally resolves them against a DefinitionLookup callback.
  *
  * The DefinitionLookup abstraction decouples this module from WorkspaceIndex
  * so both the CLI and LSP can share it (ADR-006).
@@ -15,7 +15,7 @@ import type { SpreadEntity, EntityRefResolver, SpreadEntityLookup } from "./spre
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface BacktickRef {
+export interface AtRef {
   ref: string;
   offset: number;
 }
@@ -99,37 +99,21 @@ function canonicalKey(key: string): string {
 
 // ── Extraction ────────────────────────────────────────────────────────────────
 
-const BACKTICK_RE = /`([^`]+)`/g;
-
 // @ref pattern: @identifier, @schema.field, @ns::schema.field, @`backtick`.field
 const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 /**
- * Extract backtick-delimited references and @ref mentions from a single NL string.
+ * Extract @ref mentions from a single NL string.
  */
-export function extractBacktickRefs(text: string): BacktickRef[] {
-  const refs: BacktickRef[] = [];
+export function extractAtRefs(text: string): AtRef[] {
+  const refs: AtRef[] = [];
   let match;
 
-  // Extract @ref mentions (preferred)
   AT_REF_RE.lastIndex = 0;
   while ((match = AT_REF_RE.exec(text)) !== null) {
     const rawRef = match[0].slice(1); // remove @
     const ref = rawRef.replace(/`([^`]+)`/g, "$1");
     refs.push({ ref, offset: match.index });
-  }
-
-  // Also extract backtick refs (backward compat)
-  BACKTICK_RE.lastIndex = 0;
-  while ((match = BACKTICK_RE.exec(text)) !== null) {
-    const matchIndex = match.index;
-    const alreadyFound = refs.some((r) => {
-      const rEnd = r.offset + r.ref.length + 1;
-      return matchIndex >= r.offset && matchIndex < rEnd;
-    });
-    if (!alreadyFound) {
-      refs.push({ ref: match[1]!, offset: match.index });
-    }
   }
 
   return refs;
@@ -590,7 +574,7 @@ export function resolveAllNLRefs(
   const results: ResolvedNLRef[] = [];
 
   for (const item of nlRefData) {
-    const backtickRefs = extractBacktickRefs(item.text);
+    const atRefs = extractAtRefs(item.text);
     const mappingKey = item.namespace
       ? `${item.namespace}::${item.mapping}`
       : item.mapping;
@@ -601,7 +585,7 @@ export function resolveAllNLRefs(
       namespace: item.namespace,
     };
 
-    for (const { ref, offset } of backtickRefs) {
+    for (const { ref, offset } of atRefs) {
       const classification = classifyRef(ref);
       const resolution = resolveRef(ref, mappingContext, lookup);
 

@@ -1,5 +1,5 @@
 /**
- * nl-ref-validate.test.js — Tests for NL backtick reference validation
+ * nl-ref-validate.test.js — Tests for NL @ref validation
  */
 
 import assert from "node:assert/strict";
@@ -33,7 +33,7 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] }) {
 }
 
 describe("NL ref validation: nl-ref-unresolved", () => {
-  it("does not warn for valid NL backtick references", () => {
+  it("does not warn for valid NL @refs", () => {
     const index = makeIndex({
       schemas: [
         { name: "source::hr_employees", fields: [{ name: "department" }, { name: "employee_id" }] },
@@ -47,7 +47,7 @@ describe("NL ref validation: nl-ref-unresolved", () => {
         targets: ["staging::stg_gl_entries"],
       }],
       nlRefData: [{
-        text: "Lookup `department` from `source::hr_employees` using `posted_by` -> `employee_id`",
+        text: "Lookup @department from @source::hr_employees using @posted_by -> @employee_id",
         mapping: "stage gl entries",
         namespace: "staging",
         targetField: "department",
@@ -62,7 +62,7 @@ describe("NL ref validation: nl-ref-unresolved", () => {
     assert.equal(nlWarnings.length, 0, "Valid NL refs should produce no warnings");
   });
 
-  it("warns for unresolvable NL backtick references", () => {
+  it("warns for unresolvable NL @refs", () => {
     const index = makeIndex({
       schemas: [
         { name: "source::finance_gl", fields: [{ name: "posted_by" }] },
@@ -75,7 +75,7 @@ describe("NL ref validation: nl-ref-unresolved", () => {
         targets: ["staging::stg_gl_entries"],
       }],
       nlRefData: [{
-        text: "Lookup `nonexistent_field` from `source::unknown_schema`",
+        text: "Lookup @nonexistent_field from @source::unknown_schema",
         mapping: "my_mapping",
         namespace: "staging",
         targetField: "foo",
@@ -108,7 +108,7 @@ describe("NL ref validation: nl-ref-not-in-source", () => {
         targets: ["staging::stg_gl_entries"],
       }],
       nlRefData: [{
-        text: "Lookup from `source::hr_employees` using `posted_by`",
+        text: "Lookup from @source::hr_employees using @posted_by",
         mapping: "my_mapping",
         namespace: "staging",
         targetField: "dept",
@@ -139,7 +139,7 @@ describe("NL ref validation: nl-ref-not-in-source", () => {
         targets: ["staging::stg_gl_entries"],
       }],
       nlRefData: [{
-        text: "Lookup from `source::hr_employees`",
+        text: "Lookup from @source::hr_employees",
         mapping: "my_mapping",
         namespace: "staging",
         targetField: "dept",
@@ -176,7 +176,7 @@ describe("NL ref validation: fragment spread fields", () => {
       }],
       nlRefData: [
         {
-          text: "SUM(`ex::product_day.SALES_VALUE`)",
+          text: "SUM(@ex::product_day.SALES_VALUE)",
           mapping: "Product to Summary",
           namespace: "ex",
           targetField: "TOTAL_SALES",
@@ -185,7 +185,7 @@ describe("NL ref validation: fragment spread fields", () => {
           column: 6,
         },
         {
-          text: "SUM(`ex::product_day.RETURN_VALUE`)",
+          text: "SUM(@ex::product_day.RETURN_VALUE)",
           mapping: "Product to Summary",
           namespace: "ex",
           targetField: "TOTAL_RETURNS",
@@ -225,7 +225,7 @@ describe("NL ref validation: fragment spread fields", () => {
         targets: ["ex::summary_day"],
       }],
       nlRefData: [{
-        text: "SUM(`ex::product_day.NONEXISTENT`)",
+        text: "SUM(@ex::product_day.NONEXISTENT)",
         mapping: "m1",
         namespace: "ex",
         targetField: "TOTAL",
@@ -254,7 +254,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
         { name: "target_system", fields: [{ name: "id" }] },
       ],
       nlRefData: [{
-        text: "Converts `source_system` records into `target_system`",
+        text: "Converts @source_system records into @target_system",
         mapping: "note:",
         namespace: null,
         targetField: null,
@@ -275,7 +275,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
         { name: "my_schema", fields: [{ name: "user_id" }, { name: "email" }] },
       ],
       nlRefData: [{
-        text: "The `user_id` field is the primary key",
+        text: "The @user_id field is the primary key",
         mapping: "note:",
         namespace: null,
         targetField: null,
@@ -296,7 +296,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
         { name: "my_schema", fields: [{ name: "user_id" }] },
       ],
       nlRefData: [{
-        text: "Needs `external_config_key` to be provisioned",
+        text: "Needs @external_config_key to be provisioned",
         mapping: "note:",
         namespace: null,
         targetField: null,
@@ -317,7 +317,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
         { name: "source_system", fields: [{ name: "email_addr" }] },
       ],
       nlRefData: [{
-        text: "See `source_system.email_addr` for details",
+        text: "See @source_system.email_addr for details",
         mapping: "note:",
         namespace: null,
         targetField: null,
@@ -338,7 +338,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
         { name: "my_schema", fields: [{ name: "user_id" }] },
       ],
       nlRefData: [{
-        text: "The `user_id` is sequential",
+        text: "The @user_id is sequential",
         mapping: "note:my_schema",
         namespace: null,
         targetField: null,
@@ -365,7 +365,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
         targets: ["target::tgt"],
       }],
       nlRefData: [{
-        text: "Check `nonexistent_field` before proceeding",
+        text: "Check @nonexistent_field before proceeding",
         mapping: "my_mapping",
         namespace: null,
         targetField: null,
@@ -395,7 +395,7 @@ describe("NL ref validation: bare field matching", () => {
         targets: ["staging::stg"],
       }],
       nlRefData: [{
-        text: "Sum of `amount` grouped by `department`",
+        text: "Sum of @amount grouped by @department",
         mapping: "m1",
         namespace: "staging",
         targetField: "total",

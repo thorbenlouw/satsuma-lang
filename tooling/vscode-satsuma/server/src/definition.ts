@@ -485,7 +485,6 @@ function getMappingSchemaRefs(
 
 // ---------- NL reference detection ----------
 
-const BACKTICK_REF_RE = /`([^`\\]*(?:\\.[^`\\]*)*)`/g;
 const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
 
 /**
@@ -547,25 +546,7 @@ function tryNlRefContext(
     }
   }
 
-  // Fall back to backtick refs (backward compat)
-  BACKTICK_REF_RE.lastIndex = 0;
-  while ((match = BACKTICK_REF_RE.exec(text)) !== null) {
-    const refStart = match.index;
-    const refEnd = refStart + match[0].length;
-    if (cursorOffset >= refStart && cursorOffset < refEnd) {
-      const refName = match[1]!;
-      const ns = findEnclosingNamespace(nlNode);
-      const mapping = findEnclosingMapping(nlNode);
-      return {
-        kind: "nl_ref",
-        name: refName,
-        namespace: ns,
-        node: nlNode,
-        mappingSources: mapping ? getMappingSchemaRefs(mapping, "source_block") : [],
-        mappingTargets: mapping ? getMappingSchemaRefs(mapping, "target_block") : [],
-      };
-    }
-  }
+
 
   return null;
 }

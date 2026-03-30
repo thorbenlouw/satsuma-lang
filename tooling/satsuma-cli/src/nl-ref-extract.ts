@@ -10,7 +10,7 @@
  */
 
 import {
-  extractBacktickRefs,
+  extractAtRefs,
   classifyRef,
   resolveRef as _resolveRef,
   extractNLRefData,
@@ -18,7 +18,7 @@ import {
   isSchemaInMappingSources as _isSchemaInMappingSources,
 } from "@satsuma/core";
 import type {
-  BacktickRef,
+  AtRef,
   RefClassification,
   Resolution,
   ResolvedNLRef,
@@ -28,8 +28,8 @@ import type { MappingRecord, NLRefData, WorkspaceIndex } from "./types.js";
 import { expandEntityFields } from "./spread-expand.js";
 
 // Re-export pure functions and types directly.
-export { extractBacktickRefs, classifyRef, extractNLRefData };
-export type { BacktickRef, RefClassification, Resolution, ResolvedNLRef };
+export { extractAtRefs, classifyRef, extractNLRefData };
+export type { AtRef, RefClassification, Resolution, ResolvedNLRef };
 
 // ── WorkspaceIndex → DefinitionLookup bridge ──────────────────────────────────
 
