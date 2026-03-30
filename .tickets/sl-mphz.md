@@ -1,6 +1,6 @@
 ---
 id: sl-mphz
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T18:25:01Z
