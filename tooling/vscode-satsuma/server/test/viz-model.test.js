@@ -7,7 +7,7 @@ const {
   getImportReachableUris,
   indexFile,
 } = require("../dist/workspace-index");
-const { buildVizModel } = require("../dist/viz-model");
+const { buildVizModel, mergeVizModels } = require("../dist/viz-model");
 
 before(async () => { await initTestParser(); });
 
@@ -46,6 +46,29 @@ function vizModelScoped(files, targetUri) {
   const reachable = getImportReachableUris(targetUri, idx);
   const scoped = createScopedIndex(idx, reachable);
   return buildVizModel(targetUri, trees[targetUri], scoped);
+}
+
+/**
+ * Build a full-lineage merged VizModel, mirroring the satsuma/vizFullLineage
+ * endpoint: builds per-file VizModels for all import-reachable files, then
+ * merges them.
+ */
+function vizModelFullLineage(files, targetUri) {
+  const idx = createWorkspaceIndex();
+  const trees = {};
+  for (const [uri, source] of Object.entries(files)) {
+    const tree = parse(source);
+    trees[uri] = tree;
+    indexFile(idx, uri, tree);
+  }
+  const reachable = getImportReachableUris(targetUri, idx);
+  const models = [];
+  for (const fileUri of reachable) {
+    if (!trees[fileUri]) continue;
+    const scoped = createScopedIndex(idx, getImportReachableUris(fileUri, idx));
+    models.push(buildVizModel(fileUri, trees[fileUri], scoped));
+  }
+  return mergeVizModels(targetUri, models);
 }
 
 // ---------- Basic structure ----------
@@ -804,5 +827,166 @@ mapping m {
     const rateRef = arrow.transform.atRefs.find(r => r.ref === "rate");
     assert.ok(rateRef, "expected atRef for rate");
     assert.equal(rateRef.classification, "bare");
+  });
+});
+
+// ---------- mergeVizModels ----------
+
+describe("mergeVizModels", () => {
+  it("returns empty model when given no inputs", () => {
+    const result = mergeVizModels("file:///a.stm", []);
+    assert.equal(result.uri, "file:///a.stm");
+    assert.equal(result.namespaces.length, 0);
+  });
+
+  it("returns the single model unchanged when given one input", () => {
+    const model = vizModel("schema foo { id INT }");
+    const result = mergeVizModels(model.uri, [model]);
+    assert.deepStrictEqual(result, model);
+  });
+
+  it("deduplicates schemas by qualifiedId across models", () => {
+    const m1 = vizModel("schema foo { id INT }", "file:///a.stm");
+    const m2 = vizModel("schema foo { id INT\nname VARCHAR }", "file:///b.stm");
+    // Primary model's schema wins the dedup.
+    const result = mergeVizModels("file:///a.stm", [m1, m2]);
+    const schemas = result.namespaces.flatMap(ns => ns.schemas);
+    assert.equal(schemas.length, 1, "duplicate schema should be deduped");
+    assert.equal(schemas[0].fields.length, 1, "primary model schema should win");
+  });
+
+  it("includes mappings from upstream files", () => {
+    // Model A has a schema and mapping; model B has a different mapping.
+    const modelA = vizModel(`
+schema src { id INT }
+schema tgt { id INT }
+mapping m1 {
+  source { src }
+  target { tgt }
+  src.id -> id
+}`, "file:///a.stm");
+
+    const modelB = vizModel(`
+schema upstream { code VARCHAR }
+schema src { id INT }
+mapping m_upstream {
+  source { upstream }
+  target { src }
+  upstream.code -> id
+}`, "file:///b.stm");
+
+    const result = mergeVizModels("file:///a.stm", [modelA, modelB]);
+    const allMappings = result.namespaces.flatMap(ns => ns.mappings);
+    assert.equal(allMappings.length, 2, "both mappings should be present");
+    const mappingIds = allMappings.map(m => m.id);
+    assert.ok(mappingIds.includes("m1"), "primary mapping present");
+    assert.ok(mappingIds.includes("m_upstream"), "upstream mapping present");
+  });
+
+  it("preserves only primary file's fileNotes", () => {
+    const modelA = vizModel(`
+note { "File A note" }
+schema foo { id INT }
+`, "file:///a.stm");
+
+    const modelB = vizModel(`
+note { "File B note" }
+schema bar { id INT }
+`, "file:///b.stm");
+
+    const result = mergeVizModels("file:///a.stm", [modelA, modelB]);
+    assert.equal(result.fileNotes.length, 1);
+    assert.ok(result.fileNotes[0].text.includes("File A note"));
+  });
+
+  it("merges entities from different namespaces correctly", () => {
+    const modelA = vizModel(`
+namespace crm {
+  schema customers { id INT }
+}`, "file:///a.stm");
+
+    const modelB = vizModel(`
+namespace billing {
+  schema invoices { id INT }
+}`, "file:///b.stm");
+
+    const result = mergeVizModels("file:///a.stm", [modelA, modelB]);
+    assert.equal(result.namespaces.length, 2, "two namespace groups");
+    const nsNames = result.namespaces.map(ns => ns.name).sort();
+    assert.deepStrictEqual(nsNames, ["billing", "crm"]);
+  });
+});
+
+// ---------- Full lineage (vizModelFullLineage) ----------
+
+describe("vizModelFullLineage", () => {
+  it("includes schemas and mappings from transitively imported files", () => {
+    // File C defines an upstream schema.
+    // File B imports C and maps upstream -> intermediate.
+    // File A imports B and maps intermediate -> target.
+    const files = {
+      "file:///c.stm": `
+schema upstream { code VARCHAR }`,
+
+      "file:///b.stm": `
+import { upstream } from "./c.stm"
+schema intermediate { id INT }
+mapping m_b {
+  source { upstream }
+  target { intermediate }
+  upstream.code -> id
+}`,
+
+      "file:///a.stm": `
+import { intermediate } from "./b.stm"
+schema target { key INT }
+mapping m_a {
+  source { intermediate }
+  target { target }
+  intermediate.id -> key
+}`,
+    };
+
+    const result = vizModelFullLineage(files, "file:///a.stm");
+
+    // All three schemas should be present.
+    const allSchemas = result.namespaces.flatMap(ns => ns.schemas);
+    const schemaIds = allSchemas.map(s => s.qualifiedId).sort();
+    assert.ok(schemaIds.includes("upstream"), "upstream schema from file C");
+    assert.ok(schemaIds.includes("intermediate"), "intermediate schema from file B");
+    assert.ok(schemaIds.includes("target"), "target schema from file A");
+
+    // Both mappings should be present (one from A, one from B).
+    const allMappings = result.namespaces.flatMap(ns => ns.mappings);
+    const mappingIds = allMappings.map(m => m.id).sort();
+    assert.ok(mappingIds.includes("m_a"), "mapping from file A");
+    assert.ok(mappingIds.includes("m_b"), "mapping from file B");
+  });
+
+  it("location.uri tracks which file each entity came from", () => {
+    const files = {
+      "file:///src.stm": `
+schema source_data { id INT }`,
+
+      "file:///main.stm": `
+import { source_data } from "./src.stm"
+schema result { id INT }
+mapping m {
+  source { source_data }
+  target { result }
+  source_data.id -> id
+}`,
+    };
+
+    const result = vizModelFullLineage(files, "file:///main.stm");
+    const allSchemas = result.namespaces.flatMap(ns => ns.schemas);
+
+    const resultSchema = allSchemas.find(s => s.qualifiedId === "result");
+    assert.equal(resultSchema.location.uri, "file:///main.stm",
+      "result schema should come from main.stm");
+
+    const sourceSchema = allSchemas.find(s => s.qualifiedId === "source_data");
+    assert.equal(sourceSchema.location.uri, "file:///src.stm",
+      "source_data schema should come from src.stm");
   });
 });
