@@ -636,6 +636,10 @@ export class SatsumaViz extends LitElement {
   @state()
   private _nsFilter: string | null = null;
 
+  /** File-scope filter: null = show all files (full lineage), URI string = show only that file. */
+  @state()
+  private _fileFilter: string | null = null;
+
   @state()
   private _zoom = 1;
 
@@ -716,6 +720,7 @@ export class SatsumaViz extends LitElement {
       || changed.has("_viewMode")
       || changed.has("model")
       || changed.has("_nsFilter")
+      || changed.has("_fileFilter")
       || changed.has("_showNotes")
     ) {
       requestAnimationFrame(() => this._measureNamespaceBoxes());
@@ -985,6 +990,26 @@ export class SatsumaViz extends LitElement {
                 <option value="" ?selected=${this._nsFilter === null}>All namespaces</option>
                 ${namedNs.map(
                   (ns) => html`<option value=${ns.name!} ?selected=${this._nsFilter === ns.name}>${ns.name}</option>`
+                )}
+              </select>
+            `
+          : ""}
+        ${this._getSourceFiles().length > 1 && !inDetail
+          ? html`
+              <div class="toolbar-sep"></div>
+              <select
+                class="toolbar-select"
+                @change=${this._onFileFilterChange}
+                title="Filter by source file"
+              >
+                <option value="" ?selected=${this._fileFilter === null}>All files</option>
+                ${this._getSourceFiles().map(
+                  (uri) => {
+                    const name = uri.split("/").pop() ?? uri;
+                    const isCurrent = uri === this.model?.uri;
+                    const label = isCurrent ? `${name} (current)` : name;
+                    return html`<option value=${uri} ?selected=${this._fileFilter === uri}>${label}</option>`;
+                  }
                 )}
               </select>
             `
@@ -1590,11 +1615,55 @@ export class SatsumaViz extends LitElement {
     this._nsFilter = val || null;
   }
 
+  private _onFileFilterChange(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this._fileFilter = val || null;
+  }
+
+  /** Extract unique source file URIs from the current model, primary file first. */
+  private _getSourceFiles(): string[] {
+    if (!this.model) return [];
+    const uris = new Set<string>();
+    for (const ns of this.model.namespaces) {
+      for (const s of ns.schemas) uris.add(s.location.uri);
+      for (const m of ns.mappings) uris.add(m.location.uri);
+      for (const mt of ns.metrics) uris.add(mt.location.uri);
+    }
+    // Put the primary (current) file first in the list.
+    const result: string[] = [];
+    if (this.model.uri && uris.has(this.model.uri)) {
+      result.push(this.model.uri);
+      uris.delete(this.model.uri);
+    }
+    for (const uri of uris) result.push(uri);
+    return result;
+  }
+
   private _filterNamespaces(namespaces: NamespaceGroup[]): NamespaceGroup[] {
-    if (!this._nsFilter) return namespaces;
-    return namespaces.filter(
-      (ns) => ns.name === this._nsFilter || (!ns.name && namespaces.some((n) => n.name === this._nsFilter))
-    );
+    let result = namespaces;
+
+    // Namespace filter
+    if (this._nsFilter) {
+      result = result.filter(
+        (ns) => ns.name === this._nsFilter || (!ns.name && result.some((n) => n.name === this._nsFilter))
+      );
+    }
+
+    // File filter — narrow schemas/mappings/metrics/fragments to those from the selected file.
+    if (this._fileFilter) {
+      result = result.map(ns => ({
+        ...ns,
+        schemas: ns.schemas.filter(s => s.location.uri === this._fileFilter),
+        mappings: ns.mappings.filter(m => m.location.uri === this._fileFilter),
+        metrics: ns.metrics.filter(m => m.location.uri === this._fileFilter),
+        fragments: ns.fragments.filter(f => f.location.uri === this._fileFilter),
+      })).filter(ns =>
+        ns.schemas.length > 0 || ns.mappings.length > 0 ||
+        ns.metrics.length > 0 || ns.fragments.length > 0
+      );
+    }
+
+    return result;
   }
 
   /** Filter overview edges to only those whose source and target nodes are visible. */
@@ -1602,7 +1671,7 @@ export class SatsumaViz extends LitElement {
     edges: import("./layout/elk-layout.js").OverviewEdge[],
     visibleNamespaces: NamespaceGroup[],
   ): import("./layout/elk-layout.js").OverviewEdge[] {
-    if (!this._nsFilter) return edges;
+    if (!this._nsFilter && !this._fileFilter) return edges;
     const visibleIds = new Set<string>();
     for (const ns of visibleNamespaces) {
       for (const s of ns.schemas) visibleIds.add(s.qualifiedId);

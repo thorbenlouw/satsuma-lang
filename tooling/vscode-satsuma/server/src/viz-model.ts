@@ -1179,3 +1179,107 @@ function nodeLocation(uri: string, node: SyntaxNode): SourceLocation {
     character: node.startPosition.column,
   };
 }
+
+// ---------- Multi-file merge (full transitive lineage) ----------
+
+/**
+ * Merge multiple per-file VizModels into a single model that represents the
+ * full transitive lineage reachable from `primaryUri`.
+ *
+ * The primary file's entities appear first and win any dedup ties. Schemas are
+ * deduped by `qualifiedId`, mappings by `id` + source URI, metrics by
+ * `qualifiedId`, and fragments by `id`. This means stub schemas injected by
+ * `injectImportedSchemaStubs` are naturally superseded when the upstream file's
+ * full definition is present.
+ *
+ * @param primaryUri - The file URI that anchors the lineage view.
+ * @param models     - One VizModel per import-reachable file (including the primary).
+ */
+export function mergeVizModels(
+  primaryUri: string,
+  models: VizModel[],
+): VizModel {
+  if (models.length === 0) {
+    return { uri: primaryUri, fileNotes: [], namespaces: [] };
+  }
+  if (models.length === 1) return models[0]!;
+
+  // Put primary model first so its entities take precedence in dedup.
+  const sorted = [...models].sort((a, b) =>
+    a.uri === primaryUri ? -1 : b.uri === primaryUri ? 1 : 0,
+  );
+
+  // Global dedup sets — track what has already been included.
+  const seenSchemas = new Set<string>();
+  const seenMappings = new Set<string>();
+  const seenMetrics = new Set<string>();
+  const seenFragments = new Set<string>();
+
+  /** Dedup key for a mapping: id + source URI (same name in different files = different mappings). */
+  const mappingKey = (m: MappingBlock): string =>
+    `${m.id}@${m.location.uri}`;
+
+  // Accumulate merged namespace groups keyed by namespace name (null = global).
+  const nsMap = new Map<string | null, NamespaceGroup>();
+
+  function getOrCreate(nsName: string | null): NamespaceGroup {
+    let ns = nsMap.get(nsName);
+    if (!ns) {
+      ns = { name: nsName, schemas: [], mappings: [], metrics: [], fragments: [] };
+      nsMap.set(nsName, ns);
+    }
+    return ns;
+  }
+
+  for (const model of sorted) {
+    for (const ns of model.namespaces) {
+      const target = getOrCreate(ns.name);
+
+      for (const s of ns.schemas) {
+        if (!seenSchemas.has(s.qualifiedId)) {
+          seenSchemas.add(s.qualifiedId);
+          target.schemas.push(s);
+        }
+      }
+      for (const m of ns.mappings) {
+        const key = mappingKey(m);
+        if (!seenMappings.has(key)) {
+          seenMappings.add(key);
+          target.mappings.push(m);
+        }
+      }
+      for (const mt of ns.metrics) {
+        if (!seenMetrics.has(mt.qualifiedId)) {
+          seenMetrics.add(mt.qualifiedId);
+          target.metrics.push(mt);
+        }
+      }
+      for (const f of ns.fragments) {
+        if (!seenFragments.has(f.id)) {
+          seenFragments.add(f.id);
+          target.fragments.push(f);
+        }
+      }
+    }
+  }
+
+  // Only include the primary file's notes — upstream file notes would be noise.
+  const primary = sorted[0]!;
+  const fileNotes = primary.uri === primaryUri ? primary.fileNotes : [];
+
+  // Build ordered namespace list: global first (if present), then named.
+  const namespaces: NamespaceGroup[] = [];
+  const globalNs = nsMap.get(null);
+  if (globalNs && (globalNs.schemas.length > 0 || globalNs.mappings.length > 0 ||
+      globalNs.metrics.length > 0 || globalNs.fragments.length > 0)) {
+    namespaces.push(globalNs);
+  }
+  for (const [name, ns] of nsMap) {
+    if (name !== null && (ns.schemas.length > 0 || ns.mappings.length > 0 ||
+        ns.metrics.length > 0 || ns.fragments.length > 0)) {
+      namespaces.push(ns);
+    }
+  }
+
+  return { uri: primaryUri, fileNotes, namespaces };
+}

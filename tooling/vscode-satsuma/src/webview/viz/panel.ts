@@ -104,7 +104,7 @@ export class VizPanel {
     }
 
     try {
-      const model = await this.client.sendRequest("satsuma/vizModel", { uri });
+      const model = await this.client.sendRequest("satsuma/vizFullLineage", { uri });
       if (!model) {
         this.panel.webview.postMessage({
           type: "error",

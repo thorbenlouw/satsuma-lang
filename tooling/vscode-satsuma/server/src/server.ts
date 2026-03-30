@@ -38,7 +38,7 @@ import { computeCodeLenses } from "./codelens";
 import { computeActionContext } from "./action-context";
 import { prepareRename, computeRename } from "./rename";
 import { computeFormatting, initFormatting } from "./formatting";
-import { buildVizModel } from "./viz-model";
+import { buildVizModel, mergeVizModels } from "./viz-model";
 import { computeMappingCoverage } from "./coverage";
 
 // ---------- Connection setup ----------
@@ -336,6 +336,30 @@ connection.onRequest(
     const tree = trees.get(params.uri);
     if (!tree) return null;
     return buildVizModel(params.uri, tree, scopeIndex(params.uri));
+  },
+);
+
+/**
+ * Return a merged VizModel spanning the full transitive lineage reachable from
+ * the given file via import declarations. Each import-reachable file contributes
+ * its schemas, mappings, metrics, and fragments — deduplicated so that stub
+ * schemas are superseded by their full upstream definitions.
+ */
+connection.onRequest(
+  "satsuma/vizFullLineage",
+  (params: { uri: string }) => {
+    const primaryTree = trees.get(params.uri);
+    if (!primaryTree) return null;
+
+    const reachableUris = getImportReachableUris(params.uri, wsIndex);
+    const models = [];
+    for (const fileUri of reachableUris) {
+      const fileTree = trees.get(fileUri);
+      if (!fileTree) continue;
+      models.push(buildVizModel(fileUri, fileTree, scopeIndex(fileUri)));
+    }
+
+    return mergeVizModels(params.uri, models);
   },
 );
 
