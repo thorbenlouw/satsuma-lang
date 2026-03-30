@@ -75,3 +75,17 @@ fi
 run_parallel "Python tests (tree-sitter + excel skill)" \
   "python3 -m pytest '$ROOT_DIR/tooling/tree-sitter-satsuma/scripts/' -v" \
   "python3 -m pytest '$ROOT_DIR/skills/excel-to-satsuma/scripts/test_excel_tool.py' -v"
+
+# Smoke tests call the live satsuma CLI against real fixture files.
+# They require satsuma on PATH and the pytest-bdd package.
+# Skip gracefully if satsuma is not installed; fail clearly if pytest-bdd is missing.
+if command -v satsuma &>/dev/null; then
+  if ! python3 -c "import pytest_bdd" 2>/dev/null; then
+    echo "ERROR: pytest-bdd not found. Install it with: pip install -r smoke-tests/requirements.txt" >&2
+    exit 1
+  fi
+  run_step "smoke tests (BDD)" \
+    python3 -m pytest "$ROOT_DIR/smoke-tests/" -v --tb=short
+else
+  printf '\n[smoke tests] SKIP — satsuma not on PATH. Install it first (e.g. npm install -g tooling/satsuma-cli/).\n'
+fi

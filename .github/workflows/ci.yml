@@ -341,6 +341,63 @@ jobs:
           npm install -g ./satsuma-cli.tgz
           satsuma --version
 
+  smoke-tests:
+    name: Smoke tests (BDD)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - uses: actions/cache/restore@v5
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
+            tooling/satsuma-core/node_modules
+            tooling/satsuma-core/dist
+            tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
+            tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
+          key: workspace-${{ github.sha }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r smoke-tests/requirements.txt
+
+      - name: Install satsuma globally
+        working-directory: tooling/satsuma-cli
+        run: |
+          npm run pack
+          npm install -g ./satsuma-cli.tgz
+
+      - name: Run smoke tests
+        run: |
+          mkdir -p test-results
+          python3 -m pytest smoke-tests/ -v --tb=short \
+            --junit-xml=test-results/smoke-tests.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-smoke-tests
+          path: test-results/smoke-tests.xml
+
   excel-skill:
     name: Excel-to-Satsuma skill
     runs-on: ubuntu-latest
@@ -370,7 +427,7 @@ jobs:
   test-report:
     name: Test report
     if: always()
-    needs: [satsuma-cli, parser, vscode-extension, excel-skill, cli-pack-smoke-test]
+    needs: [satsuma-cli, parser, vscode-extension, excel-skill, cli-pack-smoke-test, smoke-tests]
     runs-on: ubuntu-latest
     permissions:
       contents: read
