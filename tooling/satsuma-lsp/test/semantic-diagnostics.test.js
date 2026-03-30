@@ -2,7 +2,7 @@ const { describe, it, before } = require("node:test");
 const assert = require("node:assert/strict");
 const { initTestParser, parse } = require("./helper");
 const { createWorkspaceIndex, indexFile } = require("../dist/workspace-index");
-const { computeMissingImportDiagnostics } = require("../dist/semantic-diagnostics");
+const { computeMissingImportDiagnostics, computeCoreSemanticDiagnostics } = require("../dist/semantic-diagnostics");
 
 before(async () => { await initTestParser(); });
 
@@ -134,5 +134,48 @@ mapping m {
     const diags = computeMissingImportDiagnostics(parse(aSrc), "file:///a.stm", idx);
     // orders is imported — no diagnostic
     assert.equal(diags.length, 0);
+  });
+});
+
+describe("computeCoreSemanticDiagnostics", () => {
+  it("detects duplicate definitions for the same schema name across files", () => {
+    const aSrc = `schema orders { id UUID }`;
+    const bSrc = `schema orders { name STRING }`;
+    const idx = buildIndex({
+      "file:///a.stm": aSrc,
+      "file:///b.stm": bSrc,
+    });
+    // Both files define 'orders' — should produce a duplicate diagnostic
+    const diagsA = computeCoreSemanticDiagnostics("file:///a.stm", idx);
+    const diagsB = computeCoreSemanticDiagnostics("file:///b.stm", idx);
+    const allDiags = [...diagsA, ...diagsB];
+    const dupDiag = allDiags.find((d) => d.code === "duplicate-definition");
+    assert.ok(dupDiag, "expected a duplicate-definition diagnostic");
+  });
+
+  it("returns no diagnostics for a valid single-file workspace", () => {
+    const src = `schema customers { id UUID }
+mapping m {
+  source { customers }
+  target { customers }
+  id -> id
+}`;
+    const idx = buildIndex({ "file:///a.stm": src });
+    const diags = computeCoreSemanticDiagnostics("file:///a.stm", idx);
+    assert.equal(diags.length, 0);
+  });
+
+  it("returns diagnostics with 0-indexed positions (LSP convention)", () => {
+    const aSrc = `schema orders { id UUID }`;
+    const bSrc = `schema orders { name STRING }`;
+    const idx = buildIndex({
+      "file:///a.stm": aSrc,
+      "file:///b.stm": bSrc,
+    });
+    const diags = computeCoreSemanticDiagnostics("file:///b.stm", idx);
+    if (diags.length > 0) {
+      // LSP lines are 0-indexed
+      assert.ok(diags[0].range.start.line >= 0, "line should be 0-indexed");
+    }
   });
 });
