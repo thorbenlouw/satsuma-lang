@@ -106,18 +106,16 @@ Inline annotations above blocks:
 
 ### Command Palette
 
-Nine commands available via `Ctrl+Shift+P`:
+Seven commands available via `Ctrl+Shift+P`:
 
 | Command | Description |
 |---|---|
 | **Satsuma: Validate Workspace** | Run `satsuma validate` and populate the Problems panel |
 | **Satsuma: Show Lineage From...** | Pick a schema and trace its downstream lineage |
-| **Satsuma: Where Used** | Find all references to the symbol under cursor |
 | **Satsuma: Show Warnings** | Show all `//!` warnings in the Problems panel |
 | **Satsuma: Show Workspace Summary** | Display workspace statistics |
-| **Satsuma: Show Arrows for Field** | Show all arrows involving a field |
-| **Satsuma: Show Workspace Graph** | Open interactive workspace graph webview |
-| **Satsuma: Trace Field Lineage** | Open field-level lineage webview |
+| **Satsuma: Show Mapping Visualization** | Open interactive workspace graph webview |
+| **Satsuma: Show Field Lineage** | Open field-level lineage webview |
 | **Satsuma: Show Mapping Coverage** | Show mapped/unmapped fields with gutter markers |
 
 ### Workspace Graph
