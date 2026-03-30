@@ -1,6 +1,6 @@
 ---
 id: sl-fiqs
-status: open
+status: closed
 deps: [sl-o4by, sl-z6ps]
 links: []
 created: 2026-03-30T18:25:14Z

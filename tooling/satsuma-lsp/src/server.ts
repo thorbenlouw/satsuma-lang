@@ -30,7 +30,7 @@ import {
   getImportReachableUris,
   createScopedIndex,
 } from "./workspace-index";
-import { computeMissingImportDiagnostics } from "./semantic-diagnostics";
+import { computeMissingImportDiagnostics, computeCoreSemanticDiagnostics } from "./semantic-diagnostics";
 import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
 import { computeCompletions } from "./completion";
@@ -445,14 +445,34 @@ function scopeIndex(uri: string): WorkspaceIndex {
   return createScopedIndex(wsIndex, getImportReachableUris(uri, wsIndex));
 }
 
-/** Send parse diagnostics merged with cached validate diagnostics and semantic (missing-import) diagnostics. */
+/**
+ * Send parse diagnostics merged with cached validate diagnostics,
+ * core semantic diagnostics, and missing-import diagnostics.
+ *
+ * Core semantic diagnostics run directly against the workspace index (no
+ * subprocess). The CLI subprocess (validate-diagnostics.ts) provides
+ * additional arrow-level and NL @ref checks that require full arrow
+ * extraction not available from the LSP workspace index.
+ */
 function sendMergedDiagnostics(uri: string, tree: Tree): void {
   const parseDiags = computeDiagnostics(tree);
   const validateDiags = validateDiagCache.get(uri) ?? [];
+  const coreSemanticDiags = computeCoreSemanticDiagnostics(uri, wsIndex);
   const missingImportDiags = computeMissingImportDiagnostics(tree, uri, wsIndex);
+
+  // Deduplicate: core semantic diagnostics may overlap with CLI validate
+  // diagnostics. Use rule + line as the dedup key, preferring CLI results
+  // (they may have more precise position data from full file parsing).
+  const validateKeys = new Set(
+    validateDiags.map((d) => `${d.code}:${d.range.start.line}`),
+  );
+  const dedupedCoreDiags = coreSemanticDiags.filter(
+    (d) => !validateKeys.has(`${d.code}:${d.range.start.line}`),
+  );
+
   connection.sendDiagnostics({
     uri,
-    diagnostics: [...parseDiags, ...validateDiags, ...missingImportDiags],
+    diagnostics: [...parseDiags, ...validateDiags, ...dedupedCoreDiags, ...missingImportDiags],
   });
 }
 
