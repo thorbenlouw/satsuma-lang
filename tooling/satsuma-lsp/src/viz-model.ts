@@ -14,6 +14,7 @@ import {
   classifyTransform,
   expandEntityFields,
   makeEntityRefResolver,
+  extractFieldTree,
 } from "@satsuma/core";
 import type { MetaEntry, Classification, FieldDecl, SpreadEntity } from "@satsuma/core";
 
@@ -468,13 +469,9 @@ function extractSchema(
   };
 }
 
+/** Extract spread names from a schema_body node using core's extractFieldTree. */
 function extractSpreads(body: SyntaxNode): string[] {
-  const spreads: string[] = [];
-  for (const spreadNode of children(body, "fragment_spread")) {
-    const name = child(spreadNode, "spread_label")?.text;
-    if (name) spreads.push(name);
-  }
-  return spreads;
+  return extractFieldTree(body).spreads;
 }
 
 function extractSchemaLabel(meta: SyntaxNode | null): string | null {
@@ -523,72 +520,91 @@ function extractFragment(uri: string, node: SyntaxNode, namespace: string | null
 }
 
 // ---------- Field extraction ----------
+//
+// Uses core's extractFieldTree() for the canonical field tree structure (name,
+// type, children, metadata, isList), then enriches each FieldDecl with
+// viz-specific data (constraints, notes, comments, location) by walking the
+// CST field_decl nodes in parallel. This ensures type computation is
+// consistent with core while preserving the rich per-field annotations the
+// viz needs for rendering.
 
+/**
+ * Extract field entries from a schema_body node using core's extractFieldTree().
+ * Enriches core's FieldDecl records with viz-specific constraint, note, and
+ * comment data by walking the parallel CST nodes.
+ */
 function extractFieldEntries(uri: string, body: SyntaxNode): FieldEntry[] {
-  const fields: FieldEntry[] = [];
-  for (const fieldNode of children(body, "field_decl")) {
-    const entry = extractSingleField(uri, fieldNode);
-    if (entry) fields.push(entry);
-  }
-  return fields;
+  const fieldTree = extractFieldTree(body);
+  const fieldNodes = children(body, "field_decl");
+
+  // Core's extractFieldTree returns fields in the same order as field_decl
+  // children, so we can zip them together for enrichment.
+  return fieldTree.fields.map((decl, i) => {
+    const cstNode = fieldNodes[i];
+    return fieldDeclToEntry(decl, uri, cstNode ?? null);
+  });
 }
 
-function extractSingleField(
+/**
+ * Convert a core FieldDecl to a viz FieldEntry, enriching with CST-derived
+ * notes, comments, constraints, and location from the parallel CST node.
+ */
+function fieldDeclToEntry(
+  decl: FieldDecl,
   uri: string,
-  fieldNode: SyntaxNode,
-): FieldEntry | null {
-  const nameNode = child(fieldNode, "field_name");
-  if (!nameNode) return null;
+  cstNode: SyntaxNode | null,
+): FieldEntry {
+  // Derive constraints from core's metadata entries
+  const constraints = extractConstraintsFromMeta(decl.metadata ?? []);
 
-  const name = fieldNameText(nameNode);
-  if (!name) return null;
+  // Build the type string: core uses "record" for nested, but viz distinguishes
+  // "list_of record", "list_of <type>", and plain types.
+  let type = decl.type;
+  if (decl.isList && decl.type === "record") type = "list_of record";
+  else if (decl.isList && decl.type) type = `list_of ${decl.type}`;
+  else if (decl.isList) type = "list_of";
 
-  const typeExpr = child(fieldNode, "type_expr");
-  const nestedBody = child(fieldNode, "schema_body");
-  const isList = fieldNode.children.some((c) => c.type === "list_of");
-  const isRecord = fieldNode.children.some((c) => c.type === "record");
+  // Child fields: recursively zip with nested CST nodes
+  const nestedBody = cstNode ? child(cstNode, "schema_body") : null;
+  const nestedCstNodes = nestedBody ? children(nestedBody, "field_decl") : [];
+  const fieldChildren = (decl.children ?? []).map((childDecl, j) =>
+    fieldDeclToEntry(childDecl, uri, nestedCstNodes[j] ?? null),
+  );
 
-  let type = "";
-  if (isList && isRecord) type = "list_of record";
-  else if (isRecord) type = "record";
-  else if (isList && typeExpr) type = `list_of ${typeExpr.text}`;
-  else if (typeExpr) type = typeExpr.text;
-
-  const meta = child(fieldNode, "metadata_block");
-  const constraints = meta ? extractConstraints(meta) : [];
+  // Location: from CST field_name node if available, else from decl row/column
+  const nameNode = cstNode ? child(cstNode, "field_name") : null;
+  const location = nameNode
+    ? nodeLocation(uri, nameNode)
+    : { uri, line: decl.startRow ?? 0, character: decl.startColumn ?? 0 };
 
   return {
-    name,
+    name: decl.name,
     type,
     constraints,
-    notes: extractNotes(uri, fieldNode),
-    comments: extractComments(uri, fieldNode),
-    children: nestedBody ? extractFieldEntries(uri, nestedBody) : [],
-    location: nodeLocation(uri, nameNode),
+    notes: cstNode ? extractNotes(uri, cstNode) : [],
+    comments: cstNode ? extractComments(uri, cstNode) : [],
+    children: fieldChildren,
+    location,
   };
 }
 
-function extractConstraints(meta: SyntaxNode): string[] {
+/**
+ * Extract constraint tags from core MetaEntry[] records.
+ * Constraints are bare tags (pk, required, pii, etc.) or tag_with_value
+ * entries whose key is a known constraint.
+ */
+function extractConstraintsFromMeta(entries: MetaEntry[]): string[] {
   const constraints: string[] = [];
-  for (const ch of meta.namedChildren) {
-    // CST uses tag_token for bare constraint tags like pk, required, pii
-    if (ch.type === "tag_token") {
-      // tag_token may contain an identifier child
-      const text = ch.namedChildren[0]?.text ?? ch.text;
-      if (CONSTRAINT_TAGS.has(text)) {
-        constraints.push(text);
-      }
-    }
-    // Also handle tag_with_value (e.g., default USD — not a constraint, but pk/required could appear here)
-    if (ch.type === "tag_with_value") {
-      const key = ch.namedChildren[0];
-      if (key && CONSTRAINT_TAGS.has(key.text)) {
-        constraints.push(key.text);
-      }
+  for (const entry of entries) {
+    if (entry.kind === "tag" && CONSTRAINT_TAGS.has(entry.tag)) {
+      constraints.push(entry.tag);
+    } else if (entry.kind === "kv" && CONSTRAINT_TAGS.has(entry.key)) {
+      constraints.push(entry.key);
     }
   }
   return constraints;
 }
+
 
 // ---------- Mapping extraction ----------
 
