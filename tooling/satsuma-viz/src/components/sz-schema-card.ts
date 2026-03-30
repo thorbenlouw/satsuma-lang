@@ -268,6 +268,7 @@ export class SzSchemaCard extends LitElement {
       line-height: 1.5;
       padding: 4px 0 2px 22px;
       word-break: break-word;
+      max-width: 400px;
     }
 
     .note-content p {
