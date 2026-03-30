@@ -50,6 +50,7 @@ jobs:
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
             tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -80,6 +81,7 @@ jobs:
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
             tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -115,6 +117,7 @@ jobs:
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
             tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -171,6 +174,7 @@ jobs:
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
             tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
@@ -241,6 +245,7 @@ jobs:
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
             tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
             tooling/satsuma-viz/dist
             tooling/tree-sitter-satsuma/node_modules
