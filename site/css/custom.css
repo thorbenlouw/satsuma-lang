@@ -249,3 +249,65 @@ body { background-color: var(--cream); color: var(--charcoal); }
 ::selection {
   background: rgba(242, 145, 61, 0.2);
 }
+
+/* ─── Satsuma Diaries ─────────────────────────────────────────────────────── */
+
+/* Sidebar active state is toggled via JS classes */
+.diary-sidebar button.text-orange-dark {
+  border-left: 3px solid var(--orange);
+  padding-left: calc(1rem - 3px);
+}
+
+/* Rendered markdown prose */
+.diary-prose {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--charcoal);
+}
+
+.diary-prose h1 { display: none; } /* stripped by JS; hidden as fallback */
+
+.diary-prose h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--peach);
+}
+
+.diary-prose p {
+  margin-bottom: 1.25rem;
+}
+
+.diary-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.diary-prose strong {
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.diary-prose em {
+  font-style: italic;
+  color: var(--warm-gray);
+}
+
+/* Sign-off line: "— *Pip 🍊*" */
+.diary-prose p:last-of-type em {
+  display: block;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--code-border);
+  font-size: 0.95rem;
+}
+
+.diary-prose code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.4em;
+}
