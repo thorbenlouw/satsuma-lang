@@ -1,6 +1,6 @@
 ---
 id: sl-4asu
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-03-30T06:28:59Z
@@ -45,3 +45,10 @@ satsuma-cli/src/parser.ts and the init portions of vscode-satsuma/server/src/par
 - Covers: first init succeeds, re-init is a no-op, getParser() throws before init, locateWasm override is used when provided
 - No tests that exist only to confirm that a function exists or returns without throwing — every case validates a meaningful behavioural contract
 
+
+## Notes
+
+**2026-03-30T06:57:47Z**
+
+Cause: initParser/getParser singletons were duplicated in satsuma-cli/src/parser.ts and vscode-satsuma/server/src/parser-utils.ts with slightly different WASM path handling.
+Fix: created satsuma-core/src/parser.ts with initParser(wasmPath, options?)/getParser()/getLanguage(); CLI parser.ts is now a thin re-export wrapper; LSP parser-utils.ts removed its singleton, re-exports from core; server.ts updated to pass locateFile option for esbuild path resolution. (commit pending)
