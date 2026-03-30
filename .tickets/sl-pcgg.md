@@ -1,6 +1,6 @@
 ---
 id: sl-pcgg
-status: open
+status: closed
 deps: [sl-qe6b, sl-bdg6]
 links: []
 created: 2026-03-30T06:29:23Z
@@ -45,3 +45,11 @@ Requires WorkspaceIndex (or a compatible abstract interface) to be importable fr
 - Test inputs are minimal valid/invalid Satsuma snippets, not copies of full example files — keeps tests fast and their intent obvious
 - No test exists only to confirm a function returns without throwing; every case asserts a specific diagnostic is or is not present
 
+
+## Notes
+
+**2026-03-30T13:00:00Z**
+
+Cause: `collectSemanticWarnings` in `satsuma-cli/src/validate.ts` (~350 lines) was the only implementation of Satsuma semantic validation. The LSP shelled out to `satsuma validate --json` for validation, adding subprocess overhead and making the logic inaccessible to direct consumers.
+
+Fix: Moved all check logic to `@satsuma/core/src/validate.ts` as `collectSemanticDiagnostics(index: SemanticIndex): SemanticDiagnostic[]`. Defined `SemanticIndex` as a minimal structural interface satisfied by the CLI `WorkspaceIndex` via duck typing. Added `resolveScopedEntityRef` to `@satsuma/core/src/canonical-ref.ts`. CLI `validate.ts` now delegates to core and maps `SemanticDiagnostic[]` → `LintDiagnostic[]`. Fixed a bug where `dup.kind === "namespace-metadata"` was incorrectly checked as `"namespace-metadata-conflict"`.

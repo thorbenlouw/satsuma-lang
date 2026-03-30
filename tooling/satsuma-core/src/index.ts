@@ -1,4 +1,16 @@
 export { capitalize, normalizeName } from "./string-utils.js";
+export { collectSemanticDiagnostics } from "./validate.js";
+export type {
+  SemanticDiagnostic,
+  SemanticIndex,
+  SemanticSchema,
+  SemanticFragment,
+  SemanticMapping,
+  SemanticMetric,
+  SemanticArrow,
+  SemanticNLRef,
+  SemanticDuplicate,
+} from "./validate.js";
 export { initParser, getParser, getLanguage } from "./parser.js";
 export type { ParserInitOptions } from "./parser.js";
 export { collectParseErrors } from "./parse-errors.js";
@@ -9,7 +21,7 @@ export { format } from "./format.js";
 export type { SyntaxNode, Tree, Classification, PipeStep, MetaEntry, MetaEntryTag, MetaEntryKV, MetaEntryEnum, MetaEntryNote, MetaEntrySlice, FieldDecl } from "./types.js";
 export { child, children, allDescendants, labelText, stringText, entryText } from "./cst-utils.js";
 export { classifyTransform, classifyArrow } from "./classify.js";
-export { canonicalRef, canonicalEntityName } from "./canonical-ref.js";
+export { canonicalRef, canonicalEntityName, resolveScopedEntityRef } from "./canonical-ref.js";
 export { extractMetadata } from "./meta-extract.js";
 export {
   extractFieldTree,
