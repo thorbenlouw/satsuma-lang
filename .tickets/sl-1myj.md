@@ -1,6 +1,6 @@
 ---
 id: sl-1myj
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T06:28:47Z
@@ -45,3 +45,11 @@ Do NOT fold into @satsuma/core — these are LSP/client protocol types, not pars
 - Every test has a leading comment (or string description) stating *why* the case exists and what property it validates — not just what it does
 - Test suite is lean: no two tests validate the same invariant in the same way
 
+
+## Notes
+
+**2026-03-30T11:30:00Z**
+
+Cause: `satsuma-viz/src/model.ts` and `vscode-satsuma/server/src/viz-model.ts` independently defined the same VizModel interface hierarchy. The LSP version was the superset (adding `atRefs` on `TransformInfo`, `spreads` on `FragmentCard`, `CONSTRAINT_TAGS`), but the two had already diverged with no enforcement mechanism.
+
+Fix: Created `tooling/satsuma-viz-model/` as a new package exporting all VizModel types and `CONSTRAINT_TAGS` from a single source. Both `satsuma-viz/src/model.ts` and `vscode-satsuma/server/src/viz-model.ts` now re-export from the shared package. The `VizModel fixture validation` test suite moved to `satsuma-viz-model/test/model.test.js`; the duplicate tests in `satsuma-viz/test/model.test.js` were removed.

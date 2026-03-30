@@ -2,166 +2,58 @@ import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { findReferences, resolveDefinition } from "./workspace-index";
-import type { RefClassification, DefinitionLookup } from "@satsuma/core";
+import type { DefinitionLookup } from "@satsuma/core";
 import { extractAtRefs, classifyRef, resolveRef } from "@satsuma/core";
 
-// ---------- VizModel interfaces ----------
+// ---------- VizModel protocol types (from shared package) ----------
 
-export interface VizModel {
-  uri: string;
-  fileNotes: NoteBlock[];
-  namespaces: NamespaceGroup[];
-}
+// All VizModel types and CONSTRAINT_TAGS are defined in @satsuma/viz-model and
+// shared with the satsuma-viz web component. Re-export them here so existing
+// LSP code that imports from this module continues to work unchanged.
+export type {
+  VizModel,
+  NamespaceGroup,
+  SchemaCard,
+  FieldEntry,
+  MappingBlock,
+  ArrowEntry,
+  ResolvedAtRef,
+  TransformInfo,
+  EachBlock,
+  FlattenBlock,
+  MetricCard,
+  MetricFieldEntry,
+  FragmentCard,
+  NoteBlock,
+  CommentEntry,
+  MetadataEntry,
+  SourceBlockInfo,
+  SourceLocation,
+} from "@satsuma/viz-model";
+export { CONSTRAINT_TAGS } from "@satsuma/viz-model";
 
-export interface NamespaceGroup {
-  name: string | null;
-  schemas: SchemaCard[];
-  mappings: MappingBlock[];
-  metrics: MetricCard[];
-  fragments: FragmentCard[];
-}
-
-export interface SchemaCard {
-  id: string;
-  qualifiedId: string;
-  kind: "schema" | "inline";
-  label: string | null;
-  fields: FieldEntry[];
-  notes: NoteBlock[];
-  comments: CommentEntry[];
-  metadata: MetadataEntry[];
-  location: SourceLocation;
-  hasExternalLineage: boolean;
-  spreads: string[];
-}
-
-export interface FieldEntry {
-  name: string;
-  type: string;
-  constraints: string[];
-  notes: NoteBlock[];
-  comments: CommentEntry[];
-  children: FieldEntry[];
-  location: SourceLocation;
-}
-
-export interface MappingBlock {
-  id: string;
-  sourceRefs: string[];
-  targetRef: string;
-  arrows: ArrowEntry[];
-  eachBlocks: EachBlock[];
-  flattenBlocks: FlattenBlock[];
-  sourceBlock: SourceBlockInfo | null;
-  notes: NoteBlock[];
-  comments: CommentEntry[];
-  location: SourceLocation;
-}
-
-export interface ArrowEntry {
-  sourceFields: string[];
-  targetField: string;
-  transform: TransformInfo | null;
-  metadata: MetadataEntry[];
-  comments: CommentEntry[];
-  location: SourceLocation;
-}
-
-export interface ResolvedAtRef {
-  ref: string;
-  classification: RefClassification;
-  resolved: boolean;
-  resolvedTo: { kind: string; name: string } | null;
-}
-
-export interface TransformInfo {
-  kind: "pipeline" | "nl" | "mixed" | "map";
-  text: string;
-  steps: string[];
-  nlText: string | null;
-  /** Resolved @-refs extracted from NL transform text (present for nl/mixed kind). */
-  atRefs?: ResolvedAtRef[];
-}
-
-export interface EachBlock {
-  sourceField: string;
-  targetField: string;
-  arrows: ArrowEntry[];
-  nestedEach: EachBlock[];
-  location: SourceLocation;
-}
-
-export interface FlattenBlock {
-  sourceField: string;
-  arrows: ArrowEntry[];
-  location: SourceLocation;
-}
-
-export interface MetricCard {
-  id: string;
-  qualifiedId: string;
-  label: string | null;
-  source: string[];
-  grain: string | null;
-  slices: string[];
-  filter: string | null;
-  fields: MetricFieldEntry[];
-  notes: NoteBlock[];
-  comments: CommentEntry[];
-  location: SourceLocation;
-}
-
-export interface MetricFieldEntry {
-  name: string;
-  type: string;
-  measure: "additive" | "non_additive" | "semi_additive" | null;
-  notes: NoteBlock[];
-  location: SourceLocation;
-}
-
-export interface FragmentCard {
-  id: string;
-  fields: FieldEntry[];
-  /** Fragment names spread into this fragment (resolved and stripped before the model is sent to the client). */
-  spreads: string[];
-  notes: NoteBlock[];
-  location: SourceLocation;
-}
-
-export interface NoteBlock {
-  text: string;
-  isMultiline: boolean;
-  location: SourceLocation;
-}
-
-export interface CommentEntry {
-  kind: "warning" | "question";
-  text: string;
-  location: SourceLocation;
-}
-
-export interface MetadataEntry {
-  key: string;
-  value: string;
-}
-
-export interface SourceBlockInfo {
-  schemas: string[];
-  joinDescription: string | null;
-  filters: string[];
-}
-
-export interface SourceLocation {
-  uri: string;
-  line: number;
-  character: number;
-}
-
-// ---------- Known constraint tags ----------
-
-const CONSTRAINT_TAGS = new Set([
-  "pk", "required", "pii", "indexed", "unique", "encrypt",
-]);
+// Local type aliases for use within this file's builder functions.
+import type {
+  VizModel,
+  NamespaceGroup,
+  SchemaCard,
+  FieldEntry,
+  MappingBlock,
+  ArrowEntry,
+  ResolvedAtRef,
+  TransformInfo,
+  EachBlock,
+  FlattenBlock,
+  MetricCard,
+  MetricFieldEntry,
+  FragmentCard,
+  NoteBlock,
+  CommentEntry,
+  MetadataEntry,
+  SourceBlockInfo,
+  SourceLocation,
+} from "@satsuma/viz-model";
+import { CONSTRAINT_TAGS } from "@satsuma/viz-model";
 
 // ---------- VizModel builder ----------
 
