@@ -50,13 +50,18 @@ export function labelText(node: SyntaxNode): string | null {
 }
 
 /**
- * Strip outer delimiters from a string node.
- * Handles nl_string ("...") and multiline_string ("""...""").
+ * Strip outer delimiters from a string node and unescape contents.
+ *
+ * - nl_string ("..."):      strip quotes, then unescape \" → " and \\ → \
+ * - multiline_string ("""..."""): strip triple-quotes and trim (raw syntax, no escapes)
+ * - other node types:       return raw text unchanged
  */
 export function stringText(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
   if (node.type === "multiline_string") return node.text.slice(3, -3).trim();
-  if (node.type === "nl_string") return node.text.slice(1, -1);
+  if (node.type === "nl_string") {
+    return node.text.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+  }
   return node.text;
 }
 
