@@ -67,6 +67,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "tsc",
+    "pretest": "tsc",
     "test": "node --test test/**/*.test.js"
   },
   "dependencies": {

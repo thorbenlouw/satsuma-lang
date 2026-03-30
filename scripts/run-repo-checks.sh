@@ -35,6 +35,10 @@ cd "$ROOT_DIR"
 
 run_step "repo lint" npm run lint
 
+run_parallel "satsuma-core + satsuma-viz-model tests" \
+  "npm --prefix tooling/satsuma-core test" \
+  "npm --prefix tooling/satsuma-viz-model test"
+
 run_step "satsuma-cli tests" npm --prefix tooling/satsuma-cli test
 
 run_step "satsuma fmt --check examples" node tooling/satsuma-cli/dist/index.js fmt --check examples/
