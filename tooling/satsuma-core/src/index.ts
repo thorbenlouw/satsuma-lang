@@ -1,6 +1,8 @@
 export { capitalize, normalizeName } from "./string-utils.js";
 export { initParser, getParser, getLanguage } from "./parser.js";
 export type { ParserInitOptions } from "./parser.js";
+export { collectParseErrors } from "./parse-errors.js";
+export type { ParseErrorEntry } from "./parse-errors.js";
 export { format } from "./format.js";
 export type { SyntaxNode, Tree, Classification, PipeStep, MetaEntry, MetaEntryTag, MetaEntryKV, MetaEntryEnum, MetaEntryNote, MetaEntrySlice, FieldDecl } from "./types.js";
 export { child, children, allDescendants, labelText, stringText, entryText } from "./cst-utils.js";

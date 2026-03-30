@@ -15,8 +15,8 @@ import type { Command } from "commander";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
-import { extractImports } from "@satsuma/core";
-import { collectParseErrors, collectSemanticWarnings } from "../validate.js";
+import { extractImports, collectParseErrors } from "@satsuma/core";
+import { collectSemanticWarnings } from "../validate.js";
 import type { LintDiagnostic } from "../types.js";
 
 export function register(program: Command): void {
@@ -61,8 +61,19 @@ Examples:
       const parseErrors: LintDiagnostic[] = [];
       for (const f of files) {
         const parsed = parseFile(f);
-        // Collect parse errors and extract data while tree is still valid
-        parseErrors.push(...collectParseErrors(parsed.tree.rootNode, parsed.filePath));
+        // Collect parse errors and extract data while tree is still valid.
+        // Map core's 0-indexed ParseErrorEntry to CLI's 1-indexed LintDiagnostic.
+        for (const e of collectParseErrors(parsed.tree)) {
+          parseErrors.push({
+            file: parsed.filePath,
+            line: e.startRow + 1,
+            column: e.startColumn + 1,
+            severity: "error",
+            rule: e.isMissing ? "missing-node" : "parse-error",
+            message: e.message,
+            fixable: false,
+          });
+        }
 
         // Check for missing import files and undefined import names
         const imports = extractImports(parsed.tree.rootNode);

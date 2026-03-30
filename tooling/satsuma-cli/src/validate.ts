@@ -15,7 +15,7 @@ import {
 } from "./nl-ref-extract.js";
 import { resolveScopedEntityRef } from "./index-builder.js";
 import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
-import type { ArrowRecord, LintDiagnostic, SchemaRecord, SyntaxNode, WorkspaceIndex } from "./types.js";
+import type { ArrowRecord, LintDiagnostic, SchemaRecord, WorkspaceIndex } from "./types.js";
 import type { MetaEntry } from "@satsuma/core";
 
 /**
@@ -82,42 +82,6 @@ function getConventionFields(schema: SchemaRecord): Set<string> {
   }
 
   return fields;
-}
-
-/**
- * Collect all ERROR and MISSING nodes from a CST.
- */
-export function collectParseErrors(node: SyntaxNode, file: string): LintDiagnostic[] {
-  const diagnostics: LintDiagnostic[] = [];
-  walkErrors(node, file, diagnostics);
-  return diagnostics;
-}
-
-function walkErrors(node: SyntaxNode, file: string, diagnostics: LintDiagnostic[]): void {
-  if (node.type === "ERROR") {
-    diagnostics.push({
-      file,
-      line: node.startPosition.row + 1,
-      column: node.startPosition.column + 1,
-      severity: "error",
-      rule: "parse-error",
-      message: `Syntax error: unexpected '${node.text.slice(0, 40).replace(/\n/g, "\\n")}'`,
-      fixable: false,
-    });
-  } else if (node.isMissing) {
-    diagnostics.push({
-      file,
-      line: node.startPosition.row + 1,
-      column: node.startPosition.column + 1,
-      severity: "error",
-      rule: "missing-node",
-      message: `Missing expected '${node.type}'`,
-      fixable: false,
-    });
-  }
-  for (let i = 0; i < node.childCount; i++) {
-    walkErrors(node.child(i)!, file, diagnostics);
-  }
 }
 
 function resolveEntityRef(ref: string, currentNs: string | null, entityMap: Map<string, unknown>): string | null {
