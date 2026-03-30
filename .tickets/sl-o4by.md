@@ -1,6 +1,6 @@
 ---
 id: sl-o4by
-status: open
+status: closed
 deps: [sl-mphz, sl-z6ps]
 links: [sl-d0je]
 created: 2026-03-30T18:23:03Z
