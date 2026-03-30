@@ -155,10 +155,14 @@ function spreadLabelText(labelNode: SyntaxNode): string {
 }
 
 /**
- * Extract a source_ref name with ERROR-node recovery for live editing.
+ * Extract a source_ref name for extraction purposes, excluding nl_string
+ * children (which represent join descriptions in source blocks, not names).
  *
- * Delegates to cst-utils sourceRefText for well-formed source_ref nodes,
- * but adds ERROR-node recovery: when tree-sitter wraps a partially-parsed
+ * This differs from core's generic sourceRefText() which treats nl_string
+ * as a valid source ref value. In the extraction context, only qualified_name,
+ * backtick_name, and identifier children represent schema names.
+ *
+ * Also adds ERROR-node recovery: when tree-sitter wraps a partially-parsed
  * source_ref in an ERROR node during mid-edit, we walk the ERROR node's
  * named children to recover any already-typed identifier or qualified_name.
  */
@@ -172,7 +176,13 @@ function sourceRefNameNs(node: SyntaxNode | null | undefined): string | null {
     return null;
   }
   if (node.type !== "source_ref") return entryText(node);
-  return cstSourceRefText(node);
+  // Only extract structural name children — nl_string is a join description
+  for (const c of node.namedChildren) {
+    if (c.type === "qualified_name") return qualifiedNameText(c);
+    if (c.type === "backtick_name") return c.text.slice(1, -1);
+    if (c.type === "identifier") return c.text;
+  }
+  return null;
 }
 
 interface NamespaceCollected {

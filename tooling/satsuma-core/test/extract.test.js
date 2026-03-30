@@ -16,6 +16,9 @@ import {
   extractWarnings,
   extractQuestions,
   extractFieldTree,
+  extractMetrics,
+  extractNotes,
+  extractTransforms,
 } from "../dist/extract.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
@@ -272,5 +275,136 @@ describe("extractQuestions()", () => {
     const result = extractQuestions(root);
     assert.equal(result.length, 1);
     assert.equal(result[0].text, "is this right");
+  });
+});
+
+// ── extractMetrics ──────────────────────────────────────────────────────────
+
+describe("extractMetrics()", () => {
+  it("extracts a basic metric with name and namespace", () => {
+    const metricBody = n("metric_body", [fieldDecl("revenue", "DECIMAL")]);
+    const metricBlock = n("metric_block", [blockLabel("total_revenue"), metricBody]);
+    const root = n("program", [metricBlock]);
+
+    const result = extractMetrics(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "total_revenue");
+    assert.equal(result[0].namespace, null);
+    assert.equal(result[0].fields.length, 1);
+    assert.equal(result[0].fields[0].name, "revenue");
+  });
+
+  it("extracts metric with source from metadata", () => {
+    const sourceVal = n("value_text", [ident("orders")], "orders");
+    const sourceKv = n("tag_with_value", [ident("source"), sourceVal]);
+    const meta = n("metadata_block", [sourceKv]);
+    const metricBlock = n("metric_block", [blockLabel("aov"), meta]);
+    const root = n("program", [metricBlock]);
+
+    const result = extractMetrics(root);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0].sources, ["orders"]);
+  });
+
+  it("extracts metric inside namespace block", () => {
+    const metricBlock = n("metric_block", [blockLabel("revenue")]);
+    const nsBlock = n("namespace_block", [ident("finance"), metricBlock]);
+    const root = n("program", [nsBlock]);
+
+    const result = extractMetrics(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "revenue");
+    assert.equal(result[0].namespace, "finance");
+  });
+});
+
+// ── extractTransforms ───────────────────────────────────────────────────────
+
+describe("extractTransforms()", () => {
+  it("extracts a transform block with its name", () => {
+    const pipeChain = n("pipe_chain", [], "lookup(dim)");
+    const transformBlock = n("transform_block", [blockLabel("enrich"), pipeChain]);
+    const root = n("program", [transformBlock]);
+
+    const result = extractTransforms(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "enrich");
+    assert.equal(result[0].body, "lookup(dim)");
+    assert.equal(result[0].namespace, null);
+  });
+
+  it("extracts transform inside namespace", () => {
+    const transformBlock = n("transform_block", [blockLabel("clean")]);
+    const nsBlock = n("namespace_block", [ident("etl"), transformBlock]);
+    const root = n("program", [nsBlock]);
+
+    const result = extractTransforms(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].name, "clean");
+    assert.equal(result[0].namespace, "etl");
+  });
+});
+
+// ── extractNotes ────────────────────────────────────────────────────────────
+
+describe("extractNotes()", () => {
+  it("extracts a top-level note block", () => {
+    const nlStr = n("nl_string", [], '"This is a note"');
+    const noteBlock = n("note_block", [nlStr]);
+    const root = n("program", [noteBlock]);
+
+    const result = extractNotes(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, "This is a note");
+    assert.equal(result[0].parent, null);
+    assert.equal(result[0].namespace, null);
+  });
+
+  it("associates note with parent block", () => {
+    const nlStr = n("nl_string", [], '"Schema note"');
+    const noteBlock = n("note_block", [nlStr]);
+    const body = n("schema_body", [noteBlock]);
+    const schemaBlock = n("schema_block", [blockLabel("orders"), body]);
+    const root = n("program", [schemaBlock]);
+
+    const result = extractNotes(root);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, "Schema note");
+    assert.equal(result[0].parent, "orders");
+  });
+});
+
+// ── extractFieldTree — nested records ───────────────────────────────────────
+
+describe("extractFieldTree() — nested records", () => {
+  it("extracts nested record fields with children", () => {
+    const innerField = fieldDecl("city", "STRING");
+    const innerBody = n("schema_body", [innerField]);
+    const nameNode = n("field_name", [ident("address")]);
+    // record field: has schema_body child and 'record' anonymous child
+    const recordField = n("field_decl", [nameNode, innerBody], "address record { city STRING }", 0, ["record"]);
+
+    const body = n("schema_body", [recordField]);
+    const result = extractFieldTree(body);
+    assert.equal(result.fields.length, 1);
+    assert.equal(result.fields[0].name, "address");
+    assert.equal(result.fields[0].type, "record");
+    assert.equal(result.fields[0].children.length, 1);
+    assert.equal(result.fields[0].children[0].name, "city");
+  });
+
+  it("extracts list_of record fields", () => {
+    const innerField = fieldDecl("sku", "STRING");
+    const innerBody = n("schema_body", [innerField]);
+    const nameNode = n("field_name", [ident("items")]);
+    const listRecordField = n("field_decl", [nameNode, innerBody], "items list_of record { sku STRING }", 0, ["list_of", "record"]);
+
+    const body = n("schema_body", [listRecordField]);
+    const result = extractFieldTree(body);
+    assert.equal(result.fields.length, 1);
+    assert.equal(result.fields[0].name, "items");
+    assert.equal(result.fields[0].type, "record");
+    assert.equal(result.fields[0].isList, true);
+    assert.equal(result.fields[0].children.length, 1);
   });
 });

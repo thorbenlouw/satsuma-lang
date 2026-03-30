@@ -1,6 +1,6 @@
 ---
 id: sl-inqs
-status: open
+status: closed
 deps: [sl-via3, sl-ewyv, sl-o4by, sl-d0je, sl-idw9, sl-p6nd, sl-ys4h, sl-4afx, sl-i2k9, sl-fiqs]
 links: []
 created: 2026-03-30T18:25:34Z
