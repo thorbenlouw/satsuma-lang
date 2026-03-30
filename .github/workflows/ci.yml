@@ -298,6 +298,49 @@ jobs:
           name: test-results-vscode
           path: test-results/lsp.xml
 
+  cli-pack-smoke-test:
+    name: CLI pack smoke-test
+    needs: install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tooling/satsuma-cli
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - uses: actions/cache/restore@v5
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
+            tooling/satsuma-core/node_modules
+            tooling/satsuma-core/dist
+            tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
+            tooling/vscode-satsuma/node_modules
+            tooling/vscode-satsuma/server/node_modules
+          key: workspace-${{ github.sha }}
+
+      - name: Pack tarball
+        run: npm run pack
+
+      - name: Smoke-test global install
+        shell: bash
+        run: |
+          npm install -g ./satsuma-cli.tgz
+          satsuma --version
+
   excel-skill:
     name: Excel-to-Satsuma skill
     runs-on: ubuntu-latest
@@ -327,7 +370,7 @@ jobs:
   test-report:
     name: Test report
     if: always()
-    needs: [satsuma-cli, parser, vscode-extension, excel-skill]
+    needs: [satsuma-cli, parser, vscode-extension, excel-skill, cli-pack-smoke-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

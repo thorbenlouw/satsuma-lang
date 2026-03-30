@@ -246,18 +246,18 @@ How we'll know Satsuma is working:
 
 ### What exists today
 
-- Formal language specification ([SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md))
+- Formal language specification ([SATSUMA-V2-SPEC.md](../developer/SATSUMA-V2-SPEC.md))
 - Canonical example library covering major integration patterns (16 `.stm` files)
-- AI-oriented quick reference and compact grammar for prompts ([AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md))
+- AI-oriented quick reference and compact grammar for prompts ([AI-AGENT-REFERENCE.md](../../AI-AGENT-REFERENCE.md))
 - Tree-sitter parser (482 corpus tests)
-- TypeScript CLI (`satsuma`) with 17 commands for structural extraction, analysis, validation, formatting, and diff — see [SATSUMA-CLI.md](SATSUMA-CLI.md)
+- TypeScript CLI (`satsuma`) with 17 commands for structural extraction, analysis, validation, formatting, and diff — see [SATSUMA-CLI.md](../../SATSUMA-CLI.md)
 - `satsuma fmt` — opinionated, zero-config formatter (CLI + VS Code Format Document)
 - `satsuma lint` with 3 policy rules and `--fix` support
 - VS Code extension with LSP server (go-to-definition, find-references, completions, hover, rename, code lens, semantic tokens, diagnostics, folding, document symbols, formatting)
 - Namespace support for multi-team, multi-domain platform modelling
 - Unified field syntax (`Name record { }`, `Name list_of record { }`, `Name list_of TYPE`)
 - Data-modelling conventions and examples for Kimball and Data Vault patterns
-- Self-contained [Excel-to-Satsuma prompt](useful-prompts/excel-to-stm-prompt.md) for web LLMs
+- Self-contained [Excel-to-Satsuma prompt](../../useful-prompts/excel-to-stm-prompt.md) for web LLMs
 
 ### What is strategically important next
 

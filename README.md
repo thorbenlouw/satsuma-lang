@@ -240,14 +240,14 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 
 ## Repository Guide
 
-- [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md): authoritative language specification
-- [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
+- [SATSUMA-V2-SPEC.md](docs/developer/SATSUMA-V2-SPEC.md): authoritative language specification
+- [PROJECT-OVERVIEW.md](docs/product-owner/PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
 - [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (21 commands for structural extraction, analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents (also available via `satsuma agent-reference`)
 - [docs/tutorials/](docs/tutorials/): role-based tutorials (BA, data engineer, integration engineer)
-- [USE_CASES.md](USE_CASES.md): practical scenarios and personas
+- [USE_CASES.md](docs/product-owner/USE_CASES.md): practical scenarios and personas
 - [HOW-DO-I.md](HOW-DO-I.md): question-based index to all guides and conventions
-- [ROADMAP.md](ROADMAP.md): deferred work items, ideas, and convention docs still to write
+- [ROADMAP.md](docs/product-owner/ROADMAP.md): deferred work items, ideas, and convention docs still to write
 - [examples/](examples): canonical Satsuma examples
 - [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
 - [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation
@@ -307,7 +307,7 @@ meaning.
 
 If you are contributing tooling, start here:
 
-- read [SATSUMA-V2-SPEC.md](SATSUMA-V2-SPEC.md)
+- read [SATSUMA-V2-SPEC.md](docs/developer/SATSUMA-V2-SPEC.md)
 - inspect the example corpus in [examples/](examples)
 - review the parser in [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma) and its grammar
 - review the CLI in [tooling/satsuma-cli/](tooling/satsuma-cli) and its command reference in [SATSUMA-CLI.md](SATSUMA-CLI.md)
@@ -322,13 +322,19 @@ If you are contributing tooling, start here:
 
 ### Setup
 
-Install all dependencies (root + all sub-packages) in one step:
+Install all dependencies across every package, build the WASM parser, and
+compile all bundles in one step from the repo root:
 
 ```bash
 npm run install:all
 ```
 
-To start fresh, clean all `node_modules` directories and reinstall:
+This is the only setup step needed. It runs `npm install` in every package,
+builds `satsuma-core`, builds the WASM parser (`tree-sitter build --wasm`),
+runs the CLI prebuild to copy generated sources and WASM into `dist`, builds
+`satsuma-viz`, and compiles the VS Code LSP server.
+
+To start fresh, wipe all `node_modules` and `dist` directories and reinstall:
 
 ```bash
 npm run reinstall
@@ -338,27 +344,37 @@ npm run reinstall
 
 ```bash
 cd tooling/tree-sitter-satsuma
-npm install
-npm run generate          # generate parser from grammar.js
-npm test                  # corpus tests + fixture tests + consumer tests + smoke tests
+npm run generate          # regenerate parser from grammar.js
+npm test                  # corpus tests + fixture tests + CST tests + smoke tests
 ```
 
 Individual test suites:
 
 ```bash
-tree-sitter test --wasm   # corpus tests only
-python3 scripts/test_fixtures.py          # example and recovery fixtures
-python3 scripts/test_cst_summary.py       # CST consumer unit tests
-python3 scripts/test_smoke_summary.py     # smoke test all examples
+node_modules/.bin/tree-sitter test --wasm   # corpus tests only (always use --wasm)
+python3 scripts/test_fixtures.py            # example and recovery fixtures
+python3 scripts/test_cst_summary.py         # CST consumer unit tests
+python3 scripts/test_smoke_summary.py       # smoke test all examples
 ```
+
+Always use the `--wasm` flag with the `tree-sitter` CLI — there is no native
+build in this repository.
+
+When changing `grammar.js`, regenerate and commit the generated parser sources:
+
+```bash
+npm run generate
+git add src/
+```
+
+CI will fail if `src/` diverges from `grammar.js`.
 
 ### Satsuma CLI
 
 ```bash
 cd tooling/satsuma-cli
-npm install
-npm test                  # 772 tests covering all 21 commands
-npm link                  # makes `satsuma` available globally
+npm test                  # full test suite
+npm link                  # symlink `satsuma` onto your PATH for local use
 ```
 
 Quick usage:
@@ -377,31 +393,53 @@ satsuma agent-reference               # print grammar, conventions, and CLI guid
 satsuma agent-reference > .github/copilot-instructions.md   # feed to Copilot
 ```
 
-See [SATSUMA-CLI.md](SATSUMA-CLI.md) for full command reference.
+To build the distributable tarball (the same way CI and releases do):
+
+```bash
+npm run pack              # produces satsuma-cli.tgz, verified and smoke-tested
+```
+
+See [SATSUMA-CLI.md](SATSUMA-CLI.md) for the full command reference.
 
 ### VS Code extension
-We haven't published the extension to the official VSCode Marketplace yet. 
+
+We haven't published the extension to the official VS Code Marketplace yet.
 A pre-built `.vsix` is published on every merge to `main`. Download it from the
 [latest release](https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest)
 and install:
 
-* In VSCode, open the Command Palette (CMD-SHIFT-P) and choose 'Extensions: Install from VSIX...'
-* Navigate to where you downloaded the .vsix file and select it
-* You should see the Satsuma extension in the list of extensions now. Commands like 'Satsuma: Show Warnings' are available, and the syntax highlighting for `.stm` files should work. 
+- In VS Code, open the Command Palette (`Cmd+Shift+P`) and choose
+  **Extensions: Install from VSIX...**
+- Navigate to the downloaded `.vsix` and select it.
+- Commands like **Satsuma: Show Warnings** are available, and `.stm` files get
+  syntax highlighting and LSP features.
 
 To build from source or run the test suite:
 
 ```bash
 cd tooling/vscode-satsuma
-npm install
 npm run check             # validate manifest/grammar + run all tests
+npm run build             # build client + server + webview bundles
 ```
 
 ### CI
 
-GitHub Actions runs both the parser and VS Code extension checks on every push
-and pull request to `main`. The workflow also enforces that grammar conflict count
-matches `tooling/tree-sitter-satsuma/CONFLICTS.expected` — update that file when
+The full CI picture is documented in [CI-WORKFLOWS.md](docs/developer/CI-WORKFLOWS.md).
+In brief:
+
+- **CI** (`ci.yml`) runs on every push and pull request to `main`. It verifies
+  linting, the tree-sitter parser (corpus tests, generated-source staleness,
+  conflict count), the CLI test suite, the VS Code extension tests and LSP
+  server, a CLI tarball pack-and-install smoke test, and the Excel skill tests.
+- **Release** (`release.yml`) runs on every push to `main` to publish a rolling
+  `latest` pre-release, and on manual dispatch to create a tagged release with
+  changelog-sourced release notes.
+- **Security** (`security.yml`) runs on every push and PR, and is also called
+  as a gate by the release workflow. It covers `npm audit` across all packages
+  and Semgrep SAST.
+
+Grammar conflict count is enforced in CI against
+`tooling/tree-sitter-satsuma/CONFLICTS.expected` — update that file when
 adding or removing documented conflicts.
 
 ## Contributing

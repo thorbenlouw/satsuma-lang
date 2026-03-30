@@ -18,6 +18,20 @@ const contents = execFileSync("tar", ["-tzf", tarballPath], {
   encoding: "utf8",
 });
 
+// Any tarball entry containing '..' would be rejected by npm at install time with
+// TAR_ENTRY_ERROR. This happens when a file: dependency is bundled as a symlink
+// pointing outside the package directory. Catch it here so the build fails fast.
+const dotDotEntries = contents.split("\n").filter((e) => e.includes(".."));
+if (dotDotEntries.length > 0) {
+  throw new Error(
+    `verify-pack: tarball contains entries with '..' in their paths — ` +
+    `npm will reject these on install.\n` +
+    dotDotEntries.map((e) => `  ${e}`).join("\n")
+  );
+}
+
+console.log("verify-pack: no '..' paths in tarball entries");
+
 const requiredEntries = [
   "package/dist/index.js",
   "package/dist/tree-sitter-satsuma.wasm",

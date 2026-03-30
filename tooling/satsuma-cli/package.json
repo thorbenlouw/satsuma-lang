@@ -20,6 +20,7 @@
     "dev": "tsc --watch",
     "pretest": "npm run prebuild && tsc",
     "prepare": "npm run build",
+    "pack": "node scripts/pack.js",
     "test": "node --import ./test/setup.js --test test/**/*.test.js"
   },
   "dependencies": {
@@ -30,5 +31,6 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "typescript": "^6.0.2"
-  }
+  },
+  "bundleDependencies": true
 }

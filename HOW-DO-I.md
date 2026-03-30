@@ -16,7 +16,7 @@ Read the [Data Engineer Tutorial](docs/tutorials/data-engineer-tutorial.md) — 
 Read the [Integration Engineer Tutorial](docs/tutorials/integration-engineer-tutorial.md) — covers using Satsuma for ESBs, APIs, message queues, and iPaaS platforms.
 
 **How do I look up the full syntax?**
-Read the [language specification](SATSUMA-V2-SPEC.md). For a compact reference, see [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md) or run `satsuma agent-reference`.
+Read the [language specification](docs/developer/SATSUMA-V2-SPEC.md). For a compact reference, see [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md) or run `satsuma agent-reference`.
 
 **How do I see working examples?**
 Browse [examples/](examples/) — each scenario is a workspace subdirectory with one or more parser-validated `.stm` files.
@@ -127,7 +127,7 @@ Run `satsuma fmt <file>` or use Format Document in VS Code.
 Install the [VS Code extension](tooling/vscode-satsuma/) — it provides syntax highlighting, diagnostics, go-to-definition, completions, hover, rename, and more.
 
 **How do I understand the tooling architecture?**
-Read [ARCHITECTURE.md](ARCHITECTURE.md) — covers the package map, dependency graph, data flow (source text → parse → extraction → CLI/LSP), satsuma-core module structure, key type hierarchy, extension points, and test strategy. See [adrs/](adrs/) for the architectural decision records behind each design choice.
+Read [ARCHITECTURE.md](docs/developer/ARCHITECTURE.md) — covers the package map, dependency graph, data flow (source text → parse → extraction → CLI/LSP), satsuma-core module structure, key type hierarchy, extension points, and test strategy. See [adrs/](adrs/) for the architectural decision records behind each design choice.
 
 **How do I convert an Excel mapping spreadsheet to Satsuma?**
 Use the [Excel-to-Satsuma skill](skills/excel-to-satsuma/) or the [lite system prompt](useful-prompts/excel-to-stm-prompt.md) for web LLMs.

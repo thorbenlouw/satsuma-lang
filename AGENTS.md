@@ -199,7 +199,7 @@ Expected workflow:
 ## Agent Workflow
 
 - **All code changes must go through a PR.** Direct pushes to `main` are blocked.
-  See [AGENT-CONTRIBUTIONS.md](AGENT-CONTRIBUTIONS.md) for the
+  See [AGENT-CONTRIBUTIONS.md](docs/developer/AGENT-CONTRIBUTIONS.md) for the
   full contribution workflow including worktree setup, branch naming, and parallel
   work conventions.
 - Use git worktrees in `.worktrees/` for feature isolation. Create one per feature
