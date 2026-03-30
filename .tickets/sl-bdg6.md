@@ -1,6 +1,6 @@
 ---
 id: sl-bdg6
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T05:30:05Z

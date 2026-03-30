@@ -57,6 +57,10 @@
     "./parse-errors": {
       "types": "./dist/parse-errors.d.ts",
       "default": "./dist/parse-errors.js"
+    },
+    "./coverage": {
+      "types": "./dist/coverage.d.ts",
+      "default": "./dist/coverage.js"
     }
   },
   "types": "./dist/index.d.ts",
