@@ -1,6 +1,6 @@
 ---
 id: sl-4afx
-status: open
+status: closed
 deps: [sl-mphz, sl-z6ps]
 links: [sl-i2k9, sl-idw9, sl-p6nd, sl-ys4h]
 created: 2026-03-30T18:24:25Z
