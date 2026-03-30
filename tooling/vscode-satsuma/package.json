@@ -48,7 +48,6 @@
     "commands": [
       { "command": "satsuma.validateWorkspace", "title": "Satsuma: Validate Workspace" },
       { "command": "satsuma.showLineage", "title": "Satsuma: Show Lineage From..." },
-      { "command": "satsuma.whereUsed", "title": "Satsuma: Where Used" },
       { "command": "satsuma.showWarnings", "title": "Satsuma: Show Warnings" },
       { "command": "satsuma.showSummary", "title": "Satsuma: Show Workspace Summary" },
       { "command": "satsuma.traceFieldLineage", "title": "Satsuma: Show Field Lineage" },
@@ -61,14 +60,12 @@
     ],
     "menus": {
       "commandPalette": [
-        { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma" },
         { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma" },
         { "command": "satsuma.showViz", "when": "editorLangId == satsuma" }
       ],
       "editor/context": [
         { "command": "satsuma.showViz", "when": "editorLangId == satsuma", "group": "satsuma" },
-        { "command": "satsuma.whereUsed", "when": "editorLangId == satsuma", "group": "satsuma" },
         { "command": "satsuma.traceFieldLineage", "when": "editorLangId == satsuma", "group": "satsuma" },
         { "command": "satsuma.showCoverage", "when": "editorLangId == satsuma", "group": "satsuma" }
       ],

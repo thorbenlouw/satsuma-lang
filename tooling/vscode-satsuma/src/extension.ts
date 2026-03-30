@@ -9,7 +9,6 @@ import {
 } from "vscode-languageclient/node";
 import { registerValidateCommand } from "./commands/validate";
 import { registerLineageCommand } from "./commands/lineage";
-import { registerWhereUsedCommand } from "./commands/where-used";
 import { registerWarningsCommand } from "./commands/warnings";
 import { registerSummaryCommand } from "./commands/summary";
 import { registerCoverageCommand } from "./commands/coverage";
@@ -66,7 +65,6 @@ export function activate(context: ExtensionContext): void {
   // Register commands
   registerValidateCommand(context, cliPath);
   registerLineageCommand(context, cliPath, client);
-  registerWhereUsedCommand(context, cliPath);
   registerWarningsCommand(context, cliPath);
   registerSummaryCommand(context, cliPath, outputChannel);
 
