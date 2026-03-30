@@ -212,16 +212,18 @@ export class SzMappingDetail extends LitElement {
       width: 400px;
       max-width: 400px;
       min-width: 320px;
+      text-align: left;
     }
 
     .transform-pipeline {
-      display: inline;
+      display: inline-block;
       font-family: var(--sz-font-mono, monospace);
       font-size: 11px;
       color: var(--sz-orange-dark, #D97726);
       white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: anywhere;
+      text-align: left;
     }
 
     .transform-pipeline .pipe {
@@ -238,6 +240,7 @@ export class SzMappingDetail extends LitElement {
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
+      text-align: left;
     }
 
     .transform-bare {
@@ -248,6 +251,24 @@ export class SzMappingDetail extends LitElement {
     .arrow-icon {
       color: var(--sz-text-muted, #6B6560);
       font-size: 11px;
+    }
+
+    /* Note row displayed beneath an arrow that carries a (note "...") tag. */
+    .arrow-note-row td {
+      padding: 0 12px 6px;
+    }
+
+    .arrow-note {
+      font-family: var(--sz-font-sans, system-ui);
+      font-size: 11px;
+      font-style: italic;
+      color: var(--sz-text-muted, #6B6560);
+      line-height: 1.4;
+      padding: 2px 8px;
+      background: rgba(45, 42, 38, 0.03);
+      border-radius: 3px;
+      max-width: 400px;
+      word-break: break-word;
     }
 
     /* Scope sections (each/flatten) */
@@ -570,6 +591,7 @@ export class SzMappingDetail extends LitElement {
 
   private _renderArrowRow(a: ArrowEntry): TemplateResult {
     const hl = this._isArrowHighlighted(a) ? "hl" : "";
+    const noteEntry = a.metadata.find((m) => m.key === "note");
 
     return html`
       <tr
@@ -589,6 +611,9 @@ export class SzMappingDetail extends LitElement {
         <td class="transform-cell">${this._renderTransform(a)}</td>
         <td><span class="field-ref">${a.targetField}</span></td>
       </tr>
+      ${noteEntry
+        ? html`<tr class="arrow-note-row"><td colspan="4"><span class="arrow-note">${noteEntry.value}</span></td></tr>`
+        : ""}
     `;
   }
 
