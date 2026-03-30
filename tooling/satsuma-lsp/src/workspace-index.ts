@@ -1,3 +1,14 @@
+/**
+ * workspace-index.ts — LSP workspace index: wiring layer over @satsuma/core
+ *
+ * Builds and maintains a per-file index of definitions, references, and imports
+ * for go-to-definition, find-references, completions, and other LSP features.
+ *
+ * Entity extraction (fields, types) delegates to @satsuma/core functions.
+ * Reference indexing (source/target refs, spread refs, arrow field refs, NL refs)
+ * is LSP-specific and remains here — core does not track cross-file references.
+ */
+
 import {
   Range,
 } from "vscode-languageserver";
@@ -10,7 +21,9 @@ import {
   qualifiedNameText as coreQualifiedNameText,
   fieldNameText as coreFieldNameText,
   entryText,
+  extractFieldTree,
 } from "@satsuma/core";
+import type { FieldDecl } from "@satsuma/core";
 
 // ---------- Data structures ----------
 
@@ -762,37 +775,50 @@ function indexMetricRefs(
 }
 
 // ---------- Field extraction ----------
+//
+// Delegates to core's extractFieldTree() for the canonical field tree structure,
+// then maps each FieldDecl to a FieldInfo with LSP Range data. The CST
+// field_decl nodes are walked in parallel to derive precise ranges.
 
+/**
+ * Extract fields from a schema_body using core's extractFieldTree(), then
+ * map to FieldInfo records with LSP Range data from the parallel CST nodes.
+ */
 function extractFields(body: SyntaxNode | null): FieldInfo[] {
   if (!body) return [];
-  const fields: FieldInfo[] = [];
+  const fieldTree = extractFieldTree(body);
+  const fieldNodes = children(body, "field_decl");
+  return fieldTree.fields.map((decl, i) =>
+    fieldDeclToInfo(decl, fieldNodes[i] ?? null),
+  );
+}
 
-  for (const fieldNode of children(body, "field_decl")) {
-    const nameNode = child(fieldNode, "field_name");
-    if (!nameNode) continue;
-    const name = fieldNameText(nameNode);
-    if (!name) continue;
+/**
+ * Convert a core FieldDecl to an LSP FieldInfo, deriving the Range from
+ * the parallel CST field_name node when available, otherwise from the
+ * decl's startRow/startColumn.
+ */
+function fieldDeclToInfo(decl: FieldDecl, cstNode: SyntaxNode | null): FieldInfo {
+  // Build the type string: core uses "record" for nested, LSP distinguishes list_of variants
+  let type: string | null = decl.type || null;
+  if (decl.isList && decl.type === "record") type = "list_of record";
+  else if (decl.isList && decl.type) type = `list_of ${decl.type}`;
+  else if (decl.isList) type = "list_of";
 
-    const typeExpr = child(fieldNode, "type_expr");
-    const nestedBody = child(fieldNode, "schema_body");
-    const isList = fieldNode.children.some((c) => c.type === "list_of");
-    const isRecord = fieldNode.children.some((c) => c.type === "record");
+  // Range from CST node (precise) or from core position data (approximate)
+  const nameNode = cstNode ? child(cstNode, "field_name") : null;
+  const range = nameNode
+    ? nodeRange(nameNode)
+    : Range.create(decl.startRow ?? 0, decl.startColumn ?? 0, decl.startRow ?? 0, (decl.startColumn ?? 0) + decl.name.length);
 
-    let type: string | null = null;
-    if (isList && isRecord) type = "list_of record";
-    else if (isRecord) type = "record";
-    else if (isList && typeExpr) type = `list_of ${typeExpr.text}`;
-    else if (typeExpr) type = typeExpr.text;
+  // Recurse for nested fields
+  const nestedBody = cstNode ? child(cstNode, "schema_body") : null;
+  const nestedNodes = nestedBody ? children(nestedBody, "field_decl") : [];
+  const fieldChildren = (decl.children ?? []).map((childDecl, j) =>
+    fieldDeclToInfo(childDecl, nestedNodes[j] ?? null),
+  );
 
-    fields.push({
-      name,
-      type,
-      range: nodeRange(nameNode),
-      children: nestedBody ? extractFields(nestedBody) : [],
-    });
-  }
-
-  return fields;
+  return { name: decl.name, type, range, children: fieldChildren };
 }
 
 // ---------- Text extraction helpers ----------
