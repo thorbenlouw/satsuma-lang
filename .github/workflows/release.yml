@@ -43,18 +43,14 @@ jobs:
         run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
       - name: Bundle for distribution
+        run: npm run pack
+
+      - name: Smoke-test global install
         shell: bash
         run: |
-          # Bundle all dependencies into the tarball so consumers skip install
-          node -e "
-            const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
-            pkg.bundleDependencies = true;
-            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-
-          npm pack
-          mv satsuma-cli-*.tgz satsuma-cli.tgz
-          node scripts/verify-pack.js
+          # Install from the just-built tarball and confirm the CLI is functional.
+          npm install -g ./satsuma-cli.tgz
+          satsuma --version
 
       - uses: actions/upload-artifact@v7
         with:
