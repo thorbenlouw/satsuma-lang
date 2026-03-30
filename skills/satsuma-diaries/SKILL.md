@@ -68,7 +68,7 @@ git -C <repo> log --reverse --format="%ad" --date=short | head -1
 
 ---
 
-## Phase 2: Gather Commits
+## Phase 2: Gather Commits and PRs
 
 Get all commits strictly after `last_covered_date` up to and including `TARGET_DATE`:
 
@@ -95,6 +95,18 @@ git -C <repo> log \
 Count commits per day. A day is **noteworthy** (worthy of its own entry) if it has **8 or more commits**, or has particularly significant commits (a version bump, a new feature area, a major refactor, or anything that would make Pip go "bruv").
 
 A day is **quiet** if it has fewer than 8 commits and nothing particularly dramatic.
+
+### Gather merged PRs
+
+For each date range being covered, also fetch any PRs merged during that window:
+
+```bash
+gh pr list --state merged --limit 100 \
+  --json number,title,mergedAt,body \
+  | jq '[.[] | select(.mergedAt >= "<last_covered_date>T00:00:00Z" and .mergedAt <= "<TARGET_DATE>T23:59:59Z")]'
+```
+
+For each PR, use the title and body to understand **what was actually shipped** — PR descriptions contain the real intent, the design decisions, the bugs found, and the acceptance criteria, which commit messages often don't convey. Use the PR body as the primary source of narrative material; use commits to fill gaps. When a PR covers multiple days, attribute it to the day it was merged.
 
 ---
 
@@ -144,17 +156,23 @@ Write the entry in **Pip's voice**. Follow these rules absolutely:
 # The Satsuma Diaries
 ## <Day, DD Month YYYY> [— <Day, DD Month YYYY>] (for rollups)
 
+> **tl;dr** — <One or two sentences. Plain language. What actually shipped or happened today that a non-developer would care about. No jargon. If it was a quiet day, say so.>
+
 <Opening line that sets the scene. Sometimes one word. Sometimes a mild complaint.>
 
-<Body paragraphs — one per theme or area of work. Don't cover every single commit, 
+<Body paragraphs — one per theme or area of work. Don't cover every single commit,
 pick the threads that make an interesting story. Group related commits together.
-Name the thing being worked on in plain terms, then describe what happened to it.>
+Name the thing being worked on in plain terms, then describe what happened to it.
+Where PRs were merged, summarise what the PR was for and any design decisions or
+bugs found that the PR description reveals — this is where the real story lives.>
 
-<Closing line. Often Pip filing a mild observation or signing off. Not always a punchline. 
+<Closing line. Often Pip filing a mild observation or signing off. Not always a punchline.
 Sometimes just a vibe.>
 
 — *Pip 🍊*
 ```
+
+The **tl;dr** is mandatory on every entry. It should be one or two sentences that a non-developer could read and understand. Think: what would you text a mate who doesn't code? It goes immediately after the header, before Pip's voice kicks in. For rollups, the tl;dr covers the whole range.
 
 Vary the sign-off — Pip might add a brief aside, a mood, or nothing at all, but keep the orange emoji. Never include a location tag like "SE15" — it won't mean anything to readers who aren't from there.
 
@@ -198,19 +216,24 @@ satsuma-diaries/<yyyy>/<mm>/<yyyy-mm-dd>.md
 # The Satsuma Diaries
 ## Saturday, 29 March 2026
 
+> **tl;dr** — A new shared code library was extracted so three different tools can stop doing the same work independently. Forty-nine commits. On a Sunday.
+
 Fam.
 
 Forty-nine commits. Saturday. I ain't saying nothing. I'm just logging it for the record.
 Forty. Nine. On a weekend. Thorben, bruv.
 
-Right so the big thing today was **satsuma-core** getting born — think of it like 
-someone finally deciding to stop keeping their important stuff in fourteen different 
-drawers and putting it all in one sensible cupboard. Into this new shared library 
-went: helpers for reading the language's syntax tree (the internal structure the 
-parser produces, basically the blueprint of your code), functions for tracking which 
-fields refer to which other fields, and a whole system for `@ref` annotations — 
-little notes you write in your mapping files in plain English to describe where data 
-comes from, so both humans and AI agents can follow the trail without having a meltdown.
+Right so the big thing today was **satsuma-core** getting born — think of it like
+someone finally deciding to stop keeping their important stuff in fourteen different
+drawers and putting it all in one sensible cupboard. The PR for this (#125) explains
+it pretty plainly: the CLI, the VS Code extension, and the visualisation component
+were all separately doing the same fundamental operations. Now they share one library.
+Into this new shared library went: helpers for reading the language's syntax tree
+(the internal structure the parser produces, basically the blueprint of your code),
+functions for tracking which fields refer to which other fields, and a whole system
+for `@ref` annotations — little notes you write in your mapping files in plain English
+to describe where data comes from, so both humans and AI agents can follow the trail
+without having a meltdown.
 
 ...
 
