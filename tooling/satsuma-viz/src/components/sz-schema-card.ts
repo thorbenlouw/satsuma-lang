@@ -366,6 +366,19 @@ export class SzSchemaCard extends LitElement {
       min-width: 100%;
     }
 
+    /* Shaded note row displayed beneath a field that has notes. */
+    .field-note {
+      font-family: var(--sz-font-sans, system-ui);
+      font-size: 11px;
+      font-style: italic;
+      color: var(--sz-text-muted, #6B6560);
+      line-height: 1.4;
+      padding: 2px 12px 4px 38px;
+      background: rgba(45, 42, 38, 0.03);
+      max-width: 400px;
+      word-break: break-word;
+    }
+
     :host([content-width]) .header-name {
       --sz-header-name-overflow: visible;
       --sz-header-name-overflow-mode: clip;
@@ -573,6 +586,9 @@ export class SzSchemaCard extends LitElement {
           <line x1="3.5" y1="6.7" x2="8.5" y2="8.3" stroke="currentColor" stroke-width="1.2"/>
         </svg></button>
       </div>
+      ${f.notes.length > 0
+        ? f.notes.map((n) => html`<div class="field-note" style=${depth > 0 ? `padding-left: ${38 + depth * 20}px` : ""}>${n.text}</div>`)
+        : ""}
       ${f.children.map((child) => this._renderField(child, depth + 1))}
     `;
   }
