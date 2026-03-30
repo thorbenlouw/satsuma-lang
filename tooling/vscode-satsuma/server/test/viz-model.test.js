@@ -963,6 +963,46 @@ mapping m_a {
     assert.ok(mappingIds.includes("m_b"), "mapping from file B");
   });
 
+  it("renders full lineage from an import-only entry point file", () => {
+    // Entry point has no local schemas or mappings — just imports that stitch
+    // the workspace together. The full lineage should still include everything.
+    const files = {
+      "file:///sources.stm": `
+schema raw_orders { order_id INT\ncustomer_id INT }`,
+
+      "file:///pipeline.stm": `
+import { raw_orders } from "./sources.stm"
+schema cleaned_orders { order_id INT\ncustomer_id INT }
+mapping clean {
+  source { raw_orders }
+  target { cleaned_orders }
+  raw_orders.order_id -> order_id
+  raw_orders.customer_id -> customer_id
+}`,
+
+      "file:///platform.stm": `
+import { raw_orders } from "./sources.stm"
+import { cleaned_orders } from "./pipeline.stm"`,
+    };
+
+    const result = vizModelFullLineage(files, "file:///platform.stm");
+
+    // Both schemas and the mapping from imported files should be present.
+    const allSchemas = result.namespaces.flatMap(ns => ns.schemas);
+    const schemaIds = allSchemas.map(s => s.qualifiedId).sort();
+    assert.ok(schemaIds.includes("raw_orders"), "upstream schema present");
+    assert.ok(schemaIds.includes("cleaned_orders"), "downstream schema present");
+
+    const allMappings = result.namespaces.flatMap(ns => ns.mappings);
+    assert.equal(allMappings.length, 1, "mapping from pipeline file present");
+    assert.equal(allMappings[0].id, "clean");
+
+    // Namespaces should not be empty — the import-only file contributes nothing
+    // locally, but the merged model has content from imported files.
+    assert.ok(result.namespaces.length > 0,
+      "merged model has non-empty namespaces despite import-only entry point");
+  });
+
   it("location.uri tracks which file each entity came from", () => {
     const files = {
       "file:///src.stm": `
