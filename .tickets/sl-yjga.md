@@ -1,6 +1,6 @@
 ---
 id: sl-yjga
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T06:39:22Z
@@ -22,3 +22,9 @@ tooling/satsuma-core/src/types.ts has two documentation gaps on exported types:
 - MetaEntrySlice has a doc-comment explaining what it represents, how it differs from a full MetaEntry, and the typical consumer
 - All existing types tests pass (types.ts is a pure declaration file; any related test that imports these types should still compile)
 
+
+## Notes
+
+**2026-03-30T09:44:41Z**
+
+Cause: Classification type had no doc-comment — the distinction between 'nl', 'mixed', and 'nl-derived' was not obvious from the name alone. MetaEntrySlice had no doc-comment explaining what a slice is or who creates/consumes it. Fix: added a doc-comment to Classification explaining all five members and how each is assigned; added a doc-comment to MetaEntrySlice explaining that it represents the dimension schema names from a metric's slice { } metadata entry. All 862 tests pass.

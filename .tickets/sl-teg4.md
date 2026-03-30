@@ -1,6 +1,6 @@
 ---
 id: sl-teg4
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-30T06:38:13Z
@@ -23,3 +23,9 @@ tooling/satsuma-cli/src/lint-engine.ts has two high-severity readability defects
 - All regex literals that encode structural patterns have a named constant or inline comment explaining what they match and why
 - All existing lint-engine tests pass
 
+
+## Notes
+
+**2026-03-30T09:44:49Z**
+
+Cause: KNOWN_PIPELINE_FUNCTIONS had only a spec citation with no explanation of why the list exists or how to maintain it. makeAddSourceFix and makeAddArrowSourceFix were long, structurally-similar closures with undocumented regexes and no algorithm commentary. Fix: expanded the KNOWN_PIPELINE_FUNCTIONS comment to explain its purpose (suppress false-positive NL ref warnings) and noted the list may be incomplete; added doc-comments to both fix-builders explaining the four-step algorithm; added inline step comments; named the two regex patterns with comments explaining what they match. All 862 tests pass.

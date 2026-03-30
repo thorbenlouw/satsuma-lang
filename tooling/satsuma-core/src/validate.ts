@@ -570,20 +570,43 @@ function suggestAlternatives(ref: string, entityMap: Map<string, unknown>): stri
   return hints;
 }
 
+// ---------- Convention field tables ----------
+//
+// These constants enumerate the field names that Data Vault and Kimball standards
+// place on each entity type by convention. They are used in getConventionFields()
+// to suppress "field not in schema" false positives for columns that are populated
+// by the ETL layer and therefore not declared in the schema body.
+//
+// Sources: Data Vault 2.0 standard (Linstedt & Olschimke, 2nd ed.);
+//          The Data Warehouse Toolkit (Kimball & Ross, 3rd ed.).
+// These lists are opinionated approximations — full implementations vary, and we
+// cover the most common field names seen in practice rather than every possible variant.
+
+/** Standard audit columns on a Data Vault hub. The composite hash key ({name}_hk) is derived separately. */
+const DV_HUB_FIELDS = ["load_date", "record_source"] as const;
+
+/** Standard audit columns on a Data Vault link. Hash key and hub foreign keys are derived separately. */
+const DV_LINK_FIELDS = ["load_date", "record_source"] as const;
+
+/** Full set of standard DV satellite audit columns. The parent hash key ({parent}_hk) is derived separately. */
+const DV_SAT_FIELDS = ["load_date", "load_end_date", "hash_diff", "record_source"] as const;
+
+/** Slowly-changing dimension tracking columns added to Kimball dimensions under scd: 2 or scd: 6. */
+const KIMBALL_SCD_FIELDS = ["surrogate_key", "valid_from", "valid_to", "is_current", "row_hash"] as const;
+
+/** ETL audit columns present on all Kimball fact tables. */
+const KIMBALL_FACT_FIELDS = ["etl_batch_id", "loaded_at"] as const;
+
 /**
- * Compute convention-inferred field names for a schema based on its metadata tokens.
+ * Return the set of convention-inferred field names for a schema based on its metadata tags.
  *
- * Data Vault conventions (source: Data Vault 2.0 standard):
- *   hub        → {name}_hk, load_date, record_source
- *   link       → {name}_hk, load_date, record_source, {hub}_hk (per link_hubs kv)
- *   satellite  → load_date, load_end_date, hash_diff, record_source, {parent}_hk
+ * Fields listed here are implicitly present by Data Vault or Kimball convention —
+ * populated by the ETL layer, not declared in the schema body. Adding them to the
+ * valid-path set prevents false "field not in schema" warnings on arrows that
+ * target these columns. See the DV_* and KIMBALL_* constants for the specific sets.
  *
- * Kimball conventions (source: The Data Warehouse Toolkit):
- *   dimension + scd 2 or 6 → surrogate_key, valid_from, valid_to, is_current, row_hash
- *   fact       → etl_batch_id, loaded_at
- *
- * These fields are pre-populated in the valid-path set so arrows targeting them
- * do not trigger false "field not in schema" warnings.
+ * The lists are opinionated approximations and do not constitute a full implementation
+ * of either standard.
  */
 function getConventionFields(schema: SemanticSchema): Set<string> {
   const fields = new Set<string>();
@@ -591,15 +614,18 @@ function getConventionFields(schema: SemanticSchema): Set<string> {
   const tags = new Set(meta.filter((m): m is MetaEntry & { kind: "tag" } => m.kind === "tag").map((m) => m.tag));
   const kvs = meta.filter((m): m is MetaEntry & { kind: "kv" } => m.kind === "kv");
 
+  // --- Data Vault 2.0 conventions ---
+
   if (tags.has("hub")) {
+    // Hub: composite business-key hash + standard DV audit columns
     fields.add(`${schema.name}_hk`);
-    fields.add("load_date");
-    fields.add("record_source");
+    for (const f of DV_HUB_FIELDS) fields.add(f);
   }
+
   if (tags.has("link")) {
+    // Link: composite hash key + DV audit columns + a hash key per linked hub (from link_hubs metadata)
     fields.add(`${schema.name}_hk`);
-    fields.add("load_date");
-    fields.add("record_source");
+    for (const f of DV_LINK_FIELDS) fields.add(f);
     for (const kv of kvs) {
       if (kv.key === "link_hubs") {
         for (const hub of kv.value.split(",").map((h) => h.trim())) {
@@ -608,29 +634,30 @@ function getConventionFields(schema: SemanticSchema): Set<string> {
       }
     }
   }
+
   if (tags.has("satellite")) {
-    fields.add("load_date");
-    fields.add("load_end_date");
-    fields.add("hash_diff");
-    fields.add("record_source");
+    // Satellite: full DV audit columns + parent entity hash key (from parent metadata)
+    for (const f of DV_SAT_FIELDS) fields.add(f);
     for (const kv of kvs) {
       if (kv.key === "parent") fields.add(`${kv.value}_hk`);
     }
   }
+
+  // --- Kimball dimensional modelling conventions ---
+
   if (tags.has("dimension")) {
+    // SCD types 2 and 6 add slowly-changing dimension history tracking columns
     const hasScd2or6 = kvs.some((kv) => kv.key === "scd" && (kv.value === "2" || kv.value === "6"));
     if (hasScd2or6) {
-      fields.add("surrogate_key");
-      fields.add("valid_from");
-      fields.add("valid_to");
-      fields.add("is_current");
-      fields.add("row_hash");
+      for (const f of KIMBALL_SCD_FIELDS) fields.add(f);
     }
   }
+
   if (tags.has("fact")) {
-    fields.add("etl_batch_id");
-    fields.add("loaded_at");
+    // All fact tables carry ETL batch audit columns
+    for (const f of KIMBALL_FACT_FIELDS) fields.add(f);
   }
+
   return fields;
 }
 

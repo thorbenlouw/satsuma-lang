@@ -30,6 +30,20 @@ export interface Tree {
 
 // ── Classification ──────────────────────────────────────────────────────────
 
+/**
+ * Arrow transform classification, derived from CST node types by the arrow extractor.
+ *
+ * - "structural"  — the transform is a deterministic pipeline (function calls, map blocks,
+ *                   arithmetic). Fully machine-readable; no interpretation needed.
+ * - "nl"          — the transform is a natural language string. Requires human or LLM
+ *                   interpretation to understand intent.
+ * - "mixed"       — the transform contains both pipeline steps and an NL string.
+ *                   The pipeline portion is deterministic; the NL portion requires interpretation.
+ * - "none"        — bare arrow with no transform (`src -> tgt`). Signals a direct copy.
+ * - "nl-derived"  — a synthetic arrow inferred from an `@ref` mention inside an NL transform
+ *                   string. Not declared explicitly in the source; created by the graph builder
+ *                   to represent implicit field lineage from NL references.
+ */
 export type Classification = "structural" | "nl" | "mixed" | "none" | "nl-derived";
 
 export interface PipeStep {
@@ -60,8 +74,20 @@ export interface MetaEntryNote {
   text: string;
 }
 
+/**
+ * A `slice { dim1, dim2 }` metadata entry on a metric block.
+ *
+ * Specifies the dimension schema names by which the metric can be sliced or
+ * grouped in reporting tools. Unlike MetaEntryEnum (which lists allowed field
+ * values), the `values` here are schema references — names of dimension schemas
+ * that define the slicing axes.
+ *
+ * Created by the metric extractor when it encounters `slice { ... }` in metric
+ * metadata. Consumed by the metric command and diff engine.
+ */
 export interface MetaEntrySlice {
   kind: "slice";
+  /** Dimension schema names that define the valid slicing axes for this metric. */
   values: string[];
 }
 
