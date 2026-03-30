@@ -1,22 +1,22 @@
 /**
- * normalize.ts — Deterministic name normalization for field matching
+ * normalize.ts — Field-level name matching for source-to-target alignment
  *
- * Normalizes field names by lowercasing and stripping underscores and hyphens.
- * Match is exact string equality after normalization — binary, no scoring.
+ * Provides fuzzy field matching: two field names are considered equivalent
+ * when their normalised forms (see normalizeName in @satsuma/core) are
+ * identical.  Match is binary — no scoring, no partial credit.
+ *
+ * normalizeName itself lives in @satsuma/core so other tooling packages can
+ * reuse it without depending on the CLI.  It is re-exported here so existing
+ * callers within satsuma-cli can import from either location.
  */
 
+export { normalizeName } from "@satsuma/core";
+import { normalizeName } from "@satsuma/core";
 import type { FieldDecl, FieldMatch, MatchResult } from "./types.js";
 
 /**
- * Normalize a field name for comparison.
- * Lowercase, strip underscores, hyphens, and spaces.
- */
-export function normalizeName(name: string): string {
-  return name.toLowerCase().replace(/[_\- ]/g, "");
-}
-
-/**
  * Flatten nested fields into dotted path names for matching.
+ * e.g. a field "city" nested under "address" becomes "address.city".
  */
 function flattenFields(fields: FieldDecl[], prefix = ""): { name: string }[] {
   const result: { name: string }[] = [];
