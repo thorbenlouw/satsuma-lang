@@ -2,6 +2,49 @@
 
 
 
+
+## v0.6.0 — 2026-03-30
+
+### VS Code Extension — LSP Server Crash Fix
+
+- Fixed a critical crash that prevented the language server from starting after
+  the VSIX was installed. esbuild bundled satsuma-core's `await import("web-tree-sitter")`
+  using the ESM build, which calls `createRequire(import.meta.url)` — but esbuild
+  stubs `import.meta` as `{}` in CJS output, making `import.meta.url` undefined at
+  runtime. Fixed by aliasing `web-tree-sitter` to its CJS build in the server
+  esbuild config. As a bonus, this also consolidates the previously duplicated
+  ESM and CJS instances into a single one used by both the parser and semantic
+  token helpers.
+
+### VS Code Extension — Removed Redundant Command
+
+- Removed the **Satsuma: Where Used** command and its right-click context menu
+  entry. The built-in **Find All References** (Shift+F12) backed by the LSP
+  references provider covers this fully and with better UX.
+
+### End-to-End Smoke Tests
+
+- The `smoke-tests/` suite is now run in CI. Tests are written as pytest-bdd
+  Gherkin feature files (`.feature` + step definitions in `conftest.py`),
+  covering 43 arrow scenarios and 4 lineage scenarios against the live CLI.
+- `scripts/run-repo-checks.sh` runs the smoke tests locally when `satsuma` is
+  on PATH, skipping gracefully with a clear message when it is not.
+
+### Code Readability
+
+- Extensive literate-programming pass across the CLI and LSP packages: every
+  module now opens with a purpose comment, exported functions have doc-comments
+  stating their contract, business rules are labelled with their source, and
+  magic constants are named. Targets the project's goal of being a readable
+  reference implementation of a tree-sitter-backed language toolchain.
+
+### Documentation & Tooling
+
+- Reorganised `docs/` into `developer/` and `product-owner/` subfolders.
+- Added an `adr-draft` skill for assessing and drafting Architecture Decision
+  Records; integrated as a pre-PR review step in the agent workflow.
+- Added the Satsuma Diaries section to the website.
+
 ## v0.5.0 — 2026-03-28
 
 ### VS Code Visualization — Schema Spread Resolution
