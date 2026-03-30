@@ -15,6 +15,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
+import { addPathAndPrefixes } from "@satsuma/core";
 import type { WorkspaceIndex, FieldDecl, ParsedFile, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
 
 interface FieldWithTags extends FieldDecl {
@@ -161,27 +162,17 @@ function getMappedFieldNames(mappingName: string, schemaName: string, index: Wor
       if (arrowQualified !== mappingName && arrow.mapping !== bareMappingName) continue;
       if (isSource) {
         for (const source of arrow.sources) {
-          const norm = normalizePath(source);
-          mapped.add(norm);
-          // Also add leaf name for nested paths (e.g. each/flatten child arrows)
-          const leafIdx = norm.lastIndexOf(".");
-          if (leafIdx > 0) mapped.add(norm.slice(leafIdx + 1));
+          // addPathAndPrefixes strips [] and registers all ancestor prefixes —
+          // matches the same logic used by the VS Code coverage gutter.
+          addPathAndPrefixes(mapped, source);
         }
       }
       if (isTarget && arrow.target) {
-        const norm = normalizePath(arrow.target);
-        mapped.add(norm);
-        const leafIdx = norm.lastIndexOf(".");
-        if (leafIdx > 0) mapped.add(norm.slice(leafIdx + 1));
+        addPathAndPrefixes(mapped, arrow.target);
       }
     }
   }
   return mapped;
-}
-
-/** Strip all [] brackets from a path to normalize for comparison. */
-function normalizePath(p: string): string {
-  return p.replace(/\[\]/g, "");
 }
 
 /**
@@ -193,16 +184,21 @@ function filterUnmappedFields(fields: FieldWithTags[], mapped: Set<string>, pref
   const result: FieldWithTags[] = [];
   for (const f of fields) {
     const path = prefix ? `${prefix}.${f.name}` : f.name;
-    if (mapped.has(f.name) || mapped.has(path)) continue;
     if (f.children && f.children.length > 0) {
-      // Recurse: filter children, keeping only unmapped ones
+      // Record/list field: always recurse to evaluate children individually.
+      // Do NOT skip based on mapped.has(f.name) — a parent path appearing in
+      // 'mapped' only means it was registered as a prefix of a child arrow
+      // (via addPathAndPrefixes), not that the record itself was directly targeted.
+      // A record is excluded only when all its children are covered.
       const unmappedChildren = filterUnmappedFields(f.children as FieldWithTags[], mapped, path);
       if (unmappedChildren.length > 0) {
         result.push({ ...f, children: unmappedChildren });
       }
-      // If all children are mapped (none left), skip the record entirely
     } else {
-      result.push(f);
+      // Leaf field: skip if directly covered by an arrow path.
+      if (!mapped.has(f.name) && !mapped.has(path)) {
+        result.push(f);
+      }
     }
   }
   return result;

@@ -1,6 +1,6 @@
 ---
 id: sl-qe6b
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-30T06:29:09Z

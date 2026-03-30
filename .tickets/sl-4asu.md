@@ -1,6 +1,6 @@
 ---
 id: sl-4asu
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-30T06:28:59Z

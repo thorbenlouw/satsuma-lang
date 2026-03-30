@@ -14,32 +14,27 @@
  *
  * Nested record fields are handled recursively.  each_block and flatten_block
  * src-paths contribute both the top-level field and the qualified nested path.
+ *
+ * Types (FieldCoverageEntry, SchemaCoverageResult, MappingCoverageResult) and
+ * the addPathAndPrefixes path utility live in @satsuma/core so the CLI can
+ * share the same definitions without depending on the LSP server.
  */
 
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, children, labelText } from "./parser-utils";
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { resolveDefinition } from "./workspace-index";
+import { addPathAndPrefixes } from "@satsuma/core";
 
-// ---------- Public interfaces ----------
+// Re-export shared types from core so existing LSP code that imports from
+// this module continues to work without import path changes.
+export type {
+  FieldCoverageEntry,
+  SchemaCoverageResult,
+  MappingCoverageResult,
+} from "@satsuma/core";
 
-export interface FieldCoverageEntry {
-  /** Qualified path from the schema root, e.g. "address" or "address.line1". */
-  path: string;
-  uri: string;
-  line: number;
-  mapped: boolean;
-}
-
-export interface SchemaCoverageResult {
-  schemaId: string;
-  role: "source" | "target";
-  fields: FieldCoverageEntry[];
-}
-
-export interface MappingCoverageResult {
-  schemas: SchemaCoverageResult[];
-}
+import type { FieldCoverageEntry, SchemaCoverageResult, MappingCoverageResult } from "@satsuma/core";
 
 // ---------- Entry point ----------
 
@@ -102,11 +97,11 @@ function collectBodyPaths(
   for (const node of body.namedChildren) {
     switch (node.type) {
       case "map_arrow":
-        for (const sp of children(node, "src_path")) addPath(srcPaths, pathText(sp));
-        { const tp = child(node, "tgt_path"); if (tp) addPath(tgtPaths, pathText(tp)); }
+        for (const sp of children(node, "src_path")) addPathAndPrefixes(srcPaths, pathText(sp));
+        { const tp = child(node, "tgt_path"); if (tp) addPathAndPrefixes(tgtPaths, pathText(tp)); }
         break;
       case "computed_arrow":
-        { const tp = child(node, "tgt_path"); if (tp) addPath(tgtPaths, pathText(tp)); }
+        { const tp = child(node, "tgt_path"); if (tp) addPathAndPrefixes(tgtPaths, pathText(tp)); }
         break;
       case "each_block":
         collectEachPaths(node, srcPaths, tgtPaths, null, null);
@@ -134,28 +129,25 @@ function collectEachPaths(
   const srcBase = rawSrc ? qualify(outerSrcBase, pathText(rawSrc)) : outerSrcBase;
   const tgtBase = rawTgt ? qualify(outerTgtBase, pathText(rawTgt)) : outerTgtBase;
 
-  if (srcBase) addPath(srcPaths, srcBase);
-  if (tgtBase) addPath(tgtPaths, tgtBase);
+  if (srcBase) addPathAndPrefixes(srcPaths, srcBase);
+  if (tgtBase) addPathAndPrefixes(tgtPaths, tgtBase);
 
   for (const ch of node.namedChildren) {
     if (ch.type === "map_arrow") {
       for (const sp of children(ch, "src_path")) {
         const leaf = pathText(sp);
-        addPath(srcPaths, srcBase ? qualify(srcBase, leaf) : leaf);
-        addPath(srcPaths, leaf); // bare name for top-level match
+        addPathAndPrefixes(srcPaths, srcBase ? qualify(srcBase, leaf) : leaf);
       }
       const tp = child(ch, "tgt_path");
       if (tp) {
         const leaf = pathText(tp);
-        addPath(tgtPaths, tgtBase ? qualify(tgtBase, leaf) : leaf);
-        addPath(tgtPaths, leaf);
+        addPathAndPrefixes(tgtPaths, tgtBase ? qualify(tgtBase, leaf) : leaf);
       }
     } else if (ch.type === "computed_arrow") {
       const tp = child(ch, "tgt_path");
       if (tp) {
         const leaf = pathText(tp);
-        addPath(tgtPaths, tgtBase ? qualify(tgtBase, leaf) : leaf);
-        addPath(tgtPaths, leaf);
+        addPathAndPrefixes(tgtPaths, tgtBase ? qualify(tgtBase, leaf) : leaf);
       }
     } else if (ch.type === "each_block") {
       collectEachPaths(ch, srcPaths, tgtPaths, srcBase, tgtBase);
@@ -170,37 +162,20 @@ function collectFlattenPaths(
 ): void {
   const rawSrc = child(node, "src_path");
   const srcBase = rawSrc ? pathText(rawSrc) : null;
-  if (srcBase) addPath(srcPaths, srcBase);
+  if (srcBase) addPathAndPrefixes(srcPaths, srcBase);
 
   for (const ch of node.namedChildren) {
     if (ch.type === "map_arrow") {
       for (const sp of children(ch, "src_path")) {
         const leaf = pathText(sp);
-        addPath(srcPaths, srcBase ? qualify(srcBase, leaf) : leaf);
-        addPath(srcPaths, leaf);
+        addPathAndPrefixes(srcPaths, srcBase ? qualify(srcBase, leaf) : leaf);
       }
       const tp = child(ch, "tgt_path");
-      if (tp) addPath(tgtPaths, pathText(tp));
+      if (tp) addPathAndPrefixes(tgtPaths, pathText(tp));
     } else if (ch.type === "computed_arrow") {
       const tp = child(ch, "tgt_path");
-      if (tp) addPath(tgtPaths, pathText(tp));
+      if (tp) addPathAndPrefixes(tgtPaths, pathText(tp));
     }
-  }
-}
-
-/**
- * Add a path and all its prefix segments to the set.
- * "orders.item_id" → adds "orders", "orders.item_id", "item_id".
- * This lets a top-level field match a path that starts with it.
- */
-function addPath(set: Set<string>, p: string): void {
-  if (!p) return;
-  const parts = p.split(".");
-  let prefix = "";
-  for (const part of parts) {
-    prefix = prefix ? `${prefix}.${part}` : part;
-    set.add(prefix);
-    set.add(part); // bare leaf too
   }
 }
 
