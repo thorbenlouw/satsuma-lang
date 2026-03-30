@@ -18,7 +18,7 @@
     "lit": "^3.3.0"
   },
   "devDependencies": {
-    "@lit-labs/ssr": "^4.0.0",
+    "@lit-labs/ssr-dom-shim": "^1.5.1",
     "@types/node": "^22.0.0",
     "esbuild": "^0.27.4",
     "typescript": "^5.9.3"
