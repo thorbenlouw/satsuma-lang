@@ -6,7 +6,7 @@
  * Each item includes raw text, position type, and parent block/field context.
  */
 
-import { stringText } from "@satsuma/core";
+import { labelText, stringText } from "@satsuma/core";
 import type { SyntaxNode } from "./types.js";
 
 export interface NLItem {
@@ -102,21 +102,13 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         c.type === "fragment_block" ||
         c.type === "transform_block"
       ) {
-        newParent = getBlockName(c);
+        newParent = labelText(c);
       } else if (c.type === "field_decl") {
         newParent = getFieldName(c) ?? parent;
       }
       walkNL(c, newParent, items);
     }
   }
-}
-
-function getBlockName(node: SyntaxNode): string | null {
-  const lbl = node.namedChildren.find((c) => c.type === "block_label");
-  const inner = lbl?.namedChildren[0];
-  if (!inner) return null;
-  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
-  return inner.text;
 }
 
 function getFieldName(node: SyntaxNode): string | null {

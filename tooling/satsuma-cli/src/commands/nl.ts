@@ -15,7 +15,8 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractNLContent } from "../nl-extract.js";
 import type { NLItem } from "../nl-extract.js";
-import { findBlockNode, getBlockName } from "../cst-query.js";
+import { labelText } from "@satsuma/core";
+import { findBlockNode } from "../cst-query.js";
 import type { SyntaxNode, WorkspaceIndex, ParsedFile, FieldDecl } from "../types.js";
 
 interface NLItemWithFile extends NLItem {
@@ -209,7 +210,7 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
     );
     if (!mBody) continue;
 
-    const parentName = getBlockName(mappingNode) ?? "?";
+    const parentName = labelText(mappingNode) ?? "?";
     collectFieldArrowNL(mBody.namedChildren, leafName, parentName, mapping.file, items);
   }
 
