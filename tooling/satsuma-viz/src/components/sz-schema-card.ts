@@ -79,6 +79,8 @@ export class SzSchemaCard extends LitElement {
       color: var(--sz-text-muted, #6B6560);
       font-style: italic;
       border-bottom: 1px solid var(--sz-card-border, rgba(45, 42, 38, 0.08));
+      max-width: 400px;
+      word-break: break-word;
     }
 
     .fields {
