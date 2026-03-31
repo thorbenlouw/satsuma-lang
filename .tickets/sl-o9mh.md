@@ -9,17 +9,16 @@ priority: 1
 assignee: Thorben Louw
 tags: [cli, adr-022, breaking-change]
 ---
-# ADR-022: update all CLI commands to require file argument, remove directory support
+# ADR-022: make CLI commands file-based while preserving explicit import visibility
 
-Per ADR-022, all CLI commands must accept only .stm file arguments, not directories. Directory arguments should produce an error message suggesting a file instead. The CLI resolves imports transitively from the entry file to build the workspace.
+Per ADR-022, path-taking CLI commands must accept only `.stm` file arguments, not directories. This task is to remove directory mode while preserving strict import scoping inside the loaded files.
 
-Files to change: all files in tooling/satsuma-cli/src/commands/ (~20 files), plus resolve-input.ts and index-builder.ts.
+Files to change: all relevant files in `tooling/satsuma-cli/src/commands/`, plus `workspace.ts` and any index-building code that currently conflates file discovery with symbol visibility.
 
 Key changes:
-- resolveInput() rejects directory paths
-- All [path] parameters documented as requiring a .stm file
-- satsuma fmt accepts a file or --stdin only
-- satsuma diff <a> <b> accepts two entry files
-- All --help text updated
-- All CLI tests updated to use file arguments
-
+- Directory arguments are rejected with a clear error
+- Help text explains that a command applies to a file entry point
+- Broad repository-level examples are replaced with file-entry examples where appropriate
+- Semantic resolution continues to require explicit imports plus only the exact transitive dependencies those imports require
+- Tests cover both file-entry workspace selection and selective transitive dependency visibility
+- Any IDE/LSP-facing workspace helpers used by the CLI path model are aligned to the same file/import-graph boundary

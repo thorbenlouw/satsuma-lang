@@ -1,61 +1,82 @@
-# ADR-022 — Transitive Imports and File-Based CLI Scope
+# ADR-022 — Selective Transitive Import Reachability and File-Based Workspace Scope
 
 **Status:** Accepted
 **Date:** 2026-03
 
 ## Context
 
-The Satsuma v2 spec (section 5.3) originally stated two import scoping rules:
+The Satsuma v2 spec (section 5.3) had one correct rule and one rule that was too strict:
 
-1. "Imports are **not** re-exported" — if file A imports `X` from file B, file C must import `X` directly from B.
-2. "A symbol is only in scope within a file if it appears in that file's import graph" — symbols in the same directory but not import-reachable are not in scope.
+1. Imports are explicit. Only the symbols named in an `import { ... }` clause are brought into scope.
+2. Symbols that exist in the same workspace directory but are not reachable through transitively resolving the imports from the file in consideration are not in scope.
+3. The spec's current "imports are not re-exported" wording is too blunt for the intended model. Imported symbols must carry their own dependency graph with them, but that does not make unrelated definitions from the imported file visible.
 
-In practice, the CLI has always treated imports as transitive: importing a file brings its entire dependency tree into scope. This is simpler, matches user expectations (no one has filed a bug about transitive imports being visible), and avoids a class of confusing "symbol exists but is not in scope" errors.
+The exploratory bugs exposed a different problem: some tooling paths still treat the filesystem or workspace folder as the effective scope. Directory-level CLI commands can create accidental merged workspaces, and IDE/LSP features must not fall back to "everything in the folder" when resolving symbols.
 
-A related issue arises with directory-level commands. When `satsuma validate <directory>` merges all files in a directory into a single scope, it bypasses import boundaries entirely. Two files in the same directory that don't import each other can reference each other's definitions — which is neither the strict-scoping model nor the transitive model, but an accidental third behavior.
+The required change is therefore:
+- MODIFY the spec's import visibility rules so an explicitly imported symbol brings only its exact transitive dependencies into scope.
+- make workspace scope file-based everywhere: CLI, IDE, and LSP operations all use the file in scope and its import graph
+- remove directory mode from CLI commands so a workspace is defined by a chosen file and its import graph
 
 ## Decision
 
-### 1. Imports are transitive
+### 1. Make imported symbols carry their exact dependency graph
 
-Importing a file brings all of its definitions — including those it transitively imports — into scope. There is no re-export mechanism because re-export is implicit and automatic.
 
-This matches the current CLI behavior and is now the canonical spec position. The v2 spec section 5.3 has been updated accordingly.
+- An `import` only introduces the names it explicitly lists.
+- Those imported names may rely on their own transitive dependencies.
+- Unrelated definitions from the same imported file are not automatically in scope.
+- A downstream file can use symbols that are transitively reachable through the imported symbols' dependency graph.
 
-### 2. CLI commands operate on file arguments only
+This preserves precise, teachable semantics: scope is defined by explicit imports, not by file co-location.
 
-All CLI commands that accept a path argument require a `.stm` file. **Directory arguments are not supported.** Passing a directory produces an error suggesting the user provide a specific file.
+### 2. Workspace scope is file-based everywhere
+
+All tooling uses the file in scope and its import graph as the workspace boundary.
+
+- CLI commands operate on file arguments only.
+- IDE/LSP features for an open file consider only what is reachable transitively via imports from that file.
+- Tooling must not treat the surrounding directory or workspace folder as an implicit merged scope.
+
+### 3. CLI commands operate on file arguments only
+
+For commands that accept a path, the path must be a `.stm` file. Directory arguments are not supported.
 
 ```bash
-# Correct — file entry point
-satsuma validate pipeline.stm
+# Validate one workspace entry file
+satsuma validate examples/sfdc-to-snowflake/pipeline.stm
+
+# Graph one platform entry file
 satsuma graph platform.stm --json
 
-# Error — directory not accepted
+# Error: directory arguments are not accepted
 satsuma validate examples/sfdc-to-snowflake/
-# → Error: expected a .stm file, not a directory. Try: satsuma validate <file.stm>
 ```
 
-When given a file, the CLI resolves its import graph transitively and builds a workspace index from the resulting file set. The import graph defines the workspace boundary, not the filesystem.
+When given a file, the CLI resolves exactly the explicitly imported symbols required by that file, along with their transitive dependencies, and builds the workspace from the resulting import graph. The workspace boundary is defined by the entry file, not by the filesystem.
 
-### 3. Entry files are the canonical workspace boundary
+### 4. Entry files are the canonical workspace boundary
 
-For multi-file platforms, a dedicated entry file (e.g., `platform.stm`) imports from all pipeline files. Running `satsuma graph platform.stm` produces the full platform graph by following the import tree. This is documented in CLAUDE.md as the "platform entry point" pattern.
+Platform entry files such as `platform.stm` remain the canonical way to describe a whole platform intentionally. Example workspaces may also have their own entry files.
 
-### 4. LSP and VS Code are unaffected
+### 5. File-based workspace selection does not change symbol visibility rules
 
-The LSP builds its workspace index by scanning the VS Code workspace folder (standard IDE behaviour) and then scopes per-file via `createScopedIndex()` + `getImportReachableUris()`. This already follows the import graph for each operation. The validate subprocess (`validate-diagnostics.ts`) already passes a file path to the CLI, not a directory. No LSP or VS Code changes are needed — the file-based scope model is already how the LSP works internally.
+File-based workspace selection does not relax import semantics:
+
+- importing one symbol from a file does not make every definition in that file visible
+- transitively required dependencies of imported symbols do remain reachable
+- references still have to resolve through explicit imports
+- IDE/LSP navigation, completion, rename, and diagnostics use the same boundary
 
 ## Consequences
 
 **Positive:**
-- Simpler mental model: importing a file gives you everything in it, transitively.
-- No confusing "symbol exists but is not in scope" errors.
-- File-based CLI scope is deterministic and reproducible — the same file always produces the same workspace.
-- No ambiguous directory-merging semantics — the workspace is exactly what the import graph says it is.
+- Preserves explicit imports while allowing imported symbols to bring the dependencies they actually need.
+- Eliminates accidental directory-wide or workspace-folder-wide scope merging.
+- Makes tooling scope deterministic and reproducible: the same entry file always produces the same workspace.
+- Avoids conflating filesystem discovery with symbol scope.
 
 **Negative:**
-- Large import trees may bring many definitions into scope. This could slow index building for very large platforms (mitigated by caching in `buildIndex`).
-- Users cannot selectively import only some definitions from a file while excluding others. This has not been requested and is unlikely to be needed given Satsuma's domain.
-- Removing directory mode is a breaking change. All documentation, examples, tests, website, lessons, and CLI help text must be updated. Every example directory needs a clear entry file.
-- The spec's original strict-scoping model was more theoretically correct. We are trading precision for pragmatism.
+- Removing directory mode is a breaking change for CLI users and docs.
+- Example workspaces need a clear entry file wherever whole-workspace commands are expected.
+- Documentation must explain that file selection defines workspace scope across CLI and IDE/LSP, while imports define symbol reachability.

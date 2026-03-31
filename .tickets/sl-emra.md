@@ -26,5 +26,4 @@ The examples/ directory is the 'canonical example corpus' per CLAUDE.md and shou
 
 **2026-03-31**
 
-Resolution: this is not a bug. Per ADR-022, all CLI commands operate on a file entry point and build the workspace by following that file's import graph transitively. `satsuma validate examples/` is not a valid operation — there is no directory-level mode. Each example subdirectory should have an entry file (or each .stm file can be validated individually). The duplicate-definition errors are an artifact of the old directory-merging behaviour which is being removed. The two individual file warnings (multi-source, sfdc-to-snowflake) should still be investigated separately.
-
+Resolution: this is not a CLI correctness bug in itself, but the usage expectation needs documenting. `examples/` is a corpus containing many independent example workspaces, so validating that top-level directory as one workspace will surface expected duplicate names. Per ADR-022, directory mode is being removed and example workspaces should be validated through explicit entry files such as `examples/sfdc-to-snowflake/pipeline.stm`. The two individual workspace warnings (multi-source, sfdc-to-snowflake) should still be investigated separately.

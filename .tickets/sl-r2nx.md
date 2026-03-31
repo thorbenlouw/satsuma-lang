@@ -1,6 +1,6 @@
 ---
 id: sl-r2nx
-status: closed
+status: open
 deps: []
 links: []
 created: 2026-03-31T08:30:03Z
@@ -28,5 +28,4 @@ Note: This may be intentional for backward compatibility (pre-import workspaces)
 
 **2026-03-31**
 
-Closed — resolved by design change. The spec was wrong about import scoping. Additionally, CLI commands will be changed to operate on FILE arguments rather than directories, which eliminates the directory-level scoping question entirely. When given a file, the CLI follows its import graph. See ADR-022.
-
+Re-opened. Prior triage focused on the wrong semantics. ADR-022 removes directory mode, but this ticket still captures a real boundary bug: tooling must never treat all files in a folder as a merged semantic scope. Workspace scope is file-based, and symbol reachability inside that workspace must still follow the import graph. Implementation is still needed.

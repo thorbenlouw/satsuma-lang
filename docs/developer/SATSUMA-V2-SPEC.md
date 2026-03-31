@@ -559,26 +559,17 @@ import { `address fields`, `audit fields` } from "lib/common.stm"
 import { `currency rates` } from "lookups/finance.stm"
 ```
 
-Import syntax follows the pattern `import { <names> } from "<path>"`. Paths are resolved relative to the importing file.
+Import syntax follows the pattern `import { <names> } from "<path>"`. Paths are resolved relative to the importing file. Importing `X` from another file brings `X` into scope together with the exact transitive dependencies `X` requires. It does **not** bring every other definition from that file into scope.
 
-#### Transitive Imports
+#### Import Scoping
 
-Imports are **transitive**: if file A imports from file B, and file B imports from file C, then all of C's definitions are visible to A. Imported symbols are implicitly re-exported — there is no need to explicitly forward them. This keeps the import mechanism simple: an `import` statement brings a file (and its full dependency tree) into scope.
+Satsuma uses **explicit import scoping**: a symbol is only in scope within a file if it appears in that file's import graph (directly imported or transitively reachable via imported symbols' own dependencies). Symbols that exist in the same workspace directory but are not reachable via imports are **not** in scope. Importing one symbol from a file does **not** bring every other definition from that file into scope.
 
-```
-// lib/common.stm defines: fragment `audit fields`, fragment `address fields`
-// pipeline/sources.stm: import { `audit fields` } from "../lib/common.stm"
-//   → `address fields` is also visible (transitive)
-// pipeline/main.stm: import { src_customers } from "./sources.stm"
-//   → `audit fields` and `address fields` are also visible (transitive)
-```
-
-#### Workspace Scope
-
-Tooling operates on a **file and its import graph**. When a CLI command receives a file argument, it resolves that file's imports transitively and builds a workspace index from the resulting file set. Definitions in the same directory that are not reachable via imports are **not** in scope.
-
-- Navigation features (go-to-definition, find-references, completions, rename) resolve symbols within the import-reachable file set of the active file.
-- Workspace visualisation and field-lineage traces start from a specific entry file and follow its import graph.
+Tooling must respect this boundary:
+- Navigation features (go-to-definition, find-references, completions, rename) resolve symbols only within the import-reachable file set of the active file.
+- Editor diagnostics and semantic analysis use the same import-reachable file set; they do not treat the surrounding directory or workspace folder as an implicit merged scope.
+- A reference to a symbol that exists in the workspace but is not reachable via imports is a semantic error. Tooling should suggest the exact `import` statement needed to bring the symbol into scope.
+- The workspace visualisation and field-lineage traces start from a specific entry file and follow its import graph, not the entire directory tree.
 
 The entry file for platform-wide lineage analysis is the file that imports from all top-level pipeline files (see `CLAUDE.md` for the platform entry point pattern).
 

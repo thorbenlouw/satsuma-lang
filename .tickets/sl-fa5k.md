@@ -9,19 +9,21 @@ priority: 2
 assignee: Thorben Louw
 tags: [docs, site, lessons, adr-022]
 ---
-# ADR-022: update website (site/) and lessons — all CLI examples to file-based
+# ADR-022: update website and lessons for file-based CLI usage
 
-Update website and learning materials to reflect file-based CLI scope per ADR-022.
+Update website and learning materials to reflect the actual ADR-022 direction: commands target explicit entry files, while import visibility inside files remains selective and dependency-based.
 
 Files:
-- site/cli.njk — ~6 examples with examples/ or directory paths
-- lessons/01-what-is-satsuma.md — 2 directory examples
-- lessons/02-reading-satsuma.md — 1 directory example
-- lessons/08-satsuma-cli.md — ~6 directory examples
-- lessons/09-agent-workflows.md — 3 examples with .
-- lessons/10-real-world-workflows.md — 2 examples with .
-- lessons/12-data-engineer-playbook.md — 3 examples with .
-- lessons/13-governance-playbook.md — ~6 examples with .
+- `site/cli.njk`
+- `lessons/01-what-is-satsuma.md`
+- `lessons/02-reading-satsuma.md`
+- `lessons/08-satsuma-cli.md`
+- `lessons/09-agent-workflows.md`
+- `lessons/10-real-world-workflows.md`
+- `lessons/12-data-engineer-playbook.md`
+- `lessons/13-governance-playbook.md`
 
-All CLI examples must use file entry points, not directories.
-
+Documentation goals:
+- use entry-file examples instead of directory examples
+- avoid examples that accidentally imply the whole repository is one workspace
+- explain selective transitive dependency reachability separately from file-based workspace selection
