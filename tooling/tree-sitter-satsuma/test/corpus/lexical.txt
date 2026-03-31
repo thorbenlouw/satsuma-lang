@@ -410,7 +410,8 @@ schema test { `` STRING }
   (schema_block
     (block_label
       (identifier))
-    (ERROR)))
+    (ERROR
+      (UNEXPECTED '`'))))
 
 ================================================================================
 Keyword rejected as bare label (produces error node)
