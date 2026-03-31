@@ -218,7 +218,7 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
   for (const [id, metric] of index.metrics) {
     if (nsFilter && metric.namespace !== nsFilter) continue;
     includedNodeIds.add(id);
-    nodes.push({
+    const metricNode: Record<string, unknown> = {
       id,
       kind: "metric",
       namespace: metric.namespace ?? null,
@@ -227,7 +227,14 @@ function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root
       sources: metric.sources,
       grain: metric.grain ?? null,
       slices: metric.slices ?? [],
-    });
+    };
+    if (!schemaOnly) {
+      metricNode.fields = metric.fields.map((f) => ({
+        name: f.name,
+        type: f.isList && f.type ? `list_of ${f.type}` : (f.type ?? null),
+      }));
+    }
+    nodes.push(metricNode);
   }
 
   // Fragments are macro definitions — they do not appear as graph nodes.
@@ -591,9 +598,9 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
     if (!nlRef.resolved || !nlRef.resolvedTo || nlRef.resolvedTo.kind !== "field") continue;
     if (!nlRef.targetField) continue; // skip notes without a target arrow
 
-    const mappingKey = nlRef.namespace
-      ? `${nlRef.namespace}::${nlRef.mapping}`
-      : nlRef.mapping;
+    // nlRef.mapping is already the fully-qualified key (e.g. "ns::name")
+    // built by resolveAllNLRefs — no additional namespace prefixing needed.
+    const mappingKey = nlRef.mapping;
     const mapping = index.mappings.get(mappingKey);
     if (!mapping) continue;
 

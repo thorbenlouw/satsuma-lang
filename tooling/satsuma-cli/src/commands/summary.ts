@@ -18,12 +18,40 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
+import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { canonicalEntityName } from "@satsuma/core";
 import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
 function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: WorkspaceIndex): number {
   const expanded = expandEntityFields(schema as Parameters<typeof expandEntityFields>[0], schema.namespace ?? null, index);
   return schema.fields.length + expanded.length;
+}
+
+/**
+ * Count nl-derived arrows per mapping.
+ * Uses the same resolution pipeline as graph.ts: resolve all @refs, then
+ * count unique source→target pairs per mapping (excluding self-refs).
+ */
+function countNlDerivedByMapping(index: WorkspaceIndex): Map<string, number> {
+  const nlRefs = resolveAllNLRefs(index);
+  const counts = new Map<string, number>();
+  const seen = new Set<string>();
+
+  for (const nlRef of nlRefs) {
+    if (!nlRef.resolved || !nlRef.resolvedTo || nlRef.resolvedTo.kind !== "field") continue;
+    if (!nlRef.targetField) continue;
+
+    const mappingKey = nlRef.mapping;
+    const sourceField = nlRef.resolvedTo.name;
+    const dedupKey = `${sourceField}|${nlRef.targetField}|${mappingKey}`;
+    if (seen.has(dedupKey)) continue;
+    seen.add(dedupKey);
+    if (sourceField === nlRef.targetField) continue;
+
+    counts.set(mappingKey, (counts.get(mappingKey) ?? 0) + 1);
+  }
+
+  return counts;
 }
 
 export function register(program: Command): void {
@@ -35,16 +63,17 @@ export function register(program: Command): void {
     .addHelpText("after", `
 JSON shape (--json):
   {
-    "schemas":      [{"name": str, "file": str, "fieldCount": int, "note": str|null}, ...],
-    "metrics":      [{"name": str, "file": str}, ...],
-    "mappings":     [{"name": str, "file": str, "arrowCount": int, "sources": [str], "targets": [str]}, ...],
-    "fragments":    [{"name": str, "file": str}, ...],
-    "transforms":   [{"name": str, "file": str}, ...],
+    "schemas":      [{"name": str, "fieldCount": int, "note": str|null, "file": str, "line": int}, ...],
+    "metrics":      [{"name": str, "fieldCount": int, "displayName": str|null, "grain": str|null, "sources": [str], "file": str, "line": int}, ...],
+    "mappings":     [{"name": str, "arrowCount": int, "nlDerivedArrowCount"?: int, "sources": [str], "targets": [str], "file": str, "line": int}, ...],
+    "fragments":    [{"name": str, "fieldCount": int, "file": str, "line": int}, ...],
+    "transforms":   [{"name": str, "file": str, "line": int}, ...],
     "fileCount":    int,
     "warningCount": int,
     "questionCount": int,
     "totalErrors":  int
   }
+  --compact omits file, line, note, displayName, grain, sources, targets.
 
 Examples:
   satsuma summary pipeline.stm           # human overview
@@ -90,31 +119,34 @@ Examples:
 
 function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean): void {
   const displayName = canonicalEntityName;
+  const nlDerivedCounts = countNlDerivedByMapping(index);
 
   const out: Record<string, unknown> = {
     schemas: [...index.schemas.values()].map((s) => {
       const obj: Record<string, unknown> = { name: displayName(s), fieldCount: totalFieldCount(s, index) };
-      if (!compact) { obj.note = s.note; obj.file = s.file; obj.row = s.row + 1; }
+      if (!compact) { obj.note = s.note; obj.file = s.file; obj.line = s.row + 1; }
       return obj;
     }),
     metrics: [...index.metrics.values()].map((m) => {
       const obj: Record<string, unknown> = { name: displayName(m), fieldCount: m.fields.length };
-      if (!compact) { obj.displayName = m.displayName; obj.grain = m.grain; obj.sources = m.sources; obj.file = m.file; obj.row = m.row + 1; }
+      if (!compact) { obj.displayName = m.displayName; obj.grain = m.grain; obj.sources = m.sources; obj.file = m.file; obj.line = m.row + 1; }
       return obj;
     }),
-    mappings: [...index.mappings.values()].map((m) => {
-      const obj: Record<string, unknown> = { name: displayName(m), arrowCount: m.arrowCount };
-      if (!compact) { obj.sources = m.sources; obj.targets = m.targets; obj.file = m.file; obj.row = m.row + 1; }
+    mappings: [...index.mappings.entries()].map(([key, m]) => {
+      const nlDerived = nlDerivedCounts.get(key) ?? 0;
+      const obj: Record<string, unknown> = { name: displayName(m), arrowCount: m.arrowCount + nlDerived };
+      if (nlDerived > 0) obj.nlDerivedArrowCount = nlDerived;
+      if (!compact) { obj.sources = m.sources; obj.targets = m.targets; obj.file = m.file; obj.line = m.row + 1; }
       return obj;
     }),
     fragments: [...index.fragments.values()].map((f) => {
       const obj: Record<string, unknown> = { name: displayName(f), fieldCount: f.fields.length };
-      if (!compact) { obj.file = f.file; obj.row = f.row + 1; }
+      if (!compact) { obj.file = f.file; obj.line = f.row + 1; }
       return obj;
     }),
     transforms: [...index.transforms.values()].map((t) => {
       const obj: Record<string, unknown> = { name: displayName(t) };
-      if (!compact) { obj.file = t.file; obj.row = t.row + 1; }
+      if (!compact) { obj.file = t.file; obj.line = t.row + 1; }
       return obj;
     }),
     fileCount,

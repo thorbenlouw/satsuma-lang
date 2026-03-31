@@ -1,6 +1,6 @@
 ---
 id: sl-dfqb
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:32:07Z
@@ -27,3 +27,10 @@ The original bug cbh-zdk3 fixed double-counting of the container itself, but the
 
 Either arrowCount should equal arrows.length (counting containers but not their children), or there should be two fields (e.g., arrowCount for top-level, leafArrowCount for recursive total).
 
+
+## Notes
+
+**2026-03-31T12:07:46Z**
+
+Cause: arrowCount counted leaf arrows recursively but arrows[] is hierarchical (each/flatten blocks as single entries with children), so arrowCount != arrows.length.
+Fix: Added topLevelArrowCount field to mapping --json output that equals arrows.length. arrowCount retained as the recursive leaf count.

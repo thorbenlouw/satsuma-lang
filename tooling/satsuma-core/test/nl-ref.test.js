@@ -9,6 +9,7 @@ import {
   classifyRef,
   resolveRef,
   resolveAllNLRefs,
+  stripNLRefScopePrefix,
 } from "../dist/nl-ref.js";
 
 // ── extractAtRefs ─────────────────────────────────────────────────────────────
@@ -133,5 +134,36 @@ describe("resolveAllNLRefs()", () => {
   it("returns empty array for empty input", () => {
     const lookup = makeLookup({});
     assert.deepEqual(resolveAllNLRefs([], lookup), []);
+  });
+});
+
+// ── stripNLRefScopePrefix ────────────────────────────────────────────────────
+
+describe("stripNLRefScopePrefix", () => {
+  it("strips note:metric: prefix to bare entity name", () => {
+    assert.equal(stripNLRefScopePrefix("note:metric:churn_rate"), "churn_rate");
+  });
+
+  it("strips note:schema: prefix to bare entity name", () => {
+    assert.equal(stripNLRefScopePrefix("note:schema:orders"), "orders");
+  });
+
+  it("strips note:fragment: prefix to bare entity name", () => {
+    assert.equal(stripNLRefScopePrefix("note:fragment:address"), "address");
+  });
+
+  it("strips transform: prefix to bare entity name", () => {
+    assert.equal(stripNLRefScopePrefix("transform:normalize"), "normalize");
+  });
+
+  it("returns placeholder for standalone file-level note", () => {
+    // Standalone notes have mapping "note:" — after stripping the bare
+    // prefix, the result would be empty. Use a descriptive placeholder.
+    assert.equal(stripNLRefScopePrefix("note:"), "(file-level note)");
+  });
+
+  it("returns mapping names without scope prefix unchanged", () => {
+    assert.equal(stripNLRefScopePrefix("crm sync"), "crm sync");
+    assert.equal(stripNLRefScopePrefix("ns::load data"), "ns::load data");
   });
 });

@@ -32,7 +32,8 @@ interface ScoredCandidate {
   type: string;
   score: number;
   file: string;
-  row: number;
+  /** 1-indexed source line number. */
+  line: number;
 }
 
 export function register(program: Command): void {
@@ -72,12 +73,12 @@ Examples:
       if (opts.json) {
         console.log(
           JSON.stringify(
-            candidates.map(({ name, type, score, file, row }) => ({
+            candidates.map(({ name, type, score, file, line }) => ({
               name,
               type,
               score,
               file,
-              row,
+              line,
             })),
             null,
             2,
@@ -132,7 +133,7 @@ function scoreText(text: string, terms: string[]): number {
 
 /**
  * Score all blocks in the index against terms.
- * Returns [{name, type, score, file, row}]
+ * Returns [{name, type, score, file, line}]
  */
 function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFile[]): ScoredCandidate[] {
   const results: ScoredCandidate[] = [];
@@ -190,7 +191,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
       score += scoreText(rawText, terms);
     }
     if (score > 0) {
-      results.push({ name, type, score, file: entry.file, row: entry.row + 1 });
+      results.push({ name, type, score, file: entry.file, line: entry.row + 1 });
     }
   };
 
@@ -228,7 +229,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
         } else {
           const m = index.mappings.get(mappingKey);
           if (m) {
-            results.push({ name: mappingKey, type: "mapping", score: nlScore, file: m.file, row: m.row });
+            results.push({ name: mappingKey, type: "mapping", score: nlScore, file: m.file, line: m.row + 1 });
           }
         }
       }

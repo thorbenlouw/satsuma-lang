@@ -201,7 +201,7 @@ function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: Wo
     name: canonicalEntityName(entry),
     ...(entry.namespace ? { namespace: entry.namespace } : {}),
     file: entry.file,
-    row: entry.row + 1,
+    line: entry.row + 1,
     fields: allFields,
   };
 

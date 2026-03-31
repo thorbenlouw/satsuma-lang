@@ -1,6 +1,6 @@
 ---
 id: sl-cgpn
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:26:01Z
@@ -28,3 +28,10 @@ Actual shape:
 
 Consumers relying on the documented shape will miss available data.
 
+
+## Notes
+
+**2026-03-31T12:13:16Z**
+
+Cause: summary --help JSON shape documentation was incomplete — missing fieldCount, displayName, grain, sources, row from metrics and fragments.
+Fix: Updated --help text to document all actual fields including nlDerivedArrowCount and compact mode behavior.

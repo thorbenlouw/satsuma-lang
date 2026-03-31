@@ -1,6 +1,6 @@
 ---
 id: sl-bjtj
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:32:16Z
@@ -23,3 +23,10 @@ All commands should use the same field name. The CLI docs (exit codes section) d
 
 Tested against examples/multi-source and examples/sfdc-to-snowflake.
 
+
+## Notes
+
+**2026-03-31T12:20:08Z**
+
+Cause: 6 commands used 'row' as JSON field name for line numbers while 5 used 'line', making generic JSON processing impossible.
+Fix: Standardized all commands to use 'line' (1-indexed) in JSON output: summary, schema, mapping, warnings, where-used, context. Also fixed where-used fragment_spread/transform_call/import refs that were emitting 0-indexed row values.

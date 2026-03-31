@@ -1,6 +1,6 @@
 ---
 id: sl-mraa
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:32:28Z
@@ -35,3 +35,10 @@ This creates a contract ambiguity: how many arrows does this mapping actually ha
 
 Affected workspaces: cobol-to-avro, db-to-db, edi-to-json, filter-flatten-governance, json-api-to-parquet, multi-source, protobuf-to-parquet, sap-po-to-mfcs, sfdc-to-snowflake, xml-to-parquet.
 
+
+## Notes
+
+**2026-03-31T12:12:51Z**
+
+Cause: summary arrowCount only counted declared arrows from extract.ts, while graph edges included nl-derived edges — causing disagreements.
+Fix: Added countNlDerivedByMapping() in summary.ts using resolveAllNLRefs. arrowCount now includes nl-derived edges. Mappings with nl-derived arrows expose nlDerivedArrowCount breakdown field. Also moved stripNLRefScopePrefix to core as a shared utility.

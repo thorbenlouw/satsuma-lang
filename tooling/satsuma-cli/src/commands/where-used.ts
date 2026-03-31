@@ -18,13 +18,15 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
+import { stripNLRefScopePrefix } from "@satsuma/core";
 import type { SyntaxNode, WorkspaceIndex, ParsedFile } from "../types.js";
 
 interface Ref {
   kind: string;
   name: string;
   file: string;
-  row?: number;
+  /** 1-indexed source line number. */
+  line?: number;
 }
 
 export function register(program: Command): void {
@@ -39,7 +41,7 @@ Searches mappings (source/target refs), metrics (source refs), schemas
 JSON shape (--json):
   {
     "name": str,   # canonical name searched
-    "refs": [{"kind": "mapping"|"metric"|"schema"|"nl_ref", "name": str, "file": str, "row": int}, ...]
+    "refs": [{"kind": "mapping"|"metric"|"schema"|"nl_ref", "name": str, "file": str, "line": int}, ...]
   }
 
 Examples:
@@ -114,14 +116,14 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
     const mappingNames = index.referenceGraph.usedByMappings.get(name) ?? [];
     for (const mname of mappingNames) {
       const m = index.mappings.get(mname);
-      refs.push({ kind: "mapping", name: mname, file: m?.file ?? "?", row: (m?.row ?? 0) + 1 });
+      refs.push({ kind: "mapping", name: mname, file: m?.file ?? "?", line: (m?.row ?? 0) + 1 });
     }
 
     // Metrics that reference this schema
     for (const [metricName, sources] of index.referenceGraph.metricsReferences) {
       if (sources.includes(name)) {
         const m = index.metrics.get(metricName);
-        refs.push({ kind: "metric", name: metricName, file: m?.file ?? "?", row: (m?.row ?? 0) + 1 });
+        refs.push({ kind: "metric", name: metricName, file: m?.file ?? "?", line: (m?.row ?? 0) + 1 });
       }
     }
   }
@@ -131,7 +133,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
     for (const { filePath, tree } of parsedFiles) {
       const spreads = findFragmentSpreads(tree.rootNode, name);
       for (const { block, row } of spreads) {
-        refs.push({ kind: "fragment_spread", name: block, file: filePath, row });
+        refs.push({ kind: "fragment_spread", name: block, file: filePath, line: row + 1 });
       }
     }
   }
@@ -141,7 +143,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
     for (const { filePath, tree } of parsedFiles) {
       const transformRefs = findTransformRefs(tree.rootNode, name);
       for (const { mapping, row } of transformRefs) {
-        refs.push({ kind: "transform_call", name: mapping, file: filePath, row });
+        refs.push({ kind: "transform_call", name: mapping, file: filePath, line: row + 1 });
       }
     }
   }
@@ -155,7 +157,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
           if (m.kind === "kv" && m.key === "ref") {
             const refTarget = m.value.replace(/^@/, "").split(".")[0];
             if (refTarget === name || refTarget === name.split("::").pop()) {
-              refs.push({ kind: "ref_metadata", name: `${schemaName}.${field.name}`, file: schema.file, row: schema.row + 1 });
+              refs.push({ kind: "ref_metadata", name: `${schemaName}.${field.name}`, file: schema.file, line: schema.row + 1 });
             }
           }
         }
@@ -167,7 +169,7 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
   for (const { filePath, tree } of parsedFiles) {
     const importRefs = findImportRefs(tree.rootNode, name);
     for (const { path, row } of importRefs) {
-      refs.push({ kind: "import", name: path, file: filePath, row });
+      refs.push({ kind: "import", name: path, file: filePath, line: row + 1 });
     }
   }
 
@@ -184,9 +186,9 @@ function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile
       seenNLRefs.add(dedup);
       refs.push({
         kind: "nl_ref",
-        name: nlRef.mapping,
+        name: stripNLRefScopePrefix(nlRef.mapping),
         file: nlRef.file,
-        row: nlRef.line + 1,
+        line: nlRef.line + 1,
       });
     }
   }
@@ -378,8 +380,8 @@ function printDefault(name: string, refs: Ref[]): void {
   for (const [kind, kindRefs] of byKind) {
     console.log(`${kindLabels[kind] ?? kind} (${kindRefs.length}):`);
     for (const ref of kindRefs) {
-      const row = ref.row !== undefined ? `:${ref.row + 1}` : "";
-      console.log(`  ${ref.name}  ${ref.file}${row}`);
+      const lineStr = ref.line !== undefined ? `:${ref.line}` : "";
+      console.log(`  ${ref.name}  ${ref.file}${lineStr}`);
     }
     console.log();
   }

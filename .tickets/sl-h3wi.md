@@ -1,6 +1,6 @@
 ---
 id: sl-h3wi
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:34:31Z
@@ -27,3 +27,10 @@ Comparison with non-namespace workspace:
 
 The graph builder likely fails to match namespace-qualified field references during nl-derived edge creation.
 
+
+## Notes
+
+**2026-03-31T11:59:46Z**
+
+Cause: resolveAllNLRefs already builds fully-qualified mapping keys (ns::name) but graph.ts was prepending the namespace again, producing ns::ns::name which never matched in the index.
+Fix: Removed redundant namespace prefixing in graph.ts — use nlRef.mapping directly as the mapping key. Regenerated golden graph snapshot.
