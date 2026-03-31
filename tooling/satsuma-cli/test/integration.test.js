@@ -1535,15 +1535,17 @@ describe("satsuma nl", () => {
     assert.match(note.text, /divided by/i, "should include second concatenated string");
   });
 
-  it("record/list block notes use block name as parent (sl-3nrg)", async () => {
+  it("record/list block notes use schema-qualified path as parent (sl-3nrg, sl-prsy)", async () => {
+    // Field-level NL items use schema-qualified paths (e.g. "nested_test.address")
+    // so consumers can disambiguate fields across schemas (sl-prsy).
     const F = resolve(import.meta.dirname, "fixtures", "nl-parent-test.stm");
     const { stdout, code } = await run("nl", "all", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const addressItems = data.filter((d) => d.parent === "address");
-    assert.ok(addressItems.length >= 1, "address block items should have parent 'address'");
-    const contactItems = data.filter((d) => d.parent === "contacts");
-    assert.ok(contactItems.length >= 1, "contacts block items should have parent 'contacts'");
+    const addressItems = data.filter((d) => d.parent === "nested_test.address");
+    assert.ok(addressItems.length >= 1, "address block items should have parent 'nested_test.address'");
+    const contactItems = data.filter((d) => d.parent === "nested_test.contacts");
+    assert.ok(contactItems.length >= 1, "contacts block items should have parent 'nested_test.contacts'");
   });
 
   it("returns NL from both schema and mapping when names collide (sl-vw49)", async () => {
@@ -3692,6 +3694,60 @@ describe("satsuma nl — field scope in each/flatten (sl-sq4u)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Bug fix: metric description string included in nl output (sl-571v)
+// ---------------------------------------------------------------------------
+describe("satsuma nl — metric description string (sl-571v)", () => {
+  const fixture = resolve(import.meta.dirname, "fixtures", "metric-description.stm");
+
+  it("includes the metric description string alongside body notes", async () => {
+    // The nl_string between the metric name and metadata parens is the metric's
+    // displayName — it should surface as kind: "note" in nl output.
+    const { stdout, code } = await run("nl", "monthly_revenue", fixture);
+    assert.equal(code, 0);
+    assert.match(stdout, /Total monthly revenue/);
+    assert.match(stdout, /Body note/);
+  });
+
+  it("--json includes the description with correct parent", async () => {
+    const { stdout, code } = await run("nl", "monthly_revenue", "--json", fixture);
+    assert.equal(code, 0);
+    const items = JSON.parse(stdout);
+    const desc = items.find((i) => i.text === "Total monthly revenue");
+    assert.ok(desc, "description string should be in nl output");
+    assert.equal(desc.kind, "note");
+    assert.equal(desc.parent, "monthly_revenue");
+  });
+
+  it("nl all scope also includes the metric description", async () => {
+    const { stdout, code } = await run("nl", "all", "--json", fixture);
+    assert.equal(code, 0);
+    const items = JSON.parse(stdout);
+    const desc = items.find((i) => i.text === "Total monthly revenue");
+    assert.ok(desc, "description string should be in nl all output");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl parent field uses schema-qualified path (sl-prsy)
+// ---------------------------------------------------------------------------
+describe("satsuma nl — schema-qualified parent (sl-prsy)", () => {
+  it("field-level notes have schema.field parent, not bare field name", async () => {
+    // When two schemas have the same field name, nl output must distinguish
+    // them with schema-qualified paths in the parent field.
+    const fixture = resolve(import.meta.dirname, "fixtures", "nl-parent-qualified.stm");
+    const { stdout, code } = await run("nl", "all", fixture, "--json");
+    assert.equal(code, 0);
+    const items = JSON.parse(stdout);
+    const alpha = items.find((i) => i.text === "Alpha email");
+    const beta = items.find((i) => i.text === "Beta email");
+    assert.ok(alpha, "should find Alpha email note");
+    assert.ok(beta, "should find Beta email note");
+    assert.equal(alpha.parent, "alpha.email", "parent should be schema-qualified");
+    assert.equal(beta.parent, "beta.email", "parent should be schema-qualified");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Bug fix: validate no false warnings with duplicate mapping names (sl-04eg)
 // ---------------------------------------------------------------------------
 describe("satsuma validate — duplicate mapping names (sl-04eg)", () => {
@@ -3701,6 +3757,69 @@ describe("satsuma validate — duplicate mapping names (sl-04eg)", () => {
     const { stdout } = await run("validate", fixtureA, fixtureB);
     // Should only report duplicate-definition, not field-not-in-schema
     assert.doesNotMatch(stdout, /field-not-in-schema/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: arrows/field-lineage for anonymous mapping in namespace (sl-1vnm)
+// ---------------------------------------------------------------------------
+describe("satsuma arrows — anonymous mapping in namespace (sl-1vnm)", () => {
+  const fixture = resolve(import.meta.dirname, "fixtures", "namespace-anon-mapping.stm");
+
+  it("finds arrows for fields in anonymous namespaced mapping", async () => {
+    // Anonymous mappings inside namespace blocks must be resolvable by
+    // their namespace-qualified field paths.
+    const { stdout, code } = await run("arrows", "ns::tgt_ns.val", "--json", fixture);
+    assert.equal(code, 0);
+    const arrows = JSON.parse(stdout);
+    assert.equal(arrows.length, 1);
+    assert.equal(arrows[0].source, "ns::src_ns.val");
+    assert.equal(arrows[0].target, "ns::tgt_ns.val");
+  });
+
+  it("field-lineage returns upstream for anonymous namespaced mapping", async () => {
+    const { stdout, code } = await run("field-lineage", "ns::tgt_ns.val", "--json", fixture);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.upstream.length, 1);
+    assert.equal(data.upstream[0].field, "ns::src_ns.val");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug fix: nl-derived arrows returned when querying by target field (sl-k797)
+// ---------------------------------------------------------------------------
+describe("satsuma arrows — nl-derived by target field (sl-k797)", () => {
+  const fixture = resolve(import.meta.dirname, "fixtures", "nl-derived-target.stm");
+
+  it("query by source returns the nl-derived arrow", async () => {
+    const { stdout, code } = await run("arrows", "source8.amount", "--json", fixture);
+    assert.equal(code, 0);
+    const arrows = JSON.parse(stdout);
+    const nlDerived = arrows.find((a) => a.classification === "nl-derived");
+    assert.ok(nlDerived, "nl-derived arrow should be present");
+    assert.equal(nlDerived.source, "::source8.amount");
+    assert.equal(nlDerived.target, "::target8.total");
+  });
+
+  it("query by target also returns the nl-derived arrow", async () => {
+    // The @ref resolves to source8.amount, creating an nl-derived arrow to
+    // target8.total. Querying by target must include this arrow (sl-k797).
+    const { stdout, code } = await run("arrows", "target8.total", "--json", fixture);
+    assert.equal(code, 0);
+    const arrows = JSON.parse(stdout);
+    const nlDerived = arrows.find((a) => a.classification === "nl-derived");
+    assert.ok(nlDerived, "nl-derived arrow should appear when querying by target");
+    assert.equal(nlDerived.source, "::source8.amount");
+    assert.equal(nlDerived.target, "::target8.total");
+  });
+
+  it("--as-target filter includes the nl-derived arrow", async () => {
+    const { stdout, code } = await run("arrows", "target8.total", "--as-target", "--json", fixture);
+    assert.equal(code, 0);
+    const arrows = JSON.parse(stdout);
+    const nlDerived = arrows.find((a) => a.classification === "nl-derived");
+    assert.ok(nlDerived, "nl-derived arrow should pass --as-target filter");
   });
 });
 

@@ -1,0 +1,7 @@
+// Fixture for sl-prsy: schema-qualified parent in nl output
+schema alpha {
+  email STRING (note "Alpha email")
+}
+schema beta {
+  email STRING (note "Beta email")
+}

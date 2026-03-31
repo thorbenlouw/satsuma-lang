@@ -1,0 +1,12 @@
+// Fixture for sl-k797: nl-derived arrow discoverable by target field
+schema source8 {
+  amount DECIMAL
+}
+schema target8 {
+  total DECIMAL
+}
+mapping nl_ref_test {
+  source { source8 }
+  target { target8 }
+  -> total { "Sum @source8.amount grouped by order" }
+}

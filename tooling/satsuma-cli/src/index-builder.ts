@@ -246,7 +246,11 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
       metrics.set(key, { ...m, file: filePath } as MetricRecord);
     }
     for (const m of fileData.mappings) {
-      const qKey = m.name ? qualifiedKey(m.namespace, m.name) : `<anon>@${filePath}:${m.row}`;
+      // Anonymous mappings use a synthetic key based on file position. Namespace
+      // prefix is applied so that `ns::<anon>@file:row` matches the lookup key
+      // constructed in arrows.ts (sl-1vnm).
+      const anonKey = `<anon>@${filePath}:${m.row}`;
+      const qKey = m.name ? qualifiedKey(m.namespace, m.name) : qualifiedKey(m.namespace, anonKey);
       if (m.name) {
         checkDuplicate("mapping", m.name, m.namespace, filePath, m.row);
       }

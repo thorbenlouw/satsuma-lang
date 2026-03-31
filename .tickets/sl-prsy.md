@@ -1,6 +1,6 @@
 ---
 id: sl-prsy
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:28:42Z
