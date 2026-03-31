@@ -5,20 +5,44 @@
  * - Idempotency: format(format(x)) === format(x) for all corpus files
  * - Structural equivalence: parse tree is preserved after formatting
  * - Specific formatting rules: alignment, comments, blank lines, etc.
+ *
+ * The formatter is a pure function (Tree + source → string) with no I/O.
+ * These tests live in satsuma-core because the implementation is here;
+ * CLI-specific concerns (stdin, --diff, exit codes) are tested separately.
  */
 
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { before, describe, it } from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { format } from "../dist/format.js";
-import { parseSource } from "../dist/parser.js";
+import { format, initParser, getParser } from "../dist/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Path to the grammar WASM — committed artifact, no build needed for tests.
+const WASM_PATH = resolve(__dirname, "../../tree-sitter-satsuma/tree-sitter-satsuma.wasm");
 const examplesDir = join(__dirname, "../../../examples");
 
+// Initialise the WASM parser once before all tests.
+before(async () => {
+  await initParser(WASM_PATH);
+});
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Parse source text and return { tree, errorCount } without file I/O. */
+function parseSource(src) {
+  const parser = getParser();
+  const tree = parser.parse(src);
+  if (!tree) throw new Error("parse returned null");
+  function countErrors(node) {
+    let n = node.type === "ERROR" ? 1 : 0;
+    for (const c of node.namedChildren) n += countErrors(c);
+    return n;
+  }
+  return { tree, errorCount: countErrors(tree.rootNode) };
+}
 
 function fmt(src) {
   const { tree } = parseSource(src);
