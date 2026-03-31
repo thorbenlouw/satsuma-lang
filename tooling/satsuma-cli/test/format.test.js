@@ -164,6 +164,145 @@ schema b { y STRING }`;
   });
 });
 
+// ── Block-Level Comment Preservation ────────────────────────────────────────
+// Tree-sitter places comments that appear between `{` and the body node as
+// children of the block, not the body.  The formatter must collect these
+// "gap comments" so they are not silently dropped.
+
+describe("block-level comment preservation", () => {
+  it("preserves the first comment in a schema body (sl-h3tu)", () => {
+    const src = `schema test {
+  //! Data quality warning
+  a STRING
+  //! Second warning
+  b STRING
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("//! Data quality warning"), "first comment before first field must be preserved");
+    assert.ok(out.includes("//! Second warning"), "mid-body comment must also be preserved");
+  });
+
+  it("preserves all three comment types as first child in schema body", () => {
+    const src1 = `schema a {
+  // regular first
+  x INT
+}`;
+    const src2 = `schema b {
+  //! warning first
+  x INT
+}`;
+    const src3 = `schema c {
+  //? question first
+  x INT
+}`;
+    assert.ok(fmt(src1).includes("// regular first"));
+    assert.ok(fmt(src2).includes("//! warning first"));
+    assert.ok(fmt(src3).includes("//? question first"));
+  });
+
+  it("preserves the first comment in a fragment body", () => {
+    const src = `fragment audit_fields {
+  // Audit trail columns
+  created_at TIMESTAMP
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("// Audit trail columns"));
+  });
+
+  it("preserves the first comment in a mapping body (sl-ztet)", () => {
+    const src = `schema s { a STRING }
+schema t { b STRING }
+mapping {
+  // First comment before source block
+  source { s }
+  target { t }
+  a -> b
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("// First comment before source block"));
+  });
+
+  it("preserves first AND trailing comments in metric bodies (sl-1kzh)", () => {
+    const src = `schema orders { total INT }
+metric test_metric (source orders) {
+  // First comment in metric body
+  total INT
+  // Second comment
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("// First comment in metric body"), "leading gap comment in metric must be preserved");
+    assert.ok(out.includes("// Second comment"), "trailing gap comment in metric must be preserved");
+  });
+
+  it("preserves first AND trailing comments in transform bodies (sl-17lk)", () => {
+    const src = `transform with_comments {
+  // Comment before first pipe step
+  trim | lowercase
+  // Trailing comment
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("// Comment before first pipe step"), "leading gap comment in transform must be preserved");
+    assert.ok(out.includes("// Trailing comment"), "trailing gap comment in transform must be preserved");
+  });
+
+  it("preserves first comment in nested record bodies (sl-necw)", () => {
+    const src = `schema nested_test {
+  id INT (pk)
+  address record {
+    // Street address components
+    street STRING(200)
+    city STRING(100)
+  }
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("// Street address components"), "first comment inside nested record must be preserved");
+  });
+
+  it("preserves first comment in list_of record bodies", () => {
+    const src = `schema test {
+  items list_of record {
+    // Item fields
+    sku STRING
+  }
+}`;
+    const out = fmt(src);
+    assert.ok(out.includes("// Item fields"), "first comment inside list_of record must be preserved");
+  });
+
+  it("is idempotent for blocks with leading gap comments", () => {
+    const src = `schema test {
+  // First comment
+  x INT
+}`;
+    const out1 = fmt(src);
+    const out2 = fmt(out1);
+    assert.equal(out1, out2, "format(format(x)) must equal format(x) when leading gap comments exist");
+  });
+
+  it("is idempotent for metric blocks with gap comments", () => {
+    const src = `schema s { x INT }
+metric m (source s) {
+  // Leading
+  x INT
+  // Trailing
+}`;
+    const out1 = fmt(src);
+    const out2 = fmt(out1);
+    assert.equal(out1, out2, "metric with gap comments must be idempotent");
+  });
+
+  it("is idempotent for transform blocks with gap comments", () => {
+    const src = `transform t {
+  // Leading
+  trim | lowercase
+  // Trailing
+}`;
+    const out1 = fmt(src);
+    const out2 = fmt(out1);
+    assert.equal(out1, out2, "transform with gap comments must be idempotent");
+  });
+});
+
 // ── Blank Lines ──────────────────────────────────────────────────────────────
 
 describe("blank lines", () => {

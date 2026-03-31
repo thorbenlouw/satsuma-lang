@@ -1,6 +1,6 @@
 ---
 id: sl-1kzh
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:26:42Z
@@ -26,3 +26,14 @@ Actual: both comments dropped, only 'total INT' remains in formatted output
 
 Fixture: /tmp/satsuma-test-parser-edge/51-metric-first-comment.stm
 
+
+## Notes
+
+**2026-03-31T11:23:04Z**
+
+## Notes
+
+**2026-03-31T12:00:00Z**
+
+Cause: Tree-sitter places comments between { and the body node as children of the block, not the body. The formatter only iterated body.children, missing these gap comments.
+Fix: Added collectBlockLeadingComments() and collectBlockTrailingComments() calls in all block formatters. Same root cause and fix as sl-h3tu.
