@@ -122,6 +122,18 @@ Cross-namespace references:
   import { raw::customers, mart::dim_customer } from "platform.stm"
   metric mrr (source raw::orders, grain monthly) { ... }
 
+## Import reachability
+Imports are selective, not whole-file:
+  import { customers } from "crm.stm"
+brings `customers` into scope together with only the exact transitive
+dependencies `customers` requires. It does NOT bring every other
+definition from `crm.stm` into scope.
+
+Workspace scope is also file-based everywhere:
+  - CLI commands operate on entry files, not directories
+  - IDE/LSP features for an open file use only that file's import-reachable graph
+  - the surrounding folder is never an implicit merged scope
+
 ## Source blocks — not just schema names
   source {
     schema_ref
@@ -286,7 +298,7 @@ Every command produces 100% correct results from structural analysis. There are 
 
 ```bash
 # Workspace extractors — retrieve whole blocks
-satsuma summary path/to/workspace/          # overview — schemas, mappings, metrics, counts
+satsuma summary platform.stm                # overview — schemas, mappings, metrics, counts
 satsuma schema hub_customer                  # full schema definition
 satsuma mapping "sfdc to hub_customer"        # full mapping with all arrows
 satsuma metric monthly_revenue               # full metric definition
@@ -305,22 +317,21 @@ satsuma field-lineage loyalty_sfdc.LoyaltyTier --downstream # only downstream (w
 satsuma arrows loyalty_sfdc.LoyaltyTier      # immediate arrows involving this field + classification
 satsuma nl "demographics to mart"            # NL content in a mapping
 satsuma nl mart_customer_360.email            # NL content on a specific field
-satsuma nl all path/to/workspace/             # all NL across the workspace
+satsuma nl all platform.stm                   # all NL across the entry-file workspace
 satsuma meta loyalty_sfdc.Email              # metadata entries (tags, type, constraints)
 satsuma fields sat_customer_demographics     # field list with types
 satsuma fields mart_customer_360 --unmapped-by 'demographics to mart'  # fields with no arrows
 satsuma match-fields --source loyalty_sfdc --target sat_customer_demographics  # name comparison
-satsuma nl-refs path/to/workspace/ --json    # extract @ref references from NL text
+satsuma nl-refs platform.stm --json          # extract @ref references from NL text
 
 # Workspace graph — full topology in one call
-satsuma graph path/to/workspace/ --json      # complete semantic graph (nodes, edges, field-level flow)
-satsuma graph path/ --json --schema-only     # topology only (no field-level edges)
-satsuma graph path/ --json --namespace crm   # filter to a namespace
-satsuma graph path/ --json --no-nl           # strip NL text for smaller payload
-satsuma graph path/ --compact                # flat schema-level adjacency list
+satsuma graph platform.stm --json            # complete semantic graph (nodes, edges, field-level flow)
+satsuma graph platform.stm --json --schema-only   # topology only (no field-level edges)
+satsuma graph platform.stm --json --namespace crm # filter to a namespace
+satsuma graph platform.stm --json --no-nl         # strip NL text for smaller payload
+satsuma graph platform.stm --compact              # flat schema-level adjacency list
 
 # Formatting
-satsuma fmt path/to/workspace/               # format all .stm files in place
 satsuma fmt file.stm                         # format a single file
 satsuma fmt --check                          # CI mode — exit 1 if any file would change
 satsuma fmt --diff file.stm                  # print diff without writing
@@ -331,7 +342,7 @@ satsuma validate                             # parse errors + semantic reference
 satsuma lint                                 # policy/convention checks (duplicates, NL refs)
 satsuma lint --fix                           # apply safe deterministic fixes
 satsuma lint --json                          # structured lint diagnostics
-satsuma diff v1/ v2/                         # structural comparison of two snapshots
+satsuma diff old-platform.stm new-platform.stm # structural comparison of two snapshots
 ```
 
 ### field-lineage vs arrows
@@ -369,7 +380,7 @@ Every arrow the CLI returns carries a classification from CST node types:
 
 ### Composing workflows
 
-**Whole-workspace reasoning:** Call `satsuma graph path/ --json` to load the entire workspace topology in one call — nodes (schemas, mappings, metrics, fragments, transforms), field-level edges with transform classification, and schema-level topology. Use `--schema-only` for topology-only queries, `--namespace <ns>` to scope, `--no-nl` to reduce payload size. The `unresolved_nl` section lists all NL arrows requiring interpretation.
+**Whole-workspace reasoning:** Call `satsuma graph <entry-file>.stm --json` to load the entire workspace topology for that file's import-reachable graph in one call — nodes (schemas, mappings, metrics, fragments, transforms), field-level edges with transform classification, and schema-level topology. Use `--schema-only` for topology-only queries, `--namespace <ns>` to scope, `--no-nl` to reduce payload size. The `unresolved_nl` section lists all NL arrows requiring interpretation.
 
 **Impact analysis:** Call `satsuma arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `satsuma nl` to read the NL content and reason about it yourself.
 
