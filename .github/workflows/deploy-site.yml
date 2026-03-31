@@ -57,7 +57,7 @@ jobs:
       - name: Build site with Eleventy
         run: cd site && npx @11ty/eleventy
 
-      - uses: actions/configure-pages@v4
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/_site
