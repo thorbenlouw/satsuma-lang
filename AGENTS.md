@@ -37,7 +37,7 @@ import { billing::invoices } from "billing/pipeline.stm"
 import { warehouse::inventory } from "warehouse/ingest.stm"
 ```
 
-Use `satsuma lineage --from <schema> <dir>` to trace data flow through the platform. See `features/15-namespaces/PRD.md` for the full namespace specification.
+Use `satsuma lineage --from <schema> platform.stm` to trace data flow through the platform. See `features/15-namespaces/PRD.md` for the full namespace specification.
 
 ## Source of Truth
 

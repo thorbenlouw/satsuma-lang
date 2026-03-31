@@ -1,6 +1,6 @@
 ---
 id: sl-mypf
-status: open
+status: closed
 deps: [sl-o9mh]
 links: []
 created: 2026-03-31T09:45:36Z
@@ -25,3 +25,10 @@ Documentation goals:
 - explain that imports are explicit and that imported symbols bring only their exact transitive dependencies
 - distinguish workspace scope from in-file symbol scope
 - state explicitly that IDE/LSP features do not treat the workspace folder as an implicit merged scope
+
+## Notes
+
+**2026-03-31T12:00:32Z**
+
+Cause: Core docs (CLAUDE.md, HOW-DO-I.md, AI-AGENT-REFERENCE.md) still had directory-based CLI examples (satsuma validate <dir>, satsuma lint <dir>, satsuma summary <dir>, bare commands without file args).
+Fix: Updated all directory-argument CLI examples to use .stm file entry points. SATSUMA-CLI.md and PROJECT-OVERVIEW.md were already correct.

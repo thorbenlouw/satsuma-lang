@@ -340,15 +340,15 @@ satsuma graph platform.stm --compact              # flat schema-level adjacency 
 
 # Formatting
 satsuma fmt file.stm                         # format a single file
-satsuma fmt --check                          # CI mode — exit 1 if any file would change
+satsuma fmt --check pipeline.stm             # CI mode — exit 1 if any file would change
 satsuma fmt --diff file.stm                  # print diff without writing
 cat file.stm | satsuma fmt --stdin           # pipe: read stdin, write stdout
 
 # Structural analysis
-satsuma validate                             # parse errors + semantic reference checks
-satsuma lint                                 # policy/convention checks (duplicates, NL refs)
-satsuma lint --fix                           # apply safe deterministic fixes
-satsuma lint --json                          # structured lint diagnostics
+satsuma validate pipeline.stm               # parse errors + semantic reference checks
+satsuma lint pipeline.stm                   # policy/convention checks (duplicates, NL refs)
+satsuma lint --fix pipeline.stm             # apply safe deterministic fixes
+satsuma lint --json pipeline.stm            # structured lint diagnostics
 satsuma diff old-platform.stm new-platform.stm # structural comparison of two snapshots
 ```
 
@@ -401,14 +401,14 @@ Every arrow the CLI returns carries one of three classifications:
 
 | Situation | Approach |
 | --- | --- |
-| Need full workspace topology in one call | `satsuma graph --json` — all nodes, edges, and field-level flow |
-| Need to understand a workspace | `satsuma summary`, then drill with `satsuma schema` / `satsuma mapping` |
+| Need full workspace topology in one call | `satsuma graph <file>.stm --json` — all nodes, edges, and field-level flow |
+| Need to understand a workspace | `satsuma summary <file>.stm`, then drill with `satsuma schema` / `satsuma mapping` |
 | Need arrows for a specific field | `satsuma arrows <schema.field>` — not reading the whole mapping |
 | Need NL content for interpretation | `satsuma nl <scope>` — not pulling the entire block |
-| Need extracted refs inside NL text | `satsuma nl-refs` — inspect `@ref` usage without rereading whole files |
+| Need extracted refs inside NL text | `satsuma nl-refs <file>.stm` — inspect `@ref` usage without rereading whole files |
 | Need metadata on a field | `satsuma meta <schema.field>` — not parsing raw text |
 | Need to check which fields lack arrows | `satsuma fields <schema> --unmapped-by <mapping>` |
-| Need to validate after editing | `satsuma validate` for correctness, `satsuma lint` for conventions |
+| Need to validate after editing | `satsuma validate <file>.stm` for correctness, `satsuma lint <file>.stm` for conventions |
 | Need to compare versions | `satsuma diff` — not text diff |
 | Need full file content for editing | Read the file directly — CLI is for querying, not raw content |
 
@@ -436,14 +436,14 @@ When reporting results to humans, be transparent about which parts of your analy
 10. Add `//!` warnings for known data quality issues
 11. Add `//?` for any open questions or ambiguities
 12. Add `(note "...")` metadata for persistent field-level documentation
-13. Run `satsuma fmt` to apply canonical formatting
-14. Run `satsuma validate` to check for parse errors and semantic issues
-15. Run `satsuma lint` to check for policy/convention issues; use `--fix` to auto-correct fixable ones
+13. Run `satsuma fmt <file>.stm` to apply canonical formatting
+14. Run `satsuma validate <file>.stm` to check for parse errors and semantic issues
+15. Run `satsuma lint <file>.stm` to check for policy/convention issues; use `--fix` to auto-correct fixable ones
 16. Run `satsuma fields <target> --unmapped-by <mapping>` to check which target fields you haven't covered
 
 ### When reading/interpreting Satsuma:
 
-1. Run `satsuma summary` to understand the workspace scope before reading individual files
+1. Run `satsuma summary <file>.stm` to understand the workspace scope before reading individual files
 2. Use `satsuma schema <name>` and `satsuma mapping <name>` to inspect specific blocks
 3. Use `satsuma arrows <schema.field>` to trace specific fields through mappings — don't search manually
 4. Use `satsuma nl <scope>` and `satsuma nl-refs` to read NL content and inspect extracted `@ref`s

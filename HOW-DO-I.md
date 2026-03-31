@@ -112,16 +112,16 @@ Reports and models declare `source {schemas}` — these appear as edges in `sats
 ## Tooling
 
 **How do I validate my Satsuma files?**
-Run `satsuma validate <dir>`. See [SATSUMA-CLI.md](SATSUMA-CLI.md).
+Run `satsuma validate pipeline.stm`. The CLI validates the entry file and its transitive imports. See [SATSUMA-CLI.md](SATSUMA-CLI.md).
 
 **How do I trace data lineage?**
-Run `satsuma lineage --from <schema> <dir>`. For field-level edges: `satsuma arrows <schema.field>`.
+Run `satsuma lineage --from <schema> pipeline.stm`. For field-level edges: `satsuma arrows <schema.field>`.
 
 **How do I lint my Satsuma files?**
-Run `satsuma lint <dir>`. Use `--fix` for auto-fixing. Use `--format json` for CI integration.
+Run `satsuma lint pipeline.stm`. Use `--fix` for auto-fixing. Use `--json` for CI integration.
 
 **How do I format my Satsuma files?**
-Run `satsuma fmt <file>` or use Format Document in VS Code.
+Run `satsuma fmt pipeline.stm` or use Format Document in VS Code.
 
 **How do I get IDE support?**
 Install the [VS Code extension](tooling/vscode-satsuma/) — it provides syntax highlighting, diagnostics, go-to-definition, completions, hover, rename, and more.
@@ -139,7 +139,7 @@ Use the [Satsuma-to-Excel lite prompt](useful-prompts/stm-to-excel-prompt.md) wi
 Use the CLI to extract NL content and cross-reference it with known schema names. This is an agent workflow — give your AI agent these instructions:
 
 ```
-1. Run `satsuma summary <dir>` to get all schema names in the workspace.
+1. Run `satsuma summary pipeline.stm` to get all schema names in the workspace.
 2. Run `satsuma nl <mapping-name>` to extract all NL strings from a mapping.
 3. For each NL string, check whether it mentions a schema name from step 1
    without an @ref prefix. If "loyalty_sfdc" appears as plain text in a
