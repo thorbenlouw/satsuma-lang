@@ -1277,6 +1277,9 @@ describe("satsuma arrows", () => {
   it("indexes nested child arrows without leading dot in key (sl-9gvb)", async () => {
     // Verify that nested arrow relative paths (.PHONE_TYPE) get indexed
     // with bare names (PHONE_TYPE), parent-prefixed, and schema-qualified paths
+    const { initParser } = await import("../dist/parser.js");
+    const wasmPath = resolve(import.meta.dirname, "../dist/tree-sitter-satsuma.wasm");
+    await initParser(wasmPath);
     const { parseFile } = await import("../dist/parser.js");
     const { buildIndex } = await import("../dist/index-builder.js");
     const p = parseFile(resolve(EXAMPLES, "cobol-to-avro/pipeline.stm"));
