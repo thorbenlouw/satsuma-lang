@@ -1,7 +1,7 @@
 /**
  * diff.js — `satsuma diff <a> <b>` command
  *
- * Structural comparison of two Satsuma files or directories.
+ * Structural comparison of two Satsuma files.
  *
  * Flags:
  *   --json         structured delta object
@@ -19,13 +19,13 @@ import type { Delta, BlockDelta, SchemaChange, MappingChange, TransformChange } 
 export function register(program: Command): void {
   program
     .command("diff <a> <b>")
-    .description("Structural diff between two Satsuma files or directories")
+    .description("Structural diff between two Satsuma files")
     .option("--json", "structured JSON output")
     .option("--names-only", "list changed block names only")
     .option("--stat", "summary counts only")
     .addHelpText("after", `
-Compares two Satsuma snapshots structurally (not text diff). Both <a> and
-<b> should be the same type — both files or both directories.
+Compares two Satsuma files structurally (not text diff). Each file is
+resolved with its imports before comparison.
 
 JSON shape (--json):
   {
@@ -37,10 +37,10 @@ JSON shape (--json):
   }
 
 Examples:
-  satsuma diff v1/pipeline.stm v2/pipeline.stm      # file-to-file
-  satsuma diff old/ new/ --stat                      # directory summary
-  satsuma diff old/ new/ --json                      # full structural delta
-  satsuma diff old/ new/ --names-only                # just changed block names`)
+  satsuma diff v1/pipeline.stm v2/pipeline.stm      # compare two versions
+  satsuma diff old.stm new.stm --stat               # summary counts
+  satsuma diff old.stm new.stm --json               # full structural delta
+  satsuma diff old.stm new.stm --names-only         # just changed block names`)
     .action(async (pathA: string, pathB: string, opts: { json?: boolean; namesOnly?: boolean; stat?: boolean }) => {
       let filesA: string[], filesB: string[];
       try {

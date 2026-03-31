@@ -21,7 +21,7 @@ import type { WarningRecord, QuestionRecord } from "../types.js";
 export function register(program: Command): void {
   program
     .command("warnings [path]")
-    .description("List warning or question comments in the workspace")
+    .description("List warning or question comments in a Satsuma file and its imports")
     .option("--questions", "show question comments (//?  ...) instead")
     .option("--json", "output JSON")
     .addHelpText("after", `
@@ -33,10 +33,9 @@ JSON shape (--json):
   }
 
 Examples:
-  satsuma warnings                           # //! warnings in workspace
-  satsuma warnings --questions               # //? questions instead
-  satsuma warnings --json                    # structured output
-  satsuma warnings ./workspace --json        # specific directory`)
+  satsuma warnings pipeline.stm              # //! warnings in file and imports
+  satsuma warnings pipeline.stm --questions  # //? questions instead
+  satsuma warnings pipeline.stm --json       # structured output`)
     .action(async (pathArg: string | undefined, opts: { questions?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

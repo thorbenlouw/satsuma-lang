@@ -41,7 +41,7 @@ interface Dag {
 export function register(program: Command): void {
   program
     .command("lineage [path]")
-    .description("Trace data lineage through the workspace")
+    .description("Trace data lineage through a Satsuma file and its imports")
     .option("--from <name>", "start node for downstream walk")
     .option("--to <name>", "target node for upstream BFS")
     .option("--depth <n>", "maximum recursion depth", (v: string) => parseInt(v, 10), 10)

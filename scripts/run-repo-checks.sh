@@ -50,7 +50,25 @@ run_parallel "satsuma-core + satsuma-viz-model tests" \
 
 run_step "satsuma-cli tests" npm --prefix tooling/satsuma-cli test
 
-run_step "satsuma fmt --check examples" node tooling/satsuma-cli/dist/index.js fmt --check examples/
+# ADR-022: CLI accepts files, not directories. Check each example entry file.
+run_step "satsuma fmt --check examples" bash -c '
+  cli=tooling/satsuma-cli/dist/index.js
+  fail=0
+  for f in examples/*/pipeline.stm \
+           examples/filter-flatten-governance/filter-flatten-governance.stm \
+           examples/namespaces/namespaces.stm \
+           examples/namespaces/ns-platform.stm \
+           examples/namespaces/ns-merging.stm \
+           examples/metrics-platform/metrics.stm \
+           examples/metrics-platform/metric_sources.stm \
+           examples/multi-source/multi-source-hub.stm \
+           examples/multi-source/multi-source-join.stm \
+           examples/lib/common.stm \
+           examples/lookups/finance.stm; do
+    [ -f "$f" ] && node "$cli" fmt --check "$f" || fail=1
+  done
+  exit $fail
+'
 
 run_step "vscode-satsuma validate" npm --prefix tooling/vscode-satsuma run validate
 run_parallel "vscode-satsuma tests + LSP" \

@@ -1,0 +1,23 @@
+// Test-only platform entry file — imports from all example pipelines.
+// Used by integration tests that need cross-workspace visibility.
+// Not a canonical example; lives in test/fixtures/, not examples/.
+import { legacy_sqlserver } from "../../../../examples/db-to-db/pipeline.stm"
+import { sfdc_opportunity } from "../../../../examples/sfdc-to-snowflake/pipeline.stm"
+import { sap_purchase_order } from "../../../../examples/sap-po-to-mfcs/pipeline.stm"
+import { cobol_customer_master } from "../../../../examples/cobol-to-avro/pipeline.stm"
+import { edi_desadv } from "../../../../examples/edi-to-json/pipeline.stm"
+import { commerce_order } from "../../../../examples/xml-to-parquet/pipeline.stm"
+import { api_order_response } from "../../../../examples/json-api-to-parquet/pipeline.stm"
+import { commerce_event_pb } from "../../../../examples/protobuf-to-parquet/pipeline.stm"
+import { order_events } from "../../../../examples/filter-flatten-governance/filter-flatten-governance.stm"
+import { crm_customers } from "../../../../examples/merge-strategies/pipeline.stm"
+import { crm_system } from "../../../../examples/multi-source/multi-source-hub.stm"
+import { customer_360 } from "../../../../examples/multi-source/multi-source-join.stm"
+import { fact_orders } from "../../../../examples/reports-and-models/pipeline.stm"
+import { monthly_recurring_revenue } from "../../../../examples/metrics-platform/metrics.stm"
+import { fact_subscriptions } from "../../../../examples/metrics-platform/metric_sources.stm"
+import { country_codes } from "../../../../examples/lib/common.stm"
+import { fx_spot_rates } from "../../../../examples/lookups/finance.stm"
+import { audit_fields } from "../../../../examples/namespaces/namespaces.stm"
+import { standard_metadata } from "../../../../examples/namespaces/ns-platform.stm"
+import { clean_string } from "../../../../examples/namespaces/ns-merging.stm"

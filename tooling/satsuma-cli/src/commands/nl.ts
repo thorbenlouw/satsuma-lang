@@ -33,7 +33,7 @@ export function register(program: Command): void {
 Scope formats:
   <block-name>     NL in a schema, mapping, metric, or transform by name
   <schema.field>   NL on a specific field and arrows referencing it
-  all              NL across the entire workspace
+  all              NL across all reachable files
 
 JSON shape (--json): array of NL content objects
   [{
@@ -48,8 +48,8 @@ Examples:
   satsuma nl 'demographics to mart'          # NL in a mapping
   satsuma nl hub_customer                    # NL in a schema
   satsuma nl mart_customer_360.email         # NL on a field
-  satsuma nl all ./workspace                 # all NL in a directory
-  satsuma nl all --kind warning              # only //! warnings
+  satsuma nl all pipeline.stm                # all NL in file and imports
+  satsuma nl all pipeline.stm --kind warning # only //! warnings
   satsuma nl hub_customer --json             # structured output`)
     .action(async (scope: string, pathArg: string | undefined, opts: { kind?: string; json?: boolean }) => {
       const root = pathArg ?? ".";

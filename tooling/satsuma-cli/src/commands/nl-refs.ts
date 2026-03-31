@@ -21,13 +21,13 @@ import type { ResolvedNLRef } from "../nl-ref-extract.js";
 export function register(program: Command): void {
   program
     .command("nl-refs [path]")
-    .description("Extract @ref references from NL transform bodies")
+    .description("Extract @ref references from NL transform bodies in a file and its imports")
     .option("--mapping <name>", "scope to a specific mapping")
     .option("--json", "structured JSON output")
     .option("--unresolved", "show only unresolved references")
     .addHelpText("after", `
 @ref references are @field_name, @schema.field, or @ns::schema.field
-inside "..." NL strings. Each ref is checked against the workspace index —
+inside "..." NL strings. Each ref is checked against the file index —
 "resolved" means the referenced field or schema exists, "unresolved" means
 it was not found.
 
@@ -45,9 +45,9 @@ JSON shape (--json): array of ref objects
   }, ...]
 
 Examples:
-  satsuma nl-refs ./workspace                        # all refs across workspace
+  satsuma nl-refs pipeline.stm                       # all refs in file and imports
   satsuma nl-refs --mapping 'load hub_customer'      # refs in one mapping
-  satsuma nl-refs --unresolved --json                # broken refs as JSON`)
+  satsuma nl-refs pipeline.stm --unresolved --json   # broken refs as JSON`)
     .action(async (pathArg: string | undefined, opts: { mapping?: string; json?: boolean; unresolved?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

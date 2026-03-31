@@ -1,7 +1,7 @@
 /**
  * End-to-end integration tests for the Satsuma CLI.
  *
- * Spawns the CLI as a subprocess against the examples/ fixtures directory
+ * Spawns the CLI as a subprocess against canonical .stm example files
  * and verifies output, exit codes, and JSON structure.
  *
  * Prerequisites: tree-sitter native bindings must be built.
@@ -23,6 +23,7 @@ import assert from "node:assert/strict";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const EXAMPLES = resolve(__dirname, "../../../examples");
+const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 
 /**
  * Run the CLI and return { stdout, stderr, code }.
@@ -44,7 +45,7 @@ function run(...args) {
 // ---------------------------------------------------------------------------
 describe("satsuma summary", () => {
   it("lists schemas, metrics, and mappings", async () => {
-    const { stdout, code } = await run("summary", EXAMPLES);
+    const { stdout, code } = await run("summary", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /Schemas/i);
     assert.match(stdout, /Metrics/i);
@@ -54,14 +55,14 @@ describe("satsuma summary", () => {
   });
 
   it("--compact lists names only", async () => {
-    const { stdout, code } = await run("summary", "--compact", EXAMPLES);
+    const { stdout, code } = await run("summary", "--compact", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /schemas:/i);
     assert.match(stdout, /sfdc_opportunity/);
   });
 
   it("--json produces valid JSON with expected keys", async () => {
-    const { stdout, code } = await run("summary", "--json", EXAMPLES);
+    const { stdout, code } = await run("summary", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.schemas));
@@ -72,7 +73,7 @@ describe("satsuma summary", () => {
   });
 
   it("--json includes fileCount", async () => {
-    const { stdout, code } = await run("summary", "--json", EXAMPLES);
+    const { stdout, code } = await run("summary", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(typeof data.fileCount === "number", "should have fileCount");
@@ -85,7 +86,7 @@ describe("satsuma summary", () => {
   });
 
   it("uses correct pluralization for singular counts", async () => {
-    const { stdout, code } = await run("summary", EXAMPLES);
+    const { stdout, code } = await run("summary", PLATFORM);
     assert.equal(code, 0);
     // Should not have "[1 fields]" or "[1 arrows]"
     assert.ok(!stdout.includes("[1 fields]"), "should use singular 'field' for count 1");
@@ -110,7 +111,7 @@ describe("satsuma summary", () => {
   });
 
   it("--json --compact strips notes and file/row from output (sl-86n4)", async () => {
-    const { stdout, code } = await run("summary", "--json", "--compact", EXAMPLES);
+    const { stdout, code } = await run("summary", "--json", "--compact", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.schemas.length > 0);
@@ -127,14 +128,16 @@ describe("satsuma summary", () => {
 // satsuma schema
 // ---------------------------------------------------------------------------
 describe("satsuma schema", () => {
+  const SFDC = resolve(EXAMPLES, "sfdc-to-snowflake/pipeline.stm");
+
   it("prints a known schema", async () => {
-    const { stdout, code } = await run("schema", "sfdc_opportunity", EXAMPLES);
+    const { stdout, code } = await run("schema", "sfdc_opportunity", SFDC);
     assert.equal(code, 0);
     assert.match(stdout, /sfdc_opportunity/);
   });
 
   it("--fields-only prints one field per line", async () => {
-    const { stdout, code } = await run("schema", "sfdc_opportunity", "--fields-only", EXAMPLES);
+    const { stdout, code } = await run("schema", "sfdc_opportunity", "--fields-only", SFDC);
     assert.equal(code, 0);
     // Should have multiple lines with field names
     const lines = stdout.trim().split("\n").filter(Boolean);
@@ -142,7 +145,7 @@ describe("satsuma schema", () => {
   });
 
   it("--json produces valid JSON", async () => {
-    const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", EXAMPLES);
+    const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", SFDC);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.name);
@@ -150,26 +153,26 @@ describe("satsuma schema", () => {
   });
 
   it("--json row is 1-indexed (sl-2usp)", async () => {
-    const { stdout, code } = await run("schema", "country_codes", "--json", EXAMPLES);
+    const { stdout, code } = await run("schema", "country_codes", "--json", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.row, 4, "country_codes starts on line 4 (1-indexed)");
   });
 
   it("exits 1 for unknown schema", async () => {
-    const { code, stderr } = await run("schema", "no_such_schema_xyz", EXAMPLES);
+    const { code, stderr } = await run("schema", "no_such_schema_xyz", SFDC);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
 
   it("suggests close match for case-insensitive schema name", async () => {
-    const { stderr, code } = await run("schema", "SFDC_OPPORTUNITY", EXAMPLES);
+    const { stderr, code } = await run("schema", "SFDC_OPPORTUNITY", SFDC);
     assert.equal(code, 1);
     assert.match(stderr, /did you mean/i);
   });
 
   it("--json not-found error returns JSON instead of plain text", async () => {
-    const { stdout, code } = await run("schema", "no_such_schema_xyz", "--json", EXAMPLES);
+    const { stdout, code } = await run("schema", "no_such_schema_xyz", "--json", SFDC);
     assert.equal(code, 1);
     const data = JSON.parse(stdout);
     assert.ok(data.error, "should have error field");
@@ -279,7 +282,7 @@ describe("satsuma schema", () => {
   });
 
   it("--json --compact omits note field (sl-5fbn)", async () => {
-    const { stdout, code } = await run("schema", "country_codes", "--json", "--compact", EXAMPLES);
+    const { stdout, code } = await run("schema", "country_codes", "--json", "--compact", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(!("note" in data), "compact JSON should omit note");
@@ -288,7 +291,7 @@ describe("satsuma schema", () => {
   });
 
   it("--json fields include metadata (pk, ref, enum) (sl-rbvk)", async () => {
-    const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", EXAMPLES);
+    const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", SFDC);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const idField = data.fields.find((f) => f.name === "Id");
@@ -306,7 +309,7 @@ describe("satsuma schema", () => {
   });
 
   it("--json --fields-only returns just the fields array (sl-5fbn)", async () => {
-    const { stdout, code } = await run("schema", "country_codes", "--json", "--fields-only", EXAMPLES);
+    const { stdout, code } = await run("schema", "country_codes", "--json", "--fields-only", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data), "should be a plain array of fields");
@@ -367,21 +370,23 @@ describe("satsuma schema", () => {
 // satsuma metric
 // ---------------------------------------------------------------------------
 describe("satsuma metric", () => {
+  const METRICS = resolve(EXAMPLES, "metrics-platform/metrics.stm");
+
   it("prints a known metric", async () => {
-    const { stdout, code } = await run("metric", "monthly_recurring_revenue", EXAMPLES);
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", METRICS);
     assert.equal(code, 0);
     assert.match(stdout, /monthly_recurring_revenue/i);
   });
 
   it("--json produces valid JSON", async () => {
-    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", EXAMPLES);
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", METRICS);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.name);
   });
 
   it("exits 1 for unknown metric", async () => {
-    const { code, stderr } = await run("metric", "no_such_metric_xyz", EXAMPLES);
+    const { code, stderr } = await run("metric", "no_such_metric_xyz", METRICS);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
@@ -405,7 +410,7 @@ describe("satsuma metric", () => {
   });
 
   it("--json includes note field for metrics with note blocks (sl-xifk)", async () => {
-    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", EXAMPLES);
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", METRICS);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(typeof data.note === "string", "note should be a string");
@@ -413,13 +418,13 @@ describe("satsuma metric", () => {
   });
 
   it("text output preserves quotes around filter value (cbh-djny)", async () => {
-    const { stdout, code } = await run("metric", "monthly_recurring_revenue", EXAMPLES);
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", METRICS);
     assert.equal(code, 0);
     assert.match(stdout, /filter "status/, "filter value should be double-quoted");
   });
 
   it("--json includes slices for metrics with slice metadata (sl-se2f)", async () => {
-    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", EXAMPLES);
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", "--json", METRICS);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.slices), "slices should be an array");
@@ -428,14 +433,14 @@ describe("satsuma metric", () => {
   });
 
   it("text output includes slice in metadata (sl-se2f)", async () => {
-    const { stdout, code } = await run("metric", "monthly_recurring_revenue", EXAMPLES);
+    const { stdout, code } = await run("metric", "monthly_recurring_revenue", METRICS);
     assert.equal(code, 0);
     assert.match(stdout, /slice/, "should show slice metadata");
     assert.match(stdout, /customer_segment/, "should show slice dimension");
   });
 
   it("--json fields include measure metadata (sl-i1b8)", async () => {
-    const { stdout, code } = await run("metric", "order_revenue", "--json", EXAMPLES);
+    const { stdout, code } = await run("metric", "order_revenue", "--json", METRICS);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const gross = data.fields.find((f) => f.name === "gross_revenue");
@@ -450,20 +455,22 @@ describe("satsuma metric", () => {
 // satsuma mapping
 // ---------------------------------------------------------------------------
 describe("satsuma mapping", () => {
+  const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
+
   it("prints a known mapping", async () => {
-    const { stdout, code } = await run("mapping", "customer migration", EXAMPLES);
+    const { stdout, code } = await run("mapping", "customer migration", DB);
     assert.equal(code, 0);
     assert.match(stdout, /customer migration/i);
   });
 
   it("--arrows-only prints arrow table", async () => {
-    const { stdout, code } = await run("mapping", "customer migration", "--arrows-only", EXAMPLES);
+    const { stdout, code } = await run("mapping", "customer migration", "--arrows-only", DB);
     assert.equal(code, 0);
     assert.match(stdout, /->/);
   });
 
   it("--json produces valid JSON", async () => {
-    const { stdout, code } = await run("mapping", "customer migration", "--json", EXAMPLES);
+    const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.name);
@@ -488,7 +495,7 @@ describe("satsuma mapping", () => {
   });
 
   it("exits 1 for unknown mapping", async () => {
-    const { code, stderr } = await run("mapping", "no_such_mapping_xyz", EXAMPLES);
+    const { code, stderr } = await run("mapping", "no_such_mapping_xyz", DB);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
@@ -673,13 +680,13 @@ describe("satsuma mapping", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma find", () => {
   it("finds fields tagged pii", async () => {
-    const { stdout, code } = await run("find", "--tag", "pii", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "pii", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /pii/i);
   });
 
   it("--json returns valid JSON array", async () => {
-    const { stdout, code } = await run("find", "--tag", "pii", "--json", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "pii", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data));
@@ -688,7 +695,7 @@ describe("satsuma find", () => {
   });
 
   it("--json uses 1-indexed line numbers", async () => {
-    const { stdout, code } = await run("find", "--tag", "pii", "--json", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "pii", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.length > 0);
@@ -700,19 +707,19 @@ describe("satsuma find", () => {
   });
 
   it("--compact prints one match per line", async () => {
-    const { stdout, code } = await run("find", "--tag", "pii", "--compact", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "pii", "--compact", PLATFORM);
     assert.equal(code, 0);
     const lines = stdout.trim().split("\n").filter(Boolean);
     assert.ok(lines.length >= 1);
   });
 
   it("exits 1 when no matches found", async () => {
-    const { code } = await run("find", "--tag", "nonexistent_tag_xyz", EXAMPLES);
+    const { code } = await run("find", "--tag", "nonexistent_tag_xyz", PLATFORM);
     assert.equal(code, 1);
   });
 
   it("--in schema restricts to schemas only", async () => {
-    const { stdout, code } = await run("find", "--tag", "pii", "--in", "schema", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "pii", "--in", "schema", PLATFORM);
     // Either finds matches (0) or no matches (1) — just verify it runs
     assert.ok(code === 0 || code === 1);
     if (code === 0) {
@@ -721,13 +728,13 @@ describe("satsuma find", () => {
   });
 
   it("--in with invalid scope errors", async () => {
-    const { code, stderr } = await run("find", "--tag", "pii", "--in", "invalid", EXAMPLES);
+    const { code, stderr } = await run("find", "--tag", "pii", "--in", "invalid", PLATFORM);
     assert.equal(code, 1);
     assert.match(stderr, /invalid scope/i);
   });
 
   it("finds schema-level metadata tags", async () => {
-    const { stdout, code } = await run("find", "--tag", "format", "--json", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "format", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     // Should include schema-level matches (field "(schema)") in addition to field-level
@@ -761,13 +768,13 @@ describe("satsuma find", () => {
   });
 
   it("--tag note finds fields with note metadata (sl-amyh)", async () => {
-    const { stdout, code } = await run("find", "--tag", "note", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "note", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /note/);
   });
 
   it("--tag note --json returns note matches (sl-amyh)", async () => {
-    const { stdout, code } = await run("find", "--tag", "note", "--json", EXAMPLES);
+    const { stdout, code } = await run("find", "--tag", "note", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.length > 0, "should find fields with note metadata");
@@ -798,14 +805,14 @@ describe("satsuma find", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma lineage", () => {
   it("traces downstream from a schema", async () => {
-    const { stdout, code } = await run("lineage", "--from", "legacy_sqlserver", EXAMPLES);
+    const { stdout, code } = await run("lineage", "--from", "legacy_sqlserver", PLATFORM);
     assert.equal(code, 0);
     // Should mention the target schema or mapping
     assert.match(stdout, /postgres_db|customer migration/i);
   });
 
   it("--json produces valid DAG JSON", async () => {
-    const { stdout, code } = await run("lineage", "--from", "legacy_sqlserver", "--json", EXAMPLES);
+    const { stdout, code } = await run("lineage", "--from", "legacy_sqlserver", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.nodes));
@@ -814,24 +821,24 @@ describe("satsuma lineage", () => {
   });
 
   it("--compact prints names only", async () => {
-    const { stdout, code } = await run("lineage", "--from", "legacy_sqlserver", "--compact", EXAMPLES);
+    const { stdout, code } = await run("lineage", "--from", "legacy_sqlserver", "--compact", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /legacy_sqlserver/);
   });
 
   it("exits 1 for unknown --from schema", async () => {
-    const { code, stderr } = await run("lineage", "--from", "no_such_schema_xyz", EXAMPLES);
+    const { code, stderr } = await run("lineage", "--from", "no_such_schema_xyz", PLATFORM);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
 
   it("exits 1 when neither --from nor --to provided", async () => {
-    const { code } = await run("lineage", EXAMPLES);
+    const { code } = await run("lineage", PLATFORM);
     assert.notEqual(code, 0);
   });
 
   it("traces upstream with --to", async () => {
-    const { stdout, code } = await run("lineage", "--to", "postgres_db", EXAMPLES);
+    const { stdout, code } = await run("lineage", "--to", "postgres_db", PLATFORM);
     // Either finds path (0) or no path (1)
     if (code === 0) {
       assert.match(stdout, /legacy_sqlserver|customer migration/i);
@@ -839,7 +846,7 @@ describe("satsuma lineage", () => {
   });
 
   it("errors when both --from and --to are specified", async () => {
-    const { code, stderr } = await run("lineage", "--from", "legacy_sqlserver", "--to", "postgres_db", EXAMPLES);
+    const { code, stderr } = await run("lineage", "--from", "legacy_sqlserver", "--to", "postgres_db", PLATFORM);
     assert.equal(code, 1);
     assert.match(stderr, /cannot specify both/i);
   });
@@ -909,40 +916,40 @@ describe("satsuma lineage", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma where-used", () => {
   it("shows references for a known schema", async () => {
-    const { stdout, code } = await run("where-used", "legacy_sqlserver", EXAMPLES);
+    const { stdout, code } = await run("where-used", "legacy_sqlserver", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /legacy_sqlserver/i);
   });
 
   it("--json produces valid JSON", async () => {
-    const { stdout, code } = await run("where-used", "legacy_sqlserver", "--json", EXAMPLES);
+    const { stdout, code } = await run("where-used", "legacy_sqlserver", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.name);
   });
 
   it("exits 1 for unknown name", async () => {
-    const { code, stderr } = await run("where-used", "no_such_thing_xyz", EXAMPLES);
+    const { code, stderr } = await run("where-used", "no_such_thing_xyz", PLATFORM);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
   });
 
   it("--json not-found error returns JSON instead of plain text", async () => {
-    const { stdout, code } = await run("where-used", "no_such_thing_xyz", "--json", EXAMPLES);
+    const { stdout, code } = await run("where-used", "no_such_thing_xyz", "--json", PLATFORM);
     assert.equal(code, 1);
     const data = JSON.parse(stdout);
     assert.ok(data.error, "should have error field");
   });
 
   it("detects import references (sl-izap)", async () => {
-    const { stdout, code } = await run("where-used", "address fields", EXAMPLES);
+    const { stdout, code } = await run("where-used", "address fields", PLATFORM);
     assert.equal(code, 0);
     assert.match(stdout, /Imported in/);
     assert.match(stdout, /db-to-db\/pipeline\.stm/);
   });
 
   it("detects ref metadata references (sl-7yoa)", async () => {
-    const { stdout, code } = await run("where-used", "dim_customer", "--json", EXAMPLES);
+    const { stdout, code } = await run("where-used", "dim_customer", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const refMetaRefs = data.refs.filter((r) => r.kind === "ref_metadata");
@@ -971,14 +978,14 @@ describe("satsuma where-used", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma warnings", () => {
   it("lists warning comments", async () => {
-    const { stdout, code } = await run("warnings", EXAMPLES);
+    const { stdout, code } = await run("warnings", PLATFORM);
     assert.equal(code, 0);
     // Might list warnings or say "no warnings"
     assert.ok(stdout.length > 0);
   });
 
   it("--json produces valid JSON", async () => {
-    const { stdout, code } = await run("warnings", "--json", EXAMPLES);
+    const { stdout, code } = await run("warnings", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.kind);
@@ -987,7 +994,7 @@ describe("satsuma warnings", () => {
   });
 
   it("--questions shows question comments", async () => {
-    const { stdout, code } = await run("warnings", "--questions", EXAMPLES);
+    const { stdout, code } = await run("warnings", "--questions", PLATFORM);
     assert.equal(code, 0);
     assert.ok(stdout.length > 0);
   });
@@ -1013,14 +1020,14 @@ describe("satsuma warnings", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma context", () => {
   it("returns relevant blocks for a query", async () => {
-    const { stdout, code } = await run("context", "customer migration", EXAMPLES);
+    const { stdout, code } = await run("context", "customer migration", PLATFORM);
     assert.equal(code, 0);
     // Should include the mapping or related schemas
     assert.match(stdout, /legacy_sqlserver|customer migration|postgres_db/i);
   });
 
   it("--json produces valid JSON array", async () => {
-    const { stdout, code } = await run("context", "customer migration", "--json", EXAMPLES);
+    const { stdout, code } = await run("context", "customer migration", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data));
@@ -1030,14 +1037,14 @@ describe("satsuma context", () => {
   });
 
   it("--budget limits output tokens", async () => {
-    const { stdout, code } = await run("context", "customer", "--budget", "500", EXAMPLES);
+    const { stdout, code } = await run("context", "customer", "--budget", "500", PLATFORM);
     assert.equal(code, 0);
     // Output should be shorter than default
     assert.ok(stdout.length > 0);
   });
 
   it("handles query with no matches gracefully", async () => {
-    const { stdout, code } = await run("context", "zzz_no_match_xyz", EXAMPLES);
+    const { stdout, code } = await run("context", "zzz_no_match_xyz", PLATFORM);
     assert.equal(code, 1, "should exit 1 when no results found");
     assert.match(stdout, /no relevant/i);
   });
@@ -1072,7 +1079,7 @@ describe("satsuma context", () => {
   });
 
   it("searches metadata tags/values for query matches (sl-mdlr)", async () => {
-    const { stdout, code } = await run("context", "pii", EXAMPLES, "--json");
+    const { stdout, code } = await run("context", "pii", PLATFORM, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.length > 0, "should find blocks with pii metadata");
@@ -1259,6 +1266,7 @@ describe("satsuma arrows", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma fields", () => {
   const DB = resolve(EXAMPLES, "db-to-db/pipeline.stm");
+  const METRICS = resolve(EXAMPLES, "metrics-platform/metrics.stm");
 
   it("lists all fields with types", async () => {
     const { stdout, code } = await run("fields", "legacy_sqlserver", DB);
@@ -1355,14 +1363,14 @@ describe("satsuma fields", () => {
   });
 
   it("lists fields of a fragment (sl-3o9n)", async () => {
-    const { stdout, code } = await run("fields", "audit columns", EXAMPLES);
+    const { stdout, code } = await run("fields", "audit columns", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     assert.match(stdout, /created_at/);
     assert.match(stdout, /updated_at/);
   });
 
   it("lists fields of a metric (sl-g4u2)", async () => {
-    const { stdout, code } = await run("fields", "order_revenue", EXAMPLES);
+    const { stdout, code } = await run("fields", "order_revenue", METRICS);
     assert.equal(code, 0);
     assert.match(stdout, /gross_revenue/);
     assert.match(stdout, /net_revenue/);
@@ -1589,14 +1597,14 @@ describe("satsuma meta", () => {
   });
 
   it("extracts metric field metadata (sl-eglw)", async () => {
-    const { stdout, code } = await run("meta", "order_revenue.gross_revenue", EXAMPLES);
+    const { stdout, code } = await run("meta", "order_revenue.gross_revenue", resolve(EXAMPLES, "metrics-platform/metrics.stm"));
     assert.equal(code, 0);
     assert.match(stdout, /type: DECIMAL/);
     assert.match(stdout, /measure/);
   });
 
   it("extracts metric field metadata as JSON (sl-eglw)", async () => {
-    const { stdout, code } = await run("meta", "order_revenue.gross_revenue", "--json", EXAMPLES);
+    const { stdout, code } = await run("meta", "order_revenue.gross_revenue", "--json", resolve(EXAMPLES, "metrics-platform/metrics.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "measure"));
@@ -1878,8 +1886,8 @@ describe("satsuma validate", () => {
   });
 
   it("warns on undefined import name (sl-t5k4)", async () => {
-    const dir = resolve(import.meta.dirname, "fixtures", "import-validate");
-    const { stdout, code } = await run("validate", dir, "--json");
+    const badImport = resolve(import.meta.dirname, "fixtures", "import-validate", "bad-import.stm");
+    const { stdout, code } = await run("validate", badImport, "--json");
     assert.equal(code, 0, "undefined import is a warning, not an error");
     const data = JSON.parse(stdout);
     const undefinedImport = data.findings.find((d) => d.rule === "undefined-import");
@@ -3694,5 +3702,30 @@ describe("satsuma arrows — no leaf-name false positives across schemas", () =>
     assert.equal(code, 0);
     assert.match(stdout, /customer\.customer_id -> customer_id/);
     assert.match(stdout, /2 as source/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ADR-022: directory argument rejection
+// ---------------------------------------------------------------------------
+describe("directory argument rejection (ADR-022)", () => {
+  it("rejects directory arguments with a clear error", async () => {
+    // Verifies that passing a directory to any command produces the
+    // ADR-022 rejection message, not silent directory discovery.
+    const { stderr, code } = await run("summary", EXAMPLES);
+    assert.notEqual(code, 0, "should exit non-zero for directory argument");
+    assert.match(stderr, /directory arguments are not supported/);
+  });
+
+  it("rejects directory arguments for validate", async () => {
+    const { stderr, code } = await run("validate", EXAMPLES);
+    assert.notEqual(code, 0);
+    assert.match(stderr, /directory arguments are not supported/);
+  });
+
+  it("rejects directory arguments for graph", async () => {
+    const { stderr, code } = await run("graph", "--json", EXAMPLES);
+    assert.notEqual(code, 0);
+    assert.match(stderr, /directory arguments are not supported/);
   });
 });

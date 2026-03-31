@@ -29,7 +29,7 @@ function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | nul
 export function register(program: Command): void {
   program
     .command("summary [path]")
-    .description("Summarise a Satsuma workspace or file")
+    .description("Summarise a Satsuma file and its imports")
     .option("--compact", "show names only")
     .option("--json", "output JSON")
     .addHelpText("after", `
@@ -47,9 +47,9 @@ JSON shape (--json):
   }
 
 Examples:
-  satsuma summary ./workspace            # human overview
-  satsuma summary ./workspace --json     # structured index
-  satsuma summary --compact              # names only`)
+  satsuma summary pipeline.stm           # human overview
+  satsuma summary pipeline.stm --json    # structured index
+  satsuma summary pipeline.stm --compact # names only`)
     .action(async (pathArg: string | undefined, opts: { compact?: boolean; json?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

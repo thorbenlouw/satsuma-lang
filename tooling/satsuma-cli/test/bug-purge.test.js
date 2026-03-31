@@ -25,6 +25,7 @@ import { runLint } from "#src/lint-engine.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const EXAMPLES = resolve(__dirname, "../../../examples");
+const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 
 function run(...args) {
   return new Promise((resolve) => {
@@ -91,7 +92,7 @@ describe("sl-5dyc: import warnings go to stderr", () => {
 
 describe("sl-j1eb: graph --json no doubled schema prefix", () => {
   it("multi-source mapping arrows use schema.field, not schema.schema.field", async () => {
-    const { stdout, code } = await run("graph", "--json", EXAMPLES);
+    const { stdout, code } = await run("graph", "--json", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     const data = JSON.parse(stdout);
 
@@ -120,7 +121,7 @@ describe("sl-j1eb: graph --json no doubled schema prefix", () => {
 
 describe("sl-bl5e: graph --json no double-dot paths", () => {
   it("nested field paths have no '..' separators", async () => {
-    const { stdout, code } = await run("graph", "--json", EXAMPLES);
+    const { stdout, code } = await run("graph", "--json", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     const data = JSON.parse(stdout);
 
@@ -141,14 +142,14 @@ describe("sl-bl5e: graph --json no double-dot paths", () => {
 
 describe("sl-n464: graph --schema-only aggregates field edges", () => {
   it("returns non-zero edges", async () => {
-    const { stdout, code } = await run("graph", "--schema-only", "--json", EXAMPLES);
+    const { stdout, code } = await run("graph", "--schema-only", "--json", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     const data = JSON.parse(stdout);
     assert.ok(data.edges.length > 0, "should have aggregated edges");
   });
 
   it("edges are schema-level (no dotted field paths)", async () => {
-    const { stdout } = await run("graph", "--schema-only", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--schema-only", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     for (const edge of data.edges) {
       if (edge.from) {
@@ -163,7 +164,7 @@ describe("sl-n464: graph --schema-only aggregates field edges", () => {
   });
 
   it("deduplicates schema-pair edges from multiple field arrows", async () => {
-    const { stdout } = await run("graph", "--schema-only", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--schema-only", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     // Same schema pair + mapping should not appear multiple times
     const seen = new Set();
@@ -343,7 +344,7 @@ describe("sl-j8uk: filesystem errors exit code 2", () => {
   });
 
   it("not-found schema still exits 1", async () => {
-    const { code } = await run("schema", "nonexistent_schema_name", EXAMPLES);
+    const { code } = await run("schema", "nonexistent_schema_name", PLATFORM);
     assert.equal(code, 1);
   });
 });
