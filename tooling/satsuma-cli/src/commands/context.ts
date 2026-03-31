@@ -38,7 +38,7 @@ interface ScoredCandidate {
 export function register(program: Command): void {
   program
     .command("context <query> [path]")
-    .description("Rank and emit workspace blocks relevant to a query")
+    .description("Rank and emit blocks relevant to a query from a Satsuma file and its imports")
     .option("--budget <n>", "token budget", (v: string) => parseInt(v, 10), 4000)
     .option("--compact", "omit notes and transform bodies")
     .option("--json", "emit ranked JSON list")

@@ -28,7 +28,7 @@ Block-level extraction — retrieve whole blocks or workspace-level summaries.
 
 | Command | Operation | Example |
 |---|---|---|
-| `summary [path]` | Workspace overview — all schemas, mappings, metrics, counts | `satsuma summary examples/` |
+| `summary [path]` | Workspace overview — all schemas, mappings, metrics, counts | `satsuma summary pipeline.stm` |
 | `schema <name>` | Full schema definition from parse tree | `satsuma schema hub_customer` |
 | `metric <name>` | Full metric definition from parse tree | `satsuma metric monthly_revenue` |
 | `mapping <name>` | Full mapping with all arrows and transforms | `satsuma mapping "sfdc to hub_customer"` |
@@ -57,7 +57,7 @@ Full workspace topology export for one-shot reasoning.
 
 | Command | Operation | Example |
 |---|---|---|
-| `graph [path]` | Complete semantic graph — nodes, edges, and field-level data flow | `satsuma graph examples/ --json` |
+| `graph [path]` | Complete semantic graph — nodes, edges, and field-level data flow | `satsuma graph pipeline.stm --json` |
 
 Flags: `--json` (full graph), `--compact` (schema-level adjacency list), `--schema-only` (omit field-level edges), `--namespace <ns>` (filter to namespace), `--no-nl` (strip NL text from edges).
 
@@ -75,8 +75,8 @@ Pipe the output into your agent's instructions file (e.g., `satsuma agent-refere
 
 | Command | Operation | Example |
 |---|---|---|
-| `fmt [path]` | Format files in place (opinionated, zero-config) | `satsuma fmt examples/` |
-| `fmt --check` | Exit 1 if any file would change (for CI) | `satsuma fmt --check .` |
+| `fmt [path]` | Format file and its imports (opinionated, zero-config) | `satsuma fmt pipeline.stm` |
+| `fmt --check` | Exit 1 if any file would change (for CI) | `satsuma fmt --check pipeline.stm` |
 | `fmt --diff` | Print unified diff without writing | `satsuma fmt --diff file.stm` |
 | `fmt --stdin` | Read from stdin, write formatted output to stdout | `cat file.stm \| satsuma fmt --stdin` |
 
@@ -90,9 +90,9 @@ Operations that check or compare workspace structure.
 
 | Command | Operation | Example |
 |---|---|---|
-| `validate [path]` | Parse errors and semantic reference checks | `satsuma validate` |
-| `lint [path]` | Policy and convention checks with optional autofix | `satsuma lint --json` |
-| `diff <a> <b>` | Structural comparison of two workspace snapshots | `satsuma diff v1/ v2/` |
+| `validate [path]` | Parse errors and semantic reference checks | `satsuma validate pipeline.stm` |
+| `lint [path]` | Policy and convention checks with optional autofix | `satsuma lint pipeline.stm --json` |
+| `diff <a> <b>` | Structural comparison of two Satsuma files | `satsuma diff v1.stm v2.stm` |
 
 ### validate vs lint
 
@@ -239,7 +239,7 @@ satsuma meta sat_customer_demographics.country_code
 
 ```bash
 # 1. Load the full workspace graph in one call
-satsuma graph examples/ --json > workspace.json
+satsuma graph platform.stm --json > workspace.json
 
 # 2. Agent has all nodes, edges, and field-level data flow
 #    — impact analysis, PII audit, coverage check without round-trips
@@ -247,16 +247,16 @@ satsuma graph examples/ --json > workspace.json
 #    — unresolved_nl section surfaces all NL arrows for interpretation
 
 # 3. For large workspaces, narrow the scope:
-satsuma graph examples/ --json --namespace warehouse
-satsuma graph examples/ --json --schema-only    # topology only
-satsuma graph examples/ --json --no-nl          # smaller payload
+satsuma graph platform.stm --json --namespace warehouse
+satsuma graph platform.stm --json --schema-only    # topology only
+satsuma graph platform.stm --json --no-nl          # smaller payload
 ```
 
 ### Reviewing a change
 
 ```bash
 # 1. Structural diff
-satsuma diff main-branch/ feature-branch/ --json
+satsuma diff main-branch.stm feature-branch.stm --json
 
 # 2. For changed fields, check downstream arrows
 satsuma arrows changed_schema.changed_field --as-source --json

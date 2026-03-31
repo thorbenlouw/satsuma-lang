@@ -74,7 +74,7 @@ interface WorkspaceGraph {
 export function register(program: Command): void {
   program
     .command("graph [path]")
-    .description("Export workspace semantic graph")
+    .description("Export semantic graph for a Satsuma file and its imports")
     .option("--json", "full structured JSON output")
     .option("--compact", "schema-level adjacency list only")
     .option("--schema-only", "omit field-level edges and field arrays")
@@ -106,10 +106,10 @@ JSON shape (--json):
   edges[].classification: "none" | "structural" | "nl" | "mixed" | "nl-derived"
 
 Examples:
-  satsuma graph ./workspace --json                   # full graph
-  satsuma graph ./workspace --json --schema-only     # topology only
-  satsuma graph ./workspace --json --namespace crm   # one namespace
-  satsuma graph ./workspace --compact                # minimal output`)
+  satsuma graph pipeline.stm --json                  # full graph
+  satsuma graph pipeline.stm --json --schema-only    # topology only
+  satsuma graph pipeline.stm --json --namespace crm  # one namespace
+  satsuma graph pipeline.stm --compact               # minimal output`)
     .action(async (pathArg: string | undefined, opts: GraphOpts) => {
       const root = pathArg ?? ".";
       let files: string[];

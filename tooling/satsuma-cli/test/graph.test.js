@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const EXAMPLES = resolve(__dirname, "../../../examples");
+const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 const FIXTURES = resolve(__dirname, "fixtures");
 
 function run(...args) {
@@ -30,7 +31,7 @@ function run(...args) {
 // ---------------------------------------------------------------------------
 describe("satsuma graph (text)", () => {
   it("prints node counts and schema topology", async () => {
-    const { stdout, code } = await run("graph", EXAMPLES);
+    const { stdout, code } = await run("graph", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     assert.match(stdout, /schemas:/);
     assert.match(stdout, /mappings:/);
@@ -40,7 +41,7 @@ describe("satsuma graph (text)", () => {
   });
 
   it("prints classification breakdown", async () => {
-    const { stdout, code } = await run("graph", EXAMPLES);
+    const { stdout, code } = await run("graph", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     assert.match(stdout, /structural:/);
   });
@@ -51,7 +52,7 @@ describe("satsuma graph (text)", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma graph --json", () => {
   it("produces valid JSON with expected top-level keys", async () => {
-    const { stdout, code } = await run("graph", "--json", EXAMPLES);
+    const { stdout, code } = await run("graph", "--json", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     const data = JSON.parse(stdout);
     assert.equal(data.version, 1);
@@ -66,7 +67,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("stats counts match node/edge array lengths", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const nodesByKind = {};
     for (const n of data.nodes) {
@@ -83,7 +84,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("includes all entity kinds as nodes", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const kinds = new Set(data.nodes.map((n) => n.kind));
     assert.ok(kinds.has("schema"), "should have schema nodes");
@@ -95,7 +96,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("schema nodes include id, kind, file, line, and fields", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const schema = data.nodes.find((n) => n.kind === "schema");
     assert.ok(schema);
@@ -112,7 +113,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("mapping nodes include sources and targets", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const mapping = data.nodes.find((n) => n.kind === "mapping");
     assert.ok(mapping);
@@ -121,7 +122,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("metric nodes include sources, grain, and slices", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const metric = data.nodes.find((n) => n.kind === "metric" && n.slices.length > 0);
     assert.ok(metric, "should have a metric with slices");
@@ -132,7 +133,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("namespace-qualified names use ns::name convention", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const nsNode = data.nodes.find((n) => n.namespace && n.id.includes("::"));
     assert.ok(nsNode, "should have namespace-qualified node");
@@ -140,7 +141,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("field-level edges have expected structure", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     assert.ok(data.edges.length > 0, "should have field-level edges");
     const edge = data.edges[0];
@@ -154,7 +155,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("structural edges include transforms array", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const structural = data.edges.find((e) => e.classification === "structural" && e.transforms);
     assert.ok(structural, "should have structural edge with transforms");
@@ -162,7 +163,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("NL edges include nl_text", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const nl = data.edges.find((e) => e.classification === "nl" && e.nl_text);
     assert.ok(nl, "should have NL edge with nl_text");
@@ -170,7 +171,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("derived edges have from=null and derived=true", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const derived = data.edges.find((e) => e.derived === true);
     assert.ok(derived, "should have derived edge");
@@ -178,7 +179,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("schema_edges have from, to, and role", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     assert.ok(data.schema_edges.length > 0);
     const roles = new Set(data.schema_edges.map((e) => e.role));
@@ -192,7 +193,7 @@ describe("satsuma graph --json", () => {
   });
 
   it("includes metric_source role in schema_edges", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const metricEdge = data.schema_edges.find((e) => e.role === "metric_source");
     assert.ok(metricEdge, "should have metric_source schema edge");
@@ -204,7 +205,7 @@ describe("satsuma graph --json", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma graph --schema-only", () => {
   it("aggregates field-level edges to schema-level", async () => {
-    const { stdout } = await run("graph", "--json", "--schema-only", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--schema-only", PLATFORM);
     const data = JSON.parse(stdout);
     // --schema-only aggregates field-level arrows into schema-level edges
     assert.ok(data.edges.length > 0, "should have aggregated edges");
@@ -233,7 +234,7 @@ describe("satsuma graph --schema-only", () => {
   });
 
   it("omits fields from schema nodes", async () => {
-    const { stdout } = await run("graph", "--json", "--schema-only", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--schema-only", PLATFORM);
     const data = JSON.parse(stdout);
     const schema = data.nodes.find((n) => n.kind === "schema");
     assert.ok(schema);
@@ -246,7 +247,7 @@ describe("satsuma graph --schema-only", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma graph --namespace", () => {
   it("filters nodes to specified namespace", async () => {
-    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", PLATFORM);
     const data = JSON.parse(stdout);
     assert.ok(data.nodes.length > 0);
     for (const n of data.nodes) {
@@ -255,7 +256,7 @@ describe("satsuma graph --namespace", () => {
   });
 
   it("includes cross-namespace schema_edges", async () => {
-    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", PLATFORM);
     const data = JSON.parse(stdout);
     // warehouse mappings have sources from other namespaces (e.g. pos::stores)
     const crossNs = data.schema_edges.find((e) => e.from.includes("pos::") || e.from.includes("ecom::"));
@@ -263,7 +264,7 @@ describe("satsuma graph --namespace", () => {
   });
 
   it("stats reflect filtered counts", async () => {
-    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", PLATFORM);
     const data = JSON.parse(stdout);
     assert.ok(data.stats.schemas > 0);
     assert.ok(data.stats.schemas < 49); // less than full workspace
@@ -275,7 +276,7 @@ describe("satsuma graph --namespace", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma graph --no-nl", () => {
   it("strips nl_text from edges but preserves classification", async () => {
-    const { stdout } = await run("graph", "--json", "--no-nl", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--no-nl", PLATFORM);
     const data = JSON.parse(stdout);
     const nlEdge = data.edges.find((e) => e.classification === "nl");
     assert.ok(nlEdge, "should still have NL-classified edges");
@@ -283,7 +284,7 @@ describe("satsuma graph --no-nl", () => {
   });
 
   it("empties unresolved_nl section", async () => {
-    const { stdout } = await run("graph", "--json", "--no-nl", EXAMPLES);
+    const { stdout } = await run("graph", "--json", "--no-nl", PLATFORM);
     const data = JSON.parse(stdout);
     assert.deepEqual(data.unresolved_nl, [], "unresolved_nl should be empty with --no-nl");
   });
@@ -294,7 +295,7 @@ describe("satsuma graph --no-nl", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma graph --compact", () => {
   it("prints flat adjacency list", async () => {
-    const { stdout, code } = await run("graph", "--compact", EXAMPLES);
+    const { stdout, code } = await run("graph", "--compact", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
     assert.match(stdout, /->/);
     assert.match(stdout, /\[source\]/);
@@ -334,23 +335,18 @@ describe("satsuma graph (namespace fixture)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// satsuma graph (empty workspace)
+// satsuma graph (directory rejection — ADR-022)
 // ---------------------------------------------------------------------------
-describe("satsuma graph (empty workspace)", () => {
-  it("produces valid empty graph JSON for empty directory", async () => {
-    // Use a temp directory with no .stm files
+describe("satsuma graph (directory rejection)", () => {
+  it("rejects a directory argument with a clear error", async () => {
+    // ADR-022: directories are no longer accepted — workspace scope
+    // is defined by the entry file and its transitive imports.
     const { mkdtempSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const emptyDir = mkdtempSync(resolve(tmpdir(), "stm-graph-test-"));
-    const { stdout, code } = await run("graph", "--json", emptyDir);
-    assert.equal(code, 0);
-    const data = JSON.parse(stdout);
-    assert.equal(data.version, 1);
-    assert.equal(data.stats.schemas, 0);
-    assert.equal(data.stats.arrows, 0);
-    assert.deepEqual(data.nodes, []);
-    assert.deepEqual(data.edges, []);
-    assert.deepEqual(data.schema_edges, []);
+    const { stderr, code } = await run("graph", "--json", emptyDir);
+    assert.notEqual(code, 0, "should reject directory argument");
+    assert.match(stderr, /directory arguments are not supported/);
   });
 });
 
@@ -371,7 +367,7 @@ describe("satsuma graph (parse errors)", () => {
 // ---------------------------------------------------------------------------
 describe("satsuma graph (slices)", () => {
   it("extracts slices for metrics with slice declarations", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const mrr = data.nodes.find((n) => n.id === "monthly_recurring_revenue");
     assert.ok(mrr, "should have monthly_recurring_revenue metric");
@@ -379,7 +375,7 @@ describe("satsuma graph (slices)", () => {
   });
 
   it("returns empty slices for metrics without slice declarations", async () => {
-    const { stdout } = await run("graph", "--json", EXAMPLES);
+    const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     const metric = data.nodes.find((n) => n.kind === "metric" && n.slices.length === 0);
     assert.ok(metric, "should have a metric with empty slices");

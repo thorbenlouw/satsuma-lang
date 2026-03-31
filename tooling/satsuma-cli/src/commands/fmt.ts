@@ -15,9 +15,9 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve, relative } from "node:path";
+import { relative } from "node:path";
 import type { Command } from "commander";
-import { findStmFiles } from "../workspace.js";
+import { resolveInput } from "../workspace.js";
 import { parseFile, parseSource } from "../parser.js";
 import { format } from "../format.js";
 
@@ -30,12 +30,12 @@ export function register(program: Command): void {
     .option("--stdin", "read from stdin, write to stdout")
     .addHelpText("after", `
 Formatting is opinionated and zero-config: consistent indentation, spacing,
-and ordering. Safe to run on any valid workspace — idempotent.
+and ordering. Safe to run on any valid file — idempotent. Follows imports to
+format the entry file and all transitively imported files.
 
 Examples:
-  satsuma fmt ./workspace                    # format all .stm files in place
-  satsuma fmt file.stm                       # format a single file
-  satsuma fmt --check                        # CI mode — exit 1 if any file would change
+  satsuma fmt pipeline.stm                   # format file and its imports
+  satsuma fmt --check pipeline.stm           # CI mode — exit 1 if any file would change
   satsuma fmt --diff file.stm                # show what would change without writing
   cat file.stm | satsuma fmt --stdin         # pipe mode`)
     .action(async (
@@ -46,20 +46,12 @@ Examples:
         return handleStdin();
       }
 
-      const root = resolve(pathArg ?? ".");
+      const root = pathArg ?? ".";
       let files: string[];
       try {
-        const stat = await import("node:fs").then(m => m.statSync(root));
-        if (stat.isFile()) {
-          files = [root];
-        } else if (stat.isDirectory()) {
-          files = await findStmFiles(root);
-        } else {
-          console.error(`Not a file or directory: ${root}`);
-          process.exit(2);
-        }
+        files = await resolveInput(root);
       } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
+        console.error(`Error: ${(err as Error).message}`);
         process.exit(2);
       }
 

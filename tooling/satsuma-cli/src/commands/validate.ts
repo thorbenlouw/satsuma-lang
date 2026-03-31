@@ -22,7 +22,7 @@ import type { LintDiagnostic } from "../types.js";
 export function register(program: Command): void {
   program
     .command("validate [path]")
-    .description("Validate Satsuma files for parse errors and semantic issues")
+    .description("Validate a Satsuma file (and its imports) for parse errors and semantic issues")
     .option("--json", "structured JSON output")
     .option("--errors-only", "suppress warnings")
     .option("--quiet", "exit code only (0=clean, 2=errors)")
@@ -36,10 +36,10 @@ JSON shape (--json):
 Exit codes: 0 = clean, 2 = parse errors or semantic issues.
 
 Examples:
-  satsuma validate                           # validate workspace
-  satsuma validate ./path --json             # structured diagnostics
-  satsuma validate --quiet                   # exit code only
-  satsuma validate --errors-only             # suppress warnings`)
+  satsuma validate pipeline.stm              # validate entry file and its imports
+  satsuma validate pipeline.stm --json       # structured diagnostics
+  satsuma validate pipeline.stm --quiet      # exit code only
+  satsuma validate pipeline.stm --errors-only  # suppress warnings`)
     .action(async (pathArg: string | undefined, opts: { json?: boolean; errorsOnly?: boolean; quiet?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];

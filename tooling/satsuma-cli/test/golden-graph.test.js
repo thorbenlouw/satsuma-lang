@@ -1,13 +1,13 @@
 /**
  * golden-graph.test.js — Regression snapshot test for `satsuma graph --json`
  *
- * Captures the full graph output over examples/ and asserts byte-for-byte
- * equality against a committed snapshot. Any change to extraction logic that
- * silently alters the graph format will fail here.
+ * Captures the full graph output over the test fixture platform.stm and
+ * asserts byte-for-byte equality against a committed snapshot. Any change
+ * to extraction logic that silently alters the graph format will fail here.
  *
  * To regenerate the snapshot (after an intentional change):
  *   cd /path/to/satsuma-lang
- *   satsuma graph --json examples/ 2>/dev/null | \
+ *   satsuma graph --json tooling/satsuma-cli/test/fixtures/platform.stm 2>/dev/null | \
  *     node -e "
  *       const c=[];process.stdin.on('data',d=>c.push(d));
  *       process.stdin.on('end',()=>{
@@ -34,7 +34,7 @@ import { dirname, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
-const EXAMPLES = resolve(__dirname, "../../../examples");
+const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 const GOLDEN = resolve(__dirname, "fixtures/golden-graph-output.json");
 
 /** Normalize the graph output to make it deterministic across runs. */
@@ -69,7 +69,7 @@ describe("satsuma graph --json golden snapshot", () => {
     const { stdout, stderr, code } = await new Promise((res) => {
       execFile(
         "node",
-        [CLI, "graph", "--json", EXAMPLES],
+        [CLI, "graph", "--json", PLATFORM],
         { timeout: 30_000 },
         (err, stdout, stderr) => res({ stdout: stdout ?? "", stderr: stderr ?? "", code: err ? (err.code ?? 1) : 0 }),
       );

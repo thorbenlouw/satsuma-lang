@@ -28,7 +28,7 @@ import type { LintFix } from "../types.js";
 export function register(program: Command): void {
   program
     .command("lint [path]")
-    .description("Lint Satsuma files for policy and convention issues")
+    .description("Lint a Satsuma file (and its imports) for policy and convention issues")
     .option("--json", "structured JSON output")
     .option("--fix", "apply safe, deterministic fixes")
     .option("--select <rules>", "run only listed rules (comma-separated)")
@@ -49,11 +49,11 @@ JSON shape (--json):
   }
 
 Examples:
-  satsuma lint                               # check workspace conventions
-  satsuma lint --json                        # structured diagnostics
-  satsuma lint --fix                         # auto-fix fixable issues
+  satsuma lint pipeline.stm                  # check conventions
+  satsuma lint pipeline.stm --json           # structured diagnostics
+  satsuma lint pipeline.stm --fix            # auto-fix fixable issues
   satsuma lint --rules                       # list available rules
-  satsuma lint --select hidden-source-in-nl  # run one rule only`)
+  satsuma lint pipeline.stm --select hidden-source-in-nl  # run one rule only`)
     .action(async (pathArg: string | undefined, opts: { json?: boolean; fix?: boolean; select?: string; ignore?: string; quiet?: boolean; rules?: boolean }) => {
       // --rules: list available rules and exit
       if (opts.rules) {

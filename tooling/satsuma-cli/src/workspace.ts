@@ -1,44 +1,24 @@
 /**
- * workspace.ts — Satsuma workspace file discovery
+ * workspace.ts — Satsuma workspace file resolution
  *
- * Finds .stm files in a directory tree. When given a single file, follows
- * import declarations to discover referenced files recursively.
+ * Resolves a .stm entry file to the set of files in its import graph.
+ * Directory arguments are rejected — the workspace boundary is defined
+ * by the entry file and its transitive imports (see ADR-022).
  */
 
-import { readdir, stat } from "fs/promises";
+import { stat } from "fs/promises";
 import { readFileSync, statSync } from "fs";
-import { join, dirname, extname, resolve } from "path";
+import { dirname, resolve } from "path";
 import { extractImports } from "@satsuma/core";
 import { parseSource } from "./parser.js";
 
 /**
- * Recursively find all .stm files under `dir`.
- * Returns an array of absolute paths, sorted lexicographically.
+ * Error message shown when a directory is passed where a .stm file is expected.
+ * Guides users toward the file-based workspace model defined by ADR-022.
  */
-export async function findStmFiles(dir: string): Promise<string[]> {
-  const results: string[] = [];
-  await walk(resolve(dir), results);
-  return results.sort();
-}
-
-async function walk(dir: string, acc: string[]): Promise<void> {
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return; // skip unreadable directories
-  }
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // Skip hidden directories and node_modules
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-      await walk(fullPath, acc);
-    } else if (entry.isFile() && extname(entry.name) === ".stm") {
-      acc.push(fullPath);
-    }
-  }
-}
+const DIRECTORY_NOT_SUPPORTED =
+  "directory arguments are not supported — provide a .stm file instead. " +
+  "The workspace is defined by the entry file and its transitive imports.";
 
 /**
  * Follow import declarations from a single .stm file, collecting all
@@ -89,16 +69,16 @@ function followImports(entryFile: string): string[] {
 
 /**
  * Resolve the input argument to a list of .stm file paths.
- * Accepts a file path or a directory path.
  *
- * When given a single file, follows import declarations to discover
- * referenced files recursively.
+ * Accepts only .stm file paths — directory arguments are rejected with
+ * a clear error (ADR-022). When given a file, follows import declarations
+ * to discover the full transitive import graph unless followImports is false.
  */
 export async function resolveInput(pathArg: string, opts?: { followImports?: boolean }): Promise<string[]> {
   const abs = resolve(pathArg);
   const s = await stat(abs);
   if (s.isDirectory()) {
-    return findStmFiles(abs);
+    throw new Error(DIRECTORY_NOT_SUPPORTED);
   }
   if (opts?.followImports === false) {
     return [abs];
