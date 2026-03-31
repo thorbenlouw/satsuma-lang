@@ -1,6 +1,6 @@
 # Feature 27 — Exploratory Bug Fixes: CLI Correctness and Consistency
 
-> **Status: PLANNED** (2026-03-31). 48 bugs found via 8-agent exploratory QA session. After triage: 5 closed (2 deferred — function classification moot due to planned language simplification; 2 closed — spec was wrong, not CLI; 1 closed — not a bug per ADR-008). **43 remaining bugs** organised into 8 implementation waves.
+> **Status: PLANNED** (2026-03-31). 48 bugs found via 8-agent exploratory QA session. After triage: 3 closed (2 deferred — function classification moot due to planned language simplification; 1 closed — not a bug per ADR-008). **45 remaining bugs** organised into 8 implementation waves.
 
 ## Goal
 
@@ -25,7 +25,7 @@ The Satsuma CLI is the structural foundation for agent-driven data mapping workf
 |--------|----------|--------|
 | sl-xy4s, sl-lzcp | **Deferred** (closed) | Function names planned for removal from language; only NL and `...transform` spreads will remain |
 | sl-95jv | **Invalid** (closed) | Per ADR-008, fragments are macros, not graph entities. SATSUMA-CLI.md was wrong — already fixed |
-| sl-cf9t, sl-r2nx | **Not a bug** (closed) | Spec was wrong about import scoping. Imports ARE transitive by design. Spec updated, ADR-022 issued |
+| sl-cf9t, sl-r2nx | **Re-opened** | Prior triage was wrong. ADR-022 keeps file-based workspace scope, but imported symbols now bring only their exact transitive dependencies rather than exposing a flat whole-file graph |
 
 ---
 
@@ -271,12 +271,12 @@ One systematic pass to ensure namespace-qualified names are canonical everywhere
 
 ---
 
-## Wave 7: File-Based CLI Scope (ADR-022)
+## Wave 7: Explicit Import Scoping + File-Based CLI Scope (ADR-022)
 
-**Tickets:** sl-o9mh (CLI impl), sl-mypf (core docs), sl-fa5k (website/lessons), sl-fcqc (examples/testing)
+**Tickets:** sl-cf9t, sl-r2nx, sl-o9mh (CLI impl), sl-mypf (core docs), sl-fa5k (website/lessons), sl-fcqc (examples/testing)
 **ADR:** `adrs/adr-022-transitive-imports-file-based-cli.md`
 
-Per ADR-022, all CLI commands operate on a **file entry point only**. Directory arguments are removed entirely — passing a directory produces an error. The CLI resolves the file's import graph transitively to build the workspace.
+Per ADR-022, workspace scope is file-based and directory arguments are removed. A workspace is defined by a file entry point and the exact explicitly imported symbols it brings into scope, together with their transitive dependencies. The same boundary applies in CLI, IDE, and LSP operations.
 
 ### 7A. CLI command implementation changes
 
@@ -285,28 +285,28 @@ Per ADR-022, all CLI commands operate on a **file entry point only**. Directory 
 **Acceptance criteria:**
 1. All commands that accept `[path]` require a `.stm` file.
 2. Directory arguments produce a clear error: `"Expected a .stm file, not a directory. Try: satsuma <cmd> <file.stm>"`.
-3. The CLI resolves imports transitively from the entry file to build the workspace index.
-4. `satsuma fmt` accepts a file (formats that file) or `--stdin` (pipe mode). No directory glob.
-5. `satsuma diff <a> <b>` accepts two `.stm` files (entry points for two workspaces).
-6. Help text and `--help` output updated for all commands.
-7. All existing CLI tests updated to use file arguments.
+3. Semantic resolution inside the resulting workspace still respects explicit imports plus only the exact transitive dependencies those imports require.
+4. Importing one symbol from a file does not make every definition in that file visible.
+5. IDE/LSP operations for an active file also use only that file's import-reachable workspace, not the surrounding folder.
+6. Help text and `--help` output explain the file-based model clearly.
+7. CLI and LSP tests cover both file-entry workspace selection and selective transitive dependency visibility.
 
 ### 7B. Documentation updates
 
 **Files:** `SATSUMA-CLI.md`, `AI-AGENT-REFERENCE.md`, `HOW-DO-I.md`, `CLAUDE.md`, `PROJECT-OVERVIEW.md`
 
 **Acceptance criteria:**
-1. All CLI examples use file arguments, not directories.
-2. "Workspace" concept documented: a workspace is defined by an entry file and its transitive import graph.
+1. CLI examples use file arguments, not directories.
+2. Documentation distinguishes workspace scope from symbol reachability inside a file, and states that the same rule applies in IDE/LSP.
 
 ### 7C. Website and learning materials
 
 **Files:** `site/cli.njk`, all files in `lessons/` (01, 02, 08, 09, 10, 12, 13)
 
 **Acceptance criteria:**
-1. All CLI examples on the website use file arguments.
-2. All lesson CLI examples use file arguments.
-3. Lesson content explains the file-based workspace model.
+1. Website CLI examples use file arguments, not directories.
+2. Lesson CLI examples use file arguments.
+3. Lesson content explains the file-based workspace model and selective transitive import reachability, including IDE/LSP behavior.
 
 ### 7D. Example workspaces
 
@@ -353,9 +353,9 @@ Low-severity fixes that improve the agent consumption experience.
 | 4 | Parser and grammar | 5 | Medium | 1 PR (grammar + corpus tests) |
 | 5 | Validate and lint quality | 7 | Medium | 1 PR |
 | 6 | Namespace consistency | 7 | Medium | 1 PR, systematic pass |
-| 7 | File-based CLI scope (ADR-022) | 0 (new) | Medium | 1 PR |
+| 7 | Selective transitive import reachability + file-based CLI scope (ADR-022) | 2 + docs | Medium | 1 PR |
 | 8 | Polish and JSON consistency | 12 | Small each | 1-2 PRs |
-| **Total** | | **43 + ADR-022** | | **8-9 PRs** |
+| **Total** | | **45 + ADR-022 docs/tasks** | | **8-9 PRs** |
 
 ---
 
@@ -375,4 +375,4 @@ For regressions (sl-1wpy, sl-j9ew, sl-van1): add regression tests that specifica
 ## Related ADRs
 
 - **ADR-008** — Fragment Spread Expansion Semantics (fragments are macros, not graph entities)
-- **ADR-022** — Transitive Imports and File-Based CLI Scope (new, issued with this feature)
+- **ADR-022** — Selective Transitive Import Reachability and File-Based Workspace Scope (new, issued with this feature)

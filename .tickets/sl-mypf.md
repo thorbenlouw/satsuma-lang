@@ -9,16 +9,19 @@ priority: 1
 assignee: Thorben Louw
 tags: [docs, adr-022]
 ---
-# ADR-022: update core docs — SATSUMA-CLI.md, AI-AGENT-REFERENCE.md, HOW-DO-I.md, CLAUDE.md
+# ADR-022: update core docs for file-based CLI scope and explicit import scoping
 
-Update all core documentation to reflect file-based CLI scope per ADR-022. Directory arguments no longer exist.
+Update core documentation to reflect the actual ADR-022 decision. Directory arguments are removed; the key distinction is between workspace scope selected by a file entry point and symbol scope inside a file. The same file/import-graph scope rule applies in IDE/LSP features too.
 
 Files:
-- SATSUMA-CLI.md — all command examples use directories (summary examples/, graph examples/, fmt examples/, validate ., lint .)
-- AI-AGENT-REFERENCE.md — ~10 examples with path/to/workspace/ or path/
-- HOW-DO-I.md — 4+ lines referencing satsuma <cmd> <dir>
-- CLAUDE.md — platform entry point section may need update
-- PROJECT-OVERVIEW.md — if it references directory-level commands
+- `SATSUMA-CLI.md`
+- `AI-AGENT-REFERENCE.md`
+- `HOW-DO-I.md`
+- `CLAUDE.md`
+- `PROJECT-OVERVIEW.md` if needed
 
-All examples must use file entry points. Document the workspace-is-defined-by-import-graph model.
-
+Documentation goals:
+- use file-entry examples instead of directory examples
+- explain that imports are explicit and that imported symbols bring only their exact transitive dependencies
+- distinguish workspace scope from in-file symbol scope
+- state explicitly that IDE/LSP features do not treat the workspace folder as an implicit merged scope
