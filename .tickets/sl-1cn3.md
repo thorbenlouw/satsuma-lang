@@ -1,6 +1,6 @@
 ---
 id: sl-1cn3
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:23:33Z

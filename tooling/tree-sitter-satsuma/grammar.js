@@ -634,7 +634,7 @@ module.exports = grammar({
 
     identifier: (_) => /[a-zA-Z_][a-zA-Z0-9_-]*/,
 
-    backtick_name: (_) => /`(?:[^`\\]|\\.)*`/,
+    backtick_name: (_) => /`(?:[^`\\]|\\.)+`/,
 
     multiline_string: (_) => token(prec(1, /"""([^"]|"[^"]|""[^"])*"""/)),
 
