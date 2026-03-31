@@ -659,6 +659,37 @@ export function resolveAllNLRefs(
   return results;
 }
 
+// ── Scope prefix handling ─────────────────────────────────────────────────────
+//
+// extractStandaloneNoteRefs and extractBlockNoteRefs use internal scope
+// prefixes (e.g. "note:metric:", "note:schema:") in the mapping field to
+// track which block a ref came from. These prefixes are implementation
+// details and must not leak into consumer-facing output.
+
+/** Internal scope prefixes used in NLRefDataItem.mapping, ordered longest-first. */
+const NL_REF_SCOPE_PREFIXES = [
+  "note:metric:",
+  "note:schema:",
+  "note:fragment:",
+  "note:",
+  "transform:",
+] as const;
+
+/**
+ * Strip internal scope prefixes from an NL ref mapping name.
+ * Returns the bare entity name (e.g. "churn_rate" from "note:metric:churn_rate").
+ * Standalone file-level notes (mapping = "note:") return "(file-level note)".
+ */
+export function stripNLRefScopePrefix(mapping: string): string {
+  for (const prefix of NL_REF_SCOPE_PREFIXES) {
+    if (mapping.startsWith(prefix)) {
+      const stripped = mapping.slice(prefix.length);
+      return stripped || "(file-level note)";
+    }
+  }
+  return mapping;
+}
+
 /**
  * Check if a schema reference from an NL block is declared in the mapping's
  * source or target list.

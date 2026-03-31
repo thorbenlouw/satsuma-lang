@@ -57,6 +57,10 @@ When making changes or answering questions about syntax, semantics, or supported
 - Use the example corpus as golden fixtures whenever possible.
 - Document any ambiguity, unsupported syntax, or recovery behavior near the implementation.
 
+### Core vs Consumer Packages
+
+Before closing a ticket, assess whether logic you've added or modified in a consumer package (CLI, LSP, viz, VS Code extension) is actually a **core concern** that belongs in `satsuma-core`. Shared data transformation, naming conventions, NL ref handling, and format normalization are examples of core concerns. If the logic would need to be duplicated by another consumer (e.g. the LSP needs the same utility the CLI uses), it belongs in core. Move it — including its tests — as part of the ticket work, not as deferred cleanup.
+
 ## Code Readability
 
 **The satsuma-lang tooling is intended to be a teaching example** — the kind of codebase a developer can read to learn how to build a tree-sitter-backed language toolchain well. Every file should meet that bar. When in doubt, ask: *would a capable developer unfamiliar with this system understand what this code does, why it exists, and how it fits the whole — just by reading it?*

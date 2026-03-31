@@ -110,16 +110,29 @@ describe("satsuma summary", () => {
     assert.match(stdout, /with_spreads.*4 fields/);
   });
 
+  it("--json arrowCount includes nl-derived edges and exposes nlDerivedArrowCount (sl-mraa)", async () => {
+    // Summary arrowCount should match graph edge count by including nl-derived
+    // edges. Mappings with NL @refs get an nlDerivedArrowCount breakdown field.
+    const COBOL = resolve(EXAMPLES, "cobol-to-avro/pipeline.stm");
+    const { stdout, code } = await run("summary", "--json", COBOL);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const mapping = data.mappings[0];
+    assert.ok(mapping.nlDerivedArrowCount > 0, "should have nl-derived arrows");
+    assert.ok(mapping.arrowCount > mapping.nlDerivedArrowCount,
+      "arrowCount should include both declared and nl-derived arrows");
+  });
+
   it("--json --compact strips notes and file/row from output (sl-86n4)", async () => {
     const { stdout, code } = await run("summary", "--json", "--compact", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.schemas.length > 0);
-    // Compact should not have note, file, or row
+    // Compact should not have note, file, or line
     for (const s of data.schemas) {
       assert.ok(!("note" in s), "compact JSON should omit note");
       assert.ok(!("file" in s), "compact JSON should omit file");
-      assert.ok(!("row" in s), "compact JSON should omit row");
+      assert.ok(!("line" in s), "compact JSON should omit line");
     }
   });
 });
@@ -152,11 +165,11 @@ describe("satsuma schema", () => {
     assert.ok(Array.isArray(data.fields));
   });
 
-  it("--json row is 1-indexed (sl-2usp)", async () => {
+  it("--json line is 1-indexed (sl-2usp)", async () => {
     const { stdout, code } = await run("schema", "country_codes", "--json", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.equal(data.row, 4, "country_codes starts on line 4 (1-indexed)");
+    assert.equal(data.line, 4, "country_codes starts on line 4 (1-indexed)");
   });
 
   it("exits 1 for unknown schema", async () => {
@@ -662,6 +675,20 @@ describe("satsuma mapping", () => {
     const data = JSON.parse(stdout);
     // 2 outer map arrows + 5 flatten children + 1 regular map + 3 computed = 11
     assert.equal(data.arrowCount, 11, "flatten container should not be counted as an arrow");
+  });
+
+  it("--json topLevelArrowCount equals arrows array length for hierarchical mappings (sl-dfqb)", async () => {
+    // arrowCount counts leaf arrows (recursive), but arrows[] is hierarchical
+    // (each/flatten blocks are single entries with children). topLevelArrowCount
+    // gives consumers a count that matches arrows.length.
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
+    const { stdout, code } = await run("mapping", "order line facts", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.topLevelArrowCount, data.arrows.length,
+      "topLevelArrowCount should equal arrows.length");
+    assert.ok(data.arrowCount > data.topLevelArrowCount,
+      "arrowCount (leaf) should exceed topLevelArrowCount for hierarchical mappings");
   });
 
   it("--json preserves backtick-quoted source field names (cbh-sttt)", async () => {
@@ -2872,7 +2899,7 @@ describe("satsuma where-used (NL refs)", () => {
     const result = JSON.parse(stdout);
     const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
     assert.ok(nlRefs.length >= 1, "should find NL ref in standalone note block");
-    assert.ok(nlRefs.some((r) => r.name.startsWith("note:")), "should have note: mapping key");
+    assert.ok(nlRefs.some((r) => r.name === "(file-level note)"), "standalone note should use descriptive placeholder name");
   });
 
   it("finds NL @refs in metric note blocks", async () => {
@@ -2881,7 +2908,7 @@ describe("satsuma where-used (NL refs)", () => {
     const result = JSON.parse(stdout);
     const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
     assert.ok(nlRefs.length >= 1, "should find NL ref in metric note block");
-    assert.ok(nlRefs.some((r) => r.name === "note:metric:order_count"), "should attribute to metric");
+    assert.ok(nlRefs.some((r) => r.name === "order_count"), "should use bare entity name without internal scope prefix");
   });
 
   it("text output uses 'Referenced in NL text' label", async () => {

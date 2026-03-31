@@ -132,6 +132,27 @@ describe("satsuma graph --json", () => {
     assert.ok(metric.slices.length > 0);
   });
 
+  it("metric nodes include fields array matching metric command output (sl-j713)", async () => {
+    // Graph metric nodes must expose the same fields array that
+    // `satsuma metric --json` returns, so a single graph query gives
+    // consumers complete metric field information.
+    const { stdout } = await run("graph", "--json", PLATFORM);
+    const data = JSON.parse(stdout);
+    const metric = data.nodes.find((n) => n.kind === "metric" && n.fields && n.fields.length > 0);
+    assert.ok(metric, "should have a metric node with fields");
+    assert.ok(Array.isArray(metric.fields));
+    assert.ok("name" in metric.fields[0]);
+    assert.ok("type" in metric.fields[0]);
+  });
+
+  it("--schema-only omits fields from metric nodes (sl-j713)", async () => {
+    const { stdout } = await run("graph", "--json", "--schema-only", PLATFORM);
+    const data = JSON.parse(stdout);
+    const metric = data.nodes.find((n) => n.kind === "metric");
+    assert.ok(metric);
+    assert.ok(!("fields" in metric), "metric nodes should omit fields in --schema-only mode");
+  });
+
   it("namespace-qualified names use ns::name convention", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
@@ -331,6 +352,27 @@ describe("satsuma graph (namespace fixture)", () => {
     );
     assert.ok(sourceEdge);
     assert.equal(sourceEdge.role, "source");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// satsuma graph (nl-derived edges in namespace workspaces)
+// ---------------------------------------------------------------------------
+describe("satsuma graph (nl-derived edges in namespace workspaces)", () => {
+  it("produces nl-derived edges for namespace-qualified mappings (sl-h3wi)", async () => {
+    // Before this fix, the graph builder double-prefixed the namespace on
+    // the mapping key (ns::ns::name), causing zero nl-derived edges for
+    // namespace workspaces despite nl-refs resolving successfully.
+    const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "namespaces/ns-merging.stm"));
+    assert.ok(code === 0 || code === 2);
+    const data = JSON.parse(stdout);
+    const nlDerived = data.edges.filter((e) => e.classification === "nl-derived");
+    assert.ok(nlDerived.length > 0, "should produce nl-derived edges for namespaced workspace");
+
+    // All nl-derived edges should reference namespace-qualified mappings
+    for (const e of nlDerived) {
+      assert.ok(e.mapping.includes("::"), `nl-derived edge mapping should be namespace-qualified: ${e.mapping}`);
+    }
   });
 });
 

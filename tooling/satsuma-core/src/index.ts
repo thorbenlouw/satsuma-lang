@@ -51,6 +51,7 @@ export {
   extractNLRefData,
   resolveAllNLRefs,
   isSchemaInMappingSources,
+  stripNLRefScopePrefix,
 } from "./nl-ref.js";
 export type {
   AtRef,

@@ -29,7 +29,7 @@ JSON shape (--json):
   {
     "kind":  "warning" | "question",
     "count": int,
-    "items": [{"text": str, "row": int, "file": str, "block": str, "blockType": str}, ...]
+    "items": [{"text": str, "line": int, "file": str, "block": str, "blockType": str}, ...]
   }
 
 Examples:
@@ -62,7 +62,7 @@ Examples:
       if (opts.json) {
         const jsonItems = items.map((item) => ({
           text: item.text,
-          row: item.row + 1,
+          line: item.row + 1,
           file: item.file,
           ...(item.parent ? { block: item.parent, blockType: item.parentType } : {}),
         }));
