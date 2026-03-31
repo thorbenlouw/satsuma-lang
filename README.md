@@ -69,7 +69,7 @@ In real mapping work, some intent is naturally formal:
 - field references
 - metadata tags
 - imports and reusable definitions
-- deterministic transform pipelines
+- file-based workspace boundaries and import-reachable symbol graphs
 
 Some intent is not naturally formal, at least not without turning the mapping
 document into a programming language:
@@ -126,7 +126,7 @@ Satsuma supports:
 - schema and record structure declarations
 - source-to-target field mappings
 - computed target fields
-- transform pipelines
+- transform bodies expressed as natural-language pipe steps plus value maps
 - conditional mapping logic
 - comments and rich notes with semantic intent
 - reusable fragments and imports
@@ -208,6 +208,11 @@ mapping {
 }
 ```
 
+Pipe steps such as `trim | lowercase | validate_email | null_if_invalid` are
+natural-language instructions. Quotes are optional; tooling classifies them as
+`nl`, not as a separate structural pipeline type. `map { ... }` remains a
+structural value-mapping construct.
+
 For richer examples, see [examples/db-to-db/pipeline.stm](examples/db-to-db/pipeline.stm),
 [examples/edi-to-json/pipeline.stm](examples/edi-to-json/pipeline.stm),
 and [examples/multi-source/multi-source-hub.stm](examples/multi-source/multi-source-hub.stm).
@@ -279,13 +284,15 @@ What exists today:
 
 Satsuma supports multi-file platform modeling through imports and namespaces.
 That gives tooling a consistent way to traverse lineage and impact across a
-platform without introducing a special file type.
+platform from a chosen entry file, without treating a whole directory as an
+implicit merged workspace.
 
 In practical terms:
 
 - library files define reusable schemas, fragments, and lookups
 - integration files define source/target structures and mapping blocks
 - namespace-qualified imports connect those files into one platform graph
+- only symbols reachable through the entry file's import graph are in scope
 
 This matters when multiple teams have similarly named schemas or when lineage
 needs to cross project boundaries cleanly.
@@ -380,10 +387,10 @@ npm link                  # symlink `satsuma` onto your PATH for local use
 Quick usage:
 
 ```bash
-satsuma summary examples/            # structural overview
-satsuma validate examples/           # structural + semantic validation
-satsuma schema customers examples/   # show a specific schema
-satsuma lineage --from legacy_sqlserver examples/   # trace data flow
+satsuma summary examples/db-to-db/pipeline.stm                       # structural overview
+satsuma validate examples/db-to-db/pipeline.stm                      # structural + semantic validation
+satsuma schema customers examples/db-to-db/pipeline.stm              # show a specific schema
+satsuma lineage --from legacy_sqlserver examples/db-to-db/pipeline.stm   # trace data flow
 ```
 
 To set up an AI agent, print the built-in reference:

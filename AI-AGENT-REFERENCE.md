@@ -141,8 +141,18 @@ Workspace scope is also file-based everywhere:
     "Join @schema_ref to @other_source on @customer_id = @customer_id"
   }
 
-## Transform catalog (combine with | inside { })
+## Transform bodies (combine with | inside { })
+Pipe steps are natural-language instructions. Quotes are optional:
+  trim | lowercase | validate_email | null_if_invalid
+  "Trim" | "Lowercase" | "Validate email; if invalid, set null"
+Both forms mean the same thing to tooling: they are NL for a human or agent to interpret.
+
+Two constructs remain explicitly structural inside transform bodies:
   ...named_transform
+  map { src: "tgt", null: "default", _: "fallback" }
+  map { < 1000: "low", < 5000: "mid", default: "high" }
+
+Vocabulary tokens are still encouraged as concise shorthand:
   trim, lowercase, uppercase, title_case, null_if_empty, null_if_invalid
   drop_if_invalid, drop_if_null, warn_if_invalid, warn_if_null
   error_if_invalid, error_if_null
@@ -152,9 +162,6 @@ Workspace scope is also file-based everywhere:
   pad_left(n, c), pad_right(n, c), replace(old, new), escape_html
   to_string, to_number, to_boolean, uuid_v5(ns, name)
   encrypt(algo, key), hash(algo), parse(fmt)
-  * N, / N, + N, - N
-  map { src: "tgt", null: "default", _: "fallback" }
-  map { < 1000: "low", < 5000: "mid", default: "high" }
   "NL description — use @field_name for refs"
 
 ## Metric rules
@@ -239,7 +246,7 @@ mapping {
   target { warehouse }
 
   id     -> customer_id   { uuid_v5("namespace", id) }
-  name   -> display_name  { trim | title_case }
+  name   -> display_name  { "Trim" | "Title-case" }
   email  -> email_address { trim | lowercase | validate_email | null_if_invalid }
   status -> is_active     { map { A: true, I: false } }
 }
@@ -368,25 +375,23 @@ JSON shape for `field-lineage --json`:
 
 ### Transform classification
 
-Every arrow the CLI returns carries a classification from CST node types:
+Every arrow the CLI returns carries one of three classifications:
 
 | Marker | Meaning | Your responsibility |
 | --- | --- | --- |
-| `[structural]` | Deterministic pipeline | None — fully specified |
-| `[nl]` | NL string — extracted verbatim | Read it, interpret intent, judge correctness |
-| `[mixed]` | Both pipeline steps and NL | Review the NL portion |
-| `[none]` | Bare `src -> tgt`, no transform | None |
+| `[none]` | Bare `src -> tgt`, no transform body | None |
+| `[nl]` | Has a transform body; all pipe-step content is NL | Read it and interpret intent |
 | `[nl-derived]` | Implicit arrow from NL `@ref` | Synthetic — verify the referenced field exists |
 
 ### Composing workflows
 
 **Whole-workspace reasoning:** Call `satsuma graph <entry-file>.stm --json` to load the entire workspace topology for that file's import-reachable graph in one call — nodes (schemas, mappings, metrics, fragments, transforms), field-level edges with transform classification, and schema-level topology. Use `--schema-only` for topology-only queries, `--namespace <ns>` to scope, `--no-nl` to reduce payload size. The `unresolved_nl` section lists all NL arrows requiring interpretation.
 
-**Impact analysis:** Call `satsuma arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `satsuma nl` to read the NL content and reason about it yourself.
+**Impact analysis:** Call `satsuma arrows <field> --as-source --json`, follow each target with another `arrows` call, recurse. At `[nl]` hops, call `satsuma nl` to read the transform or note content and reason about it yourself.
 
 **Coverage check:** Call `satsuma fields <target> --unmapped-by <mapping> --json` for each mapping. Intersect results to find fields unmapped by all mappings. For mapped fields, check classification via `satsuma arrows`.
 
-**PII audit:** Call `satsuma find --tag pii --json`, then `satsuma arrows` for each tagged field, recurse downstream. At `[nl]` hops, read the NL to judge whether PII survives the transform.
+**PII audit:** Call `satsuma find --tag pii --json`, then `satsuma arrows` for each tagged field, recurse downstream. At `[nl]` hops, read the transform text to judge whether PII survives.
 
 **Drafting a mapping:** Call `satsuma match-fields` for deterministic name matches. Call `satsuma nl` on both schemas to read field notes. For multi-source work, describe joins/filters in the `source { }` block with `@ref`s. Apply your own judgment for non-obvious matches and transforms.
 
