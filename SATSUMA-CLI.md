@@ -61,7 +61,7 @@ Full workspace topology export for one-shot reasoning.
 
 Flags: `--json` (full graph), `--compact` (schema-level adjacency list), `--schema-only` (omit field-level edges), `--namespace <ns>` (filter to namespace), `--no-nl` (strip NL text from edges).
 
-The `schema_edges` array includes edges with roles: `source`, `target`, `metric_source`, `fragment_spread`, and `nl_ref`. The `nl_ref` role marks schemas referenced in NL text but not declared in the mapping's source/target list — these represent data dependencies discovered through NL analysis.
+The `schema_edges` array includes edges with roles: `source`, `target`, `metric_source`, and `nl_ref`. The `nl_ref` role marks schemas referenced in NL text but not declared in the mapping's source/target list — these represent data dependencies discovered through NL analysis. Fragments do not appear as graph nodes or edges — per ADR-008, fragments are macros whose fields are inlined into consuming schemas before analysis.
 
 ### Agent Setup
 
