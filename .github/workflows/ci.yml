@@ -144,7 +144,8 @@ jobs:
             test/**/*.test.js
 
       - name: Check example corpus formatting
-        run: node dist/index.js fmt --check ../../examples/
+        run: |
+          find ../../examples -name '*.stm' -print0 | xargs -0 -n1 node dist/index.js fmt --check
 
       - name: Upload test results
         if: always()
