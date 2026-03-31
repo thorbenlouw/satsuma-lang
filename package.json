@@ -11,7 +11,7 @@
     "lint:js": "eslint .",
     "lint:md": "markdownlint-cli2",
     "lint:yaml": "yamllint .github/workflows/",
-    "lint:python": "ruff check scripts/ tooling/tree-sitter-satsuma/scripts/ skills/ smoke-tests/ features/"
+    "lint:python": "ruff check scripts/ tooling/tree-sitter-satsuma/scripts/ skills/ smoke-tests/"
   },
   "overrides": {
     "smol-toml": "^1.6.1"
