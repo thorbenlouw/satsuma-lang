@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma metric <name> [path]` shows a full metric definition from the parse tree.
+`satsuma metric <name> [file.stm]` shows a full metric definition from the parse tree.
 
 Test areas:
 - **Basic retrieval**: Retrieve metrics from `examples/metrics.stm`. Verify all fields, metadata, and notes are present.

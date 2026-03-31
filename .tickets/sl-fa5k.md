@@ -1,6 +1,6 @@
 ---
 id: sl-fa5k
-status: open
+status: closed
 deps: [sl-o9mh]
 links: []
 created: 2026-03-31T09:45:40Z

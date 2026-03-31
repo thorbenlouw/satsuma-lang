@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma lineage --from/--to <schema> [path]` traces data lineage through the workspace.
+`satsuma lineage --from/--to <schema> [file.stm]` traces data lineage through the workspace.
 
 Test areas:
 - **Forward lineage (`--from`)**: Trace from a source schema. Verify all downstream schemas reachable via mappings are listed.
@@ -34,7 +34,7 @@ Test areas:
 - **Both `--from` and `--to`**: What happens if both are specified? Error?
 - **Neither `--from` nor `--to`**: What happens? Error message?
 - **Non-existent schema**: Exit code and message?
-- **Single file**: `satsuma lineage --from schema examples/lib/common.stm`.
+- **Single file**: `satsuma lineage --from schema examples/sfdc-to-snowflake/pipeline.stm`.
 - **@ref lineage edges**: Do `@ref` references in NL strings (e.g., `"Join with @other_schema"`) create lineage edges?
 - **@ref in NL transforms**: `"Sum @line_amount grouped by @order_id"` — do @refs create lineage edges? These are the primary ref syntax in v2.
 - **@ref to undeclared schema**: A mapping's NL transform references `@external_lookup.code` but `external_lookup` is not in source/target. Does lineage show it as an `nl_ref` dependency?

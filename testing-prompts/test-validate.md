@@ -16,10 +16,10 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma validate [path]` checks for parse errors and semantic reference checks. It answers "is this workspace well-formed?"
+`satsuma validate [file.stm]` checks for parse errors and semantic reference checks. It answers "is this workspace well-formed?"
 
 Test areas:
-- **Valid files**: Run against `examples/`. Should pass with no errors.
+- **Valid files**: Run against each example entry file (e.g. `examples/sfdc-to-snowflake/pipeline.stm`). Should pass with no errors.
 - **Parse errors**: Create files with syntax errors — missing braces, bad keywords, invalid types. Are errors reported with file and line?
 - **Undefined schema references**: Mapping references a schema in `source { \`nonexistent\` }`. Caught?
 - **Undefined fragment references**: `...nonexistent_fragment`. Caught?

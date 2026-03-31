@@ -184,11 +184,11 @@ The CLI is most valuable in large workspaces where reading entire files would ov
 
 Imagine you've inherited a Satsuma workspace with 20 files you've never seen before. Here's how the agent would help you explore it:
 
-1. **Get the big picture:** `satsuma summary .`
+1. **Get the big picture:** `satsuma summary pipeline.stm`
    - How many schemas? Mappings? Metrics?
    - What systems are represented?
 
-2. **Find risk areas:** `satsuma warnings .`
+2. **Find risk areas:** `satsuma warnings pipeline.stm`
    - What data quality issues are flagged (`//!`)?
    - What questions are unresolved (`//?`)?
 
@@ -196,11 +196,11 @@ Imagine you've inherited a Satsuma workspace with 20 files you've never seen bef
    - What are the source and target?
    - How many arrows? What classifications?
 
-4. **Check compliance:** `satsuma find --tag pii .`
+4. **Check compliance:** `satsuma find --tag pii pipeline.stm`
    - Which fields are PII?
    - Are they encrypted? (Check `meta` for encryption tags.)
 
-5. **Trace lineage:** `satsuma lineage --from crm_customers .`
+5. **Trace lineage:** `satsuma lineage --from crm_customers pipeline.stm`
    - Where does CRM data flow?
    - What downstream targets are affected by a schema change?
 
@@ -213,11 +213,11 @@ Each step gives you exact, parseable information. The agent combines it into a n
 Do one direct, non-agent walkthrough on the repo corpus:
 
 ```bash
-satsuma summary examples/
+satsuma summary examples/sfdc-to-snowflake/pipeline.stm
 satsuma schema country_codes
 satsuma mapping `customer migration`
-satsuma validate examples/
-satsuma lint examples/
+satsuma validate examples/sfdc-to-snowflake/pipeline.stm
+satsuma lint examples/sfdc-to-snowflake/pipeline.stm
 ```
 
 What you should get out of this:

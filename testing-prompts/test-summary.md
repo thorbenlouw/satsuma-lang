@@ -16,11 +16,12 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma summary [path]` provides a workspace overview — schemas, mappings, metrics, counts.
+`satsuma summary [file.stm]` provides a workspace overview — schemas, mappings, metrics, counts.
 
 Test areas:
 - **Basic correctness**: Run against `examples/` and verify every schema, mapping, metric, and fragment is counted and listed. Cross-check by manually reading the `.stm` files.
-- **Single file vs directory**: Does `satsuma summary examples/lib/common.stm` work correctly for a single file? Does `satsuma summary examples/` work for the whole directory?
+- **Single file**: Does `satsuma summary examples/sfdc-to-snowflake/pipeline.stm` work correctly? Does it include definitions from transitive imports?
+- **Directory argument rejected**: Does `satsuma summary examples/` produce an error directing the user to pass a `.stm` file instead?
 - **Empty workspace**: Create a temp directory with no `.stm` files. What happens?
 - **Malformed files**: Create `.stm` files with parse errors. Does summary still report what it can, or crash?
 - **`--json` flag**: Verify JSON output is valid JSON and contains the same information as text output.

@@ -156,9 +156,9 @@ Before you bring in an agent, it is worth proving to yourself that Satsuma is in
 Take a small example file and do three things:
 
 ```bash
-satsuma summary examples/
+satsuma summary examples/sfdc-to-snowflake/pipeline.stm
 satsuma schema country_codes
-satsuma validate examples/
+satsuma validate examples/sfdc-to-snowflake/pipeline.stm
 ```
 
 What you should notice:

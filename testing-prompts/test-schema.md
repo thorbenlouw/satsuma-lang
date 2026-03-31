@@ -16,12 +16,12 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma schema <name> [path]` shows a full schema definition from the parse tree.
+`satsuma schema <name> [file.stm]` shows a full schema definition from the parse tree.
 
 Test areas:
-- **Basic retrieval**: Retrieve schemas from `examples/` by name. Verify output matches the source file content.
+- **Basic retrieval**: Retrieve schemas from `examples/sfdc-to-snowflake/pipeline.stm` by name. Verify output matches the source file content.
 - **Quoted labels**: Schemas with labels like `'My Complex Schema'`. Can they be retrieved by their quoted name?
-- **Namespace-qualified names**: Retrieve `crm::customers` style names from `examples/namespaces.stm`.
+- **Namespace-qualified names**: Retrieve `crm::customers` style names from `examples/namespaces/ns-platform.stm`.
 - **Fragment spreads**: Schemas containing `...fragment_name`. Does the output show the spread correctly, or does it expand it? What is the correct behavior per the spec?
 - **Nested structures**: Schemas with `record` and `list` blocks. Are they fully rendered?
 - **All metadata types**: Fields with `pk`, `required`, `enum {}`, `ref`, `note ""`, `format`, `xpath`, `namespace`, `filter`, etc.

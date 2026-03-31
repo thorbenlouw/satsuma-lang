@@ -16,10 +16,10 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma find --tag <token> [path]` finds fields carrying a metadata tag.
+`satsuma find --tag <token> [file.stm]` finds fields carrying a metadata tag.
 
 Test areas:
-- **Common tags**: `pii`, `pk`, `required`, `unique`, `indexed`, `encrypt`. Search for each in `examples/`.
+- **Common tags**: `pii`, `pk`, `required`, `unique`, `indexed`, `encrypt`. Search for each in `examples/sfdc-to-snowflake/pipeline.stm`.
 - **Custom tags**: Create files with arbitrary metadata tokens and search for them.
 - **Tag in different positions**: Tag as first, middle, or last metadata entry. `(pk, required, pii)` — can you find by any of them?
 - **Tags with values**: `format email`, `default "N/A"`, `ref table.field`. Can you search for `format`? For `email`?
@@ -32,7 +32,7 @@ Test areas:
 - **No results**: Search for a tag that doesn't exist. Exit code? Output message?
 - **Multiple files**: Tag exists in multiple files. All found?
 - **Case sensitivity**: Is tag search case-sensitive? Should it be?
-- **Single file path**: Does `satsuma find --tag pii examples/lib/common.stm` work?
+- **File path**: Does `satsuma find --tag pii examples/sfdc-to-snowflake/pipeline.stm` work?
 - **Special characters in tags**: Tags with hyphens, underscores, etc.
 - **`note` as metadata**: `(note "...")` on fields. Searchable by `note`?
 

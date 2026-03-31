@@ -148,7 +148,7 @@ Lineage is your tool for understanding and managing data flow:
 ### Upstream lineage (where does data come from?)
 
 ```
-satsuma lineage --to order_headers_parquet .
+satsuma lineage --to order_headers_parquet pipeline.stm
 ```
 
 Shows every schema and mapping that feeds into the target, helping you understand:
@@ -159,7 +159,7 @@ Shows every schema and mapping that feeds into the target, helping you understan
 ### Downstream lineage (what depends on this?)
 
 ```
-satsuma lineage --from crm_customers .
+satsuma lineage --from crm_customers pipeline.stm
 ```
 
 Shows every downstream consumer, helping you assess:
@@ -240,7 +240,7 @@ The agent uses the CLI to extract the relevant mapping details and then reasons 
 For platform-scale work, the full workspace graph is your most powerful tool:
 
 ```
-satsuma graph --json .
+satsuma graph --json pipeline.stm
 ```
 
 This gives you the complete node and edge structure of the workspace. The agent can use it to:

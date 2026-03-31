@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma where-used <name> [path]` finds all references to a schema, fragment, or transform.
+`satsuma where-used <name> [file.stm]` finds all references to a schema, fragment, or transform.
 
 Test areas:
 - **Schema in source/target**: Schema referenced in `source { \`schema\` }` or `target { \`schema\` }` blocks.
