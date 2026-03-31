@@ -1,0 +1,10 @@
+// Fixture for sl-1vnm: anonymous mapping inside namespace
+namespace ns {
+  schema src_ns { val STRING }
+  schema tgt_ns { val STRING }
+  mapping {
+    source { src_ns }
+    target { tgt_ns }
+    val -> val { trim }
+  }
+}

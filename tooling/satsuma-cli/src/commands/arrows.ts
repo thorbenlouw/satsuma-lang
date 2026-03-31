@@ -151,43 +151,72 @@ Examples:
         });
       }
 
-      // Add NL-derived arrows for this field
+      // Add NL-derived arrows for this field (as source or target).
+      //
+      // An @ref like `@source8.amount` in `-> total { "Sum @source8.amount" }`
+      // produces an nl-derived arrow: source8.amount → target8.total.
+      // This arrow must be discoverable both when querying source8.amount (the
+      // ref resolves to the queried field) AND when querying target8.total (the
+      // queried field is the arrow's target). See sl-k797.
       const nlRefs = resolveAllNLRefs(index);
       const canonicalQualified = canonicalKey(qualifiedField);
       for (const nlRef of nlRefs) {
         if (!nlRef.resolved || !nlRef.resolvedTo) continue;
         const resolvedTo = nlRef.resolvedTo.name;
-        if (resolvedTo === canonicalQualified) {
-          // Skip if the queried field is already a declared source for the same
-          // arrow (e.g. `c -> d { "clean up @s1.c" }` — don't emit a duplicate
-          // nl-derived arrow on top of the existing declared one).
-          const nlMappingKey = nlRef.namespace
-            ? `${nlRef.namespace}::${nlRef.mapping}`
-            : nlRef.mapping;
-          const alreadyDeclared = arrows.some((a) => {
-            if (a.classification === "nl-derived") return false;
-            const aMappingKey = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
-            return aMappingKey === nlMappingKey && a.target === nlRef.targetField;
-          });
-          if (alreadyDeclared) continue;
 
-          // Use the fully resolved path as the source so cross-schema refs
-          // are correctly attributed (sl-uk9q)
-          arrows.push({
-            mapping: nlRef.namespace && nlRef.mapping?.startsWith(`${nlRef.namespace}::`)
-              ? nlRef.mapping.slice(nlRef.namespace.length + 2)
-              : nlRef.mapping,
-            namespace: nlRef.namespace,
-            sources: [resolvedTo],
-            target: nlRef.targetField,
-            transform_raw: `(NL ref)`,
-            steps: [],
-            classification: "nl-derived",
-            derived: true,
-            line: nlRef.line,
-            file: nlRef.file,
-          });
-        }
+        const nlMappingKey = nlRef.namespace
+          ? `${nlRef.namespace}::${nlRef.mapping}`
+          : nlRef.mapping;
+
+        // Match when queried field is the @ref source OR the arrow's target.
+        // For target matching, verify the mapping actually targets the queried schema.
+        const matchesSource = resolvedTo === canonicalQualified;
+        const nlMapping = index.mappings.get(nlMappingKey);
+        const mappingTargetsQueriedSchema = nlMapping?.targets.includes(resolvedSchema.key) ?? false;
+        const matchesTarget = mappingTargetsQueriedSchema &&
+          (nlRef.targetField === fieldName || nlRef.targetField === leafName);
+
+        if (!matchesSource && !matchesTarget) continue;
+
+        // Skip if the queried field is already a declared source for the same
+        // arrow (e.g. `c -> d { "clean up @s1.c" }` — don't emit a duplicate
+        // nl-derived arrow on top of the existing declared one). Only suppress
+        // when the declared arrow actually lists the @ref field as a source;
+        // derived arrows (source=null) from `-> tgt { "@src.field" }` lack
+        // the source info that the nl-derived arrow adds (sl-k797).
+        const alreadyDeclared = arrows.some((a) => {
+          if (a.classification === "nl-derived") return false;
+          const aMappingKey = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
+          if (aMappingKey !== nlMappingKey || a.target !== nlRef.targetField) return false;
+          return a.sources.some((s) =>
+            s === resolvedTo || canonicalKey(s) === resolvedTo,
+          );
+        });
+        if (alreadyDeclared) continue;
+
+        // Deduplicate against nl-derived arrows already added (an NL string may
+        // contain multiple @refs resolving to different fields, each producing an
+        // arrow with the same target).
+        const dedupKey = `${nlMappingKey}:${resolvedTo}:${nlRef.targetField}:${nlRef.line}`;
+        if (seen.has(dedupKey)) continue;
+        seen.add(dedupKey);
+
+        // Use the fully resolved path as the source so cross-schema refs
+        // are correctly attributed (sl-uk9q)
+        arrows.push({
+          mapping: nlRef.namespace && nlRef.mapping?.startsWith(`${nlRef.namespace}::`)
+            ? nlRef.mapping.slice(nlRef.namespace.length + 2)
+            : nlRef.mapping,
+          namespace: nlRef.namespace,
+          sources: [resolvedTo],
+          target: nlRef.targetField,
+          transform_raw: `(NL ref)`,
+          steps: [],
+          classification: "nl-derived",
+          derived: true,
+          line: nlRef.line,
+          file: nlRef.file,
+        });
       }
 
       // Apply direction filters — verify the queried schema is on the correct

@@ -93,6 +93,20 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
           }
         }
       }
+    } else if (
+      // Metric description string: the nl_string/multiline_string that appears
+      // as a direct child of metric_block (between the name and metadata parens).
+      // This is the metric's displayName and is NL content that should surface
+      // via `satsuma nl`. It's already exposed as `displayName` via `satsuma metric`.
+      (c.type === "nl_string" || c.type === "multiline_string") &&
+      node.type === "metric_block"
+    ) {
+      items.push({
+        text: stringText(c) ?? "",
+        kind: "note",
+        parent,
+        line: c.startPosition.row + 1,
+      });
     } else {
       let newParent = parent;
       if (
@@ -104,7 +118,10 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
       ) {
         newParent = labelText(c);
       } else if (c.type === "field_decl") {
-        newParent = getFieldName(c) ?? parent;
+        // Use schema-qualified path (e.g. "alpha.email") so field-level NL
+        // items are unambiguous across schemas in JSON output (sl-prsy).
+        const fname = getFieldName(c);
+        newParent = fname && parent ? `${parent}.${fname}` : (fname ?? parent);
       }
       walkNL(c, newParent, items);
     }
