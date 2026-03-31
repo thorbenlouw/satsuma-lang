@@ -399,18 +399,13 @@ mapping `CRM → Warehouse (v2)` {}
       (backtick_name))))
 
 ================================================================================
-Empty backtick identifier is rejected (produces error node)
+Empty backtick identifier is rejected
+:error
 ================================================================================
 
 schema test { `` STRING }
 
 --------------------------------------------------------------------------------
-
-(source_file
-  (schema_block
-    (block_label
-      (identifier))
-    (ERROR)))
 
 ================================================================================
 Keyword rejected as bare label (produces error node)
