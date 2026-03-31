@@ -77,6 +77,48 @@ function findChildren(node: SyntaxNode, type: string): SyntaxNode[] {
   return node.children.filter(c => c.type === type);
 }
 
+// Body-type names recognised when scanning block-level children for gap
+// comments (comments between `{` and the body node, or between the body
+// node and `}`).  Tree-sitter places extras (comments) at the nearest
+// enclosing named node, so a comment before the first body child lands as
+// a sibling of the body inside the block — not inside the body itself.
+const BODY_TYPES = new Set([
+  "schema_body", "mapping_body", "metric_body", "pipe_chain",
+]);
+
+/**
+ * Collect comments that appear between the opening `{` and the body node.
+ *
+ * Tree-sitter's `extras` placement means a comment before the body's first
+ * named child becomes a child of the *block*, not of the body.  These
+ * "leading gap" comments would otherwise be silently dropped because the
+ * body-formatting functions only iterate `body.children`.
+ *
+ * Returns a formatted string (with leading newline per comment) ready to
+ * append after the opening `{` line.
+ */
+function collectBlockLeadingComments(
+  node: SyntaxNode, indent: number
+): string {
+  const comments: string[] = [];
+  let braceRow = -1;
+
+  for (const child of node.children) {
+    if (child.type === "{") { braceRow = child.startPosition.row; continue; }
+    if (braceRow < 0) continue;                           // still before `{`
+    if (BODY_TYPES.has(child.type) || child.type === "}") break;
+    if (isComment(child)) {
+      // Skip inline comments on the brace line — those are handled by
+      // the caller (e.g. formatMultiLineField's inline-comment loop).
+      if (child.startPosition.row === braceRow) continue;
+      comments.push(formatComment(child, indent + 1));
+    }
+  }
+  return comments.length > 0
+    ? "\n" + comments.join("\n")
+    : "";
+}
+
 /**
  * Collect any comments inside a block node that appear after the body
  * but before the closing }. These are typically trailing inline comments
@@ -91,8 +133,7 @@ function collectBlockTrailingComments(
   const openBraceRow = openBrace?.startPosition.row ?? -1;
 
   for (const child of node.children) {
-    if (child.type === "schema_body" || child.type === "mapping_body" ||
-        child.type === "metric_body" || child.type === "pipe_chain") {
+    if (BODY_TYPES.has(child.type)) {
       foundBody = true;
       continue;
     }
@@ -264,14 +305,16 @@ function formatSchemaBlock(node: SyntaxNode, source: string, indent: number): st
   if (meta) line += " " + formatMetadataBlock(meta, source, indent);
   line += " {";
 
+  const leading = collectBlockLeadingComments(node, indent);
+
   if (!body || body.namedChildren.length === 0) {
     const trailing = collectBlockTrailingComments(node, -1, indent);
-    return line + trailing + "\n" + ind(indent) + "}";
+    return line + leading + trailing + "\n" + ind(indent) + "}";
   }
 
   const bodyStr = formatSchemaBody(body, source, indent + 1);
   const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
-  return line + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
+  return line + leading + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Fragment Block ────────────────────────────────────────────────────────────
@@ -283,14 +326,16 @@ function formatFragmentBlock(node: SyntaxNode, source: string, indent: number): 
   let line = ind(indent) + "fragment " + formatBlockLabel(label!);
   line += " {";
 
+  const leading = collectBlockLeadingComments(node, indent);
+
   if (!body || body.namedChildren.length === 0) {
     const trailing = collectBlockTrailingComments(node, -1, indent);
-    return line + trailing + "\n" + ind(indent) + "}";
+    return line + leading + trailing + "\n" + ind(indent) + "}";
   }
 
   const bodyStr = formatSchemaBody(body, source, indent + 1);
   const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
-  return line + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
+  return line + leading + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Block Label ───────────────────────────────────────────────────────────────
@@ -443,14 +488,16 @@ function formatMultiLineField(node: SyntaxNode, source: string, indent: number):
     }
   }
 
+  const leading = collectBlockLeadingComments(node, indent);
+
   if (!body || body.namedChildren.length === 0) {
     const trailing = collectBlockTrailingComments(node, openBrace?.startPosition.row ?? -1, indent);
-    return line + trailing + "\n" + ind(indent) + "}";
+    return line + leading + trailing + "\n" + ind(indent) + "}";
   }
 
   const bodyStr = formatSchemaBody(body, source, indent + 1);
   const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
-  return line + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
+  return line + leading + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Fragment Spread ───────────────────────────────────────────────────────────
@@ -488,14 +535,16 @@ function formatMappingBlock(node: SyntaxNode, source: string, indent: number): s
   if (meta) line += " " + formatMetadataBlock(meta, source, indent);
   line += " {";
 
+  const leading = collectBlockLeadingComments(node, indent);
+
   if (!body) {
     const trailing = collectBlockTrailingComments(node, -1, indent);
-    return line + trailing + "\n" + ind(indent) + "}";
+    return line + leading + trailing + "\n" + ind(indent) + "}";
   }
 
   const bodyStr = formatMappingBody(body, source, indent + 1);
   const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
-  return line + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
+  return line + leading + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Mapping Body ──────────────────────────────────────────────────────────────
@@ -903,14 +952,18 @@ function formatTransformBlock(node: SyntaxNode, source: string, indent: number):
     return line + " { }";
   }
 
-  // Try single-line
+  const leading = collectBlockLeadingComments(node, indent);
+  const trailing = collectBlockTrailingComments(node, pipeChain.endPosition.row, indent);
+
+  // Try single-line (only when no gap comments exist)
   const chainStr = formatPipeChain(pipeChain, source, indent);
   const singleLine = line + " { " + chainStr + " }";
-  if (isInlinePipeChain(pipeChain) && singleLine.length <= 80) {
+  if (!leading && !trailing && isInlinePipeChain(pipeChain) && singleLine.length <= 80) {
     return line + " {\n" + ind(indent + 1) + chainStr + "\n" + ind(indent) + "}";
   }
 
-  return line + " {\n" + formatPipeChainMultiLine(pipeChain, source, indent + 1) + "\n" + ind(indent) + "}";
+  const bodyStr = formatPipeChainMultiLine(pipeChain, source, indent + 1);
+  return line + " {" + leading + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Metric Block ──────────────────────────────────────────────────────────────
@@ -926,9 +979,11 @@ function formatMetricBlock(node: SyntaxNode, source: string, indent: number): st
   if (meta) line += " " + formatMetadataBlock(meta, source, indent);
   line += " {";
 
+  const leading = collectBlockLeadingComments(node, indent);
+
   // Metric body contains field_decls and note_blocks
   if (!body) {
-    return line + "\n" + ind(indent) + "}";
+    return line + leading + "\n" + ind(indent) + "}";
   }
 
   const innerLines: string[] = [];
@@ -967,7 +1022,8 @@ function formatMetricBlock(node: SyntaxNode, source: string, indent: number): st
     prev = child;
   }
 
-  return line + "\n" + innerLines.join("\n") + "\n" + ind(indent) + "}";
+  const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
+  return line + leading + "\n" + innerLines.join("\n") + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Note Block ────────────────────────────────────────────────────────────────

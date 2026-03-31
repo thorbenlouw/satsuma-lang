@@ -1,6 +1,6 @@
 ---
 id: sl-h3tu
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:25:45Z
@@ -30,3 +30,14 @@ This is particularly dangerous for //! warning comments that document known data
 
 Fixture: /tmp/satsuma-test-parser-edge/44e-first-comment-all-types.stm
 
+
+## Notes
+
+**2026-03-31T11:22:50Z**
+
+## Notes
+
+**2026-03-31T12:00:00Z**
+
+Cause: Tree-sitter places comments between { and the body node as children of the block, not the body. The formatter only iterated body.children, missing these gap comments.
+Fix: Added collectBlockLeadingComments() helper and applied in all block formatters (schema, fragment, mapping, metric, transform, multi-line field).

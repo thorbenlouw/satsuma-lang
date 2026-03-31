@@ -1,6 +1,6 @@
 ---
 id: sl-necw
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:31:36Z
@@ -30,3 +30,14 @@ Also affects list_of record bodies and deeply nested record-in-record structures
 
 Fixture: /tmp/satsuma-test-fmt-semantic/originals/24-nested-record-comments.stm
 
+
+## Notes
+
+**2026-03-31T11:23:04Z**
+
+## Notes
+
+**2026-03-31T12:00:00Z**
+
+Cause: Tree-sitter places comments between { and the body node as children of the block, not the body. The formatter only iterated body.children, missing these gap comments.
+Fix: Added collectBlockLeadingComments() and collectBlockTrailingComments() calls in all block formatters. Same root cause and fix as sl-h3tu.
