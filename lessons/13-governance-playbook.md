@@ -21,7 +21,7 @@ Satsuma gives you something most mapping specifications can't: **deterministic s
 ### Finding PII across the workspace
 
 ```
-satsuma find --tag pii .
+satsuma find --tag pii pipeline.stm
 ```
 
 This returns every field tagged with `(pii)` across all files. The result is deterministic — if a field is tagged, it's found. If it's not tagged, it's not found.
@@ -55,7 +55,7 @@ The agent combines this with metadata checks to produce a PII flow audit:
 ### Extracting all warnings and questions
 
 ```
-satsuma warnings .
+satsuma warnings pipeline.stm
 ```
 
 This returns every `//!` (warning) and `//?` (question/TODO) comment across the workspace.
@@ -123,10 +123,10 @@ For audit purposes, this means:
 
 ### Pre-migration compliance check
 
-1. `satsuma find --tag pii .` — locate all PII fields.
+1. `satsuma find --tag pii pipeline.stm` — locate all PII fields.
 2. Trace each PII field through mappings — check for encryption.
-3. `satsuma warnings .` — review all data quality risks.
-4. `satsuma validate .` — confirm the spec is structurally valid.
+3. `satsuma warnings pipeline.stm` — review all data quality risks.
+4. `satsuma validate pipeline.stm` — confirm the spec is structurally valid.
 5. Export Excel snapshot — attach to compliance documentation.
 
 ### Change impact assessment
@@ -138,10 +138,10 @@ For audit purposes, this means:
 
 ### Periodic audit
 
-1. `satsuma summary .` — current workspace inventory.
-2. `satsuma warnings .` — current risk register.
-3. `satsuma find --tag pii .` — current PII inventory.
-4. `satsuma graph --json .` — full lineage graph for documentation.
+1. `satsuma summary pipeline.stm` — current workspace inventory.
+2. `satsuma warnings pipeline.stm` — current risk register.
+3. `satsuma find --tag pii pipeline.stm` — current PII inventory.
+4. `satsuma graph --json pipeline.stm` — full lineage graph for documentation.
 5. Compare against previous audit — what has changed?
 
 ---

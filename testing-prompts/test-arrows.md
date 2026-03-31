@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma arrows <schema.field> [path]` shows all arrows involving a field, with transform classification.
+`satsuma arrows <schema.field> [file.stm]` shows all arrows involving a field, with transform classification.
 
 Test areas:
 - **Basic arrow lookup**: Find arrows for a field that appears in a mapping. Correct source/target shown?

@@ -54,10 +54,10 @@ satsuma mapping "mapping_name" --json
 ### Workflow 3: Graph vs Lineage Consistency
 ```bash
 # 1. Get the full graph
-satsuma graph path/ --json
+satsuma graph path/pipeline.stm --json
 
 # 2. Get lineage for a specific schema
-satsuma lineage --from schema_name path/ --json
+satsuma lineage --from schema_name path/pipeline.stm --json
 
 # 3. Compare
 ```
@@ -67,8 +67,8 @@ satsuma lineage --from schema_name path/ --json
 
 ### Workflow 4: Lint vs Validate Consistency
 ```bash
-satsuma validate path/ --json
-satsuma lint path/ --json
+satsuma validate path/pipeline.stm --json
+satsuma lint path/pipeline.stm --json
 ```
 - Do both commands find the same duplicate-definition errors?
 - Does validate's `[nl-ref-unresolved]` warning match lint's `unresolved-nl-ref` rule?
@@ -95,41 +95,41 @@ satsuma nl mapping.target_field
 Create a fixture with @refs in various positions and verify all commands agree:
 ```bash
 # Does nl-refs find the ref?
-satsuma nl-refs path/ --json
+satsuma nl-refs path/pipeline.stm --json
 
 # Does lineage trace through it?
-satsuma lineage --from ref_target path/ --json
+satsuma lineage --from ref_target path/pipeline.stm --json
 
 # Does graph include it as an nl_ref edge?
-satsuma graph path/ --json
+satsuma graph path/pipeline.stm --json
 
 # Does where-used find the reference?
-satsuma where-used ref_target path/ --json
+satsuma where-used ref_target path/pipeline.stm --json
 
 # Does lint flag it if undeclared?
-satsuma lint path/ --json
+satsuma lint path/pipeline.stm --json
 
 # Does validate warn if unresolved?
-satsuma validate path/ --json
+satsuma validate path/pipeline.stm --json
 ```
 - Do all 6 commands agree on which @refs exist and whether they resolve?
 - Test with @refs in: arrow transforms, note blocks, source join descriptions, each/flatten blocks, named transforms.
 
 ### Workflow 7: Classification Consistency
 ```bash
-satsuma arrows schema.field --json    # classification field
-satsuma mapping mapping_name --json   # kind field on arrows
-satsuma graph path/ --json            # classification on field edges
+satsuma arrows schema.field --json            # classification field
+satsuma mapping mapping_name --json           # kind field on arrows
+satsuma graph path/pipeline.stm --json        # classification on field edges
 ```
 - Do all three commands agree on the classification of every arrow?
 - Pay special attention to: empty `{ }` bodies, mixed NL+structural in same pipe step, map transforms.
 
 ### Workflow 8: Namespace Consistency
 ```bash
-satsuma summary path/ --json          # namespace counts
-satsuma graph path/ --namespace ns    # filtered graph
-satsuma lineage --from ns::schema     # namespace-qualified lineage
-satsuma where-used ns::schema path/   # namespace-qualified search
+satsuma summary path/pipeline.stm --json          # namespace counts
+satsuma graph path/pipeline.stm --namespace ns     # filtered graph
+satsuma lineage --from ns::schema                  # namespace-qualified lineage
+satsuma where-used ns::schema path/pipeline.stm    # namespace-qualified search
 ```
 - Are namespace-qualified names consistent across commands?
 - Does `graph --namespace` match what summary reports for that namespace?
@@ -140,7 +140,7 @@ satsuma where-used ns::schema path/   # namespace-qualified search
 satsuma fmt --diff path/file.stm      # see what would change
 satsuma fmt path/file.stm             # apply formatting
 satsuma validate path/file.stm        # still valid?
-satsuma graph path/ --json            # same topology?
+satsuma graph path/file.stm --json    # same topology?
 ```
 - Does formatting preserve all semantics?
 - Does the graph before and after formatting have identical nodes/edges?
@@ -148,9 +148,9 @@ satsuma graph path/ --json            # same topology?
 ### Workflow 10: Diff Accuracy
 ```bash
 # Create two versions of a workspace
-satsuma diff v1/ v2/                  # structural diff
-satsuma summary v1/ --json            # baseline counts
-satsuma summary v2/ --json            # updated counts
+satsuma diff v1/pipeline.stm v2/pipeline.stm    # structural diff
+satsuma summary v1/pipeline.stm --json           # baseline counts
+satsuma summary v2/pipeline.stm --json           # updated counts
 ```
 - Does the diff correctly capture all additions/removals between the two summaries?
 - Are renamed schemas detected as renames or as add+remove?

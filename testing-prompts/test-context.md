@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma context <query> [path]` performs keyword-ranked block extraction (heuristic).
+`satsuma context <query> [file.stm]` performs keyword-ranked block extraction (heuristic).
 
 Test areas:
 - **Basic keyword matching**: Query for schema names, field names, or terms that appear in notes. Relevant blocks returned?
@@ -34,7 +34,7 @@ Test areas:
 - **`--compact` flag**: What gets omitted?
 - **Case sensitivity**: Is query matching case-insensitive?
 - **Cross-file results**: Results from multiple files. Correctly ranked?
-- **Single file**: `satsuma context "customer" examples/lib/common.stm`.
+- **Single file**: `satsuma context "customer" examples/sfdc-to-snowflake/pipeline.stm`.
 - **Empty query**: What happens with an empty string?
 - **Special characters in query**: Queries with dots, backticks, quotes.
 

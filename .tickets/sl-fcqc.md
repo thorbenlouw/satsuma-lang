@@ -1,6 +1,6 @@
 ---
 id: sl-fcqc
-status: open
+status: closed
 deps: [sl-o9mh]
 links: []
 created: 2026-03-31T09:45:46Z

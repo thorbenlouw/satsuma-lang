@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma field-lineage <schema.field> [path]` traces the full upstream and downstream field-level lineage in a single pass.
+`satsuma field-lineage <schema.field> [file.stm]` traces the full upstream and downstream field-level lineage in a single pass.
 
 ### A. Input parsing and error handling
 
@@ -112,9 +112,9 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 ### N. Path argument
 
 - **No path**: Uses current directory (`.`). Works if run from workspace root.
-- **Explicit directory path**: `satsuma field-lineage schema.field /path/to/workspace/`.
-- **Single file path**: `satsuma field-lineage schema.field file.stm`.
-- **Non-existent path**: `satsuma field-lineage schema.field /nonexistent/` — expected error, exit 2.
+- **Explicit file path**: `satsuma field-lineage schema.field /path/to/workspace/pipeline.stm`.
+- **Directory argument**: `satsuma field-lineage schema.field /path/to/workspace/` — expected error (directories are rejected, must pass a `.stm` file).
+- **Non-existent path**: `satsuma field-lineage schema.field /nonexistent/file.stm` — expected error, exit 2.
 
 ### O. Multiple files / cross-file lineage
 

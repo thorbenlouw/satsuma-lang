@@ -261,7 +261,7 @@ Use a real corpus file instead of an invented snippet:
 
 1. Open `examples/lib/common.stm` directly.
 2. Identify the three top-level schemas and two fragments by eye.
-3. Run `satsuma summary examples/` and confirm the structural picture.
+3. Run `satsuma summary examples/sfdc-to-snowflake/pipeline.stm` and confirm the structural picture.
 4. Ask yourself which facts came from the parser exactly and which explanations would require interpretation.
 
 This is the reading pattern you want throughout the rest of the course.

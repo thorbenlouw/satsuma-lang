@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma lint [path]` checks policy and convention rules. It answers "does this workspace follow best practices?"
+`satsuma lint [file.stm]` checks policy and convention rules. It answers "does this workspace follow best practices?"
 
 Known lint rules (from SATSUMA-CLI.md):
 - `hidden-source-in-nl` (warning, fixable) — NL text references a schema not in the mapping's source/target list
@@ -33,7 +33,7 @@ Test areas:
 - **`--select <rules>`**: Filter to run only specific rules. Works?
 - **`--ignore <rules>`**: Exclude specific rules. Works?
 - **`--rules` flag**: Lists available rules with descriptions?
-- **Clean workspace**: Run against `examples/`. Should be clean (no warnings). If not, note what fires.
+- **Clean workspace**: Run against `examples/sfdc-to-snowflake/pipeline.stm`. Should be clean (no warnings). If not, note what fires.
 - **Exit codes**: What exit code for warnings vs errors vs clean?
 - **Multiple violations**: Same rule triggered multiple times. All reported?
 - **Cross-file lint**: Violations spanning multiple files.
@@ -41,7 +41,7 @@ Test areas:
 - **Fragment spread context**: NL references to fields that come from fragment spreads. False positive or correctly resolved?
 - **Namespace context**: NL references using namespace-qualified names.
 - **Metric source context**: NL in a metric body referencing its source schema.
-- **Single file**: `satsuma lint examples/lib/common.stm`. Works?
+- **Single file**: `satsuma lint examples/sfdc-to-snowflake/pipeline.stm`. Works?
 - **@ref in `hidden-source-in-nl`**: `"Sum @external_schema.amount"` where `external_schema` is not in source/target — does the rule fire?
 - **@ref in each/flatten blocks**: NL with @refs inside `each`/`flatten` blocks — does lint detect hidden sources there?
 - **Dotted sub-field paths as hidden sources**: `PARENT_RECORD.CHILD_FIELD` where `PARENT_RECORD` IS in the source schema — is this a false positive?

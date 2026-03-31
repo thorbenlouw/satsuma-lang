@@ -70,8 +70,8 @@ This is better than inventing thresholds that might be wrong. The `//?` makes th
 After drafting, run validation:
 
 ```
-satsuma validate .
-satsuma lint .
+satsuma validate pipeline.stm
+satsuma lint pipeline.stm
 ```
 
 **`validate`** catches:

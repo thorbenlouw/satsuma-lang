@@ -55,9 +55,9 @@ permalink: cli.html
 <span class="prompt">$</span> satsuma agent-reference <span class="flag">&gt;&gt;</span> AGENTS.md
 
 <span class="output"># Agent can now query your workspace</span>
-<span class="prompt">$</span> satsuma summary <span class="flag">examples/</span>
+<span class="prompt">$</span> satsuma summary <span class="flag">examples/sfdc-to-snowflake/pipeline.stm</span>
 
-<span class="highlight">Workspace Summary</span>  <span class="output">examples/</span>
+<span class="highlight">Workspace Summary</span>  <span class="output">examples/sfdc-to-snowflake/pipeline.stm</span>
 
 <span class="output">Schemas:</span>          <span class="highlight">8</span>
 <span class="output">Mappings:</span>         <span class="highlight">5</span>
@@ -368,7 +368,7 @@ permalink: cli.html
               <span class="text-xs text-gray-400 ml-2 font-mono">satsuma graph</span>
             </div>
             <pre>
-<span class="prompt">$</span> satsuma graph <span class="flag">examples/ --json</span>
+<span class="prompt">$</span> satsuma graph <span class="flag">examples/sfdc-to-snowflake/pipeline.stm --json</span>
 
 <span class="output">{</span>
   <span class="highlight">"nodes"</span><span class="output">: [</span>
@@ -387,7 +387,7 @@ permalink: cli.html
 <span class="output">}</span>
 
 <span class="output"># Narrow scope for large workspaces</span>
-<span class="prompt">$</span> satsuma graph <span class="flag">examples/ --json --namespace</span> warehouse</pre>
+<span class="prompt">$</span> satsuma graph <span class="flag">examples/sfdc-to-snowflake/pipeline.stm --json --namespace</span> warehouse</pre>
           </div>
         </div>
       </div>
@@ -491,7 +491,7 @@ permalink: cli.html
           <div class="terminal text-xs">
             <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
             <pre>
-<span class="prompt">$</span> satsuma validate <span class="flag">examples/</span>
+<span class="prompt">$</span> satsuma validate <span class="flag">examples/sfdc-to-snowflake/pipeline.stm</span>
 <span class="output">valid &mdash; 0 errors, 0 warnings</span>
 
 <span class="prompt">$</span> satsuma validate <span class="flag">--json</span>
@@ -507,10 +507,10 @@ permalink: cli.html
           <div class="terminal text-xs">
             <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div></div>
             <pre>
-<span class="prompt">$</span> satsuma fmt <span class="flag">examples/</span>
-<span class="output">Formatted 3 file(s)</span>
+<span class="prompt">$</span> satsuma fmt <span class="flag">examples/sfdc-to-snowflake/pipeline.stm</span>
+<span class="output">Formatted 1 file(s)</span>
 
-<span class="prompt">$</span> satsuma fmt <span class="flag">--check examples/</span>
+<span class="prompt">$</span> satsuma fmt <span class="flag">--check examples/sfdc-to-snowflake/pipeline.stm</span>
 <span class="output">0 file(s) would be reformatted</span>
 
 <span class="prompt">$</span> satsuma fmt <span class="flag">--diff mapping.stm</span></pre>

@@ -16,10 +16,10 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma mapping <name> [path]` shows a full mapping with all arrows and transforms.
+`satsuma mapping <name> [file.stm]` shows a full mapping with all arrows and transforms.
 
 Test areas:
-- **Basic retrieval**: Retrieve named mappings from `examples/`. Verify all arrows, source/target declarations, and transforms are present.
+- **Basic retrieval**: Retrieve named mappings from `examples/sfdc-to-snowflake/pipeline.stm`. Verify all arrows, source/target declarations, and transforms are present.
 - **Quoted mapping names**: Mappings with labels like `'sfdc to hub_customer'`. Test retrieval with exact quoting.
 - **Unnamed mappings**: Mappings without labels. How are they referenced?
 - **Arrow types**: Direct (`src -> tgt`), with transform (`src -> tgt { ... }`), derived (`-> tgt { ... }`), nested array (`src[] -> tgt[] { ... }`).

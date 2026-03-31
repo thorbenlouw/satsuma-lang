@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma diff <a> <b>` performs structural comparison of two Satsuma files or directories.
+`satsuma diff <a.stm> <b.stm>` performs structural comparison of two Satsuma entry files.
 
 Test areas:
 - **Identical files**: Diff a file against itself. No differences?
@@ -33,9 +33,9 @@ Test areas:
 - **Modified mapping - changed transform**: Same arrow, different transform body.
 - **Added/removed metric**: Metric changes.
 - **Added/removed fragment**: Fragment changes.
-- **Directory diff**: Compare two directories with multiple files.
-- **File vs file**: Compare two individual files.
-- **File vs directory**: What happens? Error?
+- **Multi-file diff**: Compare two entry files that import from multiple files. Are transitive imports included?
+- **File vs file**: Compare two individual `.stm` files.
+- **Directory argument**: What happens if you pass a directory instead of a `.stm` file? Expected error?
 - **`--json` flag**: Valid JSON with structured change records?
 - **Renamed schema**: Schema with same fields but different name. Detected as rename or add+remove?
 - **Reordered fields**: Same fields in different order. Shown as change or identical?

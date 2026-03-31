@@ -64,7 +64,7 @@ Alternatively, use `satsuma match-fields --source <s> --target <t>` for a quick 
 
 **Agent approach:**
 
-1. Run `satsuma find --tag pii .` to locate all PII-tagged fields.
+1. Run `satsuma find --tag pii pipeline.stm` to locate all PII-tagged fields.
 2. For each PII field, run `satsuma arrows <field>` to trace where it flows.
 3. Check target field metadata for encryption tags with `satsuma meta`.
 4. Report any PII that flows to an unencrypted target.
@@ -109,7 +109,7 @@ The structural diff is more useful than a line-by-line text diff because it unde
 
 **Agent approach:**
 
-1. Run `satsuma warnings .` to find all `//!` and `//?` comments.
+1. Run `satsuma warnings pipeline.stm` to find all `//!` and `//?` comments.
 2. Run `satsuma nl` to extract NL transforms that might contain hedging language ("TBD", "unclear", "pending").
 3. Organize by severity: blocking decisions vs. nice-to-have clarifications.
 
@@ -133,7 +133,7 @@ The structural diff is more useful than a line-by-line text diff because it unde
 
 **Agent approach:**
 
-1. Run `satsuma graph --json .` to export the complete workspace graph.
+1. Run `satsuma graph --json pipeline.stm` to export the complete workspace graph.
 2. Parse the graph to identify source systems, intermediate layers, and final targets.
 3. Summarize the data flow in business terms.
 

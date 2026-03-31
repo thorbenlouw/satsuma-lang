@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma fields <schema> [path]` lists fields in a schema with types.
+`satsuma fields <schema> [file.stm]` lists fields in a schema with types.
 
 Test areas:
 - **Basic field listing**: List fields for a schema. Verify all fields present with correct types.
@@ -39,7 +39,8 @@ Test areas:
 - **Metric fields**: Can you list fields of a metric?
 - **Large schemas**: Schema with many fields. All listed?
 - **Comments between fields**: Are comments excluded from field list?
-- **Single file path**: Specifying a file instead of directory.
+- **File path**: Specifying a `.stm` entry file.
+- **Directory argument rejected**: Specifying a directory instead of a `.stm` file. Expected error?
 
 ## Creating test fixtures
 

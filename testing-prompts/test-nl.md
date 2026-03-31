@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma nl <scope> [path]` extracts NL content from a scope (schema, mapping, field, or all).
+`satsuma nl <scope> [file.stm]` extracts NL content from a scope (schema, mapping, field, or all).
 
 Test areas:
 - **Mapping scope**: `satsuma nl 'mapping name'`. All NL transforms, notes, and comments in the mapping?

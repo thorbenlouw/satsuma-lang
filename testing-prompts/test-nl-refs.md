@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma nl-refs [path]` extracts `@ref` references from NL transform bodies.
+`satsuma nl-refs [file.stm]` extracts `@ref` references from NL transform bodies.
 
 Note: Backtick refs in NL strings are no longer valid Satsuma v2 syntax. All NL references use `@ref` syntax (e.g., `@schema.field`). Backticks are only for identifiers/labels (e.g., `` `My Schema` ``).
 

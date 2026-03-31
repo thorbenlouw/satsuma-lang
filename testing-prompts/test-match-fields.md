@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma match-fields --source <s> --target <t> [path]` matches fields between two schemas by normalized name.
+`satsuma match-fields --source <s> --target <t> [file.stm]` matches fields between two schemas by normalized name.
 
 Test areas:
 - **Exact name matches**: Same field name in source and target. Matched?

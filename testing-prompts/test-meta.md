@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma meta <scope> [path]` extracts metadata for a schema, field, mapping, or metric.
+`satsuma meta <scope> [file.stm]` extracts metadata for a schema, field, mapping, or metric.
 
 Test areas:
 - **Schema metadata**: `satsuma meta schema_name`. Schema-level metadata in `()`.

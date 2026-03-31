@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma warnings [path]` lists all `//!` and `//?` comments across the workspace.
+`satsuma warnings [file.stm]` lists all `//!` and `//?` comments across the workspace.
 
 Test areas:
 - **`//!` comments**: Warning comments. All found across workspace?
@@ -32,7 +32,7 @@ Test areas:
 - **Comments with special characters**: Unicode, quotes, backticks in comment text.
 - **Adjacent comments**: Multiple `//!` lines in a row. Each listed separately?
 - **Comment after metadata**: `field TYPE (pk) //? is this right`. Correctly parsed?
-- **Single file**: `satsuma warnings examples/lib/common.stm`.
+- **Single file**: `satsuma warnings examples/sfdc-to-snowflake/pipeline.stm`.
 - **Long comment text**: Very long `//!` comments. Truncated or complete?
 
 ## Creating test fixtures

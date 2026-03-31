@@ -16,7 +16,7 @@ You are an exploratory QA agent for the Satsuma CLI. Your job is to thoroughly t
 
 ## What to test
 
-`satsuma graph [path]` exports the complete workspace semantic graph — nodes, edges, and field-level data flow.
+`satsuma graph [file.stm]` exports the complete workspace semantic graph — nodes, edges, and field-level data flow.
 
 Test areas:
 - **`--json` flag**: Full graph output. Valid JSON? Contains nodes (schemas, mappings, metrics, fragments, transforms), edges (field-level with classification), and schema-level topology?
@@ -35,8 +35,8 @@ Test areas:
 - **Import handling**: Cross-file imports correctly wired?
 - **Namespace-qualified names**: Nodes use correct namespace-qualified names?
 - **Empty workspace**: No `.stm` files. Output?
-- **Single file**: `satsuma graph examples/lib/common.stm --json`.
-- **Large workspace**: Full `examples/` directory. Performance? Completeness?
+- **Single file**: `satsuma graph examples/sfdc-to-snowflake/pipeline.stm --json`.
+- **Large workspace**: Entry file that imports from many files (e.g. `examples/namespaces/ns-platform.stm`). Performance? Completeness?
 - **Disconnected nodes**: Schemas with no mappings. Present as isolated nodes?
 - **Self-referencing**: Mapping where source and target are the same schema.
 - **Derived arrows**: `-> tgt` arrows in graph edges.
