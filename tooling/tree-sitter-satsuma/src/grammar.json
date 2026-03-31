@@ -2248,7 +2248,7 @@
     },
     "backtick_name": {
       "type": "PATTERN",
-      "value": "`(?:[^`\\\\]|\\\\.)*`"
+      "value": "`(?:[^`\\\\]|\\\\.)+`"
     },
     "multiline_string": {
       "type": "TOKEN",
