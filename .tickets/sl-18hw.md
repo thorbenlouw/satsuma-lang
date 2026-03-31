@@ -2,7 +2,7 @@
 id: sl-18hw
 status: closed
 deps: [sl-ck20]
-links: [sl-cyen]
+links: [sl-cyen, sl-van1]
 created: 2026-03-21T08:01:14Z
 type: bug
 priority: 2
