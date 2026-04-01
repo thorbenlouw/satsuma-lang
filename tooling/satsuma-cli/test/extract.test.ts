@@ -7,7 +7,9 @@
  */
 
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { before, describe, it } from "node:test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   extractSchemas,
   extractMetrics,
@@ -20,6 +22,9 @@ import {
   extractImports,
 } from "@satsuma/core";
 import { MockNode, mockNode as n } from "./helpers.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const EXAMPLES = resolve(__dirname, "../../../examples");
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
@@ -594,5 +599,66 @@ describe("extractImports", () => {
     const root = n("source_file", []);
     const result = extractImports(root as any);
     assert.equal(result.length, 0);
+  });
+});
+
+// ── Real-file extraction tests (relocated from integration.test.ts) ─────────
+
+describe("extraction against real files", () => {
+  let parseFile: (filePath: string) => any;
+  let extractFileData: (parsed: any) => any;
+  let buildIndex: (data: any[]) => any;
+
+  before(async () => {
+    const parser = await import("#src/parser.js");
+    parseFile = parser.parseFile;
+    const ib = await import("#src/index-builder.js");
+    extractFileData = ib.extractFileData;
+    buildIndex = ib.buildIndex;
+  });
+
+  it("schema row is 0-indexed in extracted data, CLI converts to 1-indexed (sl-2usp)", () => {
+    // The tree-sitter row is 0-indexed. CLI commands add +1 for human output.
+    const parsed = parseFile(resolve(EXAMPLES, "lib/common.stm"));
+    const data = extractFileData(parsed);
+    const index = buildIndex([data]);
+    const schema = index.schemas.get("country_codes");
+    assert.ok(schema, "should find country_codes");
+    assert.equal(schema.row, 3, "country_codes starts on row 3 (0-indexed) = line 4 (1-indexed)");
+  });
+
+  it("spread-expanded fieldCount includes direct + fragment fields (sl-vlsh)", async () => {
+    // The summary command uses expandEntityFields to include spread fields.
+    const { expandEntityFields } = await import("#src/spread-expand.js");
+    const fixture = resolve(__dirname, "fixtures", "spread-fields-meta.stm");
+    const parsed = parseFile(fixture);
+    const data = extractFileData(parsed);
+    const index = buildIndex([data]);
+    const schema = index.schemas.get("with_spreads");
+    assert.ok(schema, "should find with_spreads schema");
+    const expanded = expandEntityFields(schema as any, schema.namespace ?? null, index);
+    const totalCount = schema.fields.length + expanded.length;
+    assert.equal(totalCount, 4, "should count 1 direct + 3 spread fields");
+  });
+
+  it("field metadata includes pk, ref, and enum entries (sl-rbvk)", () => {
+    // Validates the metadata extraction pipeline for different metadata kinds.
+    const parsed = parseFile(resolve(EXAMPLES, "sfdc-to-snowflake/pipeline.stm"));
+    const data = extractFileData(parsed);
+    const schemas = data.schemas;
+    const opp = schemas.find((s: any) => s.name === "sfdc_opportunity");
+    assert.ok(opp, "should find sfdc_opportunity schema");
+    const idField = opp.fields.find((f: any) => f.name === "Id");
+    assert.ok(idField.metadata, "Id field should have metadata");
+    assert.deepEqual(idField.metadata[0], { kind: "tag", tag: "pk" });
+    const accField = opp.fields.find((f: any) => f.name === "AccountId");
+    assert.ok(accField.metadata, "AccountId should have metadata");
+    assert.equal(accField.metadata[0].kind, "kv");
+    assert.equal(accField.metadata[0].key, "ref");
+    const stageField = opp.fields.find((f: any) => f.name === "StageName");
+    assert.ok(stageField.metadata, "StageName should have metadata");
+    const enumEntry = stageField.metadata.find((m: any) => m.kind === "enum");
+    assert.ok(enumEntry, "StageName should have enum metadata");
+    assert.ok(enumEntry.values.length > 0, "enum should have values");
   });
 });

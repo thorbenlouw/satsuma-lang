@@ -11,9 +11,14 @@
  */
 
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { before, describe, it } from "node:test";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildIndex } from "#src/index-builder.js";
 import { collectSemanticWarnings } from "#src/validate.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const EXAMPLES = resolve(__dirname, "../../../examples");
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
@@ -722,5 +727,31 @@ describe("schema field merging across files", () => {
     const warnings = collectSemanticWarnings(index);
     const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Nested record children should merge without false warnings");
+  });
+});
+
+// ── fieldArrows index keying with real files ────────────────────────────────
+
+describe("fieldArrows index: nested child arrow keys (sl-9gvb)", () => {
+  let parseFile: (filePath: string) => any;
+  let extractFileData: (parsed: any) => any;
+
+  before(async () => {
+    const parser = await import("#src/parser.js");
+    parseFile = parser.parseFile;
+    const ib = await import("#src/index-builder.js");
+    extractFileData = ib.extractFileData;
+  });
+
+  it("indexes nested child arrows with bare name, parent-prefixed, and schema-qualified keys", () => {
+    // Nested arrow relative paths (.PHONE_TYPE) should be indexed under
+    // bare name (PHONE_TYPE), parent-prefixed, and schema-qualified paths.
+    const parsed = parseFile(resolve(EXAMPLES, "cobol-to-avro/pipeline.stm"));
+    const data = extractFileData(parsed);
+    const index = buildIndex([data]);
+    assert.ok(index.fieldArrows.has("PHONE_TYPE"),
+      "should index bare PHONE_TYPE");
+    assert.ok(index.fieldArrows.has("cobol_customer_master.PHONE_NUMBERS.PHONE_TYPE"),
+      "should index fully qualified PHONE_TYPE");
   });
 });
