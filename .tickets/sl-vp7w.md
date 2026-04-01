@@ -41,3 +41,7 @@ Cause: The VS Code extension CI bundle resolved the embedded LSP from source, bu
 **2026-04-01T11:10:50Z**
 
 Cause: The VS Code extension bundle switched to the shared backend source to avoid missing dist artifacts, but CI resolves that source under the extension build without the backend package's own node_modules cache path. Fix: Pointed the extension server esbuild config at tooling/satsuma-lsp/node_modules so the aliased shared-backend sources resolve their transitive package dependencies in CI.
+
+**2026-04-01T11:25:05Z**
+
+Cause: The VS Code CI job still restored a workspace cache layout from before the viz-backend extraction, so the LSP compile/test steps inside that job could not resolve the shared backend package. Fix: Updated CI to build satsuma-viz-backend in the install job and include its node_modules/dist paths in the shared workspace cache restored by downstream jobs.

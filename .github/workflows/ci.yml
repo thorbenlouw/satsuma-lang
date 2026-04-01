@@ -27,6 +27,10 @@ jobs:
         working-directory: tooling/satsuma-core
         run: npm run build
 
+      - name: Build satsuma-viz-backend
+        working-directory: tooling/satsuma-viz-backend
+        run: npm run build
+
       - name: Build tree-sitter WASM (needed by CLI and VS Code)
         working-directory: tooling/tree-sitter-satsuma
         run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
@@ -49,6 +53,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
@@ -80,6 +86,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
@@ -123,6 +131,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
@@ -200,6 +210,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
@@ -271,6 +283,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
@@ -342,6 +356,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
@@ -382,6 +398,8 @@ jobs:
             tooling/satsuma-cli/dist
             tooling/satsuma-core/node_modules
             tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
             tooling/satsuma-viz-model/node_modules
             tooling/satsuma-viz-model/dist
             tooling/satsuma-viz/node_modules
