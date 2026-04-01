@@ -10,6 +10,39 @@ import type { SyntaxNode, MetaEntry } from "./types.js";
 export type { MetaEntry };
 
 /**
+ * Normalize a metadata value CST node into the logical string value.
+ *
+ * The grammar wraps key/value payloads in `value_text`, so quoted string values
+ * often arrive as `value_text.text === "\"INTERNAL\""`. Downstream JSON
+ * consumers expect the value without those source delimiters.
+ */
+function normalizeMetadataValue(valueNode: SyntaxNode | null | undefined): string {
+  if (!valueNode) return "";
+
+  if (valueNode.type === "nl_string" || valueNode.type === "backtick_name") {
+    return valueNode.text.slice(1, -1);
+  }
+
+  const nestedValue = valueNode.namedChildren.find(
+    (child) => child.type === "nl_string" || child.type === "backtick_name",
+  );
+  if (nestedValue) {
+    return normalizeMetadataValue(nestedValue);
+  }
+
+  const text = valueNode.text;
+  if (
+    text.length >= 2 &&
+    ((text.startsWith("\"") && text.endsWith("\"")) ||
+      (text.startsWith("`") && text.endsWith("`")))
+  ) {
+    return text.slice(1, -1);
+  }
+
+  return text;
+}
+
+/**
  * Extract structured metadata from a metadata_block CST node.
  */
 export function extractMetadata(metaNode: SyntaxNode | null | undefined): MetaEntry[] {
@@ -22,9 +55,7 @@ export function extractMetadata(metaNode: SyntaxNode | null | undefined): MetaEn
     } else if (c.type === "tag_with_value") {
       const key = c.namedChildren[0]; // identifier
       const val = c.namedChildren[1]; // value_text
-      let value = val?.text ?? "";
-      if (val?.type === "nl_string") value = value.slice(1, -1);
-      if (val?.type === "backtick_name") value = value.slice(1, -1);
+      const value = normalizeMetadataValue(val);
       entries.push({ kind: "kv", key: key?.text ?? "", value });
     } else if (c.type === "enum_body") {
       const values = c.namedChildren

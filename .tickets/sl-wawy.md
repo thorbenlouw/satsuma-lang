@@ -1,6 +1,6 @@
 ---
 id: sl-wawy
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:25:16Z
@@ -24,3 +24,10 @@ Actual kind values observed:
 
 The 'schema' kind documented in the help was never observed in testing. Consumers relying on the documented shape will encounter unexpected kind values.
 
+
+## Notes
+
+**2026-04-01T09:16:37Z**
+
+Cause: The where-used help text documented an outdated JSON kind set that no longer matched the command's emitted ref kinds.
+Fix: Updated the where-used --help JSON contract and added regression coverage to keep the documented kind surface aligned with actual output (commit <pending>).

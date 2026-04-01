@@ -242,7 +242,8 @@ function collectAllTags(metaNode: SyntaxNode): string[] {
     else if (c.type === "tag_with_value") {
       const key = c.namedChildren[0]; // identifier
       const val = c.namedChildren[1]; // value_text
-      tags.push(val ? `${key?.text} ${val.text}` : (key?.text ?? ""));
+      const valueText = renderMetadataValue(val);
+      tags.push(valueText ? `${key?.text} ${valueText}` : (key?.text ?? ""));
     } else if (c.type === "note_tag") {
       const strNode = c.namedChildren.find((x) => x.type === "nl_string" || x.type === "multiline_string");
       tags.push(strNode ? `note ${strNode.text}` : "note");
@@ -251,6 +252,36 @@ function collectAllTags(metaNode: SyntaxNode): string[] {
     else if (c.type === "slice_body") tags.push("slice {...}");
   }
   return tags;
+}
+
+/**
+ * Render metadata values for `find --json` using logical values rather than
+ * source syntax, so quoted strings do not keep their delimiters.
+ */
+function renderMetadataValue(valueNode: SyntaxNode | undefined): string {
+  if (!valueNode) return "";
+
+  if (valueNode.type === "nl_string" || valueNode.type === "backtick_name") {
+    return valueNode.text.slice(1, -1);
+  }
+
+  const nestedValue = valueNode.namedChildren.find(
+    (child) => child.type === "nl_string" || child.type === "backtick_name",
+  );
+  if (nestedValue) {
+    return renderMetadataValue(nestedValue);
+  }
+
+  const text = valueNode.text;
+  if (
+    text.length >= 2 &&
+    ((text.startsWith("\"") && text.endsWith("\"")) ||
+      (text.startsWith("`") && text.endsWith("`")))
+  ) {
+    return text.slice(1, -1);
+  }
+
+  return text;
 }
 
 /**

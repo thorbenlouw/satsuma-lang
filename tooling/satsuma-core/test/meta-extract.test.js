@@ -44,6 +44,16 @@ describe("extractMetadata()", () => {
     assert.deepEqual(extractMetadata(meta), [{ kind: "kv", key: "label", value: "some label" }]);
   });
 
+  it("unwraps quoted strings wrapped by value_text", () => {
+    // The parser stores metadata key/value payloads under value_text, so the
+    // extractor must normalize the wrapper node rather than only bare nl_string nodes.
+    const key = n("identifier", [], "classification");
+    const val = n("value_text", [n("nl_string", [], '"INTERNAL"')], '"INTERNAL"');
+    const kv = n("tag_with_value", [key, val]);
+    const meta = metaBlock([kv]);
+    assert.deepEqual(extractMetadata(meta), [{ kind: "kv", key: "classification", value: "INTERNAL" }]);
+  });
+
   it("extracts enum_body entries", () => {
     const id1 = n("identifier", [], "open");
     const id2 = n("identifier", [], "closed");

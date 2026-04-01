@@ -789,6 +789,19 @@ describe("satsuma find", () => {
     }
   });
 
+  it("--json metadata strings unwrap quoted kv values (sl-2old)", async () => {
+    // find renders metadata strings itself, so string-valued metadata needs its
+    // own regression coverage in addition to the shared core extractor tests.
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
+    const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const schemaLevel = data.find((m: any) => m.block === "completed_orders_parquet" && m.field === "(schema)");
+    assert.ok(schemaLevel, "expected completed_orders_parquet schema-level match");
+    assert.ok(schemaLevel.metadata.includes("classification INTERNAL"));
+    assert.ok(!schemaLevel.metadata.includes('classification "INTERNAL"'));
+  });
+
   it("--tag note finds fields with note metadata (sl-amyh)", async () => {
     const { stdout, code } = await run("find", "--tag", "note", PLATFORM);
     assert.equal(code, 0);
@@ -1025,6 +1038,18 @@ describe("satsuma where-used", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.refs.length, 2, "should have exactly 2 refs (spread + bare), not 3");
+  });
+
+  it("--help documents the current JSON ref kinds (sl-wawy)", async () => {
+    // The help text is the published JSON contract for consumers, so it must
+    // enumerate the kinds the command actually emits.
+    const { stdout, code } = await run("where-used", "--help");
+    assert.equal(code, 0);
+    assert.match(stdout, /fragment_spread/);
+    assert.match(stdout, /ref_metadata/);
+    assert.match(stdout, /import/);
+    assert.match(stdout, /transform_call/);
+    assert.match(stdout, /nl_ref/);
   });
 });
 
@@ -1332,6 +1357,20 @@ describe("satsuma fields", () => {
     assert.ok(data[0].type);
   });
 
+  it("--json unwraps quoted metadata values on fields (sl-2old)", async () => {
+    // fields --json forwards FieldDecl metadata from the shared extractor, so
+    // quoted string values should already be normalized here.
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
+    const { stdout, code } = await run("fields", "completed_orders_parquet", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const customerEmail = data.find((field: any) => field.name === "customer_email");
+    const classification = customerEmail.metadata.find((entry: any) => entry.kind === "kv" && entry.key === "classification");
+    const retention = customerEmail.metadata.find((entry: any) => entry.kind === "kv" && entry.key === "retention");
+    assert.equal(classification?.value, "RESTRICTED");
+    assert.equal(retention?.value, "3y");
+  });
+
   it("--unmapped-by on target schema returns correct set difference", async () => {
     const { stdout, code } = await run(
       "fields", "postgres_db", "--unmapped-by", "customer migration", DB,
@@ -1635,6 +1674,30 @@ describe("satsuma meta", () => {
     assert.equal(data.type, "CHAR(1)");
     assert.ok(Array.isArray(data.entries));
     assert.ok(data.entries.some((e: any) => e.kind === "enum"));
+  });
+
+  it("--json unwraps quoted metadata values at schema scope (sl-2old)", async () => {
+    // Schema-level metadata should expose logical string values, not raw source
+    // text including the quote delimiters.
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
+    const { stdout, code } = await run("meta", "completed_orders_parquet", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const classification = data.entries.find((entry: any) => entry.kind === "kv" && entry.key === "classification");
+    assert.equal(classification?.value, "INTERNAL");
+  });
+
+  it("--json unwraps quoted metadata values at field scope (sl-2old)", async () => {
+    // Field-level metadata uses the same shared extractor and must normalize
+    // string-valued kv metadata identically.
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
+    const { stdout, code } = await run("meta", "completed_orders_parquet.customer_email", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const classification = data.entries.find((entry: any) => entry.kind === "kv" && entry.key === "classification");
+    const retention = data.entries.find((entry: any) => entry.kind === "kv" && entry.key === "retention");
+    assert.equal(classification?.value, "RESTRICTED");
+    assert.equal(retention?.value, "3y");
   });
 
   it("exits 1 for unknown scope", async () => {
