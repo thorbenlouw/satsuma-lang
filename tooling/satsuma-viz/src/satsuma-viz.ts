@@ -62,6 +62,45 @@ export class SzFieldLineageEvent extends Event {
   }
 }
 
+export type VizAutomationReadyState = "empty" | "loading" | "ready" | "fallback";
+export type VizAutomationRenderMode = "empty" | "overview" | "detail" | "fallback";
+
+export interface VizAutomationState {
+  /** Stable renderer readiness state for browser automation. */
+  readyState: VizAutomationReadyState;
+  /** Which major UI surface is currently rendered. */
+  renderMode: VizAutomationRenderMode;
+  /** Current user-facing view mode. */
+  viewMode: "overview" | "detail";
+}
+
+export function sanitizeTestIdSegment(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+export function describeVizAutomationState(args: {
+  hasModel: boolean;
+  hasOverviewLayout: boolean;
+  hasDetailLayout: boolean;
+  layoutError: boolean;
+  viewMode: "overview" | "detail";
+}): VizAutomationState {
+  if (!args.hasModel) {
+    return { readyState: "empty", renderMode: "empty", viewMode: args.viewMode };
+  }
+  if (args.layoutError) {
+    return { readyState: "fallback", renderMode: "fallback", viewMode: args.viewMode };
+  }
+  if (!args.hasOverviewLayout && !args.hasDetailLayout) {
+    return { readyState: "loading", renderMode: "empty", viewMode: args.viewMode };
+  }
+  return {
+    readyState: "ready",
+    renderMode: args.viewMode === "detail" ? "detail" : "overview",
+    viewMode: args.viewMode,
+  };
+}
+
 @customElement("satsuma-viz")
 export class SatsumaViz extends LitElement {
   static override styles = css`
@@ -606,10 +645,36 @@ export class SatsumaViz extends LitElement {
       white-space: nowrap;
       z-index: 40;
     }
+
+    :host([test-mode]),
+    :host([reduce-motion]) {
+      --sz-motion-enabled: 0;
+    }
+
+    :host([test-mode]) *,
+    :host([reduce-motion]) * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :host * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
   `;
 
   @property({ type: Object })
   model: VizModel | null = null;
+
+  @property({ type: Boolean, attribute: "test-mode", reflect: true })
+  testMode = false;
+
+  @property({ type: Boolean, attribute: "reduce-motion", reflect: true })
+  reduceMotion = false;
 
   @state()
   private _viewMode: "overview" | "detail" = "overview";
@@ -688,9 +753,13 @@ export class SatsumaViz extends LitElement {
   private readonly _handleWindowResize = () => {
     this.requestUpdate();
   };
+  private _lastReadySignature: string | null = null;
 
   override connectedCallback() {
     super.connectedCallback();
+    if (!this.hasAttribute("data-testid")) {
+      this.setAttribute("data-testid", "viz-root");
+    }
     window.addEventListener("resize", this._handleWindowResize);
     this.addEventListener("field-hover", ((e: SzFieldHoverEvent) => {
       this._hoveredSchema = e.schemaId;
@@ -726,6 +795,16 @@ export class SatsumaViz extends LitElement {
       || changed.has("_showNotes")
     ) {
       requestAnimationFrame(() => this._measureNamespaceBoxes());
+    }
+
+    if (
+      changed.has("model")
+      || changed.has("_layout")
+      || changed.has("_overviewLayout")
+      || changed.has("_layoutError")
+      || changed.has("_viewMode")
+    ) {
+      this._publishAutomationState();
     }
   }
 
@@ -824,13 +903,21 @@ export class SatsumaViz extends LitElement {
   }
 
   override render() {
+    const automationState = describeVizAutomationState({
+      hasModel: Boolean(this.model),
+      hasOverviewLayout: Boolean(this._overviewLayout),
+      hasDetailLayout: Boolean(this._layout),
+      layoutError: this._layoutError,
+      viewMode: this._viewMode,
+    });
+
     if (!this.model) {
-      return html`<div class="empty">No mapping file loaded</div>`;
+      return html`<div class="empty" data-testid="viz-empty" data-ready-state=${automationState.readyState}>No mapping file loaded</div>`;
     }
 
     const { namespaces } = this.model;
     if (namespaces.length === 0) {
-      return html`<div class="empty">No schemas found in this file</div>`;
+      return html`<div class="empty" data-testid="viz-empty" data-ready-state=${automationState.readyState}>No schemas found in this file</div>`;
     }
 
     const filtered = this._filterNamespaces(namespaces);
@@ -840,7 +927,7 @@ export class SatsumaViz extends LitElement {
     if (!this._layout && !this._overviewLayout && !this._layoutError) {
       return html`
         ${this._renderToolbar(namespaces)}
-        <div class="loading">Computing layout...</div>
+        <div class="loading" data-testid="viz-loading" data-ready-state=${automationState.readyState}>Computing layout...</div>
       `;
     }
 
@@ -863,6 +950,7 @@ export class SatsumaViz extends LitElement {
           ${this._renderFileNotes()}
           <div class="notes-pane-wrapper">
             <div class="viewport"
+              data-testid="viz-viewport"
               @wheel=${this._onWheel}
               @mousedown=${this._onMouseDown}
               @mousemove=${this._onMouseMove}
@@ -895,6 +983,7 @@ export class SatsumaViz extends LitElement {
           ${this._renderFileNotes()}
           <div class="notes-pane-wrapper">
             <div class="viewport"
+              data-testid="viz-viewport"
               @wheel=${this._onWheel}
               @mousedown=${this._onMouseDown}
               @mousemove=${this._onMouseMove}
@@ -929,6 +1018,7 @@ export class SatsumaViz extends LitElement {
         ${this._renderFileNotes()}
         <div class="notes-pane-wrapper">
           <div class="viewport"
+            data-testid="viz-viewport"
             @wheel=${this._onWheel}
             @mousedown=${this._onMouseDown}
             @mousemove=${this._onMouseMove}
@@ -969,23 +1059,25 @@ export class SatsumaViz extends LitElement {
         <div class="toolbar-sep"></div>
         <button
           class="toolbar-btn"
+          data-testid="toolbar-toggle-file-notes"
           ?data-active=${this._showNotes}
           @click=${() => { this._showNotes = !this._showNotes; }}
           title="Show or hide file notes"
         >Show File Notes</button>
         <div class="toolbar-sep"></div>
         ${!inDetail
-          ? html`<button class="toolbar-btn" @click=${this._fit} title="Fit all content in viewport">Fit</button>`
+          ? html`<button class="toolbar-btn" data-testid="toolbar-fit" @click=${this._fit} title="Fit all content in viewport">Fit</button>`
           : ""}
-        <button class="toolbar-btn" @click=${this._refresh} title="Re-fetch visualization data">&#8635; Refresh</button>
+        <button class="toolbar-btn" data-testid="toolbar-refresh" @click=${this._refresh} title="Re-fetch visualization data">&#8635; Refresh</button>
         ${!inDetail
-          ? html`<button class="toolbar-btn" @click=${this._exportSvg} title="Export as SVG">&#x21E9; Export</button>`
+          ? html`<button class="toolbar-btn" data-testid="toolbar-export" @click=${this._exportSvg} title="Export as SVG">&#x21E9; Export</button>`
           : ""}
         ${hasNamespaces && !inDetail
           ? html`
               <div class="toolbar-sep"></div>
               <select
                 class="toolbar-select"
+                data-testid="toolbar-namespace-filter"
                 @change=${this._onNsFilterChange}
                 title="Filter by namespace"
               >
@@ -1001,6 +1093,7 @@ export class SatsumaViz extends LitElement {
               <div class="toolbar-sep"></div>
               <select
                 class="toolbar-select"
+                data-testid="toolbar-file-filter"
                 @change=${this._onFileFilterChange}
                 title="Filter by source file"
               >
@@ -1235,7 +1328,13 @@ export class SatsumaViz extends LitElement {
                 <div class="positioned-card" data-node-id=${s.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
                   @mouseenter=${() => this._onOverviewNodeHover(s.qualifiedId)}
                   @mouseleave=${() => this._onOverviewNodeLeave()}>
-                  <sz-schema-card .schema=${s} .namespaceLabel=${ns.name} compact></sz-schema-card>
+                  <sz-schema-card
+                    data-testid=${`overview-schema-card-${sanitizeTestIdSegment(s.qualifiedId)}`}
+                    .testIdPrefix=${`overview-schema-card-${sanitizeTestIdSegment(s.qualifiedId)}`}
+                    .schema=${s}
+                    .namespaceLabel=${ns.name}
+                    compact
+                  ></sz-schema-card>
                 </div>
               `;
             }),
@@ -1268,13 +1367,14 @@ export class SatsumaViz extends LitElement {
               return html`
                 <div
                   class="positioned-card mapping-node"
+                  data-testid=${`overview-mapping-node-${sanitizeTestIdSegment(mappingNodeId)}`}
                   data-node-id=${mappingNodeId}
                   style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
                   @click=${() => this._openOverviewMapping(m)}
                   @mouseenter=${() => this._onOverviewNodeHover(mappingNodeId)}
                   @mouseleave=${() => this._onOverviewNodeLeave()}
                 >
-                  <div class="overview-mapping-card" style="${!ns.name ? "padding-top:24px;" : ""}" title=${m.id}>
+                  <div class="overview-mapping-card" data-testid=${`overview-mapping-card-${sanitizeTestIdSegment(m.id)}`} style="${!ns.name ? "padding-top:24px;" : ""}" title=${m.id}>
                     <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;">
                       ${ns.name
                         ? html`<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:#DCECF6;color:#0A354C;">${ns.name}</span>`
@@ -1415,6 +1515,8 @@ export class SatsumaViz extends LitElement {
 
     return html`
       <sz-mapping-detail
+        data-testid=${`mapping-detail-${sanitizeTestIdSegment(mapping.id)}`}
+        .testIdPrefix=${`mapping-detail-${sanitizeTestIdSegment(mapping.id)}`}
         .mapping=${mapping}
         .sourceSchemas=${sourceSchemas}
         .targetSchema=${expandedTarget}
@@ -1431,6 +1533,42 @@ export class SatsumaViz extends LitElement {
       if (ns.mappings.includes(mapping)) return ns.name;
     }
     return null;
+  }
+
+  private _publishAutomationState() {
+    const state = describeVizAutomationState({
+      hasModel: Boolean(this.model),
+      hasOverviewLayout: Boolean(this._overviewLayout),
+      hasDetailLayout: Boolean(this._layout),
+      layoutError: this._layoutError,
+      viewMode: this._viewMode,
+    });
+    this.dataset.readyState = state.readyState;
+    this.dataset.renderMode = state.renderMode;
+    this.dataset.viewMode = state.viewMode;
+
+    if (state.readyState === "loading") return;
+
+    const signature = JSON.stringify(state);
+    if (signature === this._lastReadySignature) return;
+    this._lastReadySignature = signature;
+
+    const schedule = globalThis.requestAnimationFrame
+      ? globalThis.requestAnimationFrame.bind(globalThis)
+      : (cb: FrameRequestCallback) => {
+          cb(0);
+          return 0;
+        };
+
+    schedule(() => {
+      this.dispatchEvent(
+        new CustomEvent("viz-ready", {
+          bubbles: true,
+          composed: true,
+          detail: state,
+        }),
+      );
+    });
   }
 
   private _collectAllComments(): {
@@ -1678,7 +1816,7 @@ export class SatsumaViz extends LitElement {
     const notes = this.model.fileNotes;
     return html`
       <div class="file-notes">
-        <div class="file-notes-toggle" @click=${this._toggleFileNotes}>
+        <div class="file-notes-toggle" data-testid="file-notes-toggle" @click=${this._toggleFileNotes}>
           <span class="arrow" ?data-expanded=${this._fileNotesExpanded}>&#9654;</span>
           <span>&#128221; File Notes (${notes.length})</span>
         </div>
@@ -1731,7 +1869,13 @@ export class SatsumaViz extends LitElement {
               const isExpanded = expandedIds.has(s.qualifiedId);
               const results = [html`
                 <div class="positioned-card ${isExpanded ? "expanded" : ""}" data-node-id=${s.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;">
-                  <sz-schema-card .schema=${s} .mappedFields=${mapped} .namespaceLabel=${ns.name}></sz-schema-card>
+                  <sz-schema-card
+                    data-testid=${`detail-schema-card-${sanitizeTestIdSegment(s.qualifiedId)}`}
+                    .testIdPrefix=${`detail-schema-card-${sanitizeTestIdSegment(s.qualifiedId)}`}
+                    .schema=${s}
+                    .mappedFields=${mapped}
+                    .namespaceLabel=${ns.name}
+                  ></sz-schema-card>
                 </div>
               `];
               // Block-level comment badges
@@ -1795,7 +1939,13 @@ export class SatsumaViz extends LitElement {
     return html`
       ${ns.schemas.map((s) => {
         const mapped = this._mappedFieldsBySchema.get(s.qualifiedId) ?? new Set();
-        return html`<sz-schema-card .schema=${s} .mappedFields=${mapped} .namespaceLabel=${ns.name}></sz-schema-card>`;
+        return html`<sz-schema-card
+          data-testid=${`fallback-schema-card-${sanitizeTestIdSegment(s.qualifiedId)}`}
+          .testIdPrefix=${`fallback-schema-card-${sanitizeTestIdSegment(s.qualifiedId)}`}
+          .schema=${s}
+          .mappedFields=${mapped}
+          .namespaceLabel=${ns.name}
+        ></sz-schema-card>`;
       })}
       ${ns.fragments.map(
         (f) => html`<sz-fragment-card .fragment=${f} .namespaceLabel=${ns.name}></sz-fragment-card>`

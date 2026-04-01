@@ -38,7 +38,7 @@ import { computeCodeLenses } from "./codelens";
 import { computeActionContext } from "./action-context";
 import { prepareRename, computeRename } from "./rename";
 import { computeFormatting, initFormatting } from "./formatting";
-import { buildVizModel, mergeVizModels } from "./viz-model";
+import { buildVizModel, mergeVizModels } from "@satsuma/viz-backend";
 import { computeMappingCoverage } from "./coverage";
 
 // ---------- Connection setup ----------

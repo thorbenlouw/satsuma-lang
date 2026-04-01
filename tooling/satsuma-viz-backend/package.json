@@ -1,0 +1,39 @@
+{
+  "name": "@satsuma/viz-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared VizModel backend utilities for Satsuma visualization consumers",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./workspace-index": {
+      "types": "./dist/workspace-index.d.ts",
+      "default": "./dist/workspace-index.js"
+    },
+    "./viz-model": {
+      "types": "./dist/viz-model.d.ts",
+      "default": "./dist/viz-model.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "pretest": "npm --prefix ../satsuma-core run build && tsc",
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@satsuma/core": "file:../satsuma-core",
+    "@satsuma/viz-model": "file:../satsuma-viz-model",
+    "vscode-languageserver": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3"
+  }
+}

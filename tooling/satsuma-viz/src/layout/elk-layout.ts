@@ -719,11 +719,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const f of ns.fragments) {
       nodeIds.add(f.id);
       overviewNodeKinds.set(f.id, "fragment");
-      overviewNodeHasNamespace.add(f.id);
+      if (ns.name) overviewNodeHasNamespace.add(f.id);
       nsNodes.push({
         id: f.id,
         width: estimateCompactTextCardWidth(f.id),
-        height: NAMESPACE_PILL_HEIGHT + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
@@ -736,11 +736,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const m of ns.metrics) {
       nodeIds.add(m.qualifiedId);
       overviewNodeKinds.set(m.qualifiedId, "metric");
-      overviewNodeHasNamespace.add(m.qualifiedId);
+      if (ns.name) overviewNodeHasNamespace.add(m.qualifiedId);
       nsNodes.push({
         id: m.qualifiedId,
         width: estimateCompactTextCardWidth(m.id),
-        height: NAMESPACE_PILL_HEIGHT + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
+        height: (ns.name ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + FIELDS_PADDING_BOTTOM,
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
