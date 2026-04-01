@@ -84,7 +84,45 @@ export default [
       "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     },
   },
-  // TypeScript files — type-aware linting
+  // TypeScript test files and the viz harness package (satsuma-cli tests, viz-harness
+  // source + tests) — baseline TypeScript rules without type-info (no tsconfig needed).
+  // Other TS packages (core, lsp, viz, vscode-satsuma) are linted incrementally as
+  // they are migrated to include test files in their tsconfigs.
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: [
+      "tooling/satsuma-cli/test/**/*.ts",
+      "tooling/satsuma-viz-harness/**/*.ts",
+    ],
+  })),
+  {
+    files: [
+      "tooling/satsuma-cli/test/**/*.ts",
+      "tooling/satsuma-viz-harness/**/*.ts",
+    ],
+    rules: {
+      // Align with the JS convention used throughout the repo
+      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      // Non-null assertions require targeted inline suppression with a safety justification
+      "@typescript-eslint/no-non-null-assertion": "error",
+    },
+  },
+  // Test files — relax rules that are impractical to enforce in test code:
+  //   - no-explicit-any: test assertions commonly cast parsed output shapes to any
+  //     rather than defining full types for every intermediate result
+  //   - no-non-null-assertion: array accesses after expect(arr.length).toBe(N) are safe
+  //     but non-null assertions are the idiomatic way to narrow type in test code
+  {
+    files: ["tooling/satsuma-cli/test/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
+  // satsuma-cli source files additionally get type-aware linting because the package
+  // has a tsconfig with strict settings that supports projectService inference.
+  // Test files are intentionally excluded here — they use import.meta.dirname (Node 22+)
+  // which requires module: "node22" or higher, while the current tsconfig targets node16.
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({
     ...config,
     files: ["tooling/satsuma-cli/src/**/*.ts"],
@@ -98,9 +136,7 @@ export default [
       },
     },
     rules: {
-      // Align with existing JS convention
       "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
-      // Non-null assertions require targeted inline suppression with a safety justification
       "@typescript-eslint/no-non-null-assertion": "error",
     },
   },

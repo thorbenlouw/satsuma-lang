@@ -68,12 +68,23 @@ window.__satsumaHarness = harness;
 
 // ---------- DOM references ----------
 
-const fixtureListEl = document.getElementById("fixture-list")!;
-const fixtureLabelEl = document.getElementById("fixture-label")!;
-const sourceCodeEl = document.getElementById("source-code")!;
-const vizContainer = document.getElementById("viz-container")!;
-const readyBadge = document.getElementById("harness-ready-badge")!;
-const viewModeToggle = document.getElementById("view-mode-toggle")!;
+/**
+ * Retrieve a required DOM element by id.
+ * Throws a clear error if the element is absent — this indicates a mismatch
+ * between index.html and app.ts rather than a recoverable runtime condition.
+ */
+function getRequired(id: string): HTMLElement {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`[harness] required element #${id} not found`);
+  return el;
+}
+
+const fixtureListEl = getRequired("fixture-list");
+const fixtureLabelEl = getRequired("fixture-label");
+const sourceCodeEl = getRequired("source-code");
+const vizContainer = getRequired("viz-container");
+const readyBadge = getRequired("harness-ready-badge");
+const viewModeToggle = getRequired("view-mode-toggle");
 
 // ---------- Viz element management ----------
 
@@ -269,9 +280,9 @@ async function init(): Promise<void> {
 
   // Pre-select the first fixture so the page is immediately useful.
   if (fixtures.length > 0) {
-    const firstUri = fixtures[0]!.uri;
+    const first = fixtures[0];
     const firstBtn = fixtureListEl.querySelector<HTMLButtonElement>(".fixture-item");
-    if (firstBtn) selectFixture(firstUri, firstBtn);
+    if (first && firstBtn) selectFixture(first.uri, firstBtn);
   }
 }
 

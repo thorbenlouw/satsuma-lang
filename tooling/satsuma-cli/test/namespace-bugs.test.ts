@@ -7,7 +7,6 @@ import { run as _run } from "./helpers.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const FIXTURE = resolve(__dirname, "fixtures/namespace-collision.stm");
-const NS_FIXTURE = resolve(__dirname, "fixtures/namespaces.stm");
 // Fixture with namespace blocks used to verify output canonicalization bugs.
 const OUTPUT_BUGS_FIXTURE = resolve(__dirname, "fixtures/namespace-output-bugs.stm");
 

@@ -102,7 +102,7 @@ describe("satsuma fmt idempotency", () => {
 describe("satsuma fmt error handling", () => {
   it("skips files with parse errors and reports on stderr", async () => {
     const fixture = resolve(__dirname, "fixtures/parse-error.stm");
-    const { stderr, code } = await satsuma("fmt", "--check", fixture);
+    const { stderr } = await satsuma("fmt", "--check", fixture);
     // Should mention parse error but not crash
     assert.match(stderr, /parse error/i);
   });
