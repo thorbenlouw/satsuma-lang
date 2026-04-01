@@ -151,13 +151,12 @@ Examples:
         });
       }
 
-      // Add NL-derived arrows for this field (as source or target).
+      // Add NL-derived arrows when the queried field is the @ref source.
       //
       // An @ref like `@source8.amount` in `-> total { "Sum @source8.amount" }`
       // produces an nl-derived arrow: source8.amount → target8.total.
-      // This arrow must be discoverable both when querying source8.amount (the
-      // ref resolves to the queried field) AND when querying target8.total (the
-      // queried field is the arrow's target). See sl-k797.
+      // This arrow is discoverable when querying source8.amount (the ref
+      // resolves to the queried field). Target-side discovery uses field-lineage.
       const nlRefs = resolveAllNLRefs(index);
       const canonicalQualified = canonicalKey(qualifiedField);
       for (const nlRef of nlRefs) {
@@ -168,15 +167,8 @@ Examples:
           ? `${nlRef.namespace}::${nlRef.mapping}`
           : nlRef.mapping;
 
-        // Match when queried field is the @ref source OR the arrow's target.
-        // For target matching, verify the mapping actually targets the queried schema.
-        const matchesSource = resolvedTo === canonicalQualified;
+        if (resolvedTo !== canonicalQualified) continue;
         const nlMapping = index.mappings.get(nlMappingKey);
-        const mappingTargetsQueriedSchema = nlMapping?.targets.includes(resolvedSchema.key) ?? false;
-        const matchesTarget = mappingTargetsQueriedSchema &&
-          (nlRef.targetField === fieldName || nlRef.targetField === leafName);
-
-        if (!matchesSource && !matchesTarget) continue;
 
         // Skip if the queried field is already a declared source for the same
         // arrow (e.g. `c -> d { "clean up @s1.c" }` — don't emit a duplicate
@@ -188,9 +180,17 @@ Examples:
           if (a.classification === "nl-derived") return false;
           const aMappingKey = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
           if (aMappingKey !== nlMappingKey || a.target !== nlRef.targetField) return false;
-          return a.sources.some((s) =>
-            s === resolvedTo || canonicalKey(s) === resolvedTo,
-          );
+          // Arrow sources may be bare field names (e.g. "c") while resolvedTo is
+          // canonical (e.g. "::s1.c"). Qualify each source against the mapping's
+          // source schemas to compare properly.
+          const srcSchemas = nlMapping?.sources ?? [];
+          return a.sources.some((s) => {
+            if (s === resolvedTo || canonicalKey(s) === resolvedTo) return true;
+            for (const schema of srcSchemas) {
+              if (canonicalKey(`${schema}.${s}`) === resolvedTo) return true;
+            }
+            return false;
+          });
         });
         if (alreadyDeclared) continue;
 
