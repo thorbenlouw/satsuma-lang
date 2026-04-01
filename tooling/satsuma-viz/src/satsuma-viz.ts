@@ -6,6 +6,7 @@ import { computeLayout, computeOverviewLayout, type LayoutResult, type OverviewL
 import { SzOpenMappingEvent } from "./edges/sz-overview-edge-layer.js";
 import tokens from "./tokens.css";
 import { renderMarkdown } from "./markdown.js";
+import { buildMappedFieldsIndex, buildMappingCoveredFields } from "./field-coverage.js";
 
 export { VizModel } from "./model.js";
 export type { NamespaceGroup } from "./model.js";
@@ -18,6 +19,7 @@ export { SzEdgeLayer } from "./edges/sz-edge-layer.js";
 export { SzOverviewEdgeLayer, SzOpenMappingEvent } from "./edges/sz-overview-edge-layer.js";
 export { SzMappingDetail } from "./components/sz-mapping-detail.js";
 export { computeLayout, computeOverviewLayout } from "./layout/elk-layout.js";
+export { buildMappingCoveredFields, buildMappedFieldsIndex, resolveSchemaLocalFieldPath, schemaHasFieldPath } from "./field-coverage.js";
 export type { LayoutResult, LayoutNode, LayoutEdge, SourceBlockLayout, OverviewLayoutResult, OverviewEdge } from "./layout/elk-layout.js";
 
 /** Navigate event — dispatched when the user clicks a source-linked element. */
@@ -1403,23 +1405,11 @@ export class SatsumaViz extends LitElement {
     const targetSchema = allSchemas.find((s) => s.qualifiedId === mapping.targetRef) ?? null;
     const expandedTarget = targetSchema ? this._expandSpreads(targetSchema) : null;
 
-    // Build mapped fields for the detail view
-    const sourceMapped = new Map<string, Set<string>>();
-    const targetMapped = new Set<string>();
-    const collectArrows = (arrows: import("./model.js").ArrowEntry[]) => {
-      for (const a of arrows) {
-        targetMapped.add(a.targetField);
-        for (const sf of a.sourceFields) {
-          for (const sr of mapping.sourceRefs) {
-            if (!sourceMapped.has(sr)) sourceMapped.set(sr, new Set());
-            sourceMapped.get(sr)!.add(sf);
-          }
-        }
-      }
-    };
-    collectArrows(mapping.arrows);
-    for (const eb of mapping.eachBlocks) collectArrows(eb.arrows);
-    for (const fb of mapping.flattenBlocks) collectArrows(fb.arrows);
+    const { sourceMapped, targetMapped } = buildMappingCoveredFields(
+      mapping,
+      sourceSchemas,
+      expandedTarget,
+    );
 
     const namespaceLabel = this._namespaceForMapping(mapping);
 
@@ -1966,38 +1956,7 @@ export class SatsumaViz extends LitElement {
     };
   }
   private _buildMappedFieldsIndex(): Map<string, Set<string>> {
-    const index = new Map<string, Set<string>>();
-    if (!this.model) return index;
-
-    const ensureSet = (id: string) => {
-      if (!index.has(id)) index.set(id, new Set());
-      return index.get(id)!;
-    };
-
-    for (const ns of this.model.namespaces) {
-      for (const m of ns.mappings) {
-        const collect = (arrows: import("./model.js").ArrowEntry[]) => {
-          for (const a of arrows) {
-            ensureSet(m.targetRef).add(a.targetField);
-            for (const sf of a.sourceFields) {
-              for (const sr of m.sourceRefs) {
-                ensureSet(sr).add(sf);
-              }
-            }
-          }
-        };
-
-        collect(m.arrows);
-        for (const eb of m.eachBlocks) {
-          collect(eb.arrows);
-        }
-        for (const fb of m.flattenBlocks) {
-          collect(fb.arrows);
-        }
-      }
-    }
-
-    return index;
+    return this.model ? buildMappedFieldsIndex(this.model) : new Map();
   }
 }
 

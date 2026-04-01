@@ -61,6 +61,10 @@
     "./coverage": {
       "types": "./dist/coverage.d.ts",
       "default": "./dist/coverage.js"
+    },
+    "./coverage-paths": {
+      "types": "./dist/coverage-paths.d.ts",
+      "default": "./dist/coverage-paths.js"
     }
   },
   "types": "./dist/index.d.ts",
