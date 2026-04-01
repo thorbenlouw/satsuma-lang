@@ -41,9 +41,14 @@ export function parseSource(src: string): { src: string; tree: Tree; errorCount:
   return { src, tree: tree as unknown as Tree, errorCount };
 }
 
-/** Count ERROR nodes recursively in a tree node. */
+/**
+ * Count parse-error nodes recursively in a tree.
+ * Counts both ERROR nodes (unexpected tokens) and MISSING nodes (expected
+ * tokens the parser could not find), matching the two error signals that
+ * tree-sitter produces.  See @satsuma/core parse-errors.ts for details.
+ */
 function countErrors(node: SyntaxNode): number {
-  let n = node.type === "ERROR" ? 1 : 0;
+  let n = (node.type === "ERROR" || node.isMissing) ? 1 : 0;
   for (const child of node.namedChildren) n += countErrors(child);
   return n;
 }

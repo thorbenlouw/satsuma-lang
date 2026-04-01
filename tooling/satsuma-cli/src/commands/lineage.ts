@@ -92,7 +92,12 @@ Examples:
       if (opts.from) {
         const resolved = resolveIndexKey(opts.from, graph.nodes);
         if (!resolved) {
-          console.error(`Node '${opts.from}' not found.`);
+          const msg = `Node '${opts.from}' not found.`;
+          if (opts.json) {
+            console.log(JSON.stringify({ error: msg }, null, 2));
+          } else {
+            console.error(msg);
+          }
           process.exit(1);
         }
         const start = resolved.key;
@@ -108,7 +113,12 @@ Examples:
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: guarded by opts.to existence check in enclosing branch
         const resolvedTo = resolveIndexKey(opts.to!, graph.nodes);
         if (!resolvedTo) {
-          console.error(`Node '${opts.to}' not found.`);
+          const msg = `Node '${opts.to}' not found.`;
+          if (opts.json) {
+            console.log(JSON.stringify({ error: msg }, null, 2));
+          } else {
+            console.error(msg);
+          }
           process.exit(1);
         }
         const target = resolvedTo.key;

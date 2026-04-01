@@ -1,6 +1,6 @@
 ---
 id: sl-xfxd
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:26:07Z

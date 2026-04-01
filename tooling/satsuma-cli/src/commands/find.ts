@@ -28,7 +28,7 @@ interface Match {
   block: string;
   field: string;
   tag: string;
-  fieldType?: string;
+  fieldType?: string | null;
   metadata?: string[];
   file: string;
   line: number;
@@ -130,6 +130,7 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
           block: blockName,
           field: "(schema)",
           tag: matched,
+          fieldType: null,
           metadata: allTags.length > 0 ? allTags : undefined,
           file: blockEntry.file,
           line: blockNode.startPosition.row + 1,

@@ -111,6 +111,16 @@ describe("satsuma summary", () => {
       "arrowCount should include both declared and nl-derived arrows");
   });
 
+  it("--json totalErrors counts MISSING nodes, not just ERROR nodes (sl-8s4b)", async () => {
+    // Files with parse errors (e.g. missing closing brace) produce MISSING
+    // nodes that must be included in totalErrors, not just ERROR nodes.
+    const BAD = resolve(import.meta.dirname, "fixtures", "parse-error.stm");
+    const { stdout, code } = await run("summary", "--json", BAD);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(data.totalErrors > 0, "totalErrors should count parse errors");
+  });
+
   it("--json --compact strips notes and file/row from output (sl-86n4)", async () => {
     const { stdout, code } = await run("summary", "--json", "--compact", PLATFORM);
     assert.equal(code, 0);
@@ -813,6 +823,21 @@ describe("satsuma find", () => {
     assert.ok(schemaMatch, "expected uses_fragment match from spread");
     assert.equal(schemaMatch.field, "created_at");
   });
+
+  it("--json schema-level entries include fieldType as null (sl-t8b4)", async () => {
+    // Schema-level tag matches must include fieldType: null in JSON output,
+    // not omit the key entirely, matching the documented JSON shape.
+    const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
+    const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const schemaLevel = data.filter((m: any) => m.field === "(schema)");
+    assert.ok(schemaLevel.length > 0, "expected schema-level matches");
+    for (const m of schemaLevel) {
+      assert.ok("fieldType" in m, "schema-level entry must include fieldType key");
+      assert.equal(m.fieldType, null, "schema-level fieldType must be null");
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -845,6 +870,24 @@ describe("satsuma lineage", () => {
     const { code, stderr } = await run("lineage", "--from", "no_such_schema_xyz", PLATFORM);
     assert.equal(code, 1);
     assert.match(stderr, /not found/i);
+  });
+
+  it("--json returns JSON error object for unknown --from schema (sl-xfxd)", async () => {
+    // When --json is passed, not-found errors must return a JSON object
+    // instead of plain text, consistent with other commands like schema.
+    const { stdout, code } = await run("lineage", "--from", "no_such_schema_xyz", "--json", PLATFORM);
+    assert.equal(code, 1);
+    const data = JSON.parse(stdout);
+    assert.ok(data.error, "should have error key in JSON");
+    assert.match(data.error, /not found/i);
+  });
+
+  it("--json returns JSON error object for unknown --to schema (sl-xfxd)", async () => {
+    const { stdout, code } = await run("lineage", "--to", "no_such_schema_xyz", "--json", PLATFORM);
+    assert.equal(code, 1);
+    const data = JSON.parse(stdout);
+    assert.ok(data.error, "should have error key in JSON");
+    assert.match(data.error, /not found/i);
   });
 
   it("exits 1 when neither --from nor --to provided", async () => {
@@ -2929,11 +2972,19 @@ describe("satsuma lint", () => {
     assert.match(stdout, /hidden-source-in-nl/);
   });
 
-  it("reports unresolved NL references", async () => {
+  it("reports unresolved NL references with exit 0 (warning-only)", async () => {
+    // unresolved-nl-ref is warning severity — warnings do not cause exit 2
     const { stdout, code } = await run("lint", resolve(LINT_FIXTURES, "lint-unresolved.stm"));
-    assert.equal(code, 2);
+    assert.equal(code, 0);
     assert.match(stdout, /unresolved-nl-ref/);
     assert.match(stdout, /nonexistent_schema/);
+  });
+
+  it("--quiet exits 0 for warning-only findings (sl-8o37)", async () => {
+    // Warning-severity findings must not cause exit 2, only errors should.
+    const { stdout, code } = await run("lint", "--quiet", resolve(LINT_FIXTURES, "lint-unresolved.stm"));
+    assert.equal(code, 0);
+    assert.equal(stdout.trim(), "");
   });
 
   it("--json produces valid structured output", async () => {
@@ -3015,8 +3066,8 @@ describe("satsuma lint --fix", () => {
     const file = copyFixture("lint-mixed.stm");
 
     const { stdout, code } = await run("lint", "--fix", file);
-    // Non-fixable finding remains → exit 2
-    assert.equal(code, 2);
+    // After fix, only warning-severity findings remain → exit 0
+    assert.equal(code, 0);
     assert.match(stdout, /Fixed:/);
     assert.match(stdout, /hidden-source-in-nl/);
     // Residual non-fixable finding still reported
@@ -3031,7 +3082,8 @@ describe("satsuma lint --fix", () => {
     const file = copyFixture("lint-mixed.stm");
 
     const { stdout, code } = await run("lint", "--fix", "--json", file);
-    assert.equal(code, 2);
+    // After fix, only warning-severity findings remain → exit 0
+    assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.fixes.length > 0, "should have applied fixes");
     assert.ok(data.findings.length > 0, "should have residual findings");
@@ -3046,9 +3098,9 @@ describe("satsuma lint --fix", () => {
     const firstData = JSON.parse(first);
     assert.ok(firstData.summary.fixed > 0, "first run should fix something");
 
-    // Second run: no new fixes, only residual non-fixable findings
+    // Second run: no new fixes, only residual warning-severity findings → exit 0
     const { stdout, code } = await run("lint", "--fix", "--json", file);
-    assert.equal(code, 2);
+    assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.summary.fixed, 0, "no new fixes on second run");
     // Persistent non-fixable finding (nonexistent_fx_rates) still present
