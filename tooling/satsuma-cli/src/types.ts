@@ -146,6 +146,11 @@ export interface NLRefData {
   mapping: string;
   namespace: string | null;
   targetField: string | null;
+  /** Set to "source_block" when the NL text comes from a join condition or
+   * filter expression in a source block. These refs must not generate
+   * NL-derived arrows — they describe relationships between sources, not
+   * data flow. */
+  context?: "source_block";
   line: number;
   column: number;
   file: string;
