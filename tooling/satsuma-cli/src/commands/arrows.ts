@@ -162,6 +162,9 @@ Examples:
       const canonicalQualified = canonicalKey(qualifiedField);
       for (const nlRef of nlRefs) {
         if (!nlRef.resolved || !nlRef.resolvedTo) continue;
+        // NL refs from source blocks describe join conditions, not data flow —
+        // skip them to avoid false NL-derived arrows on join-key fields.
+        if (nlRef.context === "source_block") continue;
         const resolvedTo = nlRef.resolvedTo.name;
 
         // nlRef.mapping is already fully qualified by resolveAllNLRefs

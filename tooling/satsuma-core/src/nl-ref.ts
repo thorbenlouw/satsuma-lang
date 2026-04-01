@@ -67,6 +67,10 @@ export interface NLRefDataItem {
   mapping: string;
   namespace: string | null;
   targetField: string | null;
+  /** Where in the mapping body this NL text came from. Source block NL text
+   * describes join conditions and filters — it must not generate NL-derived
+   * arrows. Absent means an arrow body or note block. */
+  context?: "source_block";
   line: number;
   column: number;
   file: string;
@@ -80,6 +84,9 @@ export interface ResolvedNLRef {
   mapping: string;
   namespace: string | null;
   targetField: string | null;
+  /** Propagated from the source NLRefDataItem. "source_block" means the ref
+   * came from a join condition or filter expression, not an arrow body. */
+  context?: "source_block";
   file: string;
   line: number;
   column: number;
@@ -365,6 +372,8 @@ export function resolveRef(ref: string, mappingContext: MappingContext, lookup: 
 
 // ── CST Walking ───────────────────────────────────────────────────────────────
 
+/** NLRefDataItem without the file path — used during CST walking before the
+ * file path is known. */
 export type NLRefDataItemNoFile = Omit<NLRefDataItem, "file">;
 
 /**
@@ -527,6 +536,9 @@ function walkArrowsForNL(
       continue;
     }
     if (c.type === "source_block") {
+      // NL text inside a source block describes join conditions and row filters,
+      // not data flow arrows. Mark these items so callers (e.g. arrow derivation)
+      // can skip them — but still include them for nl-refs reporting.
       const nlNodes = [
         ...c.namedChildren.filter((x) => x.type === "nl_string" || x.type === "multiline_string"),
         ...c.namedChildren
@@ -543,6 +555,7 @@ function walkArrowsForNL(
             mapping: mappingName,
             namespace,
             targetField: null,
+            context: "source_block",
             line: nlNode.startPosition.row,
             column: nlNode.startPosition.column,
           });
@@ -649,6 +662,7 @@ export function resolveAllNLRefs(
         mapping: mappingKey,
         namespace: item.namespace,
         targetField: item.targetField,
+        context: item.context,
         file: item.file,
         line,
         column,
