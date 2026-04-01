@@ -96,6 +96,56 @@ Tests should be high-value and low-inertia. A test suite is an asset only when t
 - **No smoke tests.** Do not write tests that only verify a function returns without throwing, or that a known-valid input produces a non-null result. Every assertion should validate a specific, meaningful property of the output.
 - **Name cases by behaviour, not by implementation.** Prefer `"reports a diagnostic when the same schema name appears in two files"` over `"duplicate schema test"`. The description should be a falsifiable statement about the system.
 
+### Viz harness Playwright tests (human-in-the-loop workflow)
+
+The `tooling/satsuma-viz-harness/` Playwright tests cannot run directly in the
+agent sandbox — Chromium and WebKit headless both crash on ARM macOS (SwiftShader
+SIGSEGV), and even Firefox must be launched from the user's terminal.
+
+**How this works:**
+
+The harness uses a sentinel-file protocol so the agent can trigger runs and read
+results without shell access to the browser process:
+
+1. The human runs the watcher once in a background terminal (from the harness directory):
+   ```
+   ./tooling/satsuma-viz-harness/watch-and-test.sh &
+   ```
+   The watcher polls for `.run-tests`, runs `npx playwright test` when it appears,
+   writes output to `.playwright-results.txt`, then removes the sentinel.
+
+2. The agent triggers a run by creating the sentinel:
+   ```bash
+   touch tooling/satsuma-viz-harness/.run-tests
+   ```
+
+3. The agent polls until the sentinel is gone (the watcher removes it immediately
+   on pickup), then reads `.playwright-results.txt` for results.
+
+**What to tell the human:**
+
+When you need Playwright test results, tell the user:
+
+> "Please run `./tooling/satsuma-viz-harness/watch-and-test.sh` in a terminal
+> from the repo root if it's not already running. I'll touch `.run-tests` to
+> trigger a run and read the results from `.playwright-results.txt`."
+
+Then touch the sentinel, wait for it to disappear (the watcher picks it up within
+1 second), and poll `.playwright-results.txt` until it contains `passed` or
+`failed`. A full run takes roughly 30–90 seconds.
+
+**Constraints to remember:**
+
+- **Never** try to run `npx playwright test` directly — it will be blocked or
+  will produce no usable output in the sandbox.
+- **Never** try to start a browser process directly.
+- The watcher kills any stale server on port 3333 before each run, so there is
+  no need to manage the server separately.
+- If `.playwright-results.txt` is stale (timestamp older than your sentinel
+  touch), wait longer — the watcher may still be running the suite.
+- Results from a prior run remain in `.playwright-results.txt` until the next
+  run overwrites them. Always check the file timestamp after triggering.
+
 ## Security
 
 CI runs `npm audit` and `gitleaks` secret scanning on every PR. Before pushing,
