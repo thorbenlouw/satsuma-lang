@@ -79,7 +79,10 @@ test.beforeAll(async ({ request }) => {
  * Returns the <satsuma-viz> element locator.
  */
 async function loadFixture(page: Page, fixtureUri: string): Promise<void> {
-  // Click the fixture item matching the given URI.
+  // Open the fixture picker dropdown, then click the matching item.
+  // The dropdown is hidden (display:none) by default; clicking the picker
+  // button reveals the fixture list before the item is accessible.
+  await page.locator("#fixture-picker-btn").click();
   await page.locator(`.fixture-item[data-uri="${fixtureUri}"]`).click();
   // Wait for the viz to signal readiness via the data-ready-state attribute.
   await page.locator("[data-testid='viz-root']").waitFor({ state: "visible" });

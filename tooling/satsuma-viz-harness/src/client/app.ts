@@ -1,9 +1,9 @@
 /**
  * app.ts — browser-side harness application.
  *
- * Loads fixture metadata from the server, renders source text and the
- * satsuma-viz web component side-by-side, and records all interaction events
- * in window.__satsumaHarness for Playwright assertions.
+ * Loads fixture metadata from the server, renders syntax-highlighted source
+ * text and the satsuma-viz web component side-by-side, and records all
+ * interaction events in window.__satsumaHarness for Playwright assertions.
  *
  * The viz component (satsuma-viz.js) is loaded as a separate <script type="module">
  * in index.html, so this module does not import it directly.  It interacts
@@ -15,6 +15,10 @@
  *   events      — array of recorded interaction events
  *   ready       — true once the viz has reached the "ready" state
  *   clearEvents — helper to reset the event log between assertions
+ *
+ * URL parameters for headless use (e.g. Playwright tests):
+ *   ?fixture=<encoded-uri>   — auto-selects a fixture on load
+ *   ?mode=lineage|single     — overrides the default view mode
  */
 
 // ---------- Types ----------
@@ -79,12 +83,122 @@ function getRequired(id: string): HTMLElement {
   return el;
 }
 
-const fixtureListEl = getRequired("fixture-list");
-const fixtureLabelEl = getRequired("fixture-label");
-const sourceCodeEl = getRequired("source-code");
-const vizContainer = getRequired("viz-container");
-const readyBadge = getRequired("harness-ready-badge");
-const viewModeToggle = getRequired("view-mode-toggle");
+const fixtureListEl     = getRequired("fixture-list");
+const fixturePickerBtn  = getRequired("fixture-picker-btn");
+const fixturePickerName = getRequired("fixture-picker-name");
+const fixtureDropdown   = getRequired("fixture-picker-dropdown");
+const sourceCodeEl      = getRequired("source-code");
+const vizContainer      = getRequired("viz-container");
+const readyBadge        = getRequired("harness-ready-badge");
+const viewModeToggle    = getRequired("view-mode-toggle");
+
+// ---------- Syntax highlighting ----------
+
+/**
+ * Translate Satsuma source text to HTML with <span class="tok-*"> wrappers.
+ *
+ * The tokeniser is derived from the TextMate grammar in
+ * tooling/vscode-satsuma/syntaxes/satsuma.tmLanguage.json.
+ * Earlier alternatives in the master regex win (priority ordering mirrors
+ * the grammar's include order).  No external library is required.
+ */
+function highlightSatsuma(source: string): string {
+  // HTML-escape a plain-text segment.
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const wrap = (cls: string, s: string) => `<span class="${cls}">${esc(s)}</span>`;
+
+  /**
+   * Wrap the contents of a double-quoted string, further highlighting
+   * any @ref cross-references embedded within it.
+   */
+  function highlightStringContents(text: string): string {
+    // @ref pattern from variable.other.reference.satsuma in the grammar.
+    const refRe =
+      /@(?:`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::[a-zA-Z_][a-zA-Z0-9_-]*)?(?:\.(?:`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*(?!\w)/g;
+
+    let html = `<span class="tok-string">`;
+    let last = 0;
+    for (const m of text.matchAll(refRe)) {
+      html += esc(text.slice(last, m.index));
+      html += `</span><span class="tok-ref">${esc(m[0])}</span><span class="tok-string">`;
+      last = m.index! + m[0].length;
+    }
+    html += esc(text.slice(last)) + `</span>`;
+    return html;
+  }
+
+  // ── Master token regex ──────────────────────────────────────────────────
+  // Alternatives are listed in priority order (first match wins).
+  // Named capture groups map directly to the rendering logic below.
+  const TOKEN = new RegExp(
+    [
+      // Triple-quoted strings (multiline) must come before single-quoted.
+      String.raw`(?<triple>"""[\s\S]*?(?:"""|$))`,
+      // Double-quoted strings (single line, may contain @ref).
+      String.raw`(?<string>"(?:[^"\\]|\\.)*"?)`,
+      // Warning comments: //! take priority over plain //
+      String.raw`(?<comment_warn>//!.*)`,
+      // Question comments: //?
+      String.raw`(?<comment_q>//\?.*)`,
+      // Regular line comments.
+      String.raw`(?<comment>//.*)`,
+      // Mapping arrow operator.
+      String.raw`(?<arrow>->)`,
+      // Spread: ...
+      String.raw`(?<spread>\.\.\.)`,
+      // Pipe operator.
+      String.raw`(?<pipe>\|)`,
+      // Backtick-quoted identifiers: `field name`.
+      String.raw`(?<backtick>` + "`[^`]*`)",
+      // Block-level and structural keywords.
+      String.raw`(?<kw>\b(?:namespace|schema|fragment|mapping|metric|transform|note|map|source|target|each|flatten|record|list_of|import|from|default)\b)`,
+      // Data type names used in field declarations.
+      String.raw`(?<type>\b(?:STRING|VARCHAR|INT|INTEGER|BIGINT|DECIMAL|CHAR|BOOLEAN|DATE|TIMESTAMPTZ|TIMESTAMP_NTZ|UUID|JSON|TEXT|NUMBER|INT32|FLOAT|DOUBLE|CURRENCY|PICKLIST|ID|PERCENT|DATETIME)\b)`,
+      // Built-in pipeline function names.
+      String.raw`(?<pipeline>\b(?:trim|lowercase|uppercase|coalesce|round|split|first|last|to_utc|to_iso8601|parse|null_if_empty|null_if_invalid|validate_email|now_utc|title_case|escape_html|truncate|to_number|prepend|max_length|assume_utc|join|dedup)\b)`,
+      // Boolean and null literals.
+      String.raw`(?<boolean>\b(?:true|false|null)\b)`,
+      // Numeric literals (integer and decimal).
+      String.raw`(?<number>-?\b\d+(?:\.\d+)?\b)`,
+    ].join("|"),
+    "g",
+  );
+
+  let html = "";
+  let last = 0;
+
+  for (const m of source.matchAll(TOKEN)) {
+    // Emit any plain text that precedes this token.
+    if (m.index! > last) html += esc(source.slice(last, m.index));
+
+    const g = m.groups!;
+    const text = m[0];
+
+    if (g.triple)        html += wrap("tok-string-triple", text);
+    else if (g.string)   html += highlightStringContents(text);
+    else if (g.comment_warn) html += wrap("tok-comment-warn", text);
+    else if (g.comment_q)    html += wrap("tok-comment-q",    text);
+    else if (g.comment)      html += wrap("tok-comment",       text);
+    else if (g.arrow)    html += wrap("tok-arrow",    text);
+    else if (g.spread)   html += wrap("tok-spread",   text);
+    else if (g.pipe)     html += wrap("tok-pipe",     text);
+    else if (g.backtick) html += wrap("tok-backtick", text);
+    else if (g.kw)       html += wrap("tok-kw",       text);
+    else if (g.type)     html += wrap("tok-type",     text);
+    else if (g.pipeline) html += wrap("tok-pipeline", text);
+    else if (g.boolean)  html += wrap("tok-boolean",  text);
+    else if (g.number)   html += wrap("tok-number",   text);
+    else                 html += esc(text);
+
+    last = m.index! + text.length;
+  }
+
+  // Emit any remaining plain text after the last token.
+  html += esc(source.slice(last));
+  return html;
+}
 
 // ---------- Viz element management ----------
 
@@ -199,8 +313,8 @@ async function loadFixture(uri: string): Promise<void> {
   const { source } = (await sourceRes.json()) as { source: string };
   const model = await modelRes.json();
 
-  // Update source panel.
-  sourceCodeEl.textContent = source;
+  // Render syntax-highlighted source into the pre element.
+  sourceCodeEl.innerHTML = highlightSatsuma(source);
   sourceCodeEl.className = "";
 
   // Pass the model to the viz component.
@@ -208,11 +322,33 @@ async function loadFixture(uri: string): Promise<void> {
   (viz as unknown as { model: unknown }).model = model;
 }
 
-// ---------- Sidebar ----------
+// ---------- Fixture picker (dropdown) ----------
+
+/** Whether the fixture dropdown is currently open. */
+let pickerOpen = false;
 
 /**
- * Render the fixture list in the sidebar.
- * Clicking an item loads the fixture and highlights the selected row.
+ * Toggle the fixture picker dropdown open/closed.
+ */
+function togglePicker(open?: boolean): void {
+  pickerOpen = open !== undefined ? open : !pickerOpen;
+  fixtureDropdown.classList.toggle("hidden", !pickerOpen);
+}
+
+fixturePickerBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePicker();
+});
+
+// Close the dropdown when the user clicks anywhere else.
+document.addEventListener("click", () => {
+  if (pickerOpen) togglePicker(false);
+});
+
+/**
+ * Render the fixture list inside the picker dropdown.
+ * All fixture items are always present in the DOM so that URL-param
+ * auto-selection (?fixture=<uri>) can find them by data-uri attribute.
  */
 function renderFixtureList(fixtures: Fixture[]): void {
   fixtureListEl.innerHTML = "";
@@ -221,22 +357,28 @@ function renderFixtureList(fixtures: Fixture[]): void {
     btn.className = "fixture-item";
     btn.textContent = fixture.name;
     btn.dataset["uri"] = fixture.uri;
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // prevent document click from immediately closing
       selectFixture(fixture.uri, btn);
+      togglePicker(false);
     });
     fixtureListEl.appendChild(btn);
   }
 }
 
 /**
- * Mark a fixture item as selected, update the header label, and load the data.
+ * Mark a fixture item as selected, update the picker button label, and load
+ * the source and model data.
  */
 function selectFixture(uri: string, btn: HTMLButtonElement): void {
   for (const el of fixtureListEl.querySelectorAll(".fixture-item")) {
     el.classList.remove("selected");
   }
   btn.classList.add("selected");
-  fixtureLabelEl.textContent = btn.textContent ?? uri;
+  // Show a short name (last path segment) in the compact picker button.
+  const shortName = btn.textContent ?? uri;
+  fixturePickerName.textContent = shortName;
+  fixturePickerName.title = shortName;
   void loadFixture(uri);
 }
 
@@ -264,12 +406,19 @@ viewModeToggle.addEventListener("click", (e) => {
 // ---------- Startup ----------
 
 /**
- * Fetch the fixture list from the server and populate the sidebar.
- * Automatically selects the first fixture so the harness is in a useful state
- * on load, which also satisfies the requirement that Playwright tests can wait
- * for a ready state without a manual fixture selection step.
+ * Fetch the fixture list from the server and populate the picker dropdown.
+ * Auto-selects the first fixture (or a fixture specified via URL params) so
+ * the harness is in a useful state on load, which also satisfies the requirement
+ * that Playwright tests can wait for a ready state without a manual fixture
+ * selection step.
  */
 async function init(): Promise<void> {
+  // Read URL parameters set by headless callers (e.g. /api/screenshot).
+  const params = new URLSearchParams(window.location.search);
+  const autoFixtureUri = params.get("fixture");
+  const autoMode = params.get("mode");
+  if (autoMode === "lineage" || autoMode === "single") harness.viewMode = autoMode;
+
   const res = await fetch("/api/fixtures");
   if (!res.ok) {
     fixtureListEl.textContent = "Failed to load fixtures.";
@@ -278,7 +427,17 @@ async function init(): Promise<void> {
   const fixtures = (await res.json()) as Fixture[];
   renderFixtureList(fixtures);
 
-  // Pre-select the first fixture so the page is immediately useful.
+  // If a fixture was specified via URL param, select it; otherwise select the first.
+  if (autoFixtureUri) {
+    for (const btn of fixtureListEl.querySelectorAll<HTMLButtonElement>(".fixture-item")) {
+      if (btn.dataset["uri"] === autoFixtureUri) {
+        selectFixture(autoFixtureUri, btn);
+        return;
+      }
+    }
+  }
+
+  // Default: pre-select the first fixture so the page is immediately useful.
   if (fixtures.length > 0) {
     const first = fixtures[0];
     const firstBtn = fixtureListEl.querySelector<HTMLButtonElement>(".fixture-item");
