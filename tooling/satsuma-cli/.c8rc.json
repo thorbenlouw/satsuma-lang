@@ -1,0 +1,14 @@
+{
+  "all": true,
+  "src": ["dist"],
+  "exclude": [
+    "dist/index.js",
+    "dist/generated/**",
+    "test/**",
+    "scripts/**",
+    "node_modules/**"
+  ],
+  "check-coverage": true,
+  "lines": 70,
+  "reports-dir": "coverage"
+}
