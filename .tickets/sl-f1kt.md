@@ -37,3 +37,7 @@ PR checkpoint prepared: extracted @satsuma/viz-backend package, moved viz-model/
 **2026-04-01T11:03:05Z**
 
 Cause: Rebasing onto main surfaced that the extracted shared workspace index had not carried over the newer source_ref structural filtering, so quoted join descriptions were being indexed as mapping source names. Fix: Switched shared backend mapping source/target indexing to sourceRefStructuralText so the backend preserves the same join-description behavior as main after extraction.
+
+**2026-04-01T11:14:46Z**
+
+Cause: The viz-backend extraction added a new LSP packaging dependency, but scripts/build-artifacts.sh and the release workflow still assumed only core and viz-model mattered, so local artifact builds and GitHub Releases diverged and the LSP tarball path was incomplete. Fix: Updated the artifact script to build and vendor @satsuma/viz-backend for the LSP tarball, and updated the release workflow to use the same script and publish the LSP artifact.

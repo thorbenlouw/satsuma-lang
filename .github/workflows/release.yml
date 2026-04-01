@@ -21,12 +21,9 @@ jobs:
       contents: read
       security-events: write
 
-  build:
+  artifacts:
     needs: [security]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tooling/satsuma-cli
     steps:
       - uses: actions/checkout@v6
 
@@ -35,21 +32,19 @@ jobs:
           node-version: "22"
 
       - name: Install all dependencies
-        working-directory: .
         run: npm run ci:all
 
       - name: Build WASM parser
-        working-directory: tooling/tree-sitter-satsuma
-        run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
+        run: cd tooling/tree-sitter-satsuma && node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
 
-      - name: Bundle for distribution
-        run: npm run pack
+      - name: Build distributable artifacts
+        run: ./scripts/build-artifacts.sh
 
       - name: Smoke-test global install
         shell: bash
         run: |
           # Install from the just-built tarball and confirm the CLI is functional.
-          npm install -g ./satsuma-cli.tgz
+          npm install -g ./tooling/satsuma-cli/satsuma-cli.tgz
           satsuma --version
 
       - uses: actions/upload-artifact@v7
@@ -57,46 +52,18 @@ jobs:
           name: satsuma-cli
           path: tooling/satsuma-cli/satsuma-cli.tgz
 
-  vsix:
-    needs: [security]
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tooling/vscode-satsuma
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install all dependencies
-        working-directory: .
-        run: npm run ci:all
-
-      - name: Build WASM parser
-        working-directory: tooling/tree-sitter-satsuma
-        run: node_modules/.bin/tree-sitter build --wasm . -o tree-sitter-satsuma.wasm
-
-      - name: Build satsuma-viz (needed by webview bundle)
-        working-directory: tooling/satsuma-viz
-        run: npm run build
-
-      - name: Build and package .vsix
-        run: |
-          # Build client + server + webview bundles (copies .wasm + highlights.scm)
-          npm run build
-
-          # Package the extension (--allow-missing-repository for monorepo layout)
-          npx @vscode/vsce package --no-dependencies -o vscode-satsuma.vsix
-
       - uses: actions/upload-artifact@v7
         with:
           name: vscode-satsuma-vsix
           path: tooling/vscode-satsuma/vscode-satsuma.vsix
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: satsuma-lsp
+          path: tooling/satsuma-lsp/satsuma-lsp.tgz
+
   release:
-    needs: [build, vsix]
+    needs: [artifacts]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -141,6 +108,15 @@ jobs:
           process.stdout.write(`${notes}\n`);
           NODE
 
+      - name: Rename release assets for tagged release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_TAG: ${{ inputs.version }}
+        run: |
+          cp -f satsuma-cli.tgz "satsuma-cli-${RELEASE_TAG}.tgz"
+          cp -f satsuma-lsp.tgz "satsuma-lsp-${RELEASE_TAG}.tgz"
+          cp -f vscode-satsuma.vsix "vscode-satsuma-${RELEASE_TAG}.vsix"
+
       - name: Create tagged release
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -151,8 +127,9 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --title "$RELEASE_TAG" \
             --notes-file release-notes.md \
-            satsuma-cli.tgz \
-            vscode-satsuma.vsix
+            "satsuma-cli-${RELEASE_TAG}.tgz" \
+            "satsuma-lsp-${RELEASE_TAG}.tgz" \
+            "vscode-satsuma-${RELEASE_TAG}.vsix"
 
       - name: Update latest release
         if: github.event_name == 'push'
@@ -168,19 +145,29 @@ jobs:
 
           **Install CLI:**
           ```bash
-          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli.tgz
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-cli-latest.tgz
+          ```
+
+          **Install LSP:**
+          ```bash
+          npm install -g https://github.com/${{ github.repository }}/releases/download/latest/satsuma-lsp-latest.tgz
           ```
 
           **Install VS Code Extension:**
-          Download `vscode-satsuma.vsix` and install via:
+          Download `vscode-satsuma-latest.vsix` and install via:
           ```bash
-          code --install-extension vscode-satsuma.vsix
+          code --install-extension vscode-satsuma-latest.vsix
           ```
           EOF
+
+          cp -f satsuma-cli.tgz satsuma-cli-latest.tgz
+          cp -f satsuma-lsp.tgz satsuma-lsp-latest.tgz
+          cp -f vscode-satsuma.vsix vscode-satsuma-latest.vsix
 
           gh release create latest \
             --title "Latest build" \
             --notes-file notes.md \
             --prerelease \
-            satsuma-cli.tgz \
-            vscode-satsuma.vsix
+            satsuma-cli-latest.tgz \
+            satsuma-lsp-latest.tgz \
+            vscode-satsuma-latest.vsix

@@ -20,11 +20,14 @@ LSP_DIR="$REPO_ROOT/tooling/satsuma-lsp"
 CLI_DIR="$REPO_ROOT/tooling/satsuma-cli"
 
 # --------------------------------------------------------------------------- #
-# Shared dependency: build satsuma-core (consumed by CLI, LSP, and extension)
+# Shared dependencies: build packages consumed by CLI, LSP, and extension
 # --------------------------------------------------------------------------- #
 
 echo "==> Building satsuma-core..."
 npm --prefix "$REPO_ROOT/tooling/satsuma-core" run build
+
+echo "==> Building satsuma-viz-backend..."
+npm --prefix "$REPO_ROOT/tooling/satsuma-viz-backend" run build
 
 # --------------------------------------------------------------------------- #
 # 1. VS Code extension (.vsix)
@@ -47,14 +50,20 @@ echo "==> Building and packing LSP server..."
 npm --prefix "$LSP_DIR" run build
 
 # Replace file: symlinks with real copies so the tarball is self-contained.
-# The LSP depends on @satsuma/core and @satsuma/viz-model via file: links.
+# The LSP depends on @satsuma/core, @satsuma/viz-model, and
+# @satsuma/viz-backend via file: links.
 CORE_SRC="$REPO_ROOT/tooling/satsuma-core"
 VIZ_MODEL_SRC="$REPO_ROOT/tooling/satsuma-viz-model"
+VIZ_BACKEND_SRC="$REPO_ROOT/tooling/satsuma-viz-backend"
 
 LSP_CORE_DEST="$LSP_DIR/node_modules/@satsuma/core"
 LSP_VIZ_DEST="$LSP_DIR/node_modules/@satsuma/viz-model"
+LSP_VIZ_BACKEND_DEST="$LSP_DIR/node_modules/@satsuma/viz-backend"
 
-for pair in "$CORE_SRC:$LSP_CORE_DEST" "$VIZ_MODEL_SRC:$LSP_VIZ_DEST"; do
+for pair in \
+  "$CORE_SRC:$LSP_CORE_DEST" \
+  "$VIZ_MODEL_SRC:$LSP_VIZ_DEST" \
+  "$VIZ_BACKEND_SRC:$LSP_VIZ_BACKEND_DEST"; do
   src="${pair%%:*}"
   dest="${pair##*:}"
   if [ -L "$dest" ] || [ -d "$dest" ]; then
