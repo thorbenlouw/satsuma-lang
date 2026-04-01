@@ -320,7 +320,7 @@ mapping {
           (tgt_path
             (relative_field_path
               (identifier)))
-          (nested_arrow
+          (map_arrow
             (src_path
               (field_path
                 (identifier)))
@@ -365,7 +365,7 @@ mapping {
           (tgt_path
             (relative_field_path
               (identifier)))
-          (nested_arrow
+          (map_arrow
             (src_path
               (field_path
                 (identifier)))
