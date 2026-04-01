@@ -33,3 +33,7 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 **2026-04-01T10:30:21Z**
 
 PR checkpoint prepared: extracted @satsuma/viz-backend package, moved viz-model/workspace-index ownership out of satsuma-lsp, and validated backend/LSP bootstrap and tests locally.
+
+**2026-04-01T11:03:05Z**
+
+Cause: Rebasing onto main surfaced that the extracted shared workspace index had not carried over the newer source_ref structural filtering, so quoted join descriptions were being indexed as mapping source names. Fix: Switched shared backend mapping source/target indexing to sourceRefStructuralText so the backend preserves the same join-description behavior as main after extraction.
