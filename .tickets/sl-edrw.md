@@ -1,6 +1,6 @@
 ---
 id: sl-edrw
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:24:54Z
@@ -23,3 +23,12 @@ v1: src.desc -> tgt.desc | "Extract first sentence"
 v2: src.desc -> tgt.desc | "Extract first paragraph and normalize whitespace"
 Result: 'No structural differences'
 
+
+## Notes
+
+**2026-04-01T07:40:46Z**
+
+**2026-03-31T12:00:00Z**
+
+Cause: Arrow transform comparison via transform_raw was already present. Original report used bare pipe syntax without braces which is invalid Satsuma.
+Fix: Verified comparison works with canonical syntax { trim | upper }. Added unit tests for arrow-transform-changed detection.

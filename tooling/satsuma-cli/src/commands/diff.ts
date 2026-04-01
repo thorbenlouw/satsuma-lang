@@ -16,6 +16,43 @@ import { buildIndex } from "../index-builder.js";
 import { diffIndex } from "../diff.js";
 import type { Delta, BlockDelta, SchemaChange, MappingChange, TransformChange } from "../types.js";
 
+/** Union of all change kind strings across schema, mapping, and transform changes. */
+type ChangeKind = SchemaChange["kind"] | MappingChange["kind"] | TransformChange["kind"];
+
+/**
+ * Dispatch table mapping each change kind to a formatter that prints a
+ * single-line description. Replaces the prior 14-branch if-else chain
+ * (sl-3kmd) and gives TypeScript exhaustiveness checking via `satisfies`.
+ */
+const CHANGE_PRINTERS: Record<ChangeKind, (c: SchemaChange | MappingChange | TransformChange) => string> = {
+  // Schema / metric field changes
+  "field-added":     (c) => `      + field ${(c as SchemaChange).field}`,
+  "field-removed":   (c) => `      - field ${(c as SchemaChange).field}`,
+  "type-changed":    (c) => `      ~ ${(c as SchemaChange).field}: ${String(c.from)} -> ${String(c.to)}`,
+  "metadata-changed":(c) => `      ~ ${(c as SchemaChange).field} metadata: ${String(c.from)} -> ${String(c.to)}`,
+
+  // Metric header attributes
+  "source-changed":  (c) => `      ~ source: ${String(c.from)} -> ${String(c.to)}`,
+  "grain-changed":   (c) => `      ~ grain: ${String(c.from)} -> ${String(c.to)}`,
+  "slices-changed":  (c) => `      ~ slices: ${String(c.from)} -> ${String(c.to)}`,
+
+  // Mapping arrow changes
+  "arrow-count-changed":     (c) => `      ~ arrows: ${String(c.from)} -> ${String(c.to)}`,
+  "sources-changed":         (c) => `      ~ sources: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`,
+  "targets-changed":         (c) => `      ~ targets: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`,
+  "arrow-added":             (c) => `      + arrow ${String((c as MappingChange).arrow)}`,
+  "arrow-removed":           (c) => `      - arrow ${String((c as MappingChange).arrow)}`,
+  "arrow-transform-changed": (c) => `      ~ arrow ${String((c as MappingChange).arrow)}: ${String(c.from)} -> ${String(c.to)}`,
+
+  // Note changes (schema-level note tag and block notes)
+  "note-changed":  (c) => `      ~ note: ${String(c.from)} -> ${String(c.to)}`,
+  "note-added":    (c) => `      + note ${JSON.stringify(String(c.from))}`,
+  "note-removed":  (c) => `      - note ${JSON.stringify(String(c.from))}`,
+
+  // Transform body changes
+  "body-changed":  (c) => `      ~ body: ${String(c.from)} -> ${String(c.to)}`,
+} satisfies Record<ChangeKind, (c: SchemaChange | MappingChange | TransformChange) => string>;
+
 export function register(program: Command): void {
   program
     .command("diff <a> <b>")
@@ -33,7 +70,8 @@ JSON shape (--json):
     "mappings":  {"added": [str], "removed": [str], "changed": [...]},
     "metrics":   {"added": [str], "removed": [str], "changed": [...]},
     "fragments": {"added": [str], "removed": [str], "changed": [...]},
-    "transforms":{"added": [str], "removed": [str], "changed": [...]}
+    "transforms":{"added": [str], "removed": [str], "changed": [...]},
+    "notes":     {"added": [str], "removed": [str]}
   }
 
 Examples:
@@ -160,38 +198,8 @@ function printSection(label: string, section: BlockDelta<SchemaChange | MappingC
   for (const { name, changes } of section.changed) {
     console.log(`  ~ ${name}`);
     for (const c of changes) {
-      if (c.kind === "field-added") {
-        console.log(`      + field ${c.field}`);
-      } else if (c.kind === "field-removed") {
-        console.log(`      - field ${c.field}`);
-      } else if (c.kind === "type-changed") {
-        console.log(`      ~ ${c.field}: ${String(c.from)} -> ${String(c.to)}`);
-      } else if (c.kind === "arrow-count-changed") {
-        console.log(`      ~ arrows: ${String(c.from)} -> ${String(c.to)}`);
-      } else if (c.kind === "sources-changed") {
-        console.log(`      ~ sources: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
-      } else if (c.kind === "targets-changed") {
-        console.log(`      ~ targets: ${(c.from as string[]).join(", ")} -> ${(c.to as string[]).join(", ")}`);
-      } else if (c.kind === "metadata-changed") {
-        console.log(`      ~ ${c.field} metadata: ${String(c.from)} -> ${String(c.to)}`);
-      } else if (c.kind === "arrow-added") {
-        console.log(`      + arrow ${String(c.arrow)}`);
-      } else if (c.kind === "arrow-removed") {
-        console.log(`      - arrow ${String(c.arrow)}`);
-      } else if (c.kind === "arrow-transform-changed") {
-        console.log(`      ~ arrow ${String(c.arrow)}: ${String(c.from)} -> ${String(c.to)}`);
-      } else if (c.kind === "source-changed" || c.kind === "grain-changed" || c.kind === "slices-changed") {
-        const label = c.kind.replace("-changed", "");
-        console.log(`      ~ ${label}: ${String(c.from)} -> ${String(c.to)}`);
-      } else if (c.kind === "note-changed") {
-        console.log(`      ~ note: ${String(c.from)} -> ${String(c.to)}`);
-      } else if (c.kind === "note-added") {
-        console.log(`      + note ${JSON.stringify(String(c.from))}`);
-      } else if (c.kind === "note-removed") {
-        console.log(`      - note ${JSON.stringify(String(c.from))}`);
-      } else if (c.kind === "body-changed") {
-        console.log(`      ~ body: ${String(c.from)} -> ${String(c.to)}`);
-      }
+      const printer = CHANGE_PRINTERS[c.kind];
+      console.log(printer(c));
     }
   }
   console.log();

@@ -1,7 +1,12 @@
 /**
  * diff.ts — Structural comparison of two WorkspaceIndex instances
  *
- * Compares schemas (fields, types, metadata) and mappings (arrows, transforms).
+ * Compares schemas (fields, types, metadata, notes), mappings (arrows,
+ * transforms, notes), metrics (sources, grain, slices, notes), fragments,
+ * transforms, and standalone note blocks.
+ *
+ * The module is consumed by the `satsuma diff` command and any downstream
+ * tooling that needs programmatic delta information between two workspaces.
  */
 
 import type {
@@ -33,6 +38,10 @@ function noteTextsForParent(index: WorkspaceIndex, parentName: string): Set<stri
 
 /**
  * Compute a structural delta between two WorkspaceIndex instances.
+ *
+ * Compares every block type (schemas, mappings, metrics, fragments, transforms)
+ * plus standalone note blocks. Block-owned note blocks (those with a non-null
+ * parent) are compared within their parent block's diff, not at the top level.
  */
 export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta {
   // Collect arrows per mapping for detailed comparison
@@ -40,17 +49,19 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
   const arrowsB = collectArrowsByMapping(indexB);
 
   return {
-    schemas: diffBlockMap(indexA.schemas, indexB.schemas, diffSchema),
-    mappings: diffBlockMap(indexA.mappings, indexB.mappings, (a, b) => {
-      const mappingKey = [...indexA.mappings.entries()].find(([, v]) => v === a)?.[0] ?? "";
-      const notesA = noteTextsForParent(indexA, mappingKey);
-      const notesB = noteTextsForParent(indexB, mappingKey);
-      return diffMapping(a, b, arrowsA.get(mappingKey) ?? [], arrowsB.get(mappingKey) ?? [], notesA, notesB);
+    schemas: diffBlockMap(indexA.schemas, indexB.schemas, (a, b, key) => {
+      const notesA = noteTextsForParent(indexA, key);
+      const notesB = noteTextsForParent(indexB, key);
+      return diffSchema(a, b, notesA, notesB);
     }),
-    metrics: diffBlockMap(indexA.metrics, indexB.metrics, (a, b) => {
-      const metricKey = [...indexA.metrics.entries()].find(([, v]) => v === a)?.[0] ?? "";
-      const notesA = noteTextsForParent(indexA, metricKey);
-      const notesB = noteTextsForParent(indexB, metricKey);
+    mappings: diffBlockMap(indexA.mappings, indexB.mappings, (a, b, key) => {
+      const notesA = noteTextsForParent(indexA, key);
+      const notesB = noteTextsForParent(indexB, key);
+      return diffMapping(a, b, arrowsA.get(key) ?? [], arrowsB.get(key) ?? [], notesA, notesB);
+    }),
+    metrics: diffBlockMap(indexA.metrics, indexB.metrics, (a, b, key) => {
+      const notesA = noteTextsForParent(indexA, key);
+      const notesB = noteTextsForParent(indexB, key);
       return diffMetric(a, b, notesA, notesB);
     }),
     fragments: diffBlockMap(indexA.fragments, indexB.fragments, diffFragment),
@@ -81,10 +92,17 @@ function collectArrowsByMapping(index: WorkspaceIndex): Map<string, ArrowRecord[
   return byMapping;
 }
 
+/**
+ * Generic structural diff for a Map of named blocks.
+ *
+ * The diffFn callback receives the key alongside both values, so callers
+ * can look up associated data (e.g. notes) without a reverse-map scan.
+ * (Fixes O(n^2) reverse lookup — sl-g4eo.)
+ */
 function diffBlockMap<T, C>(
   mapA: Map<string, T>,
   mapB: Map<string, T>,
-  diffFn: (a: T, b: T) => C[],
+  diffFn: (a: T, b: T, key: string) => C[],
 ): BlockDelta<C> {
   const added: string[] = [];
   const removed: string[] = [];
@@ -95,7 +113,7 @@ function diffBlockMap<T, C>(
       removed.push(name);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check on line above guarantees both entries exist
-      const changes = diffFn(mapA.get(name)!, mapB.get(name)!);
+      const changes = diffFn(mapA.get(name)!, mapB.get(name)!, name);
       if (changes.length > 0) {
         changed.push({ name, changes });
       }
@@ -110,23 +128,31 @@ function diffBlockMap<T, C>(
   return { added, removed, changed };
 }
 
-function diffSchema(a: SchemaRecord, b: SchemaRecord): SchemaChange[] {
+// ── Schema diff ────────────────────────────────────────────────────────────
+
+function diffSchema(a: SchemaRecord, b: SchemaRecord, notesA: Set<string>, notesB: Set<string>): SchemaChange[] {
   const changes: SchemaChange[] = [];
 
-  // Compare schema-level note text
+  // Compare schema-level note text (note "..." in metadata block)
   if ((a.note ?? "") !== (b.note ?? "")) {
     changes.push({ kind: "note-changed", field: "(note)", from: a.note || "(none)", to: b.note || "(none)" });
   }
 
   // Compare fields
   changes.push(...diffFieldList(a.fields, b.fields));
+
+  // Compare note blocks inside the schema body (sl-fkwb)
+  changes.push(...diffNoteSet(notesA, notesB));
+
   return changes;
 }
+
+// ── Metric diff ────────────────────────────────────────────────────────────
 
 function diffMetric(a: MetricRecord, b: MetricRecord, notesA: Set<string>, notesB: Set<string>): SchemaChange[] {
   const changes: SchemaChange[] = [];
 
-  // Compare metric header attributes
+  // Compare metric header attributes (sl-1meq)
   const aSources = JSON.stringify(a.sources);
   const bSources = JSON.stringify(b.sources);
   if (aSources !== bSources) {
@@ -145,25 +171,18 @@ function diffMetric(a: MetricRecord, b: MetricRecord, notesA: Set<string>, notes
   changes.push(...diffFieldList(a.fields, b.fields));
 
   // Compare notes inside the metric
-  for (const text of notesB) {
-    if (!notesA.has(text)) {
-      const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
-      changes.push({ kind: "note-added", field: "(note)", from: preview });
-    }
-  }
-  for (const text of notesA) {
-    if (!notesB.has(text)) {
-      const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
-      changes.push({ kind: "note-removed", field: "(note)", from: preview });
-    }
-  }
+  changes.push(...diffNoteSet(notesA, notesB));
 
   return changes;
 }
 
+// ── Fragment diff ──────────────────────────────────────────────────────────
+
 function diffFragment(a: FragmentRecord, b: FragmentRecord): SchemaChange[] {
   return diffFieldList(a.fields, b.fields);
 }
+
+// ── Transform diff ─────────────────────────────────────────────────────────
 
 function diffTransform(a: TransformRecord, b: TransformRecord): TransformChange[] {
   const changes: TransformChange[] = [];
@@ -172,6 +191,8 @@ function diffTransform(a: TransformRecord, b: TransformRecord): TransformChange[
   }
   return changes;
 }
+
+// ── Field list diff ────────────────────────────────────────────────────────
 
 function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""): SchemaChange[] {
   const changes: SchemaChange[] = [];
@@ -209,6 +230,8 @@ function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""):
   return changes;
 }
 
+// ── Mapping diff ───────────────────────────────────────────────────────────
+
 function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[], arrowsB: ArrowRecord[], notesA: Set<string>, notesB: Set<string>): MappingChange[] {
   const changes: MappingChange[] = [];
 
@@ -233,7 +256,7 @@ function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[],
     changes.push({ kind: "targets-changed", from: a.targets, to: b.targets });
   }
 
-  // Compare individual arrows by source→target key
+  // Compare individual arrows by source->target key (sl-edrw: includes transform body)
   const arrowKey = (r: ArrowRecord) => `${r.sources.join(",") || ""}→${r.target ?? ""}`;
   const aByKey = new Map<string, ArrowRecord>();
   const bByKey = new Map<string, ArrowRecord>();
@@ -262,7 +285,7 @@ function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[],
     }
   }
 
-  // Compare notes inside the mapping
+  // Compare notes inside the mapping (sl-van1)
   for (const text of notesB) {
     if (!notesA.has(text)) {
       const preview = text.length > 60 ? text.slice(0, 60) + "..." : text;
@@ -279,8 +302,44 @@ function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[],
   return changes;
 }
 
+// ── Note diff helpers ──────────────────────────────────────────────────────
+
+/** Maximum preview length for note text in change descriptions. */
+const NOTE_PREVIEW_MAX_LENGTH = 60;
+
+/**
+ * Compare two sets of note texts and emit note-added / note-removed changes.
+ * Used by schema, metric, and mapping block diffs to detect note block changes
+ * within a parent block.
+ */
+function diffNoteSet(notesA: Set<string>, notesB: Set<string>): SchemaChange[] {
+  const changes: SchemaChange[] = [];
+
+  for (const text of notesB) {
+    if (!notesA.has(text)) {
+      const preview = text.length > NOTE_PREVIEW_MAX_LENGTH
+        ? text.slice(0, NOTE_PREVIEW_MAX_LENGTH) + "..."
+        : text;
+      changes.push({ kind: "note-added", field: "(note)", from: preview });
+    }
+  }
+  for (const text of notesA) {
+    if (!notesB.has(text)) {
+      const preview = text.length > NOTE_PREVIEW_MAX_LENGTH
+        ? text.slice(0, NOTE_PREVIEW_MAX_LENGTH) + "..."
+        : text;
+      changes.push({ kind: "note-removed", field: "(note)", from: preview });
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Compare standalone (top-level) notes between two indexes.
+ * Block-owned notes (parent !== null) are compared by their owning block's diff.
+ */
 function diffNotes(notesA: NoteRecord[], notesB: NoteRecord[]): NoteDelta {
-  // Only compare top-level notes (no parent); block-owned notes are compared by their block diff
   const textsA = new Set(notesA.filter((n) => n.parent === null).map((n) => n.text));
   const textsB = new Set(notesB.filter((n) => n.parent === null).map((n) => n.text));
   const added: string[] = [];
@@ -295,6 +354,8 @@ function diffNotes(notesA: NoteRecord[], notesB: NoteRecord[]): NoteDelta {
 
   return { added, removed };
 }
+
+// ── Metadata serialization ─────────────────────────────────────────────────
 
 function serializeMetadata(metadata: FieldDecl["metadata"]): string {
   if (!metadata || metadata.length === 0) return "";

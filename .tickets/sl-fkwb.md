@@ -1,6 +1,6 @@
 ---
 id: sl-fkwb
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:25:08Z
@@ -25,3 +25,12 @@ Result:
 
 Expected: note text changed, no field changes.
 
+
+## Notes
+
+**2026-04-01T07:40:46Z**
+
+**2026-03-31T12:00:00Z**
+
+Cause: diffSchema only compared metadata-level note tag but not note blocks inside schema body. Schema body note blocks were collected by extractNotes but never diffed.
+Fix: Added noteTextsForParent lookups for schemas in diffIndex and diffNoteSet calls in diffSchema. Extracted shared diffNoteSet helper.
