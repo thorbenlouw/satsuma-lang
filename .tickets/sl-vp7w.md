@@ -1,6 +1,6 @@
 ---
 id: sl-vp7w
-status: open
+status: closed
 deps: [sl-f1kt]
 links: []
 created: 2026-04-01T09:24:11Z

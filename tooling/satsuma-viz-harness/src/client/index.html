@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Satsuma Viz Harness</title>
+  <style>
+    /* ── Reset and base ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sidebar-width: 220px;
+      --header-height: 48px;
+      --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+      --color-bg: #0f1117;
+      --color-surface: #1a1d27;
+      --color-surface-2: #22273a;
+      --color-border: #2e3350;
+      --color-text: #c9d1d9;
+      --color-text-muted: #6e7891;
+      --color-accent: #5b7fde;
+      --color-accent-hover: #7094e8;
+      --color-selected: #1d2d54;
+    }
+    html, body { height: 100%; overflow: hidden; background: var(--color-bg); color: var(--color-text); font-family: var(--font-mono); font-size: 13px; }
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    #layout {
+      display: grid;
+      grid-template-rows: var(--header-height) 1fr;
+      grid-template-columns: var(--sidebar-width) 1fr 1fr;
+      grid-template-areas:
+        "header header header"
+        "sidebar source viz";
+      height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    #header {
+      grid-area: header;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+    }
+    #header h1 { font-size: 14px; font-weight: 600; color: var(--color-text); white-space: nowrap; }
+    #header h1 span { color: var(--color-accent); }
+    #fixture-label { flex: 1; font-size: 12px; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .toggle-group { display: flex; gap: 4px; }
+    .toggle-btn {
+      padding: 4px 10px; border-radius: 4px; border: 1px solid var(--color-border);
+      background: transparent; color: var(--color-text-muted); cursor: pointer; font-size: 12px; font-family: inherit;
+    }
+    .toggle-btn:hover { background: var(--color-surface-2); color: var(--color-text); }
+    .toggle-btn.active { background: var(--color-selected); color: var(--color-accent); border-color: var(--color-accent); }
+    #harness-ready-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 10px;
+      background: var(--color-surface-2); color: var(--color-text-muted); border: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    #harness-ready-badge.ready { background: #0d2b1a; color: #3fb950; border-color: #2ea043; }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
+    #sidebar {
+      grid-area: sidebar;
+      overflow-y: auto;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+    }
+    #sidebar-header { padding: 10px 12px 6px; font-size: 11px; font-weight: 600; color: var(--color-text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+    .fixture-item {
+      display: block; width: 100%; text-align: left; padding: 6px 12px;
+      background: none; border: none; color: var(--color-text-muted); cursor: pointer;
+      font-size: 11px; font-family: inherit; line-height: 1.4;
+      word-break: break-all; white-space: pre-wrap;
+      border-left: 2px solid transparent;
+    }
+    .fixture-item:hover { background: var(--color-surface-2); color: var(--color-text); }
+    .fixture-item.selected { background: var(--color-selected); color: var(--color-accent); border-left-color: var(--color-accent); }
+
+    /* ── Source panel ─────────────────────────────────────────────────────── */
+    #source-panel {
+      grid-area: source;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--color-border);
+    }
+    .panel-header {
+      padding: 6px 12px; font-size: 11px; font-weight: 600; color: var(--color-text-muted);
+      background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    #source-code {
+      flex: 1; overflow: auto; padding: 12px;
+      background: var(--color-bg); color: var(--color-text);
+      font-size: 12px; line-height: 1.6; white-space: pre; tab-size: 2;
+    }
+    #source-code.empty { color: var(--color-text-muted); font-style: italic; white-space: normal; }
+
+    /* ── Viz panel ─────────────────────────────────────────────────────────── */
+    #viz-panel {
+      grid-area: viz;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #viz-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    satsuma-viz {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #viz-placeholder {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; color: var(--color-text-muted); font-style: italic; font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div id="layout">
+    <header id="header">
+      <h1><span>satsuma</span> viz harness</h1>
+      <span id="fixture-label">no fixture selected</span>
+      <div class="toggle-group" id="view-mode-toggle">
+        <button class="toggle-btn active" data-mode="lineage" title="Full transitive import lineage">lineage</button>
+        <button class="toggle-btn"        data-mode="single"  title="Single file only">single</button>
+      </div>
+      <span id="harness-ready-badge">idle</span>
+    </header>
+
+    <nav id="sidebar">
+      <div id="sidebar-header">Fixtures</div>
+      <div id="fixture-list"></div>
+    </nav>
+
+    <section id="source-panel">
+      <div class="panel-header">Source</div>
+      <pre id="source-code" class="empty">Select a fixture to view its source.</pre>
+    </section>
+
+    <section id="viz-panel">
+      <div class="panel-header">Visualization</div>
+      <div id="viz-container">
+        <div id="viz-placeholder">Select a fixture to render the visualization.</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- satsuma-viz web component: loaded as a module to register the custom element -->
+  <script type="module" src="/satsuma-viz.js"></script>
+  <!-- harness application logic -->
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

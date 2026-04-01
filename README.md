@@ -429,6 +429,41 @@ npm run check             # validate manifest/grammar + run all tests
 npm run build             # build client + server + webview bundles
 ```
 
+### Viz harness (local Playwright tests)
+
+`tooling/satsuma-viz-harness/` is a standalone HTTP server and browser client
+for testing the `<satsuma-viz>` web component against canonical fixtures — without
+VS Code or the LSP in the loop.
+
+This is a **local developer-machine workflow only**. It is not run in CI.
+
+```bash
+cd tooling/satsuma-viz-harness
+npm run build             # build server + client bundles
+```
+
+To run the Playwright test suite, start the sentinel watcher in a separate
+terminal, then trigger a run by touching the sentinel file:
+
+```bash
+# Terminal 1 — leave running
+./watch-and-test.sh
+
+# Terminal 2 — trigger a run
+touch .run-tests
+# Results appear in .playwright-results.txt
+```
+
+The watcher kills any stale server on port 3333, runs `npx playwright test`,
+writes results to `.playwright-results.txt`, and resets the sentinel.
+
+The test suite covers:
+- Overview rendering (schema cards, mapping nodes) for the sfdc-to-snowflake fixture
+- Clicking a mapping card to open the detail view
+- Field-hover and navigate event pipeline validation (programmatic dispatch)
+- Cross-file lineage merging for an import-reachable fixture set
+- Layout stability on the sap-po-to-mfcs larger fixture
+
 ### CI
 
 The full CI picture is documented in [CI-WORKFLOWS.md](docs/developer/CI-WORKFLOWS.md).

@@ -21,39 +21,45 @@ The system is organised as a stack of packages with strict dependency direction
 (each layer depends only on layers below it):
 
 ```
-                        ┌─────────────────────┐
-                        │   vscode-satsuma     │  Editor-specific UI
-                        │  (VSCode extension)  │  (commands, webviews,
-                        └────────┬────────────┘   TextMate grammar)
-                                 │
-                        ┌────────┴────────────┐
-                        │    satsuma-lsp       │  Language Server Protocol
-                        │  (editor-agnostic)   │  (hover, completions,
-                        └────────┬────────────┘   go-to-def, diagnostics)
-                                 │
-              ┌──────────────────┼──────────────────┐
-              │                  │                   │
-     ┌────────┴───────┐  ┌──────┴───────┐  ┌───────┴────────┐
-     │  satsuma-cli   │  │ satsuma-viz  │  │ satsuma-viz-   │
-     │  (16 commands) │  │ (web comp.)  │  │ model (types)  │
-     └────────┬───────┘  └──────────────┘  └───────┬────────┘
-              │                                     │
-              └──────────────┬──────────────────────┘
-                             │
-                    ┌────────┴────────┐
-                    │  satsuma-core   │  Pure extraction, classification,
-                    │                 │  validation, formatting
-                    └────────┬────────┘
-                             │
-                  ┌──────────┴──────────┐
-                  │ tree-sitter-satsuma │  Grammar, WASM parser,
-                  │                     │  corpus tests, queries
-                  └─────────────────────┘
+           ┌─────────────────────┐   ┌─────────────────────┐
+           │   vscode-satsuma    │   │  satsuma-viz-harness │  Standalone browser
+           │  (VSCode extension) │   │  (Playwright harness)│  harness for fixture-
+           └────────┬────────────┘   └──────────┬──────────┘  driven viz testing
+                    │                            │
+           ┌────────┴────────────┐               │
+           │    satsuma-lsp      │  Language      │
+           │  (editor-agnostic)  │  Server        │
+           └────────┬────────────┘               │
+                    │                            │
+       ┌────────────┼────────────────────────────┤
+       │            │                            │
+┌─────┴──────┐  ┌──┴──────────┐  ┌──────────────┴────────┐
+│ satsuma-cli│  │ satsuma-viz │  │  satsuma-viz-backend   │
+│(16 commands│  │ (web comp.) │  │  (VizModel assembly,   │
+└─────┬──────┘  └─────────────┘  │   WorkspaceIndex,      │
+      │                          │   shared by LSP +      │
+      │                          │   harness)             │
+      │                          └───────────┬────────────┘
+      │                                      │
+      │              ┌───────────────────────┤
+      │              │                       │
+      │     ┌────────┴───────┐    ┌──────────┴──────┐
+      │     │ satsuma-viz-   │    │  satsuma-core   │
+      │     │ model (types)  │    │  Pure extraction,│
+      │     └────────────────┘    │  validation,     │
+      │                           │  formatting      │
+      └───────────────────────────┴──────┬───────────┘
+                                         │
+                              ┌──────────┴──────────┐
+                              │ tree-sitter-satsuma │  Grammar, WASM parser,
+                              │                     │  corpus tests, queries
+                              └─────────────────────┘
 ```
 
 **The cardinal rule:** dependencies flow downward. `satsuma-core` never imports
 from `satsuma-cli`, `satsuma-lsp`, or `vscode-satsuma`. The LSP never imports
-from the CLI. The CLI never imports from the LSP.
+from the CLI. The CLI never imports from the LSP. `satsuma-viz-backend` is shared
+by the LSP server and the viz harness — neither imports from the other.
 
 ---
 
@@ -142,6 +148,40 @@ This is the serialisation boundary between server and client. Changes to
 A Lit web component that renders `VizModel` as an interactive diagram. Owns
 layout (ELK.js), edge rendering (SVG), and card components. Consumes only
 `VizModel` JSON — has no dependency on core, CLI, or LSP.
+
+### satsuma-viz-backend
+
+The shared VizModel assembly library, extracted from the LSP server so that the
+viz harness can build `VizModel` objects without depending on LSP types or the
+VS Code extension.
+
+Owns:
+- **Workspace index** — `createWorkspaceIndex()`, `indexFile()`, `createScopedIndex()`
+- **Import reachability** — `getImportReachableUris()` for transitive import traversal
+- **VizModel builders** — `buildVizModel()` (single-file) and `mergeVizModels()` (lineage)
+
+Both the LSP server and the viz harness depend on this package. Neither depends
+on the other.
+
+### satsuma-viz-harness
+
+A standalone Node.js HTTP server + browser client for fixture-driven testing of
+the `<satsuma-viz>` web component, without VS Code or the LSP in the loop.
+
+Owns:
+- **Server** — discovers all `.stm` fixtures under `examples/`, parses and indexes
+  them via `@satsuma/viz-backend`, serves VizModel JSON via a REST API
+  (`/api/fixtures`, `/api/source`, `/api/model`).
+- **Browser client** — a minimal HTML + TypeScript app that renders the
+  `<satsuma-viz>` web component alongside fixture source text; exposes
+  `window.__satsumaHarness` for Playwright assertions.
+- **Playwright tests** — browser-based end-to-end coverage: overview rendering,
+  detail view, event pipeline (field-hover, expand-lineage, navigate), cross-file
+  lineage merging, and layout stability on larger fixtures.
+
+The harness is a **local developer-machine workflow only** — it is not run in CI.
+To run tests: `./watch-and-test.sh &` (starts the sentinel watcher), then
+`touch .run-tests` to trigger a run. Results appear in `.playwright-results.txt`.
 
 ### vscode-satsuma
 
@@ -296,16 +336,28 @@ didOpen/didChange notification
       → returns LSP JSON
 ```
 
-### Viz: LSP to Rendering
+### Viz: LSP to Rendering (VS Code path)
 
 ```
 LSP custom request (satsuma/vizModel)
-  → viz-model.ts calls core extract*() functions
+  → satsuma-viz-backend buildVizModel() calls core extract*() functions
   → adapts Extracted* types to VizModel (SchemaCard, MappingBlock, etc.)
   → wires core expandEntityFields for spread resolution
   → serialises VizModel as JSON
   → vscode-satsuma webview receives JSON
   → satsuma-viz web component renders cards, edges, layout
+```
+
+### Viz: Harness to Rendering (local Playwright path)
+
+```
+Playwright browser test
+  → GET /api/model?uri=<fixture>&lineage=<0|1>
+  → harness server: satsuma-viz-backend buildVizModel() / mergeVizModels()
+  → VizModel JSON returned over HTTP
+  → browser client sets <satsuma-viz>.model property
+  → satsuma-viz web component renders cards, edges, layout
+  → Playwright asserts data-testid / data-ready-state / harness event log
 ```
 
 ---
@@ -338,14 +390,17 @@ What we *do* share with rust-analyzer:
 ## Package Dependency Matrix
 
 ```
-                     tree-sitter  core  viz-model  cli  lsp  viz  vscode
-tree-sitter-satsuma      -         -       -        -    -    -     -
-satsuma-core             *         -       -        -    -    -     -
-satsuma-viz-model        -         -       -        -    -    -     -
-satsuma-cli              *         *       -        -    -    -     -
-satsuma-lsp              *         *       *        -    -    -     -
-satsuma-viz              -         -       *        -    -    -     -
-vscode-satsuma           -         -       -        -    *    *     -
+                     tree-sitter  core  viz-model  viz-backend  cli  lsp  viz  vscode  viz-harness
+tree-sitter-satsuma      -         -       -           -         -    -    -     -          -
+satsuma-core             *         -       -           -         -    -    -     -          -
+satsuma-viz-model        -         -       -           -         -    -    -     -          -
+satsuma-viz-backend      *         *       *           -         -    -    -     -          -
+satsuma-cli              *         *       -           -         -    -    -     -          -
+satsuma-lsp              *         *       *           *         -    -    -     -          -
+satsuma-viz              -         -       *           -         -    -    -     -          -
+vscode-satsuma           -         -       -           -         -    *    *     -          -
+satsuma-viz-harness      *         *       -           *         -    -    *     -          -
 ```
 
 `*` = direct dependency. The dependency graph is acyclic by construction.
+`satsuma-viz-backend` is the shared boundary between the LSP server and the viz harness.
