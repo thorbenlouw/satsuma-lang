@@ -1,6 +1,6 @@
 ---
 id: sl-be9e
-status: open
+status: closed
 deps: [sl-f1kt, sl-vp7w]
 links: []
 created: 2026-04-01T09:25:59Z

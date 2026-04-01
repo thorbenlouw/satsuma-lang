@@ -1,6 +1,6 @@
 ---
 id: sl-66hf
-status: open
+status: closed
 deps: [sl-f1kt, sl-vp7w, sl-2jq2, sl-22fg, sl-be9e]
 links: []
 created: 2026-04-01T09:24:11Z
@@ -26,3 +26,10 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 - docs/developer/ARCHITECTURE.md reflects the final detailed package map and data flow
 - README and package-level docs make clear that Playwright is a local developer-machine workflow for this feature, not a CI requirement
 - Any affected package-level README files are updated so contributors can tell where viz rendering, viz-model production, and browser harness responsibilities live
+
+## Notes
+
+**2026-04-01T12:30:00Z**
+
+Cause: Feature 29 added two new packages (`satsuma-viz-backend`, `satsuma-viz-harness`) and changed the VizModel assembly ownership from the LSP server to the shared backend; documentation still reflected the old package map.
+Fix: Updated `tooling/ARCHITECTURE.md` (package diagram, descriptions, dependency matrix, data flow), `docs/developer/ARCHITECTURE.md` (package map table, Mermaid dependency diagram, data flow, vscode-satsuma server section), and `README.md` (added "Viz harness (local Playwright tests)" section with full workflow instructions). All three documents now accurately reflect the eight-package tooling structure and make clear that Playwright tests are local-only.

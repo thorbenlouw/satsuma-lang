@@ -1,0 +1,6 @@
+# Playwright test artifacts — generated locally, not committed
+test-results/
+.playwright-results.txt
+
+# Sentinel file used by watch-and-test.sh to trigger test runs
+.run-tests

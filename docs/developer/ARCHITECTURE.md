@@ -1,6 +1,6 @@
 # Satsuma Tooling Architecture
 
-> Last updated: 2026-03-30 — Epic sl-bq7u (Consolidation): added `satsuma-viz-model` shared package; moved coverage types, parse-errors, parser singleton, string-utils, and semantic validation into `satsuma-core`.
+> Last updated: 2026-04-01 — Feature 29 (Viz Harness): extracted `satsuma-viz-backend` shared package from LSP server; added `satsuma-viz-harness` standalone browser harness with Playwright coverage.
 
 See `adrs/` for the architectural decision records that explain the choices made here.
 
@@ -8,16 +8,18 @@ See `adrs/` for the architectural decision records that explain the choices made
 
 ## Package Map
 
-The `tooling/` directory contains five npm packages:
+The `tooling/` directory contains eight npm packages:
 
 | Package | Role |
 |---------|------|
 | `tree-sitter-satsuma` | Grammar definition and compiled parser artifacts (WASM) |
 | `satsuma-core` | Shared extraction, formatting, validation, and analysis library — the foundation |
-| `satsuma-viz-model` | Shared VizModel protocol contract — types for the LSP→viz JSON payload |
+| `satsuma-viz-model` | Shared VizModel protocol contract — types for the server→viz JSON payload |
+| `satsuma-viz-backend` | Shared VizModel assembly — `buildVizModel`, `mergeVizModels`, workspace index; used by LSP server and viz harness |
 | `satsuma-cli` | CLI tool (16 commands); consumer of satsuma-core |
-| `vscode-satsuma` | VS Code extension + LSP server; consumer of satsuma-core and satsuma-viz-model |
-| `satsuma-viz` | React visualization component; consumer of satsuma-viz-model |
+| `vscode-satsuma` | VS Code extension + LSP server; consumer of satsuma-core, satsuma-viz-model, satsuma-viz-backend |
+| `satsuma-viz` | Lit web component that renders VizModel as an interactive diagram |
+| `satsuma-viz-harness` | Standalone HTTP harness for fixture-driven browser testing of satsuma-viz; Playwright tests |
 
 ### Package Dependency Diagram
 
@@ -26,23 +28,29 @@ graph TD
   TS[tree-sitter-satsuma<br/><i>grammar + WASM artifact</i>]
   CORE[satsuma-core<br/><i>formatter · cst-utils · extract · validate<br/>coverage · parser · spread-expand · nl-ref · types</i>]
   VIZM[satsuma-viz-model<br/><i>VizModel protocol types</i>]
+  VIZB[satsuma-viz-backend<br/><i>buildVizModel · mergeVizModels<br/>WorkspaceIndex · indexFile<br/>getImportReachableUris · createScopedIndex</i>]
   CLI[satsuma-cli<br/><i>16 commands · WorkspaceIndex</i>]
-  LSP[vscode-satsuma/server<br/><i>DefinitionIndex · buildVizModel<br/>semantic tokens · completions · …</i>]
+  LSP[vscode-satsuma/server<br/><i>DefinitionIndex · semantic tokens<br/>completions · hover · …</i>]
   EXT[vscode-satsuma/client<br/><i>extension host</i>]
-  VIZ[satsuma-viz<br/><i>React component</i>]
+  VIZ[satsuma-viz<br/><i>Lit web component</i>]
+  HARNESS[satsuma-viz-harness<br/><i>Node.js HTTP server<br/>browser client<br/>Playwright tests</i>]
 
   TS -- "satsuma.wasm" --> CORE
   TS -- "satsuma.wasm" --> CLI
-  TS -- "satsuma.wasm" --> LSP
+  TS -- "satsuma.wasm" --> VIZB
+  TS -- "satsuma.wasm" --> HARNESS
   CORE --> CLI
-  CORE --> LSP
-  VIZM --> LSP
+  CORE --> VIZB
+  CORE --> HARNESS
+  VIZM --> VIZB
   VIZM --> VIZ
+  VIZB --> LSP
+  VIZB --> HARNESS
+  VIZ --> HARNESS
   LSP --> EXT
-  LSP -- "VizModel JSON" --> VIZ
 ```
 
-`satsuma-core` and `satsuma-viz-model` have no runtime dependencies on any other package in this repo. All consumers depend on satsuma-core via `"@satsuma/core": "file:../satsuma-core"` and on satsuma-viz-model via `"@satsuma/viz-model": "file:../satsuma-viz-model"`.
+`satsuma-core` and `satsuma-viz-model` have no runtime dependencies on any other package in this repo. `satsuma-viz-backend` is the shared boundary between the LSP server and the viz harness — it owns all VizModel assembly logic so neither consumer duplicates it.
 
 ---
 
@@ -62,13 +70,16 @@ flowchart TD
 
   WSIDX["vscode-satsuma/workspace-index\nindexFile()"]
   DEFIDX["DefinitionIndex\ngo-to-def · find-refs · completions"]
-  VIZ["vscode-satsuma/viz-model\nbuildVizModel()"]
+  VIZB["satsuma-viz-backend\nbuildVizModel() · mergeVizModels()\nindexFile() · getImportReachableUris()"]
   VIZM["VizModel\nrendered by satsuma-viz"]
+  HARNESS["satsuma-viz-harness server\n/api/model HTTP endpoint\nserves VizModel JSON"]
+  PLAYWRIGHT["Playwright browser tests\nassert overview · detail · events\ncross-file lineage · layout"]
 
   SRC --> PARSE --> CST --> EXTRACT --> RECORDS
   RECORDS --> IDXB --> WI --> CMDS
   RECORDS --> WSIDX --> DEFIDX
-  RECORDS --> VIZ --> VIZM
+  RECORDS --> VIZB --> VIZM
+  VIZB --> HARNESS --> PLAYWRIGHT
 ```
 
 ---
@@ -169,21 +180,16 @@ vscode-satsuma/server/src/
 │                          CST helpers (child, children, etc.) imported from @satsuma/core
 ├── workspace-index.ts   — indexFile() → DefinitionIndex
 │                          IDE-oriented: definitions + references for go-to-def
-│                          Import resolution: getImportReachableUris()
-├── viz-model.ts         — buildVizModel(tree, definitionIndex) → VizModel
-│                          Uses satsuma-core extraction + DefinitionLookup callback
-│                          for @-ref resolution; adds LSP-specific enrichment
-│                          (SourceLocation, comments, metadata for rendering)
-│                          VizModel types re-exported from @satsuma/viz-model
+│                          Delegates file indexing + import resolution to @satsuma/viz-backend
 ├── coverage.ts          — computeMappingCoverage() → SchemaCoverageResult
 ├── semantic-tokens.ts, hover.ts, definition.ts, references.ts,
 │   completion.ts, symbols.ts, rename.ts, folding.ts, formatting.ts
 ```
 
-`VizModel` is the visualization data contract consumed by `@satsuma/viz`. Its types are defined in `@satsuma/viz-model` and re-exported by both the LSP server (`viz-model.ts`) and `satsuma-viz` (`model.ts`). The LSP server:
-- Enriched with source locations (for click-to-open in editor)
-- Includes comments, notes, metadata for rendering
-- ArrowEntry.transform.atRefs: ResolvedAtRef[] — resolved @-refs from NL transform text
+`VizModel` assembly has been extracted to `@satsuma/viz-backend` (`buildVizModel`,
+`mergeVizModels`, `getImportReachableUris`, `createScopedIndex`) so that the viz
+harness can build VizModels without depending on the LSP server. The LSP server
+imports from `@satsuma/viz-backend` rather than owning this logic directly.
 
 `DefinitionIndex` (LSP-specific) is the IDE index:
 - `Map<string, DefinitionEntry[]>` — keyed by qualified name
