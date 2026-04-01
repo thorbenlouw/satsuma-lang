@@ -32,4 +32,4 @@ satsuma lint /tmp/test-metric.stm --json
 **2026-04-01**
 
 Cause: `checkUnresolvedNlRef` in lint-engine.ts extracted the entity name from `"note:metric:revenue"` with a regex that captured `"metric:revenue"` instead of `"revenue"`, so `index.metrics.get("metric:revenue")` failed and the scope label fell back to `"mapping"`.
-Fix: Use `stripNLRefScopePrefix` (from `satsuma-core`) to strip all known prefix forms and get the bare entity name for lookups and display.
+Fix: Use `stripNLRefScopePrefix` (from `satsuma-core`) to strip all known prefix forms and get the bare entity name for lookups and display. (commit 9f55a7b)
