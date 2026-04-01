@@ -138,11 +138,20 @@ jobs:
         run: |
           mkdir -p ../../test-results
           npm run pretest
-          npx c8 --reporter=text --reporter=lcov \
+          npx c8 --reporter=text --reporter=lcov --reporter=json-summary \
             node --import tsx/esm --import ./test/setup.ts --test \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination=../../test-results/cli.xml \
             'test/**/*.test.ts'
+
+      - name: Post coverage summary
+        if: always()
+        run: |
+          echo '## Satsuma CLI Coverage' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npx c8 report --reporter=text 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Check example corpus formatting
         run: |
@@ -160,7 +169,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-cli
-          path: tooling/satsuma-cli/coverage/lcov.info
+          path: |
+            tooling/satsuma-cli/coverage/lcov.info
+            tooling/satsuma-cli/coverage/coverage-summary.json
 
   parser:
     name: Tree-sitter parser
@@ -433,6 +444,29 @@ jobs:
         with:
           name: test-results-excel-skill
           path: test-results/excel-skill.xml
+
+  coverage-report:
+    name: Coverage report
+    if: always() && github.event_name == 'pull_request'
+    needs: [satsuma-cli]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-cli
+          path: coverage
+
+      - name: Post coverage to PR
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Satsuma CLI Coverage
+          json-summary-path: coverage/coverage-summary.json
+          json-final-path: ""
 
   test-report:
     name: Test report
