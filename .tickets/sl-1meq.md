@@ -1,6 +1,6 @@
 ---
 id: sl-1meq
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:25:02Z
@@ -30,3 +30,12 @@ Result: 'No structural differences'
 
 Note: mapping source/target changes ARE correctly detected, so this is specific to metric blocks.
 
+
+## Notes
+
+**2026-04-01T07:40:46Z**
+
+**2026-03-31T12:00:00Z**
+
+Cause: Metric comparison logic was already present. Original report used invalid metadata syntax causing incorrect extraction.
+Fix: Verified comparison works with canonical syntax. Added explicit test coverage for source, grain, and slices change detection.

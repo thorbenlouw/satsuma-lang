@@ -1,6 +1,6 @@
 ---
 id: sl-g4eo
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:15:55Z
@@ -22,3 +22,12 @@ This runs once per entry in the changed set, making the overall diff O(n²) over
 
 **Fix:** Pass the key alongside the value in diffBlockMap's callback signature, eliminating the need for the reverse lookup entirely.
 
+
+## Notes
+
+**2026-04-01T07:40:39Z**
+
+**2026-03-31T12:00:00Z**
+
+Cause: diffBlockMap callback did not receive the map key, forcing O(n^2) reverse scan.
+Fix: Added key parameter to diffBlockMap diffFn callback, eliminating all reverse-map lookups.

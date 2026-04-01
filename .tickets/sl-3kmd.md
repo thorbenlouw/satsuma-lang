@@ -1,6 +1,6 @@
 ---
 id: sl-3kmd
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:16:12Z
@@ -22,3 +22,12 @@ else if (c.kind === "type-changed") { ... }
 
 **Suggested fix:** Replace with a `Record<ChangeKind, (c: ...) => void>` dispatch map. Using `satisfies` against the union type would give TypeScript exhaustiveness checking for free.
 
+
+## Notes
+
+**2026-04-01T07:40:46Z**
+
+**2026-03-31T12:00:00Z**
+
+Cause: printSection used a 14-branch if-else chain on c.kind with no exhaustiveness checking.
+Fix: Replaced with CHANGE_PRINTERS Record<ChangeKind, ...> dispatch table using satisfies for TypeScript exhaustiveness.

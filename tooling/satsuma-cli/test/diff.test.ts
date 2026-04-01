@@ -1,5 +1,9 @@
 /**
  * diff.test.js — Unit tests for src/diff.js
+ *
+ * Tests the structural comparison logic that powers `satsuma diff`. Each test
+ * constructs minimal WorkspaceIndex stubs and asserts that the correct change
+ * kinds are emitted.
  */
 
 import assert from "node:assert/strict";
@@ -81,7 +85,9 @@ describe("diffIndex", () => {
     assert.equal(delta.schemas.changed[0].changes[0].to, "BIGINT");
   });
 
-  it("detects metric source changes", () => {
+  // ── Metric metadata detection (sl-1meq) ─────────────────────────────────
+
+  it("detects metric source changes (sl-1meq)", () => {
     const a = makeIndex({}, {}, { metrics: { rev: { sources: ["fact_orders"], grain: "monthly", slices: ["region"], fields: [] } } });
     const b = makeIndex({}, {}, { metrics: { rev: { sources: ["fact_orders", "dim_date"], grain: "monthly", slices: ["region"], fields: [] } } });
     const delta = diffIndex(a, b);
@@ -91,7 +97,7 @@ describe("diffIndex", () => {
     assert.equal(delta.metrics.changed[0].changes[0].to, "fact_orders, dim_date");
   });
 
-  it("detects metric grain changes", () => {
+  it("detects metric grain changes (sl-1meq)", () => {
     const a = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: "monthly", slices: [], fields: [] } } });
     const b = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: "quarterly", slices: [], fields: [] } } });
     const delta = diffIndex(a, b);
@@ -99,7 +105,7 @@ describe("diffIndex", () => {
     assert.equal(delta.metrics.changed[0].changes[0].kind, "grain-changed");
   });
 
-  it("detects metric slices changes", () => {
+  it("detects metric slices changes (sl-1meq)", () => {
     const a = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: null, slices: ["region"], fields: [] } } });
     const b = makeIndex({}, {}, { metrics: { rev: { sources: ["s"], grain: null, slices: ["region", "channel"], fields: [] } } });
     const delta = diffIndex(a, b);
@@ -107,7 +113,56 @@ describe("diffIndex", () => {
     assert.equal(delta.metrics.changed[0].changes[0].kind, "slices-changed");
   });
 
-  it("detects mapping note additions", () => {
+  // ── Arrow transform detection (sl-edrw) ─────────────────────────────────
+
+  it("detects arrow transform changes via transform_raw (sl-edrw)", () => {
+    /** Verifies that diffIndex compares arrow transform bodies, not just endpoints. */
+    const arrowA = {
+      mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
+      transform_raw: "trim | upper", steps: [], classification: "structural",
+      derived: false, line: 5, file: "a.stm",
+    };
+    const arrowB = {
+      mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
+      transform_raw: "trim | lower", steps: [], classification: "structural",
+      derived: false, line: 5, file: "b.stm",
+    };
+    const a = makeIndex(
+      {},
+      { m1: { sources: ["src"], targets: ["tgt"], arrowCount: 1 } },
+      { fieldArrows: { "src.name": [arrowA] } },
+    );
+    const b = makeIndex(
+      {},
+      { m1: { sources: ["src"], targets: ["tgt"], arrowCount: 1 } },
+      { fieldArrows: { "src.name": [arrowB] } },
+    );
+    const delta = diffIndex(a, b);
+    assert.equal(delta.mappings.changed.length, 1);
+    const transformChange = delta.mappings.changed[0].changes.find((c) => c.kind === "arrow-transform-changed");
+    assert.ok(transformChange, "expected an arrow-transform-changed change");
+    assert.equal(transformChange.from, "trim | upper");
+    assert.equal(transformChange.to, "trim | lower");
+  });
+
+  it("reports no arrow changes when transform bodies are identical (sl-edrw)", () => {
+    const arrow = {
+      mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
+      transform_raw: "trim | upper", steps: [], classification: "structural",
+      derived: false, line: 5, file: "a.stm",
+    };
+    const idx = makeIndex(
+      {},
+      { m1: { sources: ["src"], targets: ["tgt"], arrowCount: 1 } },
+      { fieldArrows: { "src.name": [arrow] } },
+    );
+    const delta = diffIndex(idx, idx);
+    assert.equal(delta.mappings.changed.length, 0);
+  });
+
+  // ── Mapping note detection (sl-van1) ─────────────────────────────────────
+
+  it("detects mapping note additions (sl-van1)", () => {
     const a = makeIndex(
       {},
       { m1: { sources: ["a"], targets: ["b"], arrowCount: 1 } },
@@ -124,7 +179,7 @@ describe("diffIndex", () => {
     assert.equal(noteChanges.length, 1);
   });
 
-  it("mapping notes do not appear as top-level note changes", () => {
+  it("mapping notes do not appear as top-level note changes (sl-van1)", () => {
     const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 1 } }, { notes: [] });
     const b = makeIndex(
       {},
@@ -135,7 +190,33 @@ describe("diffIndex", () => {
     assert.equal(delta.notes.added.length, 0, "block-owned notes should not appear in top-level notes");
   });
 
-  it("detects schema-level note text changes (sl-4gio)", () => {
+  it("detects standalone top-level note additions (sl-van1)", () => {
+    /** Top-level notes (parent === null) should appear in delta.notes. */
+    const a = makeIndex({}, {}, { notes: [] });
+    const b = makeIndex({}, {}, {
+      notes: [{ text: "New standalone note.", parent: null, file: "x.stm", row: 1, namespace: null }],
+    });
+    const delta = diffIndex(a, b);
+    assert.deepEqual(delta.notes.added, ["New standalone note."]);
+    assert.deepEqual(delta.notes.removed, []);
+  });
+
+  it("detects standalone top-level note text changes (sl-van1)", () => {
+    /** When a standalone note's text changes, both the old and new appear. */
+    const a = makeIndex({}, {}, {
+      notes: [{ text: "Original note.", parent: null, file: "x.stm", row: 1, namespace: null }],
+    });
+    const b = makeIndex({}, {}, {
+      notes: [{ text: "Updated note.", parent: null, file: "x.stm", row: 1, namespace: null }],
+    });
+    const delta = diffIndex(a, b);
+    assert.deepEqual(delta.notes.added, ["Updated note."]);
+    assert.deepEqual(delta.notes.removed, ["Original note."]);
+  });
+
+  // ── Schema note detection (sl-fkwb) ─────────────────────────────────────
+
+  it("detects schema-level note text changes via note tag (sl-4gio)", () => {
     const a = makeIndex({ foo: { note: "Raw source data", fields: [{ name: "id", type: "INT" }] } });
     const b = makeIndex({ foo: { note: "Updated description", fields: [{ name: "id", type: "INT" }] } });
     const delta = diffIndex(a, b);
@@ -160,6 +241,36 @@ describe("diffIndex", () => {
     assert.equal(delta.schemas.changed.length, 0);
   });
 
+  it("detects schema note block changes attributed under schema (sl-fkwb)", () => {
+    /** Note blocks inside schema body should produce note-added/note-removed under the schema. */
+    const a = makeIndex({ data: { note: null, fields: [{ name: "id", type: "INT" }] } }, {}, {
+      notes: [{ text: "This schema holds customer data.", parent: "data", file: "a.stm", row: 1, namespace: null }],
+    });
+    const b = makeIndex({ data: { note: null, fields: [{ name: "id", type: "INT" }] } }, {}, {
+      notes: [{ text: "This schema holds updated customer data with PII.", parent: "data", file: "b.stm", row: 1, namespace: null }],
+    });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 1);
+    assert.equal(delta.schemas.changed[0].name, "data");
+    const noteAdded = delta.schemas.changed[0].changes.find((c) => c.kind === "note-added");
+    const noteRemoved = delta.schemas.changed[0].changes.find((c) => c.kind === "note-removed");
+    assert.ok(noteAdded, "expected note-added for new note text");
+    assert.ok(noteRemoved, "expected note-removed for old note text");
+    // Should not appear at top level
+    assert.equal(delta.notes.added.length, 0, "schema notes should not leak to top-level");
+    assert.equal(delta.notes.removed.length, 0, "schema notes should not leak to top-level");
+  });
+
+  it("schema note blocks with identical text produce no change (sl-fkwb)", () => {
+    const note = { text: "Same note.", parent: "data", file: "a.stm", row: 1, namespace: null };
+    const a = makeIndex({ data: { note: null, fields: [] } }, {}, { notes: [note] });
+    const b = makeIndex({ data: { note: null, fields: [] } }, {}, { notes: [note] });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 0);
+  });
+
+  // ── Transform body detection ─────────────────────────────────────────────
+
   it("detects transform body text changes (sl-7ow3)", () => {
     const a = makeIndex({}, {}, { transforms: { "clean address": { body: "trim | lowercase" } } });
     const b = makeIndex({}, {}, { transforms: { "clean address": { body: "trim | lowercase | capitalize" } } });
@@ -177,6 +288,8 @@ describe("diffIndex", () => {
     const delta = diffIndex(a, b);
     assert.equal(delta.transforms.changed.length, 0);
   });
+
+  // ── Metric note detection ────────────────────────────────────────────────
 
   it("detects metric note changes attributed under metric, not top-level (sl-kf76)", () => {
     const a = makeIndex({}, {}, {
@@ -199,11 +312,42 @@ describe("diffIndex", () => {
     assert.equal(delta.notes.removed.length, 0, "metric notes should not leak to top-level");
   });
 
+  // ── Mapping arrow changes ────────────────────────────────────────────────
+
   it("detects arrow count changes in mappings", () => {
     const a = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 5 } });
     const b = makeIndex({}, { m1: { sources: ["a"], targets: ["b"], arrowCount: 8 } });
     const delta = diffIndex(a, b);
     assert.equal(delta.mappings.changed.length, 1);
     assert.equal(delta.mappings.changed[0].changes[0].kind, "arrow-count-changed");
+  });
+
+  it("detects added and removed arrows", () => {
+    /** Verifies that added/removed arrows are detected by source->target key. */
+    const arrowA = {
+      mapping: "m1", namespace: null, sources: ["src.id"], target: "tgt.id",
+      transform_raw: "", steps: [], classification: "structural",
+      derived: false, line: 5, file: "a.stm",
+    };
+    const arrowB = {
+      mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
+      transform_raw: "", steps: [], classification: "structural",
+      derived: false, line: 5, file: "b.stm",
+    };
+    const a = makeIndex(
+      {},
+      { m1: { sources: ["src"], targets: ["tgt"], arrowCount: 1 } },
+      { fieldArrows: { "src.id": [arrowA] } },
+    );
+    const b = makeIndex(
+      {},
+      { m1: { sources: ["src"], targets: ["tgt"], arrowCount: 1 } },
+      { fieldArrows: { "src.name": [arrowB] } },
+    );
+    const delta = diffIndex(a, b);
+    const removed = delta.mappings.changed[0].changes.find((c) => c.kind === "arrow-removed");
+    const added = delta.mappings.changed[0].changes.find((c) => c.kind === "arrow-added");
+    assert.ok(removed, "expected arrow-removed for old arrow");
+    assert.ok(added, "expected arrow-added for new arrow");
   });
 });
