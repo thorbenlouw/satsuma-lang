@@ -5,9 +5,9 @@
 import assert from "node:assert/strict";
 import { describe, it, beforeEach, afterEach } from "node:test";
 
-let output = [];
-let origLog;
-beforeEach(() => { output = []; origLog = console.log; console.log = (...a) => output.push(a.join(" ")); });
+let output: string[] = [];
+let origLog: typeof console.log;
+beforeEach(() => { output = []; origLog = console.log; console.log = (...a: any[]) => output.push(a.join(" ")); });
 afterEach(() => { console.log = origLog; });
 
 describe("warnings output", () => {
@@ -31,15 +31,15 @@ describe("warnings output", () => {
     }
 
     assert.ok(output.includes("db.stm"));
-    assert.ok(output.some((l) => l.includes(":5  //! some records NULL")));
-    assert.ok(output.some((l) => l.includes(":9  //! not validated")));
+    assert.ok(output.some((l: string) => l.includes(":5  //! some records NULL")));
+    assert.ok(output.some((l: string) => l.includes(":9  //! not validated")));
     assert.ok(output.includes("other.stm"));
   });
 
   it("prints 'no warnings' when empty", () => {
     const items = [];
     if (items.length === 0) console.log("No warning comments found.");
-    assert.ok(output.some((l) => l.includes("No warning")));
+    assert.ok(output.some((l: string) => l.includes("No warning")));
   });
 });
 

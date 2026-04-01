@@ -5,14 +5,48 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { runLint, applyFixes } from "#src/lint-engine.js";
+import type { WorkspaceIndex } from "#src/types.js";
+
+/** Shape of a mock schema passed to makeIndex. */
+interface MockSchema {
+  name: string;
+  fields: Array<{ name: string; children?: Array<{ name: string }> }>;
+  file?: string;
+  row?: number;
+}
+
+/** Shape of a mock mapping passed to makeIndex. */
+interface MockMapping {
+  name: string;
+  namespace?: string | null;
+  sources?: string[];
+  targets?: string[];
+  file?: string;
+  row?: number;
+}
+
+/** Shape of a mock NL ref datum passed to makeIndex. */
+interface MockNLRef {
+  text: string;
+  mapping: string;
+  namespace: string | null;
+  targetField: string | null;
+  file: string;
+  line: number;
+  column: number;
+}
 
 /** Build a minimal WorkspaceIndex for lint testing. */
-function makeIndex({ schemas = [], mappings = [], nlRefData = [] } = {}) {
-  const schemaMap = new Map();
+function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
+  schemas?: MockSchema[];
+  mappings?: MockMapping[];
+  nlRefData?: MockNLRef[];
+} = {}): WorkspaceIndex {
+  const schemaMap = new Map<string, any>();
   for (const s of schemas) {
     schemaMap.set(s.name, { ...s, file: s.file ?? "test.stm", row: s.row ?? 0 });
   }
-  const mappingMap = new Map();
+  const mappingMap = new Map<string, any>();
   for (const m of mappings) {
     mappingMap.set(m.name, { ...m, file: m.file ?? "test.stm", row: m.row ?? 0 });
   }
@@ -22,14 +56,16 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] } = {}) {
     metrics: new Map(),
     fragments: new Map(),
     transforms: new Map(),
+    notes: [],
     warnings: [],
     questions: [],
     fieldArrows: new Map(),
     referenceGraph: { usedByMappings: new Map(), fragmentsUsedIn: new Map(), metricsReferences: new Map() },
     namespaceNames: new Set(),
     nlRefData,
+    duplicates: [],
     totalErrors: 0,
-  };
+  } as any as WorkspaceIndex;
 }
 
 // ── hidden-source-in-nl ────────────────────────────────────────────────────
@@ -132,7 +168,7 @@ describe("lint: hidden-source-in-nl", () => {
 
     assert.equal(appliedFixes.length, 1);
     assert.ok(fixedFiles.has("test.stm"));
-    const fixed = fixedFiles.get("test.stm");
+    const fixed = fixedFiles.get("test.stm")!;
     assert.match(fixed, /source \{ source::finance_gl, source::hr_employees \}/);
   });
 
@@ -177,7 +213,7 @@ describe("lint: hidden-source-in-nl", () => {
     const { fixedFiles, appliedFixes } = applyFixes(sourceByFile, diags);
 
     assert.equal(appliedFixes.length, 1);
-    const fixed = fixedFiles.get("test.stm");
+    const fixed = fixedFiles.get("test.stm")!;
     // Arrow should now be multi-source
     assert.match(fixed, /finance_gl\.posted_by, source::hr_employees -> stg_gl\.department/);
     // Source block should also be updated
@@ -225,7 +261,7 @@ describe("lint: hidden-source-in-nl", () => {
     const { fixedFiles, appliedFixes } = applyFixes(sourceByFile, diags);
 
     assert.equal(appliedFixes.length, 1);
-    const fixed = fixedFiles.get("test.stm");
+    const fixed = fixedFiles.get("test.stm")!;
     // Source block should be updated
     assert.match(fixed, /source \{ source::finance_gl, source::hr_employees \}/);
     // No arrow modification (note block, not arrow NL)

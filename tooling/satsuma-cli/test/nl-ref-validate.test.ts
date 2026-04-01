@@ -7,7 +7,11 @@ import { describe, it } from "node:test";
 import { collectSemanticWarnings } from "#src/validate.js";
 
 /** Build a minimal WorkspaceIndex with nlRefData for testing. */
-function makeIndex({ schemas = [], mappings = [], nlRefData = [] }) {
+function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
+  schemas?: any[];
+  mappings?: any[];
+  nlRefData?: any[];
+}) {
   const schemaMap = new Map();
   for (const s of schemas) {
     schemaMap.set(s.name, { ...s, file: s.file ?? "test.stm", row: s.row ?? 0 });
@@ -22,14 +26,16 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] }) {
     metrics: new Map(),
     fragments: new Map(),
     transforms: new Map(),
+    notes: [],
     warnings: [],
     questions: [],
     fieldArrows: new Map(),
     referenceGraph: { usedByMappings: new Map(), fragmentsUsedIn: new Map(), metricsReferences: new Map() },
     namespaceNames: new Set(),
     nlRefData,
+    duplicates: [],
     totalErrors: 0,
-  };
+  } as any;
 }
 
 describe("NL ref validation: nl-ref-unresolved", () => {

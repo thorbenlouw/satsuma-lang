@@ -7,17 +7,17 @@ import { describe, it } from "node:test";
 
 // ── Mock CST helpers ──────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0) {
+function n(type: string, namedChildren: any[] = [], text = "", row = 0): any {
   return { type, text, startPosition: { row, column: 0 }, namedChildren };
 }
-function ident(t) { return n("identifier", [], t); }
-function blockLabel(name) { return n("block_label", [ident(name)]); }
-function fieldName(name) { return n("field_name", [ident(name)]); }
-function typeExpr(t) { return n("type_expr", [], t); }
+function ident(t: string) { return n("identifier", [], t); }
+function blockLabel(name: string) { return n("block_label", [ident(name)]); }
+function fieldName(name: string) { return n("field_name", [ident(name)]); }
+function typeExpr(t: string) { return n("type_expr", [], t); }
 
 // ── Inline findTagInMeta ──────────────────────────────────────────────────────
 
-function findTagInMeta(metaNode, tag) {
+function findTagInMeta(metaNode: any, tag: string) {
   for (const c of metaNode.namedChildren) {
     if (c.type === "tag_token" && c.text.toLowerCase() === tag) return c.text;
     if (c.type === "tag_with_value") {
@@ -35,11 +35,11 @@ function findTagInMeta(metaNode, tag) {
 
 // ── Inline collectFieldMatches ────────────────────────────────────────────────
 
-function collectFieldMatches(bodyNode, blockType, blockName, file, tag, acc = []) {
+function collectFieldMatches(bodyNode: any, blockType: string, blockName: string, file: string, tag: string, acc: any[] = []) {
   for (const c of bodyNode.namedChildren) {
     if (c.type === "field_decl") {
-      const nameNode = c.namedChildren.find((x) => x.type === "field_name");
-      const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+      const nameNode = c.namedChildren.find((x: any) => x.type === "field_name");
+      const meta = c.namedChildren.find((x: any) => x.type === "metadata_block");
       const inner = nameNode?.namedChildren[0];
       let fname = inner?.text ?? "";
       if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
@@ -48,8 +48,8 @@ function collectFieldMatches(bodyNode, blockType, blockName, file, tag, acc = []
         if (matched) acc.push({ blockType, block: blockName, field: fname, tag: matched, file, row: c.startPosition.row });
       }
     } else if (c.type === "record_block" || c.type === "list_block") {
-      const nested = c.namedChildren.find((x) => x.type === "schema_body");
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const nested = c.namedChildren.find((x: any) => x.type === "schema_body");
+      const lbl = c.namedChildren.find((x: any) => x.type === "block_label");
       const inner = lbl?.namedChildren[0];
       let lname = inner?.text ?? "";
       if (inner?.type === "backtick_name") lname = lname.slice(1, -1);
@@ -135,7 +135,7 @@ describe("collectFieldMatches", () => {
   });
 
   it("collects multiple matches", () => {
-    const makeField = (name, tagText, row) => {
+    const makeField = (name: string, tagText: string, row: number) => {
       const tag = n("tag_token", [], tagText);
       const meta = n("metadata_block", [tag]);
       return n("field_decl", [fieldName(name), typeExpr("TEXT"), meta], "", row);

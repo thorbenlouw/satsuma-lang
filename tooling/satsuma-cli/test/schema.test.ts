@@ -9,25 +9,25 @@ import { describe, it, beforeEach, afterEach } from "node:test";
 
 // ── Mock CST helpers ──────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
-  const children = [];
-  children.push(...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
-  children.push(...namedChildren.map(c => ({ ...c, isNamed: true })));
+function n(type: string, namedChildren: any[] = [], text = "", row = 0, anonymousChildren: string[] = []) {
+  const children: any[] = [];
+  children.push(...anonymousChildren.map((t: string) => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
+  children.push(...namedChildren.map((c: any) => ({ ...c, isNamed: true })));
   return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
 }
-function ident(t) { return n("identifier", [], t); }
-function quoted(t) { return n("backtick_name", [], `'${t}'`); }
-function _blockLabel(name) {
+function ident(t: string) { return n("identifier", [], t); }
+function quoted(t: string) { return n("backtick_name", [], `'${t}'`); }
+function _blockLabel(name: string) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
 }
-function spreadLabel(name) {
+function spreadLabel(name: string) {
   if (name.startsWith("'")) return n("spread_label", [quoted(name.slice(1, -1))]);
   return n("spread_label", name.split(" ").map(ident));
 }
-function fieldName(name) { return n("field_name", [ident(name)]); }
-function typeExpr(t) { return n("type_expr", [], t); }
-function fieldDecl(name, type, meta = null) {
+function fieldName(name: string) { return n("field_name", [ident(name)]); }
+function typeExpr(t: string) { return n("type_expr", [], t); }
+function fieldDecl(name: string, type: string, meta: any = null) {
   const children = [fieldName(name), typeExpr(type)];
   if (meta) children.push(meta);
   return n("field_decl", children);
@@ -35,18 +35,18 @@ function fieldDecl(name, type, meta = null) {
 
 // ── Inline collectFields re-implementation (mirrors schema.js logic) ──────────
 
-function isList(fd) {
+function isList(fd: any) {
   if (!fd.children) return false;
-  return fd.children.some((c) => !c.isNamed && c.text === "list_of");
+  return fd.children.some((c: any) => !c.isNamed && c.text === "list_of");
 }
 
-function collectFields(bodyNode, indent = 0) {
-  const lines = [];
+function collectFields(bodyNode: any, indent = 0): { indent: number; text: string }[] {
+  const lines: { indent: number; text: string }[] = [];
   for (const c of bodyNode.namedChildren) {
     const pad = "  ".repeat(indent);
     if (c.type === "field_decl") {
-      const nameNode = c.namedChildren.find((x) => x.type === "field_name");
-      const nested = c.namedChildren.find((x) => x.type === "schema_body");
+      const nameNode = c.namedChildren.find((x: any) => x.type === "field_name");
+      const nested = c.namedChildren.find((x: any) => x.type === "schema_body");
       if (nested) {
         // Nested structure: field_decl with schema_body child (unified syntax)
         const inner = nameNode?.namedChildren[0];
@@ -58,8 +58,8 @@ function collectFields(bodyNode, indent = 0) {
         lines.push({ indent, text: `${pad}}` });
       } else {
         // Scalar field
-        const typeNode = c.namedChildren.find((x) => x.type === "type_expr");
-        const meta = c.namedChildren.find((x) => x.type === "metadata_block");
+        const typeNode = c.namedChildren.find((x: any) => x.type === "type_expr");
+        const meta = c.namedChildren.find((x: any) => x.type === "metadata_block");
         const inner = nameNode?.namedChildren[0];
         let fname = inner?.text ?? "";
         if (inner?.type === "backtick_name") fname = fname.slice(1, -1);
@@ -67,16 +67,16 @@ function collectFields(bodyNode, indent = 0) {
         lines.push({ indent, text: `${pad}${fname.padEnd(24)}${typeNode?.text ?? ""}${metaText}` });
       }
     } else if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "spread_label");
+      const lbl = c.namedChildren.find((x: any) => x.type === "spread_label");
       let sname = "";
       if (lbl) {
-        const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
+        const q = lbl.namedChildren.find((x: any) => x.type === "backtick_name");
         if (q) {
           sname = q.text;
         } else {
           sname = lbl.namedChildren
-            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
-            .map((x) => x.text)
+            .filter((x: any) => x.type === "identifier" || x.type === "qualified_name")
+            .map((x: any) => x.text)
             .join(" ");
         }
       }
@@ -154,9 +154,9 @@ describe("collectFields", () => {
 // ── printFieldsOnly output format ─────────────────────────────────────────────
 
 describe("fields-only format", () => {
-  let output = [];
-  let origLog;
-  beforeEach(() => { output = []; origLog = console.log; console.log = (...a) => output.push(a.join(" ")); });
+  let output: string[] = [];
+  let origLog: typeof console.log;
+  beforeEach(() => { output = []; origLog = console.log; console.log = (...a: any[]) => output.push(a.join(" ")); });
   afterEach(() => { console.log = origLog; });
 
   it("prints name and type tab-padded", () => {

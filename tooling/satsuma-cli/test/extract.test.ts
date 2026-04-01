@@ -19,65 +19,57 @@ import {
   extractNamespaces,
   extractImports,
 } from "@satsuma/core";
+import { MockNode, mockNode as n } from "./helpers.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
-/** Build a mock CST node. */
-function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
-  const children = [];
-  // Interleave anonymous and named children (anonymous first for keyword position)
-  children.push(...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
-  children.push(...namedChildren.map(c => ({ ...c, isNamed: true })));
-  return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
-}
-
 /** Convenience: build an identifier node. */
-function ident(text, row = 0) {
+function ident(text: string, row = 0): MockNode {
   return n("identifier", [], text, row);
 }
 
 /** Convenience: build a backtick_name node. */
-function quoted(inner, row = 0) {
+function quoted(inner: string, row = 0): MockNode {
   return n("backtick_name", [], `'${inner}'`, row);
 }
 
 /** Convenience: build an nl_string node. */
-function str(inner) {
+function str(inner: string): MockNode {
   return n("nl_string", [], `"${inner}"`);
 }
 
 /** Convenience: build a block_label node (identifier child). */
-function blockLabel(name) {
+function blockLabel(name: string): MockNode {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
 }
 
 /** Convenience: build a type_expr node. */
-function typeExpr(text) {
+function typeExpr(text: string): MockNode {
   return n("type_expr", [], text);
 }
 
 /** Convenience: build a field_name node wrapping an identifier. */
-function fieldName(name) {
+function fieldName(name: string): MockNode {
   return n("field_name", [ident(name)]);
 }
 
 /** Convenience: build a field_decl node. */
-function fieldDecl(name, type, row = 0) {
+function fieldDecl(name: string, type: string, row = 0): MockNode {
   return n("field_decl", [fieldName(name), typeExpr(type)], "", row);
 }
 
 /** Build a record field_decl: name record (metadata)? { schema_body } */
-function recordFieldDecl(name, bodyChildren = [], metaNode = null) {
-  const named = [fieldName(name)];
+function recordFieldDecl(name: string, bodyChildren: MockNode[] = [], metaNode: MockNode | null = null): MockNode {
+  const named: MockNode[] = [fieldName(name)];
   if (metaNode) named.push(metaNode);
   if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
   return n("field_decl", named, "", 0, ["record"]);
 }
 
 /** Build a list_of record field_decl: name list_of record (metadata)? { schema_body } */
-function _listOfRecordFieldDecl(name, bodyChildren = [], metaNode = null) {
-  const named = [fieldName(name)];
+function _listOfRecordFieldDecl(name: string, bodyChildren: MockNode[] = [], metaNode: MockNode | null = null): MockNode {
+  const named: MockNode[] = [fieldName(name)];
   if (metaNode) named.push(metaNode);
   if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
   return n("field_decl", named, "", 0, ["list_of", "record"]);
@@ -93,7 +85,7 @@ describe("extractSchemas", () => {
     const block = n("schema_block", [blockLabel("orders"), meta, body], "", 5);
     const root = n("source_file", [block]);
 
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "orders");
     assert.equal(result[0].note, "A note");
@@ -109,7 +101,7 @@ describe("extractSchemas", () => {
     const block = n("schema_block", [blockLabel("'my schema'"), body]);
     const root = n("source_file", [block]);
 
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     assert.equal(result[0].name, "my schema");
   });
 
@@ -118,19 +110,19 @@ describe("extractSchemas", () => {
     const block = n("schema_block", [blockLabel("t"), body]);
     const root = n("source_file", [block]);
 
-    assert.equal(extractSchemas(root)[0].note, null);
+    assert.equal(extractSchemas(root as any)[0].note, null);
   });
 
   it("returns empty array when no schemas", () => {
     const root = n("source_file", []);
-    assert.deepEqual(extractSchemas(root), []);
+    assert.deepEqual(extractSchemas(root as any), []);
   });
 
   it("extracts multiple schemas", () => {
-    const makeBlock = (name) =>
+    const makeBlock = (name: string) =>
       n("schema_block", [blockLabel(name), n("schema_body", [])]);
     const root = n("source_file", [makeBlock("a"), makeBlock("b"), makeBlock("c")]);
-    assert.equal(extractSchemas(root).length, 3);
+    assert.equal(extractSchemas(root as any).length, 3);
   });
 });
 
@@ -143,9 +135,9 @@ describe("FieldDecl metadata enrichment", () => {
     const body = n("schema_body", [fd]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
-    assert.equal(result[0].fields[0].metadata.length, 1);
-    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "tag", tag: "pk" });
+    const result = extractSchemas(root as any);
+    assert.equal(result[0].fields[0].metadata!.length, 1);
+    assert.deepEqual(result[0].fields[0].metadata![0], { kind: "tag", tag: "pk" });
   });
 
   it("extracts ref key-value from field metadata", () => {
@@ -156,9 +148,9 @@ describe("FieldDecl metadata enrichment", () => {
     const body = n("schema_body", [fd]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
-    assert.equal(result[0].fields[0].metadata.length, 1);
-    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "kv", key: "ref", value: "dim_customer.customer_id" });
+    const result = extractSchemas(root as any);
+    assert.equal(result[0].fields[0].metadata!.length, 1);
+    assert.deepEqual(result[0].fields[0].metadata![0], { kind: "kv", key: "ref", value: "dim_customer.customer_id" });
   });
 
   it("extracts enum metadata from field", () => {
@@ -168,9 +160,9 @@ describe("FieldDecl metadata enrichment", () => {
     const body = n("schema_body", [fd]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
-    assert.equal(result[0].fields[0].metadata.length, 1);
-    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "enum", values: ["monthly", "quarterly", "annual"] });
+    const result = extractSchemas(root as any);
+    assert.equal(result[0].fields[0].metadata!.length, 1);
+    assert.deepEqual(result[0].fields[0].metadata![0], { kind: "enum", values: ["monthly", "quarterly", "annual"] });
   });
 
   it("omits metadata when field has no metadata_block", () => {
@@ -178,7 +170,7 @@ describe("FieldDecl metadata enrichment", () => {
     const body = n("schema_body", [fd]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     assert.equal(result[0].fields[0].metadata, undefined);
   });
 
@@ -189,11 +181,11 @@ describe("FieldDecl metadata enrichment", () => {
     const body = n("schema_body", [recField]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     const rec = result[0].fields[0];
     assert.equal(rec.name, "address");
-    assert.equal(rec.children[0].metadata.length, 1);
-    assert.deepEqual(rec.children[0].metadata[0], { kind: "tag", tag: "required" });
+    assert.equal(rec.children![0].metadata!.length, 1);
+    assert.deepEqual(rec.children![0].metadata![0], { kind: "tag", tag: "required" });
   });
 
   it("extracts metadata on record field itself", () => {
@@ -203,10 +195,10 @@ describe("FieldDecl metadata enrichment", () => {
     const body = n("schema_body", [recField]);
     const block = n("schema_block", [blockLabel("test"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     const rec = result[0].fields[0];
-    assert.equal(rec.metadata.length, 1);
-    assert.deepEqual(rec.metadata[0], { kind: "tag", tag: "required" });
+    assert.equal(rec.metadata!.length, 1);
+    assert.deepEqual(rec.metadata![0], { kind: "tag", tag: "required" });
   });
 });
 
@@ -221,7 +213,7 @@ describe("extractFragments", () => {
     const block = n("fragment_block", [blockLabel("'address fields'"), body], "", 3);
     const root = n("source_file", [block]);
 
-    const result = extractFragments(root);
+    const result = extractFragments(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "address fields");
     assert.equal(result[0].row, 3);
@@ -229,7 +221,7 @@ describe("extractFragments", () => {
   });
 
   it("returns empty array when no fragments", () => {
-    assert.deepEqual(extractFragments(n("source_file", [])), []);
+    assert.deepEqual(extractFragments(n("source_file", []) as any), []);
   });
 });
 
@@ -240,21 +232,21 @@ describe("extractTransforms", () => {
     const block = n("transform_block", [blockLabel("normalize_phone")], "", 10);
     const root = n("source_file", [block]);
 
-    const result = extractTransforms(root);
+    const result = extractTransforms(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "normalize_phone");
     assert.equal(result[0].row, 10);
   });
 
   it("returns empty array when no transforms", () => {
-    assert.deepEqual(extractTransforms(n("source_file", [])), []);
+    assert.deepEqual(extractTransforms(n("source_file", []) as any), []);
   });
 });
 
 // ── extractMappings ───────────────────────────────────────────────────────────
 
 /** Convenience: build a source_ref node wrapping a name node. */
-function sourceRef(nameNode, extraChildren = []) {
+function sourceRef(nameNode: MockNode, extraChildren: MockNode[] = []): MockNode {
   return n("source_ref", [nameNode, ...extraChildren]);
 }
 
@@ -268,7 +260,7 @@ describe("extractMappings", () => {
     const block = n("mapping_block", [blockLabel("'customer migration'"), body], "", 20);
     const root = n("source_file", [block]);
 
-    const result = extractMappings(root);
+    const result = extractMappings(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "customer migration");
     assert.deepEqual(result[0].sources, ["legacy_sqlserver"]);
@@ -283,7 +275,7 @@ describe("extractMappings", () => {
     const block = n("mapping_block", [body]);
     const root = n("source_file", [block]);
 
-    const result = extractMappings(root);
+    const result = extractMappings(root as any);
     assert.equal(result[0].name, null);
   });
 
@@ -296,7 +288,7 @@ describe("extractMappings", () => {
     const block = n("mapping_block", [blockLabel("m"), body]);
     const root = n("source_file", [block]);
 
-    assert.equal(extractMappings(root)[0].arrowCount, 2);
+    assert.equal(extractMappings(root as any)[0].arrowCount, 2);
   });
 
   it("strips backticks from source and target names", () => {
@@ -308,7 +300,7 @@ describe("extractMappings", () => {
     const block = n("mapping_block", [blockLabel("m"), body]);
     const root = n("source_file", [block]);
 
-    const result = extractMappings(root);
+    const result = extractMappings(root as any);
     assert.deepEqual(result[0].sources, ["my_source"]);
     assert.deepEqual(result[0].targets, ["my_target"]);
   });
@@ -323,7 +315,7 @@ describe("extractMappings", () => {
     const block = n("mapping_block", [blockLabel("m"), body]);
     const root = n("source_file", [block]);
 
-    const result = extractMappings(root);
+    const result = extractMappings(root as any);
     assert.deepEqual(result[0].sources, ["crm_customers", "order_transactions"]);
   });
 
@@ -336,7 +328,7 @@ describe("extractMappings", () => {
     const block = n("mapping_block", [blockLabel("m"), body]);
     const root = n("source_file", [block]);
 
-    const result = extractMappings(root);
+    const result = extractMappings(root as any);
     assert.deepEqual(result[0].sources, ["my_table"]);
   });
 });
@@ -352,7 +344,7 @@ describe("extractMetrics", () => {
     const block = n("metric_block", [blockLabel("mrr"), meta, body], "", 7);
     const root = n("source_file", [block]);
 
-    const result = extractMetrics(root);
+    const result = extractMetrics(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "mrr");
     assert.equal(result[0].grain, "monthly");
@@ -369,7 +361,7 @@ describe("extractWarnings", () => {
     const w = n("warning_comment", [], "//! some records have NULL", 12);
     const root = n("source_file", [w]);
 
-    const result = extractWarnings(root);
+    const result = extractWarnings(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].text, "some records have NULL");
     assert.equal(result[0].row, 12);
@@ -382,13 +374,13 @@ describe("extractWarnings", () => {
     const block = n("schema_block", [blockLabel("t"), body]);
     const root = n("source_file", [block]);
 
-    assert.equal(extractWarnings(root).length, 1);
+    assert.equal(extractWarnings(root as any).length, 1);
   });
 
   it("strips //! prefix", () => {
     const w = n("warning_comment", [], "//!no space after bang", 0);
     const root = n("source_file", [w]);
-    assert.equal(extractWarnings(root)[0].text, "no space after bang");
+    assert.equal(extractWarnings(root as any)[0].text, "no space after bang");
   });
 });
 
@@ -399,22 +391,22 @@ describe("extractQuestions", () => {
     const q = n("question_comment", [], "//? is this field PII?", 8);
     const root = n("source_file", [q]);
 
-    const result = extractQuestions(root);
+    const result = extractQuestions(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].text, "is this field PII?");
     assert.equal(result[0].row, 8);
   });
 
   it("returns empty when no question comments", () => {
-    assert.deepEqual(extractQuestions(n("source_file", [])), []);
+    assert.deepEqual(extractQuestions(n("source_file", []) as any), []);
   });
 });
 
 // ── Namespace extraction ──────────────────────────────────────────────────────
 
 /** Build a namespace_block mock node. */
-function namespaceBlock(name, childNodes = [], metaNode = null, row = 0) {
-  const kids = [ident(name), ...(metaNode ? [metaNode] : []), ...childNodes];
+function namespaceBlock(name: string, childNodes: MockNode[] = [], metaNode: MockNode | null = null, row = 0): MockNode {
+  const kids: MockNode[] = [ident(name), ...(metaNode ? [metaNode] : []), ...childNodes];
   return n("namespace_block", kids, "", row);
 }
 
@@ -422,7 +414,7 @@ describe("extractNamespaces", () => {
   it("extracts namespace names and rows", () => {
     const ns = namespaceBlock("pos", [], null, 5);
     const root = n("source_file", [ns]);
-    const result = extractNamespaces(root);
+    const result = extractNamespaces(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "pos");
     assert.equal(result[0].row, 5);
@@ -434,7 +426,7 @@ describe("extractNamespaces", () => {
     const meta = n("metadata_block", [noteTag]);
     const ns = namespaceBlock("pos", [], meta, 0);
     const root = n("source_file", [ns]);
-    const result = extractNamespaces(root);
+    const result = extractNamespaces(root as any);
     assert.equal(result[0].note, "POS system");
   });
 
@@ -443,7 +435,7 @@ describe("extractNamespaces", () => {
       namespaceBlock("pos"),
       namespaceBlock("ecom"),
     ]);
-    assert.equal(extractNamespaces(root).length, 2);
+    assert.equal(extractNamespaces(root as any).length, 2);
   });
 });
 
@@ -452,7 +444,7 @@ describe("extractSchemas with namespaces", () => {
     const body = n("schema_body", [fieldDecl("id", "INT")]);
     const block = n("schema_block", [blockLabel("orders"), body]);
     const root = n("source_file", [block]);
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     assert.equal(result[0].namespace, null);
   });
 
@@ -462,7 +454,7 @@ describe("extractSchemas with namespaces", () => {
     const ns = namespaceBlock("pos", [schemaNode], null, 0);
     const root = n("source_file", [ns]);
 
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "stores");
     assert.equal(result[0].namespace, "pos");
@@ -475,7 +467,7 @@ describe("extractSchemas with namespaces", () => {
     const ns = namespaceBlock("pos", [nsSchema]);
     const root = n("source_file", [globalSchema, ns]);
 
-    const result = extractSchemas(root);
+    const result = extractSchemas(root as any);
     assert.equal(result.length, 2);
     assert.equal(result[0].name, "dim_date");
     assert.equal(result[0].namespace, null);
@@ -496,7 +488,7 @@ describe("extractMappings with namespaces", () => {
     const ns = namespaceBlock("vault", [block]);
     const root = n("source_file", [ns]);
 
-    const result = extractMappings(root);
+    const result = extractMappings(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].namespace, "vault");
     assert.deepEqual(result[0].sources, ["pos::stores"]);
@@ -511,7 +503,7 @@ describe("extractFragments with namespaces", () => {
     const ns = namespaceBlock("shared", [frag]);
     const root = n("source_file", [ns]);
 
-    const result = extractFragments(root);
+    const result = extractFragments(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "audit_cols");
     assert.equal(result[0].namespace, "shared");
@@ -524,7 +516,7 @@ describe("extractTransforms with namespaces", () => {
     const ns = namespaceBlock("vault", [block]);
     const root = n("source_file", [ns]);
 
-    const result = extractTransforms(root);
+    const result = extractTransforms(root as any);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "dv_hash");
     assert.equal(result[0].namespace, "vault");
@@ -535,7 +527,7 @@ describe("extractTransforms with namespaces", () => {
 
 describe("extractImports", () => {
   /** Build a qualified_name node (ns::name). */
-  function qualifiedName(ns, name) {
+  function qualifiedName(ns: string, name: string): MockNode {
     return n("qualified_name", [ident(ns), ident(name)], `${ns}::${name}`);
   }
 
@@ -546,7 +538,7 @@ describe("extractImports", () => {
     ], "", 0);
     const root = n("source_file", [imp]);
 
-    const result = extractImports(root);
+    const result = extractImports(root as any);
     assert.equal(result.length, 1);
     assert.deepEqual(result[0].names, ["address_fields"]);
     assert.equal(result[0].path, "common.stm");
@@ -560,7 +552,7 @@ describe("extractImports", () => {
     ], "", 2);
     const root = n("source_file", [imp]);
 
-    const result = extractImports(root);
+    const result = extractImports(root as any);
     assert.equal(result.length, 1);
     assert.deepEqual(result[0].names, ["src::customers", "mart::dim_customers"]);
     assert.equal(result[0].path, "source.stm");
@@ -575,7 +567,7 @@ describe("extractImports", () => {
     ]);
     const root = n("source_file", [imp]);
 
-    const result = extractImports(root);
+    const result = extractImports(root as any);
     assert.equal(result.length, 1);
     assert.deepEqual(result[0].names, ["address fields", "audit fields"]);
     assert.equal(result[0].path, "lib/common.stm");
@@ -592,7 +584,7 @@ describe("extractImports", () => {
     ], "", 1);
     const root = n("source_file", [imp1, imp2]);
 
-    const result = extractImports(root);
+    const result = extractImports(root as any);
     assert.equal(result.length, 2);
     assert.equal(result[0].path, "a.stm");
     assert.equal(result[1].path, "b.stm");
@@ -600,7 +592,7 @@ describe("extractImports", () => {
 
   it("returns empty array when no imports", () => {
     const root = n("source_file", []);
-    const result = extractImports(root);
+    const result = extractImports(root as any);
     assert.equal(result.length, 0);
   });
 });

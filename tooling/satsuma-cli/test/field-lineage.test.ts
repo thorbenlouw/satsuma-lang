@@ -6,27 +6,17 @@
  *   sl-m44v  Anonymous mappings not traced
  */
 
-import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { run as _run } from "./helpers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const FIXTURES = resolve(__dirname, "fixtures");
 
-function run(...args) {
-  return new Promise((resolve) => {
-    execFile("node", [CLI, ...args], { timeout: 15_000 }, (err, stdout, stderr) => {
-      resolve({
-        stdout: stdout ?? "",
-        stderr: stderr ?? "",
-        code: err ? err.code ?? 1 : 0,
-      });
-    });
-  });
-}
+const run = (...args: string[]) => _run(CLI, ...args);
 
 // ---------------------------------------------------------------------------
 // sl-nknd: --upstream --downstream together should trace both directions
@@ -80,9 +70,9 @@ describe("field-lineage anonymous mappings (sl-m44v)", () => {
     assert.equal(code, 0, `expected exit 0, got ${code}\n${stdout}`);
     const data = JSON.parse(stdout);
     assert.ok(data.upstream.length > 0, "upstream should contain orders.amount via anonymous mapping");
-    const upstreamFields = data.upstream.map((u) => u.field);
+    const upstreamFields = data.upstream.map((u: any) => u.field);
     assert.ok(
-      upstreamFields.some((f) => f.includes("orders") && f.includes("amount")),
+      upstreamFields.some((f: any) => f.includes("orders") && f.includes("amount")),
       `expected ::orders.amount in upstream, got: ${JSON.stringify(upstreamFields)}`,
     );
   });
@@ -93,9 +83,9 @@ describe("field-lineage anonymous mappings (sl-m44v)", () => {
     assert.equal(code, 0, `expected exit 0, got ${code}\n${stdout}`);
     const data = JSON.parse(stdout);
     assert.ok(data.downstream.length > 0, "downstream should contain invoices.total via anonymous mapping");
-    const downstreamFields = data.downstream.map((d) => d.field);
+    const downstreamFields = data.downstream.map((d: any) => d.field);
     assert.ok(
-      downstreamFields.some((f) => f.includes("invoices") && f.includes("total")),
+      downstreamFields.some((f: any) => f.includes("invoices") && f.includes("total")),
       `expected ::invoices.total in downstream, got: ${JSON.stringify(downstreamFields)}`,
     );
   });
@@ -108,7 +98,7 @@ describe("field-lineage anonymous mappings (sl-m44v)", () => {
     assert.ok(data.upstream.length > 0);
     // The via_mapping should reference the anonymous mapping (contains <anon>)
     assert.ok(
-      data.upstream.some((u) => u.via_mapping.includes("anon")),
+      data.upstream.some((u: any) => u.via_mapping.includes("anon")),
       `expected via_mapping to reference anonymous mapping, got: ${JSON.stringify(data.upstream)}`,
     );
   });
@@ -125,7 +115,7 @@ describe("field-lineage with typeless fields", () => {
     assert.equal(code, 0, `expected exit 0, got ${code}\n${stderr}`);
     const data = JSON.parse(stdout);
     assert.ok(
-      data.downstream.some((d) => d.field.includes("out_id")),
+      data.downstream.some((d: any) => d.field.includes("out_id")),
       `expected out_id in downstream, got: ${JSON.stringify(data.downstream)}`,
     );
   });

@@ -7,39 +7,39 @@ import { describe, it } from "node:test";
 
 // ── Mock CST helpers ──────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "") {
+function n(type: string, namedChildren: any[] = [], text = "") {
   return { type, text, startPosition: { row: 0, column: 0 }, namedChildren };
 }
-function ident(t) { return n("identifier", [], t); }
-function blockLabel(name) {
+function ident(t: string) { return n("identifier", [], t); }
+function blockLabel(name: string) {
   return n("block_label", [ident(name)]);
 }
 
 // ── Inline collectArrows (mirrors mapping.js) ─────────────────────────────────
 
-function pathText(pathNode) {
+function pathText(pathNode: any) {
   if (!pathNode) return "?";
   return pathNode.text;
 }
 
-function collectArrows(bodyNode) {
+function collectArrows(bodyNode: any): any[] {
   if (!bodyNode) return [];
-  const arrows = [];
+  const arrows: any[] = [];
   for (const c of bodyNode.namedChildren) {
     if (c.type === "map_arrow") {
-      const src = c.namedChildren.find((x) => x.type === "src_path");
-      const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-      const hasBody = c.namedChildren.some((x) => x.type === "pipe_chain");
+      const src = c.namedChildren.find((x: any) => x.type === "src_path");
+      const tgt = c.namedChildren.find((x: any) => x.type === "tgt_path");
+      const hasBody = c.namedChildren.some((x: any) => x.type === "pipe_chain");
       arrows.push({ kind: "map", src: pathText(src), tgt: pathText(tgt), hasBody });
     } else if (c.type === "computed_arrow") {
-      const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-      const hasBody = c.namedChildren.some((x) => x.type === "pipe_chain");
+      const tgt = c.namedChildren.find((x: any) => x.type === "tgt_path");
+      const hasBody = c.namedChildren.some((x: any) => x.type === "pipe_chain");
       arrows.push({ kind: "computed", src: null, tgt: pathText(tgt), hasBody });
     } else if (c.type === "nested_arrow") {
-      const src = c.namedChildren.find((x) => x.type === "src_path");
-      const tgt = c.namedChildren.find((x) => x.type === "tgt_path");
-      const children = collectArrows(c);
-      const hasChildren = children.length > 0;
+      const src = c.namedChildren.find((x: any) => x.type === "src_path");
+      const tgt = c.namedChildren.find((x: any) => x.type === "tgt_path");
+      const children: any[] = collectArrows(c);
+      const hasChildren: boolean = children.length > 0;
       arrows.push({ kind: hasChildren ? "nested" : "map", src: pathText(src), tgt: pathText(tgt), hasBody: hasChildren });
     }
   }
@@ -134,10 +134,10 @@ describe("collectArrows", () => {
 });
 
 describe("findMappingNode", () => {
-  function findMappingNode(rootNode, name) {
+  function findMappingNode(rootNode: any, name: any) {
     for (const c of rootNode.namedChildren) {
       if (c.type !== "mapping_block") continue;
-      const lbl = c.namedChildren.find((x) => x.type === "block_label");
+      const lbl = c.namedChildren.find((x: any) => x.type === "block_label");
       if (!lbl && name === null) return c;
       if (!lbl) continue;
       const inner = lbl.namedChildren[0];

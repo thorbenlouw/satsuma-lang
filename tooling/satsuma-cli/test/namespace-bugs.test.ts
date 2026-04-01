@@ -1,24 +1,14 @@
-import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { run as _run } from "./helpers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const FIXTURE = resolve(__dirname, "fixtures/namespace-collision.stm");
 
-function run(...args) {
-  return new Promise((resolvePromise) => {
-    execFile("node", [CLI, ...args], { timeout: 15_000 }, (err, stdout, stderr) => {
-      resolvePromise({
-        stdout: stdout ?? "",
-        stderr: stderr ?? "",
-        code: err ? err.code ?? 1 : 0,
-      });
-    });
-  });
-}
+const run = (...args: string[]) => _run(CLI, ...args);
 
 describe("namespace collision regressions", () => {
   it("validate keeps namespace-local mappings isolated", async () => {
@@ -64,8 +54,8 @@ describe("namespace collision regressions", () => {
     const { stdout, code } = await run("find", "--tag", "default", FIXTURE, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const alpha = data.find((m) => m.block === "alpha::customer" && m.field === "alpha_flag");
-    const beta = data.find((m) => m.block === "beta::customer" && m.field === "beta_score");
+    const alpha = data.find((m: any) => m.block === "alpha::customer" && m.field === "alpha_flag");
+    const beta = data.find((m: any) => m.block === "beta::customer" && m.field === "beta_score");
     assert.ok(alpha);
     assert.ok(beta);
     assert.equal(alpha.line, 4);
@@ -76,7 +66,7 @@ describe("namespace collision regressions", () => {
     const { stdout, code } = await run("lineage", "--from", "beta::customer", FIXTURE, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const nodeNames = new Set(data.nodes.map((n) => n.name));
+    const nodeNames = new Set(data.nodes.map((n: any) => n.name));
     assert.ok(nodeNames.has("beta::customer"));
     assert.ok(nodeNames.has("beta::load_customer"));
     assert.ok(nodeNames.has("beta::customer_out"));
@@ -87,13 +77,13 @@ describe("namespace collision regressions", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(
-      data.schema_edges.some((e) => e.from === "beta::customer" && e.to === "beta::load_customer" && e.role === "source"),
+      data.schema_edges.some((e: any) => e.from === "beta::customer" && e.to === "beta::load_customer" && e.role === "source"),
     );
     assert.ok(
-      data.schema_edges.some((e) => e.from === "beta::load_customer" && e.to === "beta::customer_out" && e.role === "target"),
+      data.schema_edges.some((e: any) => e.from === "beta::load_customer" && e.to === "beta::customer_out" && e.role === "target"),
     );
     assert.ok(
-      data.schema_edges.some((e) => e.from === "beta::customer_out" && e.to === "beta::customer_health" && e.role === "metric_source"),
+      data.schema_edges.some((e: any) => e.from === "beta::customer_out" && e.to === "beta::customer_health" && e.role === "metric_source"),
     );
   });
 });

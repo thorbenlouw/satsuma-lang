@@ -17,40 +17,46 @@ import { extractSchemas, extractMetrics } from "@satsuma/core";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0, anonymousChildren = []) {
-  const children = [];
-  children.push(...anonymousChildren.map(t => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
-  children.push(...namedChildren.map(c => ({ ...c, isNamed: true })));
-  return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true };
+function n(type: any, namedChildren: any[] = [], text = "", row = 0, anonymousChildren: any[] = []) {
+  const children: any[] = [];
+  children.push(...anonymousChildren.map((t: any) => ({ type: t, text: t, isNamed: false, namedChildren: [], children: [] })));
+  children.push(...namedChildren.map((c: any) => ({ ...c, isNamed: true })));
+  return { type, text, startPosition: { row, column: 0 }, namedChildren, children, isNamed: true } as any;
 }
 
-function ident(text, row = 0) {
+function ident(text: any, row = 0) {
   return n("identifier", [], text, row);
 }
 
-function blockLabel(name) {
+function blockLabel(name: any) {
   return n("block_label", [ident(name)]);
 }
 
-function typeExpr(text) {
+function typeExpr(text: any) {
   return n("type_expr", [], text);
 }
 
-function fieldName(name) {
+function fieldName(name: any) {
   return n("field_name", [ident(name)]);
 }
 
-function fieldDecl(name, type, row = 0) {
+function fieldDecl(name: any, type: any, row = 0) {
   return n("field_decl", [fieldName(name), typeExpr(type)], "", row);
 }
 
-function kvPair(key, valNode) {
+function kvPair(key: any, valNode: any) {
   const valText = n("value_text", valNode.type === "value_text" ? valNode.namedChildren : [valNode], valNode.text);
   return n("tag_with_value", [ident(key), valText]);
 }
 
 /** Build a minimal WorkspaceIndex for testing semantic warnings. */
-function makeIndex({ schemas = [], mappings = [], metrics = [], fragments = [], fieldArrows = [] }) {
+function makeIndex({ schemas = [], mappings = [], metrics = [], fragments = [], fieldArrows = [] }: {
+  schemas?: any[];
+  mappings?: any[];
+  metrics?: any[];
+  fragments?: any[];
+  fieldArrows?: any[];
+}): any {
   const schemaMap = new Map();
   for (const s of schemas) {
     schemaMap.set(s.name, { ...s, file: s.file ?? "test.stm", row: s.row ?? 0 });
@@ -110,8 +116,8 @@ describe("Bug 1: nested field path resolution", () => {
     assert.equal(schemas.length, 1);
     assert.equal(schemas[0].fields.length, 2); // record + top_field
     assert.equal(schemas[0].fields[0].name, "BeginningOfMessage");
-    assert.equal(schemas[0].fields[0].children.length, 2);
-    assert.equal(schemas[0].fields[0].children[0].name, "DOCNUM");
+    assert.equal(schemas[0].fields[0].children!.length, 2);
+    assert.equal(schemas[0].fields[0].children![0].name, "DOCNUM");
     assert.equal(schemas[0].fields[1].name, "top_field");
   });
 
@@ -125,7 +131,7 @@ describe("Bug 1: nested field path resolution", () => {
 
     const schemas = extractSchemas(root);
     assert.equal(schemas[0].fields[0].isList, true);
-    assert.equal(schemas[0].fields[0].children[0].name, "unit_price");
+    assert.equal(schemas[0].fields[0].children![0].name, "unit_price");
   });
 
   it("validates dotted paths against nested field tree", () => {
@@ -154,7 +160,7 @@ describe("Bug 1: nested field path resolution", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Nested dotted paths should resolve without warnings");
   });
 
@@ -179,7 +185,7 @@ describe("Bug 1: nested field path resolution", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "List dotted paths should resolve without warnings");
   });
 
@@ -199,7 +205,7 @@ describe("Bug 1: nested field path resolution", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Relative paths should be accepted");
   });
 });
@@ -222,7 +228,7 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Schema-qualified paths should resolve in multi-source mappings");
   });
 
@@ -240,7 +246,7 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 1, "Unknown schema qualifier should still warn");
   });
 
@@ -263,7 +269,7 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "same-named mappings in different namespaces should validate independently");
   });
 });
@@ -307,7 +313,7 @@ describe("Bug 3: metric source extraction", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const metricWarnings = warnings.filter((w) => w.rule === "undefined-ref" && w.message.includes("Metric"));
+    const metricWarnings = warnings.filter((w: any) => w.rule === "undefined-ref" && w.message.includes("Metric"));
     assert.equal(metricWarnings.length, 1, "Should warn for undefined metric source");
     assert.match(metricWarnings[0].message, /external_table/);
   });
@@ -315,16 +321,16 @@ describe("Bug 3: metric source extraction", () => {
 
 // ── Bug 4: Suppress for schemas with unresolved spreads ──────────────────────
 
-function spreadLabel(name) {
+function spreadLabel(name: string) {
   // spread_label children: backtick_name for 'quoted', identifier for bare
   if (name.startsWith("'") || name.startsWith('"')) {
     return n("spread_label", [n("backtick_name", [], name)]);
   }
-  const ids = name.split(" ").map((w) => ident(w));
+  const ids = name.split(" ").map((w: any) => ident(w));
   return n("spread_label", ids);
 }
 
-function fragmentSpread(name) {
+function fragmentSpread(name: string) {
   return n("fragment_spread", [spreadLabel(name)], `...${name}`);
 }
 
@@ -363,7 +369,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Should not warn for target schema with unresolved spreads");
   });
 
@@ -383,7 +389,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Fragment-contributed field should pass validation");
   });
 
@@ -403,7 +409,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 1, "Should warn for field not in schema or fragment");
     assert.ok(fieldWarnings[0].message.includes("nonexistent_field"));
   });
@@ -424,7 +430,7 @@ describe("Bug 4: suppress field-not-in-schema for schemas with spreads", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Fragment-contributed source field should pass validation");
   });
 });
@@ -449,7 +455,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Transitively spread fragment field should pass validation");
   });
 
@@ -469,7 +475,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const cycleWarnings = warnings.filter((w) => w.rule === "circular-spread");
+    const cycleWarnings = warnings.filter((w: any) => w.rule === "circular-spread");
     assert.equal(cycleWarnings.length, 1, "Should detect self-referential spread");
     assert.ok(cycleWarnings[0].message.includes("loop"), "Should mention the cyclic fragment name");
   });
@@ -490,7 +496,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const cycleWarnings = warnings.filter((w) => w.rule === "circular-spread");
+    const cycleWarnings = warnings.filter((w: any) => w.rule === "circular-spread");
     assert.ok(cycleWarnings.length >= 1, "Should detect cycle between frag_a and frag_b");
     assert.ok(cycleWarnings[0].message.includes("Circular fragment spread"));
   });
@@ -514,7 +520,7 @@ describe("Bug 4b: fragment spread cycles and nested expansion", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const cycleWarnings = warnings.filter((w) => w.rule === "circular-spread");
+    const cycleWarnings = warnings.filter((w: any) => w.rule === "circular-spread");
     assert.equal(cycleWarnings.length, 0, "Diamond shape is not a cycle");
   });
 });
@@ -539,7 +545,7 @@ describe("Bug 6: duplicate named definitions", () => {
     }];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 1, "Should emit one duplicate-definition error");
     assert.equal(dupErrors[0].severity, "error");
     assert.ok(dupErrors[0].message.includes("pos_oracle"));
@@ -577,7 +583,7 @@ describe("Bug 6: duplicate named definitions", () => {
     ];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 2, "Should emit two errors for three definitions");
   });
 
@@ -596,7 +602,7 @@ describe("Bug 6: duplicate named definitions", () => {
     }];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 1);
     assert.ok(dupErrors[0].message.includes("Metric"));
     assert.ok(dupErrors[0].message.includes("mrr"));
@@ -617,7 +623,7 @@ describe("Bug 6: duplicate named definitions", () => {
     }];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 1);
     assert.ok(dupErrors[0].message.includes("Mapping"));
     assert.ok(dupErrors[0].message.includes("load customers"));
@@ -638,7 +644,7 @@ describe("Bug 6: duplicate named definitions", () => {
     }];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 1);
     assert.ok(dupErrors[0].message.includes("Fragment"));
   });
@@ -656,7 +662,7 @@ describe("Bug 6: duplicate named definitions", () => {
     }];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 1);
     assert.ok(dupErrors[0].message.includes("Transform"));
     assert.ok(dupErrors[0].message.includes("dv_hash"));
@@ -678,7 +684,7 @@ describe("Bug 6: duplicate named definitions", () => {
     }];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 1);
     assert.ok(dupErrors[0].message.includes("Metric"));
     assert.ok(dupErrors[0].message.includes("conflicts with schema"));
@@ -695,7 +701,7 @@ describe("Bug 6: duplicate named definitions", () => {
     index.duplicates = [];
 
     const warnings = collectSemanticWarnings(index);
-    const dupErrors = warnings.filter((w) => w.rule === "duplicate-definition");
+    const dupErrors = warnings.filter((w: any) => w.rule === "duplicate-definition");
     assert.equal(dupErrors.length, 0, "Should not emit errors for unique names");
   });
 });
@@ -715,12 +721,12 @@ describe("Bug 5: duplicate warning elimination", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     // Should get exactly 2 warnings: one for source, one for target (not 4)
     assert.equal(fieldWarnings.length, 2);
 
     // Verify no duplicate messages
-    const messages = fieldWarnings.map((w) => w.message);
+    const messages = fieldWarnings.map((w: any) => w.message);
     const uniqueMessages = [...new Set(messages)];
     assert.equal(messages.length, uniqueMessages.length, "No duplicate warning messages");
   });

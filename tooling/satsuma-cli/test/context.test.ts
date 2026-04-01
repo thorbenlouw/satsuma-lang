@@ -7,22 +7,22 @@ import { describe, it } from "node:test";
 
 // ── Inline scoring helpers (mirrors context.js) ───────────────────────────────
 
-function tokenize(query) {
+function tokenize(query: string) {
   const stop = new Set(["a", "an", "the", "to", "for", "in", "of", "and", "or", "is"]);
   return query
     .toLowerCase()
     .split(/\W+/)
-    .filter((t) => t.length > 1 && !stop.has(t));
+    .filter((t: string) => t.length > 1 && !stop.has(t));
 }
 
-function scoreText(text, terms) {
+function scoreText(text: string, terms: string[]) {
   const lower = text.toLowerCase();
-  return terms.filter((t) => lower.includes(t)).length;
+  return terms.filter((t: string) => lower.includes(t)).length;
 }
 
-function scoreAll(index, terms) {
-  const results = [];
-  const scoreEntry = (name, type, entry) => {
+function scoreAll(index: any, terms: string[]) {
+  const results: { name: string; type: string; score: number; file: string; row: number }[] = [];
+  const scoreEntry = (name: string, type: string, entry: any) => {
     let score = 0;
     score += scoreText(name, terms) * 10;
     if (entry.note) score += scoreText(entry.note, terms) * 2;
@@ -42,7 +42,7 @@ function scoreAll(index, terms) {
   return results;
 }
 
-function estimateTokens(text) {
+function estimateTokens(text: string) {
   return Math.ceil(text.length / 4);
 }
 

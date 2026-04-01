@@ -74,24 +74,24 @@ describe("classifyRef", () => {
 // ── resolveRef ──────────────────────────────────────────────────────────────
 
 describe("resolveRef", () => {
-  const makeIndex = (schemas = {}, transforms = {}, fragments = {}) => ({
+  const makeIndex = (schemas: any = {}, transforms: any = {}, fragments: any = {}) => ({
     schemas: new Map(Object.entries(schemas)),
     transforms: new Map(Object.entries(transforms)),
     fragments: new Map(Object.entries(fragments)),
-  });
+  } as any);
 
   it("resolves namespace-qualified schema", () => {
     const index = makeIndex({
       "source::hr_employees": { fields: [{ name: "employee_id" }] },
     });
-    const result = resolveRef("source::hr_employees", {}, index);
+    const result = resolveRef("source::hr_employees", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "schema");
+    assert.equal(result.resolvedTo!.kind, "schema");
   });
 
   it("returns unresolved for unknown namespace-qualified schema", () => {
     const index = makeIndex({});
-    const result = resolveRef("source::nonexistent", {}, index);
+    const result = resolveRef("source::nonexistent", {} as any, index);
     assert.equal(result.resolved, false);
   });
 
@@ -99,16 +99,16 @@ describe("resolveRef", () => {
     const index = makeIndex({
       "source::hr_employees": { fields: [{ name: "department" }] },
     });
-    const result = resolveRef("source::hr_employees.department", {}, index);
+    const result = resolveRef("source::hr_employees.department", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 
   it("returns unresolved for unknown field in known schema", () => {
     const index = makeIndex({
       "source::hr_employees": { fields: [{ name: "employee_id" }] },
     });
-    const result = resolveRef("source::hr_employees.nonexistent", {}, index);
+    const result = resolveRef("source::hr_employees.nonexistent", {} as any, index);
     assert.equal(result.resolved, false);
   });
 
@@ -117,31 +117,31 @@ describe("resolveRef", () => {
       "source::finance_gl": { fields: [{ name: "posted_by" }] },
     });
     const context = { sources: ["source::finance_gl"], targets: [] };
-    const result = resolveRef("posted_by", context, index);
+    const result = resolveRef("posted_by", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
-    assert.equal(result.resolvedTo.name, "source::finance_gl.posted_by");
+    assert.equal(result.resolvedTo!.kind, "field");
+    assert.equal(result.resolvedTo!.name, "source::finance_gl.posted_by");
   });
 
   it("resolves bare identifier as transform name", () => {
     const index = makeIndex({}, { clean_string: {} });
-    const result = resolveRef("clean_string", {}, index);
+    const result = resolveRef("clean_string", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "transform");
+    assert.equal(result.resolvedTo!.kind, "transform");
   });
 
   it("resolves bare identifier via namespace lookup", () => {
     const index = makeIndex({ "staging::stg_employees": { fields: [] } });
     const context = { sources: [], targets: [], namespace: "staging" };
-    const result = resolveRef("stg_employees", context, index);
+    const result = resolveRef("stg_employees", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "schema");
-    assert.equal(result.resolvedTo.name, "staging::stg_employees");
+    assert.equal(result.resolvedTo!.kind, "schema");
+    assert.equal(result.resolvedTo!.name, "staging::stg_employees");
   });
 
   it("returns unresolved for completely unknown bare identifier", () => {
     const index = makeIndex({});
-    const result = resolveRef("nonexistent", { sources: [], targets: [] }, index);
+    const result = resolveRef("nonexistent", { sources: [], targets: [] } as any, index);
     assert.equal(result.resolved, false);
   });
 
@@ -150,10 +150,10 @@ describe("resolveRef", () => {
       my_schema: { fields: [{ name: "user_id" }, { name: "email" }] },
     });
     const context = { sources: [], targets: [] };
-    const result = resolveRef("user_id", context, index);
+    const result = resolveRef("user_id", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
-    assert.equal(result.resolvedTo.name, "::my_schema.user_id");
+    assert.equal(result.resolvedTo!.kind, "field");
+    assert.equal(result.resolvedTo!.name, "::my_schema.user_id");
   });
 
   it("does not fall back to all schemas when sources/targets are provided", () => {
@@ -162,7 +162,7 @@ describe("resolveRef", () => {
       "source::src": { fields: [{ name: "known_field" }] },
     });
     const context = { sources: ["source::src"], targets: [] };
-    const result = resolveRef("secret_field", context, index);
+    const result = resolveRef("secret_field", context as any, index);
     assert.equal(result.resolved, false, "should not search schemas outside mapping context");
   });
 
@@ -173,7 +173,7 @@ describe("resolveRef", () => {
       },
     });
     const context = { sources: ["source::orders"], targets: [] };
-    const result = resolveRef("Email", context, index);
+    const result = resolveRef("Email", context as any, index);
     assert.equal(result.resolved, true);
   });
 
@@ -184,10 +184,10 @@ describe("resolveRef", () => {
       },
     });
     const context = { sources: ["source_data"], targets: [] };
-    const result = resolveRef("source_data.address.street", context, index);
+    const result = resolveRef("source_data.address.street", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
-    assert.equal(result.resolvedTo.name, "::source_data.address.street");
+    assert.equal(result.resolvedTo!.kind, "field");
+    assert.equal(result.resolvedTo!.name, "::source_data.address.street");
   });
 
   it("resolves 3-segment namespace-qualified-field path (ns::schema.record.subfield)", () => {
@@ -196,10 +196,10 @@ describe("resolveRef", () => {
         fields: [{ name: "PID", children: [{ name: "DateOfBirth" }, { name: "Name" }] }],
       },
     });
-    const result = resolveRef("src::patient.PID.DateOfBirth", {}, index);
+    const result = resolveRef("src::patient.PID.DateOfBirth", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
-    assert.equal(result.resolvedTo.name, "src::patient.PID.DateOfBirth");
+    assert.equal(result.resolvedTo!.kind, "field");
+    assert.equal(result.resolvedTo!.name, "src::patient.PID.DateOfBirth");
   });
 
   it("returns unresolved for 3-segment path when nested field does not exist", () => {
@@ -209,7 +209,7 @@ describe("resolveRef", () => {
       },
     });
     const context = { sources: ["source_data"], targets: [] };
-    const result = resolveRef("source_data.address.zipcode", context, index);
+    const result = resolveRef("source_data.address.zipcode", context as any, index);
     assert.equal(result.resolved, false);
   });
 
@@ -225,9 +225,9 @@ describe("resolveRef", () => {
         }],
       },
     });
-    const result = resolveRef("src::msg.header.sender.name", {}, index);
+    const result = resolveRef("src::msg.header.sender.name", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 
   it("resolves 3-segment dotted path via workspace fallback", () => {
@@ -238,20 +238,20 @@ describe("resolveRef", () => {
     });
     // No sources/targets — should fall back to workspace-wide search
     const context = { sources: [], targets: [] };
-    const result = resolveRef("contacts.home.phone", context, index);
+    const result = resolveRef("contacts.home.phone", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 });
 
 // ── resolveRef with fragment spreads ─────────────────────────────────────────
 
 describe("resolveRef — fragment spread expansion", () => {
-  const makeIndex = (schemas = {}, transforms = {}, fragments = {}) => ({
+  const makeIndex = (schemas: any = {}, transforms: any = {}, fragments: any = {}) => ({
     schemas: new Map(Object.entries(schemas)),
     transforms: new Map(Object.entries(transforms)),
     fragments: new Map(Object.entries(fragments)),
-  });
+  } as any);
 
   it("resolves namespace-qualified field via fragment spread", () => {
     const index = makeIndex(
@@ -271,9 +271,9 @@ describe("resolveRef — fragment spread expansion", () => {
         },
       },
     );
-    const result = resolveRef("ex::product_day.SALES_VALUE", {}, index);
+    const result = resolveRef("ex::product_day.SALES_VALUE", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 
   it("resolves dotted-field via fragment spread", () => {
@@ -295,9 +295,9 @@ describe("resolveRef — fragment spread expansion", () => {
       },
     );
     const context = { sources: ["ex::product_day"], targets: [] };
-    const result = resolveRef("product_day.SALES_VALUE", context, index);
+    const result = resolveRef("product_day.SALES_VALUE", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 
   it("resolves bare identifier via fragment spread", () => {
@@ -319,9 +319,9 @@ describe("resolveRef — fragment spread expansion", () => {
       },
     );
     const context = { sources: ["ex::product_day"], targets: [] };
-    const result = resolveRef("SALES_VALUE", context, index);
+    const result = resolveRef("SALES_VALUE", context as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 
   it("resolves field via transitive fragment spread", () => {
@@ -348,9 +348,9 @@ describe("resolveRef — fragment spread expansion", () => {
         },
       },
     );
-    const result = resolveRef("ex::product_day.CREATED_AT", {}, index);
+    const result = resolveRef("ex::product_day.CREATED_AT", {} as any, index);
     assert.equal(result.resolved, true);
-    assert.equal(result.resolvedTo.kind, "field");
+    assert.equal(result.resolvedTo!.kind, "field");
   });
 
   it("still returns unresolved for genuine miss with spreads", () => {
@@ -371,7 +371,7 @@ describe("resolveRef — fragment spread expansion", () => {
         },
       },
     );
-    const result = resolveRef("ex::product_day.NONEXISTENT", {}, index);
+    const result = resolveRef("ex::product_day.NONEXISTENT", {} as any, index);
     assert.equal(result.resolved, false);
   });
 });
@@ -380,22 +380,22 @@ describe("resolveRef — fragment spread expansion", () => {
 
 describe("isSchemaInMappingSources", () => {
   it("returns true when schema is in sources", () => {
-    const mapping = { sources: ["source::hr_employees"], targets: ["staging::stg_employees"] };
+    const mapping = { sources: ["source::hr_employees"], targets: ["staging::stg_employees"] } as any;
     assert.equal(isSchemaInMappingSources("source::hr_employees", mapping), true);
   });
 
   it("returns true when schema is in targets", () => {
-    const mapping = { sources: [], targets: ["staging::stg_employees"] };
+    const mapping = { sources: [], targets: ["staging::stg_employees"] } as any;
     assert.equal(isSchemaInMappingSources("staging::stg_employees", mapping), true);
   });
 
   it("returns false when schema is not in sources or targets", () => {
-    const mapping = { sources: ["source::finance_gl"], targets: ["staging::stg_gl"] };
+    const mapping = { sources: ["source::finance_gl"], targets: ["staging::stg_gl"] } as any;
     assert.equal(isSchemaInMappingSources("source::hr_employees", mapping), false);
   });
 
   it("returns false for null mapping", () => {
-    assert.equal(isSchemaInMappingSources("source::hr_employees", null), false);
+    assert.equal(isSchemaInMappingSources("source::hr_employees", undefined), false);
   });
 });
 
@@ -427,17 +427,17 @@ describe("resolveAllNLRefs", () => {
       }],
     };
 
-    const results = resolveAllNLRefs(index);
+    const results = resolveAllNLRefs(index as any);
     assert.equal(results.length, 4);
 
     // All should resolve
-    assert.ok(results.every((r) => r.resolved), "all refs should resolve");
+    assert.ok(results.every((r: any) => r.resolved), "all refs should resolve");
 
     // Check specific resolutions
-    const deptRef = results.find((r) => r.ref === "department");
+    const deptRef = results.find((r: any) => r.ref === "department") as any;
     assert.equal(deptRef.resolvedTo.kind, "field");
 
-    const schemaRef = results.find((r) => r.ref === "source::hr_employees");
+    const schemaRef = results.find((r: any) => r.ref === "source::hr_employees") as any;
     assert.equal(schemaRef.resolvedTo.kind, "schema");
     assert.equal(schemaRef.classification, "namespace-qualified-schema");
   });
@@ -449,7 +449,7 @@ describe("resolveAllNLRefs", () => {
       transforms: new Map(),
       fragments: new Map(),
     };
-    const results = resolveAllNLRefs(index);
+    const results = resolveAllNLRefs(index as any);
     assert.equal(results.length, 0);
   });
 });

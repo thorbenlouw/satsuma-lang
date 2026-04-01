@@ -11,16 +11,16 @@ import { describe, it, beforeEach, afterEach } from "node:test";
 // ── Minimal WorkspaceIndex factory ────────────────────────────────────────────
 
 function makeIndex({
-  schemas = [],
-  metrics = [],
-  mappings = [],
-  fragments = [],
-  transforms = [],
-  warnings = [],
-  questions = [],
+  schemas = [] as any[],
+  metrics = [] as any[],
+  mappings = [] as any[],
+  fragments = [] as any[],
+  transforms = [] as any[],
+  warnings = [] as any[],
+  questions = [] as any[],
   totalErrors = 0,
-} = {}) {
-  const toMap = (items) => new Map(items.map((i) => [i.name ?? i.key, i]));
+}: any = {}) {
+  const toMap = (items: any[]) => new Map(items.map((i: any) => [i.name ?? i.key, i]));
   return {
     schemas: toMap(schemas),
     metrics: toMap(metrics),
@@ -36,13 +36,13 @@ function makeIndex({
 
 // ── Capture console.log output ────────────────────────────────────────────────
 
-let output = [];
-let origLog;
+let output: string[] = [];
+let origLog: typeof console.log;
 
 beforeEach(() => {
   output = [];
   origLog = console.log;
-  console.log = (...args) => output.push(args.join(" "));
+  console.log = (...args: any[]) => output.push(args.join(" "));
 });
 
 afterEach(() => {
@@ -121,7 +121,7 @@ describe("summary compact output", () => {
     });
 
     // Replicate compact logic
-    const section = (label, items) => {
+    const section = (label: string, items: string[]) => {
       if (items.length === 0) return;
       console.log(`${label}:`);
       for (const name of items) console.log(`  ${name}`);
@@ -135,7 +135,7 @@ describe("summary compact output", () => {
 
   it("skips empty sections", () => {
     const index = makeIndex({ schemas: [] });
-    const section = (label, items) => {
+    const section = (label: string, items: string[]) => {
       if (items.length === 0) return;
       console.log(`${label}:`);
     };
@@ -158,7 +158,7 @@ describe("summary default output", () => {
     if (index.questions.length > 0) notes.push(`${index.questions.length} question comment${index.questions.length !== 1 ? "s" : ""}`);
     if (notes.length > 0) console.log(notes.join("  ·  "));
 
-    assert.ok(output.some((l) => l.includes("1 warning comment")));
-    assert.ok(output.some((l) => l.includes("2 question comments")));
+    assert.ok(output.some((l: string) => l.includes("1 warning comment")));
+    assert.ok(output.some((l: string) => l.includes("2 question comments")));
   });
 });
