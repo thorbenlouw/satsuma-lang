@@ -39,6 +39,52 @@ metric monthly_recurring_revenue "MRR" (
   }
 }
 
+mapping _monthly_recurring_revenue_pipeline {
+  source {fact_subscriptions}
+  target {monthly_recurring_revenue}
+
+  // --- MRR Calculation Logic ---
+  Amount -> value {
+    to_decimal(14,2)
+    | "Normalize to monthly MRR: divide annual amounts by 12, quarterly by 3"
+    | "Exclude subscriptions where @status != active or @is_trial = true"
+  }
+
+   StartDate -> month {
+    to_date
+    | "Extract the month from the subscription start date for grain alignment"
+  }
+
+  CustomerSegment -> customer_segment
+  ProductLine -> product_line
+  Region -> region
+}
+
+mapping _customer_lifetime_value_pipeline {
+  source {fact_orders, dim_customer}
+  target {customer_lifetime_value}
+
+  // --- CLV Calculation Logic ---
+  total_revenue -> value {
+    to_decimal(14,2)
+    | "Calculate total revenue per customer from fact_orders, including refunds"
+    | "Divide by months_active and multiply by expected_lifetime_months from cohort analysis"
+  }
+
+  order_count -> order_count {
+    count
+    | "Count of orders per customer for the period"
+  }
+
+  avg_order_value -> avg_order_value {
+    to_decimal(12,2)
+    | "Average revenue per order for the customer"
+  }
+
+  // Note: acquisition_channel, segment, and cohort_year would be derived from dim_customer attributes
+}
+
+
 metric churn_rate (
   source {fact_subscriptions, dim_customer},
   grain monthly,
@@ -53,6 +99,26 @@ metric churn_rate (
     and @cancelled_at falls within the reporting month.
     """
   }
+}
+
+mapping _churn_rate_pipeline {
+  source {fact_subscriptions, dim_customer}
+  target {churn_rate}
+
+  // --- Churn Rate Calculation Logic ---
+  isCancelled -> filter {
+    "Identify churned customers: @isCancelled = true and @cancelled_at within the month"
+    equals true
+  }
+
+  CancelledAt -> month {
+    to_date
+    | "Extract the month from the cancellation date for grain alignment"
+  }
+
+  Segment -> segment
+  Region -> region
+  ProductLine -> product_line
 }
 
 metric customer_lifetime_value "CLV" (
@@ -89,6 +155,23 @@ metric conversion_rate (
   }
 }
 
+mapping _conversion_rate_pipeline {
+  source {fact_opportunities, dim_stage}
+  target {conversion_rate}
+
+  // --- Conversion Rate Calculation Logic ---
+  isDeleted -> filter {
+    "Exclude deleted opportunities from the calculation"
+    equals false
+  }
+
+  StageName -> pipeline_stage
+  Region -> region
+  AccountSegment -> account_segment
+
+  // The actual conversion rate calculation would be implemented in the BI tool or as a derived metric, since it requires counting wins vs total by stage.
+}
+
 metric pipeline_value "ARR Pipeline" (
   source fact_opportunities,
   grain weekly,
@@ -105,6 +188,41 @@ metric pipeline_value "ARR Pipeline" (
     "Open pipeline as of the snapshot date, expressed in ARR."
   }
 }
+
+mapping _pipeline_value_pipeline {
+  source {fact_opportunities}
+  target {pipeline_value}
+
+  // --- Pipeline Value Calculation Logic ---
+  Amount -> arr_value {
+    to_decimal(18,2)
+    | "Convert opportunity amount to ARR equivalent based on the subscription term"
+  }
+
+  Probability -> weighted_arr_value {
+    to_decimal(18,4)
+    | "Calculate weighted ARR for forecasting: @arr_value * @probability"
+  }
+
+  StageName -> pipeline_stage
+  Region -> region
+  AccountSegment -> account_segment
+  CloseDate -> close_quarter {
+    to_date
+    | "Extract fiscal quarter from the opportunity close date for slicing"
+  }
+
+  isDeleted -> filter {
+    "Exclude deleted opportunities from the calculation"
+    | equals false
+  }
+
+  StageName -> filter {
+    "Focus on open pipeline stages only"
+    | not_in (closed_won, closed_lost)
+  }
+}
+
 
 // --- Commerce Metrics ---
 metric order_revenue (
@@ -132,6 +250,43 @@ metric order_revenue (
   }
 }
 
+mapping _order_revenue_pipeline {
+  source {fact_orders, dim_date, dim_customer}
+  target {order_revenue}
+
+  // --- Order Revenue Calculation Logic ---
+  TotalAmount -> gross_revenue {
+    to_decimal(14,2)
+    | "Calculate gross revenue from the order total amount"
+    | "Convert to USD using daily spot rate from @currency_rates based on @currency_code and @order_date"
+  }
+
+  // Net revenue calculation would require joining with fact_adjustments to subtract refunds/chargebacks.
+
+  OrderID -> order_count {
+    count
+    | "Count of distinct orders for the order_count metric"
+  }
+
+  Quantity -> units_sold {
+    sum
+    | "Total units sold across all line items in the order"
+  }
+
+  TotalAmount -> avg_order_value {
+    to_decimal(12,2)
+    | "Average order value calculated as gross_revenue / order_count"
+    | "Exclude orders where all line items have @is_gift = true from this calculation"
+  }
+
+  OrderChannel -> order_channel
+  ShipCountry -> ship_country
+  CurrencyCode -> currency_code
+  LoyaltyTier -> loyalty_tier
+
+   // Additional filters (e.g., excluding gift orders from avg_order_value) would be implemented in the BI tool or as derived metrics, since they require line-item level logic.
+}
+
 metric cart_abandonment_rate (
   source {fact_sessions, fact_orders},
   grain daily,
@@ -144,4 +299,23 @@ metric cart_abandonment_rate (
     "Sessions that reached checkout but did not result in a placed order, "
     "divided by all sessions that reached checkout."
   }
+}
+
+mapping _cart_abandonment_rate_pipeline {
+  source {fact_sessions, fact_orders}
+  target {cart_abandonment_rate}
+
+  // --- Cart Abandonment Rate Calculation Logic ---
+  session_type -> filter {
+    "Focus on sessions that reached the checkout stage"
+    equals "checkout"
+  }
+
+  SessionID -> join {
+    "Join fact_sessions with fact_orders on SessionID to identify which sessions resulted in orders"
+    with fact_orders on SessionID
+  }
+
+  // The actual abandonment rate calculation would require counting sessions with vs without orders.
+
 }
