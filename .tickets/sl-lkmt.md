@@ -27,3 +27,9 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 - Interaction intents remain observable in a host-agnostic way
 - Renderer tests cover the new automation-oriented behaviour where appropriate
 
+
+## Notes
+
+**2026-04-01T10:30:21Z**
+
+PR checkpoint prepared: satsuma-viz now exposes stable automation selectors, host-visible ready-state attributes/events, and test/reduced-motion mode hooks. Verified satsuma-viz tests and downstream vscode-satsuma build locally.

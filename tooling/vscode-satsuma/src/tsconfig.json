@@ -2,8 +2,10 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "target": "es2022",
     "strict": true,
+    "types": ["node"],
     "outDir": "../dist/client",
     "rootDir": ".",
     "sourceMap": true,

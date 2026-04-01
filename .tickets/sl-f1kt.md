@@ -27,3 +27,9 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 - Import-reachable scoping and full-lineage assembly remain behaviourally equivalent after extraction
 - Shared backend tests cover the extracted package at its new boundary
 
+
+## Notes
+
+**2026-04-01T10:30:21Z**
+
+PR checkpoint prepared: extracted @satsuma/viz-backend package, moved viz-model/workspace-index ownership out of satsuma-lsp, and validated backend/LSP bootstrap and tests locally.

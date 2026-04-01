@@ -3,6 +3,7 @@
 // Loads the @satsuma/viz web component and wires it to VS Code messaging.
 
 import "@satsuma/viz";
+import { buildFieldLineagePath } from "./integration";
 
 const vscode = acquireVsCodeApi();
 
@@ -48,7 +49,10 @@ vizEl.addEventListener("field-lineage", (ev: CustomEvent) => {
   const schemaId = ev.schemaId ?? ev.detail?.schemaId;
   const fieldName = ev.fieldName ?? ev.detail?.fieldName;
   if (schemaId && fieldName) {
-    vscode.postMessage({ type: "fieldLineage", fieldPath: `${schemaId}.${fieldName}` });
+    vscode.postMessage({
+      type: "fieldLineage",
+      fieldPath: buildFieldLineagePath(schemaId, fieldName),
+    });
   }
 });
 

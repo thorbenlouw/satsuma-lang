@@ -6,6 +6,10 @@ import { SzNavigateEvent, SzFieldHoverEvent, SzFieldLineageEvent } from "../sats
 import { renderMarkdown } from "../markdown.js";
 import { isCoveredFieldPath } from "@satsuma/core/coverage-paths";
 
+function sanitizeTestIdSegment(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 @customElement("sz-schema-card")
 export class SzSchemaCard extends LitElement {
   static override styles = css`
@@ -411,6 +415,9 @@ export class SzSchemaCard extends LitElement {
   @property({ type: String, attribute: "namespace-label" })
   namespaceLabel: string | null = null;
 
+  @property({ type: String, attribute: "test-id-prefix" })
+  testIdPrefix = "schema-card";
+
   @property({ type: Boolean, attribute: "content-width", reflect: true })
   contentWidth = false;
 
@@ -488,9 +495,9 @@ export class SzSchemaCard extends LitElement {
     const isReport = this._isReport(s);
 
     return html`
-      <div class=${this._collapsed ? "collapsed" : ""}>
+      <div class=${this._collapsed ? "collapsed" : ""} data-testid=${this.testIdPrefix}>
         ${this._renderNamespacePill()}
-        <div class="header ${isReport ? "report" : ""}" @click=${this._onHeaderClick}>
+        <div class="header ${isReport ? "report" : ""}" data-testid=${`${this.testIdPrefix}-header`} @click=${this._onHeaderClick}>
           ${this._headerIcon(isReport)}
           <span class="header-name">${s.id}</span>
           <span class="header-count">${mappedCount}/${totalFields}</span>
@@ -504,7 +511,7 @@ export class SzSchemaCard extends LitElement {
               )}
             </div>`
           : ""}
-        <div class="fields">
+        <div class="fields" data-testid=${`${this.testIdPrefix}-fields`}>
           ${s.fields.map((f) => this._renderField(f, 0))}
         </div>
         ${s.spreads.length > 0
@@ -551,10 +558,12 @@ export class SzSchemaCard extends LitElement {
     const hlClass = isHighlighted
       ? `hl ${this.highlightColor === "target" ? "hl-target" : "hl-source"}`
       : "";
+    const fieldTestId = `${this.testIdPrefix}-field-${sanitizeTestIdSegment(f.name)}`;
 
     return html`
       <div
         class="field-row ${depth > 0 ? "nested" : ""} ${hlClass}"
+        data-testid=${fieldTestId}
         style=${depth > 0 ? `padding-left: ${12 + depth * 20}px` : ""}
         @click=${() => this._navigate(f.location)}
         @mouseenter=${() => this._onFieldHover(fieldPath)}
@@ -580,6 +589,7 @@ export class SzSchemaCard extends LitElement {
           : ""}
         <button
           class="lineage-btn"
+          data-testid=${`${fieldTestId}-lineage`}
           title="Show field lineage"
           @click=${(e: Event) => { e.stopPropagation(); this._onFieldLineage(fieldPath); }}
         ><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">

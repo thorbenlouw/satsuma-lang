@@ -10,6 +10,10 @@ import type {
 import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
 import { resolveSchemaLocalFieldPath } from "../field-coverage.js";
 
+function sanitizeTestIdSegment(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 /**
  * Three-column mapping detail view.
  *
@@ -313,6 +317,9 @@ export class SzMappingDetail extends LitElement {
   @property({ type: String, attribute: "namespace-label" })
   namespaceLabel: string | null = null;
 
+  @property({ type: String, attribute: "test-id-prefix" })
+  testIdPrefix = "mapping-detail";
+
   /** Currently hovered arrow (from table row hover). */
   @state()
   private _hoveredArrow: ArrowEntry | null = null;
@@ -500,7 +507,7 @@ export class SzMappingDetail extends LitElement {
     const targetHL = this._targetHighlightFields;
 
     return html`
-      <div class="layout">
+      <div class="layout" data-testid=${this.testIdPrefix}>
         <div class="column">
           <div class="column-header">Sources</div>
           ${this.sourceSchemas.map((s) => html`
@@ -540,7 +547,7 @@ export class SzMappingDetail extends LitElement {
     const sb = m.sourceBlock;
 
     return html`
-      <div class="mapping-header">
+      <div class="mapping-header" data-testid=${`${this.testIdPrefix}-header`}>
         ${this.namespaceLabel
           ? html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
               <span class="meta-tag" style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
@@ -581,7 +588,7 @@ export class SzMappingDetail extends LitElement {
   private _renderArrowTable(m: MappingBlock) {
     return html`
       <div class="mapping-header" style="padding: 0;">
-        <table class="arrow-table">
+        <table class="arrow-table" data-testid=${`${this.testIdPrefix}-arrow-table`}>
           <thead>
             <tr>
               <th>Source</th>
@@ -603,10 +610,12 @@ export class SzMappingDetail extends LitElement {
   private _renderArrowRow(a: ArrowEntry): TemplateResult {
     const hl = this._isArrowHighlighted(a) ? "hl" : "";
     const noteEntry = a.metadata.find((m) => m.key === "note");
+    const targetId = sanitizeTestIdSegment(a.targetField);
 
     return html`
       <tr
         class="arrow-row ${hl}"
+        data-testid=${`${this.testIdPrefix}-arrow-row-${targetId}`}
         @click=${() => this._navigate(a.location)}
         @mouseenter=${() => { this._hoveredArrow = a; this._hoveredCardField = null; }}
         @mouseleave=${() => { this._hoveredArrow = null; }}

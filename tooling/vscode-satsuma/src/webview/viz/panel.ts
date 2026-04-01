@@ -2,6 +2,10 @@ import * as vscode from "vscode";
 import { join } from "path";
 import type { LanguageClient } from "vscode-languageclient/node";
 import { FieldLineagePanel } from "../field-lineage/panel";
+import {
+  loadExpandedModels,
+  loadFullLineageModel,
+} from "./integration";
 
 export class VizPanel {
   static currentPanel: VizPanel | undefined;
@@ -104,8 +108,12 @@ export class VizPanel {
     }
 
     try {
-      const model = await this.client.sendRequest("satsuma/vizFullLineage", { uri });
-      if (!model) {
+      const modelEnvelope = await loadFullLineageModel(
+        this.client,
+        uri,
+        vscode.window.activeColorTheme.kind,
+      );
+      if (!modelEnvelope) {
         this.panel.webview.postMessage({
           type: "error",
           message: "No visualization data available for this file",
@@ -116,16 +124,10 @@ export class VizPanel {
       // Remember this URI so Refresh can reload it even without editor focus
       this._lastUri = uri;
 
-      // Detect theme kind and send alongside model
-      const themeKind = vscode.window.activeColorTheme.kind;
-      const isDark =
-        themeKind === vscode.ColorThemeKind.Dark ||
-        themeKind === vscode.ColorThemeKind.HighContrast;
-
       this.panel.webview.postMessage({
         type: "vizModel",
-        payload: model,
-        isDark,
+        payload: modelEnvelope.payload,
+        isDark: modelEnvelope.isDark,
       });
     } catch (err) {
       this.panel.webview.postMessage({
@@ -183,36 +185,29 @@ export class VizPanel {
 
   private async expandLineage(schemaId: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    const currentUri = editor?.document.uri.toString() ?? "";
+    const currentUri =
+      (editor?.document.languageId === "satsuma"
+        ? editor.document.uri.toString()
+        : undefined) ?? this._lastUri ?? "";
 
     try {
-      const linkedUris: string[] = await this.client.sendRequest(
-        "satsuma/vizLinkedFiles",
-        { schemaId, currentUri },
+      const expandedEnvelope = await loadExpandedModels(
+        this.client,
+        schemaId,
+        currentUri,
+        vscode.window.activeColorTheme.kind,
       );
 
-      if (linkedUris.length === 0) {
+      if (expandedEnvelope.models.length === 0) {
         return;
       }
-
-      // Fetch VizModels for all linked files
-      const models = await Promise.all(
-        linkedUris.map((uri) =>
-          this.client.sendRequest("satsuma/vizModel", { uri }),
-        ),
-      );
-
-      const themeKind = vscode.window.activeColorTheme.kind;
-      const isDark =
-        themeKind === vscode.ColorThemeKind.Dark ||
-        themeKind === vscode.ColorThemeKind.HighContrast;
 
       // Send expanded models to the webview
       this.panel.webview.postMessage({
         type: "expandedModels",
-        schemaId,
-        models: models.filter(Boolean),
-        isDark,
+        schemaId: expandedEnvelope.schemaId,
+        models: expandedEnvelope.models,
+        isDark: expandedEnvelope.isDark,
       });
     } catch (err) {
       this.panel.webview.postMessage({

@@ -27,3 +27,9 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 - Any build wiring affected by the extraction is updated and validated
 - Relevant LSP and VS Code tests are updated to match the new package boundary
 
+
+## Notes
+
+**2026-04-01T10:30:21Z**
+
+PR checkpoint prepared: LSP viz requests now delegate through the shared backend and VS Code viz integration was refactored into a tested host-side integration module. Verified vscode-satsuma build, unit tests, grammar tests, and LSP tests locally.
