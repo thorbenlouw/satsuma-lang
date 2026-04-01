@@ -8,20 +8,7 @@ import type {
   FlattenBlock,
 } from "../model.js";
 import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
-
-/** Strip namespace::schema prefix from a qualified field ref, returning just the field name. */
-function stripFieldQualifier(fieldRef: string): string {
-  const dotIdx = fieldRef.lastIndexOf(".");
-  return dotIdx >= 0 ? fieldRef.slice(dotIdx + 1) : fieldRef;
-}
-
-/** Check if a qualified field ref belongs to a given schema (by qualifiedId). */
-function fieldBelongsToSchema(fieldRef: string, schemaQualifiedId: string): boolean {
-  const dotIdx = fieldRef.lastIndexOf(".");
-  if (dotIdx < 0) return true; // unqualified field — could be any schema
-  const prefix = fieldRef.slice(0, dotIdx);
-  return prefix === schemaQualifiedId;
-}
+import { resolveSchemaLocalFieldPath } from "../field-coverage.js";
 
 /**
  * Three-column mapping detail view.
@@ -370,35 +357,25 @@ export class SzMappingDetail extends LitElement {
     const result = new Map<string, Set<string>>();
     const m = this.mapping;
     if (!m) return result;
+    const sourceSchemaById = new Map(
+      this.sourceSchemas.map((schema) => [schema.qualifiedId, schema] as const),
+    );
 
     if (this._hoveredArrow) {
-      // Highlight source fields of the hovered arrow in all source schemas.
-      // Source fields may be qualified (e.g. "ns::schema.field"); extract the
-      // bare field name so it matches the schema card's field names, and also
-      // route each field to the correct source schema.
       for (const sr of m.sourceRefs) {
         const fields = new Set<string>();
+        const schema = sourceSchemaById.get(sr);
+        if (!schema) continue;
         for (const sf of this._hoveredArrow.sourceFields) {
-          const bare = stripFieldQualifier(sf);
-          // Only highlight in the schema the field belongs to
-          if (fieldBelongsToSchema(sf, sr) || m.sourceRefs.length === 1) {
-            fields.add(bare);
-          }
+          const localPath = resolveSchemaLocalFieldPath(sf, schema, m.sourceRefs);
+          if (localPath) fields.add(localPath);
         }
         if (fields.size > 0) result.set(sr, fields);
       }
     } else if (this._hoveredCardField && this._hoveredCardSchema) {
-      // If a target field is hovered, find which source fields map to it
       if (this._hoveredCardSchema === m.targetRef) {
-        const matchingSourceFields = this._findSourceFieldsForTarget(
-          this._hoveredCardField, m
-        );
-        for (const sr of m.sourceRefs) {
-          result.set(sr, matchingSourceFields);
-        }
-      }
-      // If a source field is hovered, highlight it in its own card
-      else if (m.sourceRefs.includes(this._hoveredCardSchema)) {
+        return this._findSourceFieldsForTarget(this._hoveredCardField, m);
+      } else if (m.sourceRefs.includes(this._hoveredCardSchema)) {
         result.set(
           this._hoveredCardSchema,
           new Set([this._hoveredCardField])
@@ -413,18 +390,26 @@ export class SzMappingDetail extends LitElement {
   private get _targetHighlightFields(): Set<string> {
     const m = this.mapping;
     if (!m) return new Set();
+    const targetSchema = this.targetSchema;
 
     if (this._hoveredArrow) {
-      return new Set([stripFieldQualifier(this._hoveredArrow.targetField)]);
+      if (!targetSchema) return new Set();
+      const localPath = resolveSchemaLocalFieldPath(
+        this._hoveredArrow.targetField,
+        targetSchema,
+        [m.targetRef],
+      );
+      return localPath ? new Set([localPath]) : new Set();
     }
 
     if (this._hoveredCardField && this._hoveredCardSchema) {
-      // If a source field is hovered, find which target fields it maps to
       if (m.sourceRefs.includes(this._hoveredCardSchema)) {
-        return this._findTargetFieldsForSource(this._hoveredCardField, m);
-      }
-      // If target card field is hovered, highlight it
-      if (this._hoveredCardSchema === m.targetRef) {
+        return this._findTargetFieldsForSource(
+          this._hoveredCardField,
+          this._hoveredCardSchema,
+          m,
+        );
+      } else if (this._hoveredCardSchema === m.targetRef) {
         return new Set([this._hoveredCardField]);
       }
     }
@@ -432,13 +417,27 @@ export class SzMappingDetail extends LitElement {
     return new Set();
   }
 
-  /** Find source fields that map to a given target field (returns bare names). */
-  private _findSourceFieldsForTarget(targetField: string, m: MappingBlock): Set<string> {
-    const result = new Set<string>();
+  /** Find source fields that map to a given target field, grouped by schema id. */
+  private _findSourceFieldsForTarget(targetField: string, m: MappingBlock): Map<string, Set<string>> {
+    const result = new Map<string, Set<string>>();
+    const sourceSchemaById = new Map(
+      this.sourceSchemas.map((schema) => [schema.qualifiedId, schema] as const),
+    );
     const search = (arrows: ArrowEntry[]) => {
       for (const a of arrows) {
-        if (stripFieldQualifier(a.targetField) === targetField) {
-          for (const sf of a.sourceFields) result.add(stripFieldQualifier(sf));
+        const targetSchema = this.targetSchema;
+        const localTargetPath = targetSchema
+          ? resolveSchemaLocalFieldPath(a.targetField, targetSchema, [m.targetRef])
+          : null;
+        if (localTargetPath === targetField) {
+          for (const sourceSchema of this.sourceSchemas) {
+            for (const sf of a.sourceFields) {
+              const localSourcePath = resolveSchemaLocalFieldPath(sf, sourceSchema, m.sourceRefs);
+              if (!localSourcePath) continue;
+              if (!result.has(sourceSchema.qualifiedId)) result.set(sourceSchema.qualifiedId, new Set());
+              result.get(sourceSchema.qualifiedId)!.add(localSourcePath);
+            }
+          }
         }
       }
     };
@@ -448,13 +447,21 @@ export class SzMappingDetail extends LitElement {
     return result;
   }
 
-  /** Find target fields that a given source field maps to (handles qualified refs). */
-  private _findTargetFieldsForSource(sourceField: string, m: MappingBlock): Set<string> {
+  /** Find target fields that a given source field maps to. */
+  private _findTargetFieldsForSource(sourceField: string, sourceSchemaId: string, m: MappingBlock): Set<string> {
     const result = new Set<string>();
+    const sourceSchema = this.sourceSchemas.find((schema) => schema.qualifiedId === sourceSchemaId);
+    const targetSchema = this.targetSchema;
+    if (!sourceSchema || !targetSchema) return result;
     const search = (arrows: ArrowEntry[]) => {
       for (const a of arrows) {
-        if (a.sourceFields.some((sf) => stripFieldQualifier(sf) === sourceField)) {
-          result.add(stripFieldQualifier(a.targetField));
+        const sourceMatches = a.sourceFields.some((sf) => {
+          const localSourcePath = resolveSchemaLocalFieldPath(sf, sourceSchema, m.sourceRefs);
+          return localSourcePath === sourceField;
+        });
+        if (sourceMatches) {
+          const localTargetPath = resolveSchemaLocalFieldPath(a.targetField, targetSchema, [m.targetRef]);
+          if (localTargetPath) result.add(localTargetPath);
         }
       }
     };
@@ -470,13 +477,17 @@ export class SzMappingDetail extends LitElement {
     if (!this._hoveredCardField || !this._hoveredCardSchema) return false;
 
     const m = this.mapping!;
-    // Source card field hovered → highlight rows where it's a source
     if (m.sourceRefs.includes(this._hoveredCardSchema)) {
-      return a.sourceFields.some((sf) => stripFieldQualifier(sf) === this._hoveredCardField);
-    }
-    // Target card field hovered → highlight rows where it's the target
-    if (this._hoveredCardSchema === m.targetRef) {
-      return stripFieldQualifier(a.targetField) === this._hoveredCardField;
+      const sourceSchema = this.sourceSchemas.find((schema) => schema.qualifiedId === this._hoveredCardSchema);
+      return !!sourceSchema && a.sourceFields.some((sf) => {
+        const localSourcePath = resolveSchemaLocalFieldPath(sf, sourceSchema, m.sourceRefs);
+        return localSourcePath === this._hoveredCardField;
+      });
+    } else if (this._hoveredCardSchema === m.targetRef) {
+      const targetSchema = this.targetSchema;
+      if (!targetSchema) return false;
+      const localTargetPath = resolveSchemaLocalFieldPath(a.targetField, targetSchema, [m.targetRef]);
+      return localTargetPath === this._hoveredCardField;
     }
     return false;
   }

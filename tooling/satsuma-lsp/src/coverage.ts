@@ -24,7 +24,7 @@ import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, children, labelText } from "./parser-utils";
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { resolveDefinition } from "./workspace-index";
-import { addPathAndPrefixes } from "@satsuma/core";
+import { addPathAndPrefixes, isCoveredFieldPath } from "@satsuma/core";
 
 // Re-export shared types from core so existing LSP code that imports from
 // this module continues to work without import path changes.
@@ -209,7 +209,7 @@ function buildFieldCoverage(
   const result: FieldCoverageEntry[] = [];
   for (const f of fields) {
     const path = prefix ? `${prefix}.${f.name}` : f.name;
-    const mapped = coveredPaths.has(f.name) || coveredPaths.has(path);
+    const mapped = isCoveredFieldPath(path, coveredPaths);
     result.push({ path, uri, line: f.range.start.line, mapped });
     if (f.children.length > 0) {
       result.push(...buildFieldCoverage(f.children, uri, path, coveredPaths));

@@ -4,6 +4,7 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import type { SchemaCard, FieldEntry } from "../model.js";
 import { SzNavigateEvent, SzFieldHoverEvent, SzFieldLineageEvent } from "../satsuma-viz.js";
 import { renderMarkdown } from "../markdown.js";
+import { isCoveredFieldPath } from "@satsuma/core/coverage-paths";
 
 @customElement("sz-schema-card")
 export class SzSchemaCard extends LitElement {
@@ -516,9 +517,9 @@ export class SzSchemaCard extends LitElement {
     `;
   }
 
-  private _onFieldHover(fieldName: string | null) {
+  private _onFieldHover(fieldPath: string | null) {
     const schemaId = this.schema?.qualifiedId ?? "";
-    this.dispatchEvent(new SzFieldHoverEvent(schemaId, fieldName));
+    this.dispatchEvent(new SzFieldHoverEvent(schemaId, fieldPath));
   }
 
   private _renderNotes(notes: import("../model.js").NoteBlock[]) {
@@ -540,12 +541,13 @@ export class SzSchemaCard extends LitElement {
     this._notesExpanded = !this._notesExpanded;
   }
 
-  private _renderField(f: FieldEntry, depth: number): TemplateResult {
-    const isMapped = this.mappedFields.has(f.name);
+  private _renderField(f: FieldEntry, depth: number, prefix = ""): TemplateResult {
+    const fieldPath = prefix ? `${prefix}.${f.name}` : f.name;
+    const isMapped = isCoveredFieldPath(fieldPath, this.mappedFields);
     const hasWarning = f.comments.some((c) => c.kind === "warning");
     const hasQuestion = f.comments.some((c) => c.kind === "question");
     const hasPii = f.constraints.includes("pii");
-    const isHighlighted = this.highlightFields.has(f.name);
+    const isHighlighted = this.highlightFields.has(fieldPath);
     const hlClass = isHighlighted
       ? `hl ${this.highlightColor === "target" ? "hl-target" : "hl-source"}`
       : "";
@@ -555,7 +557,7 @@ export class SzSchemaCard extends LitElement {
         class="field-row ${depth > 0 ? "nested" : ""} ${hlClass}"
         style=${depth > 0 ? `padding-left: ${12 + depth * 20}px` : ""}
         @click=${() => this._navigate(f.location)}
-        @mouseenter=${() => this._onFieldHover(f.name)}
+        @mouseenter=${() => this._onFieldHover(fieldPath)}
         @mouseleave=${() => this._onFieldHover(null)}
         title=${f.name + ": " + f.type}
       >
@@ -579,7 +581,7 @@ export class SzSchemaCard extends LitElement {
         <button
           class="lineage-btn"
           title="Show field lineage"
-          @click=${(e: Event) => { e.stopPropagation(); this._onFieldLineage(f.name); }}
+          @click=${(e: Event) => { e.stopPropagation(); this._onFieldLineage(fieldPath); }}
         ><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="2" cy="6" r="1.5" fill="currentColor"/>
           <circle cx="10" cy="3" r="1.5" fill="currentColor"/>
@@ -591,7 +593,7 @@ export class SzSchemaCard extends LitElement {
       ${f.notes.length > 0
         ? f.notes.map((n) => html`<div class="field-note" style=${depth > 0 ? `padding-left: ${38 + depth * 20}px` : ""}>${n.text}</div>`)
         : ""}
-      ${f.children.map((child) => this._renderField(child, depth + 1))}
+      ${f.children.map((child) => this._renderField(child, depth + 1, fieldPath))}
     `;
   }
 
@@ -611,11 +613,12 @@ export class SzSchemaCard extends LitElement {
     return count;
   }
 
-  private _countMapped(fields: FieldEntry[]): number {
+  private _countMapped(fields: FieldEntry[], prefix = ""): number {
     let count = 0;
     for (const f of fields) {
-      if (this.mappedFields.has(f.name)) count++;
-      count += this._countMapped(f.children);
+      const fieldPath = prefix ? `${prefix}.${f.name}` : f.name;
+      if (isCoveredFieldPath(fieldPath, this.mappedFields)) count++;
+      count += this._countMapped(f.children, fieldPath);
     }
     return count;
   }

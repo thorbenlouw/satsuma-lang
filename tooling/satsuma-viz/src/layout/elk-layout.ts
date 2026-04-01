@@ -18,6 +18,7 @@ import type {
   EachBlock,
   FlattenBlock,
 } from "../model.js";
+import { buildMappedFieldsIndex } from "../field-coverage.js";
 
 export interface LayoutNode {
   id: string;
@@ -344,49 +345,6 @@ export async function computeLayout(model: VizModel): Promise<LayoutResult> {
   return extractLayout(result, model);
 }
 
-/** Build an index: schemaId → Set<fieldName> that are source or target of arrows */
-function buildMappedFieldsIndex(model: VizModel): Map<string, Set<string>> {
-  const index = new Map<string, Set<string>>();
-
-  const ensureSet = (id: string) => {
-    if (!index.has(id)) index.set(id, new Set());
-    return index.get(id)!;
-  };
-
-  for (const ns of model.namespaces) {
-    for (const m of ns.mappings) {
-      const collectArrows = (arrows: ArrowEntry[]) => {
-        for (const a of arrows) {
-          // Target field belongs to target schema
-          ensureSet(m.targetRef).add(a.targetField);
-          // Source fields belong to source schemas
-          for (const sf of a.sourceFields) {
-            for (const sr of m.sourceRefs) {
-              ensureSet(sr).add(sf);
-            }
-          }
-        }
-      };
-
-      collectArrows(m.arrows);
-
-      const collectEach = (blocks: EachBlock[]) => {
-        for (const eb of blocks) {
-          collectArrows(eb.arrows);
-          collectEach(eb.nestedEach);
-        }
-      };
-      collectEach(m.eachBlocks);
-
-      for (const fb of m.flattenBlocks) {
-        collectArrows(fb.arrows);
-      }
-    }
-  }
-
-  return index;
-}
-
 function buildElkGraph(
   model: VizModel,
   mappedFields: Map<string, Set<string>>,
@@ -451,7 +409,7 @@ function addSchemaNodes(
     const width = estimateSchemaWidth(s);
     const topOffset = preambleHeight(s, hasNamespace) + FIELDS_PADDING_TOP;
     // Expand spread fields so ports exist for arrow endpoints that reference them
-    const spreadFields = s.spreads.flatMap((name) => fragmentsById.get(name) ?? []);
+    const spreadFields = (s.spreads ?? []).flatMap((name) => fragmentsById.get(name) ?? []);
     const allFields = [...s.fields, ...spreadFields];
     const ports = buildFieldPorts(allFields, s.qualifiedId, mappedFields, topOffset, width);
 
@@ -744,11 +702,11 @@ export async function computeOverviewLayout(model: VizModel): Promise<OverviewLa
     for (const s of ns.schemas) {
       nodeIds.add(s.qualifiedId);
       overviewNodeKinds.set(s.qualifiedId, "schema");
-      overviewNodeHasNamespace.add(s.qualifiedId);
+      if (ns.name) overviewNodeHasNamespace.add(s.qualifiedId);
       nsNodes.push({
         id: s.qualifiedId,
         width: estimateCompactSchemaWidth(s),
-        height: compactHeight(s, true),
+        height: compactHeight(s, !!ns.name),
         layoutOptions: {
           "elk.layered.layerConstraint": "NONE",
         },
