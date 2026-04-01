@@ -33,3 +33,7 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 **2026-04-01T10:30:21Z**
 
 PR checkpoint prepared: satsuma-viz now exposes stable automation selectors, host-visible ready-state attributes/events, and test/reduced-motion mode hooks. Verified satsuma-viz tests and downstream vscode-satsuma build locally.
+
+**2026-04-01T10:41:18Z**
+
+Cause: The new test-id sanitizer used a backtracking regex over uncontrolled input, which GitHub Advanced Security flagged as a potential polynomial-time pattern. Fix: Replaced the regex sanitizer with a linear-time character scanner in the viz renderer helpers and added coverage for repeated separator input.

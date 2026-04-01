@@ -33,3 +33,7 @@ TODO reference: features/29-viz-harness-and-shared-backend/TODO.md
 **2026-04-01T10:30:21Z**
 
 PR checkpoint prepared: LSP viz requests now delegate through the shared backend and VS Code viz integration was refactored into a tested host-side integration module. Verified vscode-satsuma build, unit tests, grammar tests, and LSP tests locally.
+
+**2026-04-01T10:41:18Z**
+
+Cause: The VS Code extension CI bundle resolved the embedded LSP from source, but esbuild still expected the shared viz backend package to exist as prebuilt dist entrypoints under the cached dependency tree. Fix: Aliased @satsuma/viz-backend imports to the source files during extension bundling so the server bundle no longer depends on backend dist artifacts being prebuilt in that CI job.
