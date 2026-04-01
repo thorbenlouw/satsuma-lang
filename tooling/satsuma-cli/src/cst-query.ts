@@ -23,6 +23,7 @@ export function findBlockNode(rootNode: SyntaxNode, nodeType: string, qualifiedN
   // Handle anonymous blocks keyed by <anon>@file:row
   const anonMatch = qualifiedName.match(/^<anon>@.*:(\d+)$/);
   if (anonMatch) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: regex capture group 1 always matches when anonMatch succeeds
     const targetRow = parseInt(anonMatch[1]!, 10); // keys use 0-based row from startPosition
     return findBlockByRow(rootNode, nodeType, targetRow);
   }

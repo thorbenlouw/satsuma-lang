@@ -105,6 +105,7 @@ Examples:
           printTree(dag, start, 0);
         }
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: guarded by opts.to existence check in enclosing branch
         const resolvedTo = resolveIndexKey(opts.to!, graph.nodes);
         if (!resolvedTo) {
           console.error(`Node '${opts.to}' not found.`);
@@ -173,6 +174,7 @@ function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag 
   for (const [src, targets] of graph.edges) {
     for (const tgt of targets) {
       if (!reverseEdges.has(tgt)) reverseEdges.set(tgt, new Set());
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       reverseEdges.get(tgt)!.add(src);
     }
   }
@@ -209,6 +211,7 @@ function printUpstreamFlat(dag: Dag, target: string): void {
   const adj = new Map<string, string[]>();
   for (const { src, tgt } of dag.edges) {
     if (!adj.has(src)) adj.set(src, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     adj.get(src)!.push(tgt);
   }
 
@@ -253,6 +256,7 @@ function printTree(dag: Dag, start: string, _unused: number): void {
   const adj = new Map<string, string[]>();
   for (const { src, tgt } of dag.edges) {
     if (!adj.has(src)) adj.set(src, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     adj.get(src)!.push(tgt);
   }
 
@@ -276,6 +280,7 @@ function printCompact(dag: Dag, start: string): void {
   const adj = new Map<string, string[]>();
   for (const { src, tgt } of dag.edges) {
     if (!adj.has(src)) adj.set(src, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     adj.get(src)!.push(tgt);
   }
 

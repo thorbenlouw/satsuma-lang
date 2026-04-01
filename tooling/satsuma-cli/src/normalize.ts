@@ -43,6 +43,7 @@ export function matchFields(sourceFields: FieldDecl[], targetFields: FieldDecl[]
     const norm = normalizeName(f.name);
     if (!targetByNorm.has(norm)) targetByNorm.set(norm, f.name);
     // Also index by leaf name for cross-level matching
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: split always produces at least one element
     const leaf = f.name.split(".").pop()!;
     const leafNorm = normalizeName(leaf);
     if (!targetByNorm.has(leafNorm)) targetByNorm.set(leafNorm, f.name);
@@ -52,6 +53,8 @@ export function matchFields(sourceFields: FieldDecl[], targetFields: FieldDecl[]
   const matchedTargetNorms = new Set<string>();
   const sourceOnly: string[] = [];
 
+  // Safe: split().pop() always returns a value; .get() calls are guarded by .has() checks
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
   for (const f of flatSource) {
     const norm = normalizeName(f.name);
     const leaf = f.name.split(".").pop()!;
@@ -82,6 +85,7 @@ export function matchFields(sourceFields: FieldDecl[], targetFields: FieldDecl[]
       const leaf = f.name.split(".").pop()!;
       return !matchedTargetNorms.has(norm) && !matchedTargetNorms.has(normalizeName(leaf));
     })
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
     .map((f) => f.name);
 
   return { matched, sourceOnly, targetOnly };

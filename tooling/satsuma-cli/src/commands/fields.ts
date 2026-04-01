@@ -101,6 +101,7 @@ Examples:
         if (!resolvedMapping) {
           console.error(`Mapping '${opts.unmappedBy}' not found.`);
           const close = [...index.mappings.keys()].find(
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: guarded by outer opts.unmappedBy check
             (k) => k.toLowerCase() === opts.unmappedBy!.toLowerCase(),
           );
           if (close) console.error(`Did you mean '${close}'?`);

@@ -269,6 +269,7 @@ function traceUpstream(
   const queue: Array<{ field: string; depth: number }> = [{ field: start, depth: 0 }];
 
   while (queue.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: queue.length > 0 checked above
     const { field, depth } = queue.shift()!;
     if (depth >= maxDepth) continue;
 
@@ -300,6 +301,7 @@ function traceDownstream(
   const queue: Array<{ field: string; depth: number }> = [{ field: start, depth: 0 }];
 
   while (queue.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: queue.length > 0 checked above
     const { field, depth } = queue.shift()!;
     if (depth >= maxDepth) continue;
 

@@ -73,6 +73,7 @@ function collectArrowsByMapping(index: WorkspaceIndex): Map<string, ArrowRecord[
       seen.add(dedupKey);
       const key = r.namespace ? `${r.namespace}::${r.mapping}` : (r.mapping ?? "");
       if (!byMapping.has(key)) byMapping.set(key, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       byMapping.get(key)!.push(r);
     }
   }
@@ -93,6 +94,7 @@ function diffBlockMap<T, C>(
     if (!mapB.has(name)) {
       removed.push(name);
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check on line above guarantees both entries exist
       const changes = diffFn(mapA.get(name)!, mapB.get(name)!);
       if (changes.length > 0) {
         changed.push({ name, changes });
@@ -181,6 +183,7 @@ function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""):
     if (!bMap.has(name)) {
       changes.push({ kind: "field-removed", field: qualName });
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check above guarantees entry exists
       const bField = bMap.get(name)!;
       if (field.type !== bField.type) {
         changes.push({ kind: "type-changed", field: qualName, from: field.type, to: bField.type });
@@ -241,6 +244,7 @@ function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[],
     if (!bByKey.has(key)) {
       changes.push({ kind: "arrow-removed", arrow: key });
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check above guarantees entry exists
       const br = bByKey.get(key)!;
       if (ar.transform_raw !== br.transform_raw) {
         changes.push({

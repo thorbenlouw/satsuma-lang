@@ -168,6 +168,7 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   // Support nested paths like schema.record.field by using the last segment as field name
   // and intermediate segments to navigate into record/list blocks
   const pathSegments = fieldPath.split(".");
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: split always produces at least one element
   const fieldName = pathSegments[pathSegments.length - 1]!;
 
   // Search schemas, then fragments, then metrics
@@ -284,6 +285,7 @@ function findField(fields: FieldDecl[], fieldName: string): FieldDecl | null {
 
 function findFieldByPath(fields: FieldDecl[], segments: string[]): FieldDecl | null {
   if (segments.length === 0) return null;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: length === 1 guarantees index 0 exists
   if (segments.length === 1) return findField(fields, segments[0]!);
   // Navigate into nested record/list by matching intermediate segments
   for (const field of fields) {
@@ -292,6 +294,7 @@ function findFieldByPath(fields: FieldDecl[], segments: string[]): FieldDecl | n
     }
   }
   // Fallback: flat search for the last segment
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: segments.length > 1 guaranteed by preceding checks
   return findField(fields, segments[segments.length - 1]!);
 }
 

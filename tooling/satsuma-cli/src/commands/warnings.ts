@@ -80,6 +80,7 @@ Examples:
       const byFile = new Map<string, Array<WarningRecord | QuestionRecord>>();
       for (const item of items) {
         if (!byFile.has(item.file)) byFile.set(item.file, []);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
         byFile.get(item.file)!.push(item);
       }
 

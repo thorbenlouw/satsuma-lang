@@ -142,6 +142,7 @@ function printDiff(filename: string, original: string, formatted: string): void 
   let fi = 0;
 
   for (let k = 0; k < ops.length; k++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: k is within ops.length bounds
     const op = ops[k]!;
     if (op === "equal") {
       // Check if we need to start or extend a hunk (look ahead for changes within CTX*2+1)
@@ -216,6 +217,8 @@ function diffLines(a: string[], b: string[]): DiffOp[] {
   if (n + m > 10000) return greedyDiff(a, b);
 
   // Build LCS table
+  // Safe: all dp[i] and dp[i][j] accesses are within the allocated (n+1)x(m+1) bounds
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
   for (let i = 1; i <= n; i++) {
     for (let j = 1; j <= m; j++) {
@@ -244,6 +247,7 @@ function diffLines(a: string[], b: string[]): DiffOp[] {
       i--;
     }
   }
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
   ops.reverse();
   return ops;
 }
