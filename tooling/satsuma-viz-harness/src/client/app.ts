@@ -123,7 +123,7 @@ function highlightSatsuma(source: string): string {
     for (const m of text.matchAll(refRe)) {
       html += esc(text.slice(last, m.index));
       html += `</span><span class="tok-ref">${esc(m[0])}</span><span class="tok-string">`;
-      last = m.index! + m[0].length;
+      last = (m.index ?? 0) + m[0].length;
     }
     html += esc(text.slice(last)) + `</span>`;
     return html;
@@ -171,9 +171,9 @@ function highlightSatsuma(source: string): string {
 
   for (const m of source.matchAll(TOKEN)) {
     // Emit any plain text that precedes this token.
-    if (m.index! > last) html += esc(source.slice(last, m.index));
+    if ((m.index ?? 0) > last) html += esc(source.slice(last, m.index));
 
-    const g = m.groups!;
+    const g = m.groups ?? {};
     const text = m[0];
 
     if (g.triple)        html += wrap("tok-string-triple", text);
@@ -192,7 +192,7 @@ function highlightSatsuma(source: string): string {
     else if (g.number)   html += wrap("tok-number",   text);
     else                 html += esc(text);
 
-    last = m.index! + text.length;
+    last = (m.index ?? 0) + text.length;
   }
 
   // Emit any remaining plain text after the last token.
@@ -313,7 +313,9 @@ async function loadFixture(uri: string): Promise<void> {
   const { source } = (await sourceRes.json()) as { source: string };
   const model = await modelRes.json();
 
-  // Render syntax-highlighted source into the pre element.
+  // Safe: highlightSatsuma HTML-escapes all user content via esc() before
+  // constructing the markup — no raw source text reaches the DOM.
+  // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method
   sourceCodeEl.innerHTML = highlightSatsuma(source);
   sourceCodeEl.className = "";
 
