@@ -22,6 +22,7 @@
     "prepare": "npm run build",
     "pack": "node scripts/pack.js",
     "test": "node --import tsx/esm --import ./test/setup.ts --test 'test/**/*.test.ts'",
+    "test:coverage": "c8 --reporter=text --reporter=lcov node --import tsx/esm --import ./test/setup.ts --test 'test/**/*.test.ts'",
     "test:typecheck": "tsc --project tsconfig.test.json"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "c8": "^11.0.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   },

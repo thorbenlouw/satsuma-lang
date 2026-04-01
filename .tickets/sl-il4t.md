@@ -1,6 +1,6 @@
 ---
 id: sl-il4t
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:17:10Z
@@ -45,3 +45,14 @@ c8 --reporter=lcov --reporter=text node --test test/**/*.test.js
 - `src/errors.ts` — ~20% (only findSuggestion)
 - Several change-kind branches in `src/diff.ts`
 
+
+## Notes
+
+**2026-04-01T08:26:02Z**
+
+## Notes
+
+**2026-04-01T12:00:00Z**
+
+Cause: No coverage measurement existed in the CI pipeline — coverage gaps were found by manual code reading.
+Fix: Added c8 as a dev dependency, created .c8rc.json with 70% line threshold, added test:coverage script, updated CI to run tests under c8 and upload lcov artifacts. Coverage currently at 87.7% lines.
