@@ -350,4 +350,76 @@ describe("diffIndex", () => {
     assert.ok(removed, "expected arrow-removed for old arrow");
     assert.ok(added, "expected arrow-added for new arrow");
   });
+
+  it("detects sources-changed in mappings", () => {
+    const a = makeIndex({}, { m1: { sources: ["old_src"], targets: ["t"], arrowCount: 1 } });
+    const b = makeIndex({}, { m1: { sources: ["new_src"], targets: ["t"], arrowCount: 1 } });
+    const delta = diffIndex(a, b);
+    const changes = delta.mappings.changed[0].changes;
+    assert.ok(changes.some((c: any) => c.kind === "sources-changed"));
+  });
+
+  it("detects targets-changed in mappings", () => {
+    const a = makeIndex({}, { m1: { sources: ["s"], targets: ["old_tgt"], arrowCount: 1 } });
+    const b = makeIndex({}, { m1: { sources: ["s"], targets: ["new_tgt"], arrowCount: 1 } });
+    const delta = diffIndex(a, b);
+    const changes = delta.mappings.changed[0].changes;
+    assert.ok(changes.some((c: any) => c.kind === "targets-changed"));
+  });
+
+  // ── Field metadata changes ──────────────────────────────────────────────
+
+  it("detects metadata-changed on schema fields", () => {
+    const a = makeIndex({
+      s1: { fields: [{ name: "id", type: "INT", metadata: [{ kind: "tag", tag: "pk" }] }] },
+    });
+    const b = makeIndex({
+      s1: { fields: [{ name: "id", type: "INT", metadata: [{ kind: "tag", tag: "unique" }] }] },
+    });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 1);
+    const metaChange = delta.schemas.changed[0].changes.find((c) => c.kind === "metadata-changed");
+    assert.ok(metaChange, "should detect metadata change");
+  });
+
+  // ── Top-level notes ─────────────────────────────────────────────────────
+
+  it("detects added and removed top-level notes (sl-wpyb)", () => {
+    const a = makeIndex({}, {}, { notes: [{ parent: null, text: "old note" }] });
+    const b = makeIndex({}, {}, { notes: [{ parent: null, text: "new note" }] });
+    const delta = diffIndex(a, b);
+    assert.ok(delta.notes.added.includes("new note"));
+    assert.ok(delta.notes.removed.includes("old note"));
+  });
+
+  // ── Nested field recursion ──────────────────────────────────────────────
+
+  it("detects changes in nested child fields", () => {
+    const a = makeIndex({
+      s1: {
+        fields: [{
+          name: "address",
+          type: "record",
+          children: [{ name: "city", type: "VARCHAR" }],
+        }],
+      },
+    });
+    const b = makeIndex({
+      s1: {
+        fields: [{
+          name: "address",
+          type: "record",
+          children: [{ name: "city", type: "TEXT" }],
+        }],
+      },
+    });
+    const delta = diffIndex(a, b);
+    assert.equal(delta.schemas.changed.length, 1);
+    const typeChange = delta.schemas.changed[0].changes.find(
+      (c) => c.kind === "type-changed" && c.field === "address.city",
+    );
+    assert.ok(typeChange, "should detect type change in nested field");
+    assert.equal(typeChange.from, "VARCHAR");
+    assert.equal(typeChange.to, "TEXT");
+  });
 });

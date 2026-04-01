@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { canonicalRef, canonicalEntityName } from "@satsuma/core";
-import { canonicalKey, resolveCanonicalKey } from "#src/index-builder.js";
+import { canonicalKey, resolveCanonicalKey, resolveScopedEntityRef, resolveIndexKey } from "#src/index-builder.js";
 
 describe("canonicalRef", () => {
   it("returns ::schema.field when no namespace", () => {
@@ -91,5 +91,84 @@ describe("resolveCanonicalKey", () => {
 
   it("preserves bare keys", () => {
     assert.equal(resolveCanonicalKey("customers"), "customers");
+  });
+});
+
+// ── resolveScopedEntityRef ──────────────────────────────────────────────────
+
+describe("resolveScopedEntityRef", () => {
+  const map = new Map<string, unknown>([
+    ["customers", {}],
+    ["crm::orders", {}],
+    ["billing::invoices", {}],
+  ]);
+
+  it("resolves fully-qualified ref when present", () => {
+    assert.equal(resolveScopedEntityRef("crm::orders", null, map), "crm::orders");
+  });
+
+  it("returns null for fully-qualified ref not in map", () => {
+    assert.equal(resolveScopedEntityRef("crm::missing", null, map), null);
+  });
+
+  it("resolves unqualified ref via current namespace first", () => {
+    assert.equal(resolveScopedEntityRef("orders", "crm", map), "crm::orders");
+  });
+
+  it("falls back to bare name when namespace lookup fails", () => {
+    assert.equal(resolveScopedEntityRef("customers", "crm", map), "customers");
+  });
+
+  it("resolves bare name directly when no namespace context", () => {
+    assert.equal(resolveScopedEntityRef("customers", null, map), "customers");
+  });
+
+  it("returns null when neither namespaced nor bare exists", () => {
+    assert.equal(resolveScopedEntityRef("missing", "crm", map), null);
+  });
+
+  it("returns null for bare lookup with no namespace and no match", () => {
+    assert.equal(resolveScopedEntityRef("missing", null, map), null);
+  });
+});
+
+// ── resolveIndexKey ─────────────────────────────────────────────────────────
+
+describe("resolveIndexKey", () => {
+  const map = new Map([
+    ["customers", { id: 1 }],
+    ["crm::orders", { id: 2 }],
+    ["billing::orders", { id: 3 }],
+  ]);
+
+  it("returns exact match", () => {
+    const result = resolveIndexKey("customers", map);
+    assert.ok(result);
+    assert.equal(result.key, "customers");
+    assert.equal(result.entry.id, 1);
+  });
+
+  it("resolves unqualified name to single namespace match", () => {
+    // "customers" is already a bare key, but this tests the suffix lookup
+    const singleNs = new Map([["crm::widgets", { id: 4 }]]);
+    const result = resolveIndexKey("widgets", singleNs);
+    assert.ok(result);
+    assert.equal(result.key, "crm::widgets");
+  });
+
+  it("returns null for ambiguous unqualified name", () => {
+    // Both "crm::orders" and "billing::orders" end with "::orders"
+    const result = resolveIndexKey("orders", map);
+    assert.equal(result, null, "should be null for ambiguous match");
+  });
+
+  it("returns null for qualified name not in map", () => {
+    const result = resolveIndexKey("crm::missing", map);
+    assert.equal(result, null);
+  });
+
+  it("returns null for unqualified name with no matches", () => {
+    const result = resolveIndexKey("nonexistent", map);
+    assert.equal(result, null);
   });
 });
