@@ -1,6 +1,6 @@
 ---
 id: sl-i34p
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T09:24:11Z
@@ -23,3 +23,10 @@ See also: features/29-viz-harness-and-shared-backend/TODO.md
 - The visualization can be exercised end-to-end in a standalone browser harness without depending on VS Code webviews
 - CI and release continue to build the refactored VS Code package path correctly after the package extraction
 - README.md, tooling/ARCHITECTURE.md, and docs/developer/ARCHITECTURE.md are updated to reflect the final package map and test workflow
+
+## Notes
+
+**2026-04-01T13:00:00Z**
+
+Cause: Feature 29 aimed to make the Satsuma visualization testable without VS Code by extracting shared backend logic and building a fixture-driven browser harness.
+Fix: All child tickets delivered: `@satsuma/viz-backend` extracted from LSP server (sl-f1kt, sl-vp7w); `satsuma-viz-harness` standalone harness with 8 passing Playwright tests (sl-2jq2, sl-22fg); CI/release workflow updated for new package structure (sl-be9e, sl-lkmt); docs updated (sl-66hf). PR: thorbenlouw/satsuma-lang#184.
