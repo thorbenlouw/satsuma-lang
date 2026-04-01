@@ -1,6 +1,6 @@
 ---
 id: sl-pb47
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:32:19Z
@@ -20,3 +20,9 @@ Repro:
 
 This makes it impossible for consumers to disambiguate warnings from same-named schemas in different namespaces.
 
+## Notes
+
+**2026-04-01**
+
+Cause: `findParentBlock` in extract.ts (satsuma-core) returned the bare block name without checking for an enclosing `namespace_block` ancestor, so the `parent` field was always unqualified.
+Fix: Added `qualifyWithNamespace` helper that walks up the CST to find a `namespace_block` and prefixes the name (e.g. "crm::customers" instead of "customers").

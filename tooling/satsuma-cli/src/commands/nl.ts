@@ -136,7 +136,10 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: W
     const parsed = parsedFiles.find((p) => p.filePath === entry.file);
     const node = parsed ? findBlockNode(parsed.tree.rootNode, blockType, key) : null;
     if (node) {
-      for (const item of extractNLContent(node, blockName)) {
+      // Pass the resolved canonical key (e.g. "warehouse::load dim_customer") as
+      // the parent scope rather than the user's raw query string, so that JSON
+      // "parent" fields and text output always show the qualified name (sl-wfgx).
+      for (const item of extractNLContent(node, key)) {
         items.push({ ...item, file: entry.file });
       }
     }

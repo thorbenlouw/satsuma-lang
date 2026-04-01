@@ -92,17 +92,22 @@ Examples:
       const refs = gatherRefs(resolvedName, index, parsedFiles, isSchema, isFragment, isTransform);
 
       if (opts.json) {
-        console.log(JSON.stringify({ name: canonicalKey(name), refs }, null, 2));
+        // Use resolvedName (the canonical index key) rather than the raw user
+        // query so that bare-name lookups produce the qualified form, e.g.
+        // "crm::customers" not "::customers" (sl-b0mq).
+        console.log(JSON.stringify({ name: canonicalKey(resolvedName), refs }, null, 2));
         if (refs.length === 0) process.exit(1);
         return;
       }
 
       if (refs.length === 0) {
-        console.log(`No references to '${name}' found.`);
+        // Use resolvedName in text output too so the header always shows the
+        // canonical qualified name regardless of how the user queried (sl-wfgx).
+        console.log(`No references to '${resolvedName}' found.`);
         process.exit(1);
       }
 
-      printDefault(name, refs);
+      printDefault(resolvedName, refs);
     });
 }
 

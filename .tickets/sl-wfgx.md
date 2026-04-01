@@ -1,6 +1,6 @@
 ---
 id: sl-wfgx
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:29:34Z
@@ -29,3 +29,10 @@ Repro:
 **2026-03-31T08:32:49Z**
 
 Also affects: meta (header label), where-used (text header), and fields --unmapped-by (result text). All these commands echo the user's query form instead of resolving to the canonical namespace-qualified name. Root cause is the same: name canonicalization should happen before rendering output.
+
+## Notes
+
+**2026-04-01**
+
+Cause: Multiple commands passed the raw user query string (`blockName`, `name`, `schemaName`) to output formatters instead of the resolved canonical index key.
+Fix: nl.ts passes `key` (resolved) to `extractNLContent`; meta.ts returns `scope: resolvedName`; where-used.ts passes `resolvedName` to text output and `printDefault`; fields.ts uses `resolvedSchemaName` in "all mapped" / "no fields" messages.

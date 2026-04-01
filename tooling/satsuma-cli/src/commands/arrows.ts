@@ -164,9 +164,13 @@ Examples:
         if (!nlRef.resolved || !nlRef.resolvedTo) continue;
         const resolvedTo = nlRef.resolvedTo.name;
 
-        const nlMappingKey = nlRef.namespace
-          ? `${nlRef.namespace}::${nlRef.mapping}`
-          : nlRef.mapping;
+        // nlRef.mapping is already fully qualified by resolveAllNLRefs
+        // (it is built as `${namespace}::${mapping}` or bare name before being
+        // stored). Double-qualifying by prepending nlRef.namespace again would
+        // produce "crm::crm::load_dim_customer", causing the mapping lookup and
+        // the alreadyDeclared dedup check to fail, resulting in duplicate
+        // nl-derived arrows when @ref references the arrow's own source (sl-qxn5).
+        const nlMappingKey = nlRef.mapping;
 
         if (resolvedTo !== canonicalQualified) continue;
         const nlMapping = index.mappings.get(nlMappingKey);
@@ -319,7 +323,9 @@ Examples:
         return;
       }
 
-      printDefault(fieldRef, arrows, index);
+      // Pass the resolved schema key so printDefault can match against index
+      // entries even when the user queried with a bare (unqualified) name (sl-ltv6).
+      printDefault(fieldRef, arrows, index, resolvedSchema.key);
     });
 }
 
@@ -393,9 +399,17 @@ function collectAllFieldNames(fields: FieldDecl[]): string[] {
   return names;
 }
 
-function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceIndex): void {
+/**
+ * Print text-mode output for an arrows query.
+ *
+ * @param resolvedSchemaKey - The canonical index key for the queried schema
+ *   (e.g. "crm::customers"). Must be the resolved key, not the user's raw
+ *   query string, so that mapping source/target lookups hit correctly even
+ *   when the user queried with a bare unqualified name (sl-ltv6).
+ */
+function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceIndex, resolvedSchemaKey: string): void {
   const dot = fieldRef.indexOf(".");
-  const schemaName = dot >= 0 ? fieldRef.slice(0, dot) : "";
+  const schemaName = resolvedSchemaKey;
   const fieldPath = dot >= 0 ? fieldRef.slice(dot + 1) : fieldRef;
   const leafName = fieldPath.split(".").pop();
   const matchesField = (val: string | null) =>

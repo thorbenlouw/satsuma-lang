@@ -1,6 +1,6 @@
 ---
 id: sl-ltv6
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:29:10Z
@@ -20,3 +20,10 @@ Repro:
 
 Both show the same arrow in the body.
 
+
+## Notes
+
+**2026-04-01**
+
+Cause: `printDefault` in arrows.ts parsed schemaName from the raw fieldRef string (e.g. "customers" from "customers.email"), so `m.sources.includes(schemaName)` never matched the canonical index key "crm::customers", reporting 0 arrows.
+Fix: Added a `resolvedSchemaKey` parameter to `printDefault` and passed `resolvedSchema.key` from the action handler.

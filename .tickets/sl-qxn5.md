@@ -1,6 +1,6 @@
 ---
 id: sl-qxn5
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:30:19Z
@@ -25,3 +25,9 @@ Repro:
 
 This likely also affects non-namespace @refs (e.g., `@source.field` on an arrow from source.field).
 
+## Notes
+
+**2026-04-01**
+
+Cause: `nlMappingKey` in arrows.ts was constructed as `${nlRef.namespace}::${nlRef.mapping}`, but `nlRef.mapping` is already the fully-qualified key produced by `resolveAllNLRefs` (e.g. "crm::load_dim_customer"). This double-qualified the namespace, causing `index.mappings.get(nlMappingKey)` to return null, leaving `srcSchemas` empty and the dedup check unable to match the existing arrow's source field.
+Fix: Changed to `const nlMappingKey = nlRef.mapping` since `resolveAllNLRefs` already produces the fully-qualified mapping key.

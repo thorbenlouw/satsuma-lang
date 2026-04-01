@@ -1,0 +1,28 @@
+// Fixture for namespace output canonicalization regression tests.
+//
+// Covers sl-b0mq, sl-ltv6, sl-pb47, sl-qofc, sl-qxn5, sl-wfgx:
+// commands that previously echoed the user's bare query string instead of
+// the namespace-qualified canonical name in their output.
+
+namespace crm {
+  schema customers {
+    //! Some customer records may have NULL email
+    customer_id STRING (pk)
+    email       STRING (pii)
+  }
+
+  schema dim_customer {
+    customer_id STRING (pk)
+    email       STRING
+  }
+
+  mapping `load dim_customer` (note "Normalize CRM data") {
+    source { customers }
+    target { dim_customer }
+
+    customer_id -> customer_id
+    // The @ref here points to the arrow's own source field — should not
+    // produce a duplicate nl-derived arrow (sl-qxn5).
+    email -> email { "Normalize @crm::customers.email" }
+  }
+}

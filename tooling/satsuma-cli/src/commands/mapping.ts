@@ -248,7 +248,9 @@ function printBlockNode(c: SyntaxNode, compact: boolean | undefined, indent: str
 }
 
 function printDefault(entry: MappingRecord, mappingNode: SyntaxNode | null, compact: boolean | undefined): void {
-  const nameStr = entry.name ? ` '${entry.name}'` : "";
+  // Use canonicalEntityName so the header includes the namespace prefix, e.g.
+  // "mapping 'warehouse::load hub_store'" not "mapping 'load hub_store'" (sl-qofc).
+  const nameStr = entry.name ? ` '${canonicalEntityName(entry)}'` : "";
   const metaNode = mappingNode?.namedChildren.find((c) => c.type === "metadata_block");
   const metaText = metaNode && !compact ? ` ${metaNode.text}` : "";
   console.log(`mapping${nameStr}${metaText} {`);
