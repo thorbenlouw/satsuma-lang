@@ -82,14 +82,14 @@ describe("satsuma summary", () => {
   });
 
   it("surfaces fragment-spread-expanded fieldCount in --json output (sl-vlsh)", async () => {
-    // Exact count logic tested in namespace-index.test.ts; here we verify the CLI exposes it.
+    // Extraction logic tested in extract.test.ts; here we verify the CLI end-to-end value.
     const FIXTURE = resolve(__dirname, "fixtures/spread-fields-meta.stm");
     const { stdout, code } = await run("summary", "--json", FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const schema = data.schemas.find((s: any) => s.name === "::with_spreads");
     assert.ok(schema, "should find with_spreads schema");
-    assert.ok(typeof schema.fieldCount === "number" && schema.fieldCount > 0);
+    assert.equal(schema.fieldCount, 4, "should count 1 direct + 3 spread fields");
   });
 
   it("text output includes spread fields in count (sl-vlsh)", async () => {
@@ -99,16 +99,16 @@ describe("satsuma summary", () => {
     assert.match(stdout, /with_spreads.*4 fields/);
   });
 
-  it("--json exposes nlDerivedArrowCount alongside arrowCount (sl-mraa)", async () => {
-    // Verifies the CLI surfaces the nl-derived breakdown field.
-    // Arrow counting logic is tested in arrow-extract.test.ts.
+  it("--json arrowCount includes nl-derived edges and exposes nlDerivedArrowCount (sl-mraa)", async () => {
+    // Arrow counting logic tested in arrow-extract.test.ts; here we verify CLI end-to-end.
     const COBOL = resolve(EXAMPLES, "cobol-to-avro/pipeline.stm");
     const { stdout, code } = await run("summary", "--json", COBOL);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const mapping = data.mappings[0];
-    assert.ok("nlDerivedArrowCount" in mapping, "should expose nlDerivedArrowCount field");
-    assert.ok("arrowCount" in mapping, "should expose arrowCount field");
+    assert.ok(mapping.nlDerivedArrowCount > 0, "should have nl-derived arrows");
+    assert.ok(mapping.arrowCount > mapping.nlDerivedArrowCount,
+      "arrowCount should include both declared and nl-derived arrows");
   });
 
   it("--json totalErrors counts MISSING nodes, not just ERROR nodes (sl-8s4b)", async () => {
@@ -163,13 +163,12 @@ describe("satsuma schema", () => {
     assert.ok(Array.isArray(data.fields));
   });
 
-  it("--json line field is a positive integer (sl-2usp)", async () => {
-    // Verifies the CLI surfaces 1-indexed line numbers.
-    // Exact offset conversion is tested in extract.test.ts.
+  it("--json line is 1-indexed (sl-2usp)", async () => {
+    // 0→1 offset conversion tested in extract.test.ts; here we verify CLI end-to-end.
     const { stdout, code } = await run("schema", "country_codes", "--json", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(typeof data.line === "number" && data.line >= 1, "line should be a positive 1-indexed integer");
+    assert.equal(data.line, 4, "country_codes starts on line 4 (1-indexed)");
   });
 
   it("exits 1 for unknown schema", async () => {
@@ -303,14 +302,18 @@ describe("satsuma schema", () => {
     assert.ok(Array.isArray(data.fields));
   });
 
-  it("--json fields surface metadata arrays (sl-rbvk)", async () => {
-    // Verifies the CLI surfaces field metadata. Exact metadata structure
-    // is tested in extract.test.ts.
+  it("--json fields include metadata (pk, ref, enum) (sl-rbvk)", async () => {
+    // Metadata extraction tested in extract.test.ts; here we verify CLI end-to-end.
     const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", SFDC);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const fieldsWithMeta = data.fields.filter((f: any) => f.metadata && f.metadata.length > 0);
-    assert.ok(fieldsWithMeta.length > 0, "should have fields with metadata");
+    const idField = data.fields.find((f: any) => f.name === "Id");
+    assert.ok(idField.metadata, "Id field should have metadata");
+    assert.deepEqual(idField.metadata[0], { kind: "tag", tag: "pk" });
+    const stageField = data.fields.find((f: any) => f.name === "StageName");
+    const enumEntry = stageField.metadata.find((m: any) => m.kind === "enum");
+    assert.ok(enumEntry, "StageName should have enum metadata");
+    assert.ok(enumEntry.values.length > 0, "enum should have values");
   });
 
   it("--json --fields-only returns just the fields array (sl-5fbn)", async () => {
@@ -660,13 +663,13 @@ describe("satsuma mapping", () => {
     assert.match(stdout, /`Account\.Name`/, "should preserve backticks in text output");
   });
 
-  it("--json arrowCount field is present for hierarchical mappings (cbh-zdk3)", async () => {
-    // Exact container-exclusion counting tested in arrow-extract.test.ts.
+  it("--json arrowCount excludes flatten/each containers (cbh-zdk3)", async () => {
+    // Arrow counting tested in arrow-extract.test.ts; here we verify CLI end-to-end.
     const FFG = resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm");
     const { stdout, code } = await run("mapping", "order line facts", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(typeof data.arrowCount === "number" && data.arrowCount > 0);
+    assert.equal(data.arrowCount, 11, "flatten container should not be counted as an arrow");
   });
 
   it("--json topLevelArrowCount equals arrows array length for hierarchical mappings (sl-dfqb)", async () => {
@@ -2797,13 +2800,15 @@ describe("satsuma nl-refs", () => {
     assert.ok(countryCd, "should find COUNTRY_CD @ref");
   });
 
-  it("surfaces @refs from standalone transform blocks", async () => {
-    // Exact ref extraction tested in nl-ref-extract.test.ts.
+  it("extracts @refs from standalone transform blocks", async () => {
+    // Extraction logic tested in nl-ref-extract.test.ts; here we verify CLI end-to-end.
     const fixture = resolve(import.meta.dirname, "fixtures", "transform-nl-refs.stm");
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    assert.ok(refs.length > 0, "should find @refs in transform blocks");
+    assert.equal(refs.length, 3, "should find 3 @refs");
+    const refNames = refs.map((r: any) => r.ref).sort();
+    assert.deepStrictEqual(refNames, ["first_name", "last_name", "region_code"]);
   });
 
   it("shows transform name in mapping field for transform refs", async () => {
@@ -2827,24 +2832,30 @@ describe("satsuma nl-refs", () => {
     assert.match(stdout, /region_code/);
   });
 
-  it("surfaces @refs from note blocks inside mappings (sl-z57o)", async () => {
-    // Exact ref counts and names tested in nl-ref-extract.test.ts.
+  it("extracts @refs from note blocks inside mappings (sl-z57o)", async () => {
+    // Extraction logic tested in nl-ref-extract.test.ts; here we verify CLI end-to-end.
     const fixture = resolve(import.meta.dirname, "fixtures", "note-nl-refs.stm");
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    assert.ok(refs.length > 0, "should find @refs including note-block refs");
+    assert.equal(refs.length, 4, "should find 4 @refs (3 from note + 1 from arrow)");
+    const noteRefs = refs.filter((r: any) => r.targetField === null);
+    assert.equal(noteRefs.length, 3, "3 refs should come from the note block (no targetField)");
+    const refNames = noteRefs.map((r: any) => r.ref).sort();
+    assert.deepStrictEqual(refNames, ["balance", "src_accounts", "tgt_accounts"]);
   });
 
-  it("surfaces line numbers for refs in multiline strings (sl-djeo)", async () => {
-    // Exact line-offset calculations tested in nl-ref-extract.test.ts.
+  it("reports correct line numbers for refs in multiline strings (sl-djeo)", async () => {
+    // Line-offset logic tested in nl-ref-extract.test.ts; here we verify CLI end-to-end.
     const fixture = resolve(import.meta.dirname, "fixtures", "multiline-nl.stm");
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    assert.ok(refs.length > 0, "should find @refs in multiline strings");
-    assert.ok(refs.every((r: any) => typeof r.line === "number" && r.line >= 1),
-      "all refs should have positive line numbers");
+    assert.equal(refs.length, 4, "should find 4 @refs");
+    assert.equal(refs[0].line, 15, "first ref should be on line 15");
+    assert.equal(refs[1].line, 15, "second ref should be on line 15");
+    assert.equal(refs[2].line, 17, "third ref should be on line 17");
+    assert.equal(refs[3].line, 17, "fourth ref should be on line 17");
   });
 
   it("extracts @refs from standalone and schema note blocks (sl-h8sb)", async () => {
