@@ -731,3 +731,57 @@ describe("Bug 5: duplicate warning elimination", () => {
     assert.equal(messages.length, uniqueMessages.length, "No duplicate warning messages");
   });
 });
+
+// ── Bug fix sl-akdg: field-not-in-schema for anonymous mapping arrows ─────────
+
+describe("sl-akdg: field-not-in-schema fires for anonymous mapping arrows", () => {
+  it("reports field-not-in-schema when anonymous mapping arrow source is not in schema", () => {
+    // Anonymous mappings (name=null) are stored with synthetic key "<anon>@file:row".
+    // The check was previously broken because arrow.mapping ("<anon>@...") never equalled
+    // mapping.name (null). The fix compares against the index key for anonymous mappings.
+    const schemaMap = new Map<string, any>([
+      ["src", { name: "src", fields: [{ name: "id" }], file: "test.stm", row: 0 }],
+      ["tgt", { name: "tgt", fields: [{ name: "id" }], file: "test.stm", row: 0 }],
+    ]);
+    const anonKey = "<anon>@test.stm:4";
+    const mappingMap = new Map<string, any>([
+      [anonKey, { name: null, sources: ["src"], targets: ["tgt"], file: "test.stm", row: 4 }],
+    ]);
+    const arrow = { mapping: anonKey, namespace: null, sources: ["nonexistent_field"], target: "id", file: "test.stm", line: 5 };
+    const arrowMap = new Map<string, any>([
+      ["nonexistent_field", [arrow]],
+      ["id", [arrow]],
+    ]);
+    const index = {
+      schemas: schemaMap, mappings: mappingMap, metrics: new Map(), fragments: new Map(),
+      transforms: new Map(), fieldArrows: arrowMap, totalErrors: 0,
+    } as any;
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 1, "should report field-not-in-schema for anonymous mapping arrow");
+    assert.ok(fieldWarnings[0].message.includes("nonexistent_field"));
+  });
+
+  it("does not report field-not-in-schema when anonymous mapping arrow source IS in schema", () => {
+    // Sanity check: the fix should not introduce false positives for valid anonymous mapping arrows.
+    const schemaMap = new Map<string, any>([
+      ["src", { name: "src", fields: [{ name: "id" }], file: "test.stm", row: 0 }],
+      ["tgt", { name: "tgt", fields: [{ name: "id" }], file: "test.stm", row: 0 }],
+    ]);
+    const anonKey = "<anon>@test.stm:4";
+    const mappingMap = new Map<string, any>([
+      [anonKey, { name: null, sources: ["src"], targets: ["tgt"], file: "test.stm", row: 4 }],
+    ]);
+    const arrow = { mapping: anonKey, namespace: null, sources: ["id"], target: "id", file: "test.stm", line: 5 };
+    const arrowMap = new Map<string, any>([["id", [arrow]]]);
+    const index = {
+      schemas: schemaMap, mappings: mappingMap, metrics: new Map(), fragments: new Map(),
+      transforms: new Map(), fieldArrows: arrowMap, totalErrors: 0,
+    } as any;
+
+    const warnings = collectSemanticWarnings(index);
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
+    assert.equal(fieldWarnings.length, 0, "valid anonymous mapping arrows should not warn");
+  });
+});

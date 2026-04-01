@@ -1,6 +1,6 @@
 ---
 id: sl-akdg
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:27:22Z
@@ -39,3 +39,9 @@ name -> nonexistent_target_field { trim }  # no diagnostic
 
 Suspected cause: the arrow.mapping name format (e.g. '<anon>@path:10') may not match the mapping.name used in the iteration loop, causing the check on line 454 of validate.ts to skip all arrows.
 
+## Notes
+
+**2026-04-01**
+
+Cause: `checkArrowFieldRefs` in validate.ts iterated `index.mappings` by name but compared `arrow.mapping` against `mapping.name`. For anonymous mappings, `name` is `null` while `arrow.mapping` carries the synthetic key `<anon>@file:row` — they never compared equal, so all arrows for anonymous mappings were silently skipped.
+Fix: Changed iteration to `for (const [indexKey, mapping] of index.mappings)` and compare `arrow.mapping` against `indexKey` (stripped of namespace prefix) when `mapping.name === null`. Named mappings still compare by name.

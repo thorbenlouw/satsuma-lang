@@ -23,7 +23,7 @@
  */
 
 import { capitalize } from "./string-utils.js";
-import { extractAtRefs, classifyRef, resolveRef, isSchemaInMappingSources } from "./nl-ref.js";
+import { extractAtRefs, classifyRef, resolveRef, isSchemaInMappingSources, stripNLRefScopePrefix } from "./nl-ref.js";
 import type { DefinitionLookup } from "./nl-ref.js";
 import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
 import type { SpreadEntity } from "./spread-expand.js";
@@ -290,7 +290,13 @@ function checkMetricRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]
 /**
  * @refs in NL transform text must resolve to known workspace entities AND
  * must reference schemas that appear in the mapping's source or target list.
- * Refs inside note: contexts are excluded — notes are free-form prose.
+ *
+ * Note contexts (file-level, schema-level, metric-level) are checked for
+ * unresolved refs but not for source-list membership — notes have no binding
+ * mapping context so source-list checks are always meaningless there.
+ *
+ * Rule names match lint-engine.ts so that consumers running both commands can
+ * deduplicate by (rule, file, line, column).
  */
 function checkNLRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]): void {
   if (!index.nlRefData) return;
@@ -305,8 +311,18 @@ function checkNLRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]): v
       namespace: item.namespace,
     };
 
-    // Notes have no binding mapping context — skip ref checks entirely.
+    // Note contexts have no source/target list, so hidden-source checks are
+    // suppressed. Unresolved-ref checks still apply — an @ref in a note should
+    // resolve to some known workspace entity.
     const isNoteContext = mappingKey.startsWith("note:");
+
+    // Build a human-readable scope label for diagnostic messages.
+    // Strip internal prefixes (e.g. "note:metric:") so messages say
+    // "in metric 'revenue'" rather than "in mapping 'note:metric:revenue'".
+    const displayScope = isNoteContext
+      ? noteDisplayScope(item.mapping, item.namespace)
+      : `mapping '${mappingKey}'`;
+
     const lookup = makeSemanticLookup(index);
 
     for (const { ref, offset } of refs) {
@@ -314,20 +330,20 @@ function checkNLRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]): v
       const resolution = resolveRef(ref, mappingContext, lookup);
 
       if (!resolution.resolved) {
-        if (!isNoteContext) {
-          diagnostics.push({
-            file: item.file,
-            line: item.line + 1,
-            column: item.column + offset + 1,
-            severity: "warning",
-            rule: "nl-ref-unresolved",
-            message: `NL reference \`${ref}\` in mapping '${mappingKey}' does not resolve to any known identifier`,
-          });
-        }
-      } else {
+        // Rule name "unresolved-nl-ref" matches lint-engine.ts for consistency (sl-tslm).
+        diagnostics.push({
+          file: item.file,
+          line: item.line + 1,
+          column: item.column + offset + 1,
+          severity: "warning",
+          rule: "unresolved-nl-ref",
+          message: `NL reference \`${ref}\` in ${displayScope} does not resolve to any known identifier`,
+        });
+      } else if (!isNoteContext) {
         // Check that a resolved schema ref is part of the mapping's source/target list.
+        // Note contexts are excluded — they have no binding source/target list.
         const referencedSchema = extractReferencedSchema(classification, resolution, index);
-        if (referencedSchema && !isNoteContext && !isSchemaInMappingSources(referencedSchema, mapping)) {
+        if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
           diagnostics.push({
             file: item.file,
             line: item.line + 1,
@@ -340,6 +356,24 @@ function checkNLRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]): v
       }
     }
   }
+}
+
+/**
+ * Build a human-readable scope label for a note-context NL ref item.
+ * Strips internal prefixes (e.g. "note:metric:") so messages say
+ * "in metric 'revenue'" rather than "in mapping 'note:metric:revenue'".
+ */
+function noteDisplayScope(mapping: string, namespace: string | null): string {
+  const entityName = stripNLRefScopePrefix(mapping);
+  const qualifiedName = namespace && entityName !== "(file-level note)"
+    ? `${namespace}::${entityName}`
+    : entityName;
+
+  if (mapping === "note:") return "file-level note";
+  if (mapping.startsWith("note:metric:")) return `metric '${qualifiedName}'`;
+  if (mapping.startsWith("note:schema:")) return `schema '${qualifiedName}'`;
+  if (mapping.startsWith("note:fragment:")) return `fragment '${qualifiedName}'`;
+  return `note '${qualifiedName}'`;
 }
 
 /**
@@ -390,8 +424,14 @@ function checkArrowFieldRefs(index: SemanticIndex, diagnostics: SemanticDiagnost
     }
   }
 
-  for (const [, mapping] of index.mappings) {
+  // Use the index key (not just mapping.name) so that anonymous mappings
+  // (name=null, key="<anon>@path:row") can be matched against arrow.mapping
+  // (which carries the same synthetic key). Named mappings still match by name.
+  for (const [indexKey, mapping] of index.mappings) {
     const currentNs = mapping.namespace ?? null;
+    // For namespaced anonymous mappings the key is "ns::<anon>@path:row" — strip
+    // the namespace prefix so we can compare against arrow.mapping directly.
+    const bareIndexKey = currentNs ? indexKey.slice(currentNs.length + 2) : indexKey;
 
     const resolvedSrcKeys = mapping.sources
       .map((s) => resolveScopedEntityRef(s, currentNs, index.schemas as Map<string, unknown>))
@@ -451,7 +491,12 @@ function checkArrowFieldRefs(index: SemanticIndex, diagnostics: SemanticDiagnost
     }
 
     for (const arrow of uniqueArrows) {
-      if (arrow.mapping !== mapping.name || (arrow.namespace ?? null) !== currentNs) continue;
+      // Named mappings match by bare name; anonymous mappings (name=null) match
+      // by the synthetic index key (e.g. "<anon>@path:row") stored in arrow.mapping.
+      const mappingMatch = mapping.name !== null
+        ? arrow.mapping === mapping.name
+        : arrow.mapping === bareIndexKey;
+      if (!mappingMatch || (arrow.namespace ?? null) !== currentNs) continue;
       if (arrow.file !== mapping.file) continue; // guard against cross-file duplicate mapping names
 
       for (const source of arrow.sources) {

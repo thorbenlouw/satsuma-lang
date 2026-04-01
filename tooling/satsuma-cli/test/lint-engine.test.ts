@@ -427,7 +427,9 @@ describe("lint: unresolved-nl-ref", () => {
     assert.equal(diags.length, 0);
   });
 
-  it("skips file-level standalone notes (sl-vrsu)", () => {
+  it("flags unresolved @refs in file-level standalone notes (sl-vjvf)", () => {
+    // Bug sl-vjvf: unresolved @refs in file-level notes were previously skipped.
+    // They should now produce unresolved-nl-ref warnings like any other note context.
     const index = makeIndex({
       schemas: [
         { name: "source::orders", fields: [{ name: "order_id" }] },
@@ -444,7 +446,7 @@ describe("lint: unresolved-nl-ref", () => {
     });
 
     const diags = runLint(index, { select: ["unresolved-nl-ref"] });
-    assert.equal(diags.length, 0, "standalone note backtick terms should not produce warnings");
+    assert.equal(diags.length, 2, "unresolved @refs in file-level notes should produce warnings");
   });
 
   it("still flags unresolved refs in metric/schema note blocks", () => {

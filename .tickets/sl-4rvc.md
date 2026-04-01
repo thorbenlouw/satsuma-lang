@@ -1,6 +1,6 @@
 ---
 id: sl-4rvc
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:27:31Z
@@ -20,3 +20,9 @@ The CLI docs say validate checks 'structural correctness' and lint checks 'polic
 
 This causes confusion when tooling or agents run both commands sequentially - they get 2x the diagnostics. The rule names differ for NL refs (nl-ref-unresolved vs unresolved-nl-ref) which makes deduplication harder.
 
+## Notes
+
+**2026-04-01**
+
+Cause: `validate` ran its own NL ref check (rule `"nl-ref-unresolved"`) in addition to `lint` running `checkUnresolvedNlRef` (rule `"unresolved-nl-ref"`). The `duplicate-definition` check also ran in both.
+Fix (partial): sl-tslm unifies the rule name to `"unresolved-nl-ref"` in both commands, enabling consumers to deduplicate by `(rule, file, line, column)`. The underlying question of whether validate should run NL ref checks at all is a design decision deferred to a future ADR. The duplicate-definition check remains in both commands intentionally (validate needs it for correctness; lint surfaces it for workflow convenience).

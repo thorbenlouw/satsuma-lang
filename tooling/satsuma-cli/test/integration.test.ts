@@ -3204,6 +3204,22 @@ describe("satsuma lint --fix", () => {
     assert.ok(!content.includes("crm::contacts"), "should not use namespace-qualified ref inside same namespace");
     unlinkSync(file);
   });
+
+  it("applies hidden-source fix to an anonymous mapping (sl-1wpy)", async () => {
+    // Bug sl-1wpy: lint --fix identified fixable findings but applied 0 fixes for
+    // anonymous mappings. The add-source fix searched for the mapping by name, which
+    // is null for anonymous mappings. Fix: detect the anonymous mapping key pattern
+    // "<anon>@file:row" and locate the `mapping {` line by row number instead.
+    const file = copyFixture("lint-anon-fix.stm");
+
+    const { stdout, code } = await run("lint", "--fix", "--json", file);
+    assert.equal(code, 0, `lint exited with code ${code}`);
+    const data = JSON.parse(stdout);
+    assert.ok(data.summary.fixed > 0, "at least one fix should have been applied");
+
+    const content = readFileSync(file, "utf8");
+    assert.match(content, /hidden_dep/, "hidden_dep should be added to the source block");
+  });
 });
 
 // ---------------------------------------------------------------------------
