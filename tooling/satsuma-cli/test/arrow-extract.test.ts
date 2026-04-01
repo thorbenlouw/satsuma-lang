@@ -354,4 +354,15 @@ describe("extractArrowRecords against real examples", () => {
       assert.ok(r.mapping !== undefined);
     }
   });
+
+  it("extracts leaf arrows from hierarchical mapping with flatten/each (cbh-zdk3)", () => {
+    // extractArrowRecords returns one record per leaf arrow (map_arrow,
+    // computed_arrow, nested_arrow). Flatten/each containers are not
+    // themselves arrows — they wrap child arrows.
+    const { tree } = parseFile(resolve(EXAMPLES, "filter-flatten-governance/filter-flatten-governance.stm"));
+    const records = extractArrowRecords(tree.rootNode);
+    const mapping = records.filter((r) => r.mapping === "order line facts");
+    // 3 outer map arrows + 5 flatten children + 1 nested container + 3 computed = 12
+    assert.equal(mapping.length, 12, "should extract 12 leaf arrows from hierarchical mapping");
+  });
 });

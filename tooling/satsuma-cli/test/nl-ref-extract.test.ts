@@ -3,7 +3,9 @@
  */
 
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { before, describe, it } from "node:test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   extractAtRefs,
   classifyRef,
@@ -11,6 +13,8 @@ import {
   isSchemaInMappingSources,
   resolveAllNLRefs,
 } from "#src/nl-ref-extract.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── extractAtRefs ────────────────────────────────────────────────────────────
 
@@ -451,5 +455,59 @@ describe("resolveAllNLRefs", () => {
     };
     const results = resolveAllNLRefs(index as any);
     assert.equal(results.length, 0);
+  });
+});
+
+// ── Real-file extraction tests (relocated from integration.test.ts) ─────────
+
+describe("NL ref extraction against real fixtures", () => {
+  let parseFile: (filePath: string) => any;
+  let extractFileData: (parsed: any) => any;
+  let buildIndex: (data: any[]) => any;
+
+  before(async () => {
+    const parser = await import("#src/parser.js");
+    parseFile = parser.parseFile;
+    const ib = await import("#src/index-builder.js");
+    extractFileData = ib.extractFileData;
+    buildIndex = ib.buildIndex;
+  });
+
+  it("extracts 3 @refs from standalone transform blocks", () => {
+    // Transform NL strings should yield refs attributed to the transform.
+    const fixture = resolve(__dirname, "fixtures", "transform-nl-refs.stm");
+    const data = extractFileData(parseFile(fixture));
+    const index = buildIndex([data]);
+    const resolved = resolveAllNLRefs(index);
+    assert.equal(resolved.length, 3, "should find 3 @refs");
+    const refNames = resolved.map((r) => r.ref).sort();
+    assert.deepStrictEqual(refNames, ["first_name", "last_name", "region_code"]);
+  });
+
+  it("extracts @refs from note blocks inside mappings (sl-z57o)", () => {
+    // Note blocks inside mappings should yield refs with no targetField.
+    const fixture = resolve(__dirname, "fixtures", "note-nl-refs.stm");
+    const data = extractFileData(parseFile(fixture));
+    const index = buildIndex([data]);
+    const resolved = resolveAllNLRefs(index);
+    assert.equal(resolved.length, 4, "should find 4 @refs (3 from note + 1 from arrow)");
+    const noteRefs = resolved.filter((r) => r.targetField === null);
+    assert.equal(noteRefs.length, 3, "3 refs should come from the note block");
+    const refNames = noteRefs.map((r) => r.ref).sort();
+    assert.deepStrictEqual(refNames, ["balance", "src_accounts", "tgt_accounts"]);
+  });
+
+  it("reports correct 0-indexed line numbers for refs in multiline strings (sl-djeo)", () => {
+    // Multiline NL strings should yield 0-indexed row numbers. The CLI
+    // command adds +1 for human-readable 1-indexed output.
+    const fixture = resolve(__dirname, "fixtures", "multiline-nl.stm");
+    const data = extractFileData(parseFile(fixture));
+    const index = buildIndex([data]);
+    const resolved = resolveAllNLRefs(index);
+    assert.equal(resolved.length, 4, "should find 4 @refs");
+    assert.equal(resolved[0].line, 14, "first ref on row 14 (= line 15)");
+    assert.equal(resolved[1].line, 14, "second ref on row 14 (= line 15)");
+    assert.equal(resolved[2].line, 16, "third ref on row 16 (= line 17)");
+    assert.equal(resolved[3].line, 16, "fourth ref on row 16 (= line 17)");
   });
 });

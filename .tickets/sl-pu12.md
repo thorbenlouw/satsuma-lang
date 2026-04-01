@@ -1,6 +1,6 @@
 ---
 id: sl-pu12
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:16:51Z
@@ -38,3 +38,14 @@ integration.test.js contains 372 tests, virtually all of which spawn a real CLI 
 **Why this matters:**
 Integration tests that spawn subprocesses are ~10–50x slower than unit tests and harder to debug on failure. Logic bugs that could be caught by a fast unit test currently require a full CLI round-trip to surface. As the test suite grows this will compound.
 
+
+## Notes
+
+**2026-04-01T08:39:05Z**
+
+## Notes
+
+**2026-04-01T12:30:00Z**
+
+Cause: integration.test.ts contained ~9 tests that asserted on internal business logic (hardcoded counts, offset conversions, exact ref names) rather than CLI surface behaviour. One test (sl-9gvb) directly imported internal modules.
+Fix: Moved sl-9gvb index builder test to namespace-index.test.ts. Added unit tests to extract.test.ts, arrow-extract.test.ts, and nl-ref-extract.test.ts for the specific logic (fieldCount with spreads, arrow counting, line offsets, metadata extraction, NL ref extraction). Simplified the integration test versions to verify only that the CLI surfaces the relevant fields.
