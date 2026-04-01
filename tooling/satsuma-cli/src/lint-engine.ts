@@ -148,6 +148,7 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
   // Anonymous mappings have no name — encode the 0-indexed row so we can
   // locate them by source position instead of by label text.
   const anonMatch = displayName.match(/^<anon>@.+:(\d+)$/);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: anonMatch[1] is always defined when anonMatch is truthy (regex has a capture group)
   const anonRow = anonMatch ? parseInt(anonMatch[1]!, 10) : null;
 
   return (source: string): string => {
@@ -256,6 +257,7 @@ function makeAddArrowSourceFix(
 
   // Anonymous mappings: locate by row number encoded in the key.
   const anonMatch = displayName.match(/^<anon>@.+:(\d+)$/);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: anonMatch[1] is always defined when anonMatch is truthy (regex has a capture group)
   const anonRow = anonMatch ? parseInt(anonMatch[1]!, 10) : null;
 
   // Safe: lines[i] accesses are within bounds; regex capture groups are guaranteed by match checks
