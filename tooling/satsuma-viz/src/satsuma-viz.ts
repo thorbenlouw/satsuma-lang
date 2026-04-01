@@ -374,12 +374,15 @@ export class SatsumaViz extends LitElement {
       display: none;
     }
 
-    /* Zoom/pan viewport */
+    /* Zoom/pan viewport.
+     * Do NOT add height: 100% here — it interacts badly with flex: 1 when the
+     * parent's height comes purely from flex layout (no explicit height), causing
+     * the viewport to size to its content rather than the available space.  The
+     * default align-self: stretch achieves the same cross-axis fill reliably. */
     .viewport {
       overflow: hidden;
       flex: 1;
       min-height: 0;
-      height: 100%;
       position: relative;
       isolation: isolate;
     }
