@@ -18,6 +18,7 @@ import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, walkDescendants } from "./parser-utils";
 import {
   sourceRefText as coreSourceRefText,
+  sourceRefStructuralText as coreSourceRefStructuralText,
   qualifiedNameText as coreQualifiedNameText,
   fieldNameText as coreFieldNameText,
   entryText,
@@ -476,7 +477,7 @@ function indexMappingRefs(
   for (const ch of body.namedChildren) {
     if (ch.type === "source_block") {
       for (const ref of children(ch, "source_ref")) {
-        const name = sourceRefText(ref);
+        const name = sourceRefStructuralText(ref);
         if (name) {
           addReference(index, name, {
             uri,
@@ -488,7 +489,7 @@ function indexMappingRefs(
       }
     } else if (ch.type === "target_block") {
       for (const ref of children(ch, "source_ref")) {
-        const name = sourceRefText(ref);
+        const name = sourceRefStructuralText(ref);
         if (name) {
           addReference(index, name, {
             uri,
@@ -591,7 +592,7 @@ function getMappingBodySchemas(body: SyntaxNode, blockType: string): string[] {
   for (const ch of body.namedChildren) {
     if (ch.type === blockType) {
       for (const ref of children(ch, "source_ref")) {
-        const name = sourceRefText(ref);
+        const name = sourceRefStructuralText(ref);
         if (name) names.push(name);
       }
     }
@@ -834,6 +835,14 @@ function sourceRefText(ref: SyntaxNode): string | null {
 }
 
 /**
+ * Extract the structural schema/fragment name from a source_ref node.
+ * NL join descriptions inside `source {}` are intentionally ignored.
+ */
+function sourceRefStructuralText(ref: SyntaxNode): string | null {
+  return coreSourceRefStructuralText(ref);
+}
+
+/**
  * Extract import name text from an import_name node.
  * Handles qualified_name (ns::name), backtick_name, and identifier children.
  * LSP-specific: import_name nodes are only relevant for workspace indexing.
@@ -889,4 +898,3 @@ function addReference(
   existing.push(entry);
   index.references.set(name, existing);
 }
-
