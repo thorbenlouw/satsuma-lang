@@ -21,7 +21,8 @@
     "pretest": "npm run prebuild && tsc",
     "prepare": "npm run build",
     "pack": "node scripts/pack.js",
-    "test": "node --import ./test/setup.js --test test/**/*.test.js"
+    "test": "node --import tsx/esm --import ./test/setup.ts --test 'test/**/*.test.ts'",
+    "test:typecheck": "tsc --project tsconfig.test.json"
   },
   "dependencies": {
     "@satsuma/core": "file:../satsuma-core",
@@ -30,7 +31,12 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   },
-  "bundleDependencies": true
+  "bundleDependencies": [
+    "@satsuma/core",
+    "commander",
+    "web-tree-sitter"
+  ]
 }

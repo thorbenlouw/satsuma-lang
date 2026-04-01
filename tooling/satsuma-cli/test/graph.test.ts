@@ -2,11 +2,11 @@
  * graph.test.js — Unit and integration tests for `satsuma graph` command.
  */
 
-import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { run as _run } from "./helpers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
@@ -14,17 +14,7 @@ const EXAMPLES = resolve(__dirname, "../../../examples");
 const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 const FIXTURES = resolve(__dirname, "fixtures");
 
-function run(...args) {
-  return new Promise((resolve) => {
-    execFile("node", [CLI, ...args], { timeout: 15_000 }, (err, stdout, stderr) => {
-      resolve({
-        stdout: stdout ?? "",
-        stderr: stderr ?? "",
-        code: err ? err.code ?? 1 : 0,
-      });
-    });
-  });
-}
+const run = (...args: string[]) => _run(CLI, ...args);
 
 // ---------------------------------------------------------------------------
 // satsuma graph (default text output)
@@ -69,24 +59,24 @@ describe("satsuma graph --json", () => {
   it("stats counts match node/edge array lengths", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const nodesByKind = {};
+    const nodesByKind: Record<string, number> = {};
     for (const n of data.nodes) {
       nodesByKind[n.kind] = (nodesByKind[n.kind] ?? 0) + 1;
     }
-    assert.equal(data.stats.schemas, nodesByKind.schema ?? 0);
-    assert.equal(data.stats.mappings, nodesByKind.mapping ?? 0);
-    assert.equal(data.stats.metrics, nodesByKind.metric ?? 0);
+    assert.equal(data.stats.schemas, nodesByKind["schema"] ?? 0);
+    assert.equal(data.stats.mappings, nodesByKind["mapping"] ?? 0);
+    assert.equal(data.stats.metrics, nodesByKind["metric"] ?? 0);
     // Fragments are not graph nodes (sl-p0hz) — stats.fragments counts them but they don't appear in nodes[]
-    assert.equal(nodesByKind.fragment ?? 0, 0, "fragment nodes must not appear in nodes[]");
+    assert.equal(nodesByKind["fragment"] ?? 0, 0, "fragment nodes must not appear in nodes[]");
     assert.ok(data.stats.fragments >= 0, "stats.fragments should be a non-negative count");
-    assert.equal(data.stats.transforms, nodesByKind.transform ?? 0);
+    assert.equal(data.stats.transforms, nodesByKind["transform"] ?? 0);
     assert.equal(data.stats.arrows, data.edges.length);
   });
 
   it("includes all entity kinds as nodes", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const kinds = new Set(data.nodes.map((n) => n.kind));
+    const kinds = new Set(data.nodes.map((n: any) => n.kind));
     assert.ok(kinds.has("schema"), "should have schema nodes");
     assert.ok(kinds.has("mapping"), "should have mapping nodes");
     assert.ok(kinds.has("metric"), "should have metric nodes");
@@ -98,7 +88,7 @@ describe("satsuma graph --json", () => {
   it("schema nodes include id, kind, file, line, and fields", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const schema = data.nodes.find((n) => n.kind === "schema");
+    const schema = data.nodes.find((n: any) => n.kind === "schema");
     assert.ok(schema);
     assert.ok("id" in schema);
     assert.equal(schema.kind, "schema");
@@ -115,7 +105,7 @@ describe("satsuma graph --json", () => {
   it("mapping nodes include sources and targets", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const mapping = data.nodes.find((n) => n.kind === "mapping");
+    const mapping = data.nodes.find((n: any) => n.kind === "mapping");
     assert.ok(mapping);
     assert.ok(Array.isArray(mapping.sources));
     assert.ok(Array.isArray(mapping.targets));
@@ -124,7 +114,7 @@ describe("satsuma graph --json", () => {
   it("metric nodes include sources, grain, and slices", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const metric = data.nodes.find((n) => n.kind === "metric" && n.slices.length > 0);
+    const metric = data.nodes.find((n: any) => n.kind === "metric" && n.slices.length > 0);
     assert.ok(metric, "should have a metric with slices");
     assert.ok(Array.isArray(metric.sources));
     assert.ok(typeof metric.grain === "string" || metric.grain === null);
@@ -138,7 +128,7 @@ describe("satsuma graph --json", () => {
     // consumers complete metric field information.
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const metric = data.nodes.find((n) => n.kind === "metric" && n.fields && n.fields.length > 0);
+    const metric = data.nodes.find((n: any) => n.kind === "metric" && n.fields && n.fields.length > 0);
     assert.ok(metric, "should have a metric node with fields");
     assert.ok(Array.isArray(metric.fields));
     assert.ok("name" in metric.fields[0]);
@@ -148,7 +138,7 @@ describe("satsuma graph --json", () => {
   it("--schema-only omits fields from metric nodes (sl-j713)", async () => {
     const { stdout } = await run("graph", "--json", "--schema-only", PLATFORM);
     const data = JSON.parse(stdout);
-    const metric = data.nodes.find((n) => n.kind === "metric");
+    const metric = data.nodes.find((n: any) => n.kind === "metric");
     assert.ok(metric);
     assert.ok(!("fields" in metric), "metric nodes should omit fields in --schema-only mode");
   });
@@ -156,7 +146,7 @@ describe("satsuma graph --json", () => {
   it("namespace-qualified names use ns::name convention", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const nsNode = data.nodes.find((n) => n.namespace && n.id.includes("::"));
+    const nsNode = data.nodes.find((n: any) => n.namespace && n.id.includes("::"));
     assert.ok(nsNode, "should have namespace-qualified node");
     assert.ok(nsNode.id.startsWith(nsNode.namespace + "::"));
   });
@@ -178,7 +168,7 @@ describe("satsuma graph --json", () => {
   it("structural edges include transforms array", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const structural = data.edges.find((e) => e.classification === "structural" && e.transforms);
+    const structural = data.edges.find((e: any) => e.classification === "structural" && e.transforms);
     assert.ok(structural, "should have structural edge with transforms");
     assert.ok(Array.isArray(structural.transforms));
   });
@@ -186,7 +176,7 @@ describe("satsuma graph --json", () => {
   it("NL edges include nl_text", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const nl = data.edges.find((e) => e.classification === "nl" && e.nl_text);
+    const nl = data.edges.find((e: any) => e.classification === "nl" && e.nl_text);
     assert.ok(nl, "should have NL edge with nl_text");
     assert.ok(typeof nl.nl_text === "string");
   });
@@ -194,7 +184,7 @@ describe("satsuma graph --json", () => {
   it("derived edges have from=null and derived=true", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const derived = data.edges.find((e) => e.derived === true);
+    const derived = data.edges.find((e: any) => e.derived === true);
     assert.ok(derived, "should have derived edge");
     assert.equal(derived.from, null);
   });
@@ -203,10 +193,10 @@ describe("satsuma graph --json", () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
     assert.ok(data.schema_edges.length > 0);
-    const roles = new Set(data.schema_edges.map((e) => e.role));
+    const roles = new Set(data.schema_edges.map((e: any) => e.role));
     assert.ok(roles.has("source"));
     assert.ok(roles.has("target"));
-    for (const e of data.schema_edges) {
+    for (const e of data.schema_edges as any[]) {
       assert.ok("from" in e);
       assert.ok("to" in e);
       assert.ok("role" in e);
@@ -216,7 +206,7 @@ describe("satsuma graph --json", () => {
   it("includes metric_source role in schema_edges", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const metricEdge = data.schema_edges.find((e) => e.role === "metric_source");
+    const metricEdge = data.schema_edges.find((e: any) => e.role === "metric_source");
     assert.ok(metricEdge, "should have metric_source schema edge");
   });
 });
@@ -243,11 +233,11 @@ describe("satsuma graph --schema-only", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     // Collect all edge keys to detect duplicates
-    const edgeKeys = data.edges.map((e) => `${e.from}->${e.to}:${e.mapping}`);
+    const edgeKeys = data.edges.map((e: any) => `${e.from}->${e.to}:${e.mapping}`);
     const unique = new Set(edgeKeys);
     assert.equal(edgeKeys.length, unique.size, `duplicate edges found: ${JSON.stringify(edgeKeys)}`);
     // Edges for the namespaced mapping should use qualified name
-    const warehouseEdges = data.edges.filter((e) => e.mapping && e.mapping.includes("warehouse::"));
+    const warehouseEdges = data.edges.filter((e: any) => e.mapping && e.mapping.includes("warehouse::"));
     assert.ok(warehouseEdges.length > 0, "should have edges with namespace-qualified mapping name");
     for (const e of warehouseEdges) {
       assert.ok(e.mapping.startsWith("warehouse::"), `mapping should be namespace-qualified: ${e.mapping}`);
@@ -257,7 +247,7 @@ describe("satsuma graph --schema-only", () => {
   it("omits fields from schema nodes", async () => {
     const { stdout } = await run("graph", "--json", "--schema-only", PLATFORM);
     const data = JSON.parse(stdout);
-    const schema = data.nodes.find((n) => n.kind === "schema");
+    const schema = data.nodes.find((n: any) => n.kind === "schema");
     assert.ok(schema);
     assert.ok(!("fields" in schema));
   });
@@ -280,7 +270,7 @@ describe("satsuma graph --namespace", () => {
     const { stdout } = await run("graph", "--json", "--namespace", "warehouse", PLATFORM);
     const data = JSON.parse(stdout);
     // warehouse mappings have sources from other namespaces (e.g. pos::stores)
-    const crossNs = data.schema_edges.find((e) => e.from.includes("pos::") || e.from.includes("ecom::"));
+    const crossNs = data.schema_edges.find((e: any) => e.from.includes("pos::") || e.from.includes("ecom::"));
     assert.ok(crossNs, "should include cross-namespace source edges");
   });
 
@@ -299,7 +289,7 @@ describe("satsuma graph --no-nl", () => {
   it("strips nl_text from edges but preserves classification", async () => {
     const { stdout } = await run("graph", "--json", "--no-nl", PLATFORM);
     const data = JSON.parse(stdout);
-    const nlEdge = data.edges.find((e) => e.classification === "nl");
+    const nlEdge = data.edges.find((e: any) => e.classification === "nl");
     assert.ok(nlEdge, "should still have NL-classified edges");
     assert.ok(!("nl_text" in nlEdge), "should not have nl_text");
   });
@@ -334,21 +324,21 @@ describe("satsuma graph (namespace fixture)", () => {
     const data = JSON.parse(stdout);
 
     // Should have nodes from multiple namespaces
-    const namespaces = new Set(data.nodes.map((n) => n.namespace).filter(Boolean));
+    const namespaces = new Set(data.nodes.map((n: any) => n.namespace).filter(Boolean));
     assert.ok(namespaces.has("pos"));
     assert.ok(namespaces.has("ecom"));
     assert.ok(namespaces.has("warehouse"));
     assert.ok(namespaces.has("analytics"));
 
     // Should have warehouse::load hub_store mapping
-    const mapping = data.nodes.find((n) => n.id === "warehouse::load hub_store");
+    const mapping = data.nodes.find((n: any) => n.id === "warehouse::load hub_store");
     assert.ok(mapping);
     assert.deepEqual(mapping.sources, ["pos::stores"]);
     assert.deepEqual(mapping.targets, ["warehouse::hub_store"]);
 
     // Should have schema_edges for that mapping
     const sourceEdge = data.schema_edges.find(
-      (e) => e.from === "pos::stores" && e.to === "warehouse::load hub_store",
+      (e: any) => e.from === "pos::stores" && e.to === "warehouse::load hub_store",
     );
     assert.ok(sourceEdge);
     assert.equal(sourceEdge.role, "source");
@@ -366,7 +356,7 @@ describe("satsuma graph (nl-derived edges in namespace workspaces)", () => {
     const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "namespaces/ns-merging.stm"));
     assert.ok(code === 0 || code === 2);
     const data = JSON.parse(stdout);
-    const nlDerived = data.edges.filter((e) => e.classification === "nl-derived");
+    const nlDerived = data.edges.filter((e: any) => e.classification === "nl-derived");
     assert.ok(nlDerived.length > 0, "should produce nl-derived edges for namespaced workspace");
 
     // All nl-derived edges should reference namespace-qualified mappings
@@ -411,7 +401,7 @@ describe("satsuma graph (slices)", () => {
   it("extracts slices for metrics with slice declarations", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const mrr = data.nodes.find((n) => n.id === "monthly_recurring_revenue");
+    const mrr = data.nodes.find((n: any) => n.id === "monthly_recurring_revenue");
     assert.ok(mrr, "should have monthly_recurring_revenue metric");
     assert.deepEqual(mrr.slices, ["customer_segment", "product_line", "region"]);
   });
@@ -419,7 +409,7 @@ describe("satsuma graph (slices)", () => {
   it("returns empty slices for metrics without slice declarations", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const metric = data.nodes.find((n) => n.kind === "metric" && n.slices.length === 0);
+    const metric = data.nodes.find((n: any) => n.kind === "metric" && n.slices.length === 0);
     assert.ok(metric, "should have a metric with empty slices");
   });
 
@@ -430,7 +420,7 @@ describe("satsuma graph (slices)", () => {
 
     // Find nested child edges (Items.* -> items.*)
     const childEdges = data.edges.filter(
-      (e) => e.from && e.from.includes("Items.") && e.to && e.to.includes("items."),
+      (e: any) => e.from && e.from.includes("Items.") && e.to && e.to.includes("items."),
     );
     assert.ok(childEdges.length >= 7, `expected >=7 nested child edges, got ${childEdges.length}`);
 
@@ -442,7 +432,7 @@ describe("satsuma graph (slices)", () => {
     }
 
     // Specifically check .TXZ01 -> .description (the last nested arrow, previously broken)
-    const txz = childEdges.find((e) => e.from.endsWith(".TXZ01"));
+    const txz = childEdges.find((e: any) => e.from.endsWith(".TXZ01"));
     assert.ok(txz, "should find TXZ01 edge");
     assert.ok(txz.to.endsWith(".description"), `TXZ01 target should be .description, got ${txz.to}`);
   });
@@ -481,16 +471,16 @@ describe("satsuma graph (anonymous mapping edges, sl-riw5)", () => {
     }
 
     // The anonymous mapping node should appear in nodes[] with the <anon> key
-    const anonMapping = data.nodes.find((n) => n.kind === "mapping" && n.id.includes("<anon>"));
+    const anonMapping = data.nodes.find((n: any) => n.kind === "mapping" && n.id.includes("<anon>"));
     assert.ok(anonMapping, "should have an anonymous mapping node with <anon> in id");
 
     // Edges should reference that anonymous mapping key
-    const anonEdge = data.edges.find((e) => e.mapping === anonMapping.id);
+    const anonEdge = data.edges.find((e: any) => e.mapping === anonMapping.id);
     assert.ok(anonEdge, `should have an edge referencing anonymous mapping ${anonMapping.id}`);
 
     // Specifically: orders.amount -> invoices.total
     const amountToTotal = data.edges.find(
-      (e) => e.from && e.from.includes("orders") && e.from.includes("amount") &&
+      (e: any) => e.from && e.from.includes("orders") && e.from.includes("amount") &&
              e.to && e.to.includes("invoices") && e.to.includes("total"),
     );
     assert.ok(amountToTotal,

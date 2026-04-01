@@ -7,14 +7,14 @@ import { describe, it } from "node:test";
 
 // ── Mock CST helpers ──────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "") {
+function n(type: string, namedChildren: any[] = [], text = "") {
   return { type, text, startPosition: { row: 0, column: 0 }, namedChildren };
 }
-function ident(t) { return n("identifier", [], t); }
+function ident(t: string) { return n("identifier", [], t); }
 
 // ── Inline extractMetaEntries (mirrors metric.js) ─────────────────────────────
 
-function extractMetaEntries(metaNode) {
+function extractMetaEntries(metaNode: any) {
   if (!metaNode) return [];
   const entries = [];
   for (const c of metaNode.namedChildren) {
@@ -37,9 +37,9 @@ function extractMetaEntries(metaNode) {
 
 // ── Inline formatMeta (mirrors metric.js) ─────────────────────────────────────
 
-function formatMeta(entries) {
+function formatMeta(entries: { key: string; value: string | null }[]) {
   if (entries.length === 0) return "";
-  const format = (e) => (e.value !== null ? `${e.key} ${e.value}` : e.key);
+  const format = (e: { key: string; value: string | null }) => (e.value !== null ? `${e.key} ${e.value}` : e.key);
   if (entries.length <= 2) {
     return ` (${entries.map(format).join(", ")})`;
   }

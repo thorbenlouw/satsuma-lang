@@ -8,16 +8,16 @@
  *   cd tooling/tree-sitter-satsuma && npx node-gyp configure && npx node-gyp build
  */
 
-import { execFile } from "node:child_process";
 import { copyFileSync, mkdtempSync, readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { describe as _describe, it } from "node:test";
+import { run as _run } from "./helpers.js";
 
 // Run top-level describe blocks concurrently — each test spawns its own
 // CLI subprocess so there are no shared-state conflicts.
-const describe = (name, fn) => _describe(name, { concurrency: true }, fn);
+const describe = (name: string, fn: () => void) => _describe(name, { concurrency: true }, fn);
 import assert from "node:assert/strict";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,20 +25,8 @@ const CLI = resolve(__dirname, "../dist/index.js");
 const EXAMPLES = resolve(__dirname, "../../../examples");
 const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 
-/**
- * Run the CLI and return { stdout, stderr, code }.
- */
-function run(...args) {
-  return new Promise((resolve) => {
-    execFile("node", [CLI, ...args], { timeout: 15_000 }, (err, stdout, stderr) => {
-      resolve({
-        stdout: stdout ?? "",
-        stderr: stderr ?? "",
-        code: err ? err.code ?? 1 : 0,
-      });
-    });
-  });
-}
+/** Run the CLI with the given arguments and return { stdout, stderr, code }. */
+const run = (...args: string[]) => _run(CLI, ...args);
 
 // ---------------------------------------------------------------------------
 // satsuma summary
@@ -98,7 +86,7 @@ describe("satsuma summary", () => {
     const { stdout, code } = await run("summary", "--json", FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const schema = data.schemas.find((s) => s.name === "::with_spreads");
+    const schema = data.schemas.find((s: any) => s.name === "::with_spreads");
     assert.ok(schema, "should find with_spreads schema");
     assert.equal(schema.fieldCount, 4, "should count 1 direct + 3 spread fields");
   });
@@ -237,8 +225,8 @@ describe("satsuma schema", () => {
     const { stdout, code } = await run("schema", "comment_edges", "--json", F);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.fieldLines.some((l) => l.includes("comment before first field")));
-    assert.ok(data.fieldLines.some((l) => l.includes("comment after last field")));
+    assert.ok(data.fieldLines.some((l: any) => l.includes("comment before first field")));
+    assert.ok(data.fieldLines.some((l: any) => l.includes("comment after last field")));
   });
 
   it("--json shows record type for empty list_of record (sc-r9gv)", async () => {
@@ -246,7 +234,7 @@ describe("satsuma schema", () => {
     const { stdout, code } = await run("schema", "test", "--json", F);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const items = data.fields.find((f) => f.name === "items");
+    const items = data.fields.find((f: any) => f.name === "items");
     assert.ok(items, "should have items field");
     assert.equal(items.type, "record", "empty list_of record should have type 'record'");
     assert.equal(items.isList, true);
@@ -265,15 +253,15 @@ describe("satsuma schema", () => {
     const { stdout, code } = await run("fields", "customer", "--json", F);
     assert.equal(code, 0);
     const fields = JSON.parse(stdout);
-    const addr = fields.find((f) => f.name === "address");
+    const addr = fields.find((f: any) => f.name === "address");
     assert.ok(addr, "should have address field");
     assert.equal(addr.type, "record");
     assert.ok(addr.children.length > 0, "fragment fields should be nested inside record");
-    const street = addr.children.find((c) => c.name === "street");
+    const street = addr.children.find((c: any) => c.name === "street");
     assert.ok(street, "should have street inside address");
     assert.equal(street.fromFragment, "address_fields");
     // Verify no fragment fields at schema level
-    const topStreet = fields.find((f) => f.name === "street");
+    const topStreet = fields.find((f: any) => f.name === "street");
     assert.ok(!topStreet, "fragment fields should NOT appear at schema level");
   });
 
@@ -307,16 +295,16 @@ describe("satsuma schema", () => {
     const { stdout, code } = await run("schema", "sfdc_opportunity", "--json", SFDC);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const idField = data.fields.find((f) => f.name === "Id");
+    const idField = data.fields.find((f: any) => f.name === "Id");
     assert.ok(idField.metadata, "Id field should have metadata");
     assert.deepEqual(idField.metadata[0], { kind: "tag", tag: "pk" });
-    const accField = data.fields.find((f) => f.name === "AccountId");
+    const accField = data.fields.find((f: any) => f.name === "AccountId");
     assert.ok(accField.metadata, "AccountId field should have metadata");
     assert.equal(accField.metadata[0].kind, "kv");
     assert.equal(accField.metadata[0].key, "ref");
-    const stageField = data.fields.find((f) => f.name === "StageName");
+    const stageField = data.fields.find((f: any) => f.name === "StageName");
     assert.ok(stageField.metadata, "StageName field should have metadata");
-    const enumEntry = stageField.metadata.find((m) => m.kind === "enum");
+    const enumEntry = stageField.metadata.find((m: any) => m.kind === "enum");
     assert.ok(enumEntry, "StageName should have enum metadata");
     assert.ok(enumEntry.values.length > 0, "enum should have values");
   });
@@ -354,7 +342,7 @@ describe("satsuma schema", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.metadata), "should have metadata array");
-    assert.ok(data.metadata.some((m) => m.key === "format"), "should include format entry");
+    assert.ok(data.metadata.some((m: any) => m.key === "format"), "should include format entry");
   });
 
   it("text output preserves record/list block-level metadata (sl-s8xn)", async () => {
@@ -371,10 +359,10 @@ describe("satsuma schema", () => {
     const { stdout, code } = await run("schema", "commerce_order", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const order = data.fields.find((f) => f.name === "Order");
+    const order = data.fields.find((f: any) => f.name === "Order");
     assert.ok(order.metadata, "Order record should have metadata");
     assert.equal(order.metadata[0].key, "xpath");
-    const discounts = order.children.find((f) => f.name === "Discounts");
+    const discounts = order.children.find((f: any) => f.name === "Discounts");
     assert.ok(discounts.metadata, "Discounts list should have metadata");
   });
 });
@@ -456,7 +444,7 @@ describe("satsuma metric", () => {
     const { stdout, code } = await run("metric", "order_revenue", "--json", METRICS);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const gross = data.fields.find((f) => f.name === "gross_revenue");
+    const gross = data.fields.find((f: any) => f.name === "gross_revenue");
     assert.ok(gross.metadata, "gross_revenue should have metadata");
     assert.equal(gross.metadata[0].kind, "kv");
     assert.equal(gross.metadata[0].key, "measure");
@@ -537,8 +525,8 @@ describe("satsuma mapping", () => {
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.metadata));
     assert.ok(data.metadata.length > 0);
-    assert.ok(data.metadata.some((m) => m.kind === "note"));
-    assert.ok(data.metadata.some((m) => m.kind === "kv" && m.key === "scd"));
+    assert.ok(data.metadata.some((m: any) => m.kind === "note"));
+    assert.ok(data.metadata.some((m: any) => m.kind === "kv" && m.key === "scd"));
   });
 
   it("text output includes arrow-level metadata (sl-9xiz)", async () => {
@@ -553,10 +541,10 @@ describe("satsuma mapping", () => {
     const { stdout, code } = await run("mapping", "metadata test", "--json", FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const arrowWithMeta = data.arrows.find((a) => a.metadata);
+    const arrowWithMeta = data.arrows.find((a: any) => a.metadata);
     assert.ok(arrowWithMeta, "At least one arrow should have metadata");
-    assert.ok(arrowWithMeta.metadata.some((m) => m.kind === "note"));
-    assert.ok(arrowWithMeta.metadata.some((m) => m.kind === "tag" && m.tag === "required"));
+    assert.ok(arrowWithMeta.metadata.some((m: any) => m.kind === "note"));
+    assert.ok(arrowWithMeta.metadata.some((m: any) => m.kind === "tag" && m.tag === "required"));
   });
 
   it("--compact omits arrow metadata (sl-9xiz)", async () => {
@@ -576,9 +564,9 @@ describe("satsuma mapping", () => {
       assert.equal("transform" in a, false, `arrow ${a.src} -> ${a.tgt} should not have transform in compact mode`);
     }
     // hasTransform and classification should still be present
-    const withTransform = data.arrows.filter((a) => a.hasTransform);
+    const withTransform = data.arrows.filter((a: any) => a.hasTransform);
     assert.ok(withTransform.length > 0, "hasTransform should still be present");
-    assert.ok(data.arrows.every((a) => "classification" in a), "classification should still be present");
+    assert.ok(data.arrows.every((a: any) => "classification" in a), "classification should still be present");
   });
 
   it("--json --compact omits note and metadata from output (sl-gqoy)", async () => {
@@ -599,7 +587,7 @@ describe("satsuma mapping", () => {
     const { stdout, code } = await run("mapping", "customer migration", "--json", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const withTransform = data.arrows.filter((a) => a.hasTransform);
+    const withTransform = data.arrows.filter((a: any) => a.hasTransform);
     assert.ok(withTransform.length > 0, "should have arrows with transforms");
     for (const a of withTransform) {
       assert.ok(typeof a.transform === "string", `arrow ${a.src} -> ${a.tgt} should have transform text`);
@@ -619,7 +607,7 @@ describe("satsuma mapping", () => {
       );
     }
     // Should have at least one structural and one non-none classification
-    assert.ok(data.arrows.some((a) => a.classification === "structural"), "expected at least one structural arrow");
+    assert.ok(data.arrows.some((a: any) => a.classification === "structural"), "expected at least one structural arrow");
   });
 
   it("--json container arrows have hasTransform:false (sl-zfi0)", async () => {
@@ -627,7 +615,7 @@ describe("satsuma mapping", () => {
     const { stdout, code } = await run("mapping", "sap po to mfcs", "--json", SAP);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const containers = data.arrows.filter((a) => a.children && a.children.length > 0);
+    const containers = data.arrows.filter((a: any) => a.children && a.children.length > 0);
     assert.ok(containers.length > 0, "should have container arrows");
     for (const c of containers) {
       if (!c.transform) {
@@ -642,7 +630,7 @@ describe("satsuma mapping", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     // each_block arrows (unified syntax) are extracted as "each" kind with children
-    const each = data.arrows.find((a) => a.kind === "each");
+    const each = data.arrows.find((a: any) => a.kind === "each");
     if (each) {
       assert.ok(each.children, "each arrow should have children");
       assert.ok(each.children.length >= 2, "should have child arrows");
@@ -696,7 +684,7 @@ describe("satsuma mapping", () => {
     const { stdout, code } = await run("mapping", "crm sync", "--json", FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const arrow = data.arrows.find((a) => a.tgt === "last_name");
+    const arrow = data.arrows.find((a: any) => a.tgt === "last_name");
     assert.ok(arrow, "should find arrow to last_name");
     assert.match(arrow.src, /`Account\.Name`/, "JSON src should have backticks");
   });
@@ -765,7 +753,7 @@ describe("satsuma find", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     // Should include schema-level matches (field "(schema)") in addition to field-level
-    const schemaLevel = data.filter((m) => m.field === "(schema)");
+    const schemaLevel = data.filter((m: any) => m.field === "(schema)");
     assert.ok(schemaLevel.length > 0, "expected schema-level format matches");
   });
 
@@ -774,9 +762,9 @@ describe("satsuma find", () => {
     const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const cf = data.find((m) => m.field === "consent_flags");
+    const cf = data.find((m: any) => m.field === "consent_flags");
     assert.ok(cf, "should find consent_flags");
-    const noteEntry = cf.metadata.find((t) => t.startsWith("note"));
+    const noteEntry = cf.metadata.find((t: any) => t.startsWith("note"));
     assert.ok(noteEntry, "should have note in metadata");
     assert.match(noteEntry, /note "/, "note should include its text value");
   });
@@ -786,11 +774,11 @@ describe("satsuma find", () => {
     const { stdout, code } = await run("find", "--tag", "classification", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const schemaLevel = data.filter((m) => m.field === "(schema)");
+    const schemaLevel = data.filter((m: any) => m.field === "(schema)");
     assert.ok(schemaLevel.length > 0, "expected schema-level matches");
     for (const m of schemaLevel) {
       assert.ok(Array.isArray(m.metadata), `schema-level entry for ${m.block} should include metadata array`);
-      assert.ok(m.metadata.some((t) => /classification/.test(t)), "metadata should include matched tag value");
+      assert.ok(m.metadata.some((t: any) => /classification/.test(t)), "metadata should include matched tag value");
     }
   });
 
@@ -805,7 +793,7 @@ describe("satsuma find", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.length > 0, "should find fields with note metadata");
-    assert.ok(data.some((m) => m.tag === "note"), "tag should be 'note'");
+    assert.ok(data.some((m: any) => m.tag === "note"), "tag should be 'note'");
   });
 
   it("finds tagged fields from fragment spreads in consuming schema (sl-z6z9)", async () => {
@@ -821,7 +809,7 @@ describe("satsuma find", () => {
     const { stdout, code } = await run("find", "--tag", "required", "--json", FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const schemaMatch = data.find((m) => m.blockType === "schema" && m.block === "uses_fragment");
+    const schemaMatch = data.find((m: any) => m.blockType === "schema" && m.block === "uses_fragment");
     assert.ok(schemaMatch, "expected uses_fragment match from spread");
     assert.equal(schemaMatch.field, "created_at");
   });
@@ -883,7 +871,7 @@ describe("satsuma lineage", () => {
     const { stdout, code } = await run("lineage", "--from", "mt_source", "--json", fixture);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.nodes.map((n) => n.name);
+    const names = data.nodes.map((n: any) => n.name);
     assert.ok(names.includes("mt_target_1"), "should include mt_target_1 without backticks");
     assert.ok(names.includes("mt_target_2"), "should include mt_target_2");
     // Ensure no backticks in names
@@ -907,7 +895,7 @@ describe("satsuma lineage", () => {
     const { stdout, code } = await run("lineage", "--to", "target_d", "--depth", "1", "--json", F);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.nodes.map((n) => n.name);
+    const names = data.nodes.map((n: any) => n.name);
     assert.ok(names.includes("target_d"), "should include target");
     assert.ok(names.includes("intermediate_c"), "should include 1-hop upstream schema");
     assert.ok(!names.includes("source_a"), "should not include source_a (beyond depth)");
@@ -919,9 +907,9 @@ describe("satsuma lineage", () => {
     const { stdout, code } = await run("lineage", "--from", "order_events", FFG, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const noteNode = data.nodes.find((n) => n.name === "note:");
+    const noteNode = data.nodes.find((n: any) => n.name === "note:");
     assert.equal(noteNode, undefined, "should not have phantom note: node");
-    const noteEdge = data.edges.find((e) => e.src === "note:" || e.tgt === "note:");
+    const noteEdge = data.edges.find((e: any) => e.src === "note:" || e.tgt === "note:");
     assert.equal(noteEdge, undefined, "should not have edges to/from note:");
   });
 
@@ -930,7 +918,7 @@ describe("satsuma lineage", () => {
     const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--json", F);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const nodeNames = new Set(data.nodes.map((n) => n.name));
+    const nodeNames = new Set(data.nodes.map((n: any) => n.name));
     for (const edge of data.edges) {
       assert.ok(nodeNames.has(edge.src), `edge src '${edge.src}' should be in nodes`);
       assert.ok(nodeNames.has(edge.tgt), `edge tgt '${edge.tgt}' should be in nodes`);
@@ -979,9 +967,9 @@ describe("satsuma where-used", () => {
     const { stdout, code } = await run("where-used", "dim_customer", "--json", PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const refMetaRefs = data.refs.filter((r) => r.kind === "ref_metadata");
+    const refMetaRefs = data.refs.filter((r: any) => r.kind === "ref_metadata");
     assert.ok(refMetaRefs.length > 0, "should find ref metadata references");
-    assert.ok(refMetaRefs.some((r) => r.name.includes("customer_id")), "should reference customer_id field");
+    assert.ok(refMetaRefs.some((r: any) => r.name.includes("customer_id")), "should reference customer_id field");
   });
 
   it("detects transform spread references (sl-iw85)", async () => {
@@ -1036,7 +1024,7 @@ describe("satsuma warnings", () => {
     const { stdout, code } = await run("warnings", "--json", DB);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const withBlock = data.items.filter((i) => i.block);
+    const withBlock = data.items.filter((i: any) => i.block);
     assert.ok(withBlock.length > 0, "at least one warning should have block context");
     assert.ok(withBlock[0].blockType, "should have blockType");
   });
@@ -1081,7 +1069,7 @@ describe("satsuma context", () => {
     const { stdout, code } = await run("context", "phone", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.some((d) => d.name === "crm_customers"), "should match crm_customers via //? comment");
+    assert.ok(data.some((d: any) => d.name === "crm_customers"), "should match crm_customers via //? comment");
   });
 
   it("searches warning comments for query matches (sl-8zij)", async () => {
@@ -1089,7 +1077,7 @@ describe("satsuma context", () => {
     const { stdout, code } = await run("context", "conversion", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.some((d) => d.name === "raw_orders"), "should match raw_orders via //! comment");
+    assert.ok(data.some((d: any) => d.name === "raw_orders"), "should match raw_orders via //! comment");
   });
 
   it("finds blocks containing language keywords like flatten and list_of (sc-rj24)", async () => {
@@ -1225,7 +1213,7 @@ describe("satsuma arrows", () => {
     const { stdout, code } = await run("arrows", "snowflake_opps.opp_key", "--json", SFDC);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const arrow = data.find((a) => a.source);
+    const arrow = data.find((a: any) => a.source);
     assert.ok(arrow, "should have arrow with source");
     assert.match(arrow.source, /sfdc_opportunity\./, "source should reference sfdc_opportunity, not snowflake_opps");
     assert.doesNotMatch(arrow.source, /snowflake_opps\.Id/, "source should not use lookup schema");
@@ -1237,7 +1225,7 @@ describe("satsuma arrows", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data[0].metadata, "should have metadata on arrow");
-    assert.ok(data[0].metadata.some((m) => m.kind === "note" && m.text === "Arrow metadata note"));
+    assert.ok(data[0].metadata.some((m: any) => m.kind === "note" && m.text === "Arrow metadata note"));
   });
 
   it("--json includes tag metadata on arrows (sl-6ctd)", async () => {
@@ -1246,7 +1234,7 @@ describe("satsuma arrows", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data[0].metadata, "should have metadata");
-    assert.ok(data[0].metadata.some((m) => m.kind === "tag" && m.tag === "pii"));
+    assert.ok(data[0].metadata.some((m: any) => m.kind === "tag" && m.tag === "pii"));
   });
 
   it("text header shows correct count for nested field paths (sl-dvhm)", async () => {
@@ -1277,11 +1265,11 @@ describe("satsuma arrows", () => {
   it("indexes nested child arrows without leading dot in key (sl-9gvb)", async () => {
     // Verify that nested arrow relative paths (.PHONE_TYPE) get indexed
     // with bare names (PHONE_TYPE), parent-prefixed, and schema-qualified paths
-    const { initParser } = await import("../dist/parser.js");
+    const { initParser } = await import("../dist/parser.js") as { initParser: (...args: any[]) => Promise<void> };
     const wasmPath = resolve(import.meta.dirname, "../dist/tree-sitter-satsuma.wasm");
     await initParser(wasmPath);
-    const { parseFile } = await import("../dist/parser.js");
-    const { buildIndex } = await import("../dist/index-builder.js");
+    const { parseFile } = await import("../dist/parser.js") as { parseFile: (...args: any[]) => any };
+    const { buildIndex } = await import("../dist/index-builder.js") as { buildIndex: (...args: any[]) => any };
     const p = parseFile(resolve(EXAMPLES, "cobol-to-avro/pipeline.stm"));
     const index = buildIndex([p]);
     // The bare leaf name should be in the index
@@ -1354,7 +1342,7 @@ describe("satsuma fields", () => {
     );
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.map((f) => f.name);
+    const names = data.map((f: any) => f.name);
     // "items" list is targeted by nested arrow Items[] -> items[], so should NOT be unmapped
     assert.ok(!names.includes("items"), `"items" should not be reported as unmapped, got: ${names}`);
   });
@@ -1366,9 +1354,9 @@ describe("satsuma fields", () => {
     );
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const details = data.find((f) => f.name === "details");
+    const details = data.find((f: any) => f.name === "details");
     assert.ok(details, "record 'details' should still appear (has unmapped child)");
-    const childNames = details.children.map((c) => c.name);
+    const childNames = details.children.map((c: any) => c.name);
     assert.ok(!childNames.includes("name"), "mapped child 'name' should be filtered out");
     assert.ok(childNames.includes("email"), "unmapped child 'email' should remain");
   });
@@ -1380,7 +1368,7 @@ describe("satsuma fields", () => {
     );
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.map((f) => f.name);
+    const names = data.map((f: any) => f.name);
     assert.ok(!names.includes("details"), "fully-mapped record 'details' should be excluded");
     assert.ok(!names.includes("status"), "mapped leaf 'status' should be excluded");
     assert.deepEqual(data, []);
@@ -1418,8 +1406,8 @@ describe("satsuma fields", () => {
     const childLine = lines.find((l, i) => i > itemsLine && l.includes("item"));
     assert.ok(childLine, "should have child 'item' field after 'items'");
     // Child should be more indented
-    const parentIndent = lines[itemsLine].match(/^\s*/)[0].length;
-    const childIndent = childLine.match(/^\s*/)[0].length;
+    const parentIndent = lines[itemsLine].match(/^\s*/)![0].length;
+    const childIndent = childLine.match(/^\s*/)![0].length;
     assert.ok(childIndent > parentIndent, `child indent ${childIndent} should be > parent indent ${parentIndent}`);
   });
 
@@ -1428,10 +1416,10 @@ describe("satsuma fields", () => {
     const { stdout, code } = await run("fields", "commerce_order", "--with-meta", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const order = data.find((f) => f.name === "Order");
+    const order = data.find((f: any) => f.name === "Order");
     assert.ok(order.tags, "Order record should have tags from metadata");
     // Check a nested child
-    const orderId = order.children.find((f) => f.name === "OrderId");
+    const orderId = order.children.find((f: any) => f.name === "OrderId");
     assert.ok(orderId.tags, "nested OrderId should have tags from xpath metadata");
   });
 });
@@ -1509,7 +1497,7 @@ describe("satsuma nl", () => {
     const { stdout, code } = await run("nl", "all", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const transformItems = data.filter((d) => d.parent === "nl transform");
+    const transformItems = data.filter((d: any) => d.parent === "nl transform");
     assert.ok(transformItems.length >= 2, "should have transform-parented items");
   });
 
@@ -1518,7 +1506,7 @@ describe("satsuma nl", () => {
     const { stdout, code } = await run("nl", "order transform", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const note = data.find((d) => d.kind === "note");
+    const note = data.find((d: any) => d.kind === "note");
     assert.ok(note, "should have a note item");
     // Words at string boundaries should not run together
     assert.doesNotMatch(note.text, /note\.Second/, "should not run words together at boundaries");
@@ -1529,7 +1517,7 @@ describe("satsuma nl", () => {
     const { stdout, code } = await run("nl", "cart_abandonment_rate", resolve(EXAMPLES, "metrics-platform/metrics.stm"), "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const note = data.find((d) => d.kind === "note");
+    const note = data.find((d: any) => d.kind === "note");
     assert.ok(note, "should have a note item");
     assert.match(note.text, /checkout/i, "should include first string");
     assert.match(note.text, /divided by/i, "should include second concatenated string");
@@ -1542,9 +1530,9 @@ describe("satsuma nl", () => {
     const { stdout, code } = await run("nl", "all", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const addressItems = data.filter((d) => d.parent === "nested_test.address");
+    const addressItems = data.filter((d: any) => d.parent === "nested_test.address");
     assert.ok(addressItems.length >= 1, "address block items should have parent 'nested_test.address'");
-    const contactItems = data.filter((d) => d.parent === "nested_test.contacts");
+    const contactItems = data.filter((d: any) => d.parent === "nested_test.contacts");
     assert.ok(contactItems.length >= 1, "contacts block items should have parent 'nested_test.contacts'");
   });
 
@@ -1553,8 +1541,8 @@ describe("satsuma nl", () => {
     const { stdout, code } = await run("nl", "customers", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.some((d) => d.kind === "note"), "should include schema note");
-    assert.ok(data.some((d) => d.kind === "transform"), "should include mapping transform");
+    assert.ok(data.some((d: any) => d.kind === "note"), "should include schema note");
+    assert.ok(data.some((d: any) => d.kind === "transform"), "should include mapping transform");
     assert.ok(data.length >= 2, "should have at least 2 NL items from both blocks");
   });
 
@@ -1564,7 +1552,7 @@ describe("satsuma nl", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.length > 0, "should find NL content in transform block");
-    assert.ok(data.some((d) => d.parent === "nl transform"), "parent should be transform name");
+    assert.ok(data.some((d: any) => d.parent === "nl transform"), "parent should be transform name");
   });
 
   it("unescapes escape sequences in NL strings (sl-j014)", async () => {
@@ -1572,7 +1560,7 @@ describe("satsuma nl", () => {
     const { stdout, code } = await run("nl", "all", F, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const note = data.find((d) => d.kind === "note");
+    const note = data.find((d: any) => d.kind === "note");
     assert.ok(note, "should have a note");
     assert.match(note.text, /Contains "quoted" text/, "should unescape \\\" to \"");
     assert.doesNotMatch(note.text, /\\"/, "should not contain escaped quotes");
@@ -1619,7 +1607,7 @@ describe("satsuma meta", () => {
     assert.equal(data.scope, "legacy_sqlserver.CUST_TYPE");
     assert.equal(data.type, "CHAR(1)");
     assert.ok(Array.isArray(data.entries));
-    assert.ok(data.entries.some((e) => e.kind === "enum"));
+    assert.ok(data.entries.some((e: any) => e.kind === "enum"));
   });
 
   it("exits 1 for unknown scope", async () => {
@@ -1639,7 +1627,7 @@ describe("satsuma meta", () => {
     const { stdout, code } = await run("meta", "order_revenue.gross_revenue", "--json", resolve(EXAMPLES, "metrics-platform/metrics.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "measure"));
+    assert.ok(data.entries.some((e: any) => e.kind === "kv" && e.key === "measure"));
   });
 
   it("extracts metadata from record/list blocks (sl-giss)", async () => {
@@ -1654,7 +1642,7 @@ describe("satsuma meta", () => {
     const { stdout, code } = await run("meta", "commerce_order.Discounts", "--json", XML);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "xpath"), "list block should have xpath metadata");
+    assert.ok(data.entries.some((e: any) => e.kind === "kv" && e.key === "xpath"), "list block should have xpath metadata");
   });
 
   it("supports nested field paths schema.record.field (sl-bfue)", async () => {
@@ -1663,7 +1651,7 @@ describe("satsuma meta", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.type, "STRING");
-    assert.ok(data.entries.some((e) => e.kind === "kv" && e.key === "xpath"), "nested field should have xpath");
+    assert.ok(data.entries.some((e: any) => e.kind === "kv" && e.key === "xpath"), "nested field should have xpath");
   });
 
   it("disambiguates same-named fields via nested path (sl-bfue)", async () => {
@@ -1691,8 +1679,8 @@ describe("satsuma meta", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.equal(data.type, "TIMESTAMPTZ");
-    assert.ok(data.entries.some((e) => e.kind === "tag" && e.tag === "required"));
-    assert.ok(data.entries.some((e) => e.kind === "note" && e.text === "Creation timestamp"));
+    assert.ok(data.entries.some((e: any) => e.kind === "tag" && e.tag === "required"));
+    assert.ok(data.entries.some((e: any) => e.kind === "note" && e.text === "Creation timestamp"));
   });
 
   it("shows list_of prefix for scalar list fields (sc-5j7y)", async () => {
@@ -1801,7 +1789,7 @@ describe("satsuma match-fields", () => {
     );
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const spaceMatch = data.matched.find((m) => m.source.includes("Spaces") || m.target.includes("spaces"));
+    const spaceMatch = data.matched.find((m: any) => m.source.includes("Spaces") || m.target.includes("spaces"));
     assert.ok(spaceMatch, "backtick field with spaces should match snake_case equivalent");
   });
 
@@ -1914,7 +1902,7 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", BAD, "--json");
     assert.equal(code, 0, "missing import is a warning, not an error");
     const data = JSON.parse(stdout);
-    assert.ok(data.findings.some((d) => d.rule === "missing-import"), "should have missing-import diagnostic");
+    assert.ok(data.findings.some((d: any) => d.rule === "missing-import"), "should have missing-import diagnostic");
   });
 
   it("warns on undefined import name (sl-t5k4)", async () => {
@@ -1922,7 +1910,7 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", badImport, "--json");
     assert.equal(code, 0, "undefined import is a warning, not an error");
     const data = JSON.parse(stdout);
-    const undefinedImport = data.findings.find((d) => d.rule === "undefined-import");
+    const undefinedImport = data.findings.find((d: any) => d.rule === "undefined-import");
     assert.ok(undefinedImport, "should have undefined-import diagnostic");
     assert.match(undefinedImport.message, /totally_fake_name/);
   });
@@ -1932,10 +1920,10 @@ describe("satsuma validate", () => {
     const { stdout, code } = await run("validate", F, "--json");
     assert.equal(code, 0, "ref warning is not an error");
     const data = JSON.parse(stdout);
-    const refWarning = data.findings.find((d) => d.rule === "undefined-ref" && d.message.includes("nonexistent_table"));
+    const refWarning = data.findings.find((d: any) => d.rule === "undefined-ref" && d.message.includes("nonexistent_table"));
     assert.ok(refWarning, "should warn about ref to nonexistent_table");
     // Valid ref to customers should NOT produce a warning
-    assert.ok(!data.findings.some((d) => d.message.includes("customers")), "valid ref should not warn");
+    assert.ok(!data.findings.some((d: any) => d.message.includes("customers")), "valid ref should not warn");
   });
 
   it("target-only mapping parses without errors (sl-icqz)", async () => {
@@ -2081,8 +2069,8 @@ describe("satsuma diff", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const changes = data.schemas.changed[0].changes;
-    assert.ok(changes.some((c) => c.kind === "metadata-changed" && c.field === "name"));
-    assert.ok(changes.some((c) => c.kind === "metadata-changed" && c.field === "email"));
+    assert.ok(changes.some((c: any) => c.kind === "metadata-changed" && c.field === "name"));
+    assert.ok(changes.some((c: any) => c.kind === "metadata-changed" && c.field === "email"));
   });
 
   it("detects note block additions and removals", async () => {
@@ -2122,7 +2110,7 @@ describe("satsuma diff", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const changes = data.schemas.changed[0].changes;
-    const fields = changes.map((c) => c.field);
+    const fields = changes.map((c: any) => c.field);
     assert.ok(fields.includes("address.zip"), "should include address.zip");
     assert.ok(fields.includes("items.price"), "should include items.price");
   });
@@ -2151,9 +2139,9 @@ describe("satsuma diff", () => {
     const { stdout, code } = await run("diff", "--json", a, b);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const mapping = data.mappings.changed.find((m) => m.name === "copy data");
+    const mapping = data.mappings.changed.find((m: any) => m.name === "copy data");
     assert.ok(mapping, "should have changed mapping");
-    const transformChange = mapping.changes.find((c) => c.kind === "arrow-transform-changed");
+    const transformChange = mapping.changes.find((c: any) => c.kind === "arrow-transform-changed");
     assert.ok(transformChange, "should have arrow-transform-changed");
     assert.match(String(transformChange.from), /title_case/);
     assert.match(String(transformChange.to), /uppercase/);
@@ -2175,9 +2163,9 @@ describe("satsuma diff", () => {
     const { stdout, code } = await run("diff", "--json", a, b);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const schemaChange = data.schemas.changed.find((s) => s.name === "source_data");
+    const schemaChange = data.schemas.changed.find((s: any) => s.name === "source_data");
     assert.ok(schemaChange, "should have changed schema");
-    const noteChange = schemaChange.changes.find((c) => c.kind === "note-changed");
+    const noteChange = schemaChange.changes.find((c: any) => c.kind === "note-changed");
     assert.ok(noteChange, "should have note-changed");
     assert.equal(noteChange.from, "Raw source data");
     assert.equal(noteChange.to, "Updated raw source data description");
@@ -2198,9 +2186,9 @@ describe("satsuma diff", () => {
     const { stdout, code } = await run("diff", "--json", a, b);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const txChange = data.transforms.changed.find((t) => t.name === "clean address");
+    const txChange = data.transforms.changed.find((t: any) => t.name === "clean address");
     assert.ok(txChange, "should have changed transform");
-    const bodyChange = txChange.changes.find((c) => c.kind === "body-changed");
+    const bodyChange = txChange.changes.find((c: any) => c.kind === "body-changed");
     assert.ok(bodyChange, "should have body-changed");
     assert.match(bodyChange.from, /trim/);
     assert.match(bodyChange.to, /capitalize/);
@@ -2222,10 +2210,10 @@ describe("satsuma diff", () => {
     const { stdout, code } = await run("diff", "--json", a, b);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const metricChange = data.metrics.changed.find((m) => m.name === "daily_signups");
+    const metricChange = data.metrics.changed.find((m: any) => m.name === "daily_signups");
     assert.ok(metricChange, "should have changed metric");
-    const noteAdded = metricChange.changes.find((c) => c.kind === "note-added");
-    const noteRemoved = metricChange.changes.find((c) => c.kind === "note-removed");
+    const noteAdded = metricChange.changes.find((c: any) => c.kind === "note-added");
+    const noteRemoved = metricChange.changes.find((c: any) => c.kind === "note-removed");
     assert.ok(noteAdded, "should have note-added");
     assert.ok(noteRemoved, "should have note-removed");
     assert.equal(data.notes.added.length, 0, "metric notes should not leak to top-level");
@@ -2281,7 +2269,7 @@ describe("satsuma summary (namespaces)", () => {
     const { stdout, code } = await run("summary", "--json", NS_FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.schemas.map((s) => s.name);
+    const names = data.schemas.map((s: any) => s.name);
     assert.ok(names.includes("pos::stores"));
     assert.ok(names.includes("ecom::orders"));
     assert.ok(names.includes("warehouse::hub_store"));
@@ -2386,7 +2374,7 @@ describe("satsuma validate (namespaces)", () => {
     const data = JSON.parse(stdout);
     assert.ok(data.findings, "should have findings key");
     assert.ok(Array.isArray(data.findings));
-    const dupError = data.findings.find((d) => d.rule === "duplicate-definition");
+    const dupError = data.findings.find((d: any) => d.rule === "duplicate-definition");
     assert.ok(dupError, "Should contain a duplicate-definition diagnostic");
     assert.ok(dupError.message.includes("pos::stores"));
   });
@@ -2444,7 +2432,7 @@ describe("satsuma lineage (namespaces)", () => {
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.nodes));
     assert.ok(Array.isArray(data.edges));
-    const nodeNames = data.nodes.map((n) => n.name);
+    const nodeNames = data.nodes.map((n: any) => n.name);
     assert.ok(nodeNames.includes("pos::stores"));
   });
 
@@ -2501,7 +2489,7 @@ describe("satsuma mapping (namespaces)", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.name);
-    assert.ok(data.sources.includes("pos::stores") || data.sources.some((s) => s.includes("stores")));
+    assert.ok(data.sources.includes("pos::stores") || data.sources.some((s: any) => s.includes("stores")));
   });
 
   it("--json includes namespace field for namespaced mappings (sl-x8yp)", async () => {
@@ -2543,7 +2531,7 @@ describe("satsuma arrows (namespace bugs)", () => {
     const data = JSON.parse(stdout);
     assert.ok(data.length >= 1);
     // Target should be resolved, not "?.email"
-    const arrow = data.find((a) => a.target);
+    const arrow = data.find((a: any) => a.target);
     assert.ok(arrow.target.includes("sat_contact_details"), `expected qualified target, got ${arrow.target}`);
     assert.doesNotMatch(arrow.target, /^\?/);
   });
@@ -2585,7 +2573,7 @@ describe("satsuma lineage --from (namespace bugs)", () => {
     const { stdout, code } = await run("lineage", "--from", "raw::crm_deals", "--json", NS_PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const nodeNames = data.nodes.map((n) => n.name);
+    const nodeNames = data.nodes.map((n: any) => n.name);
     assert.ok(nodeNames.includes("vault::hub_deal"), `expected vault::hub_deal in ${nodeNames}`);
   });
 });
@@ -2635,10 +2623,10 @@ describe("satsuma metric (namespace bugs)", () => {
     const { stdout, code } = await run("metric", "pipeline_value", "--json", NS_PLATFORM);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const sourceMeta = data.metadata.find((m) => m.key === "source");
+    const sourceMeta = data.metadata.find((m: any) => m.key === "source");
     assert.ok(sourceMeta);
     assert.equal(sourceMeta.value, "vault::hub_deal");
-    const grainMeta = data.metadata.find((m) => m.key === "grain");
+    const grainMeta = data.metadata.find((m: any) => m.key === "grain");
     assert.ok(grainMeta);
     assert.equal(grainMeta.value, "daily");
   });
@@ -2781,7 +2769,7 @@ describe("satsuma nl-refs", () => {
     const { stdout, code } = await run("nl-refs", "--json", dbFile);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    const countryCd = refs.find((r) => r.ref === "COUNTRY_CD");
+    const countryCd = refs.find((r: any) => r.ref === "COUNTRY_CD");
     assert.ok(countryCd, "should find COUNTRY_CD @ref");
   });
 
@@ -2791,7 +2779,7 @@ describe("satsuma nl-refs", () => {
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
     assert.equal(refs.length, 3, "should find 3 @refs");
-    const refNames = refs.map((r) => r.ref).sort();
+    const refNames = refs.map((r: any) => r.ref).sort();
     assert.deepStrictEqual(refNames, ["first_name", "last_name", "region_code"]);
   });
 
@@ -2800,9 +2788,9 @@ describe("satsuma nl-refs", () => {
     const { stdout, code } = await run("nl-refs", "--json", fixture);
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
-    const firstName = refs.find((r) => r.ref === "first_name");
+    const firstName = refs.find((r: any) => r.ref === "first_name");
     assert.equal(firstName.mapping, "transform:build_fullname");
-    const regionCode = refs.find((r) => r.ref === "region_code");
+    const regionCode = refs.find((r: any) => r.ref === "region_code");
     assert.equal(regionCode.mapping, "transform:region_lookup");
   });
 
@@ -2822,9 +2810,9 @@ describe("satsuma nl-refs", () => {
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
     assert.equal(refs.length, 4, "should find 4 @refs (3 from note + 1 from arrow)");
-    const noteRefs = refs.filter((r) => r.targetField === null);
+    const noteRefs = refs.filter((r: any) => r.targetField === null);
     assert.equal(noteRefs.length, 3, "3 refs should come from the note block (no targetField)");
-    const refNames = noteRefs.map((r) => r.ref).sort();
+    const refNames = noteRefs.map((r: any) => r.ref).sort();
     assert.deepStrictEqual(refNames, ["balance", "src_accounts", "tgt_accounts"]);
   });
 
@@ -2848,15 +2836,15 @@ describe("satsuma nl-refs", () => {
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
     // Standalone note: @src_accounts
-    const standaloneRef = refs.find((r) => r.ref === "src_accounts" && r.mapping.startsWith("note:"));
+    const standaloneRef = refs.find((r: any) => r.ref === "src_accounts" && r.mapping.startsWith("note:"));
     assert.ok(standaloneRef, "should find @src_accounts in standalone note");
     // Schema note: @balance, @currency
-    const balanceRef = refs.find((r) => r.ref === "balance" && r.mapping.startsWith("note:"));
+    const balanceRef = refs.find((r: any) => r.ref === "balance" && r.mapping.startsWith("note:"));
     assert.ok(balanceRef, "should find @balance in schema note");
-    const currencyRef = refs.find((r) => r.ref === "currency" && r.mapping.startsWith("note:"));
+    const currencyRef = refs.find((r: any) => r.ref === "currency" && r.mapping.startsWith("note:"));
     assert.ok(currencyRef, "should find @currency in schema note");
     // Arrow NL: @balance, @currency (in mapping body)
-    const arrowBalance = refs.find((r) => r.ref === "balance" && !r.mapping.startsWith("note:"));
+    const arrowBalance = refs.find((r: any) => r.ref === "balance" && !r.mapping.startsWith("note:"));
     assert.ok(arrowBalance, "should find @balance in arrow NL");
   });
 
@@ -2866,9 +2854,9 @@ describe("satsuma nl-refs", () => {
     assert.equal(code, 0);
     const refs = JSON.parse(stdout);
     assert.ok(refs.length >= 2, "should find at least 2 @refs inside each block");
-    const skuRef = refs.find((r) => r.ref === "sku");
+    const skuRef = refs.find((r: any) => r.ref === "sku");
     assert.ok(skuRef, "should find @sku ref inside each block");
-    const priceRef = refs.find((r) => r.ref === "price");
+    const priceRef = refs.find((r: any) => r.ref === "price");
     assert.ok(priceRef, "should find @price ref inside each block");
   });
 });
@@ -2892,7 +2880,7 @@ describe("satsuma where-used (NL refs)", () => {
     const { stdout, code } = await run("where-used", "source::hr_employees", "--json", NS_MERGING);
     assert.equal(code, 0);
     const result = JSON.parse(stdout);
-    const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
+    const nlRefs = result.refs.filter((r: any) => r.kind === "nl_ref");
     assert.ok(nlRefs.length > 0, "should find NL references to source::hr_employees");
   });
 
@@ -2902,18 +2890,18 @@ describe("satsuma where-used (NL refs)", () => {
     const { stdout, code } = await run("where-used", "product", "--json", NOTE_WU);
     assert.equal(code, 0);
     const result = JSON.parse(stdout);
-    const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
+    const nlRefs = result.refs.filter((r: any) => r.kind === "nl_ref");
     assert.ok(nlRefs.length >= 1, "should find NL ref in standalone note block");
-    assert.ok(nlRefs.some((r) => r.name === "(file-level note)"), "standalone note should use descriptive placeholder name");
+    assert.ok(nlRefs.some((r: any) => r.name === "(file-level note)"), "standalone note should use descriptive placeholder name");
   });
 
   it("finds NL @refs in metric note blocks", async () => {
     const { stdout, code } = await run("where-used", "orders", "--json", NOTE_WU);
     assert.equal(code, 0);
     const result = JSON.parse(stdout);
-    const nlRefs = result.refs.filter((r) => r.kind === "nl_ref");
+    const nlRefs = result.refs.filter((r: any) => r.kind === "nl_ref");
     assert.ok(nlRefs.length >= 1, "should find NL ref in metric note block");
-    assert.ok(nlRefs.some((r) => r.name === "order_count"), "should use bare entity name without internal scope prefix");
+    assert.ok(nlRefs.some((r: any) => r.name === "order_count"), "should use bare entity name without internal scope prefix");
   });
 
   it("text output uses 'Referenced in NL text' label", async () => {
@@ -3003,7 +2991,7 @@ describe("satsuma lint", () => {
     const { stdout, code } = await run("lint", "--json", fixture);
     assert.equal(code, 2, "should find findings");
     const data = JSON.parse(stdout);
-    const finding = data.findings.find((f) => f.rule === "hidden-source-in-nl");
+    const finding = data.findings.find((f: any) => f.rule === "hidden-source-in-nl");
     assert.ok(finding, "should fire hidden-source-in-nl on anonymous mapping");
     assert.match(finding.message, /hidden_lookup/);
   });
@@ -3015,7 +3003,7 @@ describe("satsuma lint", () => {
 
 describe("satsuma lint --fix", () => {
   /** Copy a fixture to a temp dir so --fix can modify it safely. */
-  function copyFixture(name) {
+  function copyFixture(name: any) {
     const src = resolve(LINT_FIXTURES, name);
     const tmp = mkdtempSync(join(tmpdir(), "satsuma-lint-"));
     const dest = join(tmp, name);
@@ -3065,7 +3053,7 @@ describe("satsuma lint --fix", () => {
     assert.equal(data.summary.fixed, 0, "no new fixes on second run");
     // Persistent non-fixable finding (nonexistent_fx_rates) still present
     assert.ok(data.findings.length > 0);
-    assert.ok(data.findings.every((d) => !d.fixable));
+    assert.ok(data.findings.every((d: any) => !d.fixable));
   });
 
   it("--fix on a clean file makes no changes", async () => {
@@ -3129,7 +3117,7 @@ describe("import resolution: summary", () => {
     const { stdout, code } = await run("summary", "--json", IMPORT_ENTRY);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.schemas.map((s) => s.name);
+    const names = data.schemas.map((s: any) => s.name);
     assert.ok(names.includes("src::customers"), `expected src::customers, got ${names}`);
     assert.ok(names.includes("mart::dim_customers"), `expected mart::dim_customers, got ${names}`);
     assert.equal(data.mappings.length, 1);
@@ -3139,7 +3127,7 @@ describe("import resolution: summary", () => {
     const { stdout, code } = await run("summary", "--json", IMPORT_CHAIN);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.schemas.map((s) => s.name);
+    const names = data.schemas.map((s: any) => s.name);
     assert.ok(names.includes("src::customers"), `transitive: expected src::customers, got ${names}`);
     assert.ok(names.includes("mart::dim_customers"), `transitive: expected mart::dim_customers, got ${names}`);
     assert.ok(names.includes("analytics::customer_stats"), `transitive: expected analytics::customer_stats, got ${names}`);
@@ -3170,7 +3158,7 @@ describe("satsuma graph: --schema-only derived-only edges (sl-w4hv)", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     assert.ok(data.edges.length > 0, "should have schema-level edges");
-    const edge = data.edges.find((e) => e.mapping === "enrich data");
+    const edge = data.edges.find((e: any) => e.mapping === "enrich data");
     assert.ok(edge, "should have edge for 'enrich data' mapping");
     assert.equal(edge.from, "raw_data");
     assert.equal(edge.to, "enriched_data");
@@ -3184,8 +3172,8 @@ describe("satsuma graph: schema_edges NL-referenced schemas (sl-n11t)", () => {
     const { stdout, code } = await run("graph", FIXTURE, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const sourceEdges = data.schema_edges.filter((e) => e.role === "source");
-    const sourceNames = sourceEdges.map((e) => e.from);
+    const sourceEdges = data.schema_edges.filter((e: any) => e.role === "source");
+    const sourceNames = sourceEdges.map((e: any) => e.from);
     assert.ok(sourceNames.includes("crm_accounts"), "should have declared source");
     assert.ok(sourceNames.includes("erp_customers"), "should have declared source");
     assert.ok(!sourceNames.includes("web_profiles"), "should NOT include NL-referenced schema as source");
@@ -3195,7 +3183,7 @@ describe("satsuma graph: schema_edges NL-referenced schemas (sl-n11t)", () => {
     const { stdout, code } = await run("graph", FIXTURE, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const nlRefEdges = data.schema_edges.filter((e) => e.role === "nl_ref");
+    const nlRefEdges = data.schema_edges.filter((e: any) => e.role === "nl_ref");
     assert.equal(nlRefEdges.length, 1, "should have one nl_ref edge");
     assert.equal(nlRefEdges[0].from, "web_profiles");
     assert.equal(nlRefEdges[0].to, "build dim_customer");
@@ -3205,8 +3193,8 @@ describe("satsuma graph: schema_edges NL-referenced schemas (sl-n11t)", () => {
     const { stdout, code } = await run("graph", FIXTURE, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const nlRefEdges = data.schema_edges.filter((e) => e.role === "nl_ref");
-    const nlRefNames = nlRefEdges.map((e) => e.from);
+    const nlRefEdges = data.schema_edges.filter((e: any) => e.role === "nl_ref");
+    const nlRefNames = nlRefEdges.map((e: any) => e.from);
     assert.ok(!nlRefNames.includes("crm_accounts"), "should NOT have nl_ref for declared source");
   });
 
@@ -3224,8 +3212,8 @@ describe("satsuma graph: scalar list fields (sc-ebau)", () => {
     const { stdout, code } = await run("graph", "--json", FFG);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const allFields = data.nodes.flatMap((n) => n.fields || []);
-    const promoCodes = allFields.find((f) => f.name === "promo_codes");
+    const allFields = data.nodes.flatMap((n: any) => n.fields || []);
+    const promoCodes = allFields.find((f: any) => f.name === "promo_codes");
     assert.ok(promoCodes, "should have promo_codes field");
     assert.equal(promoCodes.type, "list_of STRING", "scalar list field should show list_of type");
   });
@@ -3236,7 +3224,7 @@ describe("satsuma graph: fragment fields (sl-yibt, sl-p0hz)", () => {
     const { stdout, code } = await run("graph", "--json", resolve(EXAMPLES, "lib/common.stm"));
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const frags = data.nodes.filter((n) => n.kind === "fragment");
+    const frags = data.nodes.filter((n: any) => n.kind === "fragment");
     assert.equal(frags.length, 0, "fragment nodes must not appear in nodes[]");
     // But stats.fragments still reports the count
     assert.ok(data.stats.fragments > 0, "stats.fragments should still count fragments");
@@ -3247,7 +3235,7 @@ describe("satsuma graph: fragment fields (sl-yibt, sl-p0hz)", () => {
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     // Find a schema that uses fragment spreads and verify its fields are expanded
-    const schemasWithFields = data.nodes.filter((n) => n.kind === "schema" && Array.isArray(n.fields) && n.fields.length > 0);
+    const schemasWithFields = data.nodes.filter((n: any) => n.kind === "schema" && Array.isArray(n.fields) && n.fields.length > 0);
     assert.ok(schemasWithFields.length > 0, "schema nodes should have non-empty fields");
   });
 });
@@ -3334,7 +3322,7 @@ describe("satsuma lineage --to upstream branches (sg-pufq)", () => {
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data.nodes));
     assert.ok(Array.isArray(data.edges));
-    const names = data.nodes.map((n) => n.name);
+    const names = data.nodes.map((n: any) => n.name);
     assert.ok(names.includes("vault::hub_contact"), `expected vault::hub_contact in ${names}`);
     assert.ok(names.includes("vault::sat_contact_details"), `expected vault::sat_contact_details in ${names}`);
   });
@@ -3366,10 +3354,10 @@ describe("satsuma lineage: @ref edge traversal (lsp-4hai)", () => {
     const { stdout, code } = await run("lineage", "--from", "web_profiles", "--json", HIDDEN_SOURCE_FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const names = data.nodes.map((n) => n.name);
+    const names = data.nodes.map((n: any) => n.name);
     assert.ok(names.includes("web_profiles"));
     assert.ok(names.includes("build dim_customer"));
-    const edge = data.edges.find((e) => e.src === "web_profiles" && e.tgt === "build dim_customer");
+    const edge = data.edges.find((e: any) => e.src === "web_profiles" && e.tgt === "build dim_customer");
     assert.ok(edge, "should have edge from web_profiles to build dim_customer");
   });
 });
@@ -3400,7 +3388,7 @@ describe("satsuma fields — fragment spread expansion (sl-3aff)", () => {
     const { stdout, code } = await run("fields", "tgt_customers", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const fields = JSON.parse(stdout);
-    const names = fields.map((f) => f.name);
+    const names = fields.map((f: any) => f.name);
     assert.ok(names.includes("created_at"), "should include created_at from audit fields");
     assert.ok(names.includes("street_line_1"), "should include street_line_1 from address fields");
   });
@@ -3409,7 +3397,7 @@ describe("satsuma fields — fragment spread expansion (sl-3aff)", () => {
     const { stdout, code } = await run("fields", "customer_with_full_address", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const fields = JSON.parse(stdout);
-    const names = fields.map((f) => f.name);
+    const names = fields.map((f: any) => f.name);
     // From 'full address' fragment directly
     assert.ok(names.includes("country"), "should include country from full address");
     // Transitive from 'address fields' via 'full address'
@@ -3432,10 +3420,10 @@ describe("satsuma fields --with-meta on fragment spreads (sl-z9us)", () => {
     const { stdout, code } = await run("fields", "with_spreads", FIXTURE, "--with-meta", "--json");
     assert.equal(code, 0);
     const fields = JSON.parse(stdout);
-    const email = fields.find((f) => f.name === "email");
+    const email = fields.find((f: any) => f.name === "email");
     assert.ok(email, "should find email field from fragment spread");
     assert.deepEqual(email.tags, ["pii"]);
-    const created = fields.find((f) => f.name === "created_at");
+    const created = fields.find((f: any) => f.name === "created_at");
     assert.ok(created, "should find created_at from fragment spread");
     assert.deepEqual(created.tags, ["required"]);
   });
@@ -3469,7 +3457,7 @@ describe("satsuma match-fields — fragment spread expansion (sl-wrzl)", () => {
     );
     assert.equal(code, 0);
     const result = JSON.parse(stdout);
-    const matchedNames = result.matched.map((m) => m.source);
+    const matchedNames = result.matched.map((m: any) => m.source);
     // Both schemas spread 'address fields' — these should match
     assert.ok(matchedNames.includes("street_line_1"), "street_line_1 should be matched");
     assert.ok(matchedNames.includes("city"), "city should be matched");
@@ -3482,9 +3470,9 @@ describe("satsuma graph --json — fragment spread expansion (sl-t6lt)", () => {
     const { stdout, code } = await run("graph", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const graph = JSON.parse(stdout);
-    const tgtNode = graph.nodes.find((n) => n.id === "tgt_customers");
+    const tgtNode = graph.nodes.find((n: any) => n.id === "tgt_customers");
     assert.ok(tgtNode, "tgt_customers node should exist");
-    const fieldNames = tgtNode.fields.map((f) => f.name);
+    const fieldNames = tgtNode.fields.map((f: any) => f.name);
     assert.ok(fieldNames.includes("created_at"), "should include created_at from audit fields");
     assert.ok(fieldNames.includes("street_line_1"), "should include street_line_1 from address fields");
   });
@@ -3493,7 +3481,7 @@ describe("satsuma graph --json — fragment spread expansion (sl-t6lt)", () => {
     const { stdout, code } = await run("graph", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const graph = JSON.parse(stdout);
-    const spreadEdges = graph.schema_edges.filter((e) => e.role === "fragment_spread");
+    const spreadEdges = graph.schema_edges.filter((e: any) => e.role === "fragment_spread");
     assert.equal(spreadEdges.length, 0, "fragment_spread edges must not appear (fragments are not nodes)");
   });
 });
@@ -3504,7 +3492,7 @@ describe("satsuma graph: nested array arrow edges (sl-4e5c)", () => {
   it("child arrows have parent path prefix", async () => {
     const { stdout } = await run("graph", FIXTURE, "--json");
     const data = JSON.parse(stdout);
-    const skuEdge = data.edges.find((e) => e.to && e.to.includes("product_code"));
+    const skuEdge = data.edges.find((e: any) => e.to && e.to.includes("product_code"));
     assert.ok(skuEdge, "should have product_code edge");
     assert.equal(skuEdge.from, "::order_api.line_items.sku");
     assert.equal(skuEdge.to, "::order_flat.items.product_code");
@@ -3522,7 +3510,7 @@ describe("satsuma graph: nested array arrow edges (sl-4e5c)", () => {
   it("parent array edge exists", async () => {
     const { stdout } = await run("graph", FIXTURE, "--json");
     const data = JSON.parse(stdout);
-    const parentEdge = data.edges.find((e) => e.from === "::order_api.line_items" && e.to === "::order_flat.items");
+    const parentEdge = data.edges.find((e: any) => e.from === "::order_api.line_items" && e.to === "::order_flat.items");
     assert.ok(parentEdge, "should have parent array edge");
   });
 });
@@ -3532,7 +3520,7 @@ describe("satsuma schema --json — fragment spread expansion (sl-zjec)", () => 
     const { stdout, code } = await run("schema", "tgt_customers", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const fieldNames = data.fields.map((f) => f.name);
+    const fieldNames = data.fields.map((f: any) => f.name);
     assert.ok(fieldNames.includes("created_at"), "should include created_at from audit fields");
     assert.ok(fieldNames.includes("updated_at"), "should include updated_at from audit fields");
     assert.ok(fieldNames.includes("created_by"), "should include created_by from audit fields");
@@ -3543,8 +3531,8 @@ describe("satsuma schema --json — fragment spread expansion (sl-zjec)", () => 
     const { stdout, code } = await run("schema", "tgt_customers", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    assert.ok(data.fieldLines.some((l) => l.includes("...audit fields")));
-    assert.ok(data.fieldLines.some((l) => l.includes("...address fields")));
+    assert.ok(data.fieldLines.some((l: any) => l.includes("...audit fields")));
+    assert.ok(data.fieldLines.some((l: any) => l.includes("...address fields")));
   });
 });
 
@@ -3553,8 +3541,8 @@ describe("satsuma where-used — fragment-to-fragment spreads (sl-307v)", () => 
     const { stdout, code } = await run("where-used", "address fields", "--json", SPREAD_FIXTURE);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const spreadRefs = data.refs.filter((r) => r.kind === "fragment_spread");
-    const refNames = spreadRefs.map((r) => r.name);
+    const spreadRefs = data.refs.filter((r: any) => r.kind === "fragment_spread");
+    const refNames = spreadRefs.map((r: any) => r.name);
     // Should find spreads in: src_customers, tgt_customers, full address, customer_with_full_address (transitive via full address)
     assert.ok(refNames.includes("src_customers"), "should find spread in src_customers");
     assert.ok(refNames.includes("tgt_customers"), "should find spread in tgt_customers");
@@ -3666,7 +3654,7 @@ describe("satsuma nl — source block join NL (cbh-so1o)", () => {
     const { stdout, code } = await run("nl", "order enrichment", "--json", fixture);
     assert.equal(code, 0);
     const items = JSON.parse(stdout);
-    const joinItem = items.find((i) => i.text.includes("Left join"));
+    const joinItem = items.find((i: any) => i.text.includes("Left join"));
     assert.ok(joinItem, "should find join NL in JSON output");
     assert.equal(joinItem.kind, "note");
   });
@@ -3712,7 +3700,7 @@ describe("satsuma nl — metric description string (sl-571v)", () => {
     const { stdout, code } = await run("nl", "monthly_revenue", "--json", fixture);
     assert.equal(code, 0);
     const items = JSON.parse(stdout);
-    const desc = items.find((i) => i.text === "Total monthly revenue");
+    const desc = items.find((i: any) => i.text === "Total monthly revenue");
     assert.ok(desc, "description string should be in nl output");
     assert.equal(desc.kind, "note");
     assert.equal(desc.parent, "monthly_revenue");
@@ -3722,7 +3710,7 @@ describe("satsuma nl — metric description string (sl-571v)", () => {
     const { stdout, code } = await run("nl", "all", "--json", fixture);
     assert.equal(code, 0);
     const items = JSON.parse(stdout);
-    const desc = items.find((i) => i.text === "Total monthly revenue");
+    const desc = items.find((i: any) => i.text === "Total monthly revenue");
     assert.ok(desc, "description string should be in nl all output");
   });
 });
@@ -3738,8 +3726,8 @@ describe("satsuma nl — schema-qualified parent (sl-prsy)", () => {
     const { stdout, code } = await run("nl", "all", fixture, "--json");
     assert.equal(code, 0);
     const items = JSON.parse(stdout);
-    const alpha = items.find((i) => i.text === "Alpha email");
-    const beta = items.find((i) => i.text === "Beta email");
+    const alpha = items.find((i: any) => i.text === "Alpha email");
+    const beta = items.find((i: any) => i.text === "Beta email");
     assert.ok(alpha, "should find Alpha email note");
     assert.ok(beta, "should find Beta email note");
     assert.equal(alpha.parent, "alpha.email", "parent should be schema-qualified");
@@ -3811,7 +3799,7 @@ describe("satsuma arrows — nl-derived duplicate suppression (sl-k797)", () => 
     const { stdout, code } = await run("arrows", "source8.amount", "--json", fixture);
     assert.equal(code, 0);
     const arrows = JSON.parse(stdout);
-    const nlDerived = arrows.find((a) => a.classification === "nl-derived");
+    const nlDerived = arrows.find((a: any) => a.classification === "nl-derived");
     assert.ok(nlDerived, "nl-derived arrow should be present for source query");
     assert.equal(nlDerived.source, "::source8.amount");
     assert.equal(nlDerived.target, "::target8.total");

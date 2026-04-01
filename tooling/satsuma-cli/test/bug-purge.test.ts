@@ -15,31 +15,21 @@
  * sc-q9c4: find --json includes fieldType for list_of record fields
  */
 
-import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { runLint } from "#src/lint-engine.js";
+import { run as _run } from "./helpers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, "../dist/index.js");
 const EXAMPLES = resolve(__dirname, "../../../examples");
 const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
 
-function run(...args) {
-  return new Promise((resolve) => {
-    execFile("node", [CLI, ...args], { timeout: 15_000 }, (err, stdout, stderr) => {
-      resolve({
-        stdout: stdout ?? "",
-        stderr: stderr ?? "",
-        code: err ? err.code ?? 1 : 0,
-      });
-    });
-  });
-}
+const run = (...args: string[]) => _run(CLI, ...args);
 
-function makeIndex({ schemas = [], mappings = [], nlRefData = [] } = {}) {
+function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: { schemas?: any[]; mappings?: any[]; nlRefData?: any[] } = {}) {
   const schemaMap = new Map();
   for (const s of schemas) {
     schemaMap.set(s.name, { ...s, file: s.file ?? "test.stm", row: s.row ?? 0 });
@@ -62,7 +52,7 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] } = {}) {
     nlRefData,
     totalErrors: 0,
     duplicates: [],
-  };
+  } as any;
 }
 
 // ── sl-5dyc: Import warnings on stderr ────────────────────────────────────
@@ -358,7 +348,7 @@ describe("sc-1ar0: mapping includes flatten/each block arrows", () => {
     const { stdout, code } = await run("mapping", "order line facts", FFG, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const flattenArrow = data.arrows.find((a) => a.kind === "flatten");
+    const flattenArrow = data.arrows.find((a: any) => a.kind === "flatten");
     assert.ok(flattenArrow, "should have a flatten arrow");
     assert.ok(flattenArrow.children.length > 0, "flatten should have child arrows");
   });
@@ -438,7 +428,7 @@ describe("sc-q9c4: find --json includes fieldType for list_of record fields", ()
     const { stdout, code } = await run("find", "--tag", "filter", FFG, "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const lineItems = data.find((r) => r.field === "line_items");
+    const lineItems = data.find((r: any) => r.field === "line_items");
     assert.ok(lineItems, "should find line_items");
     assert.ok(lineItems.fieldType, "should have fieldType");
     assert.match(lineItems.fieldType, /list_of/);

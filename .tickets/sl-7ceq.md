@@ -1,6 +1,6 @@
 ---
 id: sl-7ceq
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:15:35Z
@@ -26,3 +26,9 @@ Alternatively, at minimum, add a // @ts-check header and a jsconfig.json to the 
 
 **Why this wasn't caught earlier:** The pretest script runs tsc — but tsc only compiles src/, not test/. So CI passes even when tests are type-unsafe.
 
+
+## Notes
+
+**2026-04-01T07:42:11Z**
+
+**2026-04-01** Cause: All 26 test files were plain JavaScript (.test.js) while source was TypeScript, meaning tests bypassed type checking entirely. Fix: Migrated all test files to TypeScript (.test.ts), added tsx for runtime transpilation, created tsconfig.test.json for type checking, and added a shared helpers.ts with typed run() and mockNode() utilities. Added test:typecheck script for CI.

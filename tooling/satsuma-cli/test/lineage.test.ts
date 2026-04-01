@@ -5,13 +5,25 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+// ── Types for test graph structures ──────────────────────────────────────────
+
+interface TestGraph {
+  nodes: Map<string, Record<string, unknown>>;
+  edges: Map<string, Set<string>>;
+}
+
+interface DagEdge {
+  src: string;
+  tgt: string;
+}
+
 // ── Graph helpers (mirrors lineage.js) ───────────────────────────────────────
 
-function buildDownstream(graph, start, maxDepth = 10) {
-  const visitedNodes = new Set();
-  const dagEdges = [];
+function buildDownstream(graph: TestGraph, start: string, maxDepth = 10) {
+  const visitedNodes = new Set<string>();
+  const dagEdges: DagEdge[] = [];
 
-  function dfs(node, depth) {
+  function dfs(node: string, depth: number) {
     if (depth > maxDepth || visitedNodes.has(node)) return;
     visitedNodes.add(node);
     const children = graph.edges.get(node) ?? new Set();
@@ -29,12 +41,12 @@ function buildDownstream(graph, start, maxDepth = 10) {
   };
 }
 
-function bfsPath(graph, target, maxDepth = 10) {
-  const reverseEdges = new Map();
+function bfsPath(graph: TestGraph, target: string, maxDepth = 10) {
+  const reverseEdges = new Map<string, Set<string>>();
   for (const [src, targets] of graph.edges) {
     for (const tgt of targets) {
       if (!reverseEdges.has(tgt)) reverseEdges.set(tgt, new Set());
-      reverseEdges.get(tgt).add(src);
+      reverseEdges.get(tgt)!.add(src);
     }
   }
 
@@ -42,10 +54,10 @@ function bfsPath(graph, target, maxDepth = 10) {
   const visited = new Set([target]);
 
   while (queue.length > 0) {
-    const path = queue.shift();
+    const path = queue.shift()!;
     if (path.length > maxDepth + 1) break;
-    const current = path[path.length - 1];
-    const parents = reverseEdges.get(current) ?? new Set();
+    const current = path[path.length - 1]!;
+    const parents = reverseEdges.get(current) ?? new Set<string>();
 
     if (parents.size === 0) return [...path].reverse();
 
@@ -62,7 +74,7 @@ function bfsPath(graph, target, maxDepth = 10) {
 
 // ── Helper to build a simple graph ───────────────────────────────────────────
 
-function makeGraph(edgeList) {
+function makeGraph(edgeList: [string, string][]): TestGraph {
   const nodes = new Map();
   const edges = new Map();
 

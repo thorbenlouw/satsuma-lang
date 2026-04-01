@@ -10,52 +10,49 @@ import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { extractArrowRecords } from "@satsuma/core";
+import { type MockNode, mockNode as n } from "./helpers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EXAMPLES = resolve(__dirname, "../../../examples");
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0) {
-  return { type, text, startPosition: { row, column: 0 }, namedChildren };
-}
-
-function ident(text) {
+function ident(text: string): MockNode {
   return n("identifier", [], text);
 }
 
-function blockLabel(name) {
+function blockLabel(name: string): MockNode {
   const inner = name.startsWith("'")
     ? n("backtick_name", [], name)
     : n("identifier", [], name);
   return n("block_label", [inner]);
 }
 
-function fieldPath(name) {
+function fieldPath(name: string): MockNode {
   return n("field_path", [ident(name)], name);
 }
 
-function namespacedPath(ns, schema, field) {
+function namespacedPath(ns: string, schema: string, field: string | null): MockNode {
   const ids = [ident(ns), ident(schema)];
   if (field) ids.push(ident(field));
   const text = field ? `${ns}::${schema}.${field}` : `${ns}::${schema}`;
   return n("namespaced_path", ids, text);
 }
 
-function srcPath(name) {
+function srcPath(name: string): MockNode {
   return n("src_path", [fieldPath(name)], name);
 }
 
-function srcPathNs(ns, schema, field) {
+function srcPathNs(ns: string, schema: string, field: string | null): MockNode {
   const inner = namespacedPath(ns, schema, field);
   return n("src_path", [inner], inner.text);
 }
 
-function tgtPath(name) {
+function tgtPath(name: string): MockNode {
   return n("tgt_path", [fieldPath(name)], name);
 }
 
-function pipeStep(innerType, text = "") {
+function pipeStep(innerType: string, text = ""): MockNode {
   if (innerType === "pipe_text" && (text.startsWith('"') || text.startsWith('"""'))) {
     // NL pipe text — wrap nl_string inside pipe_text
     const strType = text.startsWith('"""') ? "multiline_string" : "nl_string";
@@ -65,23 +62,23 @@ function pipeStep(innerType, text = "") {
   return n("pipe_step", [n(innerType, [n("identifier", [], text)], text)], text);
 }
 
-function pipeChain(steps) {
+function pipeChain(steps: MockNode[]): MockNode {
   return n("pipe_chain", steps, steps.map((s) => s.text).join(" | "));
 }
 
-function mapArrow(src, tgt, steps = [], row = 0) {
-  const children = [srcPath(src), tgtPath(tgt)];
+function mapArrow(src: string, tgt: string, steps: MockNode[] = [], row = 0): MockNode {
+  const children: MockNode[] = [srcPath(src), tgtPath(tgt)];
   if (steps.length > 0) children.push(pipeChain(steps));
   return n("map_arrow", children, "", row);
 }
 
-function computedArrow(tgt, steps = [], row = 0) {
-  const children = [tgtPath(tgt)];
+function computedArrow(tgt: string, steps: MockNode[] = [], row = 0): MockNode {
+  const children: MockNode[] = [tgtPath(tgt)];
   if (steps.length > 0) children.push(pipeChain(steps));
   return n("computed_arrow", children, "", row);
 }
 
-function mappingBlock(name, arrows, row = 0) {
+function mappingBlock(name: string, arrows: MockNode[], row = 0): MockNode {
   const srcBlock = n("source_block", [ident("src_schema")]);
   const tgtBlock = n("target_block", [ident("tgt_schema")]);
   const body = n("mapping_body", [srcBlock, tgtBlock, ...arrows]);
@@ -96,7 +93,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.equal(records[0].mapping, "m1");
     assert.equal(records[0].sources[0], "CUST_ID");
@@ -117,7 +114,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.equal(records[0].classification, "structural");
     assert.equal(records[0].transform_raw, "trim | lowercase");
@@ -133,7 +130,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records[0].classification, "nl");
     assert.equal(records[0].transform_raw, '"Do something complex"');
   });
@@ -147,7 +144,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records[0].classification, "mixed");
     assert.deepEqual(records[0].steps, [
       { type: "pipe_text", text: '"Filter profanity"' },
@@ -161,7 +158,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.deepEqual(records[0].sources, []);
     assert.equal(records[0].target, "migration_ts");
@@ -176,7 +173,7 @@ describe("extractArrowRecords", () => {
     const m2 = mappingBlock("m2", [a2]);
     const root = n("source_file", [m1, m2]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 2);
     assert.equal(records[0].mapping, "m1");
     assert.equal(records[1].mapping, "m2");
@@ -188,19 +185,19 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records[0].classification, "structural");
   });
 
   it("returns empty array when no mappings", () => {
     const root = n("source_file", []);
-    assert.deepEqual(extractArrowRecords(root), []);
+    assert.deepEqual(extractArrowRecords(root as any), []);
   });
 
   it("handles mapping with no body", () => {
     const mapping = n("mapping_block", [blockLabel("empty")]);
     const root = n("source_file", [mapping]);
-    assert.deepEqual(extractArrowRecords(root), []);
+    assert.deepEqual(extractArrowRecords(root as any), []);
   });
 
   it("extracts nested_arrow source and target", () => {
@@ -209,7 +206,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [nested]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     // Should include the nested_arrow itself and the inner map_arrow
     const nestedRecord = records.find((r) => r.target === "items");
     assert.ok(nestedRecord, "should extract nested_arrow target");
@@ -222,7 +219,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.deepEqual(records[0].sources, ["first_name", "last_name"]);
     assert.equal(records[0].target, "full_name");
@@ -233,7 +230,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.deepEqual(records[0].sources, ["city", "state", "zip"]);
   });
@@ -243,7 +240,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.deepEqual(records[0].sources, ["CUST_ID"]);
   });
@@ -253,7 +250,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.equal(records[0].sources[0], "crm::customers.email");
   });
@@ -263,7 +260,7 @@ describe("extractArrowRecords", () => {
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
-    const records = extractArrowRecords(root);
+    const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
     assert.equal(records[0].sources[0], "billing::invoices");
   });
@@ -272,7 +269,7 @@ describe("extractArrowRecords", () => {
 // ── Integration with real example files ──────────────────────────────────────
 
 describe("extractArrowRecords against real examples", () => {
-  let parseFile;
+  let parseFile: (filePath: string) => { tree: { rootNode: any }; [k: string]: any };
 
   before(async () => {
     const parser = await import("#src/parser.js");
@@ -336,7 +333,7 @@ describe("extractArrowRecords against real examples", () => {
     // Each child arrow should have a clean source (no newlines, no target contamination)
     for (const a of childArrows) {
       assert.ok(!a.sources[0].includes("\n"), `source should not contain newline: ${a.sources[0]}`);
-      assert.ok(!a.target.includes("\n"), `target should not contain newline: ${a.target}`);
+      assert.ok(!a.target!.includes("\n"), `target should not contain newline: ${a.target}`);
       assert.equal(a.derived, false, `${a.sources[0]} should not be derived`);
     }
 

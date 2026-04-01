@@ -33,7 +33,19 @@ function makeFileData({
   warnings = [],
   questions = [],
   errorCount = 0,
-}) {
+}: {
+  filePath?: string;
+  schemas?: any[];
+  metrics?: any[];
+  mappings?: any[];
+  fragments?: any[];
+  transforms?: any[];
+  namespaces?: any[];
+  arrowRecords?: any[];
+  warnings?: any[];
+  questions?: any[];
+  errorCount?: number;
+}): any {
   return {
     filePath,
     errorCount,
@@ -192,7 +204,7 @@ describe("namespace metadata merging", () => {
       schemas: [{ name: "txns", namespace: "pos", fields: [], row: 1 }],
     });
     const index = buildIndex([data1, data2]);
-    const metaConflicts = index.duplicates.filter((d) => d.kind === "namespace-metadata");
+    const metaConflicts = index.duplicates.filter((d: any) => d.kind === "namespace-metadata");
     assert.equal(metaConflicts.length, 0, "Same note value should not conflict");
   });
 
@@ -206,7 +218,7 @@ describe("namespace metadata merging", () => {
       namespaces: [{ name: "pos", note: null, row: 0 }],
     });
     const index = buildIndex([data1, data2]);
-    const metaConflicts = index.duplicates.filter((d) => d.kind === "namespace-metadata");
+    const metaConflicts = index.duplicates.filter((d: any) => d.kind === "namespace-metadata");
     assert.equal(metaConflicts.length, 0);
   });
 
@@ -220,7 +232,7 @@ describe("namespace metadata merging", () => {
       namespaces: [{ name: "pos", note: "POS system", row: 5 }],
     });
     const index = buildIndex([data1, data2]);
-    const metaConflicts = index.duplicates.filter((d) => d.kind === "namespace-metadata");
+    const metaConflicts = index.duplicates.filter((d: any) => d.kind === "namespace-metadata");
     assert.equal(metaConflicts.length, 1);
     assert.equal(metaConflicts[0].name, "pos");
     assert.equal(metaConflicts[0].tag, "note");
@@ -268,7 +280,7 @@ describe("namespace-aware reference resolution", () => {
     });
     const index = buildIndex([data]);
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 0, "Qualified source and local target should resolve");
   });
 
@@ -289,7 +301,7 @@ describe("namespace-aware reference resolution", () => {
     });
     const index = buildIndex([data]);
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 0, "Global reference should resolve from inside namespace");
   });
 
@@ -310,7 +322,7 @@ describe("namespace-aware reference resolution", () => {
     });
     const index = buildIndex([data]);
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 1, "Unqualified cross-namespace ref should warn");
     assert.ok(refWarnings[0].message.includes("pos_oracle"));
   });
@@ -333,7 +345,7 @@ describe("namespace-aware reference resolution", () => {
     });
     const index = buildIndex([data]);
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 1);
     assert.ok(refWarnings[0].message.includes("hint"), "Should include a hint");
     assert.ok(refWarnings[0].message.includes("crm::customer") || refWarnings[0].message.includes("billing::customer"));
@@ -356,7 +368,7 @@ describe("namespace-aware reference resolution", () => {
     });
     const index = buildIndex([data]);
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 0, "Qualified reference should resolve directly");
   });
 
@@ -376,7 +388,7 @@ describe("namespace-aware reference resolution", () => {
     });
     const index = buildIndex([data]);
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 1);
     assert.ok(refWarnings[0].message.includes("nonexistent::schema"));
   });
@@ -396,7 +408,7 @@ describe("namespace metadata conflict diagnostics", () => {
     });
     const index = buildIndex([data1, data2]);
     const warnings = collectSemanticWarnings(index);
-    const metaErrors = warnings.filter((w) => w.rule === "namespace-metadata-conflict");
+    const metaErrors = warnings.filter((w: any) => w.rule === "namespace-metadata-conflict");
     assert.equal(metaErrors.length, 1);
     assert.equal(metaErrors[0].severity, "error");
     assert.ok(metaErrors[0].message.includes("pos"));
@@ -426,7 +438,7 @@ describe("backward compatibility: global-only workspaces", () => {
     assert.ok(index.schemas.has("orders"));
     assert.ok(index.schemas.has("customers"));
     const warnings = collectSemanticWarnings(index);
-    const refWarnings = warnings.filter((w) => w.rule === "undefined-ref");
+    const refWarnings = warnings.filter((w: any) => w.rule === "undefined-ref");
     assert.equal(refWarnings.length, 0);
   });
 
@@ -476,7 +488,7 @@ describe("schema field merging across files", () => {
     const index = buildIndex([data1, data2]);
     const schema = index.schemas.get("pos_oracle");
     assert.ok(schema, "Schema should exist in index");
-    const fieldNames = schema.fields.map((f) => f.name);
+    const fieldNames = schema.fields.map((f: any) => f.name);
     assert.ok(fieldNames.includes("CUSTOMER_ID"), "Should have fields from first file");
     assert.ok(fieldNames.includes("FIRST_NAME"), "Should have fields from first file");
     assert.ok(fieldNames.includes("STORE_ID"), "Should have merged fields from second file");
@@ -510,9 +522,9 @@ describe("schema field merging across files", () => {
       }],
     });
     const index = buildIndex([data1, data2]);
-    const schema = index.schemas.get("shared");
-    const fieldNames = schema.fields.map((f) => f.name);
-    assert.equal(fieldNames.filter((n) => n === "id").length, 1, "Should not duplicate shared field");
+    const schema = index.schemas.get("shared")!;
+    const fieldNames = schema.fields.map((f: any) => f.name);
+    assert.equal(fieldNames.filter((n: any) => n === "id").length, 1, "Should not duplicate shared field");
     assert.equal(schema.fields.length, 3, "id + name + email");
   });
 
@@ -538,7 +550,7 @@ describe("schema field merging across files", () => {
       }],
     });
     const index = buildIndex([data1, data2]);
-    assert.equal(index.schemas.get("src").hasSpreads, true, "hasSpreads should be true if any declaration has spreads");
+    assert.equal(index.schemas.get("src")!.hasSpreads, true, "hasSpreads should be true if any declaration has spreads");
   });
 
   it("merged schema fields resolve correctly in field-not-in-schema check", () => {
@@ -610,7 +622,7 @@ describe("schema field merging across files", () => {
     });
     const index = buildIndex([data1, data2]);
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Merged schema fields should resolve across files");
   });
 
@@ -699,16 +711,16 @@ describe("schema field merging across files", () => {
     // Verify the merged schema has both children under "address"
     const schema = index.schemas.get("customer");
     assert.ok(schema, "Merged schema should exist");
-    const addressField = schema.fields.find((f) => f.name === "address");
+    const addressField = schema.fields.find((f: any) => f.name === "address");
     assert.ok(addressField, "address field should exist");
     assert.ok(addressField.children, "address should have children");
-    const childNames = addressField.children.map((c) => c.name);
+    const childNames = addressField.children.map((c: any) => c.name);
     assert.ok(childNames.includes("street"), "address should have street child");
     assert.ok(childNames.includes("city"), "address should have city child from second file");
 
     // Verify no false field-not-in-schema warnings
     const warnings = collectSemanticWarnings(index);
-    const fieldWarnings = warnings.filter((w) => w.rule === "field-not-in-schema");
+    const fieldWarnings = warnings.filter((w: any) => w.rule === "field-not-in-schema");
     assert.equal(fieldWarnings.length, 0, "Nested record children should merge without false warnings");
   });
 });

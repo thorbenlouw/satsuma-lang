@@ -7,56 +7,56 @@ import { describe, it } from "node:test";
 
 // ── Mock CST helpers ──────────────────────────────────────────────────────────
 
-function n(type, namedChildren = [], text = "", row = 0) {
+function n(type: string, namedChildren: any[] = [], text = "", row = 0): any {
   return { type, text, startPosition: { row, column: 0 }, namedChildren };
 }
-function ident(t) { return n("identifier", [], t); }
-function quoted(t) { return n("backtick_name", [], `'${t}'`); }
-function blockLabel(name) {
+function ident(t: string) { return n("identifier", [], t); }
+function quoted(t: string) { return n("backtick_name", [], `'${t}'`); }
+function blockLabel(name: string) {
   const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
   return n("block_label", [inner]);
 }
-function spreadLabel(name) {
+function spreadLabel(name: string) {
   if (name.startsWith("'")) return n("spread_label", [quoted(name.slice(1, -1))]);
   return n("spread_label", name.split(" ").map(ident));
 }
 
 // ── Inline findFragmentSpreads + walkForSpreads ───────────────────────────────
 
-function walkForSpreads(bodyNode, fragmentName, blockName, results) {
+function walkForSpreads(bodyNode: any, fragmentName: string, blockName: string, results: any[]) {
   for (const c of bodyNode.namedChildren) {
     if (c.type === "fragment_spread") {
-      const lbl = c.namedChildren.find((x) => x.type === "spread_label" || x.type === "block_label");
+      const lbl = c.namedChildren.find((x: any) => x.type === "spread_label" || x.type === "block_label");
       let sname = "";
       if (lbl) {
-        const q = lbl.namedChildren.find((x) => x.type === "backtick_name");
+        const q = lbl.namedChildren.find((x: any) => x.type === "backtick_name");
         if (q) {
           sname = q.text.slice(1, -1);
         } else {
           sname = lbl.namedChildren
-            .filter((x) => x.type === "identifier" || x.type === "qualified_name")
-            .map((x) => x.text)
+            .filter((x: any) => x.type === "identifier" || x.type === "qualified_name")
+            .map((x: any) => x.text)
             .join(" ");
         }
       }
       if (sname === fragmentName) results.push({ block: blockName, row: c.startPosition.row });
     } else if (c.type === "record_block" || c.type === "list_block") {
-      const nested = c.namedChildren.find((x) => x.type === "schema_body");
+      const nested = c.namedChildren.find((x: any) => x.type === "schema_body");
       if (nested) walkForSpreads(nested, fragmentName, blockName, results);
     }
   }
 }
 
-function findFragmentSpreads(rootNode, fragmentName) {
-  const results = [];
+function findFragmentSpreads(rootNode: any, fragmentName: string) {
+  const results: any[] = [];
   for (const topLevel of rootNode.namedChildren) {
     if (topLevel.type !== "schema_block" && topLevel.type !== "fragment_block") continue;
-    const lbl = topLevel.namedChildren.find((c) => c.type === "block_label");
+    const lbl = topLevel.namedChildren.find((c: any) => c.type === "block_label");
     const inner = lbl?.namedChildren[0];
     let blockName = inner?.text ?? "";
     if (inner?.type === "backtick_name") blockName = blockName.slice(1, -1);
 
-    const body = topLevel.namedChildren.find((c) => c.type === "schema_body");
+    const body = topLevel.namedChildren.find((c: any) => c.type === "schema_body");
     if (body) walkForSpreads(body, fragmentName, blockName, results);
   }
   return results;
