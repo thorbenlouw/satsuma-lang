@@ -124,11 +124,21 @@ results without shell access to the browser process:
 
 **What to tell the human:**
 
-When you need Playwright test results, tell the user:
+When you need Playwright test results, tell the user the **full absolute path**
+to the script — do not use a relative path.  You may be running inside a worktree
+at a non-obvious location (e.g. `.worktrees/feat/some-feature/`) and the human
+will not know which directory you mean without the full path.
 
-> "Please run `./tooling/satsuma-viz-harness/watch-and-test.sh` in a terminal
-> from the repo root if it's not already running. I'll touch `.run-tests` to
-> trigger a run and read the results from `.playwright-results.txt`."
+Example message:
+
+> "Please run this in a terminal if it's not already running:
+> `/Users/thorben/dev/personal/satsuma-lang/.worktrees/feat/viz-harness/tooling/satsuma-viz-harness/watch-and-test.sh`
+> I'll trigger runs by touching `.run-tests` in that same directory and read
+> results from `.playwright-results.txt` there."
+
+Substitute the actual absolute path for your current working directory.  Use
+`pwd` or inspect the path you are already using for file operations — you know
+it.  Never make the human guess where the worktree is.
 
 Then touch the sentinel, wait for it to disappear (the watcher picks it up within
 1 second), and poll `.playwright-results.txt` until it contains `passed` or
