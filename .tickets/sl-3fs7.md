@@ -1,6 +1,6 @@
 ---
 id: sl-3fs7
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:16:26Z
@@ -29,3 +29,9 @@ graph.ts currently handles all of the following in a single file:
 
 This would make each piece independently testable and easier to navigate.
 
+
+## Notes
+
+**2026-04-01T07:30:20Z**
+
+Cause: graph.ts contained 701 lines mixing CLI registration, graph assembly, and formatting. Fix: split into graph.ts (CLI), graph-builder.ts (assembly/edges), graph-format.ts (formatters).
