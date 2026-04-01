@@ -315,8 +315,7 @@ async function loadFixture(uri: string): Promise<void> {
 
   // Safe: highlightSatsuma HTML-escapes all user content via esc() before
   // constructing the markup — no raw source text reaches the DOM.
-  // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method
-  sourceCodeEl.innerHTML = highlightSatsuma(source);
+  sourceCodeEl.innerHTML = highlightSatsuma(source); // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method
   sourceCodeEl.className = "";
 
   // Pass the model to the viz component.
