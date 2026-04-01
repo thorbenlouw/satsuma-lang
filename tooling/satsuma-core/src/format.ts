@@ -410,6 +410,17 @@ interface FieldAlignment {
   metaCol: number;   // column where metadata starts (relative to indent)
 }
 
+/**
+ * Return the visual width of a field name for column alignment purposes.
+ * A backtick name that contains a newline spans multiple lines; the type
+ * column continues from the last line, so only that line's character count
+ * matters for alignment (sl-w5fs).
+ */
+function fieldNameDisplayWidth(name: string): number {
+  const lastNewline = name.lastIndexOf("\n");
+  return lastNewline === -1 ? name.length : name.length - lastNewline - 1;
+}
+
 function calcFieldAlignment(fields: SyntaxNode[]): FieldAlignment {
   let maxName = 0;
   let maxType = 0;
@@ -417,7 +428,7 @@ function calcFieldAlignment(fields: SyntaxNode[]): FieldAlignment {
   for (const f of fields) {
     const name = fieldNameText(f);
     const type = fieldTypeText(f);
-    if (name.length > maxName) maxName = name.length;
+    if (fieldNameDisplayWidth(name) > maxName) maxName = fieldNameDisplayWidth(name);
     if (type.length > maxType) maxType = type.length;
   }
 
@@ -437,8 +448,9 @@ function formatSingleLineField(
   const type = fieldTypeText(node);
   const meta = findChild(node, "metadata_block");
 
-  // Name padding
-  const nameGap = Math.max(typeCol - name.length, 2);
+  // Name padding — use the last-line width so multiline backtick names align
+  // correctly (the type column starts after the last line of the name).
+  const nameGap = Math.max(typeCol - fieldNameDisplayWidth(name), 2);
   let line = ind(indent) + name + " ".repeat(nameGap) + type;
 
   if (meta) {

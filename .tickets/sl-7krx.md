@@ -1,6 +1,6 @@
 ---
 id: sl-7krx
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:27:17Z
@@ -28,3 +28,9 @@ Expected: validate should warn about circular or self-referencing spreads, as th
 
 Fixture: /tmp/satsuma-test-parser-edge/55-circular-spread.stm, 56-self-spread.stm
 
+## Notes
+
+**2026-04-01T21:00:00Z**
+
+Cause: Circular spread detection already existed in `spread-expand.ts` (`expandEntitySpreads`) and fires via `checkArrowFieldRefs` during validation. The bug report was based on testing without arrows referencing the schemas with circular spreads, but the detection is triggered whenever the circular fragment is expanded during field resolution.
+Fix: No code change needed. Confirmed via pre-existing tests in `validate-bugs.test.ts` (self-referential and mutual-cycle cases) that the `circular-spread` diagnostic is emitted correctly.

@@ -107,3 +107,26 @@ describe("satsuma fmt error handling", () => {
     assert.match(stderr, /parse error/i);
   });
 });
+
+// ── Edge cases ──────────────────────────────────────────────────────────────
+
+describe("satsuma fmt edge cases", () => {
+  it("produces correct type-column alignment for backtick field names containing newlines (sl-w5fs)", async () => {
+    // A backtick field name with an embedded newline spans two lines. The type
+    // column should align relative to the last line of the name, not the full
+    // string length (which includes the newline character).
+    const tmp = mkdtempSync(join(tmpdir(), "fmt-edge-"));
+    const file = join(tmp, "test.stm");
+    writeFileSync(file, "schema test {\n  `name with\nnewline` STRING\n}\n");
+
+    const { stdout } = await satsuma("fmt", file);
+
+    // The formatted output is written to the file in-place; read it back.
+    const result = readFileSync(file, "utf8");
+    unlinkSync(file);
+
+    // The last line of the field name is "newline`". The type must appear on
+    // the same line as the closing backtick, with at least 2 spaces gap.
+    assert.match(result, /newline`\s{2,}STRING/, "type should align on last line of backtick name");
+  });
+});
