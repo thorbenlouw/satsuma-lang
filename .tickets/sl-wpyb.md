@@ -1,6 +1,6 @@
 ---
 id: sl-wpyb
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:15:23Z
@@ -47,3 +47,14 @@ Core lookup functions used by nearly every command. Namespace-scoped resolution 
 **findSuggestion prefix heuristic is undertested**
 Missing: name shorter than 3 chars (.slice(0, 3) edge), name that prefix-matches multiple entries, name identical to an available entry (the suggestion !== name guard in notFound).
 
+
+## Notes
+
+**2026-04-01T08:49:36Z**
+
+## Notes
+
+**2026-04-01T13:00:00Z**
+
+Cause: Six modules had no or minimal unit test coverage — logic was only exercised transitively through slow CLI integration tests.
+Fix: Added unit test files for cst-query.ts (new), workspace.ts (new), fmt.ts (new). Expanded existing tests in errors.test.ts, normalize.test.ts, diff.test.ts, and canonical-ref.test.ts. Total test count increased from 774 to 832.
