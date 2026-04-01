@@ -1,6 +1,6 @@
 ---
 id: sl-2old
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:32:55Z
@@ -28,3 +28,10 @@ Affects: meta --json, fields --json (metadata entries). Unquoted identifier valu
 
 This also affects the metadata array in find --json output, where string values like classification appear as 'classification "INTERNAL"' with embedded quotes.
 
+
+## Notes
+
+**2026-04-01T09:16:37Z**
+
+Cause: Metadata key/value extraction only unwrapped bare nl_string nodes, but parser output wraps quoted values in value_text nodes so JSON consumers received literal quote delimiters.
+Fix: Normalized quoted metadata values in satsuma-core and aligned find metadata rendering so meta, fields, and find JSON surfaces return logical string values without embedded quotes (commit <pending>).

@@ -41,7 +41,7 @@ Searches mappings (source/target refs), metrics (source refs), schemas
 JSON shape (--json):
   {
     "name": str,   # canonical name searched
-    "refs": [{"kind": "mapping"|"metric"|"schema"|"nl_ref", "name": str, "file": str, "line": int}, ...]
+    "refs": [{"kind": "mapping"|"metric"|"fragment_spread"|"ref_metadata"|"import"|"transform_call"|"nl_ref", "name": str, "file": str, "line": int}, ...]
   }
 
 Examples:
