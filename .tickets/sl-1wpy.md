@@ -37,4 +37,4 @@ Expected: --fix should add hidden_dep to the mapping's source list.
 **2026-04-01**
 
 Cause: `makeAddSourceFix` and `makeAddArrowSourceFix` searched for the mapping block by name label. For anonymous mappings (`name: null`), the `displayName` is the synthetic key `<anon>@file:row`, which never matches the named-mapping regex, so 0 fixes were applied.
-Fix: Detect the `<anon>@file:row` pattern and locate the `mapping {` line by 0-indexed row number instead of by name label. Integration test added with `test/fixtures/lint-anon-fix.stm`.
+Fix: Detect the `<anon>@file:row` pattern and locate the `mapping {` line by 0-indexed row number instead of by name label. Integration test added with `test/fixtures/lint-anon-fix.stm`. (commit 9f55a7b)

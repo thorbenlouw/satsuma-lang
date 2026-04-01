@@ -25,4 +25,4 @@ This causes confusion when tooling or agents run both commands sequentially - th
 **2026-04-01**
 
 Cause: `validate` ran its own NL ref check (rule `"nl-ref-unresolved"`) in addition to `lint` running `checkUnresolvedNlRef` (rule `"unresolved-nl-ref"`). The `duplicate-definition` check also ran in both.
-Fix (partial): sl-tslm unifies the rule name to `"unresolved-nl-ref"` in both commands, enabling consumers to deduplicate by `(rule, file, line, column)`. The underlying question of whether validate should run NL ref checks at all is a design decision deferred to a future ADR. The duplicate-definition check remains in both commands intentionally (validate needs it for correctness; lint surfaces it for workflow convenience).
+Fix (partial): sl-tslm unifies the rule name to `"unresolved-nl-ref"` in both commands, enabling consumers to deduplicate by `(rule, file, line, column)`. The underlying question of whether validate should run NL ref checks at all is a design decision deferred to a future ADR. The duplicate-definition check remains in both commands intentionally (validate needs it for correctness; lint surfaces it for workflow convenience). (commit 9f55a7b)

@@ -44,4 +44,4 @@ Suspected cause: the arrow.mapping name format (e.g. '<anon>@path:10') may not m
 **2026-04-01**
 
 Cause: `checkArrowFieldRefs` in validate.ts iterated `index.mappings` by name but compared `arrow.mapping` against `mapping.name`. For anonymous mappings, `name` is `null` while `arrow.mapping` carries the synthetic key `<anon>@file:row` — they never compared equal, so all arrows for anonymous mappings were silently skipped.
-Fix: Changed iteration to `for (const [indexKey, mapping] of index.mappings)` and compare `arrow.mapping` against `indexKey` (stripped of namespace prefix) when `mapping.name === null`. Named mappings still compare by name.
+Fix: Changed iteration to `for (const [indexKey, mapping] of index.mappings)` and compare `arrow.mapping` against `indexKey` (stripped of namespace prefix) when `mapping.name === null`. Named mappings still compare by name. (commit 9f55a7b)

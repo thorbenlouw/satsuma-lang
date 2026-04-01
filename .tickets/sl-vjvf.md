@@ -33,4 +33,4 @@ Note: @refs in metric note blocks ARE checked (confirmed working), so the gap is
 
 Cause (file-level notes): Both `checkNLRefs` (validate) and `checkUnresolvedNlRef` (lint) had an explicit `if (item.mapping === "note:") continue;` guard that skipped file-level notes entirely. This was the fix for sl-vrsu (false positives on backtick emphasis) but it also suppressed genuine `@ref` warnings.
 Cause (inline metadata): `extractBlockNoteRefs` in nl-ref.ts only scanned `note_block` child nodes, missing the `metadata_block > note_tag` path that represents inline `(note "...")` in schema/metric declarations.
-Fix: Removed the `note:` guard from both validate and lint. Added scanning of `metadata_block > note_tag` in `extractBlockNoteRefs`. Updated sl-vrsu-era test in lint-engine.test.ts to document the new behaviour.
+Fix: Removed the `note:` guard from both validate and lint. Added scanning of `metadata_block > note_tag` in `extractBlockNoteRefs`. Updated sl-vrsu-era test in lint-engine.test.ts to document the new behaviour. (commit 9f55a7b)
