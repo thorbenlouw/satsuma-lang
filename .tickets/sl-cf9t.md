@@ -31,3 +31,9 @@ This also affects fragment spreads: a file can use ...base_fields from a transit
 **2026-03-31**
 
 Re-opened. Prior triage was wrong: Satsuma keeps explicit imports, but imported symbols bring their exact transitive dependencies with them. The bug is that the current implementation appears broader than that and leaks unrelated symbols through a flat transitive scope. ADR-022 now describes the narrower dependency-reachability model; implementation is still needed.
+
+**2026-04-01**
+
+Bug confirmed still reproducible against current main. The root cause is in `buildIndex` — all transitively reachable files are merged into a flat scope with no import-boundary enforcement. Both the CLI validator and the LSP diagnostic engine (and likely completions/hover) consume this same flat index, so both are affected.
+
+Implementation guidance: the fix should live in `satsuma-core` so CLI and LSP share exactly the same reachability logic and cannot diverge. The index can remain flat (it is useful for cross-file lookups), but a per-file **reachability set** needs to be computed from the import graph and threaded into validation so that undefined-ref checks only consider symbols actually reachable from the file being validated. Placing this in core prevents a repeat of the pattern where the same rule is implemented independently in the CLI and LSP and drifts over time.
