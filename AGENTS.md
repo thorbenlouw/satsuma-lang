@@ -132,7 +132,7 @@ will not know which directory you mean without the full path.
 Example message:
 
 > "Please run this in a terminal if it's not already running:
-> `/Users/thorben/dev/personal/satsuma-lang/.worktrees/feat/viz-harness/tooling/satsuma-viz-harness/watch-and-test.sh`
+> `/path/tp/clone/of/satsuma-lang/.worktrees/feat/viz-harness/tooling/satsuma-viz-harness/watch-and-test.sh`
 > I'll trigger runs by touching `.run-tests` in that same directory and read
 > results from `.playwright-results.txt` there."
 
