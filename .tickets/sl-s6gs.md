@@ -1,6 +1,6 @@
 ---
 id: sl-s6gs
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:23:30Z
@@ -41,3 +41,9 @@ Fix: add $.each_block and $.flatten_block to the repeat() inside each_block and 
 
 Fixture: /tmp/satsuma-test-parser-edge/24-flatten-in-each.stm, 24b, 24c, 24d, 09-mixed-nesting.stm
 
+## Notes
+
+**2026-04-01T21:00:00Z**
+
+Cause: The grammar defined `each_block` and `flatten_block` bodies as `repeat($._arrow_decl)`, which excluded `each_block` and `flatten_block` themselves, making nested blocks a parse error.
+Fix: Added `_nested_block_item` rule (`choice($._arrow_decl, $.each_block, $.flatten_block)`) and used it in both block body repeats. Regenerated parser and WASM. Added corpus tests for each-in-each and flatten-in-each.

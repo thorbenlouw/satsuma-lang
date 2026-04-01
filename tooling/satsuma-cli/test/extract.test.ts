@@ -336,6 +336,23 @@ describe("extractMappings", () => {
     const result = extractMappings(root as any);
     assert.deepEqual(result[0].sources, ["my_table"]);
   });
+
+  it("does not include comment nodes as source or target references (sl-bi92)", () => {
+    // Tree-sitter extras (comments) appear as named children inside source/target
+    // blocks. They must be silently skipped — not treated as schema references.
+    const comment = n("comment", [], "// this is a comment");
+    const warnComment = n("warning_comment", [], "//! warning comment");
+    const srcEntry = sourceRef(n("identifier", [], "s"));
+    const srcBlock = n("source_block", [comment, srcEntry, warnComment]);
+    const tgtBlock = n("target_block", [sourceRef(n("identifier", [], "t"))]);
+    const body = n("mapping_body", [srcBlock, tgtBlock]);
+    const block = n("mapping_block", [body]);
+    const root = n("source_file", [block]);
+
+    const result = extractMappings(root as any);
+    assert.deepEqual(result[0].sources, ["s"], "only schema ref, not comment text");
+    assert.deepEqual(result[0].targets, ["t"]);
+  });
 });
 
 // ── extractMetrics ────────────────────────────────────────────────────────────

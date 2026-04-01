@@ -192,8 +192,12 @@ module.exports = grammar({
       ),
 
     // ── each/flatten blocks ─────────────────────────────────────────────
-    // each src_path -> tgt_path (metadata)? { arrow_decl* }
-    // flatten src_path -> tgt_path (metadata)? { arrow_decl* }
+    // each src_path -> tgt_path (metadata)? { nested_block_item* }
+    // flatten src_path -> tgt_path (metadata)? { nested_block_item* }
+    //
+    // The body allows nested each/flatten per spec section 4.4. Source/target
+    // blocks and note blocks are mapping-level constructs and are not permitted
+    // inside nested blocks.
 
     each_block: ($) =>
       seq(
@@ -203,7 +207,7 @@ module.exports = grammar({
         $.tgt_path,
         optional($.metadata_block),
         "{",
-        repeat($._arrow_decl),
+        repeat($._nested_block_item),
         "}",
       ),
 
@@ -215,8 +219,18 @@ module.exports = grammar({
         $.tgt_path,
         optional($.metadata_block),
         "{",
-        repeat($._arrow_decl),
+        repeat($._nested_block_item),
         "}",
+      ),
+
+    // Shared body item for each/flatten blocks: arrow declarations plus nested
+    // each/flatten sub-blocks. Does not include source/target/note, which are
+    // mapping-level constructs.
+    _nested_block_item: ($) =>
+      choice(
+        $._arrow_decl,
+        $.each_block,
+        $.flatten_block,
       ),
 
     // ── Metric block ──────────────────────────────────────────────────────

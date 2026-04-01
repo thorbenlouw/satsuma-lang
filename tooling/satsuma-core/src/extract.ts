@@ -154,12 +154,23 @@ function spreadLabelText(labelNode: SyntaxNode): string {
   return words.join(" ");
 }
 
+// Comment node types from the grammar extras list. These appear as named
+// children in tree-sitter's namedChildren when they occur inside blocks, but
+// they are not schema references and must be skipped during source/target extraction.
+const COMMENT_NODE_TYPES = new Set(["comment", "warning_comment", "question_comment"]);
+
 /**
  * Extract a structural source_ref name for mapping extraction and recover
  * through ERROR nodes during mid-edit tree-sitter states.
+ *
+ * Returns null for comment nodes — they are extras that appear as named
+ * children in the CST but carry no source/target reference meaning (sl-bi92).
  */
 function sourceRefNameNs(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
+  // Skip comment extras — they appear as named children in source/target blocks
+  // but are not schema references.
+  if (COMMENT_NODE_TYPES.has(node.type)) return null;
   if (node.type === "ERROR") {
     for (const c of node.namedChildren) {
       const result = sourceRefNameNs(c);

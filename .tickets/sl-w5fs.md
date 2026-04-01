@@ -1,6 +1,6 @@
 ---
 id: sl-w5fs
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:23:38Z
@@ -27,3 +27,9 @@ The type 'STRING' is misaligned because the formatter calculates column width in
 
 Fixture: /tmp/satsuma-test-parser-edge/29-backtick-edge.stm
 
+## Notes
+
+**2026-04-01T21:00:00Z**
+
+Cause: `calcFieldAlignment` and `formatSingleLineField` in `format.ts` used `name.length` for column width calculations. For backtick names containing newlines, `.length` includes the newline character, making the padding overflow onto the second line of the name.
+Fix: Added `fieldNameDisplayWidth()` helper that returns `name.split('\n')` last-line length, and used it in both functions. Added a test in `fmt.test.ts`.

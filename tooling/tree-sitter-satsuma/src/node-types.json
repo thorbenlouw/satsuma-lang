@@ -116,6 +116,14 @@
           "named": true
         },
         {
+          "type": "each_block",
+          "named": true
+        },
+        {
+          "type": "flatten_block",
+          "named": true
+        },
+        {
           "type": "map_arrow",
           "named": true
         },
@@ -236,6 +244,14 @@
       "types": [
         {
           "type": "computed_arrow",
+          "named": true
+        },
+        {
+          "type": "each_block",
+          "named": true
+        },
+        {
+          "type": "flatten_block",
           "named": true
         },
         {

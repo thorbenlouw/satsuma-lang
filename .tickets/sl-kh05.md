@@ -1,6 +1,6 @@
 ---
 id: sl-kh05
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:23:46Z
@@ -31,3 +31,9 @@ Either the grammar should be tightened to reject reserved keywords as bare ident
 
 Fixture: /tmp/satsuma-test-parser-edge/15b-keywords-as-fields.stm, kw-*.stm, fkw-*.stm
 
+## Notes
+
+**2026-04-01T21:00:00Z**
+
+Cause: The spec (section 2.6) stated keywords "cannot be used as bare identifiers" but the grammar only enforces this for `note` (which starts a note block inside schema body). All other keywords are freely accepted as identifiers.
+Fix: Updated spec section 2.6 to accurately document current parser behavior — keywords are "strongly discouraged" as identifiers rather than "cannot be used". Added a parser enforcement note explaining the distinction. Tightening the grammar to reject all keywords was judged too risky (potential corpus breakage) relative to the benefit; a future ADR can revisit if strict enforcement is desired.

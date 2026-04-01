@@ -89,11 +89,13 @@ Comments run to end of line. There are no block comments.
 
 ### 2.6 Reserved Keywords
 
-These keywords introduce structural blocks and cannot be used as bare identifiers:
+These keywords introduce structural blocks and are strongly discouraged as bare identifiers:
 
 `schema` `fragment` `mapping` `transform` `metric` `source` `target` `map` `record` `list_of` `each` `flatten` `note` `import`
 
 `each` and `flatten` are only valid inside mapping bodies. `record` and `list_of` are type keywords used in field declarations.
+
+**Parser enforcement note (sl-kh05):** The tree-sitter grammar enforces keyword exclusion only where structural ambiguity would arise. In practice, `note` is rejected as a field name (because the grammar interprets it as the start of a note block), but most other keywords are currently accepted as schema names and field names. Using reserved keywords as identifiers is strongly discouraged because it produces confusing output and may be rejected in future parser versions. Tooling should treat keyword identifiers as user errors.
 
 ### 2.7 Vocabulary Tokens
 

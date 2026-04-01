@@ -543,7 +543,7 @@
           "type": "REPEAT",
           "content": {
             "type": "SYMBOL",
-            "name": "_arrow_decl"
+            "name": "_nested_block_item"
           }
         },
         {
@@ -591,12 +591,29 @@
           "type": "REPEAT",
           "content": {
             "type": "SYMBOL",
-            "name": "_arrow_decl"
+            "name": "_nested_block_item"
           }
         },
         {
           "type": "STRING",
           "value": "}"
+        }
+      ]
+    },
+    "_nested_block_item": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_arrow_decl"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "each_block"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "flatten_block"
         }
       ]
     },

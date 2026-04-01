@@ -1,6 +1,6 @@
 ---
 id: sl-bi92
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:23:19Z
@@ -32,3 +32,9 @@ Also affects: comments after source entries (e.g. 's // comment'), comments insi
 
 Fixture: /tmp/satsuma-test-parser-edge/06e-comment-inside-source.stm, 06f, 06g, 06b
 
+## Notes
+
+**2026-04-01T21:00:00Z**
+
+Cause: Tree-sitter `extras` (comment nodes) appear as named children in `source_block.namedChildren`. The `sourceRefNameNs` helper in `extract.ts` fell through to `entryText(node)` for any non-`source_ref` node, returning the raw comment text as a schema reference.
+Fix: Added a `COMMENT_NODE_TYPES` constant and a guard in `sourceRefNameNs` to return `null` for comment, warning_comment, and question_comment nodes. Added a test in `extract.test.ts`.
