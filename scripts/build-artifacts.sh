@@ -29,6 +29,9 @@ npm --prefix "$REPO_ROOT/tooling/satsuma-core" run build
 echo "==> Building satsuma-viz-backend..."
 npm --prefix "$REPO_ROOT/tooling/satsuma-viz-backend" run build
 
+echo "==> Building satsuma-viz..."
+npm --prefix "$REPO_ROOT/tooling/satsuma-viz" run build
+
 # --------------------------------------------------------------------------- #
 # 1. VS Code extension (.vsix)
 # --------------------------------------------------------------------------- #
