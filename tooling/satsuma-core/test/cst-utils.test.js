@@ -16,6 +16,7 @@ import {
   entryText,
   qualifiedNameText,
   sourceRefText,
+  sourceRefStructuralText,
   fieldNameText,
   walkDescendants,
 } from "../dist/cst-utils.js";
@@ -282,6 +283,26 @@ describe("sourceRefText()", () => {
 
   it("returns null for null input", () => {
     assert.equal(sourceRefText(null), null);
+  });
+});
+
+// ── sourceRefStructuralText() ──────────────────────────────────────────────
+
+describe("sourceRefStructuralText()", () => {
+  it("extracts identifier text from a structural source_ref", () => {
+    const ref = n("source_ref", [ident("orders")], "orders");
+    assert.equal(sourceRefStructuralText(ref), "orders");
+  });
+
+  it("extracts qualified names from structural source refs", () => {
+    const qn = n("qualified_name", [ident("crm"), ident("orders")], "crm::orders");
+    const ref = n("source_ref", [qn], "crm::orders");
+    assert.equal(sourceRefStructuralText(ref), "crm::orders");
+  });
+
+  it("ignores nl_string join descriptions inside a source_ref", () => {
+    const ref = n("source_ref", [nlStr("Join on a.id = b.id")], '"Join on a.id = b.id"');
+    assert.equal(sourceRefStructuralText(ref), null);
   });
 });
 

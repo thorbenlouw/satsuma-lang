@@ -457,7 +457,7 @@ function scopeIndex(uri: string): WorkspaceIndex {
 function sendMergedDiagnostics(uri: string, tree: Tree): void {
   const parseDiags = computeDiagnostics(tree);
   const validateDiags = validateDiagCache.get(uri) ?? [];
-  const coreSemanticDiags = computeCoreSemanticDiagnostics(uri, wsIndex);
+  const coreSemanticDiags = computeCoreSemanticDiagnostics(uri, scopeIndex(uri));
   const missingImportDiags = computeMissingImportDiagnostics(tree, uri, wsIndex);
 
   // Deduplicate: core semantic diagnostics may overlap with CLI validate

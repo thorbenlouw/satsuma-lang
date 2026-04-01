@@ -111,6 +111,24 @@ export function sourceRefText(node: SyntaxNode | null | undefined): string | nul
 }
 
 /**
+ * Extract the structural schema/fragment name from a source_ref CST node.
+ *
+ * Unlike sourceRefText(), this deliberately ignores nl_string children because
+ * quoted text inside `source {}` is natural-language join/filter documentation,
+ * not a structural schema reference.
+ */
+export function sourceRefStructuralText(node: SyntaxNode | null | undefined): string | null {
+  if (!node) return null;
+  const qn = child(node, "qualified_name");
+  if (qn) return qualifiedNameText(qn);
+  const bn = child(node, "backtick_name");
+  if (bn) return bn.text.slice(1, -1);
+  const id = child(node, "identifier");
+  if (id) return id.text;
+  return null;
+}
+
+/**
  * Extract the display name from a field_name CST node.
  * Strips backtick delimiters when the inner node is a backtick_name.
  */

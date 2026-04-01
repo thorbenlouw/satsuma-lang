@@ -195,6 +195,26 @@ describe("indexFile", () => {
     assert.equal(refs[0].context, "source");
   });
 
+  it("does not index quoted join descriptions as source references", () => {
+    const idx = buildIndex({
+      "file:///a.stm": `schema a { id INT }
+schema b { id INT }
+schema t { id INT }
+mapping \`test\` {
+  source {
+    a
+    b
+    "Join on a.id = b.id"
+  }
+  target { t }
+  a.id -> id
+}`,
+    });
+    assert.equal(idx.references.get("Join on a.id = b.id"), undefined);
+    const srcRefs = idx.references.get("a") ?? [];
+    assert.equal(srcRefs.filter((ref) => ref.context === "source").length, 1);
+  });
+
   it("indexes fragment spread references from schemas", () => {
     const idx = buildIndex({
       "file:///a.stm": `schema customers {
