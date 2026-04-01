@@ -1,6 +1,6 @@
 ---
 id: sl-tslm
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:30:59Z
@@ -22,3 +22,9 @@ Repro:
   satsuma validate . --json   # rule: 'nl-ref-unresolved'
   satsuma lint . --json       # rule: 'unresolved-nl-ref'
 
+## Notes
+
+**2026-04-01**
+
+Cause: `checkNLRefs` in `satsuma-core/src/validate.ts` used the rule name `"nl-ref-unresolved"` while `checkUnresolvedNlRef` in `lint-engine.ts` correctly used `"unresolved-nl-ref"` (matching CLI docs). Simple string mismatch.
+Fix: Renamed the rule in validate.ts to `"unresolved-nl-ref"`. Both paths now emit the same rule name, enabling consumers to deduplicate by `(rule, file, line, column)`.

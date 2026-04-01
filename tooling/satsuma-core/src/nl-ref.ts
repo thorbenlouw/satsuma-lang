@@ -493,6 +493,18 @@ function extractBlockNoteRefs(
     : "";
   const parentLabel = `${blockTypePrefix}${blockName}`;
 
+  // Also scan inline (note "...") metadata in the block declaration header.
+  // For example: `schema my_schema (note "Derived from @upstream")` — the note
+  // text lives in a note_tag inside metadata_block, not in a note_block child.
+  const meta = blockNode.namedChildren.find((c) => c.type === "metadata_block");
+  if (meta) {
+    const noteTag = meta.namedChildren.find((c) => c.type === "note_tag");
+    if (noteTag) {
+      // note_tag has the same nl_string/multiline_string children as note_block.
+      extractStandaloneNoteRefs(noteTag, namespace, parentLabel, results);
+    }
+  }
+
   const bodyTypes = ["schema_body", "metric_body"];
   for (const child of blockNode.namedChildren) {
     if (child.type === "note_block") {

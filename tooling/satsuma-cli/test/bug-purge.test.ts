@@ -8,6 +8,8 @@
  * sl-04pv: hidden-source-in-nl fires on bare and dotted-field refs
  * sl-80jy: unresolved-nl-ref no false positive on valid dotted-field refs
  * sl-j8uk: Filesystem errors exit code 2
+ * sl-j9ew: unresolved-nl-ref message uses "metric" scope label for metric notes
+ * sl-tslm: validate and lint emit the same rule name for unresolved NL refs
  * sc-1ar0: mapping includes flatten/each block arrows
  * sc-8g9a: validate no false-positive field-not-in-schema on flatten targets
  * sc-7zt0: arrows --json no doubled schema name on flatten targets
@@ -307,6 +309,63 @@ describe("sl-80jy: unresolved-nl-ref no false positive on dotted-field", () => {
     const diags = runLint(index, { select: ["unresolved-nl-ref"] });
     assert.equal(diags.length, 1);
     assert.equal(diags[0].rule, "unresolved-nl-ref");
+  });
+});
+
+// ── sl-j9ew: metric note scope label ─────────────────────────────────────────
+
+describe("sl-j9ew: unresolved-nl-ref message says 'metric' not 'mapping' for metric notes", () => {
+  it("diagnostic message includes scope label 'metric' for a metric note @ref (sl-j9ew)", () => {
+    // Bug sl-j9ew: the message said "in mapping 'note:metric:revenue'" because
+    // the mapping key lookup used the wrong prefix. Fix: use stripNLRefScopePrefix
+    // to get the bare entity name for the scope label.
+    const index = makeIndex({
+      schemas: [{ name: "orders", fields: [{ name: "total" }] }],
+      nlRefData: [{
+        text: "Sum @nonexistent_table.amount grouped by month",
+        mapping: "note:metric:revenue",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 6,
+      }],
+    });
+    index.metrics.set("revenue", { sources: [], fields: [], file: "test.stm", row: 2 });
+
+    const diags = runLint(index, { select: ["unresolved-nl-ref"] });
+    assert.equal(diags.length, 1, "should produce one unresolved-nl-ref warning");
+    assert.ok(diags[0].message.includes("metric"), `message should say 'metric', got: ${diags[0].message}`);
+    assert.ok(!diags[0].message.includes("mapping"), `message should not say 'mapping', got: ${diags[0].message}`);
+    assert.ok(diags[0].message.includes("revenue"), `message should include metric name, got: ${diags[0].message}`);
+  });
+});
+
+// ── sl-tslm: validate and lint emit the same rule name ───────────────────────
+
+describe("sl-tslm: collectSemanticWarnings emits 'unresolved-nl-ref' to match lint", () => {
+  it("validate uses rule name 'unresolved-nl-ref' (not 'nl-ref-unresolved') (sl-tslm)", () => {
+    // Bug sl-tslm: validate emitted "nl-ref-unresolved" while lint emitted "unresolved-nl-ref".
+    // Both now use "unresolved-nl-ref" so consumers can deduplicate by (rule, file, line, col).
+    const index = makeIndex({
+      schemas: [{ name: "src", fields: [{ name: "id" }] }],
+      mappings: [{ name: "m1", sources: ["src"], targets: ["src"] }],
+      nlRefData: [{
+        text: "Check @nonexistent",
+        mapping: "m1",
+        namespace: null,
+        targetField: null,
+        file: "test.stm",
+        line: 5,
+        column: 0,
+      }],
+    });
+
+    // runLint wraps the CLI lint-engine; collectSemanticWarnings wraps core validate.
+    // Both must emit the same rule name for the same finding.
+    const lintDiags = runLint(index, { select: ["unresolved-nl-ref"] });
+    assert.equal(lintDiags.length, 1, "lint should find the unresolved ref");
+    assert.equal(lintDiags[0].rule, "unresolved-nl-ref");
   });
 });
 

@@ -7,7 +7,7 @@
  * whose `apply` function rewrites source text deterministically.
  */
 
-import { capitalize } from "@satsuma/core";
+import { capitalize, stripNLRefScopePrefix } from "@satsuma/core";
 import {
   extractAtRefs,
   classifyRef,
@@ -123,11 +123,11 @@ function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
 
 /**
  * Build a fix closure that inserts `schemaRef` into the `source { }` block of the
- * named mapping. The fix is text-based: it walks source lines to locate the mapping,
- * then finds the `source { ... }` line and appends the new ref.
+ * named (or anonymous) mapping. The fix is text-based.
  *
  * Algorithm:
- *   1. Locate the mapping header by name (handles backtick, quoted, and bare labels).
+ *   1. Locate the mapping header by name or, for anonymous mappings, by 0-indexed
+ *      row number encoded in the key as "<anon>@path:row".
  *   2. Track brace depth to stay inside the mapping body and stop at its closing `}`.
  *   3. Find the single-line `source { ... }` form and append `insertRef` to its list.
  *   4. If the ref is already present (qualified or unqualified), return source unchanged.
@@ -145,6 +145,11 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
     insertRef = schemaRef.slice(mappingNs.length + 2);
   }
 
+  // Anonymous mappings have no name — encode the 0-indexed row so we can
+  // locate them by source position instead of by label text.
+  const anonMatch = displayName.match(/^<anon>@.+:(\d+)$/);
+  const anonRow = anonMatch ? parseInt(anonMatch[1]!, 10) : null;
+
   return (source: string): string => {
     const lines = source.split("\n");
     let inMapping = false;
@@ -154,8 +159,18 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: i is within lines.length bounds
       const trimmed = lines[i]!.trim();
 
-      // Step 1: find the mapping header — matches backtick, double-quoted, or bare label
+      // Step 1: find the mapping header.
+      // Named mappings: match by label text (backtick, double-quoted, or bare).
+      // Anonymous mappings: match by 0-indexed row number stored in the key.
       if (!inMapping) {
+        if (anonRow !== null) {
+          // Anonymous mapping — located by source position, not by name.
+          if (i === anonRow && /^mapping\b/.test(trimmed)) {
+            inMapping = true;
+            braceDepth = (trimmed.match(/\{/g) ?? []).length - (trimmed.match(/\}/g) ?? []).length;
+          }
+          continue;
+        }
         const mappingRe = /^mapping\s+(?:`([^`]+)`|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
         const m = trimmed.match(mappingRe);
         if (m) {
@@ -207,10 +222,10 @@ function composeFixes(...fns: ((s: string) => string)[]): (s: string) => string 
 
 /**
  * Build a fix closure that prepends `schemaRef` to the source list of the arrow
- * targeting `targetField` inside the named mapping. The fix is text-based.
+ * targeting `targetField` inside the named (or anonymous) mapping. The fix is text-based.
  *
  * Algorithm (mirrors makeAddSourceFix for the mapping-location phase):
- *   1. Locate the mapping header by name.
+ *   1. Locate the mapping header by name or, for anonymous mappings, by row number.
  *   2. Track brace depth to stay inside the mapping body.
  *   3. Find the arrow whose target matches `targetField` (bare or schema-qualified).
  *   4. Prepend `insertRef` to the arrow's source list before the `->`.
@@ -239,6 +254,10 @@ function makeAddArrowSourceFix(
   const dotIdx = matchTarget.indexOf(".");
   const bareTarget = dotIdx >= 0 ? matchTarget.slice(dotIdx + 1) : matchTarget;
 
+  // Anonymous mappings: locate by row number encoded in the key.
+  const anonMatch = displayName.match(/^<anon>@.+:(\d+)$/);
+  const anonRow = anonMatch ? parseInt(anonMatch[1]!, 10) : null;
+
   // Safe: lines[i] accesses are within bounds; regex capture groups are guaranteed by match checks
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   return (source: string): string => {
@@ -249,8 +268,15 @@ function makeAddArrowSourceFix(
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i]!.trim();
 
-      // Step 1: find the mapping header — handles backtick, double-quoted, and bare labels
+      // Step 1: find the mapping header — named by label text or anonymous by row number.
       if (!inMapping) {
+        if (anonRow !== null) {
+          if (i === anonRow && /^mapping\b/.test(trimmed)) {
+            inMapping = true;
+            braceDepth = (trimmed.match(/\{/g) ?? []).length - (trimmed.match(/\}/g) ?? []).length;
+          }
+          continue;
+        }
         const mappingRe = /^mapping\s+(?:`([^`]+)`|"([^"]+)"|(.+?))\s*(?:\(|$|\{)/;
         const m = trimmed.match(mappingRe);
         if (m) {
@@ -320,11 +346,6 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
   if (!index.nlRefData) return diagnostics;
 
   for (const item of index.nlRefData) {
-    // File-level standalone notes (mapping === "note:") use backtick-quoted
-    // terms for emphasis, not as field references.  Skip them to avoid false
-    // positives — mirrors the suppression already present in validate.ts.
-    if (item.mapping === "note:") continue;
-
     const refs = extractAtRefs(item.text);
     const mappingKey = item.namespace
       ? `${item.namespace}::${item.mapping}`
@@ -337,38 +358,57 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
       namespace: item.namespace,
     };
 
-    // For note blocks inside metrics/schemas, enrich mapping context with the
-    // block's own fields and source schemas so refs to them resolve correctly.
+    // Classify the scope of this NL item so messages say "in metric 'revenue'"
+    // rather than "in mapping 'note:metric:revenue'".
+    //
+    // stripNLRefScopePrefix("note:metric:revenue") → "revenue"
+    // stripNLRefScopePrefix("note:schema:customers") → "customers"
+    // stripNLRefScopePrefix("note:") → "(file-level note)"
+    const isNoteContext = item.mapping.startsWith("note:");
     let scopeLabel = "mapping";
-    const noteMatch = item.mapping.match(/^note:(.+)$/);
-    if (noteMatch) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: regex capture group 1 always matches when noteMatch succeeds
-      const blockName = noteMatch[1]!;
-      const nsBlockName = item.namespace ? `${item.namespace}::${blockName}` : blockName;
-      const metric = index.metrics?.get(nsBlockName) ?? index.metrics?.get(blockName);
-      if (metric) {
+    let displayName = mappingKey; // default: full key for regular mapping contexts
+
+    if (isNoteContext) {
+      const entityName = stripNLRefScopePrefix(item.mapping);
+      const nsEntityName = item.namespace && entityName !== "(file-level note)"
+        ? `${item.namespace}::${entityName}`
+        : entityName;
+
+      if (item.mapping.startsWith("note:metric:")) {
         scopeLabel = "metric";
-        // Add metric's own fields as virtual source so bare field refs resolve
-        mappingContext.sources = [...mappingContext.sources, ...(metric.sources ?? [])];
-      }
-      const schema = index.schemas.get(nsBlockName) ?? index.schemas.get(blockName);
-      if (schema) {
+        displayName = nsEntityName;
+        // Enrich mapping context with the metric's own source schemas so bare
+        // field refs from that schema resolve correctly inside metric notes.
+        const metric = index.metrics?.get(nsEntityName) ?? index.metrics?.get(entityName);
+        if (metric) {
+          mappingContext.sources = [...mappingContext.sources, ...(metric.sources ?? [])];
+        }
+      } else if (item.mapping.startsWith("note:schema:")) {
         scopeLabel = "schema";
+        displayName = nsEntityName;
+      } else if (item.mapping.startsWith("note:fragment:")) {
+        scopeLabel = "fragment";
+        displayName = nsEntityName;
+      } else {
+        // File-level note block (item.mapping === "note:").
+        scopeLabel = "note";
+        displayName = "file-level note";
       }
     } else if (item.mapping.startsWith("transform:")) {
       scopeLabel = "transform";
     }
 
     for (const { ref, offset } of refs) {
-      // Skip known pipeline function names
+      // Skip known pipeline function names — they appear in transform bodies and
+      // are interpreted by the runtime, not resolved to workspace identifiers.
       if (KNOWN_PIPELINE_FUNCTIONS.has(ref)) continue;
 
-      // For metric notes, check if the ref matches one of the metric's own field names
-      if (noteMatch) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: regex capture group 1 always matches when noteMatch succeeds
-      const blockName = noteMatch[1]!;
-        const nsBlockName = item.namespace ? `${item.namespace}::${blockName}` : blockName;
-        const metric = index.metrics?.get(nsBlockName) ?? index.metrics?.get(blockName);
+      // For metric notes: suppress warnings for refs to the metric's own fields
+      // (e.g. "@total_revenue" inside a metric that declares "total_revenue").
+      if (item.mapping.startsWith("note:metric:")) {
+        const entityName = stripNLRefScopePrefix(item.mapping);
+        const nsEntityName = item.namespace ? `${item.namespace}::${entityName}` : entityName;
+        const metric = index.metrics?.get(nsEntityName) ?? index.metrics?.get(entityName);
         if (metric && metric.fields.some((f) => f.name === ref)) continue;
       }
 
@@ -380,7 +420,7 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
           column: item.column + offset + 1,
           severity: "warning",
           rule: "unresolved-nl-ref",
-          message: `NL reference \`${ref}\` in ${scopeLabel} '${mappingKey}' does not resolve to any known identifier`,
+          message: `NL reference \`${ref}\` in ${scopeLabel} '${displayName}' does not resolve to any known identifier`,
           fixable: false,
         });
       }

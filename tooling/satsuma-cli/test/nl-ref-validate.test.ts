@@ -38,7 +38,7 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
   } as any;
 }
 
-describe("NL ref validation: nl-ref-unresolved", () => {
+describe("NL ref validation: unresolved-nl-ref", () => {
   it("does not warn for valid NL @refs", () => {
     const index = makeIndex({
       schemas: [
@@ -64,7 +64,7 @@ describe("NL ref validation: nl-ref-unresolved", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref" || w.rule === "nl-ref-not-in-source");
     assert.equal(nlWarnings.length, 0, "Valid NL refs should produce no warnings");
   });
 
@@ -92,7 +92,7 @@ describe("NL ref validation: nl-ref-unresolved", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const unresolvedWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    const unresolvedWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref");
     assert.equal(unresolvedWarnings.length, 2, "Should warn for both unresolved refs");
     assert.ok(unresolvedWarnings[0].message.includes("nonexistent_field"));
     assert.ok(unresolvedWarnings[1].message.includes("source::unknown_schema"));
@@ -208,8 +208,8 @@ describe("NL ref validation: fragment spread fields", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
-    assert.equal(nlWarnings.length, 0, "Fields from fragment spreads should not produce nl-ref-unresolved warnings");
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref");
+    assert.equal(nlWarnings.length, 0, "Fields from fragment spreads should not produce unresolved-nl-ref warnings");
   });
 
   it("still warns for genuine misses even when schema has spreads", () => {
@@ -246,7 +246,7 @@ describe("NL ref validation: fragment spread fields", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref");
     assert.equal(nlWarnings.length, 1, "Genuine miss should still warn");
     assert.ok(nlWarnings[0].message.includes("NONEXISTENT"));
   });
@@ -254,6 +254,7 @@ describe("NL ref validation: fragment spread fields", () => {
 
 describe("NL ref validation: standalone notes (sl-xrc8)", () => {
   it("does not warn for bare schema refs in standalone notes", () => {
+    // Schema refs that resolve to known schemas should not produce unresolved-nl-ref warnings.
     const index = makeIndex({
       schemas: [
         { name: "source_system", fields: [{ name: "user_id" }] },
@@ -271,11 +272,12 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref" || w.rule === "nl-ref-not-in-source");
     assert.equal(nlWarnings.length, 0, "Schema refs in standalone notes should not warn");
   });
 
   it("does not warn for bare field refs in standalone notes", () => {
+    // A bare @fieldName that resolves globally should not produce unresolved-nl-ref warnings.
     const index = makeIndex({
       schemas: [
         { name: "my_schema", fields: [{ name: "user_id" }, { name: "email" }] },
@@ -292,11 +294,13 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref" || w.rule === "nl-ref-not-in-source");
     assert.equal(nlWarnings.length, 0, "Bare field refs in standalone notes should resolve without warnings");
   });
 
-  it("does not warn for unresolvable refs in standalone notes", () => {
+  it("warns for unresolvable refs in file-level notes (sl-vjvf)", () => {
+    // Bug sl-vjvf: file-level note @refs that don't resolve to any known identifier
+    // should produce an unresolved-nl-ref warning. Previously these were silently skipped.
     const index = makeIndex({
       schemas: [
         { name: "my_schema", fields: [{ name: "user_id" }] },
@@ -313,11 +317,13 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
-    assert.equal(nlWarnings.length, 0, "Unresolvable refs in standalone notes should not warn");
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref");
+    assert.equal(nlWarnings.length, 1, "Unresolvable @ref in file-level note should warn");
+    assert.ok(nlWarnings[0].message.includes("external_config_key"));
   });
 
   it("does not warn for dotted field refs in standalone notes", () => {
+    // Dotted @schema.field refs that resolve should not warn.
     const index = makeIndex({
       schemas: [
         { name: "source_system", fields: [{ name: "email_addr" }] },
@@ -334,11 +340,12 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref" || w.rule === "nl-ref-not-in-source");
     assert.equal(nlWarnings.length, 0, "Dotted field refs in standalone notes should not warn");
   });
 
   it("does not warn for refs in schema-scoped notes (note:<parent>)", () => {
+    // Schema-scoped notes use a note:<name> mapping key. Resolved @refs should not warn.
     const index = makeIndex({
       schemas: [
         { name: "my_schema", fields: [{ name: "user_id" }] },
@@ -355,7 +362,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref" || w.rule === "nl-ref-not-in-source");
     assert.equal(nlWarnings.length, 0, "Refs in schema-scoped notes should not warn");
   });
 
@@ -382,7 +389,7 @@ describe("NL ref validation: standalone notes (sl-xrc8)", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const unresolvedWarnings = warnings.filter((w) => w.rule === "nl-ref-unresolved");
+    const unresolvedWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref");
     assert.equal(unresolvedWarnings.length, 1, "Mapping notes should still warn for unresolved refs");
   });
 });
@@ -412,7 +419,7 @@ describe("NL ref validation: bare field matching", () => {
     });
 
     const warnings = collectSemanticWarnings(index);
-    const nlWarnings = warnings.filter((w) => w.rule.startsWith("nl-ref-"));
+    const nlWarnings = warnings.filter((w) => w.rule === "unresolved-nl-ref" || w.rule === "nl-ref-not-in-source");
     assert.equal(nlWarnings.length, 0, "Bare fields matching source schema should not warn");
   });
 });

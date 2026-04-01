@@ -1,0 +1,11 @@
+// Fixture for sl-1wpy: lint --fix on an anonymous mapping.
+// The anonymous mapping references @hidden_dep which is not in the source list.
+// After lint --fix, hidden_dep should be added to the source block.
+schema anon_src { id INT (pk) }
+schema anon_tgt { id INT (pk) }
+schema hidden_dep { code STRING }
+mapping {
+  source { anon_src }
+  target { anon_tgt }
+  id -> id { "Look up @hidden_dep.code" }
+}
