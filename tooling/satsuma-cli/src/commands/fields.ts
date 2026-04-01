@@ -118,17 +118,20 @@ Examples:
       }
 
       if (fields.length === 0) {
+        // Use resolvedSchemaName (the canonical index key) so bare-name queries
+        // still produce the qualified name in output (e.g. "crm::customers" not
+        // "customers") — see sl-wfgx.
         if (opts.unmappedBy) {
           console.log(
-            `All fields in '${schemaName}' are mapped by '${opts.unmappedBy}'.`,
+            `All fields in '${resolvedSchemaName}' are mapped by '${opts.unmappedBy}'.`,
           );
         } else {
-          console.log(`${entityKind.charAt(0).toUpperCase() + entityKind.slice(1)} '${schemaName}' has no fields.`);
+          console.log(`${entityKind.charAt(0).toUpperCase() + entityKind.slice(1)} '${resolvedSchemaName}' has no fields.`);
         }
         return;
       }
 
-      printDefault(schemaName, fields, opts);
+      printDefault(resolvedSchemaName, fields, opts);
     });
 }
 

@@ -154,11 +154,14 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
         }
       }
 
-      return { scope: blockName, entries };
+      // Use the resolved canonical key as the scope so bare-name queries still
+      // produce the qualified name in output (e.g. "crm::customers" not "customers").
+      // resolvedName is updated by each successful resolveIndexKey call above (sl-wfgx).
+      return { scope: resolvedName, entries };
     }
   }
 
-  return { scope: blockName, entries: [] };
+  return { scope: resolvedName, entries: [] };
 }
 
 function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {

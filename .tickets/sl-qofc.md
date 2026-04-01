@@ -1,6 +1,6 @@
 ---
 id: sl-qofc
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:29:27Z
@@ -22,3 +22,9 @@ Repro:
 
 The text output is what humans and agents see first, so this makes it harder to identify which namespace a mapping belongs to.
 
+## Notes
+
+**2026-04-01**
+
+Cause: `printDefault` in mapping.ts used `entry.name` (bare name) for the header instead of the canonical entity name. `printJson` already used `canonicalEntityName(entry)` correctly.
+Fix: Changed `printDefault` to use `canonicalEntityName(entry)` for the name string, matching `printJson`.

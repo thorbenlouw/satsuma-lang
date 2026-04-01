@@ -456,13 +456,35 @@ function findParentBlock(node: SyntaxNode): { name: string | null; blockType: st
   while (current) {
     if (BLOCK_TYPES.has(current.type)) {
       const label = child(current, "block_label");
-      const name = label ? labelText(current) : null;
+      const bareName = label ? labelText(current) : null;
       const blockType = current.type.replace(/_block$/, "");
+      // Walk up further to see if this block sits inside a namespace_block so
+      // we can qualify the name (e.g. "crm::customers" not just "customers").
+      // This ensures the JSON `block` field in warnings/questions output carries
+      // the fully-qualified name needed to disambiguate same-named schemas in
+      // different namespaces (sl-pb47).
+      const name = bareName ? qualifyWithNamespace(current, bareName) : null;
       return { name, blockType };
     }
     current = current.parent;
   }
   return { name: null, blockType: null };
+}
+
+/**
+ * Walk up the CST from `blockNode` to find an enclosing namespace_block.
+ * If one is found, return "ns::name"; otherwise return `name` unchanged.
+ */
+function qualifyWithNamespace(blockNode: SyntaxNode, name: string): string {
+  let current = blockNode.parent;
+  while (current) {
+    if (current.type === "namespace_block") {
+      const nsName = child(current, "identifier");
+      return nsName ? `${nsName.text}::${name}` : name;
+    }
+    current = current.parent;
+  }
+  return name;
 }
 
 export interface ExtractedNote {
