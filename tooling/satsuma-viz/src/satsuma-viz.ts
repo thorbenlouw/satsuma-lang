@@ -75,7 +75,27 @@ export interface VizAutomationState {
 }
 
 export function sanitizeTestIdSegment(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const lowered = value.toLowerCase();
+  let result = "";
+  let pendingSeparator = false;
+
+  for (const char of lowered) {
+    const isAsciiLetter = char >= "a" && char <= "z";
+    const isDigit = char >= "0" && char <= "9";
+
+    if (isAsciiLetter || isDigit) {
+      if (pendingSeparator && result) {
+        result += "-";
+      }
+      result += char;
+      pendingSeparator = false;
+      continue;
+    }
+
+    pendingSeparator = result.length > 0;
+  }
+
+  return result;
 }
 
 export function describeVizAutomationState(args: {

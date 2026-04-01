@@ -6,6 +6,7 @@ describe("viz automation helpers", () => {
   it("sanitizes test-id segments into stable selector-friendly names", async () => {
     const mod = await import("../dist/satsuma-viz.js");
     assert.equal(mod.sanitizeTestIdSegment("crm::Customer Orders"), "crm-customer-orders");
+    assert.equal(mod.sanitizeTestIdSegment("---crm---orders---"), "crm-orders");
   });
 
   it("reports loading state before layout is available", async () => {

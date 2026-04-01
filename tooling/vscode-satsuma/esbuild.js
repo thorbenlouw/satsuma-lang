@@ -24,6 +24,17 @@ const serverConfig = {
   outfile: "server/dist/server.js",
   format: "cjs",
   sourcemap: true,
+  alias: {
+    "@satsuma/viz-backend": path.resolve(__dirname, "../satsuma-viz-backend/src/index.ts"),
+    "@satsuma/viz-backend/workspace-index": path.resolve(
+      __dirname,
+      "../satsuma-viz-backend/src/workspace-index.ts",
+    ),
+    "@satsuma/viz-backend/viz-model": path.resolve(
+      __dirname,
+      "../satsuma-viz-backend/src/viz-model.ts",
+    ),
+  },
   // web-tree-sitter uses import.meta.url internally (for createRequire and
   // WASM file location). esbuild replaces import.meta with {} in CJS bundles,
   // making import.meta.url → undefined and crashing at runtime. The banner
