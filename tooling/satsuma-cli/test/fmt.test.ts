@@ -119,7 +119,7 @@ describe("satsuma fmt edge cases", () => {
     const file = join(tmp, "test.stm");
     writeFileSync(file, "schema test {\n  `name with\nnewline` STRING\n}\n");
 
-    const { stdout } = await satsuma("fmt", file);
+    await satsuma("fmt", file);
 
     // The formatted output is written to the file in-place; read it back.
     const result = readFileSync(file, "utf8");
