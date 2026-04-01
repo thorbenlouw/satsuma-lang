@@ -24,6 +24,9 @@ const serverConfig = {
   outfile: "server/dist/server.js",
   format: "cjs",
   sourcemap: true,
+  nodePaths: [
+    path.resolve(__dirname, "../satsuma-lsp/node_modules"),
+  ],
   alias: {
     "@satsuma/viz-backend": path.resolve(__dirname, "../satsuma-viz-backend/src/index.ts"),
     "@satsuma/viz-backend/workspace-index": path.resolve(
