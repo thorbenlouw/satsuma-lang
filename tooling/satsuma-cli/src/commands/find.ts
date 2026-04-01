@@ -274,6 +274,7 @@ function collectSpreadFieldMatches(
   );
 
   while (queue.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: queue.length > 0 checked above
     const spreadRef = queue.pop()!;
     const resolvedKey = resolveScopedEntityRef(spreadRef, ns, index.fragments);
     if (!resolvedKey || visited.has(resolvedKey)) continue;
@@ -322,6 +323,7 @@ function printDefault(matches: Match[]): void {
   for (const m of matches) {
     const key = `${m.blockType}:${m.block}`;
     if (!byBlock.has(key)) byBlock.set(key, { blockType: m.blockType, block: m.block, file: m.file, fields: [] });
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     byBlock.get(key)!.fields.push(m);
   }
 

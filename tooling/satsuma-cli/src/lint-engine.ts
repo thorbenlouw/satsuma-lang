@@ -151,6 +151,7 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
     let braceDepth = 0;
 
     for (let i = 0; i < lines.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: i is within lines.length bounds
       const trimmed = lines[i]!.trim();
 
       // Step 1: find the mapping header — matches backtick, double-quoted, or bare label
@@ -178,6 +179,8 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
       // Matches: `source { ... }` where `...` is the comma-separated ref list
       const sourceLineRe = /^source\s*\{([^}]*)\}\s*$/;
       const sm = trimmed.match(sourceLineRe);
+      // Safe: sm[1] always matches when sm is non-null; lines[i] is within bounds; /^(\s*)/ always matches
+      /* eslint-disable @typescript-eslint/no-non-null-assertion */
       if (sm) {
         const existing = sm[1]!.trim();
         // Step 4: skip if the ref is already present (qualified or unqualified)
@@ -191,6 +194,7 @@ function makeAddSourceFix(mappingKey: string, schemaRef: string): (source: strin
         lines[i] = `${indent}source { ${newRefs} }`;
         return lines.join("\n");
       }
+      /* eslint-enable @typescript-eslint/no-non-null-assertion */
     }
 
     return source;
@@ -235,6 +239,8 @@ function makeAddArrowSourceFix(
   const dotIdx = matchTarget.indexOf(".");
   const bareTarget = dotIdx >= 0 ? matchTarget.slice(dotIdx + 1) : matchTarget;
 
+  // Safe: lines[i] accesses are within bounds; regex capture groups are guaranteed by match checks
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
   return (source: string): string => {
     const lines = source.split("\n");
     let inMapping = false;
@@ -291,6 +297,7 @@ function makeAddArrowSourceFix(
 
     return source;
   };
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
 }
 
 // Pipeline function names from SATSUMA-V2-SPEC.md §7.2 (pipeline step catalog).
@@ -335,6 +342,7 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
     let scopeLabel = "mapping";
     const noteMatch = item.mapping.match(/^note:(.+)$/);
     if (noteMatch) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: regex capture group 1 always matches when noteMatch succeeds
       const blockName = noteMatch[1]!;
       const nsBlockName = item.namespace ? `${item.namespace}::${blockName}` : blockName;
       const metric = index.metrics?.get(nsBlockName) ?? index.metrics?.get(blockName);
@@ -357,7 +365,8 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
 
       // For metric notes, check if the ref matches one of the metric's own field names
       if (noteMatch) {
-        const blockName = noteMatch[1]!;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: regex capture group 1 always matches when noteMatch succeeds
+      const blockName = noteMatch[1]!;
         const nsBlockName = item.namespace ? `${item.namespace}::${blockName}` : blockName;
         const metric = index.metrics?.get(nsBlockName) ?? index.metrics?.get(blockName);
         if (metric && metric.fields.some((f) => f.name === ref)) continue;
@@ -449,6 +458,8 @@ export function applyFixes(
 ): { fixedFiles: Map<string, string>; appliedFixes: LintFix[] } {
   const fixable = diagnostics.filter((d) => d.fixable && d.fix);
 
+  // Safe: d.fix is guaranteed non-null by the filter predicate above
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
   const byFile = new Map<string, LintDiagnostic[]>();
   for (const d of fixable) {
     if (!byFile.has(d.fix!.file)) byFile.set(d.fix!.file, []);
@@ -471,6 +482,7 @@ export function applyFixes(
         appliedFixes.push(d.fix!);
       }
     }
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
     if (source !== originalSource) {
       fixedFiles.set(file, source);

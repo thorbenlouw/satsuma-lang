@@ -30,6 +30,7 @@ function followImports(entryFile: string): string[] {
   const visited = new Set<string>();
   const queue = [entryFile];
   while (queue.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: queue.length > 0 checked above
     const filePath = queue.pop()!;
     if (visited.has(filePath)) continue;
     visited.add(filePath);

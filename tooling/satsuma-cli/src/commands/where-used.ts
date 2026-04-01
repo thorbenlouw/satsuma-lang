@@ -364,6 +364,7 @@ function printDefault(name: string, refs: Ref[]): void {
   const byKind = new Map<string, Ref[]>();
   for (const ref of refs) {
     if (!byKind.has(ref.kind)) byKind.set(ref.kind, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     byKind.get(ref.kind)!.push(ref);
   }
 

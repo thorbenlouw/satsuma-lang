@@ -174,6 +174,7 @@ Examples:
       const byFile = new Map<string, LintDiagnostic[]>();
       for (const d of diagnostics) {
         if (!byFile.has(d.file)) byFile.set(d.file, []);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
         byFile.get(d.file)!.push(d);
       }
 

@@ -100,8 +100,8 @@ export default [
     rules: {
       // Align with existing JS convention
       "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
-      // Allow non-null assertions — used intentionally for indexed access
-      "@typescript-eslint/no-non-null-assertion": "off",
+      // Non-null assertions require targeted inline suppression with a safety justification
+      "@typescript-eslint/no-non-null-assertion": "error",
     },
   },
 ];

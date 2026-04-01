@@ -151,6 +151,7 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
   const fieldPath = fieldRef.slice(dot + 1);
   // Support nested paths like schema.record.nested.field
   const pathSegments = fieldPath.split(".");
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: split always produces at least one element
   const leafName = pathSegments[pathSegments.length - 1]!;
 
   const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
@@ -225,6 +226,7 @@ function collectFieldArrowNL(
   items: NLItemWithFile[],
 ): void {
   for (let idx = 0; idx < children.length; idx++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: idx is within children.length bounds
     const child = children[idx]!;
     if (child.type === "each_block" || child.type === "flatten_block") {
       collectFieldArrowNL(child.namedChildren, leafName, parentName, file, items);
@@ -240,6 +242,7 @@ function collectFieldArrowNL(
 
     // Include warning/question comments immediately preceding this arrow
     for (let ci = idx - 1; ci >= 0; ci--) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: ci >= 0 checked by loop condition
       const prev = children[ci]!;
       if (prev.type === "warning_comment" || prev.type === "question_comment") {
         for (const item of extractNLContent(prev, parentName)) {

@@ -686,6 +686,7 @@ function printDefault(graph: WorkspaceGraph): void {
     const adj = new Map<string, string[]>();
     for (const e of graph.schema_edges) {
       if (!adj.has(e.from)) adj.set(e.from, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       adj.get(e.from)!.push(`${e.to} [${e.role}]`);
     }
     for (const [src, targets] of adj) {

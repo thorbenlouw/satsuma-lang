@@ -69,8 +69,11 @@ Examples:
         resolvedNames[name] = resolved;
       }
 
+      // Safe: opts.source and opts.target are resolved in the loop above, which exits on failure
+      /* eslint-disable @typescript-eslint/no-non-null-assertion */
       const srcEntry = resolvedNames[opts.source]!.entry;
       const tgtEntry = resolvedNames[opts.target]!.entry;
+      /* eslint-enable @typescript-eslint/no-non-null-assertion */
       const srcFields = [
         ...srcEntry.fields,
         ...expandEntityFields(srcEntry, srcEntry.namespace ?? null, index),

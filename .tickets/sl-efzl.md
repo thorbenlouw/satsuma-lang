@@ -1,6 +1,6 @@
 ---
 id: sl-efzl
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-01T07:18:30Z
@@ -37,3 +37,9 @@ There are currently **68 non-null assertion callsites** across 24 source files i
 **Why this matters:**
 The rule exists to catch unsafe assumptions. Keeping it active everywhere except the known-safe sites means new code gets the protection automatically, and reviewers don't need to manually audit for unguarded `!` usage.
 
+
+## Notes
+
+**2026-04-01T07:37:36Z**
+
+Cause: no-non-null-assertion rule was globally disabled (set to 'off'), suppressing warnings for all future code. The rule was not part of recommendedTypeChecked, so the 'off' setting was preemptively silencing it. Fix: replaced the global 'off' with an explicit 'error' to enable the rule, then added targeted inline suppressions at 82 existing callsites across 20 files with safety justifications.

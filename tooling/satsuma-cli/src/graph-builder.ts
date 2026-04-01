@@ -29,6 +29,7 @@ export function buildFullGraph(index: WorkspaceIndex): FullGraph {
   };
   const addEdge = (src: string, tgt: string): void => {
     if (!edges.has(src)) edges.set(src, new Set());
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     edges.get(src)!.add(tgt);
   };
 

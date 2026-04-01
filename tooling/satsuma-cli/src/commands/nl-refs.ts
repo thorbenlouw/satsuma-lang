@@ -102,6 +102,7 @@ function printDefault(refs: ResolvedNLRef[]): void {
   const byMapping = new Map<string, ResolvedNLRef[]>();
   for (const ref of refs) {
     if (!byMapping.has(ref.mapping)) byMapping.set(ref.mapping, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     byMapping.get(ref.mapping)!.push(ref);
   }
 

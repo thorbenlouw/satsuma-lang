@@ -145,6 +145,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
     for (const item of items) {
       if (!item.parent) continue;
       if (!nlByParent.has(item.parent)) nlByParent.set(item.parent, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       nlByParent.get(item.parent)!.push(item.text);
     }
   }
@@ -208,6 +209,7 @@ function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFil
     for (const item of index.nlRefData) {
       const key = item.namespace ? `${item.namespace}::${item.mapping}` : item.mapping;
       if (!nlByMapping.has(key)) nlByMapping.set(key, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       nlByMapping.get(key)!.push(item);
     }
 
@@ -336,6 +338,7 @@ function collectMetadataText(node: SyntaxNode, parent: string | null, result: Ma
     }
     if (c.type === "metadata_block" && newParent) {
       if (!result.has(newParent)) result.set(newParent, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       result.get(newParent)!.push(c.text);
     }
     collectMetadataText(c, newParent, result);

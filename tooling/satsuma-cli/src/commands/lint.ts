@@ -94,6 +94,7 @@ Examples:
       if (opts.fix && diagnostics.some((d) => d.fixable)) {
         // Read source files that have fixable diagnostics
         const fixableFiles = new Set(
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: d.fix is checked by the filter predicate
           diagnostics.filter((d) => d.fixable && d.fix).map((d) => d.fix!.file),
         );
         const sourceByFile = new Map<string, string>();

@@ -112,6 +112,7 @@ Examples:
       // Only include arrows from mappings involving the resolved schema, and only
       // when the arrow's source/target field path actually exists in the queried schema.
       // This prevents false positives from leaf-name collisions across schemas.
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: split always produces at least one element
       const leafName = fieldName.includes(".") ? fieldName.split(".").pop()! : fieldName;
       const seen = new Set(arrows.map((a) => `${a.mapping}:${a.namespace}:${a.sources.join(",")}:${a.target}:${a.line}`));
       const schemaKey = resolvedSchema.key;
@@ -352,6 +353,7 @@ function findFieldArrows(fieldKey: string, index: WorkspaceIndex): ArrowRecord[]
   if (!index.fieldArrows.has(fieldKey)) return [];
   const seen = new Set<string>();
   const results: ArrowRecord[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check on line above
   for (const arrow of index.fieldArrows.get(fieldKey)!) {
     const key = `${arrow.mapping}:${arrow.namespace}:${arrow.sources.join(",")}:${arrow.target}:${arrow.line}`;
     if (!seen.has(key)) {
@@ -431,6 +433,7 @@ function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceI
   for (const a of arrows) {
     const qMapping = a.namespace ? `${a.namespace}::${a.mapping}` : (a.mapping ?? "");
     if (!byMapping.has(qMapping)) byMapping.set(qMapping, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     byMapping.get(qMapping)!.push(a);
   }
 

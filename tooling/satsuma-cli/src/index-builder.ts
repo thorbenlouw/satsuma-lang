@@ -163,8 +163,10 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     if (!name) return;
     const nsKey = namespace ?? "__global__";
     if (!namesByNamespace.has(nsKey)) namesByNamespace.set(nsKey, new Map());
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     const nsNames = namesByNamespace.get(nsKey)!;
     if (nsNames.has(name)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check on line above
       const prev = nsNames.get(name)!;
       duplicates.push({
         kind,
@@ -196,9 +198,11 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
       for (const ns of fileData.namespaces) {
         if (!ns.name) continue;
         if (!namespaceMeta.has(ns.name)) namespaceMeta.set(ns.name, new Map());
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
         const tags = namespaceMeta.get(ns.name)!;
         if (ns.note != null) {
           if (tags.has("note")) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check on line above
             const prev = tags.get("note")!;
             if (prev.value !== ns.note) {
               duplicates.push({
@@ -369,6 +373,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
  */
 export function resolveIndexKey<T>(name: string, entityMap: Map<string, T>): { key: string; entry: T } | null {
   if (entityMap.has(name)) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: .has() check on line above
     return { key: name, entry: entityMap.get(name)! };
   }
   if (name.includes("::")) return null;
@@ -406,6 +411,7 @@ function buildFieldArrows(arrowRecords: ArrowRecord[], mappings: Map<string, Map
   function addToIndex(key: string | null, record: ArrowRecord): void {
     if (!key) return;
     if (!index.has(key)) index.set(key, []);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
     index.get(key)!.push(record);
   }
 
@@ -472,6 +478,7 @@ function buildReferenceGraph({ schemas, metrics, mappings }: {
     const refs = [...mapping.sources, ...mapping.targets];
     for (const ref of refs) {
       if (!usedByMappings.has(ref)) usedByMappings.set(ref, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       usedByMappings.get(ref)!.push(mappingName);
     }
   }
@@ -480,6 +487,7 @@ function buildReferenceGraph({ schemas, metrics, mappings }: {
   for (const [schemaKey, schema] of schemas) {
     for (const spreadName of schema.spreads ?? []) {
       if (!fragmentsUsedIn.has(spreadName)) fragmentsUsedIn.set(spreadName, []);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
       fragmentsUsedIn.get(spreadName)!.push(schemaKey);
     }
   }
