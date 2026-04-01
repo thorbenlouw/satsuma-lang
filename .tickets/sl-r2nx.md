@@ -1,6 +1,6 @@
 ---
 id: sl-r2nx
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:30:03Z
@@ -29,3 +29,9 @@ Note: This may be intentional for backward compatibility (pre-import workspaces)
 **2026-03-31**
 
 Re-opened. Prior triage focused on the wrong semantics. ADR-022 removes directory mode, but this ticket still captures a real boundary bug: tooling must never treat all files in a folder as a merged semantic scope. Workspace scope is file-based, and symbol reachability inside that workspace must still follow the import graph. Implementation is still needed.
+
+**2026-04-01T08:46:25Z**
+
+**2026-04-01**
+
+Repro no longer reproduces. The CLI now rejects both directory arguments (`satsuma validate .` → "directory arguments are not supported") and multiple file arguments (`satsuma validate *.stm` → "too many arguments"). The entry-point-based workspace model means each `validate` invocation starts from a single .stm file and resolves scope through its import graph. The original bug (directory mode merging all files into a flat scope) is no longer possible. Closing as fixed by the directory-mode removal (ADR-022).
