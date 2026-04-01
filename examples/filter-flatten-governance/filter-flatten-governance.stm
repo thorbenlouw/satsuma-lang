@@ -143,12 +143,12 @@ mapping `completed orders` {
   }
 
   source {
-    `order_events`
-    `customer_profiles`
-    "Join on order_events.customer.customer_id = customer_profiles.customer_id
+    order_events
+    customer_profiles
+    "Join on @order_events.customer.customer_id = @customer_profiles.customer_id
      WHERE @order_events.order_status = completed"
   }
-  target { `completed_orders_parquet` }
+  target { completed_orders_parquet }
 
   event_id -> order_id
   event_time -> event_time_utc
@@ -175,7 +175,7 @@ mapping `completed orders` {
   promo_codes -> promo_codes
 
   -> active_line_count {
-    "Count elements in line_items (already filtered to exclude cancelled items at source)"
+    "Count elements in @line_items (already filtered to exclude cancelled items at source)"
   }
 
   -> ingest_timestamp { now_utc() }
@@ -191,8 +191,8 @@ mapping `order line facts` {
      cancelled lines are already excluded before this mapping runs."
   }
 
-  source { `order_events` }
-  target { `order_line_facts_parquet` }
+  source { order_events }
+  target { order_line_facts_parquet }
 
   event_id -> order_id
   customer.customer_id -> customer_id
@@ -208,11 +208,11 @@ mapping `order line facts` {
   order_totals.currency -> currency { trim | uppercase }
 
   -> line_total {
-    "Multiply line_items.unit_price by line_items.quantity, then add line_items.tax_amount"
+    "Multiply @line_items.unit_price by @line_items.quantity, then add @line_items.tax_amount"
   }
 
   -> promo_code_count {
-    "Count distinct values in line_items.discount_lines.discount_code
+    "Count distinct values in @line_items.discount_lines.discount_code
      where @discount_type = promo"
   }
 
