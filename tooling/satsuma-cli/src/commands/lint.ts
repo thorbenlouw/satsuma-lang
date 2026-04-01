@@ -5,9 +5,9 @@
  * hygiene and modelling convention issues as structured diagnostics.
  *
  * Exit codes:
- *   0 — no findings (or all findings fixed with --fix)
+ *   0 — no error-severity findings (warnings alone do not cause exit 2)
  *   1 — internal error (filesystem, parser crash, bad arguments)
- *   2 — lint findings present
+ *   2 — error-severity lint findings present
  *
  * Flags:
  *   --json     machine-readable JSON output
@@ -122,11 +122,12 @@ Examples:
       }
 
       const findingCount = diagnostics.length;
+      const errorCount = diagnostics.filter((d) => d.severity === "error").length;
       const fixableCount = diagnostics.filter((d) => d.fixable).length;
 
       // --quiet: exit code only
       if (opts.quiet) {
-        process.exit(findingCount > 0 ? 2 : 0);
+        process.exit(errorCount > 0 ? 2 : 0);
       }
 
       // --json: structured output
@@ -142,7 +143,7 @@ Examples:
           },
         };
         console.log(JSON.stringify(payload, null, 2));
-        process.exit(findingCount > 0 ? 2 : 0);
+        process.exit(errorCount > 0 ? 2 : 0);
       }
 
       // Text output
@@ -187,6 +188,6 @@ Examples:
         );
       }
 
-      process.exit(2);
+      process.exit(errorCount > 0 ? 2 : 0);
     });
 }
