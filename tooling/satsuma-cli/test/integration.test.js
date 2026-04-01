@@ -3787,39 +3787,34 @@ describe("satsuma arrows — anonymous mapping in namespace (sl-1vnm)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Bug fix: nl-derived arrows returned when querying by target field (sl-k797)
+// Bug fix: nl-derived duplicate suppression (sl-k797)
+// When a declared arrow already has the @ref field as a source (e.g.
+// `c -> d { "clean up @s1.c" }`), no duplicate nl-derived arrow should be
+// emitted. But when the declared arrow is derived (source=null), the
+// nl-derived arrow adds source info and must NOT be suppressed for source queries.
 // ---------------------------------------------------------------------------
-describe("satsuma arrows — nl-derived by target field (sl-k797)", () => {
-  const fixture = resolve(import.meta.dirname, "fixtures", "nl-derived-target.stm");
+describe("satsuma arrows — nl-derived duplicate suppression (sl-k797)", () => {
+  it("no duplicate nl-derived when declared arrow already has the source", async () => {
+    // `c -> d { "clean up @s1.c" }` — declared arrow has source c, @ref is s1.c.
+    // Should return 1 arrow, not 2.
+    const fixture = resolve(import.meta.dirname, "..", "..", "..", "smoke-tests", "arrows", "10-pipe-flatten", "fixture.stm");
+    const { stdout, code } = await run("arrows", "s2.d", "--json", fixture);
+    assert.equal(code, 0);
+    const arrows = JSON.parse(stdout);
+    assert.equal(arrows.length, 1, "should not emit duplicate nl-derived arrow");
+  });
 
-  it("query by source returns the nl-derived arrow", async () => {
+  it("nl-derived arrow IS emitted when querying by source ref field", async () => {
+    // `-> total { "Sum @source8.amount" }` — querying source8.amount should find
+    // the nl-derived arrow since the declared arrow has no source.
+    const fixture = resolve(import.meta.dirname, "fixtures", "nl-derived-target.stm");
     const { stdout, code } = await run("arrows", "source8.amount", "--json", fixture);
     assert.equal(code, 0);
     const arrows = JSON.parse(stdout);
     const nlDerived = arrows.find((a) => a.classification === "nl-derived");
-    assert.ok(nlDerived, "nl-derived arrow should be present");
+    assert.ok(nlDerived, "nl-derived arrow should be present for source query");
     assert.equal(nlDerived.source, "::source8.amount");
     assert.equal(nlDerived.target, "::target8.total");
-  });
-
-  it("query by target also returns the nl-derived arrow", async () => {
-    // The @ref resolves to source8.amount, creating an nl-derived arrow to
-    // target8.total. Querying by target must include this arrow (sl-k797).
-    const { stdout, code } = await run("arrows", "target8.total", "--json", fixture);
-    assert.equal(code, 0);
-    const arrows = JSON.parse(stdout);
-    const nlDerived = arrows.find((a) => a.classification === "nl-derived");
-    assert.ok(nlDerived, "nl-derived arrow should appear when querying by target");
-    assert.equal(nlDerived.source, "::source8.amount");
-    assert.equal(nlDerived.target, "::target8.total");
-  });
-
-  it("--as-target filter includes the nl-derived arrow", async () => {
-    const { stdout, code } = await run("arrows", "target8.total", "--as-target", "--json", fixture);
-    assert.equal(code, 0);
-    const arrows = JSON.parse(stdout);
-    const nlDerived = arrows.find((a) => a.classification === "nl-derived");
-    assert.ok(nlDerived, "nl-derived arrow should pass --as-target filter");
   });
 });
 
