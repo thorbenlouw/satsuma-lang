@@ -192,6 +192,8 @@ export interface WorkspaceIndex {
   nlRefData: NLRefData[];
   duplicates: DuplicateRecord[];
   totalErrors: number;
+  /** Per-file resolved import declarations for import-scope validation (ADR-022). */
+  fileImports: Map<string, import("@satsuma/core").ResolvedFileImport[]>;
 }
 
 // ── Parsed file ─────────────────────────────────────────────────────────────

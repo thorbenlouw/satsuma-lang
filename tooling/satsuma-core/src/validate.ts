@@ -20,6 +20,7 @@
  *   6. Arrow field references — arrow paths not declared in their schema
  *   7. Transform spread references — ...spread in arrow transforms
  *   8. Ref metadata targets — (ref @schema) annotations pointing to unknown schemas
+ *   9. Import scope — symbols used but not reachable through the file's imports (ADR-022)
  */
 
 import { capitalize } from "./string-utils.js";
@@ -29,6 +30,7 @@ import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
 import type { SpreadEntity } from "./spread-expand.js";
 import { resolveScopedEntityRef } from "./canonical-ref.js";
 import type { FieldDecl, MetaEntry, PipeStep } from "./types.js";
+import type { ImportReachability } from "./import-reachability.js";
 
 // ---------- Output type ----------
 
@@ -151,8 +153,16 @@ export interface SemanticIndex {
  *
  * The checks are independent: a failure in one category does not suppress
  * diagnostics from another. Order within each category matches declaration order.
+ *
+ * When `reachability` is provided (computed by computeImportReachability from
+ * import-reachability.ts), an additional import-scope check verifies that every
+ * cross-file reference is reachable through the file's import declarations.
+ * Without reachability data the check is skipped (backward compatible).
  */
-export function collectSemanticDiagnostics(index: SemanticIndex): SemanticDiagnostic[] {
+export function collectSemanticDiagnostics(
+  index: SemanticIndex,
+  reachability?: ImportReachability,
+): SemanticDiagnostic[] {
   const diagnostics: SemanticDiagnostic[] = [];
 
   checkDuplicates(index, diagnostics);
@@ -163,6 +173,7 @@ export function collectSemanticDiagnostics(index: SemanticIndex): SemanticDiagno
   checkArrowFieldRefs(index, diagnostics);
   checkTransformSpreads(index, diagnostics);
   checkRefMetadata(index, diagnostics);
+  if (reachability) checkImportScope(index, reachability, diagnostics);
 
   return diagnostics;
 }
@@ -596,6 +607,126 @@ function checkFieldRefMetadata(
     }
     if (field.children) {
       checkFieldRefMetadata(field.children, entityName, file, row, currentNs, index, diagnostics);
+    }
+  }
+}
+
+// ---------- Section 9: Import scope (ADR-022) ----------
+
+/**
+ * Verify that every cross-file reference is reachable through the file's
+ * import declarations. A symbol that exists in the workspace but is not in
+ * the file's reachable set is an import-scope violation.
+ *
+ * This check is additive: existing checks (sections 2-8) validate against the
+ * full index, catching genuinely undefined refs. This check catches refs that
+ * exist but are out of scope — a distinct error class with a distinct fix
+ * ("add an import" vs "fix the typo").
+ *
+ * Skipped when no reachability data is provided (single-file workspaces,
+ * backward-compatible callers).
+ */
+function checkImportScope(
+  index: SemanticIndex,
+  reachability: ImportReachability,
+  diagnostics: SemanticDiagnostic[],
+): void {
+  const allDefinitions = new Map<string, unknown>([
+    ...index.schemas as Map<string, unknown>,
+    ...index.fragments as Map<string, unknown>,
+  ]);
+
+  // Helper: check if a resolved symbol key is reachable from a given file.
+  // Returns false (no diagnostic) when the symbol is undefined — that's
+  // already handled by undefined-ref checks.
+  function checkRef(
+    ref: string,
+    currentNs: string | null,
+    lookupMap: Map<string, unknown>,
+    file: string,
+    entityKind: string,
+    entityName: string,
+    row: number,
+    refKind: string,
+  ): void {
+    const resolved = resolveScopedEntityRef(ref, currentNs, lookupMap);
+    if (!resolved) return; // Undefined — handled by other checks
+    const reachable = reachability.reachableSymbols.get(file);
+    if (!reachable) return; // No reachability data for this file
+    if (reachable.has(resolved)) return; // In scope — all good
+
+    diagnostics.push({
+      file,
+      line: row + 1,
+      column: 1,
+      severity: "error",
+      rule: "import-scope",
+      message: `${capitalize(entityKind)} '${entityName}' references ${refKind} '${resolved}' which is not reachable from this file's imports`,
+    });
+  }
+
+  // --- Schema spread fragments ---
+  for (const [name, schema] of index.schemas) {
+    for (const spread of (schema.spreads ?? [])) {
+      checkRef(spread, schema.namespace ?? null, index.fragments as Map<string, unknown>,
+        schema.file, "schema", name, schema.row, "fragment");
+    }
+  }
+
+  // --- Fragment spread fragments ---
+  for (const [name, fragment] of index.fragments) {
+    for (const spread of (fragment.spreads ?? [])) {
+      checkRef(spread, fragment.namespace ?? null, index.fragments as Map<string, unknown>,
+        fragment.file, "fragment", name, fragment.row, "fragment");
+    }
+  }
+
+  // --- Mapping source/target refs ---
+  for (const [name, mapping] of index.mappings) {
+    const ns = mapping.namespace ?? null;
+    for (const src of mapping.sources) {
+      checkRef(src, ns, allDefinitions, mapping.file, "mapping", name ?? "<anonymous>", mapping.row, "source");
+    }
+    for (const tgt of mapping.targets) {
+      checkRef(tgt, ns, allDefinitions, mapping.file, "mapping", name ?? "<anonymous>", mapping.row, "target");
+    }
+  }
+
+  // --- Metric source refs ---
+  for (const [name, metric] of index.metrics) {
+    const ns = metric.namespace ?? null;
+    for (const src of (metric.sources ?? [])) {
+      checkRef(src, ns, index.schemas as Map<string, unknown>,
+        metric.file, "metric", name, metric.row, "source");
+    }
+  }
+
+  // --- Transform spread refs in arrows ---
+  if (index.fieldArrows) {
+    const seen = new Set<object>();
+    for (const [, arrows] of index.fieldArrows) {
+      for (const arrow of arrows) {
+        if (seen.has(arrow)) continue;
+        seen.add(arrow);
+        for (const step of arrow.steps ?? []) {
+          if (step.type === "fragment_spread") {
+            const spreadName = step.text.replace(/^\.\.\./, "");
+            const ns = arrow.namespace ?? null;
+            const resolved = resolveScopedEntityRef(spreadName, ns, index.transforms);
+            if (!resolved) continue;
+            const reachable = reachability.reachableSymbols.get(arrow.file);
+            if (!reachable || reachable.has(resolved)) continue;
+            diagnostics.push({
+              file: arrow.file,
+              line: arrow.line + 1,
+              column: 1,
+              severity: "error",
+              rule: "import-scope",
+              message: `Arrow in mapping '${arrow.mapping}' references transform '${resolved}' which is not reachable from this file's imports`,
+            });
+          }
+        }
+      }
     }
   }
 }

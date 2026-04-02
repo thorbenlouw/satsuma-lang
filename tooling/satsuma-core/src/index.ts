@@ -1,5 +1,7 @@
 export { capitalize, normalizeName } from "./string-utils.js";
 export { collectSemanticDiagnostics } from "./validate.js";
+export { computeImportReachability, computeSymbolDependencies } from "./import-reachability.js";
+export type { ResolvedFileImport, ImportReachability } from "./import-reachability.js";
 export type {
   SemanticDiagnostic,
   SemanticIndex,
