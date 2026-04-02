@@ -56,6 +56,7 @@ run_step "satsuma fmt --check examples" bash -c '
   fail=0
   for f in examples/*/pipeline.stm \
            examples/filter-flatten-governance/filter-flatten-governance.stm \
+           examples/filter-flatten-governance/governance.stm \
            examples/namespaces/namespaces.stm \
            examples/namespaces/ns-platform.stm \
            examples/namespaces/ns-merging.stm \
@@ -63,7 +64,9 @@ run_step "satsuma fmt --check examples" bash -c '
            examples/metrics-platform/metric_sources.stm \
            examples/multi-source/multi-source-hub.stm \
            examples/multi-source/multi-source-join.stm \
+           examples/multi-source/multi-source-arrows.stm \
            examples/lib/common.stm \
+           examples/lib/sfdc_fragments.stm \
            examples/lookups/finance.stm; do
     [ -f "$f" ] && node "$cli" fmt --check "$f" || fail=1
   done

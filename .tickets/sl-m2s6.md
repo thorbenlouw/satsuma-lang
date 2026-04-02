@@ -1,6 +1,6 @@
 ---
 id: sl-m2s6
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-02T09:19:19Z

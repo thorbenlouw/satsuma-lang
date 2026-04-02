@@ -31,6 +31,7 @@
     "!**/node_modules/**",
     "!.tickets/**",
     "!.claude/**",
+    "!.worktrees/**",
     "!site/_site/**",
     "!site/satsuma-diaries/**"
   ]

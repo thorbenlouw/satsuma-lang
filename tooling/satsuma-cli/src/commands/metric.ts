@@ -103,6 +103,17 @@ function extractMetaEntries(metaNode: SyntaxNode | undefined): MetaEntry[] {
       }
     } else if (c.type === "tag_token") {
       entries.push({ key: c.text, value: null });
+    } else if (c.type === "note_tag") {
+      const strNode = c.namedChildren.find(
+        (x) => x.type === "nl_string" || x.type === "multiline_string",
+      );
+      if (strNode) {
+        const text =
+          strNode.type === "multiline_string"
+            ? strNode.text.slice(3, -3).trim()
+            : strNode.text.slice(1, -1);
+        entries.push({ key: "note", value: text, quoted: true });
+      }
     } else if (c.type === "slice_body") {
       const sliceNames = c.namedChildren
         .filter((x) => x.type === "identifier")
@@ -152,7 +163,11 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
   // The metric body is in the schema_body node (metric_body no longer exists).
   const body = metricNode?.namedChildren.find((c) => c.type === "schema_body");
   const noteBlock = body?.namedChildren.find((c) => c.type === "note_block");
-  const note = extractNoteText(noteBlock);
+  // Also check metadata for a note_tag (note can appear as schema metadata
+  // rather than as a note_block inside the schema body).
+  const metaBlock = metricNode?.namedChildren.find((c) => c.type === "metadata_block");
+  const noteTag = metaBlock?.namedChildren.find((c) => c.type === "note_tag");
+  const note = extractNoteText(noteBlock) ?? extractNoteText(noteTag);
   console.log(
     JSON.stringify(
       {
