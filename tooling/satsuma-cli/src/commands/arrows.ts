@@ -30,15 +30,15 @@ export function register(program: Command): void {
 The field reference is <schema>.<field> — the schema name followed by a
 dot and the field name. Namespace-qualified names work (e.g. pos::stores.STORE_ID).
 
-Each arrow is classified: [structural], [nl], [mixed], [none], or [nl-derived].
+Each arrow is classified: [none], [nl], or [nl-derived].
 
 JSON shape (--json): array of arrow objects
   [{
     "mapping":        str,   # canonical mapping key, e.g. "::m" or "ns::m"
     "source":         str | null,  # canonical field path, comma-sep for multi-source, null if derived
     "target":         str | null,  # canonical field path
-    "classification": "none" | "structural" | "nl" | "mixed" | "nl-derived",
-    "transform_raw":  str,   # raw transform text (NL string, pipeline, or "(NL ref)")
+    "classification": "none" | "nl" | "nl-derived",
+    "transform_raw":  str,   # raw transform text (all pipe steps are NL)
     "steps":          [{"type": str, "text": str}, ...],
     "derived":        bool,  # true when no declared source field
     "file":           str,

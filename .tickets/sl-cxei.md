@@ -1,6 +1,6 @@
 ---
 id: sl-cxei
-status: open
+status: closed
 deps: [sl-95f9]
 links: []
 created: 2026-04-02T09:19:59Z
