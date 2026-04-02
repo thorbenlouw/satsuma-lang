@@ -7,8 +7,10 @@
  */
 
 import { LitElement, html, svg, css, unsafeCSS, type SVGTemplateResult } from "lit";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { LayoutEdge } from "../layout/elk-layout.js";
+import { highlightAtRefs } from "../markdown.js";
 import tokens from "../tokens.css";
 import { SzNavigateEvent } from "../satsuma-viz.js";
 
@@ -107,6 +109,12 @@ export class SzEdgeLayer extends LitElement {
       color: var(--sz-text, #2D2A26);
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    /* @ref highlights inside NL transform steps */
+    .transform-card .at-ref {
+      font-weight: 600;
+      color: var(--sz-at-ref, #4A8A5B);
     }
 
     .transform-card .step {
@@ -329,11 +337,11 @@ export class SzEdgeLayer extends LitElement {
               (step, i) => html`
                 <div class="step">
                   ${i > 0 ? html`<span class="step-sep">|</span>` : ""}
-                  <span class="step-text">${step}</span>
+                  <span class="step-text">${unsafeHTML(highlightAtRefs(step))}</span>
                 </div>
               `
             )}`
-          : html`<div class="step-text">${t.text}</div>`}
+          : html`<div class="step-text">${unsafeHTML(highlightAtRefs(t.text))}</div>`}
       </div>
     `;
   }

@@ -1,4 +1,5 @@
 import { LitElement, html, css, nothing, type TemplateResult } from "lit";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   MappingBlock,
@@ -9,6 +10,7 @@ import type {
 } from "../model.js";
 import { SzNavigateEvent, SzFieldHoverEvent } from "../satsuma-viz.js";
 import { resolveSchemaLocalFieldPath } from "../field-coverage.js";
+import { highlightAtRefs } from "../markdown.js";
 
 function sanitizeTestIdSegment(value: string): string {
   const lowered = value.toLowerCase();
@@ -241,6 +243,13 @@ export class SzMappingDetail extends LitElement {
     .transform-bare {
       font-size: 11px;
       color: var(--sz-text-muted, #6B6560);
+    }
+
+    /* @ref highlights inside NL transform text */
+    .at-ref {
+      font-weight: 600;
+      font-style: normal;
+      color: var(--sz-at-ref, #4A8A5B);
     }
 
     .arrow-icon {
@@ -636,7 +645,7 @@ export class SzMappingDetail extends LitElement {
         <td><span class="field-ref">${a.targetField}</span></td>
       </tr>
       ${noteEntry
-        ? html`<tr class="arrow-note-row"><td colspan="4"><span class="arrow-note">${noteEntry.value}</span></td></tr>`
+        ? html`<tr class="arrow-note-row"><td colspan="4"><span class="arrow-note">${unsafeHTML(highlightAtRefs(noteEntry.value))}</span></td></tr>`
         : ""}
     `;
   }
@@ -647,8 +656,9 @@ export class SzMappingDetail extends LitElement {
     }
 
     const t = a.transform;
-    // After Feature 28, all transforms render uniformly as NL text
-    return html`<span class="transform-nl">${t.text}</span>`;
+    // After Feature 28, all transforms render uniformly as NL text.
+    // @refs (e.g. @status, @arr_value) are wrapped in bold spans for emphasis.
+    return html`<span class="transform-nl">${unsafeHTML(highlightAtRefs(t.text))}</span>`;
   }
 
   private _renderEachSection(eb: EachBlock): TemplateResult {

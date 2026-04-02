@@ -194,9 +194,11 @@ test.describe("Cross-file lineage expansion", () => {
     await loadFixture(page, metricsUri);
 
     // With both files merged, the count must exceed what a single-file model would show.
+    // Use nth(1) as a retrying assertion — the lineage model includes schemas from
+    // both metrics.stm and metric_sources.stm, so at least two cards must appear.
+    // A bare .count() is a point-in-time snapshot that races with layout completion.
     const schemaCards = page.locator("[data-testid^='overview-schema-card-']");
-    const count = await schemaCards.count();
-    expect(count).toBeGreaterThan(1);
+    await expect(schemaCards.nth(1)).toBeVisible({ timeout: 20_000 });
   });
 
   test("expand-lineage events from the viz are captured in the harness event log", async ({

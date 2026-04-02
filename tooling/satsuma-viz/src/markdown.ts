@@ -1,4 +1,23 @@
 /**
+ * @ref pattern matching — mirrors AT_REF_RE from @satsuma/core/nl-ref.
+ * Matches @identifier, @schema.field, @ns::schema.field, and @`backtick` variants.
+ */
+const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+
+/** HTML-escape special characters to prevent injection. */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Wraps @ref tokens in text with `<span class="at-ref">` for visual emphasis.
+ * Input is HTML-escaped first to prevent injection.
+ */
+export function highlightAtRefs(text: string): string {
+  return escapeHtml(text).replace(AT_REF_RE, `<span class="at-ref">$&</span>`);
+}
+
+/**
  * Minimal Markdown → HTML converter for Satsuma notes.
  * Handles headings, lists, bold, italic, inline code, and paragraphs.
  * HTML in the input is escaped to prevent XSS.
