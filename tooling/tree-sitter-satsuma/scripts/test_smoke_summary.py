@@ -132,7 +132,7 @@ EXPECTATIONS: dict[str, dict] = {
         "min_comments": 5,
         "min_notes": 8,
         "min_annotations": 21,
-        "block_types": {"metric_block"},
+        "block_types": {"schema_block", "mapping_block"},
     },
     "examples/lib/sfdc_fragments.stm": {
         "parse_ok": True,

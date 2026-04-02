@@ -33,14 +33,13 @@ OWNER_TYPES = {
     "each_block",
     "flatten_block",
     "map_arrow",
-    "metric_block",
 }
+# In v2, metrics are schema_block nodes with (metric, ...) metadata — not a separate block type.
 BLOCK_TYPES = (
     "import_decl",
     "schema_block",
     "fragment_block",
     "mapping_block",
-    "metric_block",
     "transform_block",
 )
 PATH_TYPES = (
@@ -175,7 +174,7 @@ def _find_child_by_type(node: Node, child_type: str) -> Node | None:
 
 
 def block_label(node: Node, source: SourceText) -> str:
-    if node.type in ("schema_block", "fragment_block", "metric_block", "transform_block"):
+    if node.type in ("schema_block", "fragment_block", "transform_block"):
         keyword = node.type.replace("_block", "")
         label_node = _find_child_by_type(node, "block_label")
         name = clean_scalar(node_text(label_node, source)) if label_node else "<anonymous>"

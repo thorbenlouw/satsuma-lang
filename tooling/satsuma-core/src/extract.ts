@@ -281,6 +281,7 @@ export function extractSchemas(rootNode: SyntaxNode): ExtractedSchema[] {
 export interface ExtractedMetric {
   name: string | null;
   namespace: string | null;
+  /** Human-readable display name from the metric_name metadata tag, or null. */
   displayName: string | null;
   sources: string[];
   grain: string | null;
@@ -293,56 +294,86 @@ export interface ExtractedMetric {
 }
 
 /**
- * Extract all metric_block definitions.
+ * Returns true when a schema's metadata_block contains a bare `metric` tag_token.
+ *
+ * This is the canonical way to identify metric schemas in v2 — no separate
+ * block type exists. Metrics are schema blocks decorated with `(metric, ...)`.
  */
-export function extractMetrics(rootNode: SyntaxNode): ExtractedMetric[] {
-  return collectFromNamespaces(rootNode, "metric_block").map(({ node, namespace }) => {
-    const name = labelText(node);
-    // A metric_block's CST named children are ordered: identifier, nl_string?,
-    // metadata_block?, metric_body. The optional nl_string (or multiline_string)
-    // between the identifier and the metadata_block is the human-readable
-    // display name. We find it by selecting the first string node whose
-    // position in namedChildren comes before the metadata_block — this guards
-    // against accidentally picking up strings that appear inside the body.
-    const displayNameNode = node.namedChildren.find(
-      (c) => (c.type === "nl_string" || c.type === "multiline_string") &&
-        node.namedChildren.indexOf(c) < node.namedChildren.findIndex((x) => x.type === "metadata_block"),
-    );
-    const displayName = displayNameNode ? stringText(displayNameNode) : null;
+export function isMetricSchema(meta: SyntaxNode | null | undefined): boolean {
+  if (!meta) return false;
+  return meta.namedChildren.some(
+    (c) => c.type === "tag_token" && c.namedChildren[0]?.text === "metric",
+  );
+}
 
-    const meta = child(node, "metadata_block");
-    const sources: string[] = [];
-    let grain: string | null = null;
-    const slices: string[] = [];
-    if (meta) {
-      for (const entry of meta.namedChildren) {
-        if (entry.type === "tag_with_value") {
-          const key = entry.namedChildren[0];
-          const val = entry.namedChildren[1];
-          if (key?.text === "source") {
-            if (!val) continue;
-            for (const item of val.namedChildren) {
-              if (item.type === "qualified_name") {
-                sources.push(qualifiedNameText(item)!);
-              } else if (item.type === "identifier") {
-                sources.push(item.text);
-              }
-            }
-          } else if (key?.text === "grain") {
-            if (val) grain = entryText(val);
-          }
-        } else if (entry.type === "slice_body") {
-          for (const item of entry.namedChildren) {
-            if (item.type === "identifier") slices.push(item.text);
+/**
+ * Extract metric-specific metadata (sources, grain, slices, displayName) from
+ * a schema block's metadata_block node.
+ *
+ * In the v2 grammar, metrics are schema blocks with `(metric, ...)` metadata.
+ * The `metric_name` tag carries the human-readable display name; `source`,
+ * `grain`, and `slice` carry lineage and aggregation metadata.
+ */
+function extractMetricMeta(meta: SyntaxNode | null): {
+  displayName: string | null;
+  sources: string[];
+  grain: string | null;
+  slices: string[];
+} {
+  const sources: string[] = [];
+  let grain: string | null = null;
+  const slices: string[] = [];
+  let displayName: string | null = null;
+
+  if (!meta) return { displayName, sources, grain, slices };
+
+  for (const entry of meta.namedChildren) {
+    if (entry.type === "tag_with_value") {
+      const key = entry.namedChildren[0];
+      const val = entry.namedChildren[1];
+      if (key?.text === "metric_name") {
+        if (val) displayName = stringText(val.namedChildren.find((c) => c.type === "nl_string")) ?? entryText(val);
+      } else if (key?.text === "source") {
+        if (!val) continue;
+        for (const item of val.namedChildren) {
+          if (item.type === "qualified_name") {
+            sources.push(qualifiedNameText(item)!);
+          } else if (item.type === "identifier") {
+            sources.push(item.text);
           }
         }
+      } else if (key?.text === "grain") {
+        if (val) grain = entryText(val);
+      }
+    } else if (entry.type === "slice_body") {
+      for (const item of entry.namedChildren) {
+        if (item.type === "identifier") slices.push(item.text);
       }
     }
+  }
 
-    const body = child(node, "metric_body");
-    const fields = body ? extractDirectFields(body) : [];
-    return { name, namespace, displayName, sources, grain, slices, fields, row: node.startPosition.row, startColumn: node.startPosition.column };
-  });
+  return { displayName, sources, grain, slices };
+}
+
+/**
+ * Extract all metric-decorated schema_block definitions.
+ *
+ * In v2, a metric is a schema block whose metadata_block contains the bare
+ * `metric` tag_token. This function filters `schema_block` nodes by that
+ * criterion, then extracts metric-specific metadata (display name, sources,
+ * grain, slices) alongside the standard field tree.
+ */
+export function extractMetrics(rootNode: SyntaxNode): ExtractedMetric[] {
+  return collectFromNamespaces(rootNode, "schema_block")
+    .filter(({ node }) => isMetricSchema(child(node, "metadata_block")))
+    .map(({ node, namespace }) => {
+      const name = labelText(node);
+      const meta = child(node, "metadata_block");
+      const { displayName, sources, grain, slices } = extractMetricMeta(meta);
+      const body = child(node, "schema_body");
+      const fields = body ? extractDirectFields(body) : [];
+      return { name, namespace, displayName, sources, grain, slices, fields, row: node.startPosition.row, startColumn: node.startPosition.column };
+    });
 }
 
 export interface ExtractedMapping {
@@ -458,7 +489,7 @@ export function extractTransforms(rootNode: SyntaxNode): ExtractedTransform[] {
 }
 
 const BLOCK_TYPES = new Set([
-  "schema_block", "mapping_block", "metric_block",
+  "schema_block", "mapping_block",
   "fragment_block", "transform_block",
 ]);
 
@@ -531,7 +562,6 @@ export function extractNotes(rootNode: SyntaxNode): ExtractedNote[] {
         });
       } else if (
         c.type === "schema_block" ||
-        c.type === "metric_block" ||
         c.type === "fragment_block" ||
         c.type === "mapping_block"
       ) {
@@ -561,7 +591,7 @@ function collectNotesInBlock(
         namespace,
       });
     }
-    if (c.type === "schema_body" || c.type === "metric_body" || c.type === "mapping_body") {
+    if (c.type === "schema_body" || c.type === "mapping_body") {
       for (const inner of c.namedChildren) {
         if (inner.type === "note_block") {
           results.push({

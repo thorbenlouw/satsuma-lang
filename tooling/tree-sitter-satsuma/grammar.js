@@ -61,7 +61,6 @@ module.exports = grammar({
         $.fragment_block,
         $.transform_block,
         $.mapping_block,
-        $.metric_block,
       ),
 
     // ── Namespace block ──────────────────────────────────────────────────
@@ -84,7 +83,6 @@ module.exports = grammar({
         $.fragment_block,
         $.transform_block,
         $.mapping_block,
-        $.metric_block,
       ),
 
     // ── Import ────────────────────────────────────────────────────────────
@@ -233,19 +231,6 @@ module.exports = grammar({
         $.flatten_block,
       ),
 
-    // ── Metric block ──────────────────────────────────────────────────────
-
-    metric_block: ($) =>
-      seq(
-        "metric",
-        $.block_label,
-        optional($.nl_string),
-        $.metadata_block,
-        "{",
-        optional($.metric_body),
-        "}",
-      ),
-
     // ── Note block ────────────────────────────────────────────────────────
 
     note_block: ($) =>
@@ -266,12 +251,6 @@ module.exports = grammar({
         $.fragment_spread,
         $.note_block,
       ),
-
-    // ── Metric body ───────────────────────────────────────────────────────
-
-    metric_body: ($) => repeat1($._metric_body_item),
-
-    _metric_body_item: ($) => choice($.field_decl, $.note_block),
 
     // ── Field declaration (unified syntax) ──────────────────────────────
     // All fields follow: NAME [TYPE] [(metadata)] [{schema_body}]

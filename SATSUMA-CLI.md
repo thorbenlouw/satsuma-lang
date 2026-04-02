@@ -30,7 +30,7 @@ Block-level extraction — retrieve whole blocks or workspace-level summaries.
 |---|---|---|
 | `summary [path]` | Workspace overview — all schemas, mappings, metrics, counts | `satsuma summary pipeline.stm` |
 | `schema <name>` | Full schema definition from parse tree | `satsuma schema hub_customer` |
-| `metric <name>` | Full metric definition from parse tree | `satsuma metric monthly_revenue` |
+| `metric <name>` | Full definition of a schema decorated with `metric` metadata | `satsuma metric monthly_revenue` |
 | `mapping <name>` | Full mapping with all arrows and transforms | `satsuma mapping "sfdc to hub_customer"` |
 | `find --tag <token>` | Fields carrying a metadata tag | `satsuma find --tag pii` |
 | `lineage --from/--to <schema>` | Schema-level graph traversal | `satsuma lineage --from loyalty_sfdc` |

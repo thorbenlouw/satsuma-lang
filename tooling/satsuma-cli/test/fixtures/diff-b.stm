@@ -14,17 +14,19 @@ fragment `audit columns` {
   deleted_at  TIMESTAMP
 }
 
-metric monthly_revenue (
+schema monthly_revenue (
+  metric,
   source Customer,
-  grain monthly
+  grain monthly,
 ) {
   value  DECIMAL
   count  INTEGER
 }
 
-metric churn_rate (
+schema churn_rate (
+  metric,
   source Customer,
-  grain monthly
+  grain monthly,
 ) {
   value  DECIMAL
 }

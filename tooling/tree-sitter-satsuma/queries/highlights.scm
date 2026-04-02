@@ -59,21 +59,17 @@
 
 ; ── Block labels ──────────────────────────────────────────────────────────────
 ; Bare identifier label (e.g. `schema customers`)
+; Note: metric schemas are schema_block nodes — covered by the schema_block rule.
 (schema_block (block_label (identifier)) @type.definition)
 (fragment_block (block_label (identifier)) @type.definition)
 (transform_block (block_label (identifier)) @function.definition)
 (mapping_block (block_label (identifier)) @function.definition)
-(metric_block (block_label (identifier)) @type.definition)
 (namespace_block name: (identifier) @module)
 ; Quoted label (e.g. `schema 'order-headers'`)
 (schema_block (block_label (backtick_name)) @type.definition)
 (fragment_block (block_label (backtick_name)) @type.definition)
 (transform_block (block_label (backtick_name)) @function.definition)
 (mapping_block (block_label (backtick_name)) @function.definition)
-(metric_block (block_label (backtick_name)) @type.definition)
-
-; Metric display name string (the "MRR" label)
-(metric_block (nl_string) @string.special)
 
 ; ── Field declarations ────────────────────────────────────────────────────────
 (field_decl

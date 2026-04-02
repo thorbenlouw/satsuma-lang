@@ -246,7 +246,17 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     }
     for (const m of fileData.metrics) {
       const key = qualifiedKey(m.namespace, m.name);
-      checkDuplicate("metric", m.name, m.namespace, filePath, m.row);
+      // In v2, a metric is a schema_block decorated with the `metric` tag, so
+      // the same node appears in both fileData.schemas and fileData.metrics.
+      // Calling checkDuplicate("metric", ...) for the same node would generate a
+      // false "schema conflicts with metric" warning. We detect this case by
+      // comparing the metric's row against the already-registered schema's row —
+      // only flag a duplicate when they are genuinely different blocks (different
+      // row means a plain schema and a separate metric schema share the same name).
+      const existingSchema = schemas.get(key);
+      if (!existingSchema || existingSchema.row !== m.row) {
+        checkDuplicate("metric", m.name, m.namespace, filePath, m.row);
+      }
       metrics.set(key, { ...m, file: filePath } as MetricRecord);
     }
     for (const m of fileData.mappings) {

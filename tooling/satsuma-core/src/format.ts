@@ -83,7 +83,7 @@ function findChildren(node: SyntaxNode, type: string): SyntaxNode[] {
 // enclosing named node, so a comment before the first body child lands as
 // a sibling of the body inside the block — not inside the body itself.
 const BODY_TYPES = new Set([
-  "schema_body", "mapping_body", "metric_body", "pipe_chain",
+  "schema_body", "mapping_body", "pipe_chain",
 ]);
 
 /**
@@ -249,7 +249,6 @@ function formatTopLevel(node: SyntaxNode, source: string, indent: number): strin
     case "fragment_block":  return formatFragmentBlock(node, source, indent);
     case "mapping_block":   return formatMappingBlock(node, source, indent);
     case "transform_block": return formatTransformBlock(node, source, indent);
-    case "metric_block":    return formatMetricBlock(node, source, indent);
     case "note_block":      return formatNoteBlock(node, source, indent);
     case "import_decl":     return formatImportDecl(node, source, indent);
     case "namespace_block": return formatNamespaceBlock(node, source, indent);
@@ -396,6 +395,11 @@ function formatSchemaBody(body: SyntaxNode, source: string, indent: number): str
       }
     } else if (child.type === "fragment_spread") {
       lines.push(formatFragmentSpread(child, indent));
+    } else if (child.type === "note_block") {
+      // Note blocks are valid inside schema bodies (e.g. metric schemas carry
+      // human-readable notes alongside their fields). Delegate to the same
+      // note formatter used at the top-level and in mapping bodies.
+      lines.push(formatNoteBlock(child, source, indent));
     }
 
     prev = child;
@@ -976,66 +980,6 @@ function formatTransformBlock(node: SyntaxNode, source: string, indent: number):
 
   const bodyStr = formatPipeChainMultiLine(pipeChain, source, indent + 1);
   return line + " {" + leading + "\n" + bodyStr + trailing + "\n" + ind(indent) + "}";
-}
-
-// ── Metric Block ──────────────────────────────────────────────────────────────
-
-function formatMetricBlock(node: SyntaxNode, source: string, indent: number): string {
-  const label = findChild(node, "block_label");
-  const displayName = findChild(node, "nl_string");
-  const meta = findChild(node, "metadata_block");
-  const body = findChild(node, "metric_body");
-
-  let line = ind(indent) + "metric " + formatBlockLabel(label!);
-  if (displayName) line += " " + displayName.text;
-  if (meta) line += " " + formatMetadataBlock(meta, source, indent);
-  line += " {";
-
-  const leading = collectBlockLeadingComments(node, indent);
-
-  // Metric body contains field_decls and note_blocks
-  if (!body) {
-    return line + leading + "\n" + ind(indent) + "}";
-  }
-
-  const innerLines: string[] = [];
-  let prev: SyntaxNode | null = null;
-
-  // Gather fields for alignment
-  const fields = body.children.filter(c => c.type === "field_decl" && !isMultiLineField(c));
-  const { nameCol, typeCol, metaCol } = calcFieldAlignment(fields);
-
-  for (const child of body.children) {
-    if (!child.isNamed && !isComment(child)) continue;
-
-    if (prev !== null && hasBlankBetween(prev, child)) {
-      innerLines.push("");
-    }
-
-    if (isComment(child)) {
-      if (prev !== null && sameLine(prev, child)) {
-        const lastIdx = innerLines.length - 1;
-        if (lastIdx >= 0) {
-          innerLines[lastIdx] += "  " + formatInlineComment(child);
-          prev = child;
-          continue;
-        }
-      }
-      innerLines.push(formatComment(child, indent + 1));
-    } else if (child.type === "field_decl") {
-      if (isMultiLineField(child)) {
-        innerLines.push(formatMultiLineField(child, source, indent + 1));
-      } else {
-        innerLines.push(formatSingleLineField(child, source, indent + 1, nameCol, typeCol, metaCol));
-      }
-    } else if (child.type === "note_block") {
-      innerLines.push(formatNoteBlock(child, source, indent + 1));
-    }
-    prev = child;
-  }
-
-  const trailing = collectBlockTrailingComments(node, body.endPosition.row, indent);
-  return line + leading + "\n" + innerLines.join("\n") + trailing + "\n" + ind(indent) + "}";
 }
 
 // ── Note Block ────────────────────────────────────────────────────────────────

@@ -91,7 +91,7 @@ Comments run to end of line. There are no block comments.
 
 These keywords introduce structural blocks and are strongly discouraged as bare identifiers:
 
-`schema` `fragment` `mapping` `transform` `metric` `source` `target` `map` `record` `list_of` `each` `flatten` `note` `import`
+`schema` `fragment` `mapping` `transform` `source` `target` `map` `record` `list_of` `each` `flatten` `note` `import`
 
 `each` and `flatten` are only valid inside mapping bodies. `record` and `list_of` are type keywords used in field declarations.
 
@@ -110,7 +110,7 @@ New vocabulary tokens can be introduced at any time without language changes.
 
 ### 2.8 Definition Uniqueness
 
-All named definitions — `schema`, `metric`, `mapping`, `fragment`, and `transform` — share a single name space. **No two definitions of any kind may have the same name**, even if they are different entity types. For example, a schema named `customer` and a metric named `customer` is an error.
+All named definitions — `schema`, `mapping`, `fragment`, and `transform` — share a single name space. **No two definitions of any kind may have the same name**, even if they are different entity types. For example, a schema named `customer` and a mapping named `customer` is an error.
 
 This rule applies across files: when multiple `.stm` files are validated together, all names across all files must be unique.
 
@@ -577,32 +577,41 @@ The entry file for platform-wide lineage analysis is the file that imports from 
 
 ---
 
-## 6. Metric Blocks
+## 6. Metric Schemas
 
-A `metric` block declares a business metric: what it measures, where the data comes from, and how it can be sliced. Metrics are consumers of schemas — they appear at the end of a lineage graph, not in the middle.
+A metric schema declares a business metric: what it measures, where the data comes from, and how it can be sliced. Metrics are consumers of schemas — they appear at the end of a lineage graph, not in the middle.
 
-`metric` is a reserved keyword, not a `schema` with a metadata token. The distinction matters for tooling: lineage tracers and the CLI treat metrics as terminal nodes (data flows *into* them; nothing flows *out*).
+Metrics are `schema` blocks decorated with the `metric` vocabulary token in the metadata block. This is consistent with how `report` and `ml_model` schemas are declared — there is no separate `metric` keyword. Data flow *into* a metric is expressed via `mapping` blocks, not embedded in the schema declaration.
 
 ### 6.1 Basic Structure
 
 ```
-metric <name> <display_label>? (<metadata>) {
+schema <name> (
+  metric,
+  metric_name <display_label>?,
+  <additional metadata tokens>
+) {
   <field declarations>
   <note blocks>
 }
 ```
 
 - **name** — bare identifier or backtick-quoted string.
-- **display_label** — optional quoted string giving the short business name (e.g. `"MRR"`). This is the label shown in dashboards and documentation.
-- **metadata** — required `( )` block describing how the metric is defined.
-- **body** — measure field declarations and notes. No mappings or arrows.
+- **`metric`** — vocabulary token in the metadata block that marks this schema as a metric.
+- **`metric_name`** — optional `tag_with_value` token providing the short business label (e.g. `metric_name "MRR"`). This is the label shown in dashboards and documentation.
+- **additional metadata** — `grain`, `source`, `slice`, and `filter` tokens (all optional).
+- **body** — measure field declarations and notes. No arrows.
+
+The data pipeline that populates the metric is expressed as a separate `mapping` block targeting the metric schema — not embedded in the metric declaration itself.
 
 ### 6.2 Metric Metadata Tokens
 
-These vocabulary tokens go in the `( )` metadata block:
+These vocabulary tokens go in the `( )` metadata block alongside `metric`:
 
 | Token | Meaning | Example |
 |-------|---------|---------|
+| `metric` | Marks this schema as a business metric | `metric` |
+| `metric_name` | Short business display label | `metric_name "MRR"` |
 | `source` | Schema(s) the metric is derived from | `source fact_orders` or `source {fact_orders, dim_customer}` |
 | `grain` | The time or dimensional grain | `grain monthly`, `grain daily` |
 | `slice` | Dimensions the metric can be cut by | `slice {region, product_line, segment}` |
@@ -623,7 +632,9 @@ Fields inside a metric body declare the numeric values the metric produces. The 
 **Simple revenue metric:**
 
 ```satsuma
-metric monthly_recurring_revenue "MRR" (
+schema monthly_recurring_revenue (
+  metric,
+  metric_name "MRR",
   source fact_subscriptions,
   grain monthly,
   slice {customer_segment, product_line, region},
@@ -637,12 +648,21 @@ metric monthly_recurring_revenue "MRR" (
      Excludes trials and churned subscriptions."
   }
 }
+
+mapping _mrr_pipeline {
+  source { fact_subscriptions }
+  target { monthly_recurring_revenue }
+
+  Amount -> value { to_decimal(14,2) | "Normalize to monthly" }
+}
 ```
 
 **Multi-source metric with multiple measures:**
 
 ```satsuma
-metric customer_lifetime_value "CLV" (
+schema customer_lifetime_value (
+  metric,
+  metric_name "CLV",
   source {fact_orders, dim_customer},
   slice {acquisition_channel, segment, cohort_year}
 ) {
@@ -663,8 +683,8 @@ metric customer_lifetime_value "CLV" (
 **Metric with no display label:**
 
 ```satsuma
-metric churn_rate (
-  source {fact_subscriptions, dim_customer},
+schema churn_rate (
+  metric,
   grain monthly,
   slice {segment, region}
 ) {
@@ -672,11 +692,12 @@ metric churn_rate (
 }
 ```
 
-### 6.5 What Metrics Are Not
+### 6.5 Metric Schemas vs Regular Schemas
 
-- Metrics are **not schemas.** You cannot use a metric as a `source` or `target` in a `mapping` block.
-- Metrics are **not mappings.** They describe what a metric is, not how to compute it step by step. Complex computation logic goes in the `note { }` block in natural language.
-- Metrics are **not validated by the parser.** The `source`, `grain`, `slice`, and `filter` tokens are vocabulary tokens interpreted by the LLM or downstream tooling — the parser captures them structurally but does not resolve them.
+- Metric schemas **are schemas** — they share the definition namespace with all other schemas and can appear as `target` in mapping blocks.
+- Metric schemas are **not valid sources** — mapping blocks should not use a metric schema as a `source`. By convention, data flows *into* metrics; nothing flows *out*.
+- The `source`, `grain`, `slice`, and `filter` tokens are vocabulary tokens interpreted by the LLM or downstream tooling — the parser captures them structurally but does not enforce them.
+- The `satsuma metric <name>` command identifies schemas decorated with the `metric` metadata token. It is not a distinct block type.
 
 ---
 

@@ -61,9 +61,11 @@ namespace warehouse {
 
 // Analytics namespace with metric
 namespace analytics {
-  metric daily_sales "Daily Sales Volume" (
+  schema daily_sales (
+    metric,
+    metric_name "Daily Sales Volume",
     source ecom::orders,
-    grain daily
+    grain daily,
   ) {
     sale_date    DATE
     order_count  INTEGER  (measure)

@@ -1,45 +1,54 @@
 ================================================================================
-Minimal metric block
+Minimal metric schema — tag-only metadata
 ================================================================================
 
-metric mrr (source fact_subscriptions) {}
+schema mrr (metric, source fact_subscriptions) {}
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
           (identifier))))))
 
 ================================================================================
-Metric with display name
+Metric schema with display name via metric_name tag
 ================================================================================
 
-metric mrr "MRR" (source fact_subscriptions) {}
+schema mrr (metric, metric_name "MRR", source fact_subscriptions) {}
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
-    (nl_string)
     (metadata_block
+      (tag_token
+        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string)))
       (tag_with_value
         (identifier)
         (value_text
           (identifier))))))
 
 ================================================================================
-Metric with source, grain, and filter metadata
+Metric schema with source, grain, and filter metadata
 ================================================================================
 
-metric monthly_recurring_revenue "MRR" (
+schema monthly_recurring_revenue (
+  metric,
+  metric_name "MRR",
   source fact_subscriptions,
   grain monthly,
   filter "status = 'active'"
@@ -48,11 +57,16 @@ metric monthly_recurring_revenue "MRR" (
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
-    (nl_string)
     (metadata_block
+      (tag_token
+        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string)))
       (tag_with_value
         (identifier)
         (value_text
@@ -67,10 +81,12 @@ metric monthly_recurring_revenue "MRR" (
           (nl_string))))))
 
 ================================================================================
-Metric with slice body
+Metric schema with slice metadata
 ================================================================================
 
-metric mrr "MRR" (
+schema mrr (
+  metric,
+  metric_name "MRR",
   source fact_subscriptions,
   grain monthly,
   slice {customer_segment, product_line, region}
@@ -79,11 +95,16 @@ metric mrr "MRR" (
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
-    (nl_string)
     (metadata_block
+      (tag_token
+        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string)))
       (tag_with_value
         (identifier)
         (value_text
@@ -98,20 +119,22 @@ metric mrr "MRR" (
         (identifier)))))
 
 ================================================================================
-Metric with field declarations in body
+Metric schema with field declarations in body
 ================================================================================
 
-metric mrr (source fact_subscriptions, grain monthly) {
+schema mrr (metric, source fact_subscriptions, grain monthly) {
   value DECIMAL(14,2)
 }
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
@@ -120,32 +143,34 @@ metric mrr (source fact_subscriptions, grain monthly) {
         (identifier)
         (value_text
           (identifier))))
-    (metric_body
+    (schema_body
       (field_decl
         (field_name
           (identifier))
         (type_expr)))))
 
 ================================================================================
-Metric with measure field
+Metric schema with measure field
 ================================================================================
 
-metric mrr (source fact_subscriptions) {
+schema mrr (metric, source fact_subscriptions) {
   value DECIMAL(14,2) (measure additive)
 }
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
           (identifier))))
-    (metric_body
+    (schema_body
       (field_decl
         (field_name
           (identifier))
@@ -157,10 +182,12 @@ metric mrr (source fact_subscriptions) {
               (identifier))))))))
 
 ================================================================================
-Metric with multiple fields
+Metric schema with multiple fields
 ================================================================================
 
-metric monthly_recurring_revenue "MRR" (
+schema monthly_recurring_revenue (
+  metric,
+  metric_name "MRR",
   source fact_subscriptions,
   grain monthly,
   slice {customer_segment, product_line, region},
@@ -173,11 +200,16 @@ metric monthly_recurring_revenue "MRR" (
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
-    (nl_string)
     (metadata_block
+      (tag_token
+        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string)))
       (tag_with_value
         (identifier)
         (value_text
@@ -194,7 +226,7 @@ metric monthly_recurring_revenue "MRR" (
         (identifier)
         (value_text
           (nl_string))))
-    (metric_body
+    (schema_body
       (field_decl
         (field_name
           (identifier))
@@ -215,10 +247,10 @@ metric monthly_recurring_revenue "MRR" (
               (identifier))))))))
 
 ================================================================================
-Metric body with note block
+Metric schema body with note block
 ================================================================================
 
-metric mrr (source fact_subscriptions, grain monthly) {
+schema mrr (metric, source fact_subscriptions, grain monthly) {
   value DECIMAL(14,2)
   note {
     "Sum of active subscription amounts, normalized to monthly."
@@ -228,10 +260,12 @@ metric mrr (source fact_subscriptions, grain monthly) {
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
@@ -240,7 +274,7 @@ metric mrr (source fact_subscriptions, grain monthly) {
         (identifier)
         (value_text
           (identifier))))
-    (metric_body
+    (schema_body
       (field_decl
         (field_name
           (identifier))
@@ -249,7 +283,7 @@ metric mrr (source fact_subscriptions, grain monthly) {
         (nl_string)))))
 
 ================================================================================
-Metric distinct from schema block
+Metric schema alongside a plain schema — both produce schema_block nodes
 ================================================================================
 
 schema subscriptions {
@@ -257,7 +291,7 @@ schema subscriptions {
   amount DECIMAL(14,2)
 }
 
-metric mrr (source subscriptions) {
+schema mrr (metric, source subscriptions) {
   value DECIMAL(14,2) (measure additive)
 }
 
@@ -279,15 +313,17 @@ metric mrr (source subscriptions) {
         (field_name
           (identifier))
         (type_expr))))
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
           (identifier))))
-    (metric_body
+    (schema_body
       (field_decl
         (field_name
           (identifier))
@@ -297,4 +333,3 @@ metric mrr (source subscriptions) {
             (identifier)
             (value_text
               (identifier))))))))
-

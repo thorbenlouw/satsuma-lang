@@ -110,7 +110,7 @@ See `docs/cst-reference.md` for the full reference. Key node types:
 | `fragment_block` | Reusable field set |
 | `transform_block` | Named pipe transform |
 | `mapping_block` | Source→target mapping |
-| `metric_block` | Metric definition (distinct from schema) |
+| ~~`metric_block`~~ | Removed in v2 — metrics are `schema_block` with `(metric, ...)` metadata |
 | `note_block` | Structural documentation block |
 | `import_decl` | Import declaration |
 | `field_decl` | Field name + type + metadata |

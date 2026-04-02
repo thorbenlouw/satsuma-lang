@@ -359,8 +359,9 @@ describe("mappings", () => {
 
 describe("metrics", () => {
   it("extracts basic metric", () => {
+    // Metrics are now schema blocks with (metric, metric_name "...", ...) metadata.
     const model = vizModel(
-      'metric mrr "MRR" (source subs, grain monthly) {\n  value DECIMAL(14,2) (measure additive)\n}',
+      'schema mrr (\n  metric,\n  metric_name "MRR",\n  source subs,\n  grain monthly,\n) {\n  value DECIMAL(14,2) (measure additive)\n}',
     );
     const ns = model.namespaces[0];
     assert.equal(ns.metrics.length, 1);
@@ -373,7 +374,7 @@ describe("metrics", () => {
 
   it("extracts metric fields with measure types", () => {
     const model = vizModel(
-      "metric m1 (source s) {\n" +
+      "schema m1 (metric, source s) {\n" +
       "  val DECIMAL (measure additive)\n" +
       "  avg DECIMAL (measure non_additive)\n" +
       "  half DECIMAL (measure semi_additive)\n" +
@@ -388,7 +389,7 @@ describe("metrics", () => {
 
   it("extracts metric with slices", () => {
     const model = vizModel(
-      "metric m1 (source s, slice {a, b, c}) {\n  val DECIMAL (measure)\n}",
+      "schema m1 (metric, source s, slice {a, b, c}) {\n  val DECIMAL (measure)\n}",
     );
     const metric = model.namespaces[0].metrics[0];
     assert.deepEqual(metric.slices, ["a", "b", "c"]);
@@ -396,7 +397,7 @@ describe("metrics", () => {
 
   it("extracts metric with filter", () => {
     const model = vizModel(
-      'metric m1 (source s, filter "status = active") {\n  val DECIMAL (measure)\n}',
+      'schema m1 (metric, source s, filter "status = active") {\n  val DECIMAL (measure)\n}',
     );
     const metric = model.namespaces[0].metrics[0];
     assert.equal(metric.filter, "status = active");
@@ -404,7 +405,7 @@ describe("metrics", () => {
 
   it("extracts bare measure tag as additive", () => {
     const model = vizModel(
-      "metric m1 (source s) {\n  count INT (measure)\n}",
+      "schema m1 (metric, source s) {\n  count INT (measure)\n}",
     );
     const fields = model.namespaces[0].metrics[0].fields;
     assert.equal(fields[0].measure, "additive");

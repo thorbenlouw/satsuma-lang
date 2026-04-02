@@ -1580,13 +1580,17 @@ describe("satsuma nl", () => {
   });
 
   it("concatenated note strings are fully extracted (sl-gu24)", async () => {
+    // Verifies that multi-string note blocks are concatenated and both strings
+    // survive extraction (sl-gu24 bug: second string was dropped). The body note
+    // for cart_abandonment_rate has two concatenated nl_strings spanning "checkout"
+    // and "divided by". The metric_name tag also surfaces as a note item, so we
+    // search all note items for the one containing the expected body text.
     const { stdout, code } = await run("nl", "cart_abandonment_rate", resolve(EXAMPLES, "metrics-platform/metrics.stm"), "--json");
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
-    const note = data.find((d: any) => d.kind === "note");
-    assert.ok(note, "should have a note item");
-    assert.match(note.text, /checkout/i, "should include first string");
-    assert.match(note.text, /divided by/i, "should include second concatenated string");
+    const bodyNote = data.find((d: any) => d.kind === "note" && /checkout/i.test(d.text));
+    assert.ok(bodyNote, "should have a body note item containing 'checkout'");
+    assert.match(bodyNote.text, /divided by/i, "should include second concatenated string");
   });
 
   it("record/list block notes use schema-qualified path as parent (sl-3nrg, sl-prsy)", async () => {
@@ -2730,9 +2734,10 @@ describe("satsuma metric (namespace bugs)", () => {
   });
 
   it("text output includes namespace prefix for namespaced metric (sl-09bo)", async () => {
+    // Metrics are now rendered as schema blocks — the output uses `schema`, not `metric`.
     const { stdout, code } = await run("metric", "analytics::daily_sales", NS_FIXTURE);
     assert.equal(code, 0);
-    assert.match(stdout, /metric analytics::daily_sales/);
+    assert.match(stdout, /schema analytics::daily_sales/);
   });
 });
 

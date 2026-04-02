@@ -356,14 +356,19 @@ describe("extractMappings", () => {
 });
 
 // ── extractMetrics ────────────────────────────────────────────────────────────
+// Metrics are schema_block nodes decorated with a `metric` tag_token in their
+// metadata_block. extractMetrics() filters schema_blocks by that criterion.
 
 describe("extractMetrics", () => {
-  it("extracts a metric with fields", () => {
+  it("extracts a metric schema_block with fields and grain metadata", () => {
+    // Validates that a schema_block with a metric tag produces an ExtractedMetric
+    // with the correct name, grain, row, and fields.
+    const metricTag = n("tag_token", [ident("metric")], "metric");
     const kvVal = n("value_text", [n("identifier", [], "monthly")], "monthly");
     const kv = n("tag_with_value", [ident("grain"), kvVal]);
-    const meta = n("metadata_block", [kv]);
-    const body = n("metric_body", [fieldDecl("value", "DECIMAL(14,2)")]);
-    const block = n("metric_block", [blockLabel("mrr"), meta, body], "", 7);
+    const meta = n("metadata_block", [metricTag, kv]);
+    const body = n("schema_body", [fieldDecl("value", "DECIMAL(14,2)")]);
+    const block = n("schema_block", [blockLabel("mrr"), meta, body], "", 7);
     const root = n("source_file", [block]);
 
     const result = extractMetrics(root as any);

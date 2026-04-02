@@ -397,7 +397,7 @@ function walkMappings(node: SyntaxNode, namespace: string | null, results: NLRef
       extractTransformNLRefs(c, namespace, results);
     } else if (c.type === "note_block") {
       extractStandaloneNoteRefs(c, namespace, null, results);
-    } else if (c.type === "schema_block" || c.type === "metric_block" || c.type === "fragment_block") {
+    } else if (c.type === "schema_block" || c.type === "fragment_block") {
       extractBlockNoteRefs(c, namespace, results);
     }
   }
@@ -487,8 +487,9 @@ function extractBlockNoteRefs(
   let blockName = inner?.text ?? "";
   if (inner?.type === "backtick_name") blockName = blockName.slice(1, -1);
 
-  const blockTypePrefix = blockNode.type === "metric_block" ? "metric:"
-    : blockNode.type === "schema_block" ? "schema:"
+  // Metric schemas are schema_block nodes — they use the "schema:" prefix.
+  // (The old "metric:" prefix was for the removed metric_block type.)
+  const blockTypePrefix = blockNode.type === "schema_block" ? "schema:"
     : blockNode.type === "fragment_block" ? "fragment:"
     : "";
   const parentLabel = `${blockTypePrefix}${blockName}`;
@@ -505,7 +506,8 @@ function extractBlockNoteRefs(
     }
   }
 
-  const bodyTypes = ["schema_body", "metric_body"];
+  // In v2, all schema-like blocks use schema_body (metric_body is removed).
+  const bodyTypes = ["schema_body"];
   for (const child of blockNode.namedChildren) {
     if (child.type === "note_block") {
       extractStandaloneNoteRefs(child, namespace, parentLabel, results);

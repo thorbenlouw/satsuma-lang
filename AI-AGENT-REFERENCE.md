@@ -18,7 +18,7 @@ generation, not a complete formal grammar for every NL-heavy construct.
    value, params (comma-separated literals/identifiers)
    NUMBER, ARITH (+, -, *, /), LETTER, DIGIT, ANY, TEXT_TO_EOL *)
 
-file             = { import_stmt | note_block | namespace | schema | fragment | transform | mapping | metric } ;
+file             = { import_stmt | note_block | namespace | schema | fragment | transform | mapping } ;
 
 import_stmt      = "import" "{" name_list "}" "from" STRING ;
 name_list        = name_ref {"," name_ref} ;
@@ -27,7 +27,7 @@ name_ref         = label | label "::" label ;
 note_block       = "note" "{" (STRING | TRIPLESTRING) "}" ;
 
 namespace        = "namespace" label ["(" metadata ")"] "{" namespace_body "}" ;
-namespace_body   = { note_block | schema | fragment | transform | mapping | metric } ;
+namespace_body   = { note_block | schema | fragment | transform | mapping } ;
 
 schema           = "schema" label ["(" metadata ")"] "{" schema_body "}" ;
 fragment         = "fragment" label "{" schema_body "}" ;
@@ -37,20 +37,18 @@ metadata         = meta_entry {"," meta_entry} ;
 meta_entry       = IDENT [value] | IDENT "{" enum_items "}" | "note" (STRING | TRIPLESTRING) ;
 enum_items       = value {"," value} ;
 
-schema_body      = { field_decl | spread | COMMENT } ;
+schema_body      = { field_decl | spread | note_block | COMMENT } ;
 field_decl       = (IDENT | BACKTICK_IDENT) [type_expr] ["(" metadata ")"] ["{" schema_body "}"] ;
 type_expr        = TYPE ["(" params ")"] | "record" | "list_of" TYPE ["(" params ")"] | "list_of" "record" ;
 spread           = "..." label ;
 
+(* A metric is a schema block decorated with (metric, ...) metadata — not a separate block type. *)
+(* metric_entry tags: metric_name STRING | source (name_ref | "{" name_list "}") | grain IDENT  *)
+(*                   | slice "{" name_list "}" | filter STRING                                   *)
+
 transform        = "transform" label "{" transform_body "}" ;
 transform_body   = spread | pipe_step {"|" pipe_step} ;
 (* A bare STRING is a valid pipe_step, so a single NL string is a valid transform body *)
-
-metric           = "metric" label [STRING] ["(" metric_meta ")"] "{" metric_body "}" ;
-metric_meta      = metric_entry {"," metric_entry} ;
-metric_entry     = "source" (name_ref | "{" name_list "}") | "grain" IDENT
-                 | "slice" "{" name_list "}" | "filter" STRING ;
-metric_body      = { field | note_block | COMMENT } ;
 
 mapping          = "mapping" [label] ["(" metadata ")"] "{" mapping_body "}" ;
 mapping_body     = { note_block | source_decl | target_decl | arrow | nested_arrow | each_block | flatten_block | COMMENT } ;
@@ -97,7 +95,7 @@ default val, enum {a, b, c}, format email, ref table.field,
 note "...", xpath "...", namespace prefix "uri", filter COND
 
 ## Reserved keywords
-schema, fragment, mapping, transform, metric, note,
+schema, fragment, mapping, transform, note,
 source, target, import, from, record, list_of, each, flatten, namespace
 
 ## Naming convention
@@ -120,7 +118,7 @@ Cross-namespace references:
   source { raw::customers }
   target { mart::dim_customer }
   import { raw::customers, mart::dim_customer } from "platform.stm"
-  metric mrr (source raw::orders, grain monthly) { ... }
+  schema mrr (metric, metric_name "MRR", source raw::orders, grain monthly) { ... }
 
 ## Import reachability
 Imports are selective, not whole-file:
@@ -165,9 +163,12 @@ Vocabulary tokens are still encouraged as concise shorthand:
   "NL description — use @field_name for refs"
 
 ## Metric rules
+  - A metric is a `schema` block with `(metric, ...)` metadata — NOT a separate block type
+  - metric_name "..." carries the human-readable display name
+  - source, grain, slice, filter are metric-specific metadata tags
   - Metrics are terminal nodes: nothing flows *out* of a metric
-  - Do NOT use a metric as source/target in a mapping block
-  - Complex computation logic goes in note { } as natural language
+  - Do NOT use a metric schema as source/target in a mapping block
+  - Complex computation logic goes in note { } as natural language inside the schema body
   - Measure additivity: additive (sum all dims), non_additive (never sum),
     semi_additive (sum across some dims only, e.g. balances)
 
@@ -212,8 +213,8 @@ pitfalls that the EBNF alone doesn't prevent.
 | Using `[]` in mapping paths for array access | Use `each src -> tgt { }` for iteration, dot paths for field access |
 | Using `(flatten \`list\`)` metadata on mappings | Use `flatten src.list -> tgt { }` block syntax inside mapping body |
 | Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
-| Using `schema` for a business metric | Use `metric` — it signals a terminal node to lineage tooling |
-| Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
+| Using `metric name "X" (...)` block syntax | Metrics are now `schema name (metric, metric_name "X", ...)` — `metric` is a metadata tag, not a block keyword |
+| Using a metric schema as a mapping source or target | Metrics are terminal consumers only; reference the underlying source schema instead |
 | Using `report` / `model` as block keywords | Use `schema name (report, ...) { }` or `schema name (model, ...) { }` |
 | Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
 | Writing field names bare in NL strings | Use `@ref` — e.g. `"Sum @order_total grouped by @customer_id"` |
@@ -429,7 +430,7 @@ When reporting results to humans, be transparent about which parts of your analy
 3. Start with a `note { }` block if integration context, assumptions, or join strategy need durable documentation
 4. Define `schema` blocks with all fields, types, and metadata
 5. Add `fragment` blocks if you have reusable field sets
-6. Use `metric` for business KPIs; use `(report)` / `(model)` metadata on `schema` for downstream consumer artifacts
+6. Use `schema name (metric, metric_name "...", source ..., grain ...) { }` for business KPIs; use `(report)` / `(model)` metadata on `schema` for downstream consumer artifacts
 7. Write the `mapping { }` block with source/target refs and all arrows
 8. For multi-source mappings, put structural sources plus source-level filters in `source { }`, and describe joins in an NL string with `@ref`s
 9. Use `"natural language"` in `{ }` for any transform you can't express as a pipeline — use `@ref` for any field or schema names referenced inside the NL string (e.g. `"Sum @amount grouped by @customer_id"`)

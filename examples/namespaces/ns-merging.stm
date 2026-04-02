@@ -148,7 +148,12 @@ namespace reporting (note "Executive reporting layer") {
     }
   }
 
-  metric budget_health "Budget Utilization Health" (source staging::stg_gl_entries, grain monthly) {
+  schema budget_health (
+    metric,
+    metric_name "Budget Utilization Health",
+    source staging::stg_gl_entries,
+    grain monthly,
+  ) {
     department   VARCHAR(100)
     month        DATE
     utilization  DECIMAL(5,2)   (measure)

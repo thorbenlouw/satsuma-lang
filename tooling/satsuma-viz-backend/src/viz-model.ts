@@ -23,6 +23,7 @@ import {
   expandEntityFields,
   makeEntityRefResolver,
   extractFieldTree,
+  isMetricSchema,
 } from "@satsuma/core";
 import type { MetaEntry, Classification, FieldDecl, SpreadEntity } from "@satsuma/core";
 
@@ -362,17 +363,22 @@ function processTopLevelBlock(
   wsIndex: WorkspaceIndex,
 ): void {
   switch (node.type) {
-    case "schema_block":
-      group.schemas.push(extractSchema(uri, node, namespace, wsIndex));
+    case "schema_block": {
+      // Metric schemas are schema_blocks decorated with (metric, ...) metadata.
+      // Route them to extractMetric so they appear in the metrics panel, not schemas.
+      const metaBlock = child(node, "metadata_block");
+      if (isMetricSchema(metaBlock)) {
+        group.metrics.push(extractMetric(uri, node, namespace));
+      } else {
+        group.schemas.push(extractSchema(uri, node, namespace, wsIndex));
+      }
       break;
+    }
     case "fragment_block":
       group.fragments.push(extractFragment(uri, node, namespace));
       break;
     case "mapping_block":
       group.mappings.push(extractMapping(uri, node, namespace, wsIndex));
-      break;
-    case "metric_block":
-      group.metrics.push(extractMetric(uri, node, namespace));
       break;
   }
 }
@@ -425,7 +431,7 @@ function findPrecedingBlock(
       const mapping = globalNs.mappings.find((m) => m.id === name);
       if (mapping) return mapping.comments;
     }
-    if (prev.type === "metric_block") {
+    if (prev.type === "schema_block" && isMetricSchema(child(prev, "metadata_block"))) {
       const name = labelText(prev);
       const metric = globalNs.metrics.find((m) => m.id === name);
       if (metric) return metric.comments;
@@ -951,17 +957,25 @@ function extractMetric(
   const name = labelText(node) ?? "unknown";
   const qualifiedId = namespace ? `${namespace}::${name}` : name;
   const meta = child(node, "metadata_block");
-  const body = child(node, "metric_body") ?? child(node, "schema_body");
+  const body = child(node, "schema_body");
 
-  // Extract label from the first string literal after the block_label
+  // Extract the display label from the metric_name tag inside the metadata_block.
+  // In v2, metrics are schema blocks — the old positional nl_string is gone;
+  // the display name is now carried by the metric_name tag_with_value entry.
   let label: string | null = null;
-  for (const ch of node.namedChildren) {
-    if (ch.type === "nl_string") {
-      label = stringText(ch);
-      break;
-    }
-    if (ch.type === "metadata_block" || ch.type === "metric_body" || ch.type === "schema_body") {
-      break;
+  if (meta) {
+    for (const ch of meta.namedChildren) {
+      if (
+        ch.type === "tag_with_value" &&
+        ch.namedChildren[0]?.text === "metric_name"
+      ) {
+        const val = ch.namedChildren[1];
+        const strNode = val?.namedChildren.find(
+          (c) => c.type === "nl_string" || c.type === "multiline_string",
+        );
+        if (strNode) label = stringText(strNode);
+        break;
+      }
     }
   }
 

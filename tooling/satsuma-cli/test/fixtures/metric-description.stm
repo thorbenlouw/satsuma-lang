@@ -1,5 +1,10 @@
 // Fixture for sl-571v: metric description string in nl output
-metric monthly_revenue "Total monthly revenue" (source s, grain monthly) {
+schema monthly_revenue (
+  metric,
+  metric_name "Total monthly revenue",
+  source s,
+  grain monthly,
+) {
   note { "Body note" }
 }
 

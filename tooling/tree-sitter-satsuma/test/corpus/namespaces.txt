@@ -136,11 +136,11 @@ namespace vault {
                 (identifier)))))))))
 
 ================================================================================
-namespace with metric
+namespace with metric schema
 ================================================================================
 
 namespace analytics {
-  metric revenue (source fact_sales) {
+  schema revenue (metric, source fact_sales) {
     amount DECIMAL(18,2)
   }
 }
@@ -150,26 +150,28 @@ namespace analytics {
 (source_file
   (namespace_block
     name: (identifier)
-    (metric_block
+    (schema_block
       (block_label
         (identifier))
       (metadata_block
+        (tag_token
+          (identifier))
         (tag_with_value
           (identifier)
           (value_text
             (identifier))))
-      (metric_body
+      (schema_body
         (field_decl
           (field_name
             (identifier))
           (type_expr))))))
 
 ================================================================================
-metric with qualified source name
+metric schema with qualified source name
 ================================================================================
 
 namespace analytics {
-  metric revenue (source ecom::orders) {
+  schema revenue (metric, source ecom::orders) {
     amount DECIMAL(18,2)
   }
 }
@@ -179,28 +181,30 @@ namespace analytics {
 (source_file
   (namespace_block
     name: (identifier)
-    (metric_block
+    (schema_block
       (block_label
         (identifier))
       (metadata_block
+        (tag_token
+          (identifier))
         (tag_with_value
           (identifier)
           (value_text
             (qualified_name
               (identifier)
               (identifier)))))
-      (metric_body
+      (schema_body
         (field_decl
           (field_name
             (identifier))
           (type_expr))))))
 
 ================================================================================
-metric with qualified sources in braced list
+metric schema with qualified sources in braced list
 ================================================================================
 
 namespace analytics {
-  metric revenue (source {ecom::orders, pos::transactions}) {
+  schema revenue (metric, source {ecom::orders, pos::transactions}) {
     amount DECIMAL(18,2)
   }
 }
@@ -210,10 +214,12 @@ namespace analytics {
 (source_file
   (namespace_block
     name: (identifier)
-    (metric_block
+    (schema_block
       (block_label
         (identifier))
       (metadata_block
+        (tag_token
+          (identifier))
         (tag_with_value
           (identifier)
           (value_text
@@ -223,7 +229,7 @@ namespace analytics {
             (qualified_name
               (identifier)
               (identifier)))))
-      (metric_body
+      (schema_body
         (field_decl
           (field_name
             (identifier))

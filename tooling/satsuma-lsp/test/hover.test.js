@@ -92,8 +92,10 @@ describe("computeHover", () => {
   });
 
   it("shows metric summary with display label", () => {
+    // Metrics are now schema blocks with (metric, metric_name "...", ...) metadata.
+    // Hover should show **metric** kind and the metric_name value as Display.
     const md = hover(
-      'metric mrr "MRR" (source fact_sub, grain monthly) {\n  value DECIMAL\n}',
+      'schema mrr (\n  metric,\n  metric_name "MRR",\n  source fact_sub,\n  grain monthly,\n) {\n  value DECIMAL\n}',
       0,
       8,
     );

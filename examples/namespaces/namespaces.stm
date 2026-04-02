@@ -91,7 +91,12 @@ namespace warehouse (note "Data vault hub layer") {
 
 // --- Metrics ---
 namespace analytics (note "Business metrics layer") {
-  metric daily_sales "Daily Sales Volume" (source ecom::orders, grain daily) {
+  schema daily_sales (
+    metric,
+    metric_name "Daily Sales Volume",
+    source ecom::orders,
+    grain daily,
+  ) {
     sale_date    DATE
     channel      VARCHAR(20)
     order_count  INTEGER        (measure)

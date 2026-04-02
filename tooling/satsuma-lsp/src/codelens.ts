@@ -5,6 +5,7 @@ import {
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText } from "./parser-utils";
+import { isMetricSchema } from "@satsuma/core";
 import {
   WorkspaceIndex,
   findReferences,
@@ -50,17 +51,22 @@ function collectLenses(
   const range = lblNode ? nodeRange(lblNode) : lineRange(node);
 
   switch (node.type) {
-    case "schema_block":
-      lenses.push(...schemaLenses(node, qualName, range, index));
+    case "schema_block": {
+      // Metric schemas are schema_blocks decorated with (metric, ...) metadata.
+      // They get a metric-style lens showing source names instead of ref counts.
+      const metaBlock = child(node, "metadata_block");
+      if (isMetricSchema(metaBlock)) {
+        lenses.push(metricLens(node, range));
+      } else {
+        lenses.push(...schemaLenses(node, qualName, range, index));
+      }
       break;
+    }
     case "fragment_block":
       lenses.push(fragmentLens(qualName, range, index));
       break;
     case "mapping_block":
       lenses.push(mappingLens(node, range));
-      break;
-    case "metric_block":
-      lenses.push(metricLens(node, range));
       break;
     case "transform_block":
       lenses.push(transformLens(qualName, range, index));

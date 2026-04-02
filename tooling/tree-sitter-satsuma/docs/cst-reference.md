@@ -9,8 +9,10 @@ This document describes the concrete syntax tree (CST) produced by the `tree-sit
 ```
 source_file
   import_decl*
-  (schema_block | fragment_block | transform_block | mapping_block | metric_block | note_block)*
+  (schema_block | fragment_block | transform_block | mapping_block | note_block)*
 ```
+
+> **Note:** Metric schemas are `schema_block` nodes whose `metadata_block` contains a bare `metric` `tag_token`. There is no separate `metric_block` node type in v2.
 
 ---
 
@@ -140,15 +142,24 @@ map { map_key: map_value, ... }
 
 ---
 
-### `metric_block`
+### Metric schemas (v2)
+
+In v2, metrics are `schema_block` nodes whose `metadata_block` contains a bare
+`metric` `tag_token`. Use `isMetricSchema(node.childForFieldName("metadata_block"))` from
+`@satsuma/core` to detect them.
+
 ```
-metric <block_label> <metric_display_name>? (<metadata_block>) { <metric_body> }
+schema <block_label> (metric, metric_name "<display>", source <ref>, grain <ident>, ...) {
+  <schema_body>
+}
 ```
-Children:
-- `block_label`
-- `metric_display_name` — string literal (the quoted label, e.g. `"MRR"`)
-- `metadata_block` — contains `key_value_pair` and `tag_token` nodes
-- `metric_body` — contains `field_decl` and `note_block`
+Children are the same as `schema_block`. Metric-specific metadata tags:
+- `metric` — bare `tag_token` marking the block as a metric
+- `metric_name` — `tag_with_value` carrying the human-readable display name
+- `source` — `tag_with_value` with source schema reference(s)
+- `grain` — `tag_with_value` with aggregation grain identifier
+- `slice` — `slice_body` with dimension identifiers
+- `filter` — `tag_with_value` with filter string literal
 
 ---
 
@@ -224,8 +235,8 @@ Backtick-quoted identifier used in source/target bodies and paths.
 ; All warning comments
 (warning_comment) @warning
 
-; All metric blocks
-(metric_block
+; All metric schemas (schema blocks with the metric tag)
+(schema_block
   (block_label) @metric.name
-  (metric_display_name) @metric.label)
+  (metadata_block (tag_token) @tag (#eq? @tag "metric")))
 ```

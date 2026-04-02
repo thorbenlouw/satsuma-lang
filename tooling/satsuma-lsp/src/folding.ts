@@ -11,7 +11,6 @@ const FOLDABLE_TYPES = new Set([
   "fragment_block",
   "transform_block",
   "mapping_block",
-  "metric_block",
   "note_block",
   "namespace_block",
   "each_block",

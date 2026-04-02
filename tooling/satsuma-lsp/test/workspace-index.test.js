@@ -79,8 +79,9 @@ describe("indexFile", () => {
   });
 
   it("indexes metric definitions", () => {
+    // Metrics are now schema blocks decorated with (metric, ...) metadata.
     const idx = buildIndex({
-      "file:///a.stm": `metric monthly_revenue "MRR" (source orders) {\n  amount DECIMAL\n}`,
+      "file:///a.stm": `schema monthly_revenue (\n  metric,\n  metric_name "MRR",\n  source orders,\n) {\n  amount DECIMAL\n}`,
     });
     const defs = idx.definitions.get("monthly_revenue");
     assert.ok(defs);

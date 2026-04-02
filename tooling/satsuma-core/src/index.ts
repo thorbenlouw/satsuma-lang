@@ -29,6 +29,7 @@ export {
   extractNamespaces,
   extractSchemas,
   extractMetrics,
+  isMetricSchema,
   extractMappings,
   extractFragments,
   extractTransforms,

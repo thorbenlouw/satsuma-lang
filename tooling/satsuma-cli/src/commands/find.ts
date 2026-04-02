@@ -145,7 +145,8 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
   };
 
   for (const [name, entry] of index.schemas) search("schema", name, entry, "schema_body");
-  for (const [name, entry] of index.metrics) search("metric", name, entry, "metric_body");
+  // Metrics are schema_blocks decorated with the `metric` tag; their body is a schema_body.
+  for (const [name, entry] of index.metrics) search("metric", name, entry, "schema_body");
   for (const [name, entry] of index.fragments) search("fragment", name, entry, "schema_body");
 
   // For schemas with fragment spreads, also search spread fragment fields
@@ -160,7 +161,7 @@ function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string
 }
 
 /**
- * Walk schema_body or metric_body and collect field_decls whose metadata
+ * Walk a schema_body node and collect field_decls whose metadata
  * contains the given tag (case-insensitive prefix match).
  */
 function collectFieldMatches(bodyNode: SyntaxNode, blockType: string, blockName: string, file: string, tag: string, acc: Match[]): void {

@@ -61,7 +61,7 @@ describe("namespace collision regressions", () => {
     assert.ok(alpha);
     assert.ok(beta);
     assert.equal(alpha.line, 4);
-    assert.equal(beta.line, 28);
+    assert.equal(beta.line, 33);
   });
 
   it("lineage follows namespace-qualified downstream edges", async () => {
