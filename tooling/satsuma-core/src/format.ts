@@ -446,7 +446,7 @@ function calcFieldAlignment(fields: SyntaxNode[]): FieldAlignment {
 
 function formatSingleLineField(
   node: SyntaxNode, source: string, indent: number,
-  nameCol: number, typeCol: number, metaCol: number
+  _nameCol: number, typeCol: number, metaCol: number
 ): string {
   const name = fieldNameText(node);
   const type = fieldTypeText(node);
@@ -925,7 +925,7 @@ function formatPipeStep(node: SyntaxNode, source: string, indent: number): strin
   }
 }
 
-function formatMapLiteral(node: SyntaxNode, source: string, indent: number): string {
+function formatMapLiteral(node: SyntaxNode, _source: string, indent: number): string {
   const entries = findChildren(node, "map_entry");
 
   if (entries.length === 0) return "map { }";
@@ -984,7 +984,7 @@ function formatTransformBlock(node: SyntaxNode, source: string, indent: number):
 
 // ── Note Block ────────────────────────────────────────────────────────────────
 
-function formatNoteBlock(node: SyntaxNode, source: string, indent: number): string {
+function formatNoteBlock(node: SyntaxNode, _source: string, indent: number): string {
   // note { "..." } or note { """...""" } or note { "line1" "line2" }
   const strings: SyntaxNode[] = [];
   for (const child of node.children) {
@@ -1029,7 +1029,7 @@ function formatMultilineString(node: SyntaxNode, indent: number): string {
 
 // ── Import Declaration ────────────────────────────────────────────────────────
 
-function formatImportDecl(node: SyntaxNode, source: string, indent: number): string {
+function formatImportDecl(node: SyntaxNode, _source: string, indent: number): string {
   const names: string[] = [];
   for (const child of node.children) {
     if (child.type === "import_name") {
@@ -1140,7 +1140,7 @@ function formatMetadataInline(node: SyntaxNode, source: string): string {
 }
 
 function formatMetadataMultiLine(
-  entries: string[], node: SyntaxNode, source: string, indent: number
+  entries: string[], _node: SyntaxNode, _source: string, indent: number
 ): string {
   if (entries.length === 0) return "()";
 
