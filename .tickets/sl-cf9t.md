@@ -1,6 +1,6 @@
 ---
 id: sl-cf9t
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-03-31T08:29:54Z
@@ -48,3 +48,9 @@ Current state:
 - satsuma-core: no reachability logic yet — this is where it should live per the note above
 
 The full fix requires symbol-level reachability computation in `satsuma-core`: given a root file and its import graph, compute which symbols are reachable from each file (the imported symbol plus its own transitive declared dependencies), then thread that set into `collectSemanticDiagnostics` so undefined-ref checks are bounded to that set. This is genuinely new work — deferred to a dedicated implementation PR.
+
+**2026-04-02T10:19:48Z**
+
+Cause: buildIndex merged all transitively reachable files into a flat scope with no import-boundary enforcement. Any symbol in any file reachable via the import graph was visible everywhere, violating ADR-022's rule that imports bring only the named symbols and their exact transitive dependencies into scope.
+
+Fix: Added import-reachability.ts to satsuma-core with computeSymbolDependencies() (builds intra-workspace dependency graph) and computeImportReachability() (computes per-file reachable symbol sets from import declarations). Extended collectSemanticDiagnostics to accept optional ImportReachability and added a new 'import-scope' check (Section 9) that flags references to symbols that exist in the workspace but are not reachable from the file's imports. Wired up in the CLI by populating fileImports in buildIndex and computing reachability in collectSemanticWarnings. 16 new tests (5 dependency graph, 7 reachability algorithm, 4 CLI integration). All 880 existing tests pass.

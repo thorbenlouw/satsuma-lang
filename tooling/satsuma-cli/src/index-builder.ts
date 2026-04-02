@@ -5,6 +5,7 @@
  * in-memory index with a cross-reference graph.
  */
 
+import { dirname, resolve } from "node:path";
 import {
   canonicalRef,
   extractSchemas,
@@ -19,6 +20,7 @@ import {
   extractImports,
   extractNotes,
 } from "@satsuma/core";
+import type { ResolvedFileImport } from "@satsuma/core";
 import { extractNLRefData } from "./nl-ref-extract.js";
 import type {
   ArrowRecord,
@@ -398,6 +400,22 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
   const referenceGraph = buildReferenceGraph({ schemas, metrics, mappings });
   const fieldArrows = buildFieldArrows(allArrowRecords, mappings);
 
+  // Build per-file resolved import declarations for import-scope validation
+  // (ADR-022). Resolves relative import paths to absolute paths using each
+  // file's directory as the base. When import data is absent (mock FileData
+  // in tests), the entry is an empty array — the reachability check treats
+  // files with no imports as having only local symbols in scope.
+  const fileImports = new Map<string, ResolvedFileImport[]>();
+  for (const fileData of fileDataList) {
+    const resolved: ResolvedFileImport[] = [];
+    for (const imp of fileData.imports ?? []) {
+      if (!imp.path) continue;
+      const resolvedPath = resolve(dirname(fileData.filePath), imp.path);
+      resolved.push({ names: imp.names, resolvedFile: resolvedPath });
+    }
+    fileImports.set(fileData.filePath, resolved);
+  }
+
   return {
     schemas,
     duplicates,
@@ -413,6 +431,7 @@ export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceInd
     namespaceNames,
     nlRefData: allNLRefData,
     totalErrors,
+    fileImports,
   };
 }
 
