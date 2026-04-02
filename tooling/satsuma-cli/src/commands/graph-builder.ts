@@ -206,6 +206,37 @@ export function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGrap
   // ── Build edges ────────────────────────────────────────────────────────────
   const schemaEdges = buildSchemaEdges(index, schemaGraph, includedNodeIds, nsFilter);
 
+  // ── Backfill nodes referenced by schema_edges (sl-p895) ───────────────────
+  // When namespace-filtering, schema_edges may reference nodes from outside the
+  // filtered namespace (cross-namespace sources/targets and bridging mappings).
+  // Any endpoint not already in nodes is looked up and added here, so that every
+  // edge endpoint is backed by a node entry and callers can rely on structural
+  // consistency without further checks.
+  if (nsFilter) {
+    for (const edge of schemaEdges) {
+      for (const id of [edge.from, edge.to]) {
+        if (includedNodeIds.has(id)) continue;
+        const schema = index.schemas.get(id);
+        if (schema && !index.metrics.has(id)) {
+          includedNodeIds.add(id);
+          nodes.push({ id, kind: "schema", namespace: schema.namespace ?? null, file: schema.file, line: schema.row + 1, note: schema.note ?? null });
+          continue;
+        }
+        const mapping = index.mappings.get(id);
+        if (mapping) {
+          includedNodeIds.add(id);
+          nodes.push({ id, kind: "mapping", namespace: mapping.namespace ?? null, file: mapping.file, line: mapping.row + 1, sources: mapping.sources, targets: mapping.targets });
+          continue;
+        }
+        const metric = index.metrics.get(id);
+        if (metric) {
+          includedNodeIds.add(id);
+          nodes.push({ id, kind: "metric", namespace: metric.namespace ?? null, file: metric.file, line: metric.row + 1, sources: metric.sources, grain: metric.grain ?? null, slices: metric.slices ?? [] });
+        }
+      }
+    }
+  }
+
   // Always build field edges (needed for --schema-only aggregation too)
   const result = buildFieldEdges(index, includedNodeIds, nsFilter, includeNl);
 

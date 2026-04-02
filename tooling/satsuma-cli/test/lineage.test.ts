@@ -13,11 +13,11 @@ interface TestGraph {
 }
 
 interface DagEdge {
-  src: string;
-  tgt: string;
+  from: string;
+  to: string;
 }
 
-// ── Graph helpers (mirrors lineage.js) ───────────────────────────────────────
+// ── Graph helpers (mirrors lineage.ts) ───────────────────────────────────────
 
 function buildDownstream(graph: TestGraph, start: string, maxDepth = 10) {
   const visitedNodes = new Set<string>();
@@ -28,7 +28,7 @@ function buildDownstream(graph: TestGraph, start: string, maxDepth = 10) {
     visitedNodes.add(node);
     const children = graph.edges.get(node) ?? new Set();
     for (const child of children) {
-      dagEdges.push({ src: node, tgt: child });
+      dagEdges.push({ from: node, to: child });
       dfs(child, depth + 1);
     }
   }
