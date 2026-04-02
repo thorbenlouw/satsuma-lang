@@ -1,6 +1,8 @@
 # Feature 29 — Viz Harness and Shared Backend for Browser-Testable Mapping Visualization
 
-> **Status: PLANNED** (2026-04-01)
+> **Status: COMPLETE** (2026-04-01 → 2026-04-02)
+>
+> All 7 tasks delivered. Shared viz backend extracted to `tooling/satsuma-viz-backend/`, standalone browser harness in `tooling/satsuma-viz-harness/` with 8 Playwright tests, CI/release wiring updated, and architecture docs updated. PR: thorbenlouw/satsuma-lang#184
 
 ## Goal
 
