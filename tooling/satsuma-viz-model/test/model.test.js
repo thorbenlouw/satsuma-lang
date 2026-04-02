@@ -175,22 +175,22 @@ describe("VizModel fixture validation", () => {
     // TransformInfo.atRefs is present only in the LSP version and is optional.
     // Validates that the field is accepted in the canonical type (so LSP can
     // set it) but that its absence is also valid (viz renders without it).
+    // After Feature 28, kind is "nl" | "map" only — "pipeline" and "mixed"
+    // are removed, and nlText is gone (all content is in text).
     /** @type {import("@satsuma/viz-model").TransformInfo} */
     const withRefs = {
       kind: "nl",
       text: "copy @customers.email",
-      steps: [],
-      nlText: "copy @customers.email",
+      steps: ["copy @customers.email"],
       atRefs: [
         { ref: "@customers", classification: "schema_ref", resolved: true, resolvedTo: { kind: "schema", name: "customers" } },
       ],
     };
     /** @type {import("@satsuma/viz-model").TransformInfo} */
     const withoutRefs = {
-      kind: "pipeline",
+      kind: "nl",
       text: "trim | upper",
       steps: ["trim", "upper"],
-      nlText: null,
     };
 
     assert.equal(withRefs.atRefs?.length, 1);
