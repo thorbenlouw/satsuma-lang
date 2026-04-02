@@ -1,5 +1,8 @@
 /**
- * classify.test.js — Unit tests for src/classify.js
+ * classify.test.ts — Unit tests for core classifyTransform and classifyArrow.
+ *
+ * After Feature 28, all pipe steps are NL. classifyTransform is a simple
+ * presence check: any non-empty step array → "nl", empty/null → "none".
  */
 
 import assert from "node:assert/strict";
@@ -17,72 +20,44 @@ function pipeStep(innerType: string, innerChildren: any[] = [], text = "") {
   return n("pipe_step", [n(innerType, innerChildren, text)]);
 }
 
-// Helper: pipe_text wrapping identifiers (structural)
-function structuralStep(text: string) {
-  return pipeStep("pipe_text", [n("identifier", [], text)], text);
-}
-
-// Helper: pipe_text wrapping nl_string (NL)
-function nlStep(text: string) {
-  return pipeStep("pipe_text", [n("nl_string", [], text)], text);
-}
-
 // ── classifyTransform ────────────────────────────────────────────────────────
 
 describe("classifyTransform", () => {
-  it("returns 'structural' for pipe_text with identifiers", () => {
-    const steps = [structuralStep("trim"), structuralStep("lowercase")];
-    assert.equal(classifyTransform(steps as any), "structural");
+  // All non-empty step arrays return "nl" regardless of content type
+  it("returns 'nl' for bare identifier steps", () => {
+    const steps = [
+      pipeStep("pipe_text", [n("identifier", [], "trim")], "trim"),
+      pipeStep("pipe_text", [n("identifier", [], "lowercase")], "lowercase"),
+    ];
+    assert.equal(classifyTransform(steps as any), "nl");
   });
 
-  it("returns 'structural' for map_literal steps", () => {
+  it("returns 'nl' for map_literal steps", () => {
     const steps = [pipeStep("map_literal", [], 'map { A: "active" }')];
-    assert.equal(classifyTransform(steps as any), "structural");
+    assert.equal(classifyTransform(steps as any), "nl");
   });
 
-  it("returns 'structural' for fragment_spread steps", () => {
+  it("returns 'nl' for fragment_spread steps", () => {
     const steps = [pipeStep("fragment_spread", [], "...address")];
-    assert.equal(classifyTransform(steps as any), "structural");
-  });
-
-  it("returns 'structural' for mixed structural types", () => {
-    const steps = [
-      structuralStep("trim"),
-      pipeStep("map_literal", [], "map { X: Y }"),
-      pipeStep("fragment_spread", [], "...common"),
-    ];
-    assert.equal(classifyTransform(steps as any), "structural");
-  });
-
-  it("returns 'nl' for pipe_text containing only nl_string", () => {
-    const steps = [nlStep('"Do something with this"')];
     assert.equal(classifyTransform(steps as any), "nl");
   });
 
-  it("returns 'nl' for pipe_text containing only multiline_string", () => {
-    const steps = [pipeStep("pipe_text", [n("multiline_string", [], '"""Some long description"""')], '"""Some long description"""')];
+  it("returns 'nl' for quoted NL string steps", () => {
+    const steps = [pipeStep("pipe_text", [n("nl_string", [], '"Do something"')], '"Do something"')];
     assert.equal(classifyTransform(steps as any), "nl");
   });
 
-  it("returns 'mixed' for transforms with both structural and NL steps", () => {
-    const steps = [
-      nlStep('"Filter profanity"'),
-      structuralStep("escape_html"),
-      structuralStep("truncate(5000)"),
-    ];
-    assert.equal(classifyTransform(steps as any), "mixed");
+  it("returns 'nl' for multiline string steps", () => {
+    const steps = [pipeStep("pipe_text", [n("multiline_string", [], '"""Long"""')], '"""Long"""')];
+    assert.equal(classifyTransform(steps as any), "nl");
   });
 
-  it("returns 'mixed' when a single pipe_text has both identifiers and NL strings", () => {
-    // e.g. `lookup some_table "Apply business rule"`
+  it("returns 'nl' for mixed bare + quoted steps", () => {
     const steps = [
-      pipeStep("pipe_text", [
-        n("identifier", [], "lookup"),
-        n("identifier", [], "some_table"),
-        n("nl_string", [], '"Apply business rule"'),
-      ], 'lookup some_table "Apply business rule"'),
+      pipeStep("pipe_text", [n("nl_string", [], '"Filter"')], '"Filter"'),
+      pipeStep("pipe_text", [n("identifier", [], "escape_html")], "escape_html"),
     ];
-    assert.equal(classifyTransform(steps as any), "mixed");
+    assert.equal(classifyTransform(steps as any), "nl");
   });
 
   it("returns 'none' for empty steps array", () => {
@@ -92,16 +67,6 @@ describe("classifyTransform", () => {
   it("returns 'none' for null/undefined", () => {
     assert.equal(classifyTransform(null as any), "none");
     assert.equal(classifyTransform(undefined as any), "none");
-  });
-
-  it("returns 'none' for steps with no recognized inner nodes", () => {
-    const steps = [n("pipe_step", [])];
-    assert.equal(classifyTransform(steps as any), "none");
-  });
-
-  it("returns 'structural' for pipe_text with arithmetic tokens", () => {
-    const steps = [pipeStep("pipe_text", [n("number_literal", [], "100")], "* 100")];
-    assert.equal(classifyTransform(steps as any), "structural");
   });
 });
 

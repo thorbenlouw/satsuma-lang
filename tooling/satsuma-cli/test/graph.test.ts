@@ -30,10 +30,11 @@ describe("satsuma graph (text)", () => {
     assert.match(stdout, /Schema topology:/);
   });
 
+  // After Feature 28, classification is none/nl/nl-derived — no structural
   it("prints classification breakdown", async () => {
     const { stdout, code } = await run("graph", PLATFORM);
     assert.ok(code === 0 || code === 2, `expected exit 0 or 2, got ${code}`);
-    assert.match(stdout, /structural:/);
+    assert.match(stdout, /nl:/);
   });
 });
 
@@ -165,12 +166,13 @@ describe("satsuma graph --json", () => {
     assert.ok(edge.line >= 1, "line should be 1-indexed");
   });
 
-  it("structural edges include transforms array", async () => {
+  // After Feature 28, all transforms are NL — check that NL edges include transforms
+  it("NL edges include transforms array", async () => {
     const { stdout } = await run("graph", "--json", PLATFORM);
     const data = JSON.parse(stdout);
-    const structural = data.edges.find((e: any) => e.classification === "structural" && e.transforms);
-    assert.ok(structural, "should have structural edge with transforms");
-    assert.ok(Array.isArray(structural.transforms));
+    const nlWithTransforms = data.edges.find((e: any) => e.classification === "nl" && e.transforms);
+    assert.ok(nlWithTransforms, "should have NL edge with transforms");
+    assert.ok(Array.isArray(nlWithTransforms.transforms));
   });
 
   it("NL edges include nl_text", async () => {

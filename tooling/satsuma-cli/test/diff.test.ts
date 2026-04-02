@@ -119,12 +119,12 @@ describe("diffIndex", () => {
     /** Verifies that diffIndex compares arrow transform bodies, not just endpoints. */
     const arrowA = {
       mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
-      transform_raw: "trim | upper", steps: [], classification: "structural",
+      transform_raw: "trim | upper", steps: [], classification: "nl",
       derived: false, line: 5, file: "a.stm",
     };
     const arrowB = {
       mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
-      transform_raw: "trim | lower", steps: [], classification: "structural",
+      transform_raw: "trim | lower", steps: [], classification: "nl",
       derived: false, line: 5, file: "b.stm",
     };
     const a = makeIndex(
@@ -148,7 +148,7 @@ describe("diffIndex", () => {
   it("reports no arrow changes when transform bodies are identical (sl-edrw)", () => {
     const arrow = {
       mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
-      transform_raw: "trim | upper", steps: [], classification: "structural",
+      transform_raw: "trim | upper", steps: [], classification: "nl",
       derived: false, line: 5, file: "a.stm",
     };
     const idx = makeIndex(
@@ -326,12 +326,12 @@ describe("diffIndex", () => {
     /** Verifies that added/removed arrows are detected by source->target key. */
     const arrowA = {
       mapping: "m1", namespace: null, sources: ["src.id"], target: "tgt.id",
-      transform_raw: "", steps: [], classification: "structural",
+      transform_raw: "", steps: [], classification: "nl",
       derived: false, line: 5, file: "a.stm",
     };
     const arrowB = {
       mapping: "m1", namespace: null, sources: ["src.name"], target: "tgt.name",
-      transform_raw: "", steps: [], classification: "structural",
+      transform_raw: "", steps: [], classification: "nl",
       derived: false, line: 5, file: "b.stm",
     };
     const a = makeIndex(

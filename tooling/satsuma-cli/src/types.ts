@@ -109,7 +109,17 @@ export interface PipeStep {
   text: string;
 }
 
-export type Classification = "structural" | "nl" | "mixed" | "none" | "nl-derived";
+/**
+ * Arrow transform classification.
+ *
+ * After Feature 28 all pipe steps are NL — bare tokens, quoted strings, and map
+ * literals are human/LLM-interpreted. The only axis that matters is presence:
+ *
+ * - "none"       — direct copy arrow (no transform body)
+ * - "nl"         — any transform body (all content is NL)
+ * - "nl-derived" — synthetic edge inferred from NL @-ref resolution
+ */
+export type Classification = "none" | "nl" | "nl-derived";
 
 export interface ArrowRecord {
   mapping: string | null;

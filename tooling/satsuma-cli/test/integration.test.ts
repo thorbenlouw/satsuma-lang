@@ -618,12 +618,12 @@ describe("satsuma mapping", () => {
     const data = JSON.parse(stdout);
     for (const a of data.arrows) {
       assert.ok(
-        ["structural", "nl", "mixed", "none"].includes(a.classification),
+        ["nl", "none", "nl-derived"].includes(a.classification),
         `arrow ${a.src} -> ${a.tgt} should have classification, got: ${a.classification}`,
       );
     }
-    // Should have at least one structural and one non-none classification
-    assert.ok(data.arrows.some((a: any) => a.classification === "structural"), "expected at least one structural arrow");
+    // Should have at least one NL arrow (transform with steps)
+    assert.ok(data.arrows.some((a: any) => a.classification === "nl"), "expected at least one nl arrow");
   });
 
   it("--json container arrows have hasTransform:false (sl-zfi0)", async () => {
@@ -1186,27 +1186,28 @@ describe("satsuma arrows", () => {
     assert.equal(code, 0);
     assert.match(stdout, /CUST_ID -> customer_id/);
     assert.match(stdout, /CUST_ID -> legacy_customer_id/);
-    assert.match(stdout, /\[mixed\]/);
+    assert.match(stdout, /\[nl\]/);
     assert.match(stdout, /\[none\]/);
   });
 
-  it("shows structural classification on identifier pipeline", async () => {
+  // After Feature 28, all pipe steps are NL — no structural/mixed distinction
+  it("shows nl classification on bare identifier pipe steps", async () => {
     const { stdout, code } = await run("arrows", "legacy_sqlserver.FIRST_NM", DB);
     assert.equal(code, 0);
-    assert.match(stdout, /\[structural\]/);
+    assert.match(stdout, /\[nl\]/);
     assert.match(stdout, /trim/);
   });
 
-  it("shows mixed classification on NL + structural transform", async () => {
+  it("shows nl classification on NL + bare token transform", async () => {
     const { stdout, code } = await run("arrows", "legacy_sqlserver.PHONE_NBR", DB);
     assert.equal(code, 0);
-    assert.match(stdout, /\[mixed\]/);
+    assert.match(stdout, /\[nl\]/);
   });
 
-  it("shows mixed classification on mixed transform", async () => {
+  it("shows nl classification on quoted + bare token transform", async () => {
     const { stdout, code } = await run("arrows", "legacy_sqlserver.NOTES", DB);
     assert.equal(code, 0);
-    assert.match(stdout, /\[mixed\]/);
+    assert.match(stdout, /\[nl\]/);
   });
 
   it("--as-source filters to source arrows only", async () => {
@@ -1251,12 +1252,12 @@ describe("satsuma arrows", () => {
     const data = JSON.parse(stdout);
     assert.ok(Array.isArray(data));
     assert.equal(data.length, 2);
-    const mixed = data.find((a) => a.classification === "mixed");
-    assert.ok(mixed);
-    assert.ok(Array.isArray(mixed.steps));
-    assert.ok(mixed.steps.length > 0);
-    assert.ok(mixed.steps[0].type);
-    assert.ok(mixed.steps[0].text);
+    // After Feature 28, all transforms are "nl" — find one with steps
+    const nlWithSteps = data.find((a: any) => a.classification === "nl" && a.steps?.length > 0);
+    assert.ok(nlWithSteps, "expected at least one nl arrow with steps");
+    assert.ok(Array.isArray(nlWithSteps.steps));
+    assert.ok(nlWithSteps.steps[0].type);
+    assert.ok(nlWithSteps.steps[0].text);
   });
 
   it("--json includes file and line", async () => {

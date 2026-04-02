@@ -59,7 +59,7 @@ JSON shape (--json):
     "warnings":  [{"text": str, "file": str, "line": int}, ...],
     "unresolved_nl": [{"scope": str, "arrow": str, "text": str, "file": str, "line": int}, ...]
   }
-  edges[].classification: "none" | "structural" | "nl" | "mixed" | "nl-derived"
+  edges[].classification: "none" | "nl" | "nl-derived"
 
 Examples:
   satsuma graph pipeline.stm --json                  # full graph

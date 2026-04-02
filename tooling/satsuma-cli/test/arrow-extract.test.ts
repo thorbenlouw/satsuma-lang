@@ -105,7 +105,7 @@ describe("extractArrowRecords", () => {
     assert.equal(records[0].line, 10);
   });
 
-  it("extracts a structural arrow with identifier pipeline", () => {
+  it("extracts an NL arrow with bare identifier steps", () => {
     const steps = [
       pipeStep("pipe_text", "trim"),
       pipeStep("pipe_text", "lowercase"),
@@ -116,7 +116,7 @@ describe("extractArrowRecords", () => {
 
     const records = extractArrowRecords(root as any);
     assert.equal(records.length, 1);
-    assert.equal(records[0].classification, "structural");
+    assert.equal(records[0].classification, "nl");
     assert.equal(records[0].transform_raw, "trim | lowercase");
     assert.deepEqual(records[0].steps, [
       { type: "pipe_text", text: "trim" },
@@ -135,7 +135,7 @@ describe("extractArrowRecords", () => {
     assert.equal(records[0].transform_raw, '"Do something complex"');
   });
 
-  it("extracts a mixed arrow", () => {
+  it("extracts an NL arrow with bare + quoted steps", () => {
     const steps = [
       pipeStep("pipe_text", '"Filter profanity"'),
       pipeStep("pipe_text", "escape_html"),
@@ -145,7 +145,7 @@ describe("extractArrowRecords", () => {
     const root = n("source_file", [mapping]);
 
     const records = extractArrowRecords(root as any);
-    assert.equal(records[0].classification, "mixed");
+    assert.equal(records[0].classification, "nl");
     assert.deepEqual(records[0].steps, [
       { type: "pipe_text", text: '"Filter profanity"' },
       { type: "pipe_text", text: "escape_html" },
@@ -163,7 +163,7 @@ describe("extractArrowRecords", () => {
     assert.deepEqual(records[0].sources, []);
     assert.equal(records[0].target, "migration_ts");
     assert.equal(records[0].derived, true);
-    assert.equal(records[0].classification, "structural");
+    assert.equal(records[0].classification, "nl");
   });
 
   it("extracts arrows from multiple mappings", () => {
@@ -179,14 +179,14 @@ describe("extractArrowRecords", () => {
     assert.equal(records[1].mapping, "m2");
   });
 
-  it("extracts a map_literal arrow as structural", () => {
+  it("extracts a map_literal arrow as NL", () => {
     const steps = [pipeStep("map_literal", 'map { R: "retail" }')];
     const arrow = mapArrow("TYPE", "type", steps, 60);
     const mapping = mappingBlock("m1", [arrow]);
     const root = n("source_file", [mapping]);
 
     const records = extractArrowRecords(root as any);
-    assert.equal(records[0].classification, "structural");
+    assert.equal(records[0].classification, "nl");
   });
 
   it("returns empty array when no mappings", () => {
@@ -288,26 +288,26 @@ describe("extractArrowRecords against real examples", () => {
       assert.equal(r.mapping, "customer migration");
     }
 
-    // Check a structural arrow
+    // Check an NL arrow with bare identifier steps
     const trimArrow = records.find(
       (r) => r.sources[0] === "FIRST_NM" && r.target === "first_name",
     );
     assert.ok(trimArrow, "should find FIRST_NM -> first_name");
-    assert.equal(trimArrow.classification, "structural");
+    assert.equal(trimArrow.classification, "nl");
     assert.equal(trimArrow.derived, false);
     assert.equal(trimArrow.steps.length, 3);
 
-    // Check a mixed arrow (NL body + warn_if_invalid structural step)
+    // Check an NL arrow with bare + quoted steps
     const phoneArrow = records.find((r) => r.sources[0] === "PHONE_NBR");
     assert.ok(phoneArrow);
-    assert.equal(phoneArrow.classification, "mixed");
+    assert.equal(phoneArrow.classification, "nl");
 
-    // Check a mixed arrow
+    // Check an NL arrow with quoted text
     const notesArrow = records.find(
       (r) => r.sources[0] === "NOTES" && r.target === "notes",
     );
     assert.ok(notesArrow);
-    assert.equal(notesArrow.classification, "mixed");
+    assert.equal(notesArrow.classification, "nl");
 
     // Check a bare arrow (no transform)
     const bareArrow = records.find((r) => r.target === "legacy_customer_id");
