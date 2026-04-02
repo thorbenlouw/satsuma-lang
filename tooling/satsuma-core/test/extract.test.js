@@ -279,12 +279,22 @@ describe("extractQuestions()", () => {
 });
 
 // ── extractMetrics ──────────────────────────────────────────────────────────
+// Metrics are schema_block nodes decorated with a `metric` tag_token in their
+// metadata_block. The extractMetrics() function filters schema_blocks by that
+// criterion and extracts metric-specific metadata alongside the field tree.
+
+function metricTag() {
+  // tag_token node with a single identifier child whose text is "metric"
+  return n("tag_token", [ident("metric")], "metric");
+}
 
 describe("extractMetrics()", () => {
-  it("extracts a basic metric with name and namespace", () => {
-    const metricBody = n("metric_body", [fieldDecl("revenue", "DECIMAL")]);
-    const metricBlock = n("metric_block", [blockLabel("total_revenue"), metricBody]);
-    const root = n("program", [metricBlock]);
+  it("schema_block decorated with metric tag is extracted as a metric", () => {
+    // Validates that only schema_blocks with the `metric` tag_token are extracted.
+    const body = schemaBody([fieldDecl("revenue", "DECIMAL")]);
+    const meta = n("metadata_block", [metricTag()]);
+    const schemaBlock = n("schema_block", [blockLabel("total_revenue"), meta, body]);
+    const root = n("program", [schemaBlock]);
 
     const result = extractMetrics(root);
     assert.equal(result.length, 1);
@@ -294,21 +304,33 @@ describe("extractMetrics()", () => {
     assert.equal(result[0].fields[0].name, "revenue");
   });
 
-  it("extracts metric with source from metadata", () => {
+  it("extracts source from metric schema metadata", () => {
+    // Validates that the `source` tag in metadata is parsed into the sources array.
     const sourceVal = n("value_text", [ident("orders")], "orders");
     const sourceKv = n("tag_with_value", [ident("source"), sourceVal]);
-    const meta = n("metadata_block", [sourceKv]);
-    const metricBlock = n("metric_block", [blockLabel("aov"), meta]);
-    const root = n("program", [metricBlock]);
+    const meta = n("metadata_block", [metricTag(), sourceKv]);
+    const schemaBlock = n("schema_block", [blockLabel("aov"), meta]);
+    const root = n("program", [schemaBlock]);
 
     const result = extractMetrics(root);
     assert.equal(result.length, 1);
     assert.deepEqual(result[0].sources, ["orders"]);
   });
 
-  it("extracts metric inside namespace block", () => {
-    const metricBlock = n("metric_block", [blockLabel("revenue")]);
-    const nsBlock = n("namespace_block", [ident("finance"), metricBlock]);
+  it("non-metric schema_block is not extracted as a metric", () => {
+    // Validates that plain schema_blocks (without the metric tag) are not included.
+    const schemaBlock = n("schema_block", [blockLabel("orders")]);
+    const root = n("program", [schemaBlock]);
+
+    const result = extractMetrics(root);
+    assert.equal(result.length, 0);
+  });
+
+  it("extracts metric schema inside a namespace block", () => {
+    // Validates namespace propagation for metric schemas.
+    const meta = n("metadata_block", [metricTag()]);
+    const schemaBlock = n("schema_block", [blockLabel("revenue"), meta]);
+    const nsBlock = n("namespace_block", [ident("finance"), schemaBlock]);
     const root = n("program", [nsBlock]);
 
     const result = extractMetrics(root);

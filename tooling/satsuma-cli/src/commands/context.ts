@@ -291,8 +291,9 @@ function renderBlock(index: WorkspaceIndex, candidate: ScoredCandidate, compact?
 
 // ── Metadata collection ──────────────────────────────────────────────────────
 
+// metric_block is removed — metrics are now schema_block nodes with the `metric` tag.
 const BLOCK_TYPES = new Set([
-  "schema_block", "mapping_block", "metric_block",
+  "schema_block", "mapping_block",
   "fragment_block", "transform_block",
 ]);
 

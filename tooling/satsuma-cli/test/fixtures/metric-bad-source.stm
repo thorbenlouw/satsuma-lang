@@ -1,3 +1,3 @@
-metric bad_metric (source nonexistent_schema) {
+schema bad_metric (metric, source nonexistent_schema) {
   total DECIMAL
 }

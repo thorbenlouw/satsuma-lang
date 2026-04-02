@@ -109,14 +109,15 @@ schema orders {
   });
 
   it("shows source info for metrics", () => {
+    // Metrics are now schema blocks with (metric, source ...) metadata.
     const result = lenses(
       {
-        "file:///a.stm": `metric monthly_revenue "MRR" (source orders) {\n  amount DECIMAL\n}`,
+        "file:///a.stm": `schema monthly_revenue (\n  metric,\n  metric_name "MRR",\n  source orders,\n) {\n  amount DECIMAL\n}`,
       },
       "file:///a.stm",
     );
     assert.equal(result.length, 1);
-    assert.ok(result[0].command.title.includes("sources: orders"));
+    assert.ok(result[0].command.title.includes("sources:"));
   });
 
   it("shows usage count for transforms", () => {

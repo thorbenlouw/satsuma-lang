@@ -143,18 +143,20 @@ schema events (enum {active, suspended, closed,}) {}
         (identifier)))))
 
 ================================================================================
-Slice body
+Slice body in schema metadata
 ================================================================================
 
-metric mrr (source fact_subscriptions, grain monthly, slice {customer_segment, product_line}) {}
+schema mrr (metric, source fact_subscriptions, grain monthly, slice {customer_segment, product_line}) {}
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
@@ -249,10 +251,12 @@ schema customers (pii, required,) {}
         (identifier)))))
 
 ================================================================================
-Metric metadata with source and grain
+Metric schema metadata with metric_name, source, grain, and filter
 ================================================================================
 
-metric monthly_recurring_revenue "MRR" (
+schema monthly_recurring_revenue (
+  metric,
+  metric_name "MRR",
   source fact_subscriptions,
   grain monthly,
   filter "status = 'active'"
@@ -261,11 +265,16 @@ metric monthly_recurring_revenue "MRR" (
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
-    (nl_string)
     (metadata_block
+      (tag_token
+        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string)))
       (tag_with_value
         (identifier)
         (value_text

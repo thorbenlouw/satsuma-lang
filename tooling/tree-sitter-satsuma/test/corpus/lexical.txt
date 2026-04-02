@@ -105,19 +105,24 @@ mapping {}
   (ERROR))
 
 ================================================================================
-Metric block
+Metric schema block
 ================================================================================
 
-metric mrr "MRR" (source fact_subscriptions, grain monthly) {}
+schema mrr (metric, metric_name "MRR", source fact_subscriptions, grain monthly) {}
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
-    (nl_string)
     (metadata_block
+      (tag_token
+        (identifier))
+      (tag_with_value
+        (identifier)
+        (value_text
+          (nl_string)))
       (tag_with_value
         (identifier)
         (value_text

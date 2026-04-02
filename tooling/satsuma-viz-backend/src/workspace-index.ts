@@ -24,6 +24,7 @@ import {
   fieldNameText as coreFieldNameText,
   entryText,
   extractFieldTree,
+  isMetricSchema,
 } from "@satsuma/core";
 import type { FieldDecl } from "@satsuma/core";
 
@@ -355,12 +356,14 @@ export function findMappingsUsing(
 
 // ---------- Extraction (per file) ----------
 
+// In v2, metrics are schema_block nodes with (metric, ...) metadata.
+// The schema_block entry defaults to "schema"; indexTopLevel upgrades it to
+// "metric" for nodes that pass isMetricSchema().
 const BLOCK_KINDS: Record<string, DefinitionEntry["kind"]> = {
   schema_block: "schema",
   fragment_block: "fragment",
   transform_block: "transform",
   mapping_block: "mapping",
-  metric_block: "metric",
   namespace_block: "namespace",
 };
 
@@ -403,6 +406,13 @@ function indexTopLevel(
 
   if (!kind) return;
 
+  // Metric schemas are schema_block nodes decorated with (metric, ...) metadata.
+  // Upgrade the kind from "schema" to "metric" so the index correctly classifies them.
+  const effectiveKind: DefinitionEntry["kind"] =
+    kind === "schema" && isMetricSchema(child(node, "metadata_block"))
+      ? "metric"
+      : kind;
+
   const name = labelText(node);
   if (!name) return;
 
@@ -410,8 +420,8 @@ function indexTopLevel(
   const lblNode = child(node, "block_label");
   const selectionRange = lblNode ? nodeRange(lblNode) : nodeRange(node);
 
-  // Extract fields for schema/fragment blocks
-  const fields = (kind === "schema" || kind === "fragment")
+  // Extract fields for schema/fragment blocks (metric schemas also have schema_body)
+  const fields = (effectiveKind === "schema" || effectiveKind === "metric" || effectiveKind === "fragment")
     ? extractFields(child(node, "schema_body"))
     : [];
 
@@ -419,23 +429,23 @@ function indexTopLevel(
     uri,
     range: nodeRange(node),
     selectionRange,
-    kind,
+    kind: effectiveKind,
     namespace,
     fields,
   });
 
   // Extract references from mapping bodies
-  if (kind === "mapping") {
+  if (effectiveKind === "mapping") {
     indexMappingRefs(index, uri, node, namespace);
   }
 
   // Extract metric source references
-  if (kind === "metric") {
+  if (effectiveKind === "metric") {
     indexMetricRefs(index, uri, node, namespace);
   }
 
   // Extract fragment spread references from schema/fragment bodies
-  if (kind === "schema" || kind === "fragment") {
+  if (effectiveKind === "schema" || effectiveKind === "fragment") {
     const body = child(node, "schema_body");
     if (body) {
       indexSpreadRefs(index, uri, body);

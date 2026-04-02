@@ -3,6 +3,6 @@ schema `My Complex Schema` {
   normal_field INT
 }
 
-metric `multi word metric` (source `My Complex Schema`) {
+schema `multi word metric` (metric, source `My Complex Schema`) {
   total DECIMAL
 }

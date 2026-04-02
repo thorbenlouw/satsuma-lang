@@ -17,7 +17,12 @@ namespace alpha {
     alpha_flag  -> alpha_flag
   }
 
-  metric customer_health "Alpha Health" (source customer_out, grain daily) {
+  schema customer_health (
+    metric,
+    metric_name "Alpha Health",
+    source customer_out,
+    grain daily,
+  ) {
     score NUMBER (measure additive)
   }
 }
@@ -41,7 +46,12 @@ namespace beta {
     beta_score  -> beta_score { round(0) }
   }
 
-  metric customer_health "Beta Health" (source customer_out, grain weekly) {
+  schema customer_health (
+    metric,
+    metric_name "Beta Health",
+    source customer_out,
+    grain weekly,
+  ) {
     score NUMBER (measure non_additive)
   }
 }

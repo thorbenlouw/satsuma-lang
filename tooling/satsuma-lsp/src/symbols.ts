@@ -4,6 +4,7 @@ import {
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
+import { isMetricSchema } from "@satsuma/core";
 
 /** Map of CST block type → LSP SymbolKind. */
 const BLOCK_SYMBOL_KIND: Record<string, SymbolKind> = {
@@ -11,7 +12,6 @@ const BLOCK_SYMBOL_KIND: Record<string, SymbolKind> = {
   fragment_block: SymbolKind.Interface,
   mapping_block: SymbolKind.Function,
   transform_block: SymbolKind.Function,
-  metric_block: SymbolKind.Constant,
   namespace_block: SymbolKind.Namespace,
   note_block: SymbolKind.File,
   import_decl: SymbolKind.Package,
@@ -31,8 +31,16 @@ export function computeDocumentSymbols(tree: Tree): DocumentSymbol[] {
 function symbolsFromNodes(nodes: SyntaxNode[]): DocumentSymbol[] {
   const symbols: DocumentSymbol[] = [];
   for (const node of nodes) {
-    const kind = BLOCK_SYMBOL_KIND[node.type];
+    let kind = BLOCK_SYMBOL_KIND[node.type];
     if (kind === undefined) continue;
+
+    // Metric schemas are schema_blocks decorated with (metric, ...) metadata.
+    // Use SymbolKind.Constant (same as the old metric_block) to distinguish them
+    // from plain schemas in the outline panel.
+    if (node.type === "schema_block") {
+      const metaBlock = child(node, "metadata_block");
+      if (isMetricSchema(metaBlock)) kind = SymbolKind.Constant;
+    }
 
     const sym = blockSymbol(node, kind);
     if (sym) symbols.push(sym);
@@ -206,11 +214,21 @@ function symbolName(node: SyntaxNode): string | null {
 }
 
 function symbolDetail(node: SyntaxNode): string | undefined {
-  if (node.type === "metric_block") {
-    // Metric display label is the nl_string directly under the metric block
-    const displayLabel = child(node, "nl_string");
-    if (displayLabel) {
-      return stringText(displayLabel) ?? undefined;
+  // For metric schemas, the human-readable display label is the metric_name
+  // tag value inside the metadata_block, not a direct child nl_string.
+  if (node.type === "schema_block") {
+    const metaBlock = child(node, "metadata_block");
+    if (isMetricSchema(metaBlock) && metaBlock) {
+      const nameEntry = metaBlock.namedChildren.find(
+        (c) => c.type === "tag_with_value" && c.namedChildren[0]?.text === "metric_name",
+      );
+      if (nameEntry) {
+        const val = nameEntry.namedChildren[1];
+        const strNode = val?.namedChildren.find(
+          (c) => c.type === "nl_string" || c.type === "multiline_string",
+        );
+        if (strNode) return stringText(strNode) ?? undefined;
+      }
     }
   }
   return undefined;

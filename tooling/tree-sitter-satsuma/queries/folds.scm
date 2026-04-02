@@ -5,11 +5,11 @@
 ; Each block type is foldable on its { } body.
 
 ; Top-level block types
+; Note: metric schemas are schema_block nodes — covered by the schema_block rule.
 (schema_block) @fold
 (fragment_block) @fold
 (transform_block) @fold
 (mapping_block) @fold
-(metric_block) @fold
 
 ; Structural note blocks
 (note_block) @fold

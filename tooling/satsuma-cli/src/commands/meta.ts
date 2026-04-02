@@ -102,7 +102,9 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
   const metricResolved = resolveIndexKey(blockName, index.metrics);
   if (schemaResolved) { blockTypes.push("schema_block"); resolvedName = schemaResolved.key; }
   if (mappingResolved) { blockTypes.push("mapping_block"); resolvedName = mappingResolved.key; }
-  if (metricResolved) { blockTypes.push("metric_block"); resolvedName = metricResolved.key; }
+  // Metrics are schema_block nodes decorated with the `metric` tag — look up by schema_block.
+  // A metric name may coincide with a schema name (they ARE the same node), so only add once.
+  if (metricResolved && !schemaResolved) { blockTypes.push("schema_block"); resolvedName = metricResolved.key; }
 
   if (blockTypes.length === 0) {
     console.error(`'${blockName}' not found as a schema, mapping, or metric.`);
@@ -133,9 +135,9 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
       );
       const entries = extractMetadata(metaNode);
 
-      // Also extract note blocks from the body (mapping_body, metric_body)
+      // Also extract note blocks from the body (mapping_body or schema_body for metric schemas).
       const bodyNode = node.namedChildren.find(
-        (c) => c.type === "mapping_body" || c.type === "metric_body",
+        (c) => c.type === "mapping_body" || c.type === "schema_body",
       );
       if (bodyNode) {
         for (const child of bodyNode.namedChildren) {
@@ -185,9 +187,10 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Wo
     bodyType = "schema_body";
   }
   if (!resolved) {
+    // Metrics are schema_block nodes decorated with the `metric` tag.
     resolved = resolveIndexKey(entityName, index.metrics);
-    blockType = "metric_block";
-    bodyType = "metric_body";
+    blockType = "schema_block";
+    bodyType = "schema_body";
   }
   if (!resolved) {
     console.error(`'${entityName}' not found in schemas, fragments, or metrics.`);

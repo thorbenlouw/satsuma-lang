@@ -1,6 +1,7 @@
 import { Hover, MarkupKind } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
+import { isMetricSchema } from "@satsuma/core";
 
 // Maximum number of fields shown in a schema/fragment hover preview.
 // Beyond this cap the hover becomes too tall to be useful in the editor;
@@ -87,7 +88,6 @@ function tryHover(node: SyntaxNode, tree: Tree): HoverResult | null {
     case "fragment_block":
     case "mapping_block":
     case "transform_block":
-    case "metric_block":
     case "namespace_block":
     case "note_block":
       return hoverBlock(node);
@@ -113,9 +113,28 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
 
   switch (node.type) {
     // --- Schema / Fragment hover ---
+    // Metric schemas are schema_blocks decorated with (metric, ...) metadata;
+    // they show metric-specific info (display name, grain) above the field list.
     case "schema_block":
     case "fragment_block": {
-      lines.push(`**${blockType}** \`${name}\``);
+      const metaBlock = child(node, "metadata_block");
+      const isMetric = node.type === "schema_block" && isMetricSchema(metaBlock);
+      const displayKind = isMetric ? "metric" : blockType;
+      lines.push(`**${displayKind}** \`${name}\``);
+      if (isMetric && metaBlock) {
+        // Show metric_name tag value as display label
+        const metricNameEntry = metaBlock.namedChildren.find(
+          (c) => c.type === "tag_with_value" && c.namedChildren[0]?.text === "metric_name",
+        );
+        if (metricNameEntry) {
+          const valNode = metricNameEntry.namedChildren[1];
+          const strNode = valNode?.namedChildren.find(
+            (c) => c.type === "nl_string" || c.type === "multiline_string",
+          );
+          if (strNode) lines.push(`Display: "${stringText(strNode)}"`);
+        }
+        lines.push(`Metadata: ${metaBlock.text.trim()}`);
+      }
       const body = child(node, "schema_body");
       if (body) {
         const fields = children(body, "field_decl");
@@ -168,20 +187,6 @@ function hoverBlock(node: SyntaxNode): HoverResult | null {
         if (bodyText.length > 0 && bodyText.length < 200) {
           lines.push("```satsuma", bodyText, "```");
         }
-      }
-      break;
-    }
-
-    // --- Metric hover ---
-    case "metric_block": {
-      lines.push(`**metric** \`${name}\``);
-      const displayLabel = child(node, "nl_string");
-      if (displayLabel) {
-        lines.push(`Display: "${stringText(displayLabel)}"`);
-      }
-      const meta = child(node, "metadata_block");
-      if (meta) {
-        lines.push(`Metadata: ${meta.text.trim()}`);
       }
       break;
     }
@@ -339,8 +344,7 @@ function findAncestorBlock(node: SyntaxNode): SyntaxNode | null {
       current.type === "schema_block" ||
       current.type === "fragment_block" ||
       current.type === "mapping_block" ||
-      current.type === "transform_block" ||
-      current.type === "metric_block"
+      current.type === "transform_block"
     ) {
       return current;
     }

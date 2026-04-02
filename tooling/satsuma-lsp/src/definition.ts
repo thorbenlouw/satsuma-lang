@@ -360,8 +360,7 @@ function findEnclosingBlock(node: SyntaxNode): SyntaxNode | null {
       current.type === "schema_block" ||
       current.type === "fragment_block" ||
       current.type === "transform_block" ||
-      current.type === "mapping_block" ||
-      current.type === "metric_block"
+      current.type === "mapping_block"
     ) {
       return current;
     }

@@ -29,6 +29,16 @@ schema monthly_recurring_revenue (
 ) {
   value  DECIMAL(14,2)  (measure additive)
 
+  note {
+    """
+    Sum of active subscription amounts, normalized to monthly.
+    Annual subscriptions divided by 12. Quarterly by 3.
+    Excludes trials and churned subscriptions.
+
+    **Owner:** Finance — Revenue team
+    **SLA:** Available by 09:00 UTC on the 2nd of each month
+    """
+  }
 }
 
 mapping _monthly_recurring_revenue_pipeline {
@@ -85,7 +95,6 @@ schema churn_rate (
   slice {segment, region, product_line}
 ) {
   value  DECIMAL(5,4)  (measure non_additive)
-
 }
 
 mapping _churn_rate_pipeline {
@@ -119,7 +128,6 @@ schema customer_lifetime_value (
   value            DECIMAL(14,2)  (measure non_additive)
   order_count      INTEGER        (measure additive)
   avg_order_value  DECIMAL(12,2)  (measure non_additive)
-
 }
 
 // --- Pipeline / Sales Metrics ---
@@ -132,7 +140,6 @@ schema conversion_rate (
   filter "is_deleted = false"
 ) {
   value  DECIMAL(5,4)  (measure non_additive)  // wins / total by stage
-
 }
 
 mapping _conversion_rate_pipeline {
@@ -166,7 +173,6 @@ schema pipeline_value (
     measure additive,
     note "@arr_value * @probability — use for forecast roll-ups"
   )
-
 }
 
 mapping _pipeline_value_pipeline {
@@ -215,7 +221,6 @@ schema order_revenue (
   order_count      INTEGER        (measure additive)
   units_sold       INTEGER        (measure additive)
   avg_order_value  DECIMAL(12,2)  (measure non_additive)
-
 }
 
 mapping _order_revenue_pipeline {
@@ -267,6 +272,10 @@ schema cart_abandonment_rate (
 ) {
   value  DECIMAL(5,4)  (measure non_additive)
 
+  note {
+    "Sessions that reached checkout but did not result in a placed order, "
+    "divided by all sessions that reached checkout."
+  }
 }
 
 mapping _cart_abandonment_rate_pipeline {

@@ -246,9 +246,11 @@ mapping {
     assert.ok(out.includes("// First comment before source block"));
   });
 
-  it("preserves first AND trailing comments in metric bodies (sl-1kzh)", () => {
+  it("preserves first AND trailing comments in metric schema bodies (sl-1kzh)", () => {
+    // Metrics are now schema blocks decorated with (metric, ...) metadata.
+    // This validates that leading and trailing gap comments inside the body are preserved.
     const src = `schema orders { total INT }
-metric test_metric (source orders) {
+schema test_metric (metric, source orders) {
   // First comment in metric body
   total INT
   // Second comment
@@ -303,9 +305,11 @@ metric test_metric (source orders) {
     assert.equal(out1, out2, "format(format(x)) must equal format(x) when leading gap comments exist");
   });
 
-  it("is idempotent for metric blocks with gap comments", () => {
+  it("is idempotent for metric schema blocks with gap comments", () => {
+    // Metrics are schema blocks decorated with (metric, ...) metadata.
+    // format(format(x)) must equal format(x) for metric schemas with gap comments.
     const src = `schema s { x INT }
-metric m (source s) {
+schema m (metric, source s) {
   // Leading
   x INT
   // Trailing
@@ -546,12 +550,15 @@ describe("edge cases", () => {
     assert.ok(out.includes("  .sku -> .sku { trim }"));
   });
 
-  it("handles metric block with display name and metadata", () => {
-    const src = `metric mrr "MRR" (source subs, grain monthly) {
+  it("handles metric schema block with metric_name and metadata", () => {
+    // Metrics are now schema blocks with (metric, metric_name "MRR", ...) metadata.
+    // Validates that the formatter handles metric schemas correctly.
+    const src = `schema mrr (metric, metric_name "MRR", source subs, grain monthly) {
   value DECIMAL(14,2) (measure additive)
 }`;
     const out = fmt(src);
-    assert.ok(out.includes('metric mrr "MRR"'));
+    assert.ok(out.includes('schema mrr ('));
+    assert.ok(out.includes('metric_name "MRR"'));
     assert.ok(out.includes("value  DECIMAL(14,2)  (measure additive)"));
   });
 

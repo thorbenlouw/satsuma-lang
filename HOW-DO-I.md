@@ -160,10 +160,10 @@ This improves lineage tracing — `satsuma where-used` and `satsuma lineage` det
 ## Metrics
 
 **How do I define a business metric?**
-Use the `metric` keyword. See [examples/metrics-platform/metrics.stm](examples/metrics-platform/metrics.stm) for patterns.
+Use a `schema` block with the `metric` vocabulary token in the metadata block. Optionally add `metric_name "Label"`, `grain`, `source`, `slice`, and `filter` tokens. Express the data pipeline feeding the metric as a separate `mapping` block. See [examples/metrics-platform/metrics.stm](examples/metrics-platform/metrics.stm) for patterns.
 
 **How do I find where a metric is used?**
-Run `satsuma where-used <metric-name>` or `satsuma metric <name>` for extraction.
+Run `satsuma where-used <metric-name>` or `satsuma metric <name>` for extraction. The `metric` command queries schemas decorated with the `metric` metadata token.
 
 ---
 

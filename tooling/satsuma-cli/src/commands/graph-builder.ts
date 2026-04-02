@@ -127,6 +127,9 @@ export function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGrap
 
   for (const [id, schema] of index.schemas) {
     if (nsFilter && schema.namespace !== nsFilter) continue;
+    // Metric schemas appear in both index.schemas and index.metrics.
+    // Render them only once, as metric nodes (handled in the loop below).
+    if (index.metrics.has(id)) continue;
     includedNodeIds.add(id);
     const node: Record<string, unknown> = {
       id,
@@ -222,7 +225,10 @@ export function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGrap
     generated: new Date().toISOString(),
     workspace: resolve(root),
     stats: {
-      schemas: [...index.schemas.values()].filter((s) => !nsFilter || s.namespace === nsFilter).length,
+      // Exclude metric schemas from the schema count — they are counted under metrics.
+      schemas: [...index.schemas.entries()]
+        .filter(([id, s]) => !index.metrics.has(id) && (!nsFilter || s.namespace === nsFilter))
+        .length,
       mappings: [...index.mappings.values()].filter((m) => !nsFilter || m.namespace === nsFilter).length,
       metrics: [...index.metrics.values()].filter((m) => !nsFilter || m.namespace === nsFilter).length,
       fragments: [...index.fragments.values()].filter((f) => !nsFilter || f.namespace === nsFilter).length,

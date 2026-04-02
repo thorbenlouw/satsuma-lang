@@ -275,31 +275,41 @@ describe("Bug 2: schema-qualified references in multi-source mappings", () => {
 });
 
 // ── Bug 3: Metric source extraction ──────────────────────────────────────────
+// Metrics are schema_block nodes decorated with a `metric` tag_token in their
+// metadata_block. The extractMetrics() function filters by that criterion.
+
+function metricTag() {
+  return n("tag_token", [ident("metric")], "metric");
+}
 
 describe("Bug 3: metric source extraction", () => {
-  it("extracts single-value metric source correctly", () => {
+  it("extracts single-value metric source from schema_block decorated with metric tag", () => {
+    // Validates that `source` metadata is extracted from a metric schema_block.
     const meta = n("metadata_block", [
+      metricTag(),
       kvPair("source", ident("fact_subscriptions")),
       kvPair("grain", ident("monthly")),
     ]);
-    const body = n("metric_body", [fieldDecl("value", "DECIMAL")]);
-    const block = n("metric_block", [blockLabel("mrr"), meta, body]);
+    const body = n("schema_body", [fieldDecl("value", "DECIMAL")]);
+    const block = n("schema_block", [blockLabel("mrr"), meta, body]);
     const root = n("source_file", [block]);
 
     const metrics = extractMetrics(root);
     assert.deepEqual(metrics[0].sources, ["fact_subscriptions"]);
   });
 
-  it("extracts block-form metric sources", () => {
+  it("extracts block-form metric sources from schema_block decorated with metric tag", () => {
+    // Validates that multi-identifier `source` values are all extracted.
     const valText = n("value_text", [
       ident("fact_subscriptions"),
       ident("dim_customer"),
     ], "{fact_subscriptions, dim_customer}");
     const meta = n("metadata_block", [
+      metricTag(),
       n("tag_with_value", [ident("source"), valText]),
     ]);
-    const body = n("metric_body", []);
-    const block = n("metric_block", [blockLabel("churn_rate"), meta, body]);
+    const body = n("schema_body", []);
+    const block = n("schema_block", [blockLabel("churn_rate"), meta, body]);
     const root = n("source_file", [block]);
 
     const metrics = extractMetrics(root);

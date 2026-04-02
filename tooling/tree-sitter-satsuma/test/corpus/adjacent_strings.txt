@@ -2,7 +2,8 @@
 Adjacent NL strings in note block
 ================================================================================
 
-metric checkout_abandonment_rate (
+schema checkout_abandonment_rate (
+  metric,
   source {fact_sessions, dim_customer},
   grain daily
 ) {
@@ -15,10 +16,12 @@ metric checkout_abandonment_rate (
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text
@@ -28,7 +31,7 @@ metric checkout_abandonment_rate (
         (identifier)
         (value_text
           (identifier))))
-    (metric_body
+    (schema_body
       (note_block
         (nl_string)
         (nl_string)))))

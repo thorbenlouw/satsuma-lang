@@ -55,12 +55,30 @@ function blockLabel(blockNode, src) {
   return raw;
 }
 
-/** Return the metric display name (the "MRR" label) if present. */
-function metricDisplayName(metricNode, src) {
-  const nl = metricNode.namedChildren.find(
-    (n, i) => n.type === "nl_string" && i === 1,
+/**
+ * Return true if a schema_block is a metric schema (has the bare `metric` tag_token
+ * in its metadata_block). In v2, metrics are schema blocks, not a separate block type.
+ */
+function isMetricSchema(schemaNode) {
+  const meta = schemaNode.namedChildren.find((n) => n.type === "metadata_block");
+  if (!meta) return false;
+  return meta.namedChildren.some(
+    (n) => n.type === "tag_token" && n.namedChildren[0]?.type === "identifier" &&
+           n.text === "metric",
   );
-  return nl ? text(nl, src).slice(1, -1) : null;
+}
+
+/** Return the metric display name from the metric_name tag, if present. */
+function metricDisplayName(metricNode, src) {
+  const meta = metricNode.namedChildren.find((n) => n.type === "metadata_block");
+  if (!meta) return null;
+  const nameEntry = meta.namedChildren.find(
+    (n) => n.type === "tag_with_value" && n.namedChildren[0]?.text === "metric_name",
+  );
+  if (!nameEntry) return null;
+  const val = nameEntry.namedChildren[1];
+  const strNode = val?.namedChildren.find((n) => n.type === "nl_string");
+  return strNode ? text(strNode, src).slice(1, -1) : null;
 }
 
 /** Count ERROR nodes recursively. */
@@ -93,7 +111,8 @@ function parseFile(filePath) {
     mappings: collectNodes(root, "mapping_block").map((n) => ({
       name: blockLabel(n, src),
     })),
-    metrics: collectNodes(root, "metric_block").map((n) => ({
+    // In v2, metrics are schema_block nodes with the bare `metric` tag in metadata.
+    metrics: collectNodes(root, "schema_block").filter(isMetricSchema).map((n) => ({
       name: blockLabel(n, src),
       display: metricDisplayName(n, src),
     })),

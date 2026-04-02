@@ -6,7 +6,7 @@ schema comment_test {
   name VARCHAR
 }
 
-metric comment_metric (source comment_test) {
+schema comment_metric (metric, source comment_test) {
   total DECIMAL
   // regular metric comment
   //! warning: aggregation may be incorrect

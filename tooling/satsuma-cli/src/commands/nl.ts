@@ -129,7 +129,8 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: W
   const matches: Array<{ key: string; entry: { file: string }; blockType: string }> = [];
   if (schemaResolved) matches.push({ key: schemaResolved.key, entry: schemaResolved.entry, blockType: "schema_block" });
   if (mappingResolved) matches.push({ key: mappingResolved.key, entry: mappingResolved.entry, blockType: "mapping_block" });
-  if (metricResolved) matches.push({ key: metricResolved.key, entry: metricResolved.entry, blockType: "metric_block" });
+  // Metrics are schema_block nodes — look up by schema_block. Skip if already added via schemaResolved.
+  if (metricResolved && !schemaResolved) matches.push({ key: metricResolved.key, entry: metricResolved.entry, blockType: "schema_block" });
   if (transformResolved) matches.push({ key: transformResolved.key, entry: transformResolved.entry, blockType: "transform_block" });
 
   for (const { key, entry, blockType } of matches) {

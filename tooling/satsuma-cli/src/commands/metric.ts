@@ -1,8 +1,9 @@
 /**
  * metric.ts — `satsuma metric <name>` command
  *
- * Looks up a metric by name and renders it. Output modes:
- *   default    — reconstructed metric block with metadata and measure fields
+ * Looks up a metric by name and renders it. Metrics are schema blocks decorated
+ * with the `metric` tag_token in their metadata_block. Output modes:
+ *   default    — reconstructed schema block with metric metadata and measure fields
  *   --compact  — suppress note text
  *   --sources  — print source names only (one per line)
  *   --json     — full structured JSON output
@@ -61,7 +62,9 @@ Examples:
       const resolvedName = resolved.key;
 
       const parsed = parsedFiles.find((p) => p.filePath === entry.file);
-      const metricNode = parsed ? findBlockNode(parsed.tree.rootNode, "metric_block", resolvedName) : null;
+      // Metrics are schema_block nodes decorated with the `metric` tag in their
+      // metadata_block. Look up the schema_block by the qualified metric name.
+      const metricNode = parsed ? findBlockNode(parsed.tree.rootNode, "schema_block", resolvedName) : null;
 
       if (opts.json) {
         printJson(entry, metricNode);
@@ -146,7 +149,8 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
   const meta = metricNode
     ? extractMetaEntries(metricNode.namedChildren.find((c) => c.type === "metadata_block"))
     : [];
-  const body = metricNode?.namedChildren.find((c) => c.type === "metric_body");
+  // The metric body is in the schema_body node (metric_body no longer exists).
+  const body = metricNode?.namedChildren.find((c) => c.type === "schema_body");
   const noteBlock = body?.namedChildren.find((c) => c.type === "note_block");
   const note = extractNoteText(noteBlock);
   console.log(
@@ -173,14 +177,14 @@ function printJson(entry: MetricRecord, metricNode: SyntaxNode | null): void {
 function printDefault(entry: MetricRecord, metricNode: SyntaxNode | null, compact: boolean | undefined): void {
   const metaNode = metricNode?.namedChildren.find((c) => c.type === "metadata_block");
   const meta = extractMetaEntries(metaNode);
-  const display = entry.displayName ? ` "${entry.displayName}"` : "";
   const metaStr = formatMeta(meta);
   const baseName = entry.name && entry.name.includes(" ") ? `'${entry.name}'` : (entry.name ?? "");
   const nameStr = entry.namespace ? `${entry.namespace}::${baseName}` : baseName;
-  console.log(`metric ${nameStr}${display}${metaStr} {`);
+  // Metrics are now schema blocks — render with `schema` keyword.
+  console.log(`schema ${nameStr}${metaStr} {`);
 
-  // Fields from metric_body
-  const body = metricNode?.namedChildren.find((c) => c.type === "metric_body");
+  // Fields from schema_body (metric_body no longer exists in the grammar).
+  const body = metricNode?.namedChildren.find((c) => c.type === "schema_body");
   if (body) {
     for (const c of body.namedChildren) {
       if (c.type === "field_decl") {

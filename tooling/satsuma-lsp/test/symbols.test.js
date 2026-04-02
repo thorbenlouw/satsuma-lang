@@ -70,9 +70,13 @@ describe("computeDocumentSymbols", () => {
   });
 
   it("returns metric as Constant with display label", () => {
-    const tree = parse(`metric monthly_recurring_revenue "MRR" (
+    // Metrics are now schema blocks decorated with (metric, metric_name "...", ...)
+    // metadata. Document symbols should show SymbolKind.Constant and the display label.
+    const tree = parse(`schema monthly_recurring_revenue (
+  metric,
+  metric_name "MRR",
   source fact_subscriptions,
-  grain monthly
+  grain monthly,
 ) {
   value DECIMAL(14,2)
 }`);

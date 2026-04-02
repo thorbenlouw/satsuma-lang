@@ -258,14 +258,24 @@ namespace mart (note "Business-facing dimensional models") {
 
 // --- Cross-Layer Metrics ---
 namespace analytics (note "Business metrics layer") {
-  metric pipeline_value "Active Pipeline Value" (source vault::hub_deal, grain daily) {
+  schema pipeline_value (
+    metric,
+    metric_name "Active Pipeline Value",
+    source vault::hub_deal,
+    grain daily,
+  ) {
     snapshot_date    DATE
     stage            VARCHAR(50)
     deal_count       INTEGER        (measure)
     total_value_usd  DECIMAL(14,2)  (measure)
   }
 
-  metric customer_ltv "Customer Lifetime Value" (source mart::dim_contact, grain monthly) {
+  schema customer_ltv (
+    metric,
+    metric_name "Customer Lifetime Value",
+    source mart::dim_contact,
+    grain monthly,
+  ) {
     calc_month     DATE
     contact_bk     VARCHAR(36)
     total_revenue  DECIMAL(14,2)  (measure)

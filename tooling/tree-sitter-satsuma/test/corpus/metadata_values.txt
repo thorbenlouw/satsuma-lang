@@ -248,7 +248,8 @@ schema edi_shipment {
 Source braced list value
 ================================================================================
 
-metric churn_rate (
+schema churn_rate (
+  metric,
   source {fact_subscriptions, dim_customer},
   grain monthly,
   slice {segment, region}
@@ -257,10 +258,12 @@ metric churn_rate (
 --------------------------------------------------------------------------------
 
 (source_file
-  (metric_block
+  (schema_block
     (block_label
       (identifier))
     (metadata_block
+      (tag_token
+        (identifier))
       (tag_with_value
         (identifier)
         (value_text

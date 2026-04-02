@@ -10,15 +10,14 @@
 (fragment_block) @local.scope
 (transform_block) @local.scope
 (mapping_block) @local.scope
-(metric_block) @local.scope
 
 ; ── Name definitions ─────────────────────────────────────────────────────────
 ; Block labels are the canonical definition points for named constructs.
+; Note: metric schemas are schema_block nodes — they are already covered above.
 (schema_block (block_label) @local.definition)
 (fragment_block (block_label) @local.definition)
 (transform_block (block_label) @local.definition)
 (mapping_block (block_label) @local.definition)
-(metric_block (block_label) @local.definition)
 
 ; ── References ────────────────────────────────────────────────────────────────
 ; Fragment spreads reference fragment (or named transform) labels.

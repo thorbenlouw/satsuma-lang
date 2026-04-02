@@ -6,7 +6,7 @@
  * Each item includes raw text, position type, and parent block/field context.
  */
 
-import { labelText, stringText } from "@satsuma/core";
+import { labelText, stringText, isMetricSchema, child } from "@satsuma/core";
 import type { SyntaxNode } from "./types.js";
 
 export interface NLItem {
@@ -18,9 +18,31 @@ export interface NLItem {
 
 /**
  * Extract all NL content from a CST subtree.
+ *
+ * When the root node is itself a schema_block for a metric schema, the
+ * metric_name tag value is emitted as the first note item before descending
+ * into the body. This handles both the scoped case (where a caller passes the
+ * schema_block directly) and the document-level walk (where the block is a
+ * child and the metric_name check fires in walkNL's else branch).
  */
 export function extractNLContent(node: SyntaxNode, parent: string | null = null): NLItem[] {
   const items: NLItem[] = [];
+  // When called directly with a schema_block (scoped query), emit the metric_name
+  // immediately — walkNL only detects metric_name when schema_block is a child.
+  if (node.type === "schema_block") {
+    const metaBlock = child(node, "metadata_block");
+    if (isMetricSchema(metaBlock)) {
+      const metricNameText = extractMetricNameTag(metaBlock!);
+      if (metricNameText) {
+        items.push({
+          text: metricNameText,
+          kind: "note",
+          parent: parent ?? labelText(node),
+          line: node.startPosition.row + 1,
+        });
+      }
+    }
+  }
   walkNL(node, parent, items);
   return items;
 }
@@ -93,30 +115,32 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
           }
         }
       }
-    } else if (
-      // Metric description string: the nl_string/multiline_string that appears
-      // as a direct child of metric_block (between the name and metadata parens).
-      // This is the metric's displayName and is NL content that should surface
-      // via `satsuma nl`. It's already exposed as `displayName` via `satsuma metric`.
-      (c.type === "nl_string" || c.type === "multiline_string") &&
-      node.type === "metric_block"
-    ) {
-      items.push({
-        text: stringText(c) ?? "",
-        kind: "note",
-        parent,
-        line: c.startPosition.row + 1,
-      });
     } else {
       let newParent = parent;
       if (
         c.type === "schema_block" ||
         c.type === "mapping_block" ||
-        c.type === "metric_block" ||
         c.type === "fragment_block" ||
         c.type === "transform_block"
       ) {
         newParent = labelText(c);
+        // Metric schemas carry their display name as the `metric_name` metadata
+        // tag rather than as a note block. Emit it as a note so consumers see
+        // the human-readable label alongside body notes (sl-571v).
+        if (c.type === "schema_block") {
+          const metaBlock = child(c, "metadata_block");
+          if (isMetricSchema(metaBlock)) {
+            const metricNameText = extractMetricNameTag(metaBlock!);
+            if (metricNameText) {
+              items.push({
+                text: metricNameText,
+                kind: "note",
+                parent: newParent,
+                line: c.startPosition.row + 1,
+              });
+            }
+          }
+        }
       } else if (c.type === "field_decl") {
         // Use schema-qualified path (e.g. "alpha.email") so field-level NL
         // items are unambiguous across schemas in JSON output (sl-prsy).
@@ -126,6 +150,30 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
       walkNL(c, newParent, items);
     }
   }
+}
+
+/**
+ * Extract the value of the `metric_name` tag from a metadata_block node.
+ *
+ * The `metric_name` tag_with_value carries the human-readable display name for
+ * a metric schema. Its value child is a metadata_value containing an nl_string.
+ * Returns null if no metric_name tag is present.
+ */
+function extractMetricNameTag(metaBlock: SyntaxNode): string | null {
+  for (const entry of metaBlock.namedChildren) {
+    if (entry.type === "tag_with_value") {
+      const key = entry.namedChildren[0];
+      const val = entry.namedChildren[1];
+      if (key?.text === "metric_name" && val) {
+        // The metadata_value child contains an nl_string
+        const strNode = val.namedChildren.find(
+          (c) => c.type === "nl_string" || c.type === "multiline_string",
+        );
+        if (strNode) return stringText(strNode) ?? null;
+      }
+    }
+  }
+  return null;
 }
 
 function getFieldName(node: SyntaxNode): string | null {

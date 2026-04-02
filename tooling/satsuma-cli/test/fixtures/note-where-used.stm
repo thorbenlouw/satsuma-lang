@@ -12,9 +12,10 @@ note {
   "The @product schema is the canonical source of truth for all product data."
 }
 
-metric order_count (
+schema order_count (
+  metric,
   source orders,
-  grain daily
+  grain daily,
 ) {
   value  INTEGER
 

@@ -9,9 +9,10 @@ fragment `audit columns` {
   updated_at  TIMESTAMP
 }
 
-metric monthly_revenue (
+schema monthly_revenue (
+  metric,
   source Customer,
-  grain monthly
+  grain monthly,
 ) {
   value  DECIMAL
 }
