@@ -39,7 +39,7 @@ mapping {
 mapping {
   source { src }
   target { tgt }
-  -> cost { @orders.price | round(2) }
+  -> cost { @orders.price | round 2 }
 }
 
 --------------------------------------------------------------------------------
@@ -181,7 +181,7 @@ Multiple @refs in bare pipe text
 mapping {
   source { src }
   target { tgt }
-  a -> b { coalesce(0) | @src.fallback | round(2) }
+  a -> b { coalesce 0 | @src.fallback | round 2 }
 }
 
 --------------------------------------------------------------------------------
@@ -374,7 +374,7 @@ mapping {
 mapping {
   source { src }
   target { tgt }
-  a -> b { @source.field coalesce(0) | round(2) }
+  a -> b { @source.field coalesce 0 | round 2 }
 }
 
 --------------------------------------------------------------------------------

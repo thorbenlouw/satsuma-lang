@@ -157,21 +157,21 @@ mapping `customer 360` {
 
   -> total_revenue {
     "Sum @order_transactions.total where @status = completed."
-    | coalesce(0)
-    | round(2)
+    | coalesce 0
+    | round 2
   }
 
   -> total_refunds {
     "Sum abs(@order_transactions.total) where @status = refunded."
-    | coalesce(0)
-    | round(2)
+    | coalesce 0
+    | round 2
   }
 
-  -> net_revenue { "@total_revenue minus @total_refunds." | round(2) }
+  -> net_revenue { "@total_revenue minus @total_refunds." | round 2 }
 
   -> avg_order_value {
     "@total_revenue divided by @total_orders. Null if @total_orders = 0."
-    | round(2)
+    | round 2
   }
 
   -> first_order_date {
@@ -190,30 +190,30 @@ mapping `customer 360` {
 
   -> distinct_coupon_count {
     "Count distinct non-null @order_transactions.coupon_code."
-    | coalesce(0)
+    | coalesce 0
   }
 
   // --- Support metrics (aggregated from support_tickets) ---
   -> tickets_last_12m {
     "Count of @support_tickets (already filtered to last 12 months)."
-    | coalesce(0)
+    | coalesce 0
   }
 
   -> open_tickets {
     "Count of @support_tickets where @status IN (open, in_progress)."
-    | coalesce(0)
+    | coalesce 0
   }
 
   -> avg_resolution_hours {
     "Average hours between @support_tickets.created_at and @resolved_at
      where @resolved_at is not null. Null if no resolved tickets."
-    | round(1)
+    | round 1
   }
 
   -> avg_csat_score {
     "Average @support_tickets.csat_score where @csat_score is not null.
      Null if no ratings."
-    | round(1)
+    | round 1
   }
 
   -> has_critical_ticket {
@@ -235,9 +235,9 @@ mapping `customer 360` {
     """
   }
 
-  crm_customers.annual_contract_value -> annual_contract_value { coalesce(0) }
+  crm_customers.annual_contract_value -> annual_contract_value { coalesce 0 }
 
   // --- Audit ---
-  -> created_at { now_utc() }
-  -> updated_at { now_utc() }
+  -> created_at { now_utc }
+  -> updated_at { now_utc }
 }

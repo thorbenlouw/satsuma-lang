@@ -108,7 +108,7 @@ mapping `edi to mfcs` {
   target { `mfcs_json` }
 
   // --- Header ---
-  BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo { trim | max_length(30) }
+  BeginningOfMessage.DOCNUM -> ShipmentHeader.asnNo { trim | max_length 30 }
 
   DateTime.DATETIME -> ShipmentHeader.shipDate {
     "Parse using sibling field @DATEFMT: if 102 parse as CCYYMMDD,
@@ -123,19 +123,19 @@ mapping `edi to mfcs` {
   }
 
   POReferences.REFNUM -> ShipmentHeader.supplier {
-    split("/")
+    "Split on slash, take first segment"
     | first
     | to_number
     | "Validate supplier exists in MFCS PO table."
   }
 
   ShipmentRefs.SHIPREF -> ShipmentHeader.comments {
-    prepend("Shipment reference number: ")
+    "Prepend with label: Shipment reference number:"
   }
 
   // --- Detail lines grouped by PO ---
   each POReferences -> ShipmentHeader.asnDetails (note "Each PO reference generates one asnDetails entry.") {
-    .REFNUM -> .orderNo { split("/") | first | to_number }
+    .REFNUM -> .orderNo { "Split on slash, take first segment" | to_number }
   }
 
   // --- Line items and quantities (correlated by position within PO group) ---

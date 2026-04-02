@@ -53,7 +53,7 @@ mapping {
   target { fact_orders }
   each line_items -> lines {
     sku       -> product_code { trim | uppercase }
-    unit_cost -> amount       { round(2) }
+    unit_cost -> amount       { round 2 }
   }
 }
 

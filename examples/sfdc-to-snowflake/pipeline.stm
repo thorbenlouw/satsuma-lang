@@ -68,16 +68,16 @@ mapping `opportunity ingestion` {
   Name -> opportunity_name
 
   // --- Financial ---
-  Amount -> amount_raw { coalesce(0) }
+  Amount -> amount_raw { coalesce 0 }
 
   Amount -> amount_usd {
     "Multiply by rate from @fx_spot_rates lookup using CurrencyIsoCode"
-    | round(2)
+    | round 2
   }
 
   `ARR_Override__c` -> arr_value {
     "Use @ARR_Override__c if not null, otherwise fall back to @Amount"
-    | coalesce(0)
+    | coalesce 0
   }
 
   // --- Stage normalization ---

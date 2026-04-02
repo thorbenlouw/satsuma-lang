@@ -166,9 +166,9 @@ mapping `completed orders` {
   }
   customer_profiles.region -> region { trim | uppercase | null_if_empty }
   order_totals.currency -> currency { trim | uppercase }
-  order_totals.subtotal -> subtotal { coalesce(0) }
-  order_totals.tax -> tax { coalesce(0) }
-  order_totals.discount -> discount { coalesce(0) }
+  order_totals.subtotal -> subtotal { coalesce 0 }
+  order_totals.tax -> tax { coalesce 0 }
+  order_totals.discount -> discount { coalesce 0 }
   order_totals.total -> total
 
   // Scalar array passed through as-is — no iteration or subfield mapping needed
@@ -178,7 +178,7 @@ mapping `completed orders` {
     "Count elements in @line_items (already filtered to exclude cancelled items at source)"
   }
 
-  -> ingest_timestamp { now_utc() }
+  -> ingest_timestamp { now_utc }
 }
 
 // --- Mapping 2: Order lines — flatten nested list ---
@@ -202,7 +202,7 @@ mapping `order line facts` {
     .sku -> sku { trim | uppercase }
     .quantity -> quantity
     .unit_price -> unit_price
-    .tax_amount -> tax_amount { coalesce(0) }
+    .tax_amount -> tax_amount { coalesce 0 }
   }
 
   order_totals.currency -> currency { trim | uppercase }
@@ -216,5 +216,5 @@ mapping `order line facts` {
      where @discount_type = promo"
   }
 
-  -> ingest_timestamp { now_utc() }
+  -> ingest_timestamp { now_utc }
 }

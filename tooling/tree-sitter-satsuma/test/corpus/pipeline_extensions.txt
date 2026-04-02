@@ -1,11 +1,11 @@
 ================================================================================
-Arithmetic pipe step multiply
+NL pipe step with identifier and number tokens
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  CREDIT_LIMIT -> credit_limit_cents { coalesce(0) | * 100 | round }
+  CREDIT_LIMIT -> credit_limit_cents { coalesce 0 | multiply by 100 | round }
 }
 
 --------------------------------------------------------------------------------
@@ -33,6 +33,8 @@ mapping {
               (number_literal)))
           (pipe_step
             (pipe_text
+              (identifier)
+              (identifier)
               (number_literal)))
           (pipe_step
             (pipe_text
@@ -45,7 +47,7 @@ Pipe step with dotted path argument
 mapping {
   source { src }
   target { tgt }
-  TAX_ID -> tax_encrypted { encrypt(AES-256-GCM, secrets.tax_encryption_key) }
+  TAX_ID -> tax_encrypted { encrypt AES-256-GCM secrets.tax_encryption_key }
 }
 
 --------------------------------------------------------------------------------
@@ -76,13 +78,13 @@ mapping {
                 (identifier)))))))))
 
 ================================================================================
-Arithmetic pipe step divide
+NL prose pipe step
 ================================================================================
 
 mapping {
   source { src }
   target { tgt }
-  amount -> amount_normalized { / 100 }
+  amount -> amount_normalized { "Divide by 100 to normalise to base units" }
 }
 
 --------------------------------------------------------------------------------
@@ -106,5 +108,5 @@ mapping {
         (pipe_chain
           (pipe_step
             (pipe_text
-              (number_literal))))))))
+              (nl_string))))))))
 

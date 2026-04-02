@@ -270,7 +270,7 @@ Target-only mapping (no source block)
 
 mapping `computed values` {
   target { `computed_target` }
-  -> id { uuid_v4() }
+  -> id { uuid_v4 }
 }
 
 --------------------------------------------------------------------------------
@@ -319,7 +319,7 @@ Arrows-only mapping (no source or target)
 ================================================================================
 
 mapping {
-  -> id { uuid_v4() }
+  -> id { uuid_v4 }
 }
 
 --------------------------------------------------------------------------------

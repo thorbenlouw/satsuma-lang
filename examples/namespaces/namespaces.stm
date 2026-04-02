@@ -71,7 +71,7 @@ namespace warehouse (note "Data vault hub layer") {
     source { `pos::stores` }
     target { `hub_store` }
 
-    STORE_ID -> store_hk { md5(STORE_ID) }
+    STORE_ID -> store_hk { md5 STORE_ID }
     STORE_ID -> store_id
     STORE_NAME -> store_name { trim }
     REGION_CD -> region
@@ -82,7 +82,7 @@ namespace warehouse (note "Data vault hub layer") {
     source { `ecom::customers` }
     target { `hub_customer` }
 
-    email -> customer_hk { md5(email) }
+    email -> customer_hk { md5 email }
     email -> customer_email { trim_and_lower }
     first_name -> first_name { trim }
     last_name -> last_name { trim }
