@@ -50,11 +50,11 @@ transform `normalize` {
           (identifier))))))
 
 ================================================================================
-Function-like pipe step with arguments
+NL pipe step with multiple tokens (identifier, string, identifier)
 ================================================================================
 
 transform `coerce` {
-  coalesce("", null)
+  coalesce "" null
 }
 
 --------------------------------------------------------------------------------
@@ -358,5 +358,62 @@ transform `phone normalization` {
           (identifier)))
       (pipe_step
         (pipe_text
+          (identifier))))))
+
+================================================================================
+Arithmetic-style tokens are valid NL pipe steps
+================================================================================
+
+transform `scale value` {
+  multiply by 100 | round to 2 decimal places
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (backtick_name))
+    (pipe_chain
+      (pipe_step
+        (pipe_text
+          (identifier)
+          (identifier)
+          (number_literal)))
+      (pipe_step
+        (pipe_text
+          (identifier)
+          (identifier)
+          (number_literal)
+          (identifier)
+          (identifier))))))
+
+================================================================================
+Function-call-style tokens are valid NL pipe steps
+================================================================================
+
+transform `clean and coerce` {
+  coalesce to fallback | "format as MM/DD/YYYY" | validate email format
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (transform_block
+    (block_label
+      (backtick_name))
+    (pipe_chain
+      (pipe_step
+        (pipe_text
+          (identifier)
+          (identifier)
+          (identifier)))
+      (pipe_step
+        (pipe_text
+          (nl_string)))
+      (pipe_step
+        (pipe_text
+          (identifier)
+          (identifier)
           (identifier))))))
 

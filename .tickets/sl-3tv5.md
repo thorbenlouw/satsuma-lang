@@ -1,6 +1,6 @@
 ---
 id: sl-3tv5
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-02T09:19:27Z
@@ -21,3 +21,12 @@ Simplify the tree-sitter grammar so every token sequence between pipe delimiters
 4. New corpus tests for: bare tokens as NL, arithmetic-style text as NL, function-call-style text as NL
 5. No regressions in existing .stm parse tests
 
+
+## Notes
+
+**2026-04-02T09:49:05Z**
+
+**2026-04-02T10:00:00Z**
+
+Cause: pipe_text rule allowed _arithmetic_op and parenthesised function-call sub-rules, creating structural classification complexity and bugs.
+Fix: removed _arithmetic_op rule definition and paren seq from pipe_text; regenerated WASM; updated corpus tests and all examples to NL equivalents.

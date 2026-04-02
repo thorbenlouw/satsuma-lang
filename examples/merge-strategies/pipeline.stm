@@ -108,7 +108,7 @@ mapping `customer upsert` (merge upsert, match_on customer_id) {
   email -> email { trim | lowercase | validate_email | null_if_invalid }
   phone -> phone { trim }
   region -> region { trim | uppercase }
-  -> updated_at { now_utc() }
+  -> updated_at { now_utc }
 }
 
 // Pattern 2: Append — every event is a new row, no matching
@@ -130,7 +130,7 @@ mapping `purchase events` (merge append) {
   unit_price -> unit_price
   -> line_total { "quantity * unit_price" }
   event_timestamp -> event_timestamp
-  -> ingested_at { now_utc() }
+  -> ingested_at { now_utc }
 }
 
 // Pattern 3: Soft delete — flag deleted customers, preserve history
@@ -157,7 +157,7 @@ mapping `customer soft delete` (
 
   customer_id -> customer_id
   -> is_deleted { true }
-  -> deleted_at { now_utc() }
+  -> deleted_at { now_utc }
 }
 
 // Pattern 4: Full refresh — truncate and reload the product catalog
@@ -183,5 +183,5 @@ mapping `product catalog refresh` (merge full_refresh) {
   list_price -> list_price
   weight_kg -> weight_kg
   is_active -> is_active
-  -> refreshed_at { now_utc() }
+  -> refreshed_at { now_utc }
 }

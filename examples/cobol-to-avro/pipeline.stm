@@ -115,11 +115,11 @@ mapping `cobol customer to avro event` {
   source { `cobol_customer_master` }
   target { `customer_event_avro` }
 
-  -> event_id { uuid_v4() }
+  -> event_id { uuid_v4 }
   -> event_type { "updated" }
-  -> event_timestamp { now_utc() }
+  -> event_timestamp { now_utc }
 
-  CUST_ID -> customer_id { to_string | lpad(10, "0") }
+  CUST_ID -> customer_id { to_string | "left-pad with zeros to 10 characters" }
 
   CUST_TYPE -> customer_type { map { R: "retail", B: "business" } }
 
@@ -134,7 +134,7 @@ mapping `cobol customer to avro event` {
   ADDRESS.STREET -> address.street { trim }
   ADDRESS.CITY -> address.city { trim }
   ADDRESS.STATE -> address.state { trim | uppercase }
-  ADDRESS.ZIP -> address.postal_code { to_string | lpad(5, "0") }
+  ADDRESS.ZIP -> address.postal_code { to_string | "left-pad with zeros to 5 characters" }
   -> address.country { "US" }
 
   CREDIT_LIMIT -> credit_limit

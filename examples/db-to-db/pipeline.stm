@@ -104,7 +104,7 @@ mapping `customer migration` {
 
   // --- Identifiers ---
   CUST_ID -> customer_id {
-    uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", CUST_ID)
+    "Generate UUID v5 using namespace 6ba7b810-9dad-11d1-80b4-00c04fd430c8 and CUST_ID as name"
   }
   CUST_ID -> legacy_customer_id
 
@@ -147,7 +147,7 @@ mapping `customer migration` {
   }
 
   // --- Financial ---
-  CREDIT_LIMIT -> credit_limit_cents { coalesce(0) | * 100 | round }
+  CREDIT_LIMIT -> credit_limit_cents { coalesce 0 | "multiply by 100" | round }
 
   // --- Status ---
   ACCOUNT_STATUS -> status {
@@ -161,14 +161,14 @@ mapping `customer migration` {
 
   // --- Dates ---
   CREATED_DATE -> created_at {
-    parse("MM/DD/YYYY")
+    "Parse as MM/DD/YYYY"
     | drop_if_invalid
     | assume_utc
     | to_iso8601
   }
 
   LAST_MOD_DATE -> updated_at {
-    parse("MM/DD/YYYY hh:mm:ss a")
+    "Parse as MM/DD/YYYY hh:mm:ss a"
     | to_utc
     | to_iso8601
     | "If null, fall back to CREATED_DATE parsed as MM/DD/YYYY in UTC"
@@ -177,7 +177,7 @@ mapping `customer migration` {
   // --- Security ---
   TAX_ID -> tax_identifier_encrypted {
     error_if_null
-    | encrypt(AES-256-GCM, secrets.tax_encryption_key)
+    | encrypt AES-256-GCM secrets.tax_encryption_key
   }
 
   // --- Calculated ---
@@ -203,9 +203,9 @@ mapping `customer migration` {
   NOTES -> notes {
     "Filter profanity using corporate word list v3.2, replacing matches with asterisks"
     | escape_html
-    | truncate(5000)
+    | truncate 5000
   }
 
   // --- Audit ---
-  -> migration_timestamp { now_utc() }
+  -> migration_timestamp { now_utc }
 }

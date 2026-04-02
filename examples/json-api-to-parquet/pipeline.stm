@@ -158,7 +158,7 @@ mapping `order headers` {
 
   -> line_count { "Count entries in @LineItems for the current order." }
 
-  -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
+  -> ingest_date { now_utc | "Truncate to UTC calendar date YYYY-MM-DD." }
 }
 
 // --- Mapping: Order Lines (flattened) ---
@@ -184,5 +184,5 @@ mapping `order lines` {
   Order.Customer.CustomerId -> customer_id
   Order.ShippingAddress.CountryCode -> ship_country { trim | uppercase }
 
-  -> ingest_date { now_utc() | "Truncate to UTC calendar date YYYY-MM-DD." }
+  -> ingest_date { now_utc | "Truncate to UTC calendar date YYYY-MM-DD." }
 }

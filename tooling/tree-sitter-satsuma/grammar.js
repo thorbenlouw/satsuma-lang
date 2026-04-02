@@ -449,9 +449,16 @@ module.exports = grammar({
         $.pipe_text,
       ),
 
-    // pipe_text: greedy repeat of basic tokens.
+    // pipe_text: greedy repeat of NL-compatible tokens.
+    //
+    // Every sequence of tokens between pipe delimiters (or between { and } / |)
+    // is a single NL step — bare identifiers like `trim`, numbers, quoted
+    // strings, @refs, and dotted names are all just text that an LLM will
+    // interpret. Arithmetic operators and parenthesised function-call sub-rules
+    // are intentionally absent: `{ * 100 }` and `{ round(2) }` are no longer
+    // valid syntax. Use NL prose instead: `{ "multiply by 100" }`.
+    //
     // | and } naturally terminate it (not in the choice set).
-    // Double quotes still work for text containing | or }.
     pipe_text: ($) =>
       repeat1(
         choice(
@@ -462,25 +469,9 @@ module.exports = grammar({
           $.dotted_name,
           $.number_literal,
           $.identifier,
-          $._arithmetic_op,
           $._comparison_op,
-          seq(
-            "(",
-            repeat(
-              choice(
-                $.nl_string,
-                $.dotted_name,
-                $.identifier,
-                $.number_literal,
-                ",",
-              ),
-            ),
-            ")",
-          ),
         ),
       ),
-
-    _arithmetic_op: (_) => token(choice("*", "/", "+", "-")),
 
     // ── Map literal ───────────────────────────────────────────────────────
 

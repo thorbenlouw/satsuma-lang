@@ -256,5 +256,5 @@ mapping `customer 360 assembly` {
   crm_customers.consent.sms_marketing -> consent_sms
   crm_customers.consent.third_party_share -> consent_third_party
 
-  -> ingest_timestamp { now_utc() }
+  -> ingest_timestamp { now_utc }
 }
