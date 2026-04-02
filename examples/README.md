@@ -14,7 +14,7 @@ The CLI requires a `.stm` file entry point (not a directory). The workspace is d
 | [`filter-flatten-governance/`](filter-flatten-governance/) | `filter-flatten-governance.stm` | Scalar lists, filter/flatten, and governance metadata annotations |
 | [`json-api-to-parquet/`](json-api-to-parquet/) | `pipeline.stm` | Commerce REST API order responses to Lakehouse Parquet |
 | [`merge-strategies/`](merge-strategies/) | `pipeline.stm` | All four merge strategies (upsert, append, soft delete, full refresh) |
-| [`metrics-platform/`](metrics-platform/) | `metrics.stm` | Business metrics (MRR, CLV, churn, conversion) as terminal lineage nodes |
+| [`metrics-platform/`](metrics-platform/) | `metrics.stm` | Business metrics (MRR, CLV, churn, conversion) as schema blocks with `(metric, ...)` metadata |
 | [`multi-source/`](multi-source/) | `multi-source-hub.stm` | Multi-source arrows, data hub, and three-way join patterns |
 | [`namespaces/`](namespaces/) | `ns-platform.stm` | Namespace blocks, cross-namespace references, and namespace merging |
 | [`protobuf-to-parquet/`](protobuf-to-parquet/) | `pipeline.stm` | Protobuf Kafka commerce events to session-level Parquet |

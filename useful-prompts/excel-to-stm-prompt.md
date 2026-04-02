@@ -136,8 +136,7 @@ Cross-namespace references:
   "NL description — use @field_name for refs"
 
 ## Metric rules
-  - Metrics are terminal nodes: nothing flows *out* of a metric
-  - Do NOT use a metric as source/target in a mapping block
+  - Metric schemas are valid mapping sources and targets: a metric can feed a report or ML model
   - Complex computation logic goes in note { } as natural language
   - Measure additivity: additive (sum all dims), non_additive (never sum),
     semi_additive (sum across some dims only, e.g. balances)
@@ -199,7 +198,7 @@ Follow these steps in order:
 - Use `//!` for data quality warnings mentioned in the spreadsheet.
 - Use `//?` for anything ambiguous or unresolvable from the available information.
 - Use `note { """...""" }` for rich multi-line context. Use `(note "...")` in metadata for inline field/schema documentation.
-- Use `metric` blocks for business metrics (KPIs, measures, aggregations). Do not use `schema` for terminal metric definitions and do not use a `metric` as a mapping source or target.
+- Use `schema name (metric, ...)` for business metrics (KPIs, measures, aggregations). Metric schemas are valid mapping targets (to express data source dependency) and valid sources (e.g. feeding a downstream report or ML model).
 - For very large spreadsheets with multiple domains or systems, use **namespaces** to organize schemas. Use `import { ns::name } from "file.stm"` with namespace-qualified names and split the output into multiple files per domain (e.g., `crm/pipeline.stm`, `billing/pipeline.stm`). Create a platform entry point file that imports across domains.
 - Only use annotations shown in the conventions reference. Don't invent annotation names.
 - Prefer concise, idiomatic Satsuma — don't over-specify.
@@ -214,8 +213,7 @@ Follow these steps in order:
 | Using `[]` in mapping paths for array access | Use `each src -> tgt { }` for iteration, dot paths for field access |
 | Using `(flatten \`list\`)` metadata on mappings | Use `flatten src.list -> tgt { }` block syntax inside mapping body |
 | Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
-| Using `schema` for a business metric | Use `metric` — it signals a terminal node to lineage tooling |
-| Using a `metric` as a mapping source or target | Metrics are consumers only; reference the underlying `schema` instead |
+| Using `metric name "X" (...)` block syntax | Metrics are now `schema name (metric, metric_name "X", ...)` — `metric` is a metadata tag, not a block keyword |
 | Using `report` / `model` as block keywords | Use `schema name (report, ...) { }` or `schema name (model, ...) { }` |
 | Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
 | Writing field names bare in NL strings | Use `@ref` — e.g. `"Sum @order_total grouped by @customer_id"` |

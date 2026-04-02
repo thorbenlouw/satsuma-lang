@@ -363,7 +363,7 @@ function buildElkGraph(
   for (const ns of model.namespaces) {
     addSchemaNodes(ns.schemas, mappedFields, children, !!ns.name, fragmentsById);
     addFragmentNodes(ns.fragments, children, !!ns.name);
-    addMetricNodes(ns.metrics, children, !!ns.name);
+    addMetricNodes(ns.metrics, mappedFields, children, !!ns.name);
   }
 
   // Build a set of all port IDs so we can validate edge endpoints
@@ -446,14 +446,39 @@ function addFragmentNodes(fragments: FragmentCard[], target: ElkNode[], hasNames
   }
 }
 
-function addMetricNodes(metrics: MetricCard[], target: ElkNode[], hasNamespace = false) {
+function addMetricNodes(
+  metrics: MetricCard[],
+  mappedFields: Map<string, Set<string>>,
+  target: ElkNode[],
+  hasNamespace = false,
+) {
   for (const m of metrics) {
+    const width = estimateMetricWidth(m);
+    // Metric schemas are valid mapping sources and targets (e.g. metric → report or model),
+    // so they need field ports just like schema nodes.
+    const metaRows =
+      (m.label ? 1 : 0) + (!m.label && m.grain ? 1 : 0) + (m.slices.length > 0 ? 1 : 0);
+    const metaHeight = metaRows > 0 ? FULL_META_BASE_HEIGHT + metaRows * FULL_META_ROW_HEIGHT : 0;
+    const topOffset =
+      (hasNamespace ? NAMESPACE_PILL_HEIGHT : 0) + HEADER_HEIGHT + metaHeight + FIELDS_PADDING_TOP;
+    // MetricFieldEntry is a leaner type than FieldEntry (no constraints/comments/children).
+    // Adapt it so buildFieldPorts can generate ports for metric fields.
+    const fieldEntries: FieldEntry[] = m.fields.map((f) => ({
+      name: f.name,
+      type: f.type,
+      constraints: [],
+      notes: f.notes,
+      comments: [],
+      children: [],
+      location: f.location,
+    }));
+    const ports = buildFieldPorts(fieldEntries, m.qualifiedId, mappedFields, topOffset, width);
+
     target.push({
       id: m.qualifiedId,
-      width: estimateMetricWidth(m),
+      width,
       height: estimateMetricHeight(m, hasNamespace),
-      // Metrics have no outgoing ports
-      ports: [],
+      ports,
       children: [],
       edges: [],
     });
