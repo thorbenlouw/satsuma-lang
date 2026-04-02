@@ -101,8 +101,17 @@ describe("satsuma summary", () => {
 
   it("--json arrowCount includes nl-derived edges and exposes nlDerivedArrowCount (sl-mraa)", async () => {
     // Arrow counting logic tested in arrow-extract.test.ts; here we verify CLI end-to-end.
-    const COBOL = resolve(EXAMPLES, "cobol-to-avro/pipeline.stm");
-    const { stdout, code } = await run("summary", "--json", COBOL);
+    //
+    // Fixture: nl-refs-atref-notes.stm has one declared arrow
+    //   `balance -> balance_usd { "Convert @balance to USD using @currency rate" }`
+    // @balance is the declared source — it should NOT produce a duplicate nl-derived edge.
+    // @currency is an additional implicit source — it should produce one nl-derived edge.
+    //
+    // The cobol-to-avro pipeline was previously used here, but all its @refs point
+    // to fields that are already explicitly declared as sources in the same arrow,
+    // so the correct nl-derived count for that file is 0 (no new lineage added).
+    const fixture = resolve(__dirname, "fixtures", "nl-refs-atref-notes.stm");
+    const { stdout, code } = await run("summary", "--json", fixture);
     assert.equal(code, 0);
     const data = JSON.parse(stdout);
     const mapping = data.mappings[0];

@@ -130,6 +130,44 @@ export function resolveCanonicalKey(canonical: string): string {
   return canonical;
 }
 
+/**
+ * Qualify a raw field name by prepending the mapping's primary schema.
+ *
+ * Handles three cases:
+ *  - Nested fields (`.field`): strip the leading dot and prefix with the first schema.
+ *  - Already-qualified fields (`schema.field` or `ns::schema.field`): pass through.
+ *  - Bare field names: prefix with the first schema in the list.
+ *
+ * Used wherever raw field names from ArrowRecord or NLRef need to be compared
+ * against canonical ::schema.field keys.
+ */
+export function qualifyField(field: string, schemas: string[]): string {
+  if (schemas.length === 0) return field;
+
+  // Nested field: strip leading dot, prepend first schema
+  if (field.startsWith(".")) {
+    return `${schemas[0]}.${field.slice(1)}`;
+  }
+
+  // Multi-source: field may already be schema-qualified (e.g. "crm.customer_id")
+  const dotIdx = field.indexOf(".");
+  if (dotIdx > 0) {
+    const prefix = field.slice(0, dotIdx);
+    if (schemas.includes(prefix)) {
+      // Already qualified — don't double-prefix
+      return field;
+    }
+    // Check if prefix matches the bare name of a namespace-qualified schema
+    for (const s of schemas) {
+      const nsIdx = s.indexOf("::");
+      const bare = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
+      if (bare === prefix) return field;
+    }
+  }
+
+  return `${schemas[0]}.${field}`;
+}
+
 export function resolveScopedEntityRef(ref: string, currentNs: string | null, entityMap: Map<string, unknown>): string | null {
   if (ref.includes("::")) {
     return entityMap.has(ref) ? ref : null;
