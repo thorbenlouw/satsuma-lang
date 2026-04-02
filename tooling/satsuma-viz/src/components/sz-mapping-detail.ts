@@ -226,22 +226,6 @@ export class SzMappingDetail extends LitElement {
       text-align: left;
     }
 
-    .transform-pipeline {
-      display: inline-block;
-      font-family: var(--sz-font-mono, monospace);
-      font-size: 11px;
-      color: var(--sz-orange-dark, #D97726);
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      text-align: left;
-    }
-
-    .transform-pipeline .pipe {
-      color: var(--sz-text-muted, #6B6560);
-      padding: 0 3px;
-    }
-
     .transform-nl {
       display: inline-block;
       font-style: italic;
@@ -663,21 +647,8 @@ export class SzMappingDetail extends LitElement {
     }
 
     const t = a.transform;
-    if (t.kind === "pipeline" || t.kind === "mixed") {
-      return html`
-        <span class="transform-pipeline">
-          ${t.steps.map((step, i) => html`${i > 0 ? html`<span class="pipe">|</span>` : nothing}${step}`)}
-        </span>
-        ${t.nlText ? html`<br/><span class="transform-nl">${t.nlText}</span>` : nothing}
-      `;
-    }
-
-    if (t.kind === "nl") {
-      return html`<span class="transform-nl">${t.nlText ?? t.text}</span>`;
-    }
-
-    // map kind
-    return html`<span class="transform-pipeline">${t.text}</span>`;
+    // After Feature 28, all transforms render uniformly as NL text
+    return html`<span class="transform-nl">${t.text}</span>`;
   }
 
   private _renderEachSection(eb: EachBlock): TemplateResult {

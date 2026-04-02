@@ -1,6 +1,6 @@
 ---
 id: sl-thqe
-status: open
+status: closed
 deps: [sl-sp7g]
 links: []
 created: 2026-04-02T09:20:22Z

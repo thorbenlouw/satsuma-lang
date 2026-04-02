@@ -42,10 +42,6 @@ export class SzEdgeLayer extends LitElement {
       stroke-width: 3;
     }
 
-    .edge-path.pipeline {
-      stroke: var(--sz-edge-pipeline, #D97726);
-    }
-
     .edge-path.nl {
       stroke: var(--sz-edge-nl, #5A9E6F);
       stroke-dasharray: 6 3;
@@ -106,17 +102,9 @@ export class SzEdgeLayer extends LitElement {
       letter-spacing: 0.04em;
     }
 
-    .transform-card .pipeline-text {
+    .transform-card .step-text {
       font-family: var(--sz-font-mono, monospace);
       color: var(--sz-text, #2D2A26);
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .transform-card .nl-text {
-      font-family: var(--sz-font-sans, system-ui);
-      font-style: italic;
-      color: var(--sz-green, #5A9E6F);
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -239,12 +227,8 @@ export class SzEdgeLayer extends LitElement {
 
     const d = this._buildCurvePath(edge.points);
     const kind = edge.arrow.transform?.kind ?? "bare";
-    const cls =
-      kind === "nl"
-        ? "nl"
-        : kind === "pipeline" || kind === "mixed" || kind === "map"
-          ? "pipeline"
-          : "bare";
+    // After Feature 28, all transforms are nl or map — both render as NL style
+    const cls = kind === "nl" || kind === "map" ? "nl" : "bare";
 
     const mid = this._midpoint(edge.points);
     const hasTransform = edge.arrow.transform !== null;
@@ -338,23 +322,18 @@ export class SzEdgeLayer extends LitElement {
         @click=${(ev: Event) => ev.stopPropagation()}
       >
         <div class="label">
-          ${t.kind === "nl" ? "Natural Language" : t.kind === "mixed" ? "Mixed Transform" : "Pipeline"}
+          ${t.kind === "map" ? "Map" : "Transform"}
         </div>
-        ${t.kind === "nl" || (t.kind === "mixed" && t.nlText)
-          ? html`<div class="nl-text">${t.nlText ?? t.text}</div>`
-          : ""}
         ${t.steps.length > 0
           ? html`${t.steps.map(
               (step, i) => html`
                 <div class="step">
                   ${i > 0 ? html`<span class="step-sep">|</span>` : ""}
-                  <span class="pipeline-text">${step}</span>
+                  <span class="step-text">${step}</span>
                 </div>
               `
             )}`
-          : t.kind !== "nl"
-            ? html`<div class="pipeline-text">${t.text}</div>`
-            : ""}
+          : html`<div class="step-text">${t.text}</div>`}
       </div>
     `;
   }
