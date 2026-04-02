@@ -136,11 +136,9 @@ mapping m {
     assert.equal(diags.length, 0);
   });
 
-  it("emits diagnostics for transitive-import gaps but not for reachable transitive symbols", () => {
-    // a imports b, b imports c. a can use customers (from c) via b's transitive import? No —
-    // Satsuma imports are explicit. Only a's direct imports are in scope.
-    // But getImportReachableUris follows transitively, so symbols in c ARE reachable from a
-    // as long as b imports c and a imports b. This is the correct behaviour.
+  it("allows directly imported symbols even when the imported file has its own imports", () => {
+    // a imports { orders } from b. b imports { customers } from c.
+    // a references only orders (directly imported) — no diagnostic needed.
     const aSrc = `import { orders } from "b.stm"
 mapping m {
   source { orders }
@@ -157,6 +155,29 @@ mapping m {
     const diags = computeMissingImportDiagnostics(parse(aSrc), "file:///a.stm", idx);
     // orders is imported — no diagnostic
     assert.equal(diags.length, 0);
+  });
+
+  it("flags symbols from transitively reachable files that are not dependencies of imported symbols (sl-cf9t)", () => {
+    // a imports { orders } from b. b imports { customers } from c.
+    // a tries to use customers — but customers is NOT a dependency of orders,
+    // so it is not reachable from a's imports (ADR-022 symbol-level scoping).
+    const aSrc = `import { orders } from "b.stm"
+mapping m {
+  source { customers }
+  target { orders }
+  id -> id
+}`;
+    const bSrc = `import { customers } from "c.stm"\nschema orders { id UUID }`;
+    const cSrc = `schema customers { id UUID }`;
+    const idx = buildIndex({
+      "file:///a.stm": aSrc,
+      "file:///b.stm": bSrc,
+      "file:///c.stm": cSrc,
+    });
+    const diags = computeMissingImportDiagnostics(parse(aSrc), "file:///a.stm", idx);
+    const importDiag = diags.find((d) => d.code === "missing-import");
+    assert.ok(importDiag, "expected a missing-import diagnostic for customers");
+    assert.ok(importDiag.message.includes("customers"), "diagnostic should name the symbol");
   });
 });
 
