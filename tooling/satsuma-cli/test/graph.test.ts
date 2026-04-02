@@ -505,3 +505,40 @@ describe("satsuma graph (anonymous mapping edges, sl-riw5)", () => {
       `should have edge orders.amount -> invoices.total, got: ${JSON.stringify(data.edges)}`);
   });
 });
+
+// ---------------------------------------------------------------------------
+// satsuma graph vs summary — nl-derived edge count consistency (sl-m9v9)
+// ---------------------------------------------------------------------------
+describe("satsuma graph vs summary (nl-derived count consistency)", () => {
+  it("graph stats.arrows matches the total arrowCount reported by summary (sl-m9v9)", async () => {
+    // Bug sl-m9v9: summary overcounted nl-derived edges by not deduplicating
+    // against declared arrows. An @ref whose source→target is already the
+    // explicit declared source should NOT add an extra nl-derived edge.
+    //
+    // Fixture: nl-refs-atref-notes.stm has one declared arrow
+    //   `balance -> balance_usd { "Convert @balance to USD using @currency rate" }`
+    // @balance is the declared source (should not produce a duplicate nl-derived edge).
+    // @currency is an additional source (should produce one nl-derived edge).
+    // Total: 2 arrows (1 nl + 1 nl-derived).
+    const fixture = resolve(FIXTURES, "nl-refs-atref-notes.stm");
+
+    const [graphResult, summaryResult] = await Promise.all([
+      run("graph", "--json", fixture),
+      run("summary", "--json", fixture),
+    ]);
+
+    const graphData = JSON.parse(graphResult.stdout);
+    const summaryData = JSON.parse(summaryResult.stdout);
+
+    // graph stats.arrows counts all edges in the output array.
+    assert.equal(graphData.stats.arrows, graphData.edges.length,
+      "stats.arrows should equal the number of edges in the output");
+
+    // summary arrowCount must equal graph stats.arrows for the same workspace.
+    const summaryTotal = (summaryData.mappings as any[]).reduce(
+      (sum: number, m: any) => sum + (m.arrowCount as number), 0,
+    );
+    assert.equal(summaryTotal, graphData.stats.arrows,
+      "summary arrowCount sum should equal graph stats.arrows for the same workspace");
+  });
+});

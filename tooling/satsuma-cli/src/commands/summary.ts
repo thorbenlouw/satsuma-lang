@@ -18,7 +18,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
-import { resolveAllNLRefs } from "../nl-ref-extract.js";
+import { countNlDerivedEdgesByMapping } from "../nl-ref-extract.js";
 import { canonicalEntityName } from "@satsuma/core";
 import type { FieldDecl, WorkspaceIndex } from "../types.js";
 
@@ -27,32 +27,6 @@ function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | nul
   return schema.fields.length + expanded.length;
 }
 
-/**
- * Count nl-derived arrows per mapping.
- * Uses the same resolution pipeline as graph.ts: resolve all @refs, then
- * count unique source→target pairs per mapping (excluding self-refs).
- */
-function countNlDerivedByMapping(index: WorkspaceIndex): Map<string, number> {
-  const nlRefs = resolveAllNLRefs(index);
-  const counts = new Map<string, number>();
-  const seen = new Set<string>();
-
-  for (const nlRef of nlRefs) {
-    if (!nlRef.resolved || !nlRef.resolvedTo || nlRef.resolvedTo.kind !== "field") continue;
-    if (!nlRef.targetField) continue;
-
-    const mappingKey = nlRef.mapping;
-    const sourceField = nlRef.resolvedTo.name;
-    const dedupKey = `${sourceField}|${nlRef.targetField}|${mappingKey}`;
-    if (seen.has(dedupKey)) continue;
-    seen.add(dedupKey);
-    if (sourceField === nlRef.targetField) continue;
-
-    counts.set(mappingKey, (counts.get(mappingKey) ?? 0) + 1);
-  }
-
-  return counts;
-}
 
 export function register(program: Command): void {
   program
@@ -119,7 +93,7 @@ Examples:
 
 function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean): void {
   const displayName = canonicalEntityName;
-  const nlDerivedCounts = countNlDerivedByMapping(index);
+  const nlDerivedCounts = countNlDerivedEdgesByMapping(index);
 
   const out: Record<string, unknown> = {
     schemas: [...index.schemas.values()].map((s) => {

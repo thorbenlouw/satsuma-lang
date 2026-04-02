@@ -26,6 +26,7 @@ import type {
 } from "@satsuma/core";
 import type { MappingRecord, NLRefData, WorkspaceIndex } from "./types.js";
 import { expandEntityFields } from "./spread-expand.js";
+import { canonicalKey, qualifyField } from "./index-builder.js";
 
 // Re-export pure functions and types directly.
 export { extractAtRefs, classifyRef, extractNLRefData };
@@ -73,4 +74,87 @@ export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
  */
 export function isSchemaInMappingSources(schemaRef: string, mapping: MappingRecord | undefined): boolean {
   return _isSchemaInMappingSources(schemaRef, mapping);
+}
+
+/**
+ * Count nl-derived edges per mapping key, applying the same deduplication
+ * rules as the graph builder.
+ *
+ * A resolved NL @ref produces an nl-derived edge from the referenced field
+ * to the arrow's target field. Two dedup rules suppress redundant edges:
+ *  1. Self-references: skip if source and target resolve to the same field.
+ *  2. Declared coverage: skip if a declared (non-nl-derived) arrow already
+ *     connects the same source→target in the same mapping — the nl ref is
+ *     merely annotating an explicit source, not adding new lineage.
+ *
+ * This function is the canonical count used by both `summary --json` and any
+ * other consumer that needs a consistent nl-derived arrow tally.
+ */
+export function countNlDerivedEdgesByMapping(index: WorkspaceIndex): Map<string, number> {
+  // ── Step 1: build the set of declared source→target pairs per mapping ──────
+  // Pre-qualify all declared arrow source/target fields so they can be compared
+  // against canonical nl ref names without re-running the full graph builder.
+  const declaredCoverage = new Set<string>();
+  const seenArrow = new Set<string>();
+
+  for (const [, records] of index.fieldArrows) {
+    for (const record of records) {
+      // fieldArrows stores each record under multiple keys — deduplicate by position.
+      const arrowDedupKey = `${record.file}:${record.line}:${record.target}`;
+      if (seenArrow.has(arrowDedupKey)) continue;
+      seenArrow.add(arrowDedupKey);
+
+      // Only declared (non-synthetic) arrows can cover an nl-derived edge.
+      if (record.classification === "nl-derived") continue;
+
+      const mappingKey = record.namespace
+        ? `${record.namespace}::${record.mapping}`
+        : (record.mapping ?? "");
+      const mapping = index.mappings.get(mappingKey);
+      const sourceSchemas = mapping?.sources ?? [];
+      const targetSchemas = mapping?.targets ?? [];
+
+      const toField = record.target
+        ? canonicalKey(qualifyField(record.target, targetSchemas))
+        : null;
+      if (!toField) continue;
+
+      for (const src of record.sources) {
+        const fromField = canonicalKey(qualifyField(src, sourceSchemas));
+        declaredCoverage.add(`${fromField}|${toField}|${mappingKey}`);
+      }
+    }
+  }
+
+  // ── Step 2: count nl-derived edges, skipping redundant ones ─────────────────
+  const nlRefs = resolveAllNLRefs(index);
+  const counts = new Map<string, number>();
+  const nlSeen = new Set<string>();
+
+  for (const nlRef of nlRefs) {
+    if (!nlRef.resolved || !nlRef.resolvedTo || nlRef.resolvedTo.kind !== "field") continue;
+    if (!nlRef.targetField) continue;
+
+    const mappingKey = nlRef.mapping;
+    const mapping = index.mappings.get(mappingKey);
+    if (!mapping) continue;
+
+    const sourceField = nlRef.resolvedTo.name; // already canonical, e.g. "::schema.field"
+    const targetField = canonicalKey(qualifyField(nlRef.targetField, mapping.targets));
+
+    // Rule 1: skip self-references.
+    if (sourceField === targetField) continue;
+
+    // Dedup: count each unique source→target→mapping pair once.
+    const dedupKey = `${sourceField}|${targetField}|${mappingKey}`;
+    if (nlSeen.has(dedupKey)) continue;
+    nlSeen.add(dedupKey);
+
+    // Rule 2: skip if a declared arrow already covers this source→target.
+    if (declaredCoverage.has(dedupKey)) continue;
+
+    counts.set(mappingKey, (counts.get(mappingKey) ?? 0) + 1);
+  }
+
+  return counts;
 }

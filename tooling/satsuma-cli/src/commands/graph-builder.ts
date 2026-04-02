@@ -11,7 +11,7 @@
  */
 
 import { resolve } from "node:path";
-import { canonicalKey } from "../index-builder.js";
+import { canonicalKey, qualifyField } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import { extractAtRefs, classifyRef, resolveRef, resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { WorkspaceIndex, FieldDecl } from "../types.js";
@@ -413,32 +413,7 @@ function extractNlSchemaRefs(
  *    when the prefix matches a known schema
  *  - Simple field name -> "schema.field"
  */
-function qualifyField(field: string, schemas: string[]): string {
-  if (schemas.length === 0) return field;
-
-  // Nested field: strip leading dot, prepend first schema
-  if (field.startsWith(".")) {
-    return `${schemas[0]}.${field.slice(1)}`;
-  }
-
-  // Multi-source: field may already be schema-qualified (e.g. "crm.customer_id")
-  const dotIdx = field.indexOf(".");
-  if (dotIdx > 0) {
-    const prefix = field.slice(0, dotIdx);
-    if (schemas.includes(prefix)) {
-      // Already qualified — don't double-prefix
-      return field;
-    }
-    // Check if prefix matches the bare name of a namespace-qualified schema
-    for (const s of schemas) {
-      const nsIdx = s.indexOf("::");
-      const bare = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
-      if (bare === prefix) return field;
-    }
-  }
-
-  return `${schemas[0]}.${field}`;
-}
+// qualifyField lives in index-builder.ts (exported from there for shared use).
 
 /**
  * Build field-level edges from arrow records in the workspace index.
