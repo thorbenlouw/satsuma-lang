@@ -1,7 +1,90 @@
 # Changelog
 
+## v0.7.0 — 2026-04-02
 
+### Language Simplification (Feature 28)
 
+- **All pipe steps are now NL.** The grammar no longer distinguishes structural
+  vs NL pipe steps — every step in a pipe chain is natural language. The
+  `structural` and `mixed` transform classifications are removed from the grammar,
+  core, CLI, LSP, viz-model, and viz component.
+- **`metric` keyword replaced with `schema(metric)` metadata.** Metrics are now
+  regular schemas with a `metric` metadata tag, making them valid both as sources
+  and targets. The dedicated `metric` keyword and its grammar rules are removed.
+- Pipeline tokens (`to_decimal`, `count`, `equals`, etc.) are reframed as
+  vocabulary conventions, not grammar-level constructs.
+- All canonical examples updated to the simplified syntax.
+
+### Standalone Viz Harness (Feature 29)
+
+- **New `@satsuma/viz-backend` package** extracts VizModel production logic from
+  the LSP into a shared package consumable by both the LSP and the harness.
+- **New `satsuma-viz-harness`** provides a fixture-driven browser app that renders
+  source code alongside the `<satsuma-viz>` web component. Includes syntax
+  highlighting, fixture picker, and lineage/single mode toggle.
+- **8 Playwright browser tests** covering overview rendering, detail view, hover
+  events, cross-file lineage, navigation intents, and layout stability.
+- LSP refactored to delegate viz model assembly to the shared backend.
+
+### VS Code Visualization
+
+- **@ref highlighting** in mapping detail and edge layer — `@ref` tokens in NL
+  transform text now render bold in a darker green for visual emphasis.
+- Full transitive lineage display with file-scope filter dropdown.
+- Field notes, arrow notes, and left-aligned transforms in the mapping detail.
+- Schema card labels capped at 400px width; minimap anchored to visible viewport.
+- Removed `ClassificationFilter` and structural CSS from field-lineage panel.
+- Removed pipeline/mixed rendering branches and orange edge colour.
+
+### LSP
+
+- **Symbol-level import reachability** — diagnostics now enforce that referenced
+  symbols are actually imported, not just file-level reachability.
+- **Core semantic diagnostics** via a new `SemanticIndex` adapter.
+- Migrated field extraction, spread resolution, classification, metadata
+  extraction, and CST text helpers from LSP into `@satsuma/core`.
+
+### CLI
+
+- **File-based entry points (ADR-022)** — the CLI now requires `.stm` file
+  arguments and rejects directory arguments. Import reachability determines the
+  workspace scope.
+- Fixed 3 lineage/graph JSON output bugs, 4 nl/arrows bugs, 6 validate/lint
+  bugs, and 4 diff/dispatch bugs.
+- Refactored `graph.ts` into `graph-builder.ts` and `graph-format.ts`.
+- Migrated all test files from JavaScript to TypeScript.
+- Added test coverage measurement with c8 and coverage summary in CI.
+- Standardized JSON output format across 7 CLI commands.
+
+### Core
+
+- Added source positions to `FieldDecl` and `startColumn` to `Extracted*` types.
+- Added escape handling to `stringText()`.
+- Consolidated extraction tests and fixed `sourceRefNameNs` regression.
+
+### Grammar
+
+- Simplified `pipe_text` — all steps are NL.
+- Restored parenthesized NL tokens in `pipe_text`.
+- Rejected empty backtick identifiers as parse errors.
+- Replaced `metric` keyword with `schema(metric)` metadata decoration.
+
+### Infrastructure
+
+- Extracted `satsuma-lsp` package from `vscode-satsuma/server` (ADR-021).
+- Core extraction consolidation (ADR-020) completed.
+- Added `satsuma-viz-harness` to root `install:all`, `ci:all`, and `clean:all`.
+- Added `build-artifacts.sh` for unified release artifact builds.
+- CI dependency bumps: actions/checkout v6, actions/setup-node v6,
+  actions/upload-artifact v7, dorny/test-reporter v3.
+- Retrospective ADRs 010–023 documenting implicit architectural decisions.
+
+### Documentation
+
+- Added Satsuma Diaries section to the website.
+- Archived 7 completed features (22–25, 29).
+- Reorganised `docs/` into `developer/` and `product-owner/` subfolders.
+- Added `adr-draft` skill for assessing and drafting ADRs.
 
 ## v0.6.0 — 2026-03-30
 
