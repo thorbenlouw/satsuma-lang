@@ -37,3 +37,14 @@ Re-opened. Prior triage was wrong: Satsuma keeps explicit imports, but imported 
 Bug confirmed still reproducible against current main. The root cause is in `buildIndex` — all transitively reachable files are merged into a flat scope with no import-boundary enforcement. Both the CLI validator and the LSP diagnostic engine (and likely completions/hover) consume this same flat index, so both are affected.
 
 Implementation guidance: the fix should live in `satsuma-core` so CLI and LSP share exactly the same reachability logic and cannot diverge. The index can remain flat (it is useful for cross-file lookups), but a per-file **reachability set** needs to be computed from the import graph and threaded into validation so that undefined-ref checks only consider symbols actually reachable from the file being validated. Placing this in core prevents a repeat of the pattern where the same rule is implemented independently in the CLI and LSP and drifts over time.
+
+**2026-04-02**
+
+Partial implementation audit: the LSP already has `computeMissingImportDiagnostics` in `semantic-diagnostics.ts` which performs a scope check using `getImportReachableUris` + `createScopedIndex`. However this is **file-level scope** (any symbol in any transitively reachable file is considered in scope), not symbol-level scope. It would not catch the repro: `top.stm` imports `{ middle_schema }` from `middle.stm`; `base.stm` IS transitively reachable (via `middle.stm`'s import), so the file-level check passes — but `my_transform` is not a dependency of `middle_schema`, so it should not be in scope for `top.stm`.
+
+Current state:
+- LSP: partial implementation (file-level scope via `computeMissingImportDiagnostics`) — would not catch the repro
+- CLI: no import scope check at all
+- satsuma-core: no reachability logic yet — this is where it should live per the note above
+
+The full fix requires symbol-level reachability computation in `satsuma-core`: given a root file and its import graph, compute which symbols are reachable from each file (the imported symbol plus its own transitive declared dependencies), then thread that set into `collectSemanticDiagnostics` so undefined-ref checks are bounded to that set. This is genuinely new work — deferred to a dedicated implementation PR.
