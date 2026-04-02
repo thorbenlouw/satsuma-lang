@@ -1,6 +1,6 @@
 ---
 id: sl-vces
-status: deferred
+status: closed
 deps: []
 links: []
 created: 2026-03-29T16:14:45Z
@@ -225,3 +225,13 @@ Update all corpus fixtures in `test/corpus/` that use the old `source` metadata 
 - [ ] `SATSUMA-V2-SPEC.md` and `AI-AGENT-REFERENCE.md` updated
 - [ ] Consumer schema (`report`/`model`) `sources {}` entries that resolve to metrics create lineage edges in the graph
 - [ ] Viz panel shows metric source schemas as incoming edges and consumer schemas as outgoing edges on MetricCard nodes
+
+## Notes
+
+**2026-04-02**
+
+Will not fix. The entire premise of this ticket is superseded by the decision to remove the `metric` keyword entirely (ADR-024, PR #191, commit `5d9cc59`).
+
+Metrics are now plain `schema` blocks decorated with `(metric, metric_name "...", source ..., grain ..., slice {...}, filter "...")` metadata — the same mechanism as `report` and `model`. The `sources {}` structural block proposed here was designed for a first-class `metric_block` that no longer exists.
+
+The source dependency is already expressible via the `source` metadata tag inside the schema's `( )` block, and metric schemas are valid mapping sources and targets like any other schema (a metric can be the target of a pipeline mapping and a source for a downstream report or model). The specific lineage improvements described (go-to-definition in `sources {}`, field-lineage through metrics, `where-used` via metric source refs) remain valid future work but should be re-scoped against the schema-based model rather than the old `metric_block` grammar.
