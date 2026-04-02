@@ -18,10 +18,8 @@ import { resolve, dirname, relative } from "path";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, walkDescendants } from "./parser-utils";
 import {
-  sourceRefText as coreSourceRefText,
   sourceRefStructuralText as coreSourceRefStructuralText,
   qualifiedNameText as coreQualifiedNameText,
-  fieldNameText as coreFieldNameText,
   entryText,
   extractFieldTree,
   isMetricSchema,
@@ -859,11 +857,6 @@ function fieldDeclToInfo(decl: FieldDecl, cstNode: SyntaxNode | null): FieldInfo
 // extractArrowFullPath) remain here because they handle grammar forms or
 // multi-word patterns not needed by the general-purpose core helpers.
 
-/** Extract text from a source_ref node. Delegates to core sourceRefText. */
-function sourceRefText(ref: SyntaxNode): string | null {
-  return coreSourceRefText(ref);
-}
-
 /**
  * Extract the structural schema/fragment name from a source_ref node.
  * NL join descriptions inside `source {}` are intentionally ignored.
@@ -900,11 +893,6 @@ function spreadLabelText(node: SyntaxNode): string | null {
   const ids = node.namedChildren.filter((c: SyntaxNode) => c.type === "identifier" || c.type === "continuation_word");
   if (ids.length > 0) return ids.map((i: SyntaxNode) => i.text).join(" ");
   return node.text;
-}
-
-/** Extract field name text. Delegates to core fieldNameText. */
-function fieldNameText(nameNode: SyntaxNode): string | null {
-  return coreFieldNameText(nameNode);
 }
 
 // ---------- Internal helpers ----------
