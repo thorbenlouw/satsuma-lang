@@ -92,9 +92,6 @@ const CAPTURE_MAP: Record<string, TokenMapping> = {
   "operator":           { typeIndex: 9, modifierBits: 0 },
   "punctuation.bracket":{ typeIndex: 9, modifierBits: 0 },
   "punctuation.delimiter":{ typeIndex: 9, modifierBits: 0 },
-
-  // Function calls (pipe chain tokens)
-  "function.call":      { typeIndex: 2, modifierBits: 0 },
 };
 
 // ---------- Query loading ----------

@@ -142,15 +142,21 @@ describe("computeSemanticTokens", () => {
     assert.equal(comments.length, 3, "should have 3 comment tokens");
   });
 
-  it("tokenizes pipe chain function calls", () => {
+  // After Feature 28, pipe chain bare tokens are NL text, not function calls.
+  // They should receive string tokens, while the block label stays function.definition.
+  it("tokenizes pipe chain bare tokens as strings, not function calls", () => {
     const tree = parse(
       "transform clean {\n  trim | lowercase | validate_email\n}",
     );
     const tokens = decodeTokens(computeSemanticTokens(tree).data);
 
-    const funcCalls = tokens.filter((t) => t.type === "function");
-    // Should have 'clean' as function.definition and trim/lowercase/validate_email as function calls
-    assert.ok(funcCalls.length >= 1, "should have function tokens");
+    // 'clean' is still function.definition (block label)
+    const funcTokens = tokens.filter((t) => t.type === "function");
+    assert.ok(funcTokens.length >= 1, "should have function token for block label");
+
+    // Bare pipe tokens (trim, lowercase, validate_email) are now string tokens
+    const stringTokens = tokens.filter((t) => t.type === "string");
+    assert.ok(stringTokens.length >= 3, "pipe chain bare tokens should be string tokens");
   });
 
   it("tokenizes import keywords", () => {

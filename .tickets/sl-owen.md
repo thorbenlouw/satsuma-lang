@@ -1,6 +1,6 @@
 ---
 id: sl-owen
-status: open
+status: closed
 deps: [sl-sp7g, sl-95f9]
 links: []
 created: 2026-04-02T09:20:09Z

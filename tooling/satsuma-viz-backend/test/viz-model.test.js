@@ -212,18 +212,21 @@ describe("mappings", () => {
     assert.equal(arrow.transform, null);
   });
 
-  it("extracts pipeline transforms", () => {
+  // After Feature 28, all pipe steps are NL — bare tokens like trim/lowercase
+  // are treated the same as quoted NL strings. kind is "nl" for all non-map
+  // transforms.
+  it("extracts bare-token transforms as NL kind", () => {
     const model = vizModel(
       "schema s { a INT }\nschema t { b INT }\n" +
       "mapping m {\n  source { s }\n  target { t }\n  a -> b { trim | lowercase }\n}",
     );
     const tf = model.namespaces[0].mappings[0].arrows[0].transform;
     assert.ok(tf);
-    assert.equal(tf.kind, "pipeline");
-    assert.equal(tf.nlText, null);
+    assert.equal(tf.kind, "nl");
+    assert.deepEqual(tf.steps, ["trim", "lowercase"]);
   });
 
-  it("extracts NL transforms", () => {
+  it("extracts quoted NL transforms as NL kind", () => {
     const model = vizModel(
       "schema s { a INT }\nschema t { b INT }\n" +
       'mapping m {\n  source { s }\n  target { t }\n  a -> b { "Convert to uppercase" }\n}',
@@ -231,18 +234,16 @@ describe("mappings", () => {
     const tf = model.namespaces[0].mappings[0].arrows[0].transform;
     assert.ok(tf);
     assert.equal(tf.kind, "nl");
-    assert.equal(tf.nlText, "Convert to uppercase");
   });
 
-  it("extracts mixed transforms (NL + pipeline)", () => {
+  it("extracts mixed bare + quoted transforms as NL kind", () => {
     const model = vizModel(
       "schema s { a INT }\nschema t { b INT }\n" +
       'mapping m {\n  source { s }\n  target { t }\n  a -> b {\n    "Do something"\n    | round(2)\n  }\n}',
     );
     const tf = model.namespaces[0].mappings[0].arrows[0].transform;
     assert.ok(tf);
-    assert.equal(tf.kind, "mixed");
-    assert.ok(tf.nlText);
+    assert.equal(tf.kind, "nl");
     assert.ok(tf.steps.length > 0);
   });
 
@@ -806,12 +807,14 @@ mapping m {
     const model = vizModel(source);
     const arrow = model.namespaces[0].mappings[0].arrows[0];
     assert.ok(arrow.transform);
-    assert.equal(arrow.transform.kind, "pipeline");
+    assert.equal(arrow.transform.kind, "nl");
     assert.ok(!arrow.transform.atRefs || arrow.transform.atRefs.length === 0,
-      "expected no atRefs for pipeline transform");
+      "expected no atRefs for bare-token NL transform");
   });
 
-  it("populates atRefs for mixed transform (NL + pipeline steps)", () => {
+  // After Feature 28, bare tokens + NL strings in the same pipe chain are all
+  // NL kind. @-refs in the transform text are still resolved.
+  it("populates atRefs for NL transform with @-refs and bare tokens", () => {
     const source = `
 schema src { rate DECIMAL }
 schema tgt { result DECIMAL }
@@ -823,7 +826,7 @@ mapping m {
     const model = vizModel(source);
     const arrow = model.namespaces[0].mappings[0].arrows[0];
     assert.ok(arrow.transform);
-    assert.equal(arrow.transform.kind, "mixed");
+    assert.equal(arrow.transform.kind, "nl");
     assert.ok(Array.isArray(arrow.transform.atRefs));
     const rateRef = arrow.transform.atRefs.find(r => r.ref === "rate");
     assert.ok(rateRef, "expected atRef for rate");
