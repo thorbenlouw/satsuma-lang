@@ -17,6 +17,8 @@ site/_site/
 site/satsuma-diaries/
 .worktrees/
 .claude/*.local.md
+.claude/*.local.json
+.claude/settings.local.json
 
 **/*.vsix
 **/*.wasm
