@@ -477,14 +477,17 @@ describe("edge cases", () => {
     assert.ok(out.includes("      x  INT"));
   });
 
-  it("handles arithmetic operators in pipe chains", () => {
+  it("formats NL pipe chains with numbers as identifiers inline", () => {
+    // After Feature 28, function-call and arithmetic syntax is gone.
+    // Bare tokens, NL strings, and numbers are all valid NL pipe steps.
     const src = `mapping test {
   source { s }
   target { t }
-  s.x -> t.y { coalesce(0) | * 100 | round }
+  s.x -> t.y { coalesce 0 | "multiply by 100" | round }
 }`;
     const out = fmt(src);
-    assert.ok(out.includes("* 100"), "should preserve arithmetic operator");
+    assert.ok(out.includes("coalesce 0"), "should preserve bare-token NL step with number");
+    assert.ok(out.includes('"multiply by 100"'), "should preserve quoted NL step");
   });
 
   it("handles map literals with comparison keys", () => {

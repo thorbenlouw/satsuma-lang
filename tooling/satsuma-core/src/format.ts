@@ -865,11 +865,14 @@ function formatPath(node: SyntaxNode): string {
 // ── Pipe Chain ────────────────────────────────────────────────────────────────
 
 function isInlinePipeChain(node: SyntaxNode): boolean {
-  // A pipe chain is inline if it has no NL strings or multiline strings
+  // A pipe chain can be formatted inline unless it contains a multiline string
+  // (triple-quoted). Single-quoted NL strings are fine on one line. All pipe
+  // steps are NL after Feature 28 — the old heuristic that excluded any
+  // nl_string is moot.
   for (const child of node.children) {
     if (child.type === "pipe_step") {
       const inner = child.children[0];
-      if (inner && (inner.type === "nl_string" || inner.type === "multiline_string")) {
+      if (inner && inner.type === "multiline_string") {
         return false;
       }
     }

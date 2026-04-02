@@ -31,20 +31,20 @@ export interface Tree {
 // ── Classification ──────────────────────────────────────────────────────────
 
 /**
- * Arrow transform classification, derived from CST node types by the arrow extractor.
+ * Arrow transform classification.
  *
- * - "structural"  — the transform is a deterministic pipeline (function calls, map blocks,
- *                   arithmetic). Fully machine-readable; no interpretation needed.
- * - "nl"          — the transform is a natural language string. Requires human or LLM
- *                   interpretation to understand intent.
- * - "mixed"       — the transform contains both pipeline steps and an NL string.
- *                   The pipeline portion is deterministic; the NL portion requires interpretation.
- * - "none"        — bare arrow with no transform (`src -> tgt`). Signals a direct copy.
- * - "nl-derived"  — a synthetic arrow inferred from an `@ref` mention inside an NL transform
- *                   string. Not declared explicitly in the source; created by the graph builder
- *                   to represent implicit field lineage from NL references.
+ * Every pipe step in a transform body is natural language — bare tokens like
+ * `trim`, quoted strings, and `map { }` literals are all NL. The classification
+ * axis has three values:
+ *
+ * - "nl"          — the arrow has a transform body (any non-empty pipe chain).
+ *                   All step content is treated as NL for interpretation purposes.
+ * - "none"        — bare arrow with no transform body (`src -> tgt`). Direct copy.
+ * - "nl-derived"  — a synthetic arrow inferred from an `@ref` mention inside an NL
+ *                   transform string. Not declared explicitly in the source; created
+ *                   by the graph builder to represent implicit field lineage.
  */
-export type Classification = "structural" | "nl" | "mixed" | "none" | "nl-derived";
+export type Classification = "nl" | "none" | "nl-derived";
 
 export interface PipeStep {
   type: string;
