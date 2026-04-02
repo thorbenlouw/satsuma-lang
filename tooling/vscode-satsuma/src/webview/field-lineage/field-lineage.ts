@@ -44,13 +44,11 @@ interface NodePos {
   height: number;
 }
 
-type ClassificationFilter = "all" | "structural" | "nl" | "structural+nl-derived";
 type Direction = "both" | "upstream" | "downstream";
 
-// ── Session state (depth + filter persist across re-centres) ───────────────
+// ── Session state (depth + direction persist across re-centres) ─────────────
 
 let sessionDepth = 3;
-let sessionFilter: ClassificationFilter = "all";
 let sessionDirection: Direction = "both";
 /** Full unfiltered payload from the last message — used for client-side re-filtering. */
 let lastPayload: Payload | null = null;
@@ -67,29 +65,16 @@ window.addEventListener("message", (event: MessageEvent) => {
   }
 });
 
-// ── Classification filter ──────────────────────────────────────────────────
-
-function keepClassification(cls: string, filter: ClassificationFilter): boolean {
-  if (filter === "all") return true;
-  if (filter === "structural") return cls === "structural";
-  if (filter === "nl") return cls === "nl";
-  if (filter === "structural+nl-derived") return cls === "structural" || cls === "nl-derived";
-  return true;
-}
-
 /**
- * Apply both the direction selector and classification filter to a payload.
- * Always works from the raw lastPayload so filters compose correctly.
+ * Apply the direction filter to a payload.
+ *
+ * After Feature 28, all transforms are NL — the classification filter is
+ * removed (no structural/mixed to distinguish). Only direction filtering
+ * remains.
  */
 function applyFilters(payload: Payload): Payload {
-  const upstream =
-    sessionDirection === "downstream"
-      ? []
-      : payload.upstream.filter((e) => keepClassification(e.classification, sessionFilter));
-  const downstream =
-    sessionDirection === "upstream"
-      ? []
-      : payload.downstream.filter((e) => keepClassification(e.classification, sessionFilter));
+  const upstream = sessionDirection === "downstream" ? [] : payload.upstream;
+  const downstream = sessionDirection === "upstream" ? [] : payload.downstream;
   return { ...payload, upstream, downstream };
 }
 
@@ -320,9 +305,9 @@ function buildEdgeSvg(
   svg.setAttribute("width", String(w));
   svg.setAttribute("height", String(h));
 
-  // Arrowhead markers per classification
+  // Arrowhead markers per classification (none/nl/nl-derived only after Feature 28)
   const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-  for (const cls of ["structural", "nl", "nl-derived", "mixed", "none"]) {
+  for (const cls of ["nl", "nl-derived", "none"]) {
     defs.appendChild(buildArrowMarker(cls));
   }
   svg.appendChild(defs);
@@ -494,41 +479,6 @@ function buildToolbar(breadcrumb: string[]): HTMLDivElement {
   });
   depthWrap.appendChild(slider);
   bar.appendChild(depthWrap);
-
-  // Classification filter
-  const filterWrap = document.createElement("div");
-  filterWrap.className = "toolbar-control";
-
-  const filterLabel = document.createElement("label");
-  filterLabel.className = "toolbar-label";
-  filterLabel.htmlFor = "cls-filter";
-  filterLabel.textContent = "Show:";
-  filterWrap.appendChild(filterLabel);
-
-  const select = document.createElement("select");
-  select.id = "cls-filter";
-  select.className = "cls-filter";
-  const filterOptions: Array<{ value: ClassificationFilter; label: string }> = [
-    { value: "all", label: "All" },
-    { value: "structural", label: "Structural only" },
-    { value: "nl", label: "NL only" },
-    { value: "structural+nl-derived", label: "Structural + NL-derived" },
-  ];
-  for (const opt of filterOptions) {
-    const el = document.createElement("option");
-    el.value = opt.value;
-    el.textContent = opt.label;
-    if (opt.value === sessionFilter) el.selected = true;
-    select.appendChild(el);
-  }
-  select.addEventListener("change", () => {
-    sessionFilter = select.value as ClassificationFilter;
-    if (lastPayload) {
-      render(applyFilters(lastPayload));
-    }
-  });
-  filterWrap.appendChild(select);
-  bar.appendChild(filterWrap);
 
   return bar;
 }
