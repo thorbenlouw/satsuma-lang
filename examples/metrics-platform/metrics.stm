@@ -6,8 +6,8 @@ note {
   # Business Metrics
 
   Key business metrics derived from the Salesforce → Snowflake pipeline
-  and the commerce order lakehouse. These are terminal nodes in the lineage
-  graph — data flows into them, nothing flows out.
+  and the commerce order lakehouse. Metrics are valid mapping targets (populated
+  by pipeline mappings) and valid sources (consumed by downstream reports and models).
 
   ## Metrics defined here
   - `monthly_recurring_revenue` (MRR) — active subscription revenue

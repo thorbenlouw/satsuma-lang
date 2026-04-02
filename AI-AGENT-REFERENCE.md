@@ -166,8 +166,7 @@ Vocabulary tokens are still encouraged as concise shorthand:
   - A metric is a `schema` block with `(metric, ...)` metadata — NOT a separate block type
   - metric_name "..." carries the human-readable display name
   - source, grain, slice, filter are metric-specific metadata tags
-  - Metrics are terminal nodes: nothing flows *out* of a metric
-  - Do NOT use a metric schema as source/target in a mapping block
+  - Metric schemas are valid mapping sources and targets: a metric can feed a report or ML model
   - Complex computation logic goes in note { } as natural language inside the schema body
   - Measure additivity: additive (sum all dims), non_additive (never sum),
     semi_additive (sum across some dims only, e.g. balances)
@@ -214,7 +213,6 @@ pitfalls that the EBNF alone doesn't prevent.
 | Using `(flatten \`list\`)` metadata on mappings | Use `flatten src.list -> tgt { }` block syntax inside mapping body |
 | Repeating schema IDs in paths inside implicit mapping blocks | Bare names resolve to source (left) and target (right) |
 | Using `metric name "X" (...)` block syntax | Metrics are now `schema name (metric, metric_name "X", ...)` — `metric` is a metadata tag, not a block keyword |
-| Using a metric schema as a mapping source or target | Metrics are terminal consumers only; reference the underlying source schema instead |
 | Using `report` / `model` as block keywords | Use `schema name (report, ...) { }` or `schema name (model, ...) { }` |
 | Summing a `non_additive` measure across dimensions | Use weighted average or re-aggregate from grain; only `additive` measures can be summed |
 | Writing field names bare in NL strings | Use `@ref` — e.g. `"Sum @order_total grouped by @customer_id"` |

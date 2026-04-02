@@ -4,7 +4,7 @@ Defines key business metrics (MRR, CLV, churn, conversion, order revenue) derive
 
 ## Key features demonstrated
 
-- `metric` declarations as terminal lineage nodes
+- Metric schemas as valid mapping targets (populated by pipelines) and sources (consumed by reports and models)
 - `source`, `grain`, `slice`, and `filter` metric metadata
 - `measure additive` vs `measure non_additive` field annotations
 - Multi-file workspace: source schemas separated from metric definitions
