@@ -1,6 +1,6 @@
 ---
 id: sl-bbuh
-status: open
+status: closed
 deps: [sl-3tv5]
 links: []
 created: 2026-04-02T09:21:01Z
