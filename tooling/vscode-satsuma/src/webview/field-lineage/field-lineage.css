@@ -19,7 +19,6 @@
 
   --sz-arrow-stroke: #D97726;
   --sz-arrow-nl-stroke: #5A9E6F;
-  --sz-arrow-mixed-stroke: #8E5BB0;
 
   --sz-font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --sz-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
@@ -44,7 +43,6 @@ body.dark {
 
   --sz-arrow-stroke: #E89040;
   --sz-arrow-nl-stroke: #6DBF82;
-  --sz-arrow-mixed-stroke: #A878C8;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
@@ -134,21 +132,6 @@ html, body {
   width: 80px;
   accent-color: var(--sz-orange);
   cursor: pointer;
-}
-
-.cls-filter {
-  font-size: 11px;
-  border: 1px solid var(--sz-card-border);
-  border-radius: 4px;
-  background: var(--sz-card-bg);
-  color: var(--sz-text);
-  padding: 2px 6px;
-  cursor: pointer;
-  max-width: 160px;
-}
-
-.cls-filter:focus {
-  outline: 1px solid var(--sz-orange);
 }
 
 .toolbar-btn {
@@ -301,10 +284,8 @@ body.dark .field-card:hover {
 }
 
 /* Classification accent on left border */
-.field-card.cls-structural { border-left: 3px solid var(--sz-orange); }
 .field-card.cls-nl          { border-left: 3px solid var(--sz-green); }
 .field-card.cls-nl-derived  { border-left: 3px solid var(--sz-green); }
-.field-card.cls-mixed       { border-left: 3px solid var(--sz-violet); }
 .field-card.cls-none        { border-left: 3px solid var(--sz-card-border); }
 
 /* ── SVG edge overlay ─────────────────────────────────────────────────────── */
@@ -322,16 +303,12 @@ body.dark .field-card:hover {
   fill: none;
 }
 
-.edge.cls-structural { stroke: var(--sz-arrow-stroke); }
 .edge.cls-nl         { stroke: var(--sz-arrow-nl-stroke); }
 .edge.cls-nl-derived { stroke: var(--sz-arrow-nl-stroke); stroke-dasharray: 6 3; }
-.edge.cls-mixed      { stroke: var(--sz-arrow-mixed-stroke); }
 .edge.cls-none       { stroke: var(--sz-text-muted); }
 
-.arrowhead.cls-structural { fill: var(--sz-arrow-stroke); }
 .arrowhead.cls-nl         { fill: var(--sz-arrow-nl-stroke); }
 .arrowhead.cls-nl-derived { fill: var(--sz-arrow-nl-stroke); }
-.arrowhead.cls-mixed      { fill: var(--sz-arrow-mixed-stroke); }
 .arrowhead.cls-none       { fill: var(--sz-text-muted); }
 
 /* ── Empty and error states ───────────────────────────────────────────────── */

@@ -134,8 +134,8 @@ function createArrow(transform: string, classification: string): HTMLDivElement 
 
   if (transform) {
     const label = document.createElement("div");
-    const isNl = classification === "nl" || classification === "nl-derived";
-    label.className = `arrow-label${isNl ? " nl" : ""}`;
+    // After Feature 28, all transforms are NL — always apply the nl class
+    label.className = "arrow-label nl";
     label.textContent = transform.length > 30 ? transform.slice(0, 28) + "…" : transform;
     label.title = transform;
     div.appendChild(label);
