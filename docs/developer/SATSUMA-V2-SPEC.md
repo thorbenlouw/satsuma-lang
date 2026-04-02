@@ -724,10 +724,12 @@ Vocabulary tokens are **not keywords** — they are interpreted by the LLM based
 | `filter` | Row-level filter condition | `(filter QUAL == "ON")` |
 | `note` | Persistent documentation | `(note "Converted at daily spot rate")` |
 
-### 7.2 Pipeline Tokens (used in `{ }`)
+### 7.2 Vocabulary Conventions (pipe step shorthand)
 
-| Token | Meaning |
-|-------|---------|
+All pipe step content — bare tokens, quoted strings, and map literals — is natural language interpreted by a human or LLM. The following table lists **vocabulary conventions**: commonly used bare tokens that teams adopt as shorthand for well-understood operations. They are not keywords or reserved words; the parser treats them identically to any other bare token. Their meaning is defined by convention and by the implementing system, not by the Satsuma grammar.
+
+| Token | Conventional meaning |
+|-------|---------------------|
 | `trim` | Strip whitespace |
 | `lowercase` / `uppercase` | Case conversion |
 | `coalesce(val)` | Replace null with val |

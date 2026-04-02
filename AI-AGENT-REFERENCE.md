@@ -145,12 +145,12 @@ Pipe steps are natural-language instructions. Quotes are optional:
   "Trim" | "Lowercase" | "Validate email; if invalid, set null"
 Both forms mean the same thing to tooling: they are NL for a human or agent to interpret.
 
-Two constructs remain explicitly structural inside transform bodies:
-  ...named_transform
-  map { src: "tgt", null: "default", _: "fallback" }
+Two special forms exist inside transform bodies:
+  ...named_transform   (spread a named transform)
+  map { src: "tgt", null: "default", _: "fallback" }   (discrete value mapping)
   map { < 1000: "low", < 5000: "mid", default: "high" }
 
-Vocabulary tokens are still encouraged as concise shorthand:
+Vocabulary conventions are concise shorthand for common operations:
   trim, lowercase, uppercase, title_case, null_if_empty, null_if_invalid
   drop_if_invalid, drop_if_null, warn_if_invalid, warn_if_null
   error_if_invalid, error_if_null
