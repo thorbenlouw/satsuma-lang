@@ -106,18 +106,27 @@ export interface ArrowEntry {
   location: SourceLocation;
 }
 
-/** Parsed transform attached to an arrow. */
+/**
+ * Parsed transform attached to an arrow.
+ *
+ * After Feature 28, all pipe steps are NL — bare tokens, quoted strings,
+ * and map literals are all interpreted by a human or LLM. The kind axis
+ * has two values:
+ *
+ * - "nl"  — any pipe chain (bare tokens, quoted strings, spreads)
+ * - "map" — a standalone map { } literal (discrete value mapping)
+ *
+ * The "pipeline" and "mixed" variants are removed.
+ */
 export interface TransformInfo {
   /** Broad category of the transform expression. */
-  kind: "pipeline" | "nl" | "mixed" | "map";
+  kind: "nl" | "map";
   /** Raw source text of the transform expression. */
   text: string;
-  /** Individual pipeline step names extracted from the expression. */
+  /** Individual step texts extracted from the pipe chain. */
   steps: string[];
-  /** Natural-language segment when kind is "nl" or "mixed"; null otherwise. */
-  nlText: string | null;
   /**
-   * @-refs resolved from the NL text (present for nl/mixed kind).
+   * @-refs resolved from the transform text (present for nl kind).
    * Absent when the arrow has no NL segment or the refs have not been resolved.
    */
   atRefs?: ResolvedAtRef[];
