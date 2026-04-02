@@ -7,7 +7,7 @@
  */
 
 import type { SyntaxNode, Tree } from "./parser-utils";
-import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
+import { child, children, labelText, stringText } from "./parser-utils";
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { findReferences, resolveDefinition } from "./workspace-index";
 import type { DefinitionLookup } from "@satsuma/core";
@@ -17,15 +17,13 @@ import {
   resolveRef,
   sourceRefText as coreSourceRefText,
   fieldNameText as coreFieldNameText,
-  entryText,
   extractMetadata,
-  classifyTransform,
   expandEntityFields,
   makeEntityRefResolver,
   extractFieldTree,
   isMetricSchema,
 } from "@satsuma/core";
-import type { MetaEntry, Classification, FieldDecl, SpreadEntity } from "@satsuma/core";
+import type { MetaEntry, FieldDecl, SpreadEntity } from "@satsuma/core";
 
 // ---------- VizModel protocol types ----------
 
@@ -657,10 +655,10 @@ function resolveTransformAtRefs(
   namespace: string | null,
   wsIndex: WorkspaceIndex,
 ): ResolvedAtRef[] {
-  if (!transform.nlText) return [];
+  if (!transform.text) return [];
   const lookup = makeVizLookup(wsIndex);
   const ctx = { sources, targets, namespace };
-  return extractAtRefs(transform.nlText).map((br) => {
+  return extractAtRefs(transform.text).map((br) => {
     const resolution = resolveRef(br.ref, ctx, lookup);
     return {
       ref: br.ref,
@@ -760,7 +758,7 @@ function extractMapping(
   // Resolve NL @-refs in arrow transforms against the workspace index.
   const targets = targetRef ? [targetRef] : [];
   for (const arrow of arrows) {
-    if (arrow.transform && (arrow.transform.kind === "nl" || arrow.transform.kind === "mixed")) {
+    if (arrow.transform && arrow.transform.kind === "nl") {
       const atRefs = resolveTransformAtRefs(arrow.transform, sourceRefs, targets, namespace, wsIndex);
       if (atRefs.length > 0) arrow.transform.atRefs = atRefs;
     }
@@ -840,67 +838,32 @@ function extractComputedArrow(uri: string, node: SyntaxNode): ArrowEntry {
 /**
  * Extract transform info from a pipe_chain node.
  *
- * Uses core's classifyTransform() for the base classification, then refines
- * "structural" to "map" when a map_literal is present (a viz-only distinction
- * for rendering map blocks differently from pipeline transforms).
+ * After Feature 28 all pipe steps are NL — bare tokens, quoted strings, and
+ * spreads are all human/LLM-interpreted text. The only special case is a
+ * standalone map literal, which gets kind "map" for distinct rendering.
  */
 function extractTransform(pipeChain: SyntaxNode): TransformInfo {
   const pipeSteps = children(pipeChain, "pipe_step");
 
-  // Core classification: structural | nl | mixed | none
-  const coreKind = classifyTransform(pipeSteps);
+  // Detect standalone map literal — the only non-NL transform kind
+  const hasMap = pipeSteps.some((step) => child(step, "map_literal") !== null);
 
-  // Extract NL text and pipeline step texts for the TransformInfo payload
-  let nlText: string | null = null;
-  let hasMap = false;
+  // Collect step texts (all content is NL, including bare tokens)
   const steps: string[] = [];
-
   for (const step of pipeSteps) {
-    if (child(step, "map_literal")) {
-      hasMap = true;
-      continue;
-    }
     const pipeText = child(step, "pipe_text");
     if (pipeText) {
-      const nl = child(pipeText, "nl_string") ?? child(pipeText, "multiline_string");
-      if (nl) {
-        nlText = stringText(nl);
-      } else {
-        steps.push(pipeText.text);
-      }
+      steps.push(pipeText.text);
     }
   }
 
-  // Map core classification to viz TransformInfo.kind
-  const kind = coreClassificationToVizKind(coreKind, hasMap);
+  const kind: TransformInfo["kind"] = hasMap ? "map" : "nl";
 
   return {
     kind,
     text: pipeChain.text,
     steps,
-    nlText,
   };
-}
-
-/**
- * Map core's Classification enum to viz TransformInfo.kind.
- *
- * Core "structural" is refined to "map" when a map_literal is present,
- * since the viz renders map blocks with a distinct visual style.
- * Core "none" (bare copy arrow) maps to "pipeline" in the viz.
- */
-function coreClassificationToVizKind(
-  coreKind: Classification,
-  hasMap: boolean,
-): TransformInfo["kind"] {
-  if (hasMap) return "map";
-  switch (coreKind) {
-    case "structural": return "pipeline";
-    case "nl":         return "nl";
-    case "mixed":      return "mixed";
-    case "none":       return "pipeline";
-    case "nl-derived": return "nl";
-  }
 }
 
 function extractEachBlock(uri: string, node: SyntaxNode): EachBlock {

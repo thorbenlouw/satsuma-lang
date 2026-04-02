@@ -103,7 +103,9 @@
 (backtick_name) @string.special
 
 ; ── Pipe chain tokens ─────────────────────────────────────────────────────────
-(pipe_text (identifier) @function.call)
+; After Feature 28, all pipe steps are NL — bare tokens are human/LLM-interpreted
+; text, not function calls. Highlight them as strings for visual consistency.
+(pipe_text (identifier) @string)
 
 ; ── Map literal ───────────────────────────────────────────────────────────────
 (map_key (identifier) @constant)
