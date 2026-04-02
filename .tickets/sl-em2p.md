@@ -1,6 +1,6 @@
 ---
 id: sl-em2p
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:26:11Z
@@ -30,3 +30,10 @@ npx satsuma graph /tmp/satsuma-test-lineage-graph/diamond.stm --json | jq '.sche
 
 **Fixture:** /tmp/satsuma-test-lineage-graph/diamond.stm
 
+
+## Notes
+
+**2026-04-02T00:00:00Z**
+
+Cause: `lineage.ts` defined its `DagEdge` type with `src`/`tgt` property names while `graph`'s `SchemaEdge`/`FieldEdge` types used `from`/`to`, creating an inconsistent JSON contract across the two commands.
+Fix: Renamed `DagEdge.src → from` and `DagEdge.tgt → to` in `lineage.ts` and updated all formatters and tests accordingly.

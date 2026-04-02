@@ -22,9 +22,10 @@ import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import type { FullGraph } from "../graph-builder.js";
 
+/** A directed edge in the lineage DAG. Uses the same from/to convention as graph schema_edges. */
 interface DagEdge {
-  src: string;
-  tgt: string;
+  from: string;
+  to: string;
 }
 
 interface DagNode {
@@ -55,10 +56,10 @@ One of --from or --to is required (not both).
 JSON shape (--json):
   {
     "nodes": [{"name": str, "type": "schema"|"mapping"|"metric"|"transform", "file": str}, ...],
-    "edges": [{"src": str, "tgt": str}, ...]
+    "edges": [{"from": str, "to": str}, ...]
   }
   Schema names: global schemas use bare names ("s1"), namespaced use qualified ("ns::s1").
-  Edge direction: src → tgt follows data flow (upstream → downstream).
+  Edge direction: from → to follows data flow (upstream → downstream).
 
 Examples:
   satsuma lineage --from hub_customer              # what does hub_customer feed?
@@ -142,9 +143,13 @@ Examples:
  * Build a downstream DAG from a start node up to `maxDepth` schema hops.
  * depth increments only when reaching a schema or metric node, so --depth N
  * means N schema-to-schema hops (each hop: schema → mapping → schema).
- * Edges are only pushed when the child node will be within the depth limit,
- * so no dangling references are emitted.
- * Returns {nodes: [...], edges: [{src, tgt}]}.
+ *
+ * Mapping/transform nodes are "free" (do not increment depth) but are only
+ * included when there is room for at least one more schema hop beyond them
+ * (`depth < maxDepth`). This prevents dangling mapping nodes: a mapping at
+ * the boundary would have no outgoing edge visible within the depth limit.
+ *
+ * Returns {nodes: [...], edges: [{from, to}]}.
  */
 function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag {
   const visitedNodes = new Set<string>();
@@ -156,9 +161,14 @@ function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag
     const children = graph.edges.get(node) ?? new Set<string>();
     for (const child of children) {
       const childType = graph.nodes.get(child)?.type;
-      const nextDepth = (childType === "schema" || childType === "metric") ? depth + 1 : depth;
-      if (nextDepth <= maxDepth) {
-        dagEdges.push({ src: node, tgt: child });
+      const isSchemaLike = childType === "schema" || childType === "metric";
+      const nextDepth = isSchemaLike ? depth + 1 : depth;
+      // Schema/metric nodes: include if within the depth limit.
+      // Mapping/transform nodes: include only if there is room for another schema
+      // hop beyond them, so we never emit a mapping with no visible outgoing edge.
+      const withinLimit = isSchemaLike ? nextDepth <= maxDepth : depth < maxDepth;
+      if (withinLimit) {
+        dagEdges.push({ from: node, to: child });
         dfs(child, nextDepth);
       }
     }
@@ -175,8 +185,12 @@ function buildDownstream(graph: FullGraph, start: string, maxDepth: number): Dag
 /**
  * Build the full upstream DAG from a target node up to `maxDepth` schema hops.
  * Walks reverse edges; depth increments only when reaching a schema or metric node.
- * Edges are only pushed when the parent node will be within the depth limit.
- * Returns {nodes: [...], edges: [{src, tgt}]}.
+ *
+ * Same dangling-node guard as buildDownstream: mapping/transform parent nodes
+ * are only included when `depth < maxDepth`, ensuring every mapping node in
+ * the result has a visible outgoing edge within the depth limit.
+ *
+ * Returns {nodes: [...], edges: [{from, to}]}.
  */
 function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag {
   // Build reverse edges
@@ -198,9 +212,11 @@ function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag 
     const parents = reverseEdges.get(node) ?? new Set<string>();
     for (const parent of parents) {
       const parentType = graph.nodes.get(parent)?.type;
-      const nextDepth = (parentType === "schema" || parentType === "metric") ? depth + 1 : depth;
-      if (nextDepth <= maxDepth) {
-        dagEdges.push({ src: parent, tgt: node });
+      const isSchemaLike = parentType === "schema" || parentType === "metric";
+      const nextDepth = isSchemaLike ? depth + 1 : depth;
+      const withinLimit = isSchemaLike ? nextDepth <= maxDepth : depth < maxDepth;
+      if (withinLimit) {
+        dagEdges.push({ from: parent, to: node });
         dfs(parent, nextDepth);
       }
     }
@@ -219,14 +235,14 @@ function buildUpstream(graph: FullGraph, target: string, maxDepth: number): Dag 
 function printUpstreamFlat(dag: Dag, target: string): void {
   // Build adjacency (upstream direction: parent → child)
   const adj = new Map<string, string[]>();
-  for (const { src, tgt } of dag.edges) {
-    if (!adj.has(src)) adj.set(src, []);
+  for (const { from, to } of dag.edges) {
+    if (!adj.has(from)) adj.set(from, []);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
-    adj.get(src)!.push(tgt);
+    adj.get(from)!.push(to);
   }
 
   // Find roots (nodes with no incoming edges in the dag)
-  const hasIncoming = new Set(dag.edges.map((e) => e.tgt));
+  const hasIncoming = new Set(dag.edges.map((e) => e.to));
   const roots = dag.nodes.filter((n) => !hasIncoming.has(n.name)).map((n) => n.name);
   // If no roots found (e.g. target is isolated), just use target
   if (roots.length === 0) roots.push(target);
@@ -264,10 +280,10 @@ function printUpstreamFlat(dag: Dag, target: string): void {
 function printTree(dag: Dag, start: string, _unused: number): void {
   // Build adjacency from dag edges
   const adj = new Map<string, string[]>();
-  for (const { src, tgt } of dag.edges) {
-    if (!adj.has(src)) adj.set(src, []);
+  for (const { from, to } of dag.edges) {
+    if (!adj.has(from)) adj.set(from, []);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
-    adj.get(src)!.push(tgt);
+    adj.get(from)!.push(to);
   }
 
   function render(node: string, depth: number, visited: Set<string>): void {
@@ -288,10 +304,10 @@ function printTree(dag: Dag, start: string, _unused: number): void {
 
 function printCompact(dag: Dag, start: string): void {
   const adj = new Map<string, string[]>();
-  for (const { src, tgt } of dag.edges) {
-    if (!adj.has(src)) adj.set(src, []);
+  for (const { from, to } of dag.edges) {
+    if (!adj.has(from)) adj.set(from, []);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: key initialized on previous line
-    adj.get(src)!.push(tgt);
+    adj.get(from)!.push(to);
   }
 
   const visited = new Set<string>();

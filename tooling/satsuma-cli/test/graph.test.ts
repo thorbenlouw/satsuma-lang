@@ -257,12 +257,30 @@ describe("satsuma graph --schema-only", () => {
 // satsuma graph --namespace
 // ---------------------------------------------------------------------------
 describe("satsuma graph --namespace", () => {
-  it("filters nodes to specified namespace", async () => {
+  it("filters primary nodes to the specified namespace", async () => {
+    // The nodes array must include warehouse-namespace entities.
+    // Cross-namespace nodes may also appear when they are referenced by
+    // schema_edges (e.g. a source schema from pos:: feeding a warehouse mapping).
+    // Stats counts must reflect only the filtered-namespace entities.
     const { stdout } = await run("graph", "--json", "--namespace", "warehouse", PLATFORM);
     const data = JSON.parse(stdout);
     assert.ok(data.nodes.length > 0);
-    for (const n of data.nodes) {
-      assert.equal(n.namespace, "warehouse");
+    const warehouseNodes = data.nodes.filter((n: any) => n.namespace === "warehouse");
+    assert.ok(warehouseNodes.length > 0, "should have warehouse-namespace nodes");
+    assert.ok(data.stats.schemas > 0, "stats.schemas should count warehouse schemas");
+    assert.ok(data.stats.schemas < 49, "stats.schemas should be less than the full workspace count");
+  });
+
+  it("schema_edges reference only nodes present in the nodes array (sl-p895)", async () => {
+    // Every endpoint of every schema_edge must correspond to a node in the nodes
+    // array. Before this fix, cross-namespace mappings appeared as edge endpoints
+    // without a backing node entry.
+    const { stdout } = await run("graph", "--json", "--namespace", "warehouse", PLATFORM);
+    const data = JSON.parse(stdout);
+    const nodeIds = new Set(data.nodes.map((n: any) => n.id));
+    for (const e of data.schema_edges as any[]) {
+      assert.ok(nodeIds.has(e.from), `schema_edge.from '${e.from}' not in nodes`);
+      assert.ok(nodeIds.has(e.to), `schema_edge.to '${e.to}' not in nodes`);
     }
   });
 

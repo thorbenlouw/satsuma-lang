@@ -962,7 +962,7 @@ describe("satsuma lineage", () => {
     const data = JSON.parse(stdout);
     const noteNode = data.nodes.find((n: any) => n.name === "note:");
     assert.equal(noteNode, undefined, "should not have phantom note: node");
-    const noteEdge = data.edges.find((e: any) => e.src === "note:" || e.tgt === "note:");
+    const noteEdge = data.edges.find((e: any) => e.from === "note:" || e.to === "note:");
     assert.equal(noteEdge, undefined, "should not have edges to/from note:");
   });
 
@@ -973,8 +973,8 @@ describe("satsuma lineage", () => {
     const data = JSON.parse(stdout);
     const nodeNames = new Set(data.nodes.map((n: any) => n.name));
     for (const edge of data.edges) {
-      assert.ok(nodeNames.has(edge.src), `edge src '${edge.src}' should be in nodes`);
-      assert.ok(nodeNames.has(edge.tgt), `edge tgt '${edge.tgt}' should be in nodes`);
+      assert.ok(nodeNames.has(edge.from), `edge from '${edge.from}' should be in nodes`);
+      assert.ok(nodeNames.has(edge.to), `edge to '${edge.to}' should be in nodes`);
     }
   });
 });
@@ -3478,7 +3478,7 @@ describe("satsuma lineage: @ref edge traversal (lsp-4hai)", () => {
     const names = data.nodes.map((n: any) => n.name);
     assert.ok(names.includes("web_profiles"));
     assert.ok(names.includes("build dim_customer"));
-    const edge = data.edges.find((e: any) => e.src === "web_profiles" && e.tgt === "build dim_customer");
+    const edge = data.edges.find((e: any) => e.from === "web_profiles" && e.to === "build dim_customer");
     assert.ok(edge, "should have edge from web_profiles to build dim_customer");
   });
 });
