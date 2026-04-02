@@ -220,10 +220,6 @@ describe("computeImportReachability", () => {
 
   it("transitive dependencies of imported symbols are reachable", () => {
     // Importing a schema that spreads a fragment makes that fragment reachable.
-    const index = makeSemanticIndex({
-      schemas: [{ key: "my_schema", file: "/base.stm", spreads: ["shared_fields"] }],
-      fragments: [{ key: "shared_fields", file: "/base.stm" }],
-    });
     const fileImports = new Map([
       ["/base.stm", []],
       ["/top.stm", [{ names: ["my_schema"], resolvedFile: "/base.stm" }]],
@@ -250,10 +246,6 @@ describe("computeImportReachability", () => {
     // middle.stm imports my_transform from base.stm, defines middle_schema
     // top.stm imports middle_schema from middle.stm
     // → top.stm should NOT see my_transform (it's not a dependency of middle_schema)
-    const index = makeSemanticIndex({
-      schemas: [{ key: "middle_schema", file: "/middle.stm" }],
-      transforms: [{ key: "my_transform", file: "/base.stm" }],
-    });
     const fileImports = new Map([
       ["/base.stm", []],
       ["/middle.stm", [{ names: ["my_transform"], resolvedFile: "/base.stm" }]],
@@ -370,7 +362,7 @@ describe("satsuma validate import-scope (sl-cf9t)", () => {
         "}",
       ].join("\n"),
     });
-    const { stdout, stderr, code } = await run("validate", join(dir, "top.stm"));
+    const { stdout, stderr, code: _code } = await run("validate", join(dir, "top.stm"));
     const output = stdout + stderr;
     assert.ok(
       output.includes("import-scope") || output.includes("not reachable"),
@@ -402,7 +394,7 @@ describe("satsuma validate import-scope (sl-cf9t)", () => {
         "}",
       ].join("\n"),
     });
-    const { stdout, stderr, code } = await run("validate", join(dir, "pipeline.stm"));
+    const { stdout, stderr, code: _code } = await run("validate", join(dir, "pipeline.stm"));
     const output = stdout + stderr;
     assert.ok(!output.includes("import-scope"),
       `should not report import-scope violation for properly imported symbols, got: ${output}`);
@@ -422,7 +414,7 @@ describe("satsuma validate import-scope (sl-cf9t)", () => {
         "}",
       ].join("\n"),
     });
-    const { stdout, stderr, code } = await run("validate", join(dir, "standalone.stm"));
+    const { stdout, stderr, code: _code } = await run("validate", join(dir, "standalone.stm"));
     const output = stdout + stderr;
     assert.ok(!output.includes("import-scope"),
       `single-file workspace should not produce import-scope errors, got: ${output}`);
@@ -458,7 +450,7 @@ describe("satsuma validate import-scope (sl-cf9t)", () => {
         "}",
       ].join("\n"),
     });
-    const { stdout, stderr, code } = await run("validate", join(dir, "top.stm"));
+    const { stdout, stderr, code: _code } = await run("validate", join(dir, "top.stm"));
     const output = stdout + stderr;
     assert.ok(
       output.includes("import-scope") || output.includes("not reachable"),
