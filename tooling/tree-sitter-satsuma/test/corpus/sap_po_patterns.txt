@@ -491,4 +491,3 @@ schema purchase_order (
                   (number_literal)))
               (note_tag
                 (nl_string)))))))))
-

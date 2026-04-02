@@ -423,14 +423,14 @@ Feature: satsuma arrows, lineage, and field-lineage — end-to-end CLI behaviour
     Then the lineage includes schema "s1"
 
   # ---------------------------------------------------------------------------
-  # Case 10 — Transform classifications: structural, none (flatten), nl
+  # Case 10 — Transform classifications: nl, none (flatten), nl
   # ---------------------------------------------------------------------------
 
-  Scenario: A pipe transform body produces classification "structural"
+  Scenario: A pipe transform body produces classification "nl"
     Given the Satsuma fixture "arrows/10-pipe-flatten/fixture.stm"
     When I query arrows for "s1.a"
     Then I get 1 arrow
-    And the classification is "structural"
+    And the classification is "nl"
     And the arrow source is "::s1.a"
     And the arrow target is "::s2.b"
 
@@ -453,7 +453,7 @@ Feature: satsuma arrows, lineage, and field-lineage — end-to-end CLI behaviour
   Scenario: Querying by target field preserves the transform classification
     Given the Satsuma fixture "arrows/10-pipe-flatten/fixture.stm"
     When I query arrows for "s2.b"
-    Then the classification is "structural"
+    Then the classification is "nl"
     When I query arrows for "s2.flat"
     Then the classification is "none"
     When I query arrows for "s2.d"
@@ -462,7 +462,7 @@ Feature: satsuma arrows, lineage, and field-lineage — end-to-end CLI behaviour
   Scenario: All three transform classifications flow through the same mapping to the same schema
     Given the Satsuma fixture "arrows/10-pipe-flatten/fixture.stm"
     When I query arrows for "s1.a"
-    Then the classification is "structural"
+    Then the classification is "nl"
     And the arrow mapping is "::m"
     When I query arrows for "s1.items"
     Then the classification is "none"
