@@ -7,7 +7,6 @@
   "fragment"
   "mapping"
   "transform"
-  "metric"
   "namespace"
   "note"
   "record"
