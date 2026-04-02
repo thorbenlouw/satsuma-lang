@@ -1,5 +1,5 @@
-// Pipe transform → structural classification
-// flatten block → structural classification
+// Pipe transform → nl classification
+// flatten block → none classification
 // NL transform → nl classification
 schema s1 {
   a     x

@@ -30,3 +30,8 @@ Simplify the tree-sitter grammar so every token sequence between pipe delimiters
 
 Cause: pipe_text rule allowed _arithmetic_op and parenthesised function-call sub-rules, creating structural classification complexity and bugs.
 Fix: removed _arithmetic_op rule definition and paren seq from pipe_text; regenerated WASM; updated corpus tests and all examples to NL equivalents.
+
+**2026-04-02T12:30:00Z**
+
+Cause: the previous simplification over-corrected the grammar by rejecting parenthesized NL like `round(2)`, which contradicted the intended "anything until `|`/`}` is NL unless it is spread/map syntax" rule and broke existing fixtures.
+Fix: restored arithmetic and parenthesized tokens as plain `pipe_text`, regenerated parser/WASM, reverted fixture rewrites away from function-like NL, and reformatted the COBOL example to satisfy repo checks.

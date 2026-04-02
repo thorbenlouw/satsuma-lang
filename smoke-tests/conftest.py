@@ -92,8 +92,8 @@ def _schema_names(lineage: dict) -> set[str]:
 
 
 def _edges(lineage: dict) -> set[tuple[str, str]]:
-    """Extract (src, tgt) edge pairs from a lineage JSON result."""
-    return {(e["src"], e["tgt"]) for e in lineage["edges"]}
+    """Extract (from, to) edge pairs from a lineage JSON result."""
+    return {(e["from"], e["to"]) for e in lineage["edges"]}
 
 
 # ---------------------------------------------------------------------------

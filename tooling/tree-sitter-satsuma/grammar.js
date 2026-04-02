@@ -452,25 +452,45 @@ module.exports = grammar({
     // pipe_text: greedy repeat of NL-compatible tokens.
     //
     // Every sequence of tokens between pipe delimiters (or between { and } / |)
-    // is a single NL step — bare identifiers like `trim`, numbers, quoted
-    // strings, @refs, and dotted names are all just text that an LLM will
-    // interpret. Arithmetic operators and parenthesised function-call sub-rules
-    // are intentionally absent: `{ * 100 }` and `{ round(2) }` are no longer
-    // valid syntax. Use NL prose instead: `{ "multiply by 100" }`.
+    // is a single NL step. Bare identifiers like `trim`, numbers, quoted
+    // strings, dotted names, arithmetic operators, and parenthesised text such
+    // as `round(2)` are all treated as plain NL for downstream interpretation.
+    // The only structured pipe-step forms are fragment spreads (`...name`) and
+    // value maps (`map { ... }`), which are parsed by sibling rules above.
     //
     // | and } naturally terminate it (not in the choice set).
     pipe_text: ($) =>
       repeat1(
         choice(
-          $.at_ref,
-          $.nl_string,
-          $.multiline_string,
-          $.backtick_name,
-          $.dotted_name,
-          $.number_literal,
-          $.identifier,
-          $._comparison_op,
+          $._pipe_text_atom,
+          $._parenthesized_pipe_text,
         ),
+      ),
+
+    _pipe_text_atom: ($) =>
+      choice(
+        $.at_ref,
+        $.nl_string,
+        $.multiline_string,
+        $.backtick_name,
+        $.dotted_name,
+        $.number_literal,
+        $.identifier,
+        $._comparison_op,
+        $._arithmetic_op,
+      ),
+
+    _parenthesized_pipe_text: ($) =>
+      seq(
+        "(",
+        repeat(
+          choice(
+            $._pipe_text_atom,
+            $._parenthesized_pipe_text,
+            ",",
+          ),
+        ),
+        ")",
       ),
 
     // ── Map literal ───────────────────────────────────────────────────────
@@ -497,6 +517,8 @@ module.exports = grammar({
 
     _comparison_op: (_) =>
       token(choice(">=", "<=", ">", "<", "!=", "==")),
+
+    _arithmetic_op: (_) => token(choice("*", "/", "+", "-")),
 
     // map_value: greedy tokens until `,` or `}`.
     map_value: ($) =>
