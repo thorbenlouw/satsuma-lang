@@ -118,7 +118,7 @@ mapping {
                   (nl_string))))))))))
 
 ================================================================================
-Metric block missing required metadata
+Unrecognised top-level identifier sequence is recovered as ERROR
 ================================================================================
 
 metric mrr {}
@@ -127,8 +127,8 @@ metric mrr {}
 
 (source_file
   (ERROR
-    (block_label
-      (identifier))))
+    (identifier)
+    (continuation_word)))
 
 ================================================================================
 Schema with keyword as block label

@@ -31,8 +31,8 @@ export function extractNLContent(node: SyntaxNode, parent: string | null = null)
   // immediately — walkNL only detects metric_name when schema_block is a child.
   if (node.type === "schema_block") {
     const metaBlock = child(node, "metadata_block");
-    if (isMetricSchema(metaBlock)) {
-      const metricNameText = extractMetricNameTag(metaBlock!);
+    if (metaBlock && isMetricSchema(metaBlock)) {
+      const metricNameText = extractMetricNameTag(metaBlock);
       if (metricNameText) {
         items.push({
           text: metricNameText,
@@ -129,8 +129,8 @@ function walkNL(node: SyntaxNode, parent: string | null, items: NLItem[]): void 
         // the human-readable label alongside body notes (sl-571v).
         if (c.type === "schema_block") {
           const metaBlock = child(c, "metadata_block");
-          if (isMetricSchema(metaBlock)) {
-            const metricNameText = extractMetricNameTag(metaBlock!);
+          if (metaBlock && isMetricSchema(metaBlock)) {
+            const metricNameText = extractMetricNameTag(metaBlock);
             if (metricNameText) {
               items.push({
                 text: metricNameText,
