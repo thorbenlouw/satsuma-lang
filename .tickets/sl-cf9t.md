@@ -54,3 +54,8 @@ The full fix requires symbol-level reachability computation in `satsuma-core`: g
 Cause: buildIndex merged all transitively reachable files into a flat scope with no import-boundary enforcement. Any symbol in any file reachable via the import graph was visible everywhere, violating ADR-022's rule that imports bring only the named symbols and their exact transitive dependencies into scope.
 
 Fix: Added import-reachability.ts to satsuma-core with computeSymbolDependencies() (builds intra-workspace dependency graph) and computeImportReachability() (computes per-file reachable symbol sets from import declarations). Extended collectSemanticDiagnostics to accept optional ImportReachability and added a new 'import-scope' check (Section 9) that flags references to symbols that exist in the workspace but are not reachable from the file's imports. Wired up in the CLI by populating fileImports in buildIndex and computing reachability in collectSemanticWarnings. 16 new tests (5 dependency graph, 7 reachability algorithm, 4 CLI integration). All 880 existing tests pass.
+
+**2026-04-02T10:58:00Z**
+
+Cause: The PR branch still had unused locals in `tooling/satsuma-cli/test/import-reachability.test.ts`, so the root `eslint .` step failed even though the functional change was already correct.
+Fix: Removed two dead test fixtures and renamed intentionally ignored CLI exit-code bindings to `_code` so the test file remains explicit without tripping `@typescript-eslint/no-unused-vars`. Re-ran the focused import-reachability tests and the full root lint suite.
