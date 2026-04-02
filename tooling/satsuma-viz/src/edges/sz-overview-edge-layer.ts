@@ -54,7 +54,7 @@ export class SzOverviewEdgeLayer extends LitElement {
     }
 
     .overview-path.highlighted {
-      stroke: var(--sz-edge-pipeline, #D97726);
+      stroke: var(--sz-edge-nl, #5A9E6F);
       stroke-width: 4;
       opacity: 1;
       filter: drop-shadow(0 0 4px rgba(217, 119, 38, 0.4));
@@ -77,7 +77,7 @@ export class SzOverviewEdgeLayer extends LitElement {
     }
 
     .anchor-dot.highlighted {
-      fill: var(--sz-edge-pipeline, #D97726);
+      fill: var(--sz-edge-nl, #5A9E6F);
       opacity: 1;
     }
 

@@ -146,10 +146,9 @@ describe("computeLayout", () => {
               arrows: [
                 arrow("email", "email"),
                 arrow("name", "full_name", {
-                  kind: "pipeline",
+                  kind: "nl",
                   text: "trim | upper",
                   steps: ["trim", "upper"],
-                  nlText: null,
                 }),
               ],
               eachBlocks: [],

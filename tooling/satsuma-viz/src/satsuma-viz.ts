@@ -1206,7 +1206,6 @@ export class SatsumaViz extends LitElement {
 <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <style>
     .edge-path { fill: none; stroke-width: 1.5; }
-    .edge-path.pipeline { stroke: #D97726; }
     .edge-path.nl { stroke: #5A9E6F; stroke-dasharray: 6 3; }
     .edge-path.bare { stroke: #6B6560; stroke-width: 1; }
     .scope-label { font-family: monospace; font-size: 9px; font-weight: 600; fill: #6B6560; text-anchor: middle; }
