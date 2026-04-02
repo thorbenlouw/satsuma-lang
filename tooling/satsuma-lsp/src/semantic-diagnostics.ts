@@ -3,10 +3,12 @@
  *
  * Provides two diagnostic sources:
  *
- * 1. **Missing-import diagnostics** (LSP-only): detects references to symbols
+ * 1. **Missing-import diagnostics** (LSP-specific): detects references to symbols
  *    that exist in the workspace but are not reachable via the file's import
- *    graph. This is an LSP-specific check — the CLI uses directory scanning
- *    and doesn't require explicit imports.
+ *    graph. Uses satsuma-core's computeImportReachability for symbol-level
+ *    scope enforcement (ADR-022): importing a symbol brings only that symbol
+ *    and its transitive dependencies into scope, not all symbols from the
+ *    imported file.
  *
  * 2. **Core semantic diagnostics** (via adapter): runs a subset of core's
  *    collectSemanticDiagnostics() directly against the LSP workspace index,
@@ -17,6 +19,8 @@
  *    remains as a fallback for those checks on save.
  */
 
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, resolve } from "node:path";
 import {
   Diagnostic,
   DiagnosticSeverity,
@@ -24,12 +28,11 @@ import {
 import type { Tree } from "./parser-utils";
 import type { WorkspaceIndex, DefinitionEntry } from "./workspace-index";
 import {
-  getImportReachableUris,
-  createScopedIndex,
   buildImportSuggestion,
 } from "./workspace-index";
 import {
   collectSemanticDiagnostics,
+  computeImportReachability,
 } from "@satsuma/core";
 import type {
   SemanticIndex,
@@ -38,6 +41,7 @@ import type {
   SemanticMapping,
   SemanticMetric,
   SemanticDiagnostic,
+  ResolvedFileImport,
 } from "@satsuma/core";
 
 // ---------- Missing-import diagnostics (LSP-specific) ----------
@@ -48,7 +52,11 @@ import type {
  * Emits a `missing-import` error for any schema/fragment/mapping/metric name
  * that is referenced in this file (as a source, target, spread, or metric
  * source) and exists elsewhere in the workspace index but is NOT reachable
- * from this file's import graph.
+ * from this file's import graph at the symbol level.
+ *
+ * Uses satsuma-core's computeImportReachability for symbol-level precision:
+ * importing a symbol brings only that symbol and its transitive dependencies
+ * into scope, not every definition from the imported file (ADR-022).
  *
  * Symbols that don't exist anywhere (typos, etc.) are not flagged here —
  * those are handled by core semantic diagnostics or the CLI fallback.
@@ -58,8 +66,11 @@ export function computeMissingImportDiagnostics(
   uri: string,
   wsIndex: WorkspaceIndex,
 ): Diagnostic[] {
-  const reachableUris = getImportReachableUris(uri, wsIndex);
-  const scopedIndex = createScopedIndex(wsIndex, reachableUris);
+  // Build the data structures needed for symbol-level reachability.
+  const fileImports = buildFileImportsMap(wsIndex);
+  const semanticIndex = buildSemanticIndex(wsIndex);
+  const reachability = computeImportReachability(semanticIndex, fileImports);
+  const reachableSymbols = reachability.reachableSymbols.get(uri) ?? new Set<string>();
 
   const diagnostics: Diagnostic[] = [];
 
@@ -80,9 +91,8 @@ export function computeMissingImportDiagnostics(
     // If not defined anywhere, let core semantic validation handle it
     if (!globalDefs || globalDefs.length === 0) continue;
 
-    const scopedDefs = scopedIndex.definitions.get(name);
-    // Already reachable via imports — no problem
-    if (scopedDefs && scopedDefs.length > 0) continue;
+    // Already reachable via imports (symbol-level check) — no problem
+    if (reachableSymbols.has(name)) continue;
 
     // Symbol exists in workspace but is not reachable from this file's import graph
     const defUri = globalDefs[0]!.uri;
@@ -139,6 +149,44 @@ function semanticDiagToLsp(d: SemanticDiagnostic): Diagnostic {
     source: "satsuma",
     message: d.message,
   };
+}
+
+// ---------- File imports map builder ----------
+
+/**
+ * Convert the LSP WorkspaceIndex's import entries into the core's
+ * ResolvedFileImport format. Resolves relative import paths to absolute
+ * file URIs using the importing file's directory as the base.
+ */
+function buildFileImportsMap(
+  wsIndex: WorkspaceIndex,
+): Map<string, ResolvedFileImport[]> {
+  const result = new Map<string, ResolvedFileImport[]>();
+
+  for (const [importerUri, entries] of wsIndex.imports) {
+    const resolved: ResolvedFileImport[] = [];
+    for (const entry of entries) {
+      if (!entry.pathText) continue;
+      const resolvedUri = resolveImportPathToUri(importerUri, entry.pathText);
+      if (resolvedUri) {
+        resolved.push({ names: entry.names, resolvedFile: resolvedUri });
+      }
+    }
+    result.set(importerUri, resolved);
+  }
+
+  return result;
+}
+
+/** Resolve a relative import path to an absolute file URI. Returns null on failure. */
+function resolveImportPathToUri(importerUri: string, pathText: string): string | null {
+  try {
+    const importerPath = fileURLToPath(importerUri);
+    const importerDir = dirname(importerPath);
+    return pathToFileURL(resolve(importerDir, pathText)).toString();
+  } catch {
+    return null;
+  }
 }
 
 // ---------- SemanticIndex adapter ----------
@@ -204,7 +252,7 @@ function buildSemanticIndex(wsIndex: WorkspaceIndex): SemanticIndex {
           break;
         case "transform":
           if (!transforms.has(name)) {
-            transforms.set(name, true);
+            transforms.set(name, { file: entry.uri });
           }
           break;
       }
