@@ -2,5 +2,5 @@
   "last_covered_date": "2026-04-02",
   "last_entry_file": "satsuma-diaries/2026/04/2026-04-02.md",
   "rolled_up_days": [],
-  "note": "Last entry written: 2026-04-02. Wrote two entries (2026-04-01 and 2026-04-02) — both noteworthy days. Next run will cover from 2026-04-03."
+  "note": "Last entry written: 2026-04-02. Rewrote for the 0.7.0 release — 29 commits, 10 PRs, metric keyword removal, pipeline simplification, version bump. Next run will cover from 2026-04-03."
 }
