@@ -262,7 +262,7 @@ namespace analytics (note "Business metrics layer") {
     metric,
     metric_name "Active Pipeline Value",
     source vault::hub_deal,
-    grain daily,
+    grain daily
   ) {
     snapshot_date    DATE
     stage            VARCHAR(50)
@@ -274,7 +274,7 @@ namespace analytics (note "Business metrics layer") {
     metric,
     metric_name "Customer Lifetime Value",
     source mart::dim_contact,
-    grain monthly,
+    grain monthly
   ) {
     calc_month     DATE
     contact_bk     VARCHAR(36)
