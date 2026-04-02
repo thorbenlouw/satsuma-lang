@@ -70,9 +70,14 @@ schema weekly_sales_dashboard (
   week_ending_date  DATE           (note "Last day of the reporting week")
 }
 
-mapping _weekly_sales_dashboard_report(note "represents the logic of the Looker report's underlying query") {
-  source  {fact_orders, dim_product}
-  target  {weekly_sales_dashboard}
+mapping _weekly_sales_dashboard_report (
+  note "represents the logic of the Looker report's underlying query"
+) {
+  source {
+    fact_orders
+    dim_product
+  }
+  target { weekly_sales_dashboard }
 }
 
 // --- ML Model ---
@@ -93,9 +98,14 @@ schema churn_predictor (
   )
 }
 
-mapping _churn_predictor_pipeline(note "represents the logic of the churn_predictor model's underlying pipeline") {
-  source  {dim_customer, fact_orders}
-  target  {churn_predictor}
+mapping _churn_predictor_pipeline (
+  note "represents the logic of the churn_predictor model's underlying pipeline"
+) {
+  source {
+    dim_customer
+    fact_orders
+  }
+  target { churn_predictor }
 }
 
 // --- Report with Governance Tokens ---
@@ -118,9 +128,15 @@ schema customer_risk_report (
   )
 }
 
-mapping _customer_risk_report_pipeline(note "represents the logic of the Tableau report's underlying query") {
-  source  {dim_customer, fact_orders, churn_predictor}
-  target  {customer_risk_report}
+mapping _customer_risk_report_pipeline (
+  note "represents the logic of the Tableau report's underlying query"
+) {
+  source {
+    dim_customer
+    fact_orders
+    churn_predictor
+  }
+  target { customer_risk_report }
 }
 
 // --- Minimal Report ---
@@ -135,6 +151,6 @@ schema daily_order_summary (
 }
 
 mapping _daily_order_summary_pipeline {
-  source {fact_orders}
-  target {daily_order_summary}
+  source { fact_orders }
+  target { daily_order_summary }
 }

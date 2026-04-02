@@ -152,7 +152,7 @@ namespace reporting (note "Executive reporting layer") {
     metric,
     metric_name "Budget Utilization Health",
     source staging::stg_gl_entries,
-    grain monthly,
+    grain monthly
   ) {
     department   VARCHAR(100)
     month        DATE

@@ -130,7 +130,9 @@ EXPECTATIONS: dict[str, dict] = {
         "min_map_items": 0,
         "min_paths": 0,
         "min_comments": 5,
-        "min_notes": 8,
+        # metric_name tags are metadata (annotations), not note_block nodes — 3 explicit
+        # note{} blocks remain: top-level, monthly_recurring_revenue, and cart_abandonment_rate.
+        "min_notes": 3,
         "min_annotations": 21,
         "block_types": {"schema_block", "mapping_block"},
     },
