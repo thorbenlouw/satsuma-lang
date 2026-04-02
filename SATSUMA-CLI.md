@@ -110,17 +110,15 @@ Flags: `--json` (structured output), `--fix` (apply safe fixes), `--select <rule
 
 ## Transform Classification
 
-Every arrow the CLI returns carries a classification derived from CST node types:
+Every arrow the CLI returns carries a classification:
 
 | Classification | Meaning |
 |---|---|
-| `structural` | Transform is a deterministic pipeline — fully specified by the syntax |
-| `nl` | Transform is a natural-language string — extracted verbatim for agent interpretation |
-| `mixed` | Both pipeline steps and NL strings |
 | `none` | No transform body (bare `src -> tgt`) |
+| `nl` | Transform body present — all pipe step content is natural language |
 | `nl-derived` | Implicit arrow inferred from an `@ref` in NL — not declared in any mapping |
 
-Derived arrows (no source field) are flagged separately. The first four classifications are mechanical CST checks — no string content is examined. `nl-derived` arrows are synthetic: they are created when an NL `@ref` (e.g., `@schema.field`) resolves to a known field, and they carry `derived: true` with `transform_raw: "(NL ref)"`.
+All pipe steps — bare tokens like `trim`, quoted strings, and map literals — are natural language interpreted by a human or LLM. The classification is a simple presence check: any transform body → `nl`, no body → `none`. `nl-derived` arrows are synthetic: they are created when an NL `@ref` (e.g., `@schema.field`) resolves to a known field, and they carry `derived: true` with `transform_raw: "(NL ref)"`.
 
 ## field-lineage
 

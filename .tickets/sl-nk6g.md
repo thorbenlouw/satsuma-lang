@@ -1,6 +1,6 @@
 ---
 id: sl-nk6g
-status: open
+status: closed
 deps: [sl-cxei, sl-uu90, sl-thqe]
 links: []
 created: 2026-04-02T09:20:46Z
