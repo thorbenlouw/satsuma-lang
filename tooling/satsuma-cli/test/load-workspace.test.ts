@@ -33,11 +33,12 @@ import { CommandError, EXIT_PARSE_ERROR } from "#src/command-runner.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EXAMPLES = resolve(__dirname, "../../../examples");
+const WASM_PATH = resolve(__dirname, "../dist/tree-sitter-satsuma.wasm");
 
 before(async () => {
   // The WASM parser must be initialised once before any parseFile call;
   // otherwise loadWorkspace explodes inside loadFiles.
-  await initParser();
+  await initParser(WASM_PATH);
 });
 
 // ── happy path ───────────────────────────────────────────────────────────────
