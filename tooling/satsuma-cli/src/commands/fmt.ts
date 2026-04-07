@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
 import type { Command } from "commander";
+import { runCommand, CommandError, EXIT_OK, EXIT_NOT_FOUND, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { resolveInput } from "../workspace.js";
 import { parseFile, parseSource } from "../parser.js";
 import { format } from "../format.js";
@@ -38,12 +39,13 @@ Examples:
   satsuma fmt --check pipeline.stm           # CI mode — exit 1 if any file would change
   satsuma fmt --diff file.stm                # show what would change without writing
   cat file.stm | satsuma fmt --stdin         # pipe mode`)
-    .action(async (
+    .action(runCommand(async (
       pathArg: string | undefined,
       opts: { check?: boolean; diff?: boolean; stdin?: boolean }
     ) => {
       if (opts.stdin) {
-        return handleStdin();
+        handleStdin();
+        return;
       }
 
       const root = pathArg ?? ".";
@@ -51,13 +53,16 @@ Examples:
       try {
         files = await resolveInput(root);
       } catch (err: unknown) {
-        console.error(`Error: ${(err as Error).message}`);
-        process.exit(2);
+        // fmt is the third command that bypasses loadWorkspace: it needs
+        // to tolerate parse errors per-file (skipping rather than aborting)
+        // and uses a slightly different "Error: ..." prefix from the rest
+        // of the CLI. The resolve failure itself is still a hard exit.
+        throw new CommandError(`Error: ${(err as Error).message}`, EXIT_PARSE_ERROR);
       }
 
       if (files.length === 0) {
-        // No files to format — success
-        process.exit(0);
+        // Nothing to format — that's a success, not a failure.
+        return EXIT_OK;
       }
 
       let wouldChange = 0;
@@ -92,15 +97,19 @@ Examples:
         }
       }
 
+      // Surface a hard failure if every input was unparseable (no formatting
+      // happened and no --check assertion was made). This catches the case
+      // of running `satsuma fmt` on a directory of broken files.
       if (parseErrors > 0 && wouldChange === 0 && !opts.check) {
-        process.exit(2);
+        return EXIT_PARSE_ERROR;
       }
 
+      // --check is the CI assertion mode: exit 1 if anything would change.
       if (opts.check && wouldChange > 0) {
         console.error(`\n${wouldChange} file(s) would be reformatted`);
-        process.exit(1);
+        return EXIT_NOT_FOUND;
       }
-    });
+    }));
 }
 
 /** Return the shorter of the relative and absolute path. */
@@ -116,8 +125,7 @@ function handleStdin(): void {
   const { tree, errorCount } = parseSource(src);
 
   if (errorCount > 0) {
-    console.error(`stdin: parse error (${errorCount} error(s))`);
-    process.exit(2);
+    throw new CommandError(`stdin: parse error (${errorCount} error(s))`, EXIT_PARSE_ERROR);
   }
 
   const formatted = format(tree, src);

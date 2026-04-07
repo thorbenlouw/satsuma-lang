@@ -14,6 +14,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, EXIT_NOT_FOUND } from "../command-runner.js";
 import type { WarningRecord, QuestionRecord } from "../types.js";
 
 export function register(program: Command): void {
@@ -34,7 +35,7 @@ Examples:
   satsuma warnings pipeline.stm              # //! warnings in file and imports
   satsuma warnings pipeline.stm --questions  # //? questions instead
   satsuma warnings pipeline.stm --json       # structured output`)
-    .action(async (pathArg: string | undefined, opts: { questions?: boolean; json?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { questions?: boolean; json?: boolean }) => {
       const { index } = await loadWorkspace(pathArg);
 
       // By default show both //! and //? comments; --questions shows only //?
@@ -55,13 +56,12 @@ Examples:
           ...(item.parent ? { block: item.parent, blockType: item.parentType } : {}),
         }));
         console.log(JSON.stringify({ kind, count: jsonItems.length, items: jsonItems }, null, 2));
-        if (items.length === 0) process.exit(1);
-        return;
+        return items.length === 0 ? EXIT_NOT_FOUND : undefined;
       }
 
       if (items.length === 0) {
         console.log(`No ${kind} comments found.`);
-        process.exit(1);
+        return EXIT_NOT_FOUND;
       }
 
       // Group by file
@@ -80,5 +80,5 @@ Examples:
         }
         console.log();
       }
-    });
+    }));
 }

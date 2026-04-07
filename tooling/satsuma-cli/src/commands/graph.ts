@@ -12,6 +12,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { buildFullGraph } from "../graph-builder.js";
 import { buildWorkspaceGraph } from "./graph-builder.js";
 import { printDefault, printCompact } from "./graph-format.js";
@@ -64,7 +65,7 @@ Examples:
   satsuma graph pipeline.stm --json --schema-only    # topology only
   satsuma graph pipeline.stm --json --namespace crm  # one namespace
   satsuma graph pipeline.stm --compact               # minimal output`)
-    .action(async (pathArg: string | undefined, opts: GraphOpts) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: GraphOpts) => {
       const root = pathArg ?? ".";
       const { index } = await loadWorkspace(root);
       const schemaGraph = buildFullGraph(index);
@@ -82,9 +83,10 @@ Examples:
         printDefault(graph);
       }
 
+      // The runner flushes stdout/stderr before exit, so we don't need
+      // a manual drain here even though `--json` payloads can be large.
       if (index.totalErrors > 0) {
-        await new Promise<void>((r) => process.stdout.write("", () => r()));
-        process.exit(2);
+        return EXIT_PARSE_ERROR;
       }
-    });
+    }));
 }

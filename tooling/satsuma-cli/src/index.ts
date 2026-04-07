@@ -32,7 +32,13 @@ program
   .version(pkg.version)
   .showHelpAfterError(true);
 
-// Unhandled rejections go to stderr with exit 2
+// Last-resort safety net for promise rejections that escape the runner.
+// Every command handler is wrapped in `runCommand` (see command-runner.ts),
+// which catches both CommandError and unknown errors and exits with the
+// right code. This handler exists only for the narrow window *before*
+// dispatch — e.g. if a dynamic command import below throws, or a future
+// top-level await rejects. Inside that window we have no runner to lean
+// on, so we mirror its formatting and exit code here.
 process.on("unhandledRejection", (err: unknown) => {
   console.error(`Unhandled error: ${(err as { message?: string })?.message ?? String(err)}`);
   process.exit(2);

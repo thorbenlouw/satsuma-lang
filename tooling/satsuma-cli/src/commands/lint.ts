@@ -20,6 +20,7 @@
 import type { Command } from "commander";
 import { readFileSync, writeFileSync } from "fs";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { runLint, applyFixes, RULES } from "../lint-engine.js";
 import type { LintFix } from "../types.js";
 
@@ -52,7 +53,7 @@ Examples:
   satsuma lint pipeline.stm --fix            # auto-fix fixable issues
   satsuma lint --rules                       # list available rules
   satsuma lint pipeline.stm --select hidden-source-in-nl  # run one rule only`)
-    .action(async (pathArg: string | undefined, opts: { json?: boolean; fix?: boolean; select?: string; ignore?: string; quiet?: boolean; rules?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { json?: boolean; fix?: boolean; select?: string; ignore?: string; quiet?: boolean; rules?: boolean }) => {
       // --rules: list available rules and exit
       if (opts.rules) {
         for (const r of RULES) {
@@ -107,9 +108,14 @@ Examples:
       const errorCount = diagnostics.filter((d) => d.severity === "error").length;
       const fixableCount = diagnostics.filter((d) => d.fixable).length;
 
+      // Soft exit code: lint uses 2 for "any error-severity finding"
+      // and 0 otherwise. Warning-severity rules never push the exit
+      // non-zero — that's documented in the command help.
+      const exitCode = errorCount > 0 ? EXIT_PARSE_ERROR : 0;
+
       // --quiet: exit code only
       if (opts.quiet) {
-        process.exit(errorCount > 0 ? 2 : 0);
+        return exitCode;
       }
 
       // --json: structured output
@@ -125,7 +131,7 @@ Examples:
           },
         };
         console.log(JSON.stringify(payload, null, 2));
-        process.exit(errorCount > 0 ? 2 : 0);
+        return exitCode;
       }
 
       // Text output
@@ -170,6 +176,6 @@ Examples:
         );
       }
 
-      process.exit(errorCount > 0 ? 2 : 0);
-    });
+      return exitCode;
+    }));
 }

@@ -14,6 +14,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
@@ -59,7 +60,7 @@ Examples:
   satsuma field-lineage s2.a --upstream          # only upstream chain
   satsuma field-lineage s2.a --json              # structured output
   satsuma field-lineage ns::s2.a --downstream    # namespace-qualified`)
-    .action(async (fieldRef: string, pathArg: string | undefined, opts: {
+    .action(runCommand(async (fieldRef: string, pathArg: string | undefined, opts: {
       upstream?: boolean;
       downstream?: boolean;
       depth: number;
@@ -67,10 +68,10 @@ Examples:
     }) => {
       const dot = fieldRef.indexOf(".");
       if (dot === -1) {
-        console.error(
+        throw new CommandError(
           `Invalid field reference '${fieldRef}'. Expected format: schema.field`,
+          EXIT_PARSE_ERROR,
         );
-        process.exit(2);
       }
 
       const schemaName = fieldRef.slice(0, dot);
@@ -81,8 +82,7 @@ Examples:
       // Resolve the schema
       const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
       if (!resolvedSchema) {
-        console.error(`Schema '${schemaName}' not found.`);
-        process.exit(1);
+        throw new CommandError(`Schema '${schemaName}' not found.`, EXIT_NOT_FOUND);
       }
 
       // Validate field exists (including spread fields)
@@ -92,8 +92,10 @@ Examples:
       const fieldExists = findFieldByPath(allFields, fieldName) ||
         collectAllFieldNames(allFields).includes(fieldName);
       if (!fieldExists) {
-        console.error(`Field '${fieldName}' not found in schema '${schemaName}'.`);
-        process.exit(1);
+        throw new CommandError(
+          `Field '${fieldName}' not found in schema '${schemaName}'.`,
+          EXIT_NOT_FOUND,
+        );
       }
 
       const qualifiedField = `${resolvedSchema.key}.${fieldName}`;
@@ -129,7 +131,7 @@ Examples:
       }
 
       printDefault(result, doUpstream, doDownstream);
-    });
+    }));
 }
 
 // ── Field-edge graph ──────────────────────────────────────────────────────────

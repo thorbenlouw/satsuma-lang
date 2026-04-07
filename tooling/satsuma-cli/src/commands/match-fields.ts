@@ -11,6 +11,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { matchFields } from "../normalize.js";
 import { expandEntityFields } from "../spread-expand.js";
@@ -40,29 +41,26 @@ Examples:
   satsuma match-fields --source crm --target warehouse
   satsuma match-fields --source pos::stores --target hub_store --matched-only
   satsuma match-fields --source crm --target warehouse --json`)
-    .action(async (pathArg: string | undefined, opts: { source: string; target: string; matchedOnly?: boolean; unmatchedOnly?: boolean; json?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { source: string; target: string; matchedOnly?: boolean; unmatchedOnly?: boolean; json?: boolean }) => {
       const { index } = await loadWorkspace(pathArg);
 
-      // Validate schemas
-      const resolvedNames: Record<string, { key: string; entry: SchemaRecord }> = {};
-      for (const name of [opts.source, opts.target]) {
+      // Resolve and validate both schemas. Hand-rolling the resolution
+      // here (instead of looping) lets TypeScript narrow `srcResolved` /
+      // `tgtResolved` to non-null after each guard, which is cleaner than
+      // the previous loop + non-null assertion dance.
+      const resolveSchema = (name: string): { key: string; entry: SchemaRecord } => {
         const resolved = resolveIndexKey(name, index.schemas);
-        if (!resolved) {
-          console.error(`Schema '${name}' not found.`);
-          const close = [...index.schemas.keys()].find(
-            (k) => k.toLowerCase() === name.toLowerCase(),
-          );
-          if (close) console.error(`Did you mean '${close}'?`);
-          process.exit(1);
-        }
-        resolvedNames[name] = resolved;
-      }
+        if (resolved) return resolved;
+        const close = [...index.schemas.keys()].find(
+          (k) => k.toLowerCase() === name.toLowerCase(),
+        );
+        const lines = [`Schema '${name}' not found.`];
+        if (close) lines.push(`Did you mean '${close}'?`);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
+      };
 
-      // Safe: opts.source and opts.target are resolved in the loop above, which exits on failure
-      /* eslint-disable @typescript-eslint/no-non-null-assertion */
-      const srcEntry = resolvedNames[opts.source]!.entry;
-      const tgtEntry = resolvedNames[opts.target]!.entry;
-      /* eslint-enable @typescript-eslint/no-non-null-assertion */
+      const srcEntry = resolveSchema(opts.source).entry;
+      const tgtEntry = resolveSchema(opts.target).entry;
       const srcFields = [
         ...srcEntry.fields,
         ...expandEntityFields(srcEntry, srcEntry.namespace ?? null, index),
@@ -136,5 +134,5 @@ Examples:
         console.log("Target-only:");
         for (const f of result.targetOnly) console.log(`  ${f}`);
       }
-    });
+    }));
 }

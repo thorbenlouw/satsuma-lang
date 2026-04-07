@@ -20,7 +20,8 @@
 
 import { resolveInput } from "./workspace.js";
 import { parseFile } from "./parser.js";
-import { loadFiles, EXIT_PARSE_ERROR } from "./errors.js";
+import { loadFiles } from "./errors.js";
+import { CommandError, EXIT_PARSE_ERROR } from "./command-runner.js";
 import { buildIndex } from "./index-builder.js";
 import type { ExtractedWorkspace, ParsedFile } from "./types.js";
 
@@ -42,13 +43,16 @@ export interface LoadWorkspaceOptions {
 }
 
 /**
- * Resolve a path argument and load the full workspace, exiting with a
- * standard message on the common failure modes:
+ * Resolve a path argument and load the full workspace, throwing a
+ * {@link CommandError} on the common failure modes:
  *
  *   • `resolveInput` throws (bad path, directory argument, …) →
- *     `Error resolving path '<arg>': <message>` on stderr, exit code 2.
- *   • A file cannot be read → handled by {@link loadFiles} (warn on stderr,
- *     exit code 2).
+ *     `CommandError("Error resolving path '<arg>': <message>", EXIT_PARSE_ERROR)`.
+ *   • A file cannot be read → {@link loadFiles} prints per-file warnings to
+ *     stderr and throws an empty-message `CommandError(EXIT_PARSE_ERROR)`.
+ *
+ * Both branches surface to the user via {@link runCommand}, which is the
+ * single place in the CLI that calls `process.exit`.
  *
  * Files with parse errors are kept (a warning is printed) so commands can
  * still operate on partially-broken workspaces; this matches the long-
@@ -68,8 +72,10 @@ export async function loadWorkspace(
   try {
     filePaths = await resolveInput(root, { followImports: options.followImports ?? true });
   } catch (err: unknown) {
-    console.error(`Error resolving path '${root}': ${(err as Error).message}`);
-    process.exit(EXIT_PARSE_ERROR);
+    throw new CommandError(
+      `Error resolving path '${root}': ${(err as Error).message}`,
+      EXIT_PARSE_ERROR,
+    );
   }
 
   const files = loadFiles(filePaths, parseFile);

@@ -17,6 +17,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import type { FullGraph } from "../graph-builder.js";
@@ -65,31 +66,35 @@ Examples:
   satsuma lineage --to mart_customer_360           # what feeds mart_customer_360?
   satsuma lineage --from pos::stores --depth 3     # namespace-qualified, limited depth
   satsuma lineage --from hub_customer --json       # DAG as JSON`)
-    .action(async (pathArg: string | undefined, opts: { from?: string; to?: string; depth: number; compact?: boolean; json?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { from?: string; to?: string; depth: number; compact?: boolean; json?: boolean }) => {
       if (!opts.from && !opts.to) {
-        console.error("Provide --from <name> or --to <name>.");
-        process.exit(1);
+        throw new CommandError("Provide --from <name> or --to <name>.", EXIT_NOT_FOUND);
       }
 
       if (opts.from && opts.to) {
-        console.error("Cannot specify both --from and --to. Use one at a time.");
-        process.exit(1);
+        throw new CommandError(
+          "Cannot specify both --from and --to. Use one at a time.",
+          EXIT_NOT_FOUND,
+        );
       }
 
       const { index } = await loadWorkspace(pathArg);
       const graph = buildFullGraph(index);
 
+      // Build a "node not found" CommandError that respects the JSON
+      // contract: JSON callers receive `{"error": ...}` on stdout so the
+      // payload still parses; text callers get the message on stderr.
+      const nodeNotFound = (queried: string): CommandError => {
+        const msg = `Node '${queried}' not found.`;
+        if (opts.json) {
+          return new CommandError(JSON.stringify({ error: msg }, null, 2), EXIT_NOT_FOUND, "stdout");
+        }
+        return new CommandError(msg, EXIT_NOT_FOUND);
+      };
+
       if (opts.from) {
         const resolved = resolveIndexKey(opts.from, graph.nodes);
-        if (!resolved) {
-          const msg = `Node '${opts.from}' not found.`;
-          if (opts.json) {
-            console.log(JSON.stringify({ error: msg }, null, 2));
-          } else {
-            console.error(msg);
-          }
-          process.exit(1);
-        }
+        if (!resolved) throw nodeNotFound(opts.from);
         const start = resolved.key;
         const dag = buildDownstream(graph, start, opts.depth);
         if (opts.json) {
@@ -102,20 +107,13 @@ Examples:
       } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: guarded by opts.to existence check in enclosing branch
         const resolvedTo = resolveIndexKey(opts.to!, graph.nodes);
-        if (!resolvedTo) {
-          const msg = `Node '${opts.to}' not found.`;
-          if (opts.json) {
-            console.log(JSON.stringify({ error: msg }, null, 2));
-          } else {
-            console.error(msg);
-          }
-          process.exit(1);
-        }
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: same guard
+        if (!resolvedTo) throw nodeNotFound(opts.to!);
         const target = resolvedTo.key;
         const dag = buildUpstream(graph, target, opts.depth);
         if (dag.nodes.length === 0) {
           console.log(`No upstream path found to '${target}'.`);
-          process.exit(1);
+          return EXIT_NOT_FOUND;
         }
         if (opts.json) {
           console.log(JSON.stringify(dag, null, 2));
@@ -125,7 +123,7 @@ Examples:
           printUpstreamFlat(dag, target);
         }
       }
-    });
+    }));
 }
 
 /**

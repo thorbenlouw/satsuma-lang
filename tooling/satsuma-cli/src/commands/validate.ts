@@ -12,6 +12,7 @@
 import { dirname, resolve } from "node:path";
 import { statSync } from "node:fs";
 import type { Command } from "commander";
+import { runCommand, CommandError, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
@@ -40,19 +41,27 @@ Examples:
   satsuma validate pipeline.stm --json       # structured diagnostics
   satsuma validate pipeline.stm --quiet      # exit code only
   satsuma validate pipeline.stm --errors-only  # suppress warnings`)
-    .action(async (pathArg: string | undefined, opts: { json?: boolean; errorsOnly?: boolean; quiet?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { json?: boolean; errorsOnly?: boolean; quiet?: boolean }) => {
       const root = pathArg ?? ".";
       let files: string[];
       try {
         files = await resolveInput(root);
       } catch (err: unknown) {
+        // `validate` predates loadWorkspace and is one of the three
+        // commands that resolve the input directly (see load-workspace.ts
+        // header for why). Its `--json` mode reports the resolve failure
+        // as a one-element diagnostics array on stdout so jq pipelines
+        // still parse; the text mode prints to stderr like every other
+        // resolve failure.
         const msg = `Error resolving path: ${(err as Error).message}`;
         if (opts.json) {
-          console.log(JSON.stringify([{ severity: "error", message: msg }], null, 2));
-        } else {
-          console.error(msg);
+          throw new CommandError(
+            JSON.stringify([{ severity: "error", message: msg }], null, 2),
+            EXIT_PARSE_ERROR,
+            "stdout",
+          );
         }
-        process.exit(2);
+        throw new CommandError(msg, EXIT_PARSE_ERROR);
       }
 
       // Parse each file and extract data immediately (tree-sitter reuses a
@@ -147,8 +156,13 @@ Examples:
         (d) => d.severity === "warning",
       ).length;
 
+      // Soft exit code: validate uses 2 for "any error-severity finding"
+      // and 0 otherwise. Warnings never push the exit non-zero — that's
+      // documented in the command help.
+      const exitCode = errorCount > 0 ? EXIT_PARSE_ERROR : 0;
+
       if (opts.quiet) {
-        process.exit(errorCount > 0 ? 2 : 0);
+        return exitCode;
       }
 
       if (opts.json) {
@@ -160,7 +174,7 @@ Examples:
             warnings: warnCount,
           },
         }, null, 2));
-        process.exit(errorCount > 0 ? 2 : 0);
+        return exitCode;
       }
 
       if (diagnostics.length === 0) {
@@ -190,6 +204,6 @@ Examples:
         `${errorCount} error${errorCount !== 1 ? "s" : ""}, ${warnCount} warning${warnCount !== 1 ? "s" : ""} in ${extracted.length} file${extracted.length !== 1 ? "s" : ""}`,
       );
 
-      process.exit(errorCount > 0 ? 2 : 0);
-    });
+      return exitCode;
+    }));
 }

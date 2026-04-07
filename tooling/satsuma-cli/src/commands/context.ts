@@ -20,6 +20,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, EXIT_NOT_FOUND } from "../command-runner.js";
 import { extractAtRefs } from "../nl-ref-extract.js";
 import { extractNLContent } from "../nl-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
@@ -51,7 +52,7 @@ Examples:
   satsuma context "loyalty tier" --budget 8000       # larger context window
   satsuma context "pii email" --compact              # compact output
   satsuma context "order" --json                     # all scores as JSON`)
-    .action(async (query: string, pathArg: string | undefined, opts: { budget: number; compact?: boolean; json?: boolean }) => {
+    .action(runCommand(async (query: string, pathArg: string | undefined, opts: { budget: number; compact?: boolean; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const terms = tokenize(query);
@@ -90,7 +91,7 @@ Examples:
 
       if (emitted.length === 0) {
         console.log("No relevant blocks found.");
-        process.exit(1);
+        return EXIT_NOT_FOUND;
       }
 
       console.log(`// Context for: ${query}  (${used} tokens, ${emitted.length} blocks)`);
@@ -99,7 +100,7 @@ Examples:
         console.log(block);
         console.log();
       }
-    });
+    }));
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────

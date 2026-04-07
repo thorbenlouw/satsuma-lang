@@ -1,67 +1,114 @@
 /**
- * errors.test.js — Unit tests for src/errors.js utilities.
+ * errors.test.ts — Unit tests for src/errors.ts
+ *
+ * The behaviours pinned here are the contract that command handlers
+ * depend on:
+ *
+ *   • findSuggestion's case-insensitive exact-then-prefix matching;
+ *   • loadFiles' partial-success policy (warn on parse errors, abort on
+ *     read failures via CommandError);
+ *   • notFound's message shape (suggestion line, available list vs count
+ *     fallback) and exit code.
+ *
+ * These tests no longer need to stub `process.exit` — every failure
+ * surface is now expressed via thrown CommandError, which is observable
+ * directly. The exit-dispatcher behaviour itself is covered in
+ * command-runner.test.ts.
  */
 
 import assert from "node:assert/strict";
-import { describe, it, beforeEach, afterEach } from "node:test";
-import { findSuggestion, loadFiles, notFound, EXIT_NOT_FOUND } from "#src/errors.js";
+import { describe, it } from "node:test";
+import { findSuggestion, loadFiles, notFound } from "#src/errors.js";
+import { CommandError, EXIT_NOT_FOUND, EXIT_PARSE_ERROR } from "#src/command-runner.js";
+
+// ── findSuggestion ──────────────────────────────────────────────────────────
 
 describe("findSuggestion", () => {
-  it("returns exact case-insensitive match", () => {
-    assert.equal(findSuggestion("Orders", ["orders", "customers"]), "orders");
+  it("returns case-insensitive exact match in preference to a prefix match", () => {
+    // 'ORDERS' matches 'orders' exactly when lowercased — must beat any
+    // prefix-only candidate so the user sees the most relevant hint.
+    assert.equal(findSuggestion("ORDERS", ["orders", "order_items"]), "orders");
   });
 
-  it("returns prefix match when no exact match", () => {
-    const result = findSuggestion("cust", ["customers", "orders"]);
-    assert.equal(result, "customers");
+  it("falls back to a 3-character prefix match when no exact match exists", () => {
+    // The prefix rule is what catches typos like 'cust' → 'customers'.
+    assert.equal(findSuggestion("cust", ["customers", "orders"]), "customers");
   });
 
-  it("returns null when no match", () => {
+  it("returns null when neither rule applies", () => {
+    // No exact match, no usable prefix → no suggestion. The caller will
+    // fall through to the bare "not found" message.
     assert.equal(findSuggestion("xyz", ["orders", "customers"]), null);
   });
 
-  it("prefers exact over prefix", () => {
-    // "orders" exactly matches "ORDERS" case-insensitively
-    const result = findSuggestion("ORDERS", ["orders", "order_items"]);
-    assert.equal(result, "orders");
-  });
-
-  it("handles empty available list", () => {
+  it("returns null when the available list is empty", () => {
+    // Edge case: an empty workspace shouldn't crash the matcher.
     assert.equal(findSuggestion("anything", []), null);
-  });
-
-  it("returns null when name is shorter than 3 chars and no exact match", () => {
-    // .slice(0,3) on a 2-char name yields 2 chars, still matches prefix
-    assert.equal(findSuggestion("or", ["orders", "customers"]), "orders");
   });
 });
 
 // ── loadFiles ───────────────────────────────────────────────────────────────
 
 describe("loadFiles", () => {
-  it("returns parsed files for successful parses", () => {
+  it("returns successfully parsed files when every parse succeeds", () => {
+    // The happy path: every file parses cleanly, every result flows
+    // through. Pins that loadFiles preserves order and shape.
     const mockParse = (f: string) => ({ filePath: f, tree: {}, errorCount: 0 });
-    const result = loadFiles(["a.stm", "b.stm"], mockParse as any);
+    const result = loadFiles(["a.stm", "b.stm"], mockParse as never);
     assert.equal(result.length, 2);
-    assert.equal(result[0].filePath, "a.stm");
+    assert.equal(result[0]!.filePath, "a.stm");
   });
 
-  it("continues on parse errors and warns on stderr", () => {
-    const stderrOutput: string[] = [];
+  it("warns on parse errors but keeps the file in the result list", () => {
+    // Partial-parse policy: a file with parse errors is still useful for
+    // commands that walk the CST, so loadFiles must not drop it. The
+    // warning goes to stderr.
+    const stderrCaptured: string[] = [];
     const origWrite = process.stderr.write;
-    process.stderr.write = ((s: string) => { stderrOutput.push(s); return true; }) as any;
+    process.stderr.write = ((s: string) => { stderrCaptured.push(s); return true; }) as never;
     try {
       const mockParse = (f: string) => ({ filePath: f, tree: {}, errorCount: 2 });
-      const result = loadFiles(["bad.stm"], mockParse as any);
-      assert.equal(result.length, 1, "should still return the parsed file");
-      assert.ok(stderrOutput.some((s) => s.includes("2 parse error")));
+      const result = loadFiles(["bad.stm"], mockParse as never);
+      assert.equal(result.length, 1);
+      assert.ok(
+        stderrCaptured.some((s) => s.includes("2 parse error")),
+        "expected per-file parse-error warning on stderr",
+      );
     } finally {
       process.stderr.write = origWrite;
     }
   });
 
-  it("returns empty array for empty file list", () => {
-    const result = loadFiles([], () => ({ filePath: "", tree: {}, errorCount: 0 }) as any);
+  it("throws CommandError(EXIT_PARSE_ERROR) when a file cannot be read", () => {
+    // The hard-failure path: any read failure aborts the command. The
+    // per-file error is emitted directly by the helper (the throw carries
+    // an empty message because the runner would otherwise double-print).
+    const stderrCaptured: string[] = [];
+    const origWrite = process.stderr.write;
+    process.stderr.write = ((s: string) => { stderrCaptured.push(s); return true; }) as never;
+    try {
+      const mockParse = (_f: string) => { throw new Error("ENOENT"); };
+      assert.throws(
+        () => loadFiles(["missing.stm"], mockParse as never),
+        (err: unknown) =>
+          err instanceof CommandError &&
+          err.code === EXIT_PARSE_ERROR &&
+          err.message === "",
+      );
+      assert.ok(
+        stderrCaptured.some((s) => s.includes("could not read or parse missing.stm")),
+        "expected per-file read-error message on stderr before the throw",
+      );
+    } finally {
+      process.stderr.write = origWrite;
+    }
+  });
+
+  it("returns an empty array for an empty file list", () => {
+    // Edge case: zero inputs is a no-op success, not an error. Some
+    // commands compose loadFiles with a filter that may legitimately
+    // produce no paths.
+    const result = loadFiles([], () => ({ filePath: "", tree: {}, errorCount: 0 }) as never);
     assert.equal(result.length, 0);
   });
 });
@@ -69,58 +116,51 @@ describe("loadFiles", () => {
 // ── notFound ────────────────────────────────────────────────────────────────
 
 describe("notFound", () => {
-  let stderrOutput: string[];
-  let origWrite: typeof process.stderr.write;
-  let origExit: typeof process.exit;
-
-  beforeEach(() => {
-    stderrOutput = [];
-    origWrite = process.stderr.write;
-    origExit = process.exit;
-    process.stderr.write = ((s: string) => { stderrOutput.push(s); return true; }) as any;
+  it("includes a 'did you mean' suggestion when one is available", () => {
+    // The most user-visible thing this helper does. The suggestion comes
+    // from findSuggestion, so this also covers the wiring between the
+    // two without re-testing the matching rules themselves.
+    assert.throws(
+      () => notFound("Schema", "ORDERS", ["orders", "customers"]),
+      (err: unknown) =>
+        err instanceof CommandError &&
+        err.code === EXIT_NOT_FOUND &&
+        err.message.includes("Did you mean 'orders'"),
+    );
   });
 
-  afterEach(() => {
-    process.stderr.write = origWrite;
-    process.exit = origExit;
+  it("lists every alternative when there are 10 or fewer", () => {
+    // Up to MAX_INLINE_AVAILABLE the user gets the full list inline,
+    // because dumping it is cheaper than making them re-query.
+    assert.throws(
+      () => notFound("Schema", "xyz", ["a", "b", "c"]),
+      (err: unknown) =>
+        err instanceof CommandError &&
+        err.message.includes("Available: a, b, c"),
+    );
   });
 
-  it("prints suggestion when close match exists", () => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => { exitCode = code; throw new Error("exit"); }) as any;
-    try {
-      notFound("Schema", "ORDERS", ["orders", "customers"]);
-    } catch { /* expected exit */ }
-    assert.ok(stderrOutput.some((s) => s.includes("Did you mean 'orders'")));
-    assert.equal(exitCode, EXIT_NOT_FOUND);
-  });
-
-  it("lists available items when 10 or fewer", () => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => { exitCode = code; throw new Error("exit"); }) as any;
-    try {
-      notFound("Schema", "xyz", ["a", "b", "c"]);
-    } catch { /* expected exit */ }
-    assert.ok(stderrOutput.some((s) => s.includes("Available: a, b, c")));
-    assert.equal(exitCode, EXIT_NOT_FOUND);
-  });
-
-  it("shows count when more than 10 items available", () => {
-    process.exit = (() => { throw new Error("exit"); }) as any;
+  it("collapses long lists into a count to avoid wall-of-text output", () => {
+    // Beyond 10 alternatives the inline list is more noise than signal,
+    // so we show the count instead. Pins the threshold and the wording.
     const many = Array.from({ length: 15 }, (_, i) => `s${i}`);
-    try {
-      notFound("Schema", "xyz", many);
-    } catch { /* expected exit */ }
-    assert.ok(stderrOutput.some((s) => s.includes("15 schemas in workspace")));
+    assert.throws(
+      () => notFound("Schema", "xyz", many),
+      (err: unknown) =>
+        err instanceof CommandError &&
+        err.message.includes("15 schemas in workspace"),
+    );
   });
 
-  it("omits suggestion when name matches an available entry exactly", () => {
-    process.exit = (() => { throw new Error("exit"); }) as any;
-    try {
-      notFound("Schema", "orders", ["orders", "customers"]);
-    } catch { /* expected exit */ }
-    // Should say "not found." without "Did you mean" since the suggestion === name
-    assert.ok(stderrOutput.some((s) => s.includes("not found.")));
-    assert.ok(!stderrOutput.some((s) => s.includes("Did you mean")));
+  it("omits the 'did you mean' line when the query exactly matches an entry", () => {
+    // A user querying the canonical name shouldn't be told they meant
+    // exactly what they typed. Guards against an old regression in
+    // findSuggestion's exact-match branch.
+    assert.throws(
+      () => notFound("Schema", "orders", ["orders", "customers"]),
+      (err: unknown) =>
+        err instanceof CommandError &&
+        !err.message.includes("Did you mean"),
+    );
   });
 });

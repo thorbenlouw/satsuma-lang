@@ -17,6 +17,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { findBlockNode } from "../cst-query.js";
 import { resolveScopedEntityRef } from "../index-builder.js";
 import type { ExtractedWorkspace, ParsedFile, SyntaxNode } from "../types.js";
@@ -61,15 +62,17 @@ Examples:
   satsuma find --tag measure --in metric     # measure fields in metrics only
   satsuma find --tag ref --json              # all foreign key refs as JSON
   satsuma find --tag enum --compact          # compact one-per-line output`)
-    .action(async (pathArg: string | undefined, opts: { tag: string; in?: string; compact?: boolean; json?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { tag: string; in?: string; compact?: boolean; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const tag = opts.tag.toLowerCase();
       const scope = opts.in ?? "all";
       const validScopes = ["all", "schema", "metric", "fragment"];
       if (!validScopes.includes(scope)) {
-        console.error(`Invalid scope '${scope}'. Valid scopes: ${validScopes.join(", ")}`);
-        process.exit(1);
+        throw new CommandError(
+          `Invalid scope '${scope}'. Valid scopes: ${validScopes.join(", ")}`,
+          EXIT_NOT_FOUND,
+        );
       }
       const matches = searchTag(index, parsedFiles, tag, scope);
 
@@ -83,8 +86,11 @@ Examples:
         printDefault(matches);
       }
 
-      if (matches.length === 0) process.exit(1);
-    });
+      // "No matches" is a non-zero exit so shell pipelines can use
+      // `if satsuma find … --tag pii; then` to detect coverage. The
+      // body output (or `[]` JSON) has already been emitted above.
+      if (matches.length === 0) return EXIT_NOT_FOUND;
+    }));
 }
 
 // ── Search logic ──────────────────────────────────────────────────────────────

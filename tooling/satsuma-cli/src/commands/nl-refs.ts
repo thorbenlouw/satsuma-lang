@@ -13,6 +13,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { ResolvedNLRef } from "../nl-ref-extract.js";
@@ -47,7 +48,7 @@ Examples:
   satsuma nl-refs pipeline.stm                       # all refs in file and imports
   satsuma nl-refs --mapping 'load hub_customer'      # refs in one mapping
   satsuma nl-refs pipeline.stm --unresolved --json   # broken refs as JSON`)
-    .action(async (pathArg: string | undefined, opts: { mapping?: string; json?: boolean; unresolved?: boolean }) => {
+    .action(runCommand(async (pathArg: string | undefined, opts: { mapping?: string; json?: boolean; unresolved?: boolean }) => {
       const { index } = await loadWorkspace(pathArg);
 
       let refs = resolveAllNLRefs(index);
@@ -56,8 +57,7 @@ Examples:
       if (opts.mapping) {
         const resolved = resolveIndexKey(opts.mapping, index.mappings);
         if (!resolved) {
-          console.error(`Mapping '${opts.mapping}' not found.`);
-          process.exit(1);
+          throw new CommandError(`Mapping '${opts.mapping}' not found.`, EXIT_NOT_FOUND);
         }
         refs = refs.filter((r) => r.mapping === resolved.key);
       }
@@ -70,17 +70,16 @@ Examples:
       if (opts.json) {
         const out = refs.map((r) => ({ ...r, line: r.line + 1 }));
         console.log(JSON.stringify(out, null, 2));
-        if (refs.length === 0) process.exit(1);
-        return;
+        return refs.length === 0 ? EXIT_NOT_FOUND : undefined;
       }
 
       if (refs.length === 0) {
         console.log("No NL @ref references found.");
-        process.exit(1);
+        return EXIT_NOT_FOUND;
       }
 
       printDefault(refs);
-    });
+    }));
 }
 
 function printDefault(refs: ResolvedNLRef[]): void {

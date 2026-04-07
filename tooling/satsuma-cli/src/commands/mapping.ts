@@ -12,6 +12,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { extractMetadata, canonicalEntityName, classifyTransform } from "@satsuma/core";
@@ -32,20 +33,21 @@ Examples:
   satsuma mapping 'load hub_customer'                # full mapping
   satsuma mapping 'load hub_customer' --arrows-only  # just src → tgt
   satsuma mapping 'load hub_customer' --json         # structured output`)
-    .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; arrowsOnly?: boolean; json?: boolean }) => {
+    .action(runCommand(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; arrowsOnly?: boolean; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const resolved = resolveIndexKey(name, index.mappings);
       if (!resolved) {
         const keys = [...index.mappings.keys()];
         const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
+        const lines: string[] = [];
         if (close) {
-          console.error(`Mapping '${name}' not found. Did you mean '${close}'?`);
+          lines.push(`Mapping '${name}' not found. Did you mean '${close}'?`);
         } else {
-          console.error(`Mapping '${name}' not found.`);
-          if (keys.length > 0) console.error(`Available: ${keys.join(", ")}`);
+          lines.push(`Mapping '${name}' not found.`);
+          if (keys.length > 0) lines.push(`Available: ${keys.join(", ")}`);
         }
-        process.exit(1);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
       const entry = resolved.entry;
 
@@ -59,7 +61,7 @@ Examples:
       } else {
         printDefault(entry, mappingNode, opts.compact);
       }
-    });
+    }));
 }
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
