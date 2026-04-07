@@ -1,13 +1,14 @@
 /**
- * spread-expand.ts — CLI shim for satsuma-core spread expansion
+ * spread-expand.ts — CLI bridge between WorkspaceIndex and satsuma-core spreads
  *
- * The core logic now lives in satsuma-core/src/spread-expand.ts. This shim
- * provides the original WorkspaceIndex-based API so existing CLI callers need
- * no changes. It will be collapsed when all callers are migrated in sl-n4wb.
+ * Spread expansion logic lives in satsuma-core/src/spread-expand.ts. Per
+ * ADR-005, core uses EntityRefResolver and SpreadEntityLookup callbacks so
+ * it never has to know about WorkspaceIndex. This module's job is to build
+ * those callbacks from a WorkspaceIndex and expose expand* functions with
+ * the index-shaped signatures CLI callers expect.
  *
- * Architecture note (ADR-005): satsuma-core uses callback abstractions
- * (EntityRefResolver, SpreadEntityLookup) to avoid depending on WorkspaceIndex.
- * This shim bridges the gap by creating those callbacks from WorkspaceIndex.
+ * Owns: WorkspaceIndex → callback adaptation.
+ * Does not own: the spread expansion algorithm itself (that is in core).
  */
 
 import {
