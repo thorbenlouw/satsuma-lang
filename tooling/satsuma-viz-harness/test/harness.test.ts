@@ -93,6 +93,28 @@ async function loadFixture(page: Page, fixtureUri: string): Promise<void> {
   );
 }
 
+/**
+ * Return recorded harness events of a specific type.
+ * The function is intentionally small so event payload assertions stay
+ * focused on the user interaction each test performs.
+ */
+async function recordedEvents(page: Page, type: string): Promise<HarnessEvent[]> {
+  return page.evaluate(
+    (eventType) => window.__satsumaHarness.events.filter((event) => event.type === eventType),
+    type,
+  );
+}
+
+/**
+ * Open the first overview mapping card and wait for the mapping detail view.
+ */
+async function openFirstMappingDetail(page: Page): Promise<void> {
+  await page.locator("[data-testid^='overview-mapping-card-']").first().click();
+  await expect(page.locator("[data-testid^='mapping-detail-']").first()).toBeVisible({
+    timeout: 10_000,
+  });
+}
+
 // ---------- Tests ----------
 
 test.describe("Overview view — sfdc-to-snowflake fixture", () => {
@@ -151,35 +173,18 @@ test.describe("Hover and highlight interaction", () => {
   test("field-hover events from the viz are captured in the harness event log", async ({
     page,
   }) => {
-    // Validates that SzFieldHoverEvent — dispatched by the viz when the user
-    // hovers a field row in a schema card — is forwarded to the harness and
-    // becomes observable in window.__satsumaHarness.events.
-    //
-    // We dispatch the event programmatically rather than via DOM hover because
-    // detail-view schema cards live inside a multi-level shadow DOM
-    // (satsuma-viz → sz-mapping-detail → sz-schema-card) that Playwright's CSS
-    // locators cannot pierce to the required depth.  The test validates the
-    // harness event pipeline, not the hover mechanics in the viz component itself.
+    // A real field hover exercises the production SzFieldHoverEvent path and
+    // proves the harness normalizes schemaId/fieldName from event properties.
+    await openFirstMappingDetail(page);
     await page.evaluate(() => window.__satsumaHarness.clearEvents());
 
-    await page.evaluate(() => {
-      const viz = document.querySelector("satsuma-viz");
-      if (viz) {
-        viz.dispatchEvent(
-          new CustomEvent("field-hover", {
-            bubbles: true,
-            composed: true,
-            detail: { schemaId: "Account", fieldName: "id" },
-          }),
-        );
-      }
-    });
+    await page.locator("[data-testid='schema-card-field-id']").first().hover();
 
-    await page.waitForTimeout(300);
-    const events = await page.evaluate(() => window.__satsumaHarness.events);
-    const hoverEvents = events.filter((e) => e.type === "field-hover");
-    // The harness must have captured the dispatched field-hover event.
-    expect(hoverEvents.length).toBeGreaterThan(0);
+    await expect.poll(async () => recordedEvents(page, "field-hover")).toContainEqual(
+      expect.objectContaining({
+        detail: { schemaId: "sfdc_opportunity", fieldName: "Id" },
+      }),
+    );
   });
 });
 
@@ -204,40 +209,27 @@ test.describe("Cross-file lineage expansion", () => {
   test("expand-lineage events from the viz are captured in the harness event log", async ({
     page,
   }) => {
-    // Verify that SzExpandLineageEvent — dispatched by the viz component when a
-    // user requests cross-file lineage expansion — is captured by the harness
-    // and becomes observable in window.__satsumaHarness.events.
-    //
-    // We dispatch the event programmatically rather than via a specific UI
-    // interaction because the expand-lineage trigger element varies across fixture
-    // files and view modes.  The test validates the harness event pipeline, not
-    // the particular UI surface that triggers it in the production component.
+    // The current fixture does not expose a stable expand-lineage control yet,
+    // so this remains a recorder-level compatibility test.  It uses a
+    // production-shaped Event property rather than CustomEvent.detail.
     await page.goto("/");
     await page.locator(".toggle-btn[data-mode='single']").click();
     await loadFixture(page, metricsUri);
 
     await page.evaluate(() => window.__satsumaHarness.clearEvents());
 
-    // Dispatch a synthetic expand-lineage event from the <satsuma-viz> element,
-    // matching the shape that SzExpandLineageEvent produces.
     await page.evaluate(() => {
       const viz = document.querySelector("satsuma-viz");
       if (viz) {
-        viz.dispatchEvent(
-          new CustomEvent("expand-lineage", {
-            bubbles: true,
-            composed: true,
-            detail: { schemaId: "test::schema" },
-          }),
-        );
+        const event = new Event("expand-lineage", { bubbles: true, composed: true });
+        Object.defineProperty(event, "schemaId", { value: "test::schema" });
+        viz.dispatchEvent(event);
       }
     });
 
-    await page.waitForTimeout(300);
-    const events = await page.evaluate(() => window.__satsumaHarness.events);
-    const lineageEvents = events.filter((e) => e.type === "expand-lineage");
-    // The harness must have captured the event and recorded it.
-    expect(lineageEvents.length).toBeGreaterThan(0);
+    await expect.poll(async () => recordedEvents(page, "expand-lineage")).toContainEqual(
+      expect.objectContaining({ detail: { schemaId: "test::schema" } }),
+    );
   });
 });
 
@@ -251,35 +243,57 @@ test.describe("Navigation intent", () => {
   test("navigate events from the viz are captured in the harness event log", async ({
     page,
   }) => {
-    // Validates that SzNavigateEvent — dispatched by the viz when the user clicks
-    // a source-location link on a schema card or field label — is forwarded to the
-    // harness and becomes observable in window.__satsumaHarness.events.
-    //
-    // We dispatch the event programmatically rather than by clicking a DOM element
-    // because source-link targets live inside a multi-level shadow DOM
-    // (satsuma-viz → sz-mapping-detail → sz-schema-card) that Playwright's CSS
-    // locators cannot pierce to the required depth.  The test validates the
-    // harness event pipeline, not the click mechanics in the viz component itself.
+    // A real overview schema-header click dispatches SzNavigateEvent with a
+    // SourceLocation property; the harness must normalize it to stable JSON.
     await page.evaluate(() => window.__satsumaHarness.clearEvents());
 
-    await page.evaluate(() => {
-      const viz = document.querySelector("satsuma-viz");
-      if (viz) {
-        viz.dispatchEvent(
-          new CustomEvent("navigate", {
-            bubbles: true,
-            composed: true,
-            detail: { uri: "file:///test.stm", line: 1, character: 0 },
-          }),
-        );
-      }
-    });
+    await page.locator("[data-testid='overview-schema-card-sfdc-opportunity']").click();
 
-    await page.waitForTimeout(300);
-    const events = await page.evaluate(() => window.__satsumaHarness.events);
-    const navEvents = events.filter((e) => e.type === "navigate");
-    // The harness must have captured the dispatched navigate event.
-    expect(navEvents.length).toBeGreaterThan(0);
+    await expect.poll(async () => recordedEvents(page, "navigate")).toContainEqual(
+      expect.objectContaining({
+        detail: expect.objectContaining({
+          uri: expect.stringContaining("sfdc-to-snowflake/pipeline.stm"),
+          line: expect.any(Number),
+          character: expect.any(Number),
+        }),
+      }),
+    );
+  });
+
+  test("field-lineage events from the viz are captured in the harness event log", async ({
+    page,
+  }) => {
+    // A real field-lineage button click dispatches SzFieldLineageEvent with
+    // field identity properties that the harness must preserve as JSON.
+    await openFirstMappingDetail(page);
+    await page.evaluate(() => window.__satsumaHarness.clearEvents());
+
+    const fieldRow = page.locator("[data-testid='schema-card-field-id']").first();
+    await fieldRow.hover();
+    await fieldRow.locator("[data-testid='schema-card-field-id-lineage']").click();
+
+    await expect.poll(async () => recordedEvents(page, "field-lineage")).toContainEqual(
+      expect.objectContaining({
+        detail: { schemaId: "sfdc_opportunity", fieldName: "Id" },
+      }),
+    );
+  });
+
+  test("export events from the viz are captured in the harness event log", async ({ page }) => {
+    // A real toolbar export click emits SVG content through CustomEvent.detail;
+    // the recorder should preserve that supported CustomEvent payload shape.
+    await page.evaluate(() => window.__satsumaHarness.clearEvents());
+
+    await page.locator("[data-testid='toolbar-export']").click();
+
+    await expect.poll(async () => recordedEvents(page, "export")).toContainEqual(
+      expect.objectContaining({
+        detail: expect.objectContaining({
+          format: "svg",
+          content: expect.stringContaining("<svg"),
+        }),
+      }),
+    );
   });
 });
 

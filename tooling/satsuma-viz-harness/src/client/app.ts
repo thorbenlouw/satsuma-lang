@@ -29,6 +29,32 @@ interface Fixture {
   uri: string;
 }
 
+/** Source location payload emitted when the viz asks an editor to navigate. */
+interface HarnessSourceLocation {
+  uri: string;
+  line: number;
+  character: number;
+}
+
+/** Stable field identity used by hover and lineage interactions. */
+interface HarnessFieldPayload {
+  schemaId: string;
+  fieldName: string | null;
+}
+
+/** Stable mapping identity recorded when the overview asks to open detail. */
+interface HarnessMappingPayload {
+  id: string;
+  sourceRefs: string[];
+  targetRef: string;
+}
+
+/** SVG export payload emitted from the viz toolbar. */
+interface HarnessExportPayload {
+  format: string;
+  content: string;
+}
+
 /**
  * A recorded interaction event emitted by the viz component.
  * Playwright tests assert against this log to verify that specific user
@@ -212,12 +238,134 @@ let vizEl: HTMLElement | null = null;
 /** Mirror of the viz element's data-ready-state attribute. */
 let vizReadyState = "empty";
 
+// ---------- Event normalization ----------
+
 /**
- * Record a viz interaction event in the harness log and update the ready flag.
+ * Return true when a value can be inspected as a plain object.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/**
+ * Read a nested CustomEvent.detail object only when the event is still using
+ * the older synthetic contract. Production viz events store payload fields on
+ * the Event instance itself.
+ */
+function customEventDetail(event: Event): unknown {
+  return "detail" in event ? (event as CustomEvent<unknown>).detail : undefined;
+}
+
+/**
+ * Normalize a source-location-like value into the JSON shape Playwright tests
+ * assert against.
+ */
+function normalizeLocation(value: unknown): HarnessSourceLocation | null {
+  if (!isRecord(value)) return null;
+  const uri = value["uri"];
+  const line = value["line"];
+  const character = value["character"];
+  if (typeof uri !== "string" || typeof line !== "number" || typeof character !== "number") {
+    return null;
+  }
+  return { uri, line, character };
+}
+
+/**
+ * Normalize navigate events from production SzNavigateEvent.location while
+ * preserving detail compatibility for narrow recorder-level tests.
+ */
+function normalizeNavigateEvent(event: Event): HarnessSourceLocation | null {
+  if ("location" in event) {
+    return normalizeLocation((event as Event & { location?: unknown }).location);
+  }
+  const detail = customEventDetail(event);
+  if (isRecord(detail) && "location" in detail) return normalizeLocation(detail["location"]);
+  return normalizeLocation(detail);
+}
+
+/**
+ * Normalize field identity from production event properties first, then from
+ * CustomEvent.detail for compatibility with legacy synthetic recorder tests.
+ */
+function normalizeFieldEvent(event: Event): HarnessFieldPayload | null {
+  const source = ("schemaId" in event || "fieldName" in event)
+    ? event as Event & { schemaId?: unknown; fieldName?: unknown }
+    : customEventDetail(event);
+  if (!isRecord(source)) return null;
+  const schemaId = source["schemaId"];
+  const fieldName = source["fieldName"];
+  if (typeof schemaId !== "string") return null;
+  if (fieldName !== null && typeof fieldName !== "string") return null;
+  return { schemaId, fieldName };
+}
+
+/**
+ * Normalize mapping identity from production SzOpenMappingEvent.mapping, with
+ * detail compatibility for any remaining synthetic recorder checks.
+ */
+function normalizeOpenMappingEvent(event: Event): HarnessMappingPayload | null {
+  const detail = customEventDetail(event);
+  const source = "mapping" in event
+    ? (event as Event & { mapping?: unknown }).mapping
+    : isRecord(detail) && "mapping" in detail
+      ? detail["mapping"]
+      : detail;
+  if (!isRecord(source)) return null;
+  const id = source["id"];
+  const sourceRefs = source["sourceRefs"];
+  const targetRef = source["targetRef"];
+  if (typeof id !== "string" || !Array.isArray(sourceRefs) || typeof targetRef !== "string") {
+    return null;
+  }
+  const normalizedSourceRefs = sourceRefs.filter((value): value is string => typeof value === "string");
+  if (normalizedSourceRefs.length !== sourceRefs.length) return null;
+  return { id, sourceRefs: normalizedSourceRefs, targetRef };
+}
+
+/**
+ * Normalize expand-lineage events from production SzExpandLineageEvent.schemaId
+ * while preserving the legacy detail object shape.
+ */
+function normalizeExpandLineageEvent(event: Event): { schemaId: string } | null {
+  const source = "schemaId" in event
+    ? event as Event & { schemaId?: unknown }
+    : customEventDetail(event);
+  if (!isRecord(source)) return null;
+  const schemaId = source["schemaId"];
+  return typeof schemaId === "string" ? { schemaId } : null;
+}
+
+/**
+ * Normalize SVG export CustomEvent.detail. Export intentionally remains a
+ * CustomEvent because the payload is generated inside the viz toolbar handler.
+ */
+function normalizeExportEvent(event: Event): HarnessExportPayload | null {
+  const detail = customEventDetail(event);
+  if (!isRecord(detail)) return null;
+  const format = detail["format"];
+  const content = detail["content"];
+  if (typeof format !== "string" || typeof content !== "string") return null;
+  return { format, content };
+}
+
+/**
+ * Record a viz interaction event in the harness log.
  * Called from the event handlers attached to the viz element.
  */
 function recordEvent(type: string, detail: unknown): void {
   harness.events.push({ type, detail, timestamp: Date.now() });
+}
+
+/**
+ * Record the normalized JSON payload expected by Playwright assertions.
+ * A null payload is retained when an event shape is invalid so test failures
+ * expose the recorder mismatch instead of silently dropping the interaction.
+ */
+function recordNormalizedEvent(type: string, event: Event, normalize: (event: Event) => unknown): unknown {
+  const detail = normalize(event);
+  recordEvent(type, detail);
+  return detail;
 }
 
 /**
@@ -253,27 +401,29 @@ function ensureVizElement(): HTMLElement {
 
   // Record all interaction events for Playwright assertion.
   el.addEventListener("navigate", (e) => {
-    recordEvent("navigate", (e as CustomEvent).detail);
+    recordNormalizedEvent("navigate", e, normalizeNavigateEvent);
   });
   el.addEventListener("field-hover", (e) => {
-    recordEvent("field-hover", (e as CustomEvent).detail);
+    recordNormalizedEvent("field-hover", e, normalizeFieldEvent);
   });
   el.addEventListener("expand-lineage", (e) => {
-    const detail = (e as CustomEvent).detail as { schemaId?: string };
-    recordEvent("expand-lineage", detail);
+    const detail = recordNormalizedEvent("expand-lineage", e, normalizeExpandLineageEvent);
     // When the user requests lineage expansion from within the viz, switch to
     // the lineage view for the current fixture so the full cross-file model loads.
-    if (harness.fixture && harness.viewMode !== "lineage") {
+    if (detail && harness.fixture && harness.viewMode !== "lineage") {
       setViewMode("lineage");
-    } else if (harness.fixture) {
+    } else if (detail && harness.fixture) {
       void loadFixture(harness.fixture);
     }
   });
   el.addEventListener("field-lineage", (e) => {
-    recordEvent("field-lineage", (e as CustomEvent).detail);
+    recordNormalizedEvent("field-lineage", e, normalizeFieldEvent);
   });
   el.addEventListener("open-mapping", (e) => {
-    recordEvent("open-mapping", (e as CustomEvent).detail);
+    recordNormalizedEvent("open-mapping", e, normalizeOpenMappingEvent);
+  });
+  el.addEventListener("export", (e) => {
+    recordNormalizedEvent("export", e, normalizeExportEvent);
   });
 
   // Clear the placeholder and mount the element.
