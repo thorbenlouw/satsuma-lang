@@ -1,54 +1,85 @@
 /**
- * warnings.test.js — Unit tests for warnings/questions command logic.
+ * warnings.test.ts — Focused CLI coverage for the `satsuma warnings` command.
+ *
+ * Exercises the real command so warning/question filtering, grouped text
+ * output, JSON output, and not-found exit semantics stay aligned.
  */
 
 import assert from "node:assert/strict";
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it } from "node:test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { run as runCli } from "./helpers.js";
 
-let output: string[] = [];
-let origLog: typeof console.log;
-beforeEach(() => { output = []; origLog = console.log; console.log = (...a: any[]) => output.push(a.join(" ")); });
-afterEach(() => { console.log = origLog; });
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI = resolve(__dirname, "../dist/index.js");
+const COMMENTS = resolve(__dirname, "fixtures/comments-test.stm");
+const CLEAN = resolve(__dirname, "fixtures/lint-clean.stm");
 
-describe("warnings output", () => {
-  it("formats warnings grouped by file", () => {
-    const items = [
-      { text: "some records NULL", file: "db.stm", row: 4 },
-      { text: "not validated", file: "db.stm", row: 8 },
-      { text: "other issue", file: "other.stm", row: 1 },
-    ];
+const run = (...args: string[]) => runCli(CLI, ...args);
 
-    const byFile = new Map();
-    for (const item of items) {
-      if (!byFile.has(item.file)) byFile.set(item.file, []);
-      byFile.get(item.file).push(item);
-    }
+describe("satsuma warnings", () => {
+  it("prints warnings and questions together in default text mode", async () => {
+    // Default mode intentionally shows both comment kinds; the line prefixes
+    // are how humans distinguish warnings from questions in one pass.
+    const { stdout, code } = await run("warnings", COMMENTS);
 
-    for (const [file, fileItems] of byFile) {
-      console.log(file);
-      for (const item of fileItems) console.log(`  :${item.row + 1}  //! ${item.text}`);
-      console.log();
-    }
-
-    assert.ok(output.includes("db.stm"));
-    assert.ok(output.some((l: string) => l.includes(":5  //! some records NULL")));
-    assert.ok(output.some((l: string) => l.includes(":9  //! not validated")));
-    assert.ok(output.includes("other.stm"));
+    assert.equal(code, 0);
+    assert.match(stdout, /comments-test\.stm/);
+    assert.match(stdout, /:4  \/\/! warning: data quality issue/);
+    assert.match(stdout, /:5  \/\/\? should we rename this\?/);
+    assert.match(stdout, /:12  \/\/! warning: aggregation may be incorrect/);
+    assert.match(stdout, /:13  \/\/\? consider using SUM instead/);
   });
 
-  it("prints 'no warnings' when empty", () => {
-    const items = [];
-    if (items.length === 0) console.log("No warning comments found.");
-    assert.ok(output.some((l: string) => l.includes("No warning")));
-  });
-});
+  it("filters text output to questions with --questions", async () => {
+    // The questions flag must be a true filter, not just a label change.
+    const { stdout, code } = await run("warnings", "--questions", COMMENTS);
 
-describe("JSON output structure", () => {
-  it("produces valid JSON with kind, count, items", () => {
-    const items = [{ text: "issue", file: "a.stm", row: 0 }];
-    const json = JSON.parse(JSON.stringify({ kind: "warning", count: items.length, items }));
-    assert.equal(json.kind, "warning");
-    assert.equal(json.count, 1);
-    assert.equal(json.items[0].text, "issue");
+    assert.equal(code, 0);
+    assert.match(stdout, /:5  \/\/\? should we rename this\?/);
+    assert.match(stdout, /:13  \/\/\? consider using SUM instead/);
+    assert.doesNotMatch(stdout, /warning: data quality issue/);
+    assert.doesNotMatch(stdout, /warning: aggregation may be incorrect/);
+  });
+
+  it("emits default JSON with block context for both warning and question items", async () => {
+    // JSON consumers need stable counts, one-based lines, and enclosing block
+    // context for every extracted comment item.
+    const { stdout, code } = await run("warnings", "--json", COMMENTS);
+
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.kind, "warning");
+    assert.equal(data.count, 4);
+    assert.deepEqual(
+      data.items.map((item: { line: number }) => item.line),
+      [4, 5, 12, 13],
+    );
+    assert.ok(data.items.every((item: { block: string; blockType: string }) => item.block && item.blockType));
+  });
+
+  it("emits question-only JSON with the question kind and filtered count", async () => {
+    // `--questions --json` is the structured counterpart to question text
+    // mode; it must not include warning comments under a question payload.
+    const { stdout, code } = await run("warnings", "--questions", "--json", COMMENTS);
+
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.kind, "question");
+    assert.equal(data.count, 2);
+    assert.deepEqual(
+      data.items.map((item: { text: string }) => item.text),
+      ["should we rename this?", "consider using SUM instead"],
+    );
+  });
+
+  it("returns EXIT_NOT_FOUND while keeping empty JSON parseable", async () => {
+    // Empty results are a meaningful not-found state, but JSON callers still
+    // need a parseable payload rather than stderr-only text.
+    const { stdout, code } = await run("warnings", "--json", CLEAN);
+
+    assert.equal(code, 1);
+    assert.deepEqual(JSON.parse(stdout), { kind: "warning", count: 0, items: [] });
   });
 });

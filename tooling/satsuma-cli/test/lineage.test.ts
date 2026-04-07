@@ -1,170 +1,137 @@
 /**
- * lineage.test.js — Unit tests for lineage graph logic.
+ * lineage.test.ts — Focused CLI coverage for the `satsuma lineage` command.
+ *
+ * These tests exercise the command's public flags through the built CLI rather
+ * than mirroring private graph helpers in the test file.
  */
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { run as runCli } from "./helpers.js";
 
-// ── Types for test graph structures ──────────────────────────────────────────
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI = resolve(__dirname, "../dist/index.js");
+const LINEAGE_CHAIN = resolve(__dirname, "fixtures/lineage-chain.stm");
+const LINEAGE_CYCLE = resolve(__dirname, "fixtures/lineage-cycle.stm");
+const NAMESPACES = resolve(__dirname, "fixtures/namespaces.stm");
 
-interface TestGraph {
-  nodes: Map<string, Record<string, unknown>>;
-  edges: Map<string, Set<string>>;
-}
+const run = (...args: string[]) => runCli(CLI, ...args);
 
-interface DagEdge {
-  from: string;
-  to: string;
-}
+describe("satsuma lineage", () => {
+  it("prints downstream text trees with node types for --from", async () => {
+    // Human downstream output should show the start schema, mapping, target,
+    // and node types in data-flow order.
+    const { stdout, code } = await run("lineage", "--from", "source_a", LINEAGE_CHAIN);
 
-// ── Graph helpers (mirrors lineage.ts) ───────────────────────────────────────
+    assert.equal(code, 0);
+    assert.match(stdout, /^::source_a  \[schema\]/m);
+    assert.match(stdout, /^  ::a_to_b  \[mapping\]/m);
+    assert.match(stdout, /^    ::intermediate_b  \[schema\]/m);
+  });
 
-function buildDownstream(graph: TestGraph, start: string, maxDepth = 10) {
-  const visitedNodes = new Set<string>();
-  const dagEdges: DagEdge[] = [];
+  it("prints upstream text paths for --to", async () => {
+    // Upstream text mode is path-oriented; it should include every hop back to
+    // the source schema rather than just the target node.
+    const { stdout, code } = await run("lineage", "--to", "target_d", LINEAGE_CHAIN);
 
-  function dfs(node: string, depth: number) {
-    if (depth > maxDepth || visitedNodes.has(node)) return;
-    visitedNodes.add(node);
-    const children = graph.edges.get(node) ?? new Set();
-    for (const child of children) {
-      dagEdges.push({ from: node, to: child });
-      dfs(child, depth + 1);
-    }
-  }
+    assert.equal(code, 0);
+    assert.match(stdout, /::source_a -> ::a_to_b -> ::intermediate_b/);
+    assert.match(stdout, /::c_to_d -> ::target_d/);
+  });
 
-  dfs(start, 0);
+  it("emits depth-limited downstream JSON without dangling edges", async () => {
+    // Depth limits must truncate the DAG coherently: every edge endpoint should
+    // still be present in the nodes array.
+    const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--json", LINEAGE_CHAIN);
 
-  return {
-    nodes: [...visitedNodes].map((n) => ({ name: n, ...(graph.nodes.get(n) ?? {}) })),
-    edges: dagEdges,
-  };
-}
-
-function bfsPath(graph: TestGraph, target: string, maxDepth = 10) {
-  const reverseEdges = new Map<string, Set<string>>();
-  for (const [src, targets] of graph.edges) {
-    for (const tgt of targets) {
-      if (!reverseEdges.has(tgt)) reverseEdges.set(tgt, new Set());
-      reverseEdges.get(tgt)!.add(src);
-    }
-  }
-
-  const queue = [[target]];
-  const visited = new Set([target]);
-
-  while (queue.length > 0) {
-    const path = queue.shift()!;
-    if (path.length > maxDepth + 1) break;
-    const current = path[path.length - 1]!;
-    const parents = reverseEdges.get(current) ?? new Set<string>();
-
-    if (parents.size === 0) return [...path].reverse();
-
-    for (const parent of parents) {
-      if (!visited.has(parent)) {
-        visited.add(parent);
-        queue.push([...path, parent]);
-      }
-    }
-  }
-
-  return null;
-}
-
-// ── Helper to build a simple graph ───────────────────────────────────────────
-
-function makeGraph(edgeList: [string, string][]): TestGraph {
-  const nodes = new Map();
-  const edges = new Map();
-
-  for (const [src, tgt] of edgeList) {
-    if (!nodes.has(src)) nodes.set(src, { type: "schema" });
-    if (!nodes.has(tgt)) nodes.set(tgt, { type: "schema" });
-    if (!edges.has(src)) edges.set(src, new Set());
-    edges.get(src).add(tgt);
-  }
-
-  return { nodes, edges };
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe("buildDownstream", () => {
-  it("produces correct downstream tree", () => {
-    // src_schema → mapping → tgt_schema → metric
-    const graph = makeGraph([
-      ["src_schema", "migration"],
-      ["migration", "tgt_schema"],
-      ["tgt_schema", "mrr_metric"],
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.nodes.map((node: { name: string }) => node.name);
+    assert.deepEqual(names, ["source_a", "a_to_b", "intermediate_b"]);
+    assert.deepEqual(data.edges, [
+      { from: "source_a", to: "a_to_b" },
+      { from: "a_to_b", to: "intermediate_b" },
     ]);
-
-    const dag = buildDownstream(graph, "src_schema");
-    const nodeNames = dag.nodes.map((n) => n.name);
-    assert.ok(nodeNames.includes("src_schema"));
-    assert.ok(nodeNames.includes("migration"));
-    assert.ok(nodeNames.includes("tgt_schema"));
-    assert.ok(nodeNames.includes("mrr_metric"));
-    assert.equal(dag.edges.length, 3);
+    const nodeSet = new Set(names);
+    for (const edge of data.edges) {
+      assert.ok(nodeSet.has(edge.from), `edge from '${edge.from}' should be in nodes`);
+      assert.ok(nodeSet.has(edge.to), `edge to '${edge.to}' should be in nodes`);
+    }
   });
 
-  it("respects maxDepth", () => {
-    const graph = makeGraph([["a", "b"], ["b", "c"], ["c", "d"]]);
-    const dag = buildDownstream(graph, "a", 1);
-    const names = dag.nodes.map((n) => n.name);
-    assert.ok(names.includes("a"));
-    assert.ok(names.includes("b"));
-    assert.ok(!names.includes("c"));
+  it("prints compact downstream output as names only", async () => {
+    // Compact mode is intended for scripts and quick scans, so it should omit
+    // type annotations while preserving traversal order.
+    const { stdout, code } = await run("lineage", "--from", "source_a", "--depth", "1", "--compact", LINEAGE_CHAIN);
+
+    assert.equal(code, 0);
+    assert.deepEqual(stdout.trim().split(/\r?\n/), ["source_a", "a_to_b", "intermediate_b"]);
   });
 
-  it("handles cycles without infinite loop", () => {
-    const graph = makeGraph([["a", "b"], ["b", "a"]]);
-    const dag = buildDownstream(graph, "a");
-    // Should not hang and should have at most 2 nodes
-    assert.ok(dag.nodes.length <= 2);
+  it("terminates cyclic downstream graphs and labels the repeated node", async () => {
+    // Real workspaces can contain circular schema flows; traversal should stop
+    // at the repeated schema and make the cycle visible in text output.
+    const { stdout, code } = await run("lineage", "--from", "cycle_a", LINEAGE_CYCLE);
+
+    assert.equal(code, 0);
+    assert.match(stdout, /::cycle_a  \[schema\] \(cycle\)/);
+    assert.ok(stdout.trim().split(/\r?\n/).length <= 5);
   });
 
-  it("returns just the start node when no edges", () => {
-    const graph = { nodes: new Map([["solo", {}]]), edges: new Map() };
-    const dag = buildDownstream(graph, "solo");
-    assert.equal(dag.nodes.length, 1);
-    assert.equal(dag.edges.length, 0);
-  });
-});
+  it("emits upstream JSON for --to with edge direction preserved", async () => {
+    // Even in an upstream traversal, JSON edges must keep the data-flow
+    // direction (`from` upstream, `to` downstream) for graph consumers.
+    const { stdout, code } = await run("lineage", "--to", "target_d", "--json", LINEAGE_CHAIN);
 
-describe("bfsPath", () => {
-  it("finds shortest path to target", () => {
-    const graph = makeGraph([["a", "b"], ["b", "c"], ["a", "c"]]);
-    const path = bfsPath(graph, "c");
-    // Should find a path from a root to c
-    assert.ok(path !== null);
-    assert.equal(path[path.length - 1], "c");
-    assert.equal(path[0], "a");
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    const names = data.nodes.map((node: { name: string }) => node.name);
+    assert.ok(names.includes("source_a"));
+    assert.ok(names.includes("target_d"));
+    assert.ok(data.edges.some((edge: { from: string; to: string }) => edge.from === "source_a" && edge.to === "a_to_b"));
+    assert.ok(data.edges.some((edge: { from: string; to: string }) => edge.from === "c_to_d" && edge.to === "target_d"));
   });
 
-  it("returns null when no path exists", () => {
-    // isolated node
-    const graph = { nodes: new Map([["x", {}], ["y", {}]]), edges: new Map() };
-    // y has no parents, so bfsPath finds y as root immediately — path is just [y]
-    // But from x's perspective as target: y has no path to x
-    const path = bfsPath(graph, "x");
-    // x has no parents and is a root → path is ["x"]
-    assert.deepEqual(path, ["x"]);
+  it("resolves namespace-qualified --from names without crossing namespace scope", async () => {
+    // Namespaced platform entry points depend on qualified node lookup; this
+    // guards the public CLI path rather than only the graph builder.
+    const { stdout, code } = await run("lineage", "--from", "pos::stores", "--json", NAMESPACES);
+
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.deepEqual(
+      data.nodes.map((node: { name: string }) => node.name),
+      ["pos::stores", "warehouse::load hub_store", "warehouse::hub_store"],
+    );
+    assert.deepEqual(data.edges, [
+      { from: "pos::stores", to: "warehouse::load hub_store" },
+      { from: "warehouse::load hub_store", to: "warehouse::hub_store" },
+    ]);
   });
 
-  it("finds multi-hop path", () => {
-    const graph = makeGraph([["schema_a", "mapping_1"], ["mapping_1", "schema_b"], ["schema_b", "metric_x"]]);
-    const path = bfsPath(graph, "metric_x");
-    assert.ok(path !== null);
-    assert.equal(path[0], "schema_a");
-    assert.equal(path[path.length - 1], "metric_x");
+  it("rejects ambiguous --from/--to input before loading the workspace", async () => {
+    // The command contract requires exactly one direction selector; this should
+    // fail clearly instead of doing arbitrary traversal.
+    const { stderr, code } = await run(
+      "lineage",
+      "--from",
+      "source_a",
+      "--to",
+      "target_d",
+      LINEAGE_CHAIN,
+    );
+
+    assert.equal(code, 1);
+    assert.match(stderr, /Cannot specify both --from and --to/);
   });
 
-  it("respects maxDepth", () => {
-    // Deep chain: a→b→c→d (depth 3 to reach d)
-    const graph = makeGraph([["a", "b"], ["b", "c"], ["c", "d"]]);
-    const path = bfsPath(graph, "d", 2);
-    // Path length would be 4 (a,b,c,d) > maxDepth+1=3, should return null
-    assert.equal(path, null);
+  it("keeps not-found errors parseable in JSON mode", async () => {
+    // JSON callers rely on structured error payloads even for failed lookups.
+    const { stdout, code } = await run("lineage", "--from", "missing_schema", "--json", LINEAGE_CHAIN);
+
+    assert.equal(code, 1);
+    assert.deepEqual(JSON.parse(stdout), { error: "Node 'missing_schema' not found." });
   });
 });

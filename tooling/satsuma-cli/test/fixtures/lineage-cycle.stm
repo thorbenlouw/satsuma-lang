@@ -1,0 +1,19 @@
+schema cycle_a {
+  id INTEGER
+}
+
+schema cycle_b {
+  id INTEGER
+}
+
+mapping `a_to_b` {
+  source { cycle_a }
+  target { cycle_b }
+  id -> id
+}
+
+mapping `b_to_a` {
+  source { cycle_b }
+  target { cycle_a }
+  id -> id
+}
