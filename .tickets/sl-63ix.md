@@ -10,7 +10,7 @@ assignee: Thorben Louw
 ---
 # Feature 29: codebase and test cleanup
 
-Consolidation pass surfaced by 2026-04-05 audit. See features/29-codebase-and-test-cleanup/PRD.md and TODO.md.
+Consolidation pass surfaced by 2026-04-05 audit. See archive/features/29-codebase-and-test-cleanup/PRD.md and TODO.md.
 
 
 ## Notes

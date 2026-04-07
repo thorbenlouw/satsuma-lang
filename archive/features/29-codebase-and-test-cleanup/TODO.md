@@ -42,16 +42,16 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Identify the smallest common interface they could all consume. Added `validateSemanticWorkspace` in `@satsuma/core` as the shared reachability-aware semantic validation entry point.
 - [x] Land the unification in a dedicated PR with no behaviour change — diagnostics text and ordering must match the existing CLI integration tests exactly. CLI and LSP adapters now consume the core entry point; core/LSP/CLI checks pin the contract.
 
-### 8. Inline "why" comments for the most complex algorithms
-- [ ] `resolveRef` (NL ref resolver) — annotate the cascading conditionals with a comment explaining the precedence order and why each step exists. Reference `sl-dkr7` and the relevant memory note.
-- [ ] Spread expander (`spread-expand.ts`) — explain the migration plan in plain prose at the function level, not just the file header.
-- [ ] `viz-model.ts` top-level `extract*` builders — for each, document the VizModel-specific enrichment that core's extraction does not provide.
-- [ ] `diff.ts` comparators — document arrow identity rules, what counts as a "change" vs. "addition", and how note diffs handle multi-note targets.
-- [ ] `index-builder.ts` `buildIndex` — add a function-level doc-comment explaining the assembly order and why it cannot be reordered.
+### 8. Inline "why" comments for the most complex algorithms *(done — sl-giyu)*
+- [x] `resolveRef` (NL ref resolver) — annotate the cascading conditionals with a comment explaining the precedence order and why each step exists. Already had a thorough doc-comment from prior `sl-dkr7` work; verified and recorded in `sl-giyu`.
+- [x] Spread expander (`spread-expand.ts`) — explain the migration plan in plain prose at the function level, not just the file header. Completed in `sl-giyu`.
+- [x] `viz-model.ts` top-level `extract*` builders — for each, document the VizModel-specific enrichment that core's extraction does not provide. Completed in `sl-giyu`.
+- [x] `diff.ts` comparators — document arrow identity rules, what counts as a "change" vs. "addition", and how note diffs handle multi-note targets. Completed in `sl-giyu`.
+- [x] `index-builder.ts` `buildIndex` — add a function-level doc-comment explaining the assembly order and why it cannot be reordered. Completed in `sl-giyu`.
 
 ### 9. Reconcile `ARCHITECTURE.md` claims with reality
 - [x] Find every claim in `ARCHITECTURE.md` of the form "consumers never X" and verify it.
-- [x] Either fix the violation (preferred) or update the doc to describe reality. (sl-rovp: cardinal dependency rule verified — no upward imports exist. The "consumer tests never duplicate core extraction tests" claim is currently violated by `extract.test.ts` / `classify.test.ts`; softened to "should not" with a Known Violation note pointing at sl-cvs2, which will fix the underlying duplication.)
+- [x] Either fix the violation (preferred) or update the doc to describe reality. (sl-rovp: cardinal dependency rule verified — no upward imports exist. The temporary Known Violation note was later removed by sl-cvs2 after the duplicated CLI extraction/classification tests were consolidated into core.)
 
 ## Test cleanup
 
