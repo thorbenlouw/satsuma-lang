@@ -1,0 +1,7 @@
+{
+  "include": ["dist/**/*.js"],
+  "exclude": ["dist/**/*.d.ts"],
+  "check-coverage": true,
+  "lines": 80,
+  "reports-dir": "coverage"
+}

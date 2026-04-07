@@ -94,8 +94,8 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Each file: build a workspace index from a minimal multi-file source map, invoke the handler, assert on the response shape. Added 9 tests against multi-file workspace indexes.
 
 ### 18. Raise coverage gates
-- [ ] Measure current coverage on `satsuma-core`, `satsuma-cli`, and `satsuma-lsp`.
-- [ ] Update `.c8rc.json` (or per-package equivalents) to set the gate to (current coverage rounded down to the nearest 5%) for each package, with a target floor of 85% for core.
+- [x] Measure current coverage on `satsuma-core`, `satsuma-cli`, and `satsuma-lsp`. Measured line coverage after PR 222 and `origin/main`: core 80.96%, CLI 92.05%, LSP 88.53%.
+- [x] Update `.c8rc.json` (or per-package equivalents) to set the gate to (current coverage rounded down to the nearest 5%) for each package, with a target floor of 85% for core. Added core/LSP package configs and raised CLI's existing gate: core 80%, CLI 90%, LSP 85%. Core is below the aspirational 85% floor today, so the gate follows the measured-coverage rule rather than setting CI to fail.
 
 ## Out of scope (tracked separately)
 
