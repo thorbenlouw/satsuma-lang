@@ -325,4 +325,4 @@ Browser-level viz harness tests use the sentinel watcher workflow documented in 
 - `adrs/` — Architectural decision records
 - `SATSUMA-V2-SPEC.md` — Language specification (authoritative)
 - `SATSUMA-CLI.md` — CLI command reference
-- `features/29-codebase-and-test-cleanup/PRD.md` — current Feature 29 cleanup plan
+- `archive/features/29-codebase-and-test-cleanup/PRD.md` — completed Feature 29 cleanup plan
