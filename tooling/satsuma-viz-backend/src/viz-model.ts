@@ -443,8 +443,19 @@ function findPrecedingBlock(
   return null;
 }
 
+/**
+ * Strip the comment marker prefix and surrounding whitespace from a comment node.
+ *
+ * The grammar exposes three comment node types that share the same shape but
+ * different lead-in markers:
+ *   - `line_comment`     → `// text`   (2-char prefix)
+ *   - `warning_comment`  → `//! text`  (3-char prefix)
+ *   - `question_comment` → `//? text`  (3-char prefix)
+ *
+ * The viz model only renders the human-readable payload, so we strip the marker
+ * here rather than at every call site.
+ */
 function extractCommentText(node: SyntaxNode): string {
-  // warning_comment = "//! text", question_comment = "//? text"
   const text = node.text;
   if (text.startsWith("//!") || text.startsWith("//?")) {
     return text.slice(3).trim();
@@ -454,6 +465,19 @@ function extractCommentText(node: SyntaxNode): string {
 
 // ---------- Schema extraction ----------
 
+/**
+ * Build a SchemaCard from a `schema_block` CST node.
+ *
+ * A schema's display identity is split across two CST locations: the bare
+ * `name` (used as the local id and for cross-file resolution) and an optional
+ * `note "..."` tag inside its metadata block (used as the human-friendly
+ * label). We compute `qualifiedId` here so downstream consumers can resolve
+ * cross-namespace references without re-deriving the namespace prefix.
+ *
+ * `hasExternalLineage` is computed eagerly because the viz needs to render a
+ * "shared" badge before the user opens the card; doing it lazily would require
+ * a workspace scan on every render.
+ */
 function extractSchema(
   uri: string,
   node: SyntaxNode,
@@ -485,9 +509,18 @@ function extractSpreads(body: SyntaxNode): string[] {
   return extractFieldTree(body).spreads;
 }
 
+/**
+ * Find a schema's display label by looking for a `note "..."` entry in its
+ * metadata block.
+ *
+ * The grammar represents `note` two ways depending on context: as a dedicated
+ * `note_tag` node (the canonical form) and as a generic `tag_with_value` whose
+ * key is the literal `"note"` (the fallback form, used in some recovery paths
+ * and for backwards compatibility). We accept both so a single piece of user
+ * input renders consistently regardless of which production matched it.
+ */
 function extractSchemaLabel(meta: SyntaxNode | null): string | null {
   if (!meta) return null;
-  // In the CST, note tags appear as note_tag nodes (not tag_with_value)
   for (const ch of meta.namedChildren) {
     if (ch.type === "note_tag") {
       const str = child(ch, "nl_string") ?? child(ch, "multiline_string");
@@ -516,6 +549,14 @@ function checkExternalLineage(
 
 // ---------- Fragment extraction ----------
 
+/**
+ * Build a FragmentCard from a `fragment_block` CST node.
+ *
+ * Fragments are field-only entities — they have no metadata block and no
+ * mapping context, so the structure is much simpler than a schema. We still
+ * extract spreads and notes because fragments may compose other fragments
+ * (transitive spreads are resolved later by `expandSpreads`).
+ */
 function extractFragment(uri: string, node: SyntaxNode, namespace: string | null): FragmentCard {
   const localName = labelText(node) ?? "unknown";
   const id = namespace ? `${namespace}::${localName}` : localName;
@@ -694,6 +735,28 @@ function resolveMappingRef(
     : refName;
 }
 
+/**
+ * Build a MappingBlock from a `mapping_block` CST node.
+ *
+ * A mapping has the richest structure of any block: source/target schemas,
+ * direct arrows, computed arrows, `each` and `flatten` sub-blocks, plus
+ * note blocks both inside and outside the mapping body. We collect them in
+ * one pass over `mapping_body.namedChildren` so the resulting `MappingBlock`
+ * preserves the user's authoring order — important for diagram layout, where
+ * arrow order is meaningful to the reader.
+ *
+ * Two precedence rules to be aware of:
+ *  1. Source and target refs are resolved against the workspace index using
+ *     the enclosing namespace, so an unqualified `customers` inside a
+ *     `namespace crm { ... }` block resolves to `crm::customers`.
+ *  2. NL @-refs inside arrow transforms are resolved *after* sources/targets
+ *     are known, because the resolver needs the mapping context (sources +
+ *     targets) to disambiguate bare field names.
+ *
+ * Note blocks may appear inside `mapping_body` or as direct children of the
+ * `mapping_block` node depending on placement; we collect from both locations
+ * so the user's choice of placement does not change rendering.
+ */
 function extractMapping(
   uri: string,
   node: SyntaxNode,
@@ -779,6 +842,18 @@ function extractMapping(
   };
 }
 
+/**
+ * Extract a mapping's `source { ... }` block into schema refs and an optional
+ * join description.
+ *
+ * The grammar overloads `source_ref`: it normally wraps a schema name
+ * (identifier / backtick / qualified_name), but it can also wrap a bare NL
+ * string when the user is documenting a join condition (e.g.
+ * `source { customers, orders, "joined on customer_id" }`). We disambiguate by
+ * checking which child the source_ref actually contains: if it has only an
+ * NL string and no name child, it is a join description; otherwise it is a
+ * schema reference.
+ */
 function extractSourceBlock(node: SyntaxNode): SourceBlockInfo {
   const schemas: string[] = [];
   let joinDescription: string | null = null;
@@ -802,6 +877,14 @@ function extractSourceBlock(node: SyntaxNode): SourceBlockInfo {
   return { schemas, joinDescription, filters };
 }
 
+/**
+ * Extract a direct mapping arrow (`src -> tgt`) from a `map_arrow` node.
+ *
+ * Direct arrows always have at least one source path, exactly one target
+ * path, and an optional pipe chain (transform). The transform is left null
+ * (rather than a synthetic pass-through) so renderers can distinguish between
+ * an explicit identity transform and the absence of one.
+ */
 function extractArrow(uri: string, node: SyntaxNode): ArrowEntry {
   const srcPaths = children(node, "src_path");
   const tgtPath = child(node, "tgt_path");
@@ -821,6 +904,15 @@ function extractArrow(uri: string, node: SyntaxNode): ArrowEntry {
   };
 }
 
+/**
+ * Extract a computed arrow (`-> tgt = transform`) from a `computed_arrow` node.
+ *
+ * Computed arrows have no source paths — the value is produced entirely by the
+ * pipe chain (a literal, a constant expression, or an NL transform that
+ * references @-refs). We return an `ArrowEntry` with an empty `sourceFields`
+ * array so the viz can render direct and computed arrows through a single
+ * code path while still distinguishing them when needed.
+ */
 function extractComputedArrow(uri: string, node: SyntaxNode): ArrowEntry {
   const tgtPath = child(node, "tgt_path");
   const pipeChain = child(node, "pipe_chain");
@@ -867,6 +959,15 @@ function extractTransform(pipeChain: SyntaxNode): TransformInfo {
   };
 }
 
+/**
+ * Extract an `each` sub-block — a per-list-element mapping nested inside a
+ * parent mapping.
+ *
+ * `each` may itself contain further `each` blocks (e.g. mapping a list of
+ * orders, each containing a list of line items), so we recurse to build a
+ * nested structure rather than flattening. Computed arrows are valid inside
+ * `each` and are collected alongside direct arrows.
+ */
 function extractEachBlock(uri: string, node: SyntaxNode): EachBlock {
   const srcPath = child(node, "src_path");
   const tgtPath = child(node, "tgt_path");
@@ -892,6 +993,15 @@ function extractEachBlock(uri: string, node: SyntaxNode): EachBlock {
   };
 }
 
+/**
+ * Extract a `flatten` sub-block — collapses a list source into a flat target
+ * by mapping each element's fields directly without an enclosing record.
+ *
+ * Unlike `each`, flatten does not nest: it has a single source path and a set
+ * of arrows that target fields on the parent mapping's target. We do not
+ * recurse into nested `flatten` blocks because the grammar does not permit
+ * them.
+ */
 function extractFlattenBlock(uri: string, node: SyntaxNode): FlattenBlock {
   const srcPath = child(node, "src_path");
   const arrows: ArrowEntry[] = [];
@@ -913,6 +1023,19 @@ function extractFlattenBlock(uri: string, node: SyntaxNode): FlattenBlock {
 
 // ---------- Metric extraction ----------
 
+/**
+ * Build a MetricCard from a `schema_block` decorated with the `metric` tag.
+ *
+ * In v2 a metric is *not* a separate top-level production: it is a normal
+ * `schema_block` whose metadata block carries `metric` plus a set of metric
+ * keys (`source`, `grain`, `slice`, `filter`, `metric_name`). The label is
+ * carried by `metric_name "..."` rather than the schema-level `note "..."`,
+ * so we look for that tag specifically rather than reusing
+ * `extractSchemaLabel`. The fields use a different shape too — each field can
+ * carry a `measure` annotation (additive / non_additive / semi_additive) —
+ * which is why metric fields go through `extractMetricFields` instead of the
+ * normal `extractFieldEntries` path.
+ */
 function extractMetric(
   uri: string,
   node: SyntaxNode,
@@ -967,6 +1090,19 @@ function extractMetric(
   };
 }
 
+/**
+ * Pull metric-specific tags out of a metadata block into separate buckets.
+ *
+ * `source` and `slices` use the array form because both can be braced lists
+ * (`source { customers, orders }`, `slice { region, segment }`). `grain` and
+ * `filter` are scalar so they are passed back through setter callbacks rather
+ * than out-params on the same array — keeping the call sites readable.
+ *
+ * The `value_text` wrapper handles braced/multi-value forms; for single-value
+ * tags the value is a plain identifier or string and we read its text
+ * directly. We deliberately do not validate the tag values here — semantic
+ * validation lives in `satsuma-core` and runs against the index, not the CST.
+ */
 function extractMetricMetadata(
   meta: SyntaxNode,
   source: string[],
@@ -1016,6 +1152,14 @@ function extractMetricMetadata(
   }
 }
 
+/**
+ * Extract metric fields with their `measure` annotations.
+ *
+ * Metric fields use a flat shape (no nested children) because measures only
+ * apply to leaf-level numeric fields. We do not delegate to
+ * `extractFieldEntries` because that path enriches with constraints, comments,
+ * and recursion — none of which are relevant or rendered for metric fields.
+ */
 function extractMetricFields(uri: string, body: SyntaxNode): MetricFieldEntry[] {
   const fields: MetricFieldEntry[] = [];
   for (const fieldNode of children(body, "field_decl")) {
@@ -1043,6 +1187,19 @@ function extractMetricFields(uri: string, body: SyntaxNode): MetricFieldEntry[] 
   return fields;
 }
 
+/**
+ * Determine the measure kind for a metric field from its metadata block.
+ *
+ * The measure tag has three valid forms with different defaults:
+ *  - bare `measure`              → defaults to `"additive"`
+ *  - `measure: additive`         → explicit, same as bare
+ *  - `measure: non_additive`     → counts/distinct (cannot be summed across slices)
+ *  - `measure: semi_additive`    → balances/snapshots (summable across some dims)
+ *
+ * Any other value falls back to `"additive"` rather than `null` so the field
+ * is still treated as a measure; `null` is reserved for fields that have no
+ * `measure` tag at all (i.e. dimension fields).
+ */
 function extractMeasure(
   meta: SyntaxNode,
 ): MetricFieldEntry["measure"] {
@@ -1074,6 +1231,12 @@ function extractMeasure(
 
 // ---------- Notes & comments extraction ----------
 
+/**
+ * Extract a `note "..."` block. The string child may be either `nl_string`
+ * (single-line) or `multiline_string` (triple-quoted); we record which one
+ * was used so renderers can preserve formatting (multi-line notes are shown
+ * with line breaks; single-line notes are wrapped to fit the card width).
+ */
 function extractNoteBlock(uri: string, node: SyntaxNode): NoteBlock {
   let text = "";
   let isMultiline = false;
@@ -1088,6 +1251,20 @@ function extractNoteBlock(uri: string, node: SyntaxNode): NoteBlock {
   return { text, isMultiline, location: nodeLocation(uri, node) };
 }
 
+/**
+ * Collect every note attached to a CST node, regardless of where the user
+ * placed it.
+ *
+ * Notes can appear in two distinct CST locations and we treat them as a
+ * single conceptual list:
+ *  1. As `note_block` children inside the entity body — the canonical form,
+ *     used for free-standing prose attached to a schema/mapping/metric.
+ *  2. As `note_tag` entries inside the entity's `metadata_block` — the
+ *     compact inline form (`{ note: "short label" }`).
+ *
+ * Both forms produce identical `NoteBlock` records so the renderer does not
+ * need to know which one the user wrote.
+ */
 function extractNotes(uri: string, node: SyntaxNode): NoteBlock[] {
   const notes: NoteBlock[] = [];
   for (const ch of node.namedChildren) {

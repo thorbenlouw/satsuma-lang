@@ -75,9 +75,25 @@ export function collectFieldPaths(fields: FieldDecl[], prefix: string, paths: Se
 }
 
 /**
- * Expand fragment spreads for a set of schema keys, adding fragment fields
- * to the fieldPaths set. Returns true if any spread references an
- * unresolvable fragment.
+ * Expand fragment spreads for a set of schema keys, inlining fragment fields
+ * into `fieldPaths`. Returns true if any spread targeted an unresolvable
+ * fragment (the caller decides whether to surface this as a diagnostic).
+ *
+ * Why this is its own pass (rather than happening at parse time):
+ *  - Spreads cross file boundaries, so we cannot resolve them until the
+ *    workspace index is built and every fragment is registered.
+ *  - Spreads can be transitive (fragment A spreads fragment B which spreads
+ *    fragment C) and can form diamond shapes (two fragments spread the same
+ *    third fragment). Both are resolved here via the recursive
+ *    `expandEntitySpreads` walker, with cycle protection through `visited`.
+ *  - Schemas can also contain *nested* record-level spreads (a record-typed
+ *    field whose body uses `...Frag`). Those are walked separately by
+ *    `expandNestedFieldPaths` so the fully-qualified dotted paths
+ *    (`address.street`, etc.) end up in `fieldPaths`.
+ *
+ * `lookupSchema` is optional because some callers (e.g. fragment-only
+ * expansions) operate over a fragment-only index; when omitted we simply
+ * skip the schema lookup and only handle the records the caller passed in.
  */
 export function expandSpreads(
   schemaKeys: string[],
