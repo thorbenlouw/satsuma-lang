@@ -12,6 +12,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import { addPathAndPrefixes } from "@satsuma/core";
@@ -41,7 +42,7 @@ Examples:
   satsuma fields hub_customer --with-meta                        # include tags
   satsuma fields hub_customer --unmapped-by 'load hub_customer'  # coverage gaps
   satsuma fields pos::stores --json                              # namespace-qualified`)
-    .action(async (schemaName: string, pathArg: string | undefined, opts: { withMeta?: boolean; unmappedBy?: string; json?: boolean }) => {
+    .action(runCommand(async (schemaName: string, pathArg: string | undefined, opts: { withMeta?: boolean; unmappedBy?: string; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       // Search schemas first, then fragments, then metrics
@@ -58,12 +59,12 @@ Examples:
       }
       if (!resolved) {
         const allKeys = [...index.schemas.keys(), ...index.fragments.keys(), ...index.metrics.keys()];
-        console.error(`'${schemaName}' not found in schemas, fragments, or metrics.`);
         const close = allKeys.find(
           (k) => k.toLowerCase() === schemaName.toLowerCase(),
         );
-        if (close) console.error(`Did you mean '${close}'?`);
-        process.exit(1);
+        const lines = [`'${schemaName}' not found in schemas, fragments, or metrics.`];
+        if (close) lines.push(`Did you mean '${close}'?`);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
       const resolvedSchemaName = resolved.key;
 
@@ -88,13 +89,13 @@ Examples:
       if (opts.unmappedBy) {
         const resolvedMapping = resolveIndexKey(opts.unmappedBy, index.mappings);
         if (!resolvedMapping) {
-          console.error(`Mapping '${opts.unmappedBy}' not found.`);
           const close = [...index.mappings.keys()].find(
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: guarded by outer opts.unmappedBy check
             (k) => k.toLowerCase() === opts.unmappedBy!.toLowerCase(),
           );
-          if (close) console.error(`Did you mean '${close}'?`);
-          process.exit(1);
+          const lines = [`Mapping '${opts.unmappedBy}' not found.`];
+          if (close) lines.push(`Did you mean '${close}'?`);
+          throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
         }
 
         const mappedFields = getMappedFieldNames(resolvedMapping.key, resolvedSchemaName, index);
@@ -121,7 +122,7 @@ Examples:
       }
 
       printDefault(resolvedSchemaName, fields, opts);
-    });
+    }));
 }
 
 function deepCopyFields(fields: FieldDecl[]): FieldWithTags[] {

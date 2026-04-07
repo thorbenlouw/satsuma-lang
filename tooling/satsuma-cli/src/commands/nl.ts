@@ -11,6 +11,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { extractNLContent } from "../nl-extract.js";
 import type { NLItem } from "../nl-extract.js";
@@ -50,7 +51,7 @@ Examples:
   satsuma nl all pipeline.stm                # all NL in file and imports
   satsuma nl all pipeline.stm --kind warning # only //! warnings
   satsuma nl hub_customer --json             # structured output`)
-    .action(async (scope: string, pathArg: string | undefined, opts: { kind?: string; json?: boolean }) => {
+    .action(runCommand(async (scope: string, pathArg: string | undefined, opts: { kind?: string; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       let items: NLItemWithFile[];
@@ -77,7 +78,7 @@ Examples:
       }
 
       printDefault(items);
-    });
+    }));
 }
 
 function extractFromAll(parsedFiles: ParsedFile[]): NLItemWithFile[] {
@@ -98,7 +99,6 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: E
   const transformResolved = resolveIndexKey(blockName, index.transforms);
 
   if (!schemaResolved && !mappingResolved && !metricResolved && !transformResolved) {
-    console.error(`'${blockName}' not found as a schema, mapping, metric, or transform.`);
     const allNames = [
       ...index.schemas.keys(),
       ...index.mappings.keys(),
@@ -108,8 +108,9 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: E
     const close = allNames.find(
       (k) => k.toLowerCase() === blockName.toLowerCase(),
     );
-    if (close) console.error(`Did you mean '${close}'?`);
-    process.exit(1);
+    const lines = [`'${blockName}' not found as a schema, mapping, metric, or transform.`];
+    if (close) lines.push(`Did you mean '${close}'?`);
+    throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
   }
 
   // Collect NL content from ALL matching blocks (schema, mapping, metric, transform)
@@ -149,8 +150,7 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Ex
 
   const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
   if (!resolvedSchema) {
-    console.error(`Schema '${schemaName}' not found.`);
-    process.exit(1);
+    throw new CommandError(`Schema '${schemaName}' not found.`, EXIT_NOT_FOUND);
   }
 
   const schema = resolvedSchema.entry;
@@ -159,10 +159,10 @@ function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: Ex
     ? schemaHasFieldByPath(schema.fields, pathSegments)
     : schemaHasField(schema.fields, leafName);
   if (!fieldExists) {
-    console.error(
+    throw new CommandError(
       `Field '${fieldPath}' not found in schema '${schemaName}'.`,
+      EXIT_NOT_FOUND,
     );
-    process.exit(1);
   }
 
   const items: NLItemWithFile[] = [];

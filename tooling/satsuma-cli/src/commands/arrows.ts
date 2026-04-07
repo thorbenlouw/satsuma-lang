@@ -13,6 +13,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
@@ -48,13 +49,13 @@ Examples:
   satsuma arrows hub_customer.email                  # all arrows for this field
   satsuma arrows hub_customer.email --as-source      # only outbound arrows
   satsuma arrows pos::stores.STORE_ID --json         # namespace-qualified`)
-    .action(async (fieldRef: string, pathArg: string | undefined, opts: { asSource?: boolean; asTarget?: boolean; json?: boolean }) => {
+    .action(runCommand(async (fieldRef: string, pathArg: string | undefined, opts: { asSource?: boolean; asTarget?: boolean; json?: boolean }) => {
       const dot = fieldRef.indexOf(".");
       if (dot === -1) {
-        console.error(
+        throw new CommandError(
           `Invalid field reference '${fieldRef}'. Expected format: schema.field`,
+          EXIT_PARSE_ERROR,
         );
-        process.exit(2);
       }
 
       const schemaName = fieldRef.slice(0, dot);
@@ -65,12 +66,12 @@ Examples:
       // Validate schema exists
       const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
       if (!resolvedSchema) {
-        console.error(`Schema '${schemaName}' not found.`);
         const close = [...index.schemas.keys()].find(
           (k) => k.toLowerCase() === schemaName.toLowerCase(),
         );
-        if (close) console.error(`Did you mean '${close}'?`);
-        process.exit(1);
+        const lines = [`Schema '${schemaName}' not found.`];
+        if (close) lines.push(`Did you mean '${close}'?`);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
 
       // Validate field exists in schema (including fragment spread fields and nested children)
@@ -80,16 +81,14 @@ Examples:
       const fieldExists = findFieldByPath(allFields, fieldName) ||
         collectAllFieldNames(allFields).includes(fieldName);
       if (!fieldExists) {
-        console.error(
-          `Field '${fieldName}' not found in schema '${schemaName}'.`,
-        );
         // Suggest close matches from top-level and nested fields
         const allNames = collectAllFieldNames(allFields);
         const close = allNames.find(
           (n) => n.toLowerCase() === fieldName.toLowerCase(),
         );
-        if (close) console.error(`Did you mean '${close}'?`);
-        process.exit(1);
+        const lines = [`Field '${fieldName}' not found in schema '${schemaName}'.`];
+        if (close) lines.push(`Did you mean '${close}'?`);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
 
       // Find matching arrows using schema-qualified key
@@ -241,7 +240,7 @@ Examples:
 
       if (arrows.length === 0) {
         console.log(`No arrows found for '${fieldRef}'.`);
-        process.exit(1);
+        return EXIT_NOT_FOUND;
       }
 
       if (opts.json) {
@@ -318,7 +317,7 @@ Examples:
       // Pass the resolved schema key so printDefault can match against index
       // entries even when the user queried with a bare (unqualified) name (sl-ltv6).
       printDefault(fieldRef, arrows, index, resolvedSchema.key);
-    });
+    }));
 }
 
 /**

@@ -13,6 +13,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { canonicalEntityName } from "@satsuma/core";
@@ -32,20 +33,21 @@ Examples:
   satsuma metric daily_sales                         # full metric
   satsuma metric daily_sales --sources               # just source schemas
   satsuma metric analytics::daily_sales --json       # namespace-qualified`)
-    .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; sources?: boolean; json?: boolean }) => {
+    .action(runCommand(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; sources?: boolean; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const resolved = resolveIndexKey(name, index.metrics);
       if (!resolved) {
         const keys = [...index.metrics.keys()];
         const close = keys.find((k) => k.toLowerCase() === name.toLowerCase());
+        const lines: string[] = [];
         if (close) {
-          console.error(`Metric '${name}' not found. Did you mean '${close}'?`);
+          lines.push(`Metric '${name}' not found. Did you mean '${close}'?`);
         } else {
-          console.error(`Metric '${name}' not found.`);
-          if (keys.length > 0) console.error(`Available: ${keys.join(", ")}`);
+          lines.push(`Metric '${name}' not found.`);
+          if (keys.length > 0) lines.push(`Available: ${keys.join(", ")}`);
         }
-        process.exit(1);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
       const entry = resolved.entry;
       const resolvedName = resolved.key;
@@ -62,7 +64,7 @@ Examples:
       } else {
         printDefault(entry, metricNode, opts.compact);
       }
-    });
+    }));
 }
 
 // ── CST helpers ───────────────────────────────────────────────────────────────

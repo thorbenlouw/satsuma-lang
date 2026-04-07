@@ -11,6 +11,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { extractMetadata } from "@satsuma/core";
 import type { MetaEntry } from "@satsuma/core";
@@ -49,7 +50,7 @@ Examples:
   satsuma meta 'load hub_store'              # mapping metadata
   satsuma meta hub_customer --tags-only      # just tag tokens
   satsuma meta pos::stores.STORE_ID --json   # namespace-qualified`)
-    .action(async (scope: string, pathArg: string | undefined, opts: { tagsOnly?: boolean; json?: boolean }) => {
+    .action(runCommand(async (scope: string, pathArg: string | undefined, opts: { tagsOnly?: boolean; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       let result: MetaResult;
@@ -79,7 +80,7 @@ Examples:
       }
 
       printDefault(result);
-    });
+    }));
 }
 
 function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: ExtractedWorkspace): MetaResult {
@@ -96,7 +97,6 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: E
   if (metricResolved && !schemaResolved) { blockTypes.push("schema_block"); resolvedName = metricResolved.key; }
 
   if (blockTypes.length === 0) {
-    console.error(`'${blockName}' not found as a schema, mapping, or metric.`);
     const allNames = [
       ...index.schemas.keys(),
       ...index.mappings.keys(),
@@ -105,8 +105,9 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: E
     const close = allNames.find(
       (k) => k.toLowerCase() === blockName.toLowerCase(),
     );
-    if (close) console.error(`Did you mean '${close}'?`);
-    process.exit(1);
+    const lines = [`'${blockName}' not found as a schema, mapping, or metric.`];
+    if (close) lines.push(`Did you mean '${close}'?`);
+    throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
   }
 
   const resolvedEntry =
@@ -182,8 +183,10 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Ex
     bodyType = "schema_body";
   }
   if (!resolved) {
-    console.error(`'${entityName}' not found in schemas, fragments, or metrics.`);
-    process.exit(1);
+    throw new CommandError(
+      `'${entityName}' not found in schemas, fragments, or metrics.`,
+      EXIT_NOT_FOUND,
+    );
   }
 
   const entity = resolved.entry;
@@ -201,10 +204,10 @@ function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: Ex
   }
 
   if (!field) {
-    console.error(
+    throw new CommandError(
       `Field '${fieldPath}' not found in '${entityName}'.`,
+      EXIT_NOT_FOUND,
     );
-    process.exit(1);
   }
 
   // If the field came from a fragment spread, look up metadata from the fragment's CST

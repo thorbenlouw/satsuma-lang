@@ -10,6 +10,7 @@
  */
 
 import type { Command } from "commander";
+import { runCommand, CommandError, EXIT_PARSE_ERROR } from "../command-runner.js";
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
@@ -79,14 +80,19 @@ Examples:
   satsuma diff old.stm new.stm --stat               # summary counts
   satsuma diff old.stm new.stm --json               # full structural delta
   satsuma diff old.stm new.stm --names-only         # just changed block names`)
-    .action(async (pathA: string, pathB: string, opts: { json?: boolean; namesOnly?: boolean; stat?: boolean }) => {
+    .action(runCommand(async (pathA: string, pathB: string, opts: { json?: boolean; namesOnly?: boolean; stat?: boolean }) => {
       let filesA: string[], filesB: string[];
       try {
         filesA = await resolveInput(pathA, { followImports: false });
         filesB = await resolveInput(pathB, { followImports: false });
       } catch (err: unknown) {
-        console.error(`Error resolving paths: ${(err as Error).message}`);
-        process.exit(2);
+        // diff is one of the three commands that resolve directly rather
+        // than through loadWorkspace — it needs `followImports: false` and
+        // two separate inputs (see load-workspace.ts header).
+        throw new CommandError(
+          `Error resolving paths: ${(err as Error).message}`,
+          EXIT_PARSE_ERROR,
+        );
       }
 
       const indexA = buildIndex(filesA.map((f) => parseFile(f)));
@@ -125,7 +131,7 @@ Examples:
       }
 
       printDefault(delta);
-    });
+    }));
 }
 
 function printStat(delta: Delta): void {

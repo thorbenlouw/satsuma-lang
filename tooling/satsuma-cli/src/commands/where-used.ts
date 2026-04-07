@@ -15,6 +15,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { stripNLRefScopePrefix } from "@satsuma/core";
@@ -47,7 +48,7 @@ Examples:
   satsuma where-used hub_customer                    # who references this schema?
   satsuma where-used audit_fields                    # where is this fragment spread?
   satsuma where-used trim_and_lower --json           # transform refs as JSON`)
-    .action(async (name: string, pathArg: string | undefined, opts: { json?: boolean }) => {
+    .action(runCommand(async (name: string, pathArg: string | undefined, opts: { json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       // Determine entity type — resolve namespace-qualified lookups
@@ -68,14 +69,15 @@ Examples:
         ];
         const close = allNames.find((k) => k.toLowerCase() === name.toLowerCase());
         if (opts.json) {
+          // JSON consumers parse stdout, so the error must land there too —
+          // see schema.ts for the same pattern.
           const errorObj: Record<string, unknown> = { error: errorMsg };
           if (close) errorObj.suggestion = close;
-          console.log(JSON.stringify(errorObj, null, 2));
-        } else {
-          console.error(errorMsg);
-          if (close) console.error(`Did you mean '${close}'?`);
+          throw new CommandError(JSON.stringify(errorObj, null, 2), EXIT_NOT_FOUND, "stdout");
         }
-        process.exit(1);
+        const lines = [errorMsg];
+        if (close) lines.push(`Did you mean '${close}'?`);
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
 
       const refs = gatherRefs(resolvedName, index, parsedFiles, isSchema, isFragment, isTransform);
@@ -85,19 +87,18 @@ Examples:
         // query so that bare-name lookups produce the qualified form, e.g.
         // "crm::customers" not "::customers" (sl-b0mq).
         console.log(JSON.stringify({ name: canonicalKey(resolvedName), refs }, null, 2));
-        if (refs.length === 0) process.exit(1);
-        return;
+        return refs.length === 0 ? EXIT_NOT_FOUND : undefined;
       }
 
       if (refs.length === 0) {
         // Use resolvedName in text output too so the header always shows the
         // canonical qualified name regardless of how the user queried (sl-wfgx).
         console.log(`No references to '${resolvedName}' found.`);
-        process.exit(1);
+        return EXIT_NOT_FOUND;
       }
 
       printDefault(resolvedName, refs);
-    });
+    }));
 }
 
 // ── Reference gathering ───────────────────────────────────────────────────────

@@ -12,6 +12,7 @@
 
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
+import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
@@ -33,7 +34,7 @@ Examples:
   satsuma schema hub_customer                        # full schema
   satsuma schema hub_customer --fields-only          # one field per line
   satsuma schema pos::stores --json                  # namespace-qualified`)
-    .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; fieldsOnly?: boolean; json?: boolean }) => {
+    .action(runCommand(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; fieldsOnly?: boolean; json?: boolean }) => {
       const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const resolved = resolveIndexKey(name, index.schemas);
@@ -51,16 +52,19 @@ Examples:
           errorMsg = `Schema '${name}' not found.`;
         }
         if (opts.json) {
+          // JSON callers want the error on the same channel as success
+          // output so they can pipe `satsuma schema … --json | jq` and
+          // still parse the response. Hand the JSON-shaped message to the
+          // runner with stream: "stdout".
           const errorObj: Record<string, unknown> = { error: errorMsg };
           if (keys.length > 0) errorObj.available = keys;
-          console.log(JSON.stringify(errorObj, null, 2));
-        } else {
-          console.error(errorMsg);
-          if (keys.length > 0 && !(ambiguous && ambiguous.length > 1) && !close) {
-            console.error(`Available: ${keys.join(", ")}`);
-          }
+          throw new CommandError(JSON.stringify(errorObj, null, 2), EXIT_NOT_FOUND, "stdout");
         }
-        process.exit(1);
+        const lines: string[] = [errorMsg];
+        if (keys.length > 0 && !(ambiguous && ambiguous.length > 1) && !close) {
+          lines.push(`Available: ${keys.join(", ")}`);
+        }
+        throw new CommandError(lines.join("\n"), EXIT_NOT_FOUND);
       }
       const entry = resolved.entry;
 
@@ -77,7 +81,7 @@ Examples:
       } else {
         printDefault(entry, schemaNode, opts.compact);
       }
-    });
+    }));
 }
 
 // ── CST helpers ───────────────────────────────────────────────────────────────
