@@ -1,8 +1,11 @@
+import { createAtRefRegex } from "@satsuma/core/nl-ref";
+
 /**
- * @ref pattern matching — mirrors AT_REF_RE from @satsuma/core/nl-ref.
- * Matches @identifier, @schema.field, @ns::schema.field, and @`backtick` variants.
+ * @ref pattern matching — single source of truth lives in @satsuma/core/nl-ref.
+ * A fresh regex instance is created so that mutating /g state in this module
+ * cannot collide with other consumers of the shared pattern.
  */
-const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+const AT_REF_RE = createAtRefRegex();
 
 /** HTML-escape special characters to prevent injection. */
 function escapeHtml(s: string): string {

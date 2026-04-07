@@ -10,6 +10,7 @@
 import { capitalize, stripNLRefScopePrefix } from "@satsuma/core";
 import {
   extractAtRefs,
+  computeNLRefPosition,
   classifyRef,
   resolveRef,
   isSchemaInMappingSources,
@@ -86,6 +87,7 @@ function checkHiddenSourceInNl(index: ExtractedWorkspace): LintDiagnostic[] {
       }
 
       if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
+        const { line, column } = computeNLRefPosition(item, offset);
         const displayRef = item.namespace && referencedSchema.startsWith(`${item.namespace}::`)
           ? referencedSchema.slice(item.namespace.length + 2)
           : referencedSchema;
@@ -101,8 +103,8 @@ function checkHiddenSourceInNl(index: ExtractedWorkspace): LintDiagnostic[] {
           : `Added '${displayRef}' to source list of mapping '${mappingKey}'`;
         diagnostics.push({
           file: item.file,
-          line: item.line + 1,
-          column: item.column + offset + 1,
+          line,
+          column,
           severity: "error",
           rule: "hidden-source-in-nl",
           message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,
@@ -416,10 +418,11 @@ function checkUnresolvedNlRef(index: ExtractedWorkspace): LintDiagnostic[] {
 
       const resolution = resolveRef(ref, mappingContext, index);
       if (!resolution.resolved) {
+        const { line, column } = computeNLRefPosition(item, offset);
         diagnostics.push({
           file: item.file,
-          line: item.line + 1,
-          column: item.column + offset + 1,
+          line,
+          column,
           severity: "warning",
           rule: "unresolved-nl-ref",
           message: `NL reference \`${ref}\` in ${scopeLabel} '${displayName}' does not resolve to any known identifier`,

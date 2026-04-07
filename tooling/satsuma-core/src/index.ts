@@ -49,7 +49,10 @@ export {
   makeEntityRefResolver,
 } from "./spread-expand.js";
 export {
+  AT_REF_PATTERN,
+  createAtRefRegex,
   extractAtRefs,
+  computeNLRefPosition,
   classifyRef,
   resolveRef,
   extractNLRefData,

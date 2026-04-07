@@ -1,6 +1,6 @@
 ---
 id: sl-gl21
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-02T15:15:27Z
@@ -26,3 +26,12 @@ Needs a design decision: should the fix be a regex-level lookbehind (e.g. requir
 - @refs at start of string, after whitespace, or after punctuation like ( are still extracted
 - Existing NL ref tests continue to pass
 
+
+## Notes
+
+**2026-04-07T15:21:41Z**
+
+**2026-04-07T15:21:41Z**
+
+Cause: AT_REF_RE had no lookbehind, so any '@' followed by an identifier matched — including email addresses (user@example.com) and SQL LIKE wildcards (%@test.internal), producing spurious unresolved-nl-ref warnings.
+Fix: Added a lookbehind that only allows '@' at start-of-string, after whitespace, or after a small set of opening/separator punctuation '([{,;'. The pattern is now exported from satsuma-core as AT_REF_PATTERN with a createAtRefRegex() factory; LSP (definition.ts, semantic-tokens.ts), satsuma-viz (markdown.ts), and satsuma-viz-backend (workspace-index.ts) all import it instead of duplicating the regex. New unit tests in core/test/nl-ref.test.js cover email/wildcard/digit/underscore prefixes plus the start-of-string and opening-punctuation acceptance cases. Validating examples/multi-source/multi-source-join.stm now reports zero warnings.

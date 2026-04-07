@@ -1,4 +1,5 @@
 import { Location } from "vscode-languageserver";
+import { createAtRefRegex } from "@satsuma/core";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, children, labelText } from "./parser-utils";
 import {
@@ -484,7 +485,7 @@ function getMappingSchemaRefs(
 
 // ---------- NL reference detection ----------
 
-const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+const AT_REF_RE = createAtRefRegex();
 
 /**
  * Check if the cursor is on an @ref reference inside an NL string.
