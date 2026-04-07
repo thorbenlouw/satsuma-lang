@@ -138,9 +138,10 @@ flowchart TD
 
 | Function / Type | File | What It Does |
 |---|---|---|
-| `buildIndex(parsedFiles)` | `index-builder.ts` | The big assembler — takes parsed files, calls every core extractor, builds the full `ExtractedWorkspace` with deduplication and cross-reference graph |
+| `loadWorkspace(pathArg)` | `load-workspace.ts` | The one-call workspace loader used by 18 of 21 CLI commands — resolves the path argument, parses the files, builds the index, and reports any resolve failure with a single consistent `Error resolving path '<arg>': ...` message. Returns `{ files, index }`. |
+| `buildIndex(parsedFiles)` | `index-builder.ts` | The big assembler — takes parsed files, calls every core extractor, builds the full `ExtractedWorkspace` with deduplication and cross-reference graph. Usually invoked indirectly via `loadWorkspace`. |
 | `ExtractedWorkspace` | `types.ts` | The CLI's workspace model — maps of schemas, metrics, mappings, fragments, transforms, plus arrows, notes, warnings, NL ref data, duplicates |
-| `resolveInput(pathArg)` | `workspace.ts` | File discovery — takes a `.stm` path, follows imports transitively, returns all reachable file paths |
+| `resolveInput(pathArg)` | `workspace.ts` | Lower-level primitive — takes a `.stm` path, follows imports transitively, returns all reachable file paths. Called directly only by `fmt` / `diff` / `validate` (which have custom error handling) and by `loadWorkspace` itself. |
 | `buildFullGraph(index)` | `graph-builder.ts` | Constructs a schema-level directed graph (nodes + edges) from the workspace index, including NL-derived edges |
 | `diffIndex(indexA, indexB)` | `diff.ts` | Structural comparison of two workspace snapshots — field additions/removals, type changes, arrow changes |
 | `RULES` | `lint-engine.ts` | The lint rule registry — currently 3 rules (hidden-source-in-nl, unresolved-nl-ref, duplicate-definition) |
@@ -387,20 +388,18 @@ The matrix claims `satsuma-viz` has no dependency on `satsuma-core`. It does —
 
 ### Tier 2 — Medium Impact, Moderate Effort
 
-**R6. Extract a command harness to kill the per-command boilerplate.**
-Every command does the same dance: parse path argument, resolve imports, load files, build index, look up entity, handle not-found. A `CommandContext` harness that encapsulates this pipeline would shrink each command by 15–25 lines and centralise error handling. Sketch:
+**R6. ~~Extract a command harness to kill the per-command boilerplate.~~ (Partially done — sl-r39t)**
+The "resolve → parse → build index" half of this dance is now owned by `load-workspace.ts`'s `loadWorkspace()`, which 18 commands call in a single line. Typical usage:
 
 ```typescript
-async function withIndex(
-  pathArg: string | undefined,
-  fn: (index: ExtractedWorkspace, files: ParsedFile[]) => void,
-): Promise<void> {
-  const paths = await resolveInput(pathArg ?? ".");
-  const files = await loadFiles(paths, parseFile);
-  const index = buildIndex(files.map(extractFileData));
-  fn(index, files);
+async function schemaCommand(name: string, pathArg: string | undefined) {
+  const { files, index } = await loadWorkspace(pathArg);
+  const resolved = resolveIndexKey(name, index.schemas);
+  // … look up entity, handle not-found, print
 }
 ```
+
+The "entity lookup + not-found + suggestion" half is still per-command because the error formatting varies meaningfully across the 16 commands (different JSON shapes, different kinds of suggestion). A full `CommandContext` harness would be the next step, but it should probably be tackled together with R7 (typed errors) — the two refactors touch the same call sites and the right shape of the harness depends on whether commands throw or print + exit.
 
 **R7. Replace `process.exit()` with typed errors.**
 Create `NotFoundError`, `ParseError`, and `ValidationError` classes. Have commands throw instead of calling `process.exit()`. Add a single `try/catch` in `index.ts` that maps error types to exit codes. This makes all command logic unit-testable without spawning subprocesses. The integration tests continue to work unchanged. Phase this in command-by-command.
@@ -505,6 +504,6 @@ The architecture notes say "full re-parse is <5ms" and "incremental computation 
 
 6. **The CLI bridge files are permanent.** `satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` are the canonical adapters from the CLI's `ExtractedWorkspace` to core's callback APIs (ADR-005 / ADR-006). Earlier versions of this guide called them transitional; that was wrong.
 
-7. **Read the ADRs.** They explain _why_ decisions were made, not just what was decided. ADR-005, ADR-006, ADR-020, and ADR-022 are essential context.
+7. **Read the ADRs.** They explain *why* decisions were made, not just what was decided. ADR-005, ADR-006, ADR-020, and ADR-022 are essential context.
 
 8. **Test at the right level.** Core extraction → test in core. CLI output formatting → test in CLI. LSP protocol behaviour → test in LSP. Don't duplicate coverage across layers.
