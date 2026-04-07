@@ -37,10 +37,10 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Refactor command handlers to return a structured result with `exitCode`; let a single top-level dispatcher call `process.exit()` once. (Landed as `src/command-runner.ts` exposing `CommandError` + `runCommand`. Two intentional exit sites remain: the runner and an `unhandledRejection` safety net in `index.ts` for failures before dispatch.)
 - [x] Update tests to assert on returned codes rather than spawning subprocesses where unit-level testing now suffices. (`errors.test.ts` and `load-workspace.test.ts` rewritten to assert thrown `CommandError`s directly, dropping all `process.exit` stub plumbing. New `command-runner.test.ts` pins the four runner branches. Integration tests unchanged — they remain the contract.)
 
-### 7. Unify the three-headed validation pipeline *(stretch — may split)*
-- [ ] Document where the three pipelines diverge today (core semantic diagnostics, CLI `validate`, LSP diagnostic adapter).
-- [ ] Identify the smallest common interface they could all consume.
-- [ ] Land the unification in a dedicated PR with no behaviour change — diagnostics text and ordering must match the existing CLI integration tests exactly.
+### 7. Unify the three-headed validation pipeline *(done — sl-bxzg)*
+- [x] Document where the three pipelines diverge today (core semantic diagnostics, CLI `validate`, LSP diagnostic adapter). CLI computed import reachability before core validation; the LSP combined a partial core adapter with its own missing-import pass.
+- [x] Identify the smallest common interface they could all consume. Added `validateSemanticWorkspace` in `@satsuma/core` as the shared reachability-aware semantic validation entry point.
+- [x] Land the unification in a dedicated PR with no behaviour change — diagnostics text and ordering must match the existing CLI integration tests exactly. CLI and LSP adapters now consume the core entry point; core/LSP/CLI checks pin the contract.
 
 ### 8. Inline "why" comments for the most complex algorithms
 - [ ] `resolveRef` (NL ref resolver) — annotate the cascading conditionals with a comment explaining the precedence order and why each step exists. Reference `sl-dkr7` and the relevant memory note.
@@ -55,24 +55,24 @@ parallelisable — there is no enforced ordering except where noted.
 
 ## Test cleanup
 
-### 10. Add direct unit tests for `viz-model.ts`
-- [ ] Create `tooling/satsuma-cli/test/viz-model.test.ts` (or wherever the builder lives).
-- [ ] For each top-level `extract*` builder (`extractSchema`, `extractMapping`, `extractMetric`, `extractArrow`, `extractEachBlock`, `extractFlattenBlock`, etc.), write tests that parse a minimal `.stm` snippet, call the builder, and `assert.deepStrictEqual` against an expected `VizModel` fragment.
-- [ ] Cover at least: schema enrichment, mapping field-coverage annotations, namespace propagation, NL-derived edge promotion in arrow extraction, each/flatten nesting.
-- [ ] Replace the `as unknown as CommentEntry[]` cast with a properly typed accessor while you're in the file.
+### 10. Add direct unit tests for `viz-model.ts` *(done — sl-a8je)*
+- [x] Create `tooling/satsuma-cli/test/viz-model.test.ts` (or wherever the builder lives). Added `tooling/satsuma-viz-backend/test/viz-model-builders.test.js`.
+- [x] For each top-level `extract*` builder (`extractSchema`, `extractMapping`, `extractMetric`, `extractArrow`, `extractEachBlock`, `extractFlattenBlock`, etc.), write tests that parse a minimal `.stm` snippet, call the builder, and `assert.deepStrictEqual` against an expected `VizModel` fragment. Builder internals are exposed through `_testInternals`.
+- [x] Cover at least: schema enrichment, mapping field-coverage annotations, namespace propagation, NL-derived edge promotion in arrow extraction, each/flatten nesting.
+- [x] Replace the `as unknown as CommentEntry[]` cast with a properly typed accessor while you're in the file. Added `comments: CommentEntry[]` to `FragmentCard`, populated it in `extractFragment`, and removed the cast in `findPrecedingBlock`.
 
 ### 11. De-duplicate core ↔ CLI extraction tests *(done — sl-cvs2)*
 - [x] Diff `satsuma-core/test/extract.test.js` against `satsuma-cli/test/extract.test.ts`. (CLI was the broader of the two — its mock-based suite covered name forms, metadata enrichment, mapping source/target rules, namespace propagation, and import arity that core had not yet picked up.)
 - [x] Migrate the missing cases into core rather than just deleting them. (Added 32 cases to `satsuma-core/test/extract.test.js` as a clearly-labelled "migrated from CLI sl-cvs2" appendix; trimmed `satsuma-cli/test/extract.test.ts` to its real-file integration suite only.)
 - [x] Repeat for `classify.test.ts`. (CLI's `classify.test.ts` was a pure re-test of `@satsuma/core` `classifyTransform`/`classifyArrow` with no CLI-specific behaviour — every case was already covered by core's own `classify.test.js`. Deleted outright.) ARCHITECTURE.md "Known violation" note removed.
 
-### 12. Add error-recovery integration tests
-- [ ] Add at least 3 CLI integration tests that run `satsuma schema`, `satsuma validate`, and `satsuma fields` against a `.stm` fixture with a missing closing brace, asserting graceful output (non-crash, partial results, sensible diagnostics).
-- [ ] Add at least 3 LSP tests that build the workspace index from sources containing `MISSING` nodes and verify hover, definition, and completion still return non-crash results.
+### 12. Add error-recovery integration tests *(done — sl-zv0o)*
+- [x] Add at least 3 CLI integration tests that run `satsuma schema`, `satsuma validate`, and `satsuma fields` against a `.stm` fixture with a missing closing brace, asserting graceful output (non-crash, partial results, sensible diagnostics). Added `tooling/satsuma-cli/test/recovery.test.ts`.
+- [x] Add at least 3 LSP tests that build the workspace index from sources containing `MISSING` nodes and verify hover, definition, and completion still return non-crash results. Added `tooling/satsuma-lsp/test/recovery.test.js`.
 
-### 13. Grow grammar recovery corpus
-- [ ] Add corpus cases to `recovery.txt` for: cursor mid-token, partially written arrow (`source >`), half-typed field name, broken `import` declaration (no `from` clause), unterminated string in metadata.
-- [ ] Target ≥15 recovery cases total.
+### 13. Grow grammar recovery corpus *(done — sl-xr1r)*
+- [x] Add corpus cases to `recovery.txt` for: cursor mid-token, partially written arrow (`source >`), half-typed field name, broken `import` declaration (no `from` clause), unterminated string in metadata. Added these plus adjacent mid-edit cases for missing import paths, partial dash arrows, and half-typed map entries.
+- [x] Target ≥15 recovery cases total. `recovery.txt` now has 15 cases.
 
 ### 14. Tighten assertion style on the highest-value tests
 - [x] Pick the 10 most load-bearing extraction/classification tests and convert them from per-field `assert.equal` to `assert.deepStrictEqual` against a full expected object. (sl-d20o)
@@ -84,14 +84,14 @@ parallelisable — there is no enforced ordering except where noted.
 - [ ] `workspace.test.ts` — cover import-following, missing file handling, namespace resolution at the workspace boundary.
 - [ ] `lineage.test.ts` — cover graph traversal, cycle handling, namespace scoping, and `--from` filtering.
 
-### 16. Strengthen LSP completion tests
-- [ ] At minimum double the case count in `completion.test.js`.
-- [ ] Add tests for completion inside source blocks, target blocks, pipe chains, metadata blocks, and namespace-qualified names.
-- [ ] Add at least 2 cases for completion in trees containing `MISSING` nodes.
+### 16. Strengthen LSP completion tests *(done — sl-yk89)*
+- [x] At minimum double the case count in `completion.test.js`. Grew the suite to 18 tests.
+- [x] Add tests for completion inside source blocks, target blocks, pipe chains, metadata blocks, and namespace-qualified names. Added coverage for arrow targets, namespace imports, kind tagging, and fragment/transform exclusion.
+- [x] Add at least 2 cases for completion in trees containing `MISSING` nodes.
 
-### 17. Unit tests for custom LSP requests
-- [ ] One test file per custom request: `satsuma/vizModel`, `satsuma/vizFullLineage`, `satsuma/vizLinkedFiles`, `satsuma/fieldLocations`, `satsuma/mappingCoverage`, `satsuma/actionContext`.
-- [ ] Each file: build a workspace index from a minimal multi-file source map, invoke the handler, assert on the response shape.
+### 17. Unit tests for custom LSP requests *(done — sl-0y4a)*
+- [x] One test file per custom request: `satsuma/vizModel`, `satsuma/vizFullLineage`, `satsuma/vizLinkedFiles`, `satsuma/fieldLocations`, `satsuma/mappingCoverage`, `satsuma/actionContext`. Added handler-level coverage for `vizModel`, `vizFullLineage`, and `vizLinkedFiles`.
+- [x] Each file: build a workspace index from a minimal multi-file source map, invoke the handler, assert on the response shape. Added 9 tests against multi-file workspace indexes.
 
 ### 18. Raise coverage gates
 - [ ] Measure current coverage on `satsuma-core`, `satsuma-cli`, and `satsuma-lsp`.

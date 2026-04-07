@@ -150,3 +150,178 @@ schema schema {
           (identifier))
         (type_expr)))))
 
+================================================================================
+Cursor mid-token in top-level keyword
+================================================================================
+
+sche
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR
+    (identifier)))
+
+================================================================================
+Cursor mid-token in field type
+================================================================================
+
+schema customers {
+  customer_id UU
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (schema_body
+      (field_decl
+        (field_name
+          (identifier))
+        (type_expr)))))
+
+================================================================================
+Partial arrow typed as greater-than
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  customer_id >
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR
+    (source_block
+      (source_ref
+        (identifier)))
+    (target_block
+      (source_ref
+        (identifier)))
+    (identifier)))
+
+================================================================================
+Partial arrow typed as dash
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  customer_id -
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR
+    (source_block
+      (source_ref
+        (identifier)))
+    (target_block
+      (source_ref
+        (identifier)))
+    (identifier)))
+
+================================================================================
+Half-typed field name in schema body
+================================================================================
+
+schema customers {
+  customer_
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (schema_block
+    (block_label
+      (identifier))
+    (ERROR
+      (field_name
+        (identifier)))))
+
+================================================================================
+Broken import with no from clause
+================================================================================
+
+import { customers }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR
+    (import_name
+      (identifier))))
+
+================================================================================
+Broken import with missing path
+================================================================================
+
+import { customers } from
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (import_decl
+    (import_name
+      (identifier))
+    (import_path
+      (MISSING nl_string))))
+
+================================================================================
+Unterminated metadata string
+================================================================================
+
+schema customers (note: "contains pii {
+  customer_id UUID
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR
+    (block_label
+      (identifier))
+    (UNEXPECTED '\0')))
+
+================================================================================
+Half-typed map literal entry
+================================================================================
+
+mapping {
+  source { src }
+  target { tgt }
+  status -> status {
+    map {
+      A
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (mapping_block
+    (mapping_body
+      (source_block
+        (source_ref
+          (identifier)))
+      (target_block
+        (source_ref
+          (identifier)))
+      (map_arrow
+        (src_path
+          (field_path
+            (identifier)))
+        (tgt_path
+          (field_path
+            (identifier)))
+        (pipe_chain
+          (pipe_step
+            (map_literal
+              (ERROR
+                (identifier)))))))))
