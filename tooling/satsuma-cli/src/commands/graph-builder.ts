@@ -92,24 +92,6 @@ export interface WorkspaceGraph {
 // ── Graph construction ───────────────────────────────────────────────────────
 
 /**
- * Return an empty graph for workspaces with no .stm files.
- * Ensures --json always emits a structurally valid object.
- */
-export function emptyGraph(root: string): WorkspaceGraph {
-  return {
-    version: 1,
-    generated: new Date().toISOString(),
-    workspace: resolve(root),
-    stats: { schemas: 0, mappings: 0, metrics: 0, fragments: 0, transforms: 0, arrows: 0, errors: 0 },
-    nodes: [],
-    edges: [],
-    schema_edges: [],
-    warnings: [],
-    unresolved_nl: [],
-  };
-}
-
-/**
  * Build the full workspace graph output structure from a parsed workspace
  * index and its schema-level directed graph.
  *

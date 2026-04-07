@@ -12,9 +12,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { canonicalEntityName } from "@satsuma/core";
 import type { SyntaxNode, MetricRecord } from "../types.js";
@@ -34,17 +33,7 @@ Examples:
   satsuma metric daily_sales --sources               # just source schemas
   satsuma metric analytics::daily_sales --json       # namespace-qualified`)
     .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; sources?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const resolved = resolveIndexKey(name, index.metrics);
       if (!resolved) {

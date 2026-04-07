@@ -14,9 +14,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, canonicalKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
 import { countNlDerivedEdgesByMapping } from "../nl-ref-extract.js";
 import { canonicalEntityName } from "@satsuma/core";
@@ -54,37 +53,14 @@ Examples:
   satsuma summary pipeline.stm --json    # structured index
   satsuma summary pipeline.stm --compact # names only`)
     .action(async (pathArg: string | undefined, opts: { compact?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      if (files.length === 0) {
-        console.error("No .stm files found.");
-        process.exit(1);
-      }
-
-      const parsed = files.map((f) => {
-        try {
-          return parseFile(f);
-        } catch (err: unknown) {
-          console.error(`Parse error in ${f}: ${(err as Error).message}`);
-          process.exit(2);
-        }
-      });
-
-      const index = buildIndex(parsed);
+      const { files: parsed, index } = await loadWorkspace(pathArg);
 
       if (opts.json) {
-        printJson(index, files.length, opts.compact);
+        printJson(index, parsed.length, opts.compact);
       } else if (opts.compact) {
         printCompact(index);
       } else {
-        printDefault(index, files.length);
+        printDefault(index, parsed.length);
       }
     });
 }

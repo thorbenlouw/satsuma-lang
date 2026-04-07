@@ -19,9 +19,7 @@
 
 import type { Command } from "commander";
 import { readFileSync, writeFileSync } from "fs";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, extractFileData } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
 import { runLint, applyFixes, RULES } from "../lint-engine.js";
 import type { LintFix } from "../types.js";
 
@@ -63,24 +61,8 @@ Examples:
         return;
       }
 
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      // Parse and extract — tree-sitter reuses a single parser buffer,
-      // so we must extract data while each tree is still valid.
-      const extracted = [];
-      for (const f of files) {
-        const parsed = parseFile(f);
-        extracted.push(extractFileData(parsed));
-      }
-
-      const index = buildIndex(extracted);
+      const { files, index } = await loadWorkspace(pathArg);
+      const fileCount = files.length;
 
       // Run lint rules
       const ruleOpts: { select?: string[]; ignore?: string[] } = {};
@@ -136,7 +118,7 @@ Examples:
           findings: diagnostics.map(({ fix: _fix, ...rest }) => rest),
           fixes: appliedFixes.map(({ apply: _apply, ...rest }) => rest),
           summary: {
-            files: extracted.length,
+            files: fileCount,
             findings: findingCount,
             fixable: fixableCount,
             fixed: appliedFixes.length,
@@ -156,14 +138,14 @@ Examples:
 
       if (findingCount === 0 && appliedFixes.length === 0) {
         console.log(
-          `Linted ${extracted.length} file${extracted.length !== 1 ? "s" : ""}: no issues found.`,
+          `Linted ${fileCount} file${fileCount !== 1 ? "s" : ""}: no issues found.`,
         );
         return;
       }
 
       if (findingCount === 0 && appliedFixes.length > 0) {
         console.log(
-          `${appliedFixes.length} fixed, no remaining issues in ${extracted.length} file${extracted.length !== 1 ? "s" : ""}`,
+          `${appliedFixes.length} fixed, no remaining issues in ${fileCount} file${fileCount !== 1 ? "s" : ""}`,
         );
         return;
       }
@@ -180,11 +162,11 @@ Examples:
       console.log();
       if (appliedFixes.length > 0) {
         console.log(
-          `${appliedFixes.length} fixed, ${findingCount} remaining in ${extracted.length} file${extracted.length !== 1 ? "s" : ""} (${fixableCount} fixable)`,
+          `${appliedFixes.length} fixed, ${findingCount} remaining in ${fileCount} file${fileCount !== 1 ? "s" : ""} (${fixableCount} fixable)`,
         );
       } else {
         console.log(
-          `${findingCount} finding${findingCount !== 1 ? "s" : ""} in ${extracted.length} file${extracted.length !== 1 ? "s" : ""} (${fixableCount} fixable)`,
+          `${findingCount} finding${findingCount !== 1 ? "s" : ""} in ${fileCount} file${fileCount !== 1 ? "s" : ""} (${fixableCount} fixable)`,
         );
       }
 

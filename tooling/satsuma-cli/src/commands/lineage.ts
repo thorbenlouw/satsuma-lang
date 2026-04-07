@@ -16,9 +16,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { buildFullGraph } from "../graph-builder.js";
 import type { FullGraph } from "../graph-builder.js";
 
@@ -77,17 +76,7 @@ Examples:
         process.exit(1);
       }
 
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { index } = await loadWorkspace(pathArg);
       const graph = buildFullGraph(index);
 
       if (opts.from) {

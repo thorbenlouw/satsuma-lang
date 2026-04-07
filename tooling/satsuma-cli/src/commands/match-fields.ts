@@ -10,9 +10,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { matchFields } from "../normalize.js";
 import { expandEntityFields } from "../spread-expand.js";
 import type { SchemaRecord } from "../types.js";
@@ -42,17 +41,7 @@ Examples:
   satsuma match-fields --source pos::stores --target hub_store --matched-only
   satsuma match-fields --source crm --target warehouse --json`)
     .action(async (pathArg: string | undefined, opts: { source: string; target: string; matchedOnly?: boolean; unmatchedOnly?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { index } = await loadWorkspace(pathArg);
 
       // Validate schemas
       const resolvedNames: Record<string, { key: string; entry: SchemaRecord }> = {};

@@ -3971,23 +3971,23 @@ describe("satsuma arrows — no leaf-name false positives across schemas", () =>
 // ---------------------------------------------------------------------------
 // ADR-022: directory argument rejection
 // ---------------------------------------------------------------------------
+//
+// The exhaustive per-rule behaviour of directory rejection lives in
+// `load-workspace.test.ts` (the shared loader) and `workspace.test.ts`
+// (the underlying resolveInput primitive). The integration tests below
+// only need to prove that the rejection actually reaches the user through
+// commander's command wiring — once for the shared `loadWorkspace` path
+// (here exercised via `summary`) and once for the still-custom `validate`
+// path which formats errors specially when --json is in use.
 describe("directory argument rejection (ADR-022)", () => {
-  it("rejects directory arguments with a clear error", async () => {
-    // Verifies that passing a directory to any command produces the
-    // ADR-022 rejection message, not silent directory discovery.
+  it("surfaces the rejection through a loadWorkspace-backed command (summary)", async () => {
     const { stderr, code } = await run("summary", EXAMPLES);
     assert.notEqual(code, 0, "should exit non-zero for directory argument");
     assert.match(stderr, /directory arguments are not supported/);
   });
 
-  it("rejects directory arguments for validate", async () => {
+  it("surfaces the rejection through validate (which formats errors itself)", async () => {
     const { stderr, code } = await run("validate", EXAMPLES);
-    assert.notEqual(code, 0);
-    assert.match(stderr, /directory arguments are not supported/);
-  });
-
-  it("rejects directory arguments for graph", async () => {
-    const { stderr, code } = await run("graph", "--json", EXAMPLES);
     assert.notEqual(code, 0);
     assert.match(stderr, /directory arguments are not supported/);
   });

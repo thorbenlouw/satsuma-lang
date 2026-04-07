@@ -11,9 +11,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import { addPathAndPrefixes } from "@satsuma/core";
 import type { ExtractedWorkspace, FieldDecl, ParsedFile, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
@@ -43,17 +42,7 @@ Examples:
   satsuma fields hub_customer --unmapped-by 'load hub_customer'  # coverage gaps
   satsuma fields pos::stores --json                              # namespace-qualified`)
     .action(async (schemaName: string, pathArg: string | undefined, opts: { withMeta?: boolean; unmappedBy?: string; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       // Search schemas first, then fragments, then metrics
       type ResolvedEntity = { key: string; entry: SchemaRecord | FragmentRecord | MetricRecord };

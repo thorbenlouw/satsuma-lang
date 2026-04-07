@@ -10,9 +10,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { extractMetadata } from "@satsuma/core";
 import type { MetaEntry } from "@satsuma/core";
 import { findBlockNode } from "../cst-query.js";
@@ -51,17 +50,7 @@ Examples:
   satsuma meta hub_customer --tags-only      # just tag tokens
   satsuma meta pos::stores.STORE_ID --json   # namespace-qualified`)
     .action(async (scope: string, pathArg: string | undefined, opts: { tagsOnly?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       let result: MetaResult;
       if (scope.includes(".")) {
