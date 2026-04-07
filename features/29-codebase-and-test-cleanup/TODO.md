@@ -32,10 +32,10 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Grep for "temporary", "shim", "migration" in source headers across all packages.
 - [x] For each: either delete the shim and update callers, or remove the temporary marker and add a comment justifying its continued existence. (sl-y0sz: rejustified `nl-ref-extract.ts` and `spread-expand.ts` as permanent WorkspaceIndex→core-callback bridges; the stale "will be collapsed in sl-n4wb" claim is gone — sl-n4wb is closed and the bridges remain by design.)
 
-### 6. Reduce `process.exit()` usage in CLI commands *(stretch — may split)*
-- [ ] Count current `process.exit()` calls and bucket them by reason (validation failure, IO error, unknown command, etc.).
-- [ ] Refactor command handlers to return a structured result with `exitCode`; let a single top-level dispatcher call `process.exit()` once.
-- [ ] Update tests to assert on returned codes rather than spawning subprocesses where unit-level testing now suffices.
+### 6. Reduce `process.exit()` usage in CLI commands *(done — sl-3291)*
+- [x] Count current `process.exit()` calls and bucket them by reason. (53 inline calls across 23 files: not-found lookups, parse/IO errors, soft "no results" exits, validate/lint findings.)
+- [x] Refactor command handlers to return a structured result with `exitCode`; let a single top-level dispatcher call `process.exit()` once. (Landed as `src/command-runner.ts` exposing `CommandError` + `runCommand`. Two intentional exit sites remain: the runner and an `unhandledRejection` safety net in `index.ts` for failures before dispatch.)
+- [x] Update tests to assert on returned codes rather than spawning subprocesses where unit-level testing now suffices. (`errors.test.ts` and `load-workspace.test.ts` rewritten to assert thrown `CommandError`s directly, dropping all `process.exit` stub plumbing. New `command-runner.test.ts` pins the four runner branches. Integration tests unchanged — they remain the contract.)
 
 ### 7. Unify the three-headed validation pipeline *(stretch — may split)*
 - [ ] Document where the three pipelines diverge today (core semantic diagnostics, CLI `validate`, LSP diagnostic adapter).

@@ -245,11 +245,9 @@ The `ARCHITECTURE.md` states: "satsuma-viz has no dependency on core, CLI, or LS
 
 Both `satsuma-cli/src/spread-expand.ts` and `satsuma-cli/src/nl-ref-extract.ts` are thin bridge modules that adapt the CLI's `ExtractedWorkspace` to core's callback-based APIs (per ADR-005 / ADR-006). Earlier drafts of this guide called them temporary shims slated for removal in sl-n4wb; that ticket closed and the bridges were rejustified as permanent in sl-y0sz. They are the canonical place where CLI-shaped data meets core's callbacks — exactly one well-named module per callback interface — and they are not technical debt.
 
-### 9. Excessive `process.exit()` — 74 Calls
+### 9. (Resolved) Excessive `process.exit()` — Was 53 Calls
 
-The CLI has 74 `process.exit()` calls scattered across command handlers and error utilities. Most are in individual command files — when a schema isn't found, the command calls `notFound()` which calls `process.exit(1)`. This makes the CLI essentially untestable at the function level for error paths (you can't unit-test a function that kills the process). The integration test suite works around this by spawning subprocesses.
-
-A conventional pattern would be to throw typed errors and have a single top-level catch in `index.ts` that maps error types to exit codes.
+Resolved in sl-3291. The CLI used to have 53 inline `process.exit()` calls across 23 command files, making error paths essentially untestable without subprocess spawning. They were replaced with a single dispatcher in `satsuma-cli/src/command-runner.ts`: handlers either return a numeric exit code or throw a `CommandError`, and `runCommand` catches both and exits exactly once via `flushAndExit` (which drains stdout/stderr first — also fixed a latent `--json` truncation past ~64KiB on piped output). `errors.ts` (`loadFiles`, `notFound`) and `load-workspace.ts` throw `CommandError` instead of exiting. Down to two intentional exit sites: the runner itself, and an `unhandledRejection` safety net in `index.ts` for failures *before* dispatch. The `errors.test.ts` and `load-workspace.test.ts` rewrites dropped all `process.exit` stub plumbing in favour of asserting thrown `CommandError`s directly.
 
 ### 10. Two Workspace Index Shapes (Now Distinctly Named)
 
@@ -319,9 +317,9 @@ An earlier version of this guide listed "kill the shims" as a target. After sl-n
 
 The CLI's batch result type was renamed from `WorkspaceIndex` to `ExtractedWorkspace` in sl-erxz. The viz-backend keeps `WorkspaceIndex` because it is the naturally editor-shaped index. No further action.
 
-### 4. Replace `process.exit()` with Typed Errors
+### 4. (Resolved) Replace `process.exit()` with Typed Errors
 
-Create an error hierarchy (`NotFoundError`, `ParseError`, etc.) and throw from command handlers. Add a single `try/catch` in `index.ts` that maps error types to exit codes. This makes all command logic unit-testable without subprocess spawning.
+Resolved in sl-3291. The CLI now has a single dispatcher (`src/command-runner.ts`) with a `CommandError` class and a `runCommand` wrapper around every Commander `.action()`. Handlers return a numeric exit code or throw `CommandError`; the runner catches both, prints to the requested stream, drains stdout/stderr, and exits once. See "Resolved Issue 9" above.
 
 ### 5. Break Up `viz-model.ts`
 
@@ -399,10 +397,10 @@ async function schemaCommand(name: string, pathArg: string | undefined) {
 }
 ```
 
-The "entity lookup + not-found + suggestion" half is still per-command because the error formatting varies meaningfully across the 16 commands (different JSON shapes, different kinds of suggestion). A full `CommandContext` harness would be the next step, but it should probably be tackled together with R7 (typed errors) — the two refactors touch the same call sites and the right shape of the harness depends on whether commands throw or print + exit.
+The "entity lookup + not-found + suggestion" half is still per-command because the error formatting varies meaningfully across the 16 commands (different JSON shapes, different kinds of suggestion). A full `CommandContext` harness would be the next step; now that R7 has landed (sl-3291) every command throws `CommandError` consistently, so the harness shape is no longer blocked on the exit-policy decision.
 
-**R7. Replace `process.exit()` with typed errors.**
-Create `NotFoundError`, `ParseError`, and `ValidationError` classes. Have commands throw instead of calling `process.exit()`. Add a single `try/catch` in `index.ts` that maps error types to exit codes. This makes all command logic unit-testable without spawning subprocesses. The integration tests continue to work unchanged. Phase this in command-by-command.
+**R7. (Done — sl-3291) Replace `process.exit()` with typed errors.**
+Landed: `src/command-runner.ts` exposes `CommandError` + `runCommand`. Every command's `.action()` is wrapped, every handler either returns a numeric exit code or throws `CommandError`, and the runner is the single place that calls `process.exit`. The integration tests continue to work unchanged. Two intentional exit sites remain (runner + pre-dispatch safety net), both documented in their files.
 
 **R8. Merge the two graph builders.**
 `src/graph-builder.ts` (113 lines) builds schema-level graphs. `src/commands/graph-builder.ts` (618 lines) builds schema+field-level graphs. They share node-collection and NL-ref-edge-promotion logic with no code sharing. Merge into a single module with a `schemaOnly` option. Extract the NL-ref edge promotion into a shared function and reuse it in `lint-engine.ts` and `nl-ref-extract.ts::countNlDerivedEdgesByMapping` as well, eliminating the triplication.
@@ -440,7 +438,7 @@ This one change would eliminate: the two parallel workspace types, the CLI ↔ c
 
 ### 2. Result types, not `process.exit()`
 
-From day one, every function that can fail would return `Result<T, SatsumaError>` (or throw a typed error — either pattern works in TypeScript). No function would ever call `process.exit()`. The CLI entry point would be a thin shell that calls the real logic, catches errors, and maps them to exit codes and stderr messages. This makes every piece of logic testable without subprocess spawning, and it makes the CLI embeddable as a library (which matters for the VS Code extension integration and for programmatic consumers).
+From day one, every function that can fail would return `Result<T, SatsumaError>` (or throw a typed error — either pattern works in TypeScript). No function would ever call `process.exit()`. The CLI entry point would be a thin shell that calls the real logic, catches errors, and maps them to exit codes and stderr messages. This makes every piece of logic testable without subprocess spawning, and it makes the CLI embeddable as a library (which matters for the VS Code extension integration and for programmatic consumers). The throw-typed-error half of this landed retroactively in sl-3291 — see `src/command-runner.ts`.
 
 ### 3. The grammar would own the node-type string constants
 
