@@ -257,7 +257,15 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [tooling/tree-sitter-satsuma/](tooling/tree-sitter-satsuma): tree-sitter parser package
 - [tooling/satsuma-cli/](tooling/satsuma-cli): CLI tool for structural extraction and validation
 - [tooling/vscode-satsuma/](tooling/vscode-satsuma): VS Code extension with LSP server and syntax highlighting
-- [skills/excel-to-satsuma/](skills/excel-to-satsuma): Agent Skill for converting Excel mapping spreadsheets to Satsuma ([agentskills.io](https://agentskills.io) standard) — includes Python CLI tool and Claude Code slash command
+- [skills/](skills): Agent Skills following the [agentskills.io](https://agentskills.io) standard:
+  - [excel-to-satsuma](skills/excel-to-satsuma) — convert Excel mapping spreadsheets to Satsuma (Python CLI tool + Claude Code slash command)
+  - [satsuma-to-excel](skills/satsuma-to-excel) — generate stakeholder-ready Excel workbooks from `.stm` files
+  - [satsuma-explainer](skills/satsuma-explainer) — explain `.stm` files in plain English for business stakeholders, including PII audits, coverage checks, and impact analysis
+  - [satsuma-from-dbt](skills/satsuma-from-dbt) — reverse-engineer Satsuma specs from an existing dbt project
+  - [satsuma-to-dbt](skills/satsuma-to-dbt) — scaffold an idiomatic dbt project (Kimball, Data Vault, exposures) from `.stm` specs
+  - [satsuma-sample-data](skills/satsuma-sample-data) — generate realistic synthetic test data that respects schema constraints and referential integrity
+  - [satsuma-to-openlineage](skills/satsuma-to-openlineage) — emit OpenLineage events (Marquez/DataHub/Atlan/OpenMetadata) with column-level lineage
+  - [adr-draft](skills/adr-draft), [satsuma-diaries](skills/satsuma-diaries) — internal authoring helpers
 - [useful-prompts/](useful-prompts): self-contained system prompts for web LLMs ([Excel-to-Satsuma](useful-prompts/excel-to-stm-prompt.md), [Satsuma-to-Excel](useful-prompts/stm-to-excel-prompt.md))
 
 ## Current Status
@@ -275,10 +283,17 @@ What exists today:
 - data modelling conventions for Kimball and Data Vault patterns with canonical examples
 - pre-built CLI release artifacts published on every merge to `main`
 
-### Excel Conversion Tooling
+### Agent Skills
 
-- **Excel → Satsuma**: A full [Agent Skill](skills/excel-to-satsuma/) with a Python CLI tool (`excel_tool.py`) and a Claude Code slash command (`/excel-to-satsuma`). The skill surveys the spreadsheet, generates idiomatic Satsuma with chunked extraction, and self-critiques the output. A [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is also available for zero-setup conversion.
-- **Satsuma → Excel**: A [lite prompt for web LLMs](useful-prompts/stm-to-excel-prompt.md) that generates a Python script producing stakeholder-ready Excel workbooks from `.stm` files. A deterministic CLI tool is planned but not yet started.
+Satsuma ships a suite of [Agent Skills](skills/) that turn `.stm` files into a hub for the rest of your stack. Each skill is self-contained, follows the [agentskills.io](https://agentskills.io) standard, and works with any agent runtime that supports skills (Claude Code, Claude Desktop, etc.).
+
+- **Excel → Satsuma** ([excel-to-satsuma](skills/excel-to-satsuma)) — surveys a spreadsheet, generates idiomatic Satsuma with chunked extraction, and self-critiques the output. Includes a Python CLI tool and `/excel-to-satsuma` slash command. A [lite prompt for web LLMs](useful-prompts/excel-to-stm-prompt.md) is also available for zero-setup conversion.
+- **Satsuma → Excel** ([satsuma-to-excel](skills/satsuma-to-excel)) — produces stakeholder-ready Excel workbooks from `.stm` files. A [lite web-LLM prompt](useful-prompts/stm-to-excel-prompt.md) is also available.
+- **Explain a spec** ([satsuma-explainer](skills/satsuma-explainer)) — plain-English walkthroughs, risk assessments, PII audits, coverage checks, and impact analysis for non-technical stakeholders.
+- **dbt → Satsuma** ([satsuma-from-dbt](skills/satsuma-from-dbt)) — reverse-engineers Satsuma mapping specs from an existing dbt project so you can adopt Satsuma without starting over.
+- **Satsuma → dbt** ([satsuma-to-dbt](skills/satsuma-to-dbt)) — scaffolds an idiomatic dbt project (staging/marts, Kimball stars, Data Vault 2.0, exposures) from `.stm` specs.
+- **Synthetic test data** ([satsuma-sample-data](skills/satsuma-sample-data)) — generates realistic CSV/JSON fixtures from a schema, respecting types, enums, PII patterns, and referential integrity across tables.
+- **OpenLineage export** ([satsuma-to-openlineage](skills/satsuma-to-openlineage)) — emits OpenLineage events with column-level lineage for Marquez, DataHub, Atlan, and OpenMetadata.
 
 ## Multi-File Lineage
 

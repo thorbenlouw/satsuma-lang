@@ -133,7 +133,22 @@ Read [ARCHITECTURE.md](docs/developer/ARCHITECTURE.md) — covers the package ma
 Use the [Excel-to-Satsuma skill](skills/excel-to-satsuma/) or the [lite system prompt](useful-prompts/excel-to-stm-prompt.md) for web LLMs.
 
 **How do I generate an Excel workbook from a Satsuma file?**
-Use the [Satsuma-to-Excel lite prompt](useful-prompts/stm-to-excel-prompt.md) with any web LLM.
+Use the [satsuma-to-excel skill](skills/satsuma-to-excel/) or the [lite system prompt](useful-prompts/stm-to-excel-prompt.md) for web LLMs.
+
+**How do I explain a `.stm` file to a non-technical stakeholder?**
+Use the [satsuma-explainer skill](skills/satsuma-explainer/) — it produces plain-English walkthroughs, PII audits, coverage checks, and impact analysis from a Satsuma file or workspace.
+
+**How do I reverse-engineer Satsuma from an existing dbt project?**
+Use the [satsuma-from-dbt skill](skills/satsuma-from-dbt/) — it reads dbt models, sources, and lineage and emits idiomatic `.stm` mapping specs so you can adopt Satsuma without rewriting everything by hand.
+
+**How do I scaffold a dbt project from a Satsuma spec?**
+Use the [satsuma-to-dbt skill](skills/satsuma-to-dbt/) — it generates staging/marts, Kimball stars, Data Vault 2.0, and dbt exposures from `.stm` files, including governance metadata and merge strategies.
+
+**How do I generate synthetic test data from a Satsuma schema?**
+Use the [satsuma-sample-data skill](skills/satsuma-sample-data/) — it produces realistic CSV/JSON fixtures that respect types, enums, PII patterns, required fields, defaults, filters, and referential integrity across schemas.
+
+**How do I export Satsuma lineage to OpenLineage / Marquez / DataHub / Atlan?**
+Use the [satsuma-to-openlineage skill](skills/satsuma-to-openlineage/) — it emits OpenLineage JSON events with column-level lineage that any OpenLineage-compatible catalog can ingest.
 
 **How do I extract all natural-language strings and find schema references missing @ref?**
 Use the CLI to extract NL content and cross-reference it with known schema names. This is an agent workflow — give your AI agent these instructions:
