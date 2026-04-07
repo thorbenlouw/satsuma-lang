@@ -17,7 +17,7 @@ import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex, extractFileData } from "../index-builder.js";
 import { extractImports, collectParseErrors } from "@satsuma/core";
-import { collectSemanticWarnings } from "../validate.js";
+import { collectSemanticWarnings } from "../semantic-warnings.js";
 import type { LintDiagnostic } from "../types.js";
 
 export function register(program: Command): void {

@@ -17,6 +17,7 @@ import {
   extractQuestions,
   extractFieldTree,
   extractMetrics,
+  extractNamespaces,
   extractNotes,
   extractTransforms,
 } from "../dist/extract.js";
@@ -428,5 +429,518 @@ describe("extractFieldTree() — nested records", () => {
     assert.equal(result.fields[0].type, "record");
     assert.equal(result.fields[0].isList, true);
     assert.equal(result.fields[0].children.length, 1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Additional cases (migrated from satsuma-cli/test/extract.test.ts, sl-cvs2)
+//
+// These cases were originally in the CLI package but tested @satsuma/core's
+// extraction APIs directly, violating the architecture rule that consumer
+// tests must not duplicate core coverage. They were moved here so each
+// invariant is tested at the right level. The CLI now keeps only its
+// real-file integration tests that exercise parser → extract → buildIndex.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Convenience helpers used by the migrated cases. Mirror the originals from
+// satsuma-cli/test/helpers.ts so the ported test bodies need no rewriting.
+
+function quoted(inner, row = 0) {
+  // backtick_name node — the canonical CST representation of a quoted name
+  return n("backtick_name", [], `'${inner}'`, row);
+}
+
+function str(inner) {
+  // nl_string node wrapping a literal — used inside metadata and import paths
+  return n("nl_string", [], `"${inner}"`);
+}
+
+function blockLabelNode(name) {
+  // block_label wrapping either a backtick_name (when 'quoted') or identifier
+  const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
+  return n("block_label", [inner]);
+}
+
+function fieldName(name) {
+  return n("field_name", [ident(name)]);
+}
+
+function recordFieldDecl(name, bodyChildren = [], metaNode = null) {
+  // record field_decl: name (metadata)? { schema_body }
+  // The 'record' keyword is encoded as an anonymous child token.
+  const named = [fieldName(name)];
+  if (metaNode) named.push(metaNode);
+  if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
+  return n("field_decl", named, "", 0, ["record"]);
+}
+
+function namespaceBlockNode(name, childNodes = [], metaNode = null, row = 0) {
+  // namespace_block: ident (metadata)? children...
+  const kids = [ident(name), ...(metaNode ? [metaNode] : []), ...childNodes];
+  return n("namespace_block", kids, "", row);
+}
+
+function sourceRef(nameNode, extraChildren = []) {
+  return n("source_ref", [nameNode, ...extraChildren]);
+}
+
+// ── extractSchemas: name forms and metadata edge cases ──────────────────────
+
+describe("extractSchemas — name forms and edge cases (sl-cvs2)", () => {
+  it("strips backticks from a quoted schema name", () => {
+    // Validates that block_label wrapping a backtick_name yields the inner text
+    // without the surrounding backticks — important for grammar's quoted-name path.
+    const body = n("schema_body", []);
+    const block = n("schema_block", [blockLabelNode("'my schema'"), body]);
+    const root = n("source_file", [block]);
+    assert.equal(extractSchemas(root)[0].name, "my schema");
+  });
+
+  it("returns note=null when the schema has no metadata block", () => {
+    // Validates that the note field defaults to null rather than undefined or "".
+    const body = n("schema_body", []);
+    const block = n("schema_block", [blockLabelNode("t"), body]);
+    const root = n("source_file", [block]);
+    assert.equal(extractSchemas(root)[0].note, null);
+  });
+
+  it("extracts every schema_block at the program root", () => {
+    // Validates that the extractor visits all top-level schema_blocks, not just the first.
+    const make = (name) => n("schema_block", [blockLabelNode(name), n("schema_body", [])]);
+    const root = n("source_file", [make("a"), make("b"), make("c")]);
+    assert.equal(extractSchemas(root).length, 3);
+  });
+});
+
+// ── FieldDecl metadata enrichment (sl-cdvp) ─────────────────────────────────
+
+describe("FieldDecl metadata enrichment (sl-cvs2)", () => {
+  function schemaWith(fieldDecls) {
+    const body = n("schema_body", fieldDecls);
+    const block = n("schema_block", [blockLabelNode("test"), body]);
+    return n("source_file", [block]);
+  }
+
+  it("extracts a tag entry (e.g. pk) from field metadata", () => {
+    // Validates the tag-only metadata kind, the most common annotation form.
+    const meta = n("metadata_block", [n("tag_token", [], "pk")]);
+    const fd = n("field_decl", [fieldName("id"), n("type_expr", [], "INT"), meta]);
+    const result = extractSchemas(schemaWith([fd]));
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "tag", tag: "pk" });
+  });
+
+  it("extracts a key-value entry (e.g. ref) from field metadata", () => {
+    // Validates that tag_with_value pairs become {kind: 'kv', key, value}.
+    const kvVal = n("value_text", [n("dotted_name", [], "dim_customer.customer_id")], "dim_customer.customer_id");
+    const kvPair = n("tag_with_value", [ident("ref"), kvVal]);
+    const meta = n("metadata_block", [kvPair]);
+    const fd = n("field_decl", [fieldName("customer_id"), n("type_expr", [], "STRING(36)"), meta]);
+    const result = extractSchemas(schemaWith([fd]));
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "kv", key: "ref", value: "dim_customer.customer_id" });
+  });
+
+  it("extracts an enum entry with all values from field metadata", () => {
+    // Validates that enum_body identifiers are collected into the values array in order.
+    const enumBody = n("enum_body", [ident("monthly"), ident("quarterly"), ident("annual")]);
+    const meta = n("metadata_block", [enumBody]);
+    const fd = n("field_decl", [fieldName("period"), n("type_expr", [], "STRING(10)"), meta]);
+    const result = extractSchemas(schemaWith([fd]));
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "enum", values: ["monthly", "quarterly", "annual"] });
+  });
+
+  it("leaves metadata undefined when the field has no metadata_block", () => {
+    // Validates that the metadata key is omitted (not null) for fields without annotations,
+    // so consumers can use truthy checks to distinguish "no metadata" from "empty metadata".
+    const fd = n("field_decl", [fieldName("name"), n("type_expr", [], "VARCHAR(100)")]);
+    const result = extractSchemas(schemaWith([fd]));
+    assert.equal(result[0].fields[0].metadata, undefined);
+  });
+
+  it("extracts metadata from inner fields of a record field", () => {
+    // Validates that record-field children are walked and their own metadata is preserved.
+    const innerMeta = n("metadata_block", [n("tag_token", [], "required")]);
+    const innerFd = n("field_decl", [fieldName("street"), n("type_expr", [], "VARCHAR(200)"), innerMeta]);
+    const recField = recordFieldDecl("address", [innerFd]);
+    const result = extractSchemas(schemaWith([recField]));
+    assert.deepEqual(result[0].fields[0].children[0].metadata[0], { kind: "tag", tag: "required" });
+  });
+
+  it("extracts metadata attached to the record field itself", () => {
+    // Validates that metadata on the outer record_field (not its children) is captured.
+    const outerMeta = n("metadata_block", [n("tag_token", [], "required")]);
+    const innerFd = n("field_decl", [fieldName("id"), n("type_expr", [], "INT")]);
+    const recField = recordFieldDecl("address", [innerFd], outerMeta);
+    const result = extractSchemas(schemaWith([recField]));
+    assert.deepEqual(result[0].fields[0].metadata[0], { kind: "tag", tag: "required" });
+  });
+});
+
+// ── extractFragments: empty case ────────────────────────────────────────────
+
+describe("extractFragments — empty input (sl-cvs2)", () => {
+  it("returns an empty array when the program has no fragment_blocks", () => {
+    // Validates the no-results path returns [] (not null/undefined), so callers can safely iterate.
+    assert.deepEqual(extractFragments(n("source_file", [])), []);
+  });
+});
+
+// ── extractTransforms: name+row, empty ──────────────────────────────────────
+
+describe("extractTransforms — name and row (sl-cvs2)", () => {
+  it("captures the transform name and the source row from the block_label", () => {
+    // Validates that row is preserved verbatim (0-indexed) from the CST node.
+    const block = n("transform_block", [blockLabelNode("normalize_phone")], "", 10);
+    const root = n("source_file", [block]);
+    const result = extractTransforms(root);
+    assert.equal(result[0].name, "normalize_phone");
+    assert.equal(result[0].row, 10);
+  });
+
+  it("returns an empty array when there are no transform_blocks", () => {
+    // Validates the empty-case contract for transform extraction.
+    assert.deepEqual(extractTransforms(n("source_file", [])), []);
+  });
+});
+
+// ── extractMappings: source/target collection rules ─────────────────────────
+
+describe("extractMappings — source/target collection rules (sl-cvs2)", () => {
+  function singleSrcTgtMapping(srcChildren, tgtChildren, name = "m") {
+    const body = n("mapping_body", [
+      n("source_block", srcChildren),
+      n("target_block", tgtChildren),
+    ]);
+    const block = n("mapping_block", [blockLabelNode(name), body]);
+    return n("source_file", [block]);
+  }
+
+  it("extracts a named mapping with backtick-quoted source and target", () => {
+    // Validates the canonical case: a quoted mapping name and quoted refs at both ends.
+    const srcEntry = sourceRef(n("backtick_name", [], "`legacy_sqlserver`"));
+    const tgtEntry = sourceRef(n("backtick_name", [], "`postgres_db`"));
+    const body = n("mapping_body", [n("source_block", [srcEntry]), n("target_block", [tgtEntry])]);
+    const block = n("mapping_block", [blockLabelNode("'customer migration'"), body], "", 20);
+    const root = n("source_file", [block]);
+    const result = extractMappings(root);
+    assert.equal(result[0].name, "customer migration");
+    assert.deepEqual(result[0].sources, ["legacy_sqlserver"]);
+    assert.deepEqual(result[0].targets, ["postgres_db"]);
+    assert.equal(result[0].row, 20);
+  });
+
+  it("uses null for the name of an anonymous mapping", () => {
+    // Validates the anonymous-mapping path: missing block_label → name === null.
+    const body = n("mapping_body", [
+      n("source_block", [sourceRef(ident("src"))]),
+      n("target_block", [sourceRef(ident("tgt"))]),
+    ]);
+    const block = n("mapping_block", [body]);
+    const root = n("source_file", [block]);
+    assert.equal(extractMappings(root)[0].name, null);
+  });
+
+  it("counts every arrow node in the mapping body", () => {
+    // Validates the arrowCount tally — distinguishes mappings with vs without arrow definitions.
+    const body = n("mapping_body", [
+      n("source_block", [sourceRef(ident("s"))]),
+      n("target_block", [sourceRef(ident("t"))]),
+      n("map_arrow", []),
+      n("computed_arrow", []),
+    ]);
+    const block = n("mapping_block", [blockLabelNode("m"), body]);
+    const root = n("source_file", [block]);
+    assert.equal(extractMappings(root)[0].arrowCount, 2);
+  });
+
+  it("strips backticks from source and target names", () => {
+    // Validates that quoted names are normalised before being added to the sources/targets arrays.
+    const root = singleSrcTgtMapping(
+      [sourceRef(n("backtick_name", [], "`my_source`"))],
+      [sourceRef(n("backtick_name", [], "`my_target`"))],
+    );
+    const result = extractMappings(root);
+    assert.deepEqual(result[0].sources, ["my_source"]);
+    assert.deepEqual(result[0].targets, ["my_target"]);
+  });
+
+  it("excludes NL join descriptions from the sources array", () => {
+    // Validates the rule that nl_string entries inside source_block are documentation,
+    // not schema references — they must not appear in the sources array.
+    const root = singleSrcTgtMapping(
+      [
+        sourceRef(n("backtick_name", [], "`crm_customers`")),
+        sourceRef(n("backtick_name", [], "`order_transactions`")),
+        sourceRef(n("nl_string", [], '"Join crm_customers to order_transactions on customer_id"')),
+      ],
+      [sourceRef(n("backtick_name", [], "`target_schema`"))],
+    );
+    assert.deepEqual(extractMappings(root)[0].sources, ["crm_customers", "order_transactions"]);
+  });
+
+  it("ignores filter metadata attached to a source entry", () => {
+    // Validates that per-source filter annotations do not pollute the sources array
+    // and that the underlying schema name is still captured cleanly.
+    const meta = n("metadata_block", [], '(filter "status = active")');
+    const root = singleSrcTgtMapping(
+      [sourceRef(n("backtick_name", [], "`my_table`"), [meta])],
+      [sourceRef(ident("tgt"))],
+    );
+    assert.deepEqual(extractMappings(root)[0].sources, ["my_table"]);
+  });
+
+  it("does not treat comment nodes inside source/target blocks as refs (sl-bi92)", () => {
+    // Tree-sitter extras (line comments, warning comments) appear as named children
+    // inside source/target blocks. They must be silently skipped — not turned into
+    // schema references. Regression coverage for sl-bi92.
+    const root = singleSrcTgtMapping(
+      [
+        n("comment", [], "// this is a comment"),
+        sourceRef(ident("s")),
+        n("warning_comment", [], "//! warning comment"),
+      ],
+      [sourceRef(ident("t"))],
+    );
+    const result = extractMappings(root);
+    assert.deepEqual(result[0].sources, ["s"]);
+    assert.deepEqual(result[0].targets, ["t"]);
+  });
+});
+
+// ── extractMetrics: grain extraction ────────────────────────────────────────
+
+describe("extractMetrics — grain extraction (sl-cvs2)", () => {
+  it("extracts the grain key-value alongside the metric tag", () => {
+    // Validates that a metric with grain=monthly produces both the metric flag
+    // (via the tag) and a populated grain field — the two come from the same metadata block.
+    const tag = n("tag_token", [ident("metric")], "metric");
+    const kvVal = n("value_text", [ident("monthly")], "monthly");
+    const kv = n("tag_with_value", [ident("grain"), kvVal]);
+    const meta = n("metadata_block", [tag, kv]);
+    const body = n("schema_body", [fieldDecl("value", "DECIMAL(14,2)")]);
+    const block = n("schema_block", [blockLabelNode("mrr"), meta, body], "", 7);
+    const root = n("source_file", [block]);
+    const result = extractMetrics(root);
+    assert.equal(result[0].name, "mrr");
+    assert.equal(result[0].grain, "monthly");
+    assert.equal(result[0].row, 7);
+    assert.equal(result[0].fields[0].name, "value");
+  });
+});
+
+// ── extractWarnings: text shape, nesting, prefix ────────────────────────────
+
+describe("extractWarnings — text shape and nesting (sl-cvs2)", () => {
+  it("captures warning_comment text and row from a top-level node", () => {
+    // Validates that the //! prefix is stripped and the row is preserved.
+    const w = n("warning_comment", [], "//! some records have NULL", 12);
+    const root = n("source_file", [w]);
+    const result = extractWarnings(root);
+    assert.equal(result[0].text, "some records have NULL");
+    assert.equal(result[0].row, 12);
+  });
+
+  it("finds warnings nested inside other CST nodes", () => {
+    // Validates the recursive-walk behaviour: warnings inside schema/field nodes are still collected.
+    const w = n("warning_comment", [], "//! nested warning", 5);
+    const field = n("field_decl", [w]);
+    const body = n("schema_body", [field]);
+    const block = n("schema_block", [blockLabelNode("t"), body]);
+    const root = n("source_file", [block]);
+    assert.equal(extractWarnings(root).length, 1);
+  });
+
+  it("strips the //! prefix even when no space follows it", () => {
+    // Validates that the prefix-stripping rule does not require a trailing space —
+    // both '//! foo' and '//!foo' must yield 'foo'.
+    const w = n("warning_comment", [], "//!no space after bang", 0);
+    const root = n("source_file", [w]);
+    assert.equal(extractWarnings(root)[0].text, "no space after bang");
+  });
+});
+
+// ── extractQuestions: row and empty case ────────────────────────────────────
+
+describe("extractQuestions — row and empty case (sl-cvs2)", () => {
+  it("captures question_comment text and row", () => {
+    // Validates that //? prefix is stripped and the row is preserved.
+    const q = n("question_comment", [], "//? is this field PII?", 8);
+    const root = n("source_file", [q]);
+    const result = extractQuestions(root);
+    assert.equal(result[0].text, "is this field PII?");
+    assert.equal(result[0].row, 8);
+  });
+
+  it("returns an empty array when there are no question_comments", () => {
+    // Validates the empty-case contract for question extraction.
+    assert.deepEqual(extractQuestions(n("source_file", [])), []);
+  });
+});
+
+// ── extractNamespaces ───────────────────────────────────────────────────────
+
+describe("extractNamespaces (sl-cvs2)", () => {
+  it("extracts namespace name and row from a namespace_block", () => {
+    // Validates the basic namespace extraction: name from the leading identifier, row from the block.
+    const ns = namespaceBlockNode("pos", [], null, 5);
+    const root = n("source_file", [ns]);
+    const result = extractNamespaces(root);
+    assert.equal(result[0].name, "pos");
+    assert.equal(result[0].row, 5);
+    assert.equal(result[0].note, null);
+  });
+
+  it("extracts the namespace note from its metadata block", () => {
+    // Validates that note_tag inside the namespace's metadata becomes the note field.
+    const noteTag = n("note_tag", [str("POS system")]);
+    const meta = n("metadata_block", [noteTag]);
+    const ns = namespaceBlockNode("pos", [], meta, 0);
+    const root = n("source_file", [ns]);
+    assert.equal(extractNamespaces(root)[0].note, "POS system");
+  });
+
+  it("extracts every namespace_block at the program root", () => {
+    // Validates that multiple top-level namespaces are all collected.
+    const root = n("source_file", [namespaceBlockNode("pos"), namespaceBlockNode("ecom")]);
+    assert.equal(extractNamespaces(root).length, 2);
+  });
+});
+
+// ── extractSchemas with namespaces ──────────────────────────────────────────
+
+describe("extractSchemas — namespace propagation (sl-cvs2)", () => {
+  it("sets namespace=null for top-level schemas", () => {
+    // Validates that schemas outside any namespace_block carry an explicit null
+    // (not undefined) so consumers can rely on the field being present.
+    const body = n("schema_body", [fieldDecl("id", "INT")]);
+    const block = n("schema_block", [blockLabelNode("orders"), body]);
+    const root = n("source_file", [block]);
+    assert.equal(extractSchemas(root)[0].namespace, null);
+  });
+
+  it("propagates the namespace name to schemas defined inside a namespace_block", () => {
+    // Validates that the recursive walker passes the parent namespace name down to children.
+    const body = n("schema_body", [fieldDecl("STORE_ID", "VARCHAR(20)")]);
+    const schemaNode = n("schema_block", [blockLabelNode("stores"), body], "", 3);
+    const ns = namespaceBlockNode("pos", [schemaNode]);
+    const root = n("source_file", [ns]);
+    const result = extractSchemas(root);
+    assert.equal(result[0].name, "stores");
+    assert.equal(result[0].namespace, "pos");
+  });
+
+  it("collects both global and namespaced schemas in document order", () => {
+    // Validates that mixing top-level and namespaced schemas in one file
+    // produces both kinds in their declared order, each with the right namespace value.
+    const globalSchema = n("schema_block", [blockLabelNode("dim_date"), n("schema_body", [])]);
+    const nsSchema = n("schema_block", [blockLabelNode("stores"), n("schema_body", [])], "", 5);
+    const ns = namespaceBlockNode("pos", [nsSchema]);
+    const root = n("source_file", [globalSchema, ns]);
+    const result = extractSchemas(root);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].namespace, null);
+    assert.equal(result[1].namespace, "pos");
+  });
+});
+
+// ── extractMappings with namespaces ─────────────────────────────────────────
+
+describe("extractMappings — namespaced mapping with qualified ref (sl-cvs2)", () => {
+  it("preserves a fully-qualified source ref and qualifies the bare target ref", () => {
+    // Validates the namespace-resolution rule: an explicit ns::name source ref keeps its
+    // qualifier verbatim, while an unqualified target inside a namespaced mapping
+    // is auto-qualified with the enclosing namespace.
+    const qualName = n("qualified_name", [ident("pos"), ident("stores")], "pos::stores");
+    const srcEntry = sourceRef(qualName);
+    const tgtEntry = sourceRef(ident("hub_store"));
+    const body = n("mapping_body", [n("source_block", [srcEntry]), n("target_block", [tgtEntry])]);
+    const block = n("mapping_block", [blockLabelNode("load"), body], "", 10);
+    const ns = namespaceBlockNode("vault", [block]);
+    const root = n("source_file", [ns]);
+    const result = extractMappings(root);
+    assert.equal(result[0].namespace, "vault");
+    assert.deepEqual(result[0].sources, ["pos::stores"]);
+    assert.deepEqual(result[0].targets, ["vault::hub_store"]);
+  });
+});
+
+// ── extractFragments with namespaces ────────────────────────────────────────
+
+describe("extractFragments — namespace propagation (sl-cvs2)", () => {
+  it("attaches the enclosing namespace name to fragments declared inside it", () => {
+    // Validates that fragment_blocks inside a namespace_block inherit the namespace.
+    const body = n("schema_body", [fieldDecl("load_ts", "TIMESTAMP")]);
+    const frag = n("fragment_block", [blockLabelNode("audit_cols"), body], "", 2);
+    const ns = namespaceBlockNode("shared", [frag]);
+    const root = n("source_file", [ns]);
+    const result = extractFragments(root);
+    assert.equal(result[0].namespace, "shared");
+  });
+});
+
+// ── extractImports: name forms and arity ────────────────────────────────────
+
+describe("extractImports — name forms and arity (sl-cvs2)", () => {
+  function qualifiedName(ns, name) {
+    // qualified_name node — represents `ns::name` in the import list
+    return n("qualified_name", [ident(ns), ident(name)], `${ns}::${name}`);
+  }
+
+  it("extracts a single bare-identifier import", () => {
+    // Validates the simplest import form: a single unqualified name.
+    const imp = n("import_decl", [
+      n("import_name", [ident("address_fields")]),
+      n("import_path", [str("common.stm")]),
+    ]);
+    const root = n("source_file", [imp]);
+    const result = extractImports(root);
+    assert.deepEqual(result[0].names, ["address_fields"]);
+    assert.equal(result[0].path, "common.stm");
+  });
+
+  it("extracts multiple ns::name qualified imports from one declaration", () => {
+    // Validates that multiple qualified names in a single import_decl are collected in order.
+    const imp = n("import_decl", [
+      n("import_name", [qualifiedName("src", "customers")]),
+      n("import_name", [qualifiedName("mart", "dim_customers")]),
+      n("import_path", [str("source.stm")]),
+    ], "", 2);
+    const root = n("source_file", [imp]);
+    const result = extractImports(root);
+    assert.deepEqual(result[0].names, ["src::customers", "mart::dim_customers"]);
+    assert.equal(result[0].row, 2);
+  });
+
+  it("strips backticks from quoted import names", () => {
+    // Validates that backtick-quoted multi-word names are normalised in the names array.
+    const imp = n("import_decl", [
+      n("import_name", [quoted("address fields")]),
+      n("import_name", [quoted("audit fields")]),
+      n("import_path", [str("lib/common.stm")]),
+    ]);
+    const root = n("source_file", [imp]);
+    const result = extractImports(root);
+    assert.deepEqual(result[0].names, ["address fields", "audit fields"]);
+  });
+
+  it("returns one entry per import_decl when multiple declarations are present", () => {
+    // Validates that distinct import_decls produce distinct entries (not merged).
+    const imp1 = n("import_decl", [
+      n("import_name", [ident("foo")]),
+      n("import_path", [str("a.stm")]),
+    ], "", 0);
+    const imp2 = n("import_decl", [
+      n("import_name", [ident("bar")]),
+      n("import_path", [str("b.stm")]),
+    ], "", 1);
+    const root = n("source_file", [imp1, imp2]);
+    const result = extractImports(root);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].path, "a.stm");
+    assert.equal(result[1].path, "b.stm");
+  });
+
+  it("returns an empty array when there are no import_decls", () => {
+    // Validates the empty-case contract for import extraction.
+    assert.equal(extractImports(n("source_file", [])).length, 0);
   });
 });

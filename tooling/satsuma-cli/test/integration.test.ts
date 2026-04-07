@@ -1997,7 +1997,10 @@ describe("satsuma validate", () => {
     assert.equal(code, 0, "warnings-only should exit 0");
     assert.match(stdout, /undefined-ref/);
     assert.match(stdout, /nonexistent_xform/);
-    assert.doesNotMatch(stdout, /cleanup/, "known transform 'cleanup' should not be flagged");
+    // Use a structural assertion that the warning message itself does not name 'cleanup',
+    // rather than scanning the full stdout — file paths printed in diagnostics can legitimately
+    // contain the word "cleanup" (e.g. when the test runs from a worktree under chore/cleanup-*).
+    assert.doesNotMatch(stdout, /undefined transform 'cleanup'/, "known transform 'cleanup' should not be flagged");
     assert.match(stdout, /1 warning/);
   });
 

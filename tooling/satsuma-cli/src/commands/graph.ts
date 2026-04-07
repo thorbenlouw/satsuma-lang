@@ -13,7 +13,7 @@
 import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
 import { runCommand, EXIT_PARSE_ERROR } from "../command-runner.js";
-import { buildFullGraph } from "../graph-builder.js";
+import { buildFullGraph } from "../schema-graph.js";
 import { buildWorkspaceGraph } from "./graph-builder.js";
 import { printDefault, printCompact } from "./graph-format.js";
 

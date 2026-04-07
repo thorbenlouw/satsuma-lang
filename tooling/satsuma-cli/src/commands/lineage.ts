@@ -19,8 +19,8 @@ import type { Command } from "commander";
 import { loadWorkspace } from "../load-workspace.js";
 import { runCommand, CommandError, EXIT_NOT_FOUND } from "../command-runner.js";
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
-import { buildFullGraph } from "../graph-builder.js";
-import type { FullGraph } from "../graph-builder.js";
+import { buildFullGraph } from "../schema-graph.js";
+import type { FullGraph } from "../schema-graph.js";
 
 /** A directed edge in the lineage DAG. Uses the same from/to convention as graph schema_edges. */
 interface DagEdge {

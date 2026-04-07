@@ -15,7 +15,7 @@ import { canonicalKey, qualifyField } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import { extractAtRefs, classifyRef, resolveRef, resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { ExtractedWorkspace, FieldDecl } from "../types.js";
-import type { FullGraph } from "../graph-builder.js";
+import type { FullGraph } from "../schema-graph.js";
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
