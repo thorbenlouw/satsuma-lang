@@ -19,9 +19,7 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
 import { extractAtRefs } from "../nl-ref-extract.js";
 import { extractNLContent } from "../nl-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
@@ -54,17 +52,7 @@ Examples:
   satsuma context "pii email" --compact              # compact output
   satsuma context "order" --json                     # all scores as JSON`)
     .action(async (query: string, pathArg: string | undefined, opts: { budget: number; compact?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const terms = tokenize(query);
       const candidates = scoreAll(index, terms, parsedFiles);

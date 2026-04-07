@@ -11,11 +11,9 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
 import { buildFullGraph } from "../graph-builder.js";
-import { emptyGraph, buildWorkspaceGraph } from "./graph-builder.js";
+import { buildWorkspaceGraph } from "./graph-builder.js";
 import { printDefault, printCompact } from "./graph-format.js";
 
 /** CLI option shape produced by commander's option parsing. */
@@ -68,26 +66,7 @@ Examples:
   satsuma graph pipeline.stm --compact               # minimal output`)
     .action(async (pathArg: string | undefined, opts: GraphOpts) => {
       const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      if (files.length === 0) {
-        // Empty workspace — output valid empty graph
-        if (opts.json) {
-          console.log(JSON.stringify(emptyGraph(root), null, 2));
-        } else {
-          console.log("Empty workspace — no .stm files found.");
-        }
-        return;
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { index } = await loadWorkspace(root);
       const schemaGraph = buildFullGraph(index);
       const graph = buildWorkspaceGraph(index, schemaGraph, root, {
         namespace: opts.namespace ?? null,

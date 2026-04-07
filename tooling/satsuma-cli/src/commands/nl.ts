@@ -10,9 +10,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { extractNLContent } from "../nl-extract.js";
 import type { NLItem } from "../nl-extract.js";
 import { labelText } from "@satsuma/core";
@@ -52,17 +51,7 @@ Examples:
   satsuma nl all pipeline.stm --kind warning # only //! warnings
   satsuma nl hub_customer --json             # structured output`)
     .action(async (scope: string, pathArg: string | undefined, opts: { kind?: string; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       let items: NLItemWithFile[];
       if (scope === "all") {

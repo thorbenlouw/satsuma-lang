@@ -13,9 +13,7 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
 import type { WarningRecord, QuestionRecord } from "../types.js";
 
 export function register(program: Command): void {
@@ -37,17 +35,7 @@ Examples:
   satsuma warnings pipeline.stm --questions  # //? questions instead
   satsuma warnings pipeline.stm --json       # structured output`)
     .action(async (pathArg: string | undefined, opts: { questions?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { index } = await loadWorkspace(pathArg);
 
       // By default show both //! and //? comments; --questions shows only //?
       type TaggedItem = (WarningRecord | QuestionRecord) & { _kind: "warning" | "question" };

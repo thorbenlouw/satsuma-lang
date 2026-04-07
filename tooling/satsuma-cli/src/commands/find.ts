@@ -16,9 +16,7 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
 import { findBlockNode } from "../cst-query.js";
 import { resolveScopedEntityRef } from "../index-builder.js";
 import type { ExtractedWorkspace, ParsedFile, SyntaxNode } from "../types.js";
@@ -64,17 +62,7 @@ Examples:
   satsuma find --tag ref --json              # all foreign key refs as JSON
   satsuma find --tag enum --compact          # compact one-per-line output`)
     .action(async (pathArg: string | undefined, opts: { tag: string; in?: string; compact?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const tag = opts.tag.toLowerCase();
       const scope = opts.in ?? "all";

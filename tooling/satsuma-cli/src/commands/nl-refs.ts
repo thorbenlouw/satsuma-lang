@@ -12,9 +12,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import type { ResolvedNLRef } from "../nl-ref-extract.js";
 
@@ -49,17 +48,7 @@ Examples:
   satsuma nl-refs --mapping 'load hub_customer'      # refs in one mapping
   satsuma nl-refs pipeline.stm --unresolved --json   # broken refs as JSON`)
     .action(async (pathArg: string | undefined, opts: { mapping?: string; json?: boolean; unresolved?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { index } = await loadWorkspace(pathArg);
 
       let refs = resolveAllNLRefs(index);
 

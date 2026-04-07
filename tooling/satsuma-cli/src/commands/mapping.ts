@@ -11,9 +11,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { extractMetadata, canonicalEntityName, classifyTransform } from "@satsuma/core";
 import type { SyntaxNode, MappingRecord } from "../types.js";
@@ -34,17 +33,7 @@ Examples:
   satsuma mapping 'load hub_customer' --arrows-only  # just src → tgt
   satsuma mapping 'load hub_customer' --json         # structured output`)
     .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; arrowsOnly?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const resolved = resolveIndexKey(name, index.mappings);
       if (!resolved) {

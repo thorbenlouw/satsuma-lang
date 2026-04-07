@@ -12,9 +12,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
 import type { ExtractedWorkspace, ArrowRecord, FieldDecl } from "../types.js";
@@ -61,17 +60,7 @@ Examples:
       const schemaName = fieldRef.slice(0, dot);
       const fieldName = fieldRef.slice(dot + 1);
 
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       // Validate schema exists
       const resolvedSchema = resolveIndexKey(schemaName, index.schemas);

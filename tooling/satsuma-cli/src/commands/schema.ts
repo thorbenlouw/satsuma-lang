@@ -11,9 +11,8 @@
  */
 
 import type { Command } from "commander";
-import { resolveInput } from "../workspace.js";
-import { parseFile } from "../parser.js";
-import { buildIndex, resolveIndexKey } from "../index-builder.js";
+import { loadWorkspace } from "../load-workspace.js";
+import { resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
 import { canonicalEntityName, extractMetadata } from "@satsuma/core";
@@ -35,19 +34,7 @@ Examples:
   satsuma schema hub_customer --fields-only          # one field per line
   satsuma schema pos::stores --json                  # namespace-qualified`)
     .action(async (name: string, pathArg: string | undefined, opts: { compact?: boolean; fieldsOnly?: boolean; json?: boolean }) => {
-      const root = pathArg ?? ".";
-      let files: string[];
-      try {
-        files = await resolveInput(root);
-      } catch (err: unknown) {
-        console.error(`Error resolving path: ${(err as Error).message}`);
-        process.exit(2);
-      }
-
-      // Build index to locate the schema; also keep the per-file CST for
-      // full reconstruction from the raw node.
-      const parsedFiles = files.map((f) => parseFile(f));
-      const index = buildIndex(parsedFiles);
+      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
 
       const resolved = resolveIndexKey(name, index.schemas);
       if (!resolved) {
