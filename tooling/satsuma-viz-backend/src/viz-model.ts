@@ -1372,13 +1372,10 @@ export function mergeVizModels(
   return { uri: primaryUri, fileNotes, namespaces };
 }
 
-// ---------- Test-only exports ----------
-//
-// These re-exports give the test suite direct access to the per-builder
-// extract* helpers so each can be exercised in isolation against a parsed
-// CST node, rather than only via the full buildVizModel pipeline. They are
-// not part of the package's public API and must not be imported by
-// production code — the leading underscore is the convention.
+// Test-only re-exports of the per-builder helpers. Not part of the public
+// API; the leading underscore signals "do not import from production code".
+// Exists so test/viz-model-builders.test.js can exercise each builder
+// against a parsed CST node in isolation.
 export const _testInternals = {
   extractSchema,
   extractFragment,
