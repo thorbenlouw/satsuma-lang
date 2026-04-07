@@ -60,7 +60,7 @@ Examples:
       const schemaName = fieldRef.slice(0, dot);
       const fieldName = fieldRef.slice(dot + 1);
 
-      const { files: parsedFiles, index } = await loadWorkspace(pathArg);
+      const { index } = await loadWorkspace(pathArg);
 
       // Validate schema exists
       const resolvedSchema = resolveIndexKey(schemaName, index.schemas);
