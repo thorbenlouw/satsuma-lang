@@ -75,8 +75,8 @@ parallelisable — there is no enforced ordering except where noted.
 - [ ] Target ≥15 recovery cases total.
 
 ### 14. Tighten assertion style on the highest-value tests
-- [ ] Pick the 10 most load-bearing extraction/classification tests and convert them from per-field `assert.equal` to `assert.deepStrictEqual` against a full expected object.
-- [ ] Document the convention in a short note at the top of the affected test files.
+- [x] Pick the 10 most load-bearing extraction/classification tests and convert them from per-field `assert.equal` to `assert.deepStrictEqual` against a full expected object. (sl-d20o)
+- [x] Document the convention in a short note at the top of the affected test files. (sl-d20o)
 
 ### 15. Grow thin command test files
 - [ ] `summary.test.ts` — cover every flag and both text + JSON output modes.
