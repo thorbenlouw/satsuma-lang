@@ -150,9 +150,16 @@ satsuma-cli/src/
 ├── index-builder.ts     — extractFileData(), buildIndex() → ExtractedWorkspace
 │                          Wraps satsuma-core extractions; provides EntityFieldLookup
 │                          and DefinitionLookup factory functions for callbacks
+├── load-workspace.ts    — loadWorkspace(pathArg) → { files, index }
+│                          The one-call workspace loader used by 18 of 21 CLI
+│                          commands; owns the standard "resolve → parse → index"
+│                          pipeline and the shared resolve-error message format.
+│                          fmt, diff, and validate opt out and call resolveInput
+│                          / loadFiles / buildIndex directly (per-file parse
+│                          tolerance, two-path compare, JSON-formatted errors).
 ├── nl-ref-extract.ts    — makeDefinitionLookup(ExtractedWorkspace): DefinitionLookup
 │                          Thin adapter; all logic is in satsuma-core/nl-ref
-├── workspace.ts         — File discovery, parsing, index building for a workspace dir
+├── workspace.ts         — resolveInput(): path → .stm file list via import graph
 ├── graph-builder.ts     — Builds the graph data structure for satsuma graph
 ├── lint-engine.ts       — Lint rule evaluation
 ├── validate.ts          — Thin adapter: maps SemanticDiagnostic[] → LintDiagnostic[]

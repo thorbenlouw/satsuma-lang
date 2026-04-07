@@ -26,7 +26,7 @@ parallelisable — there is no enforced ordering except where noted.
 ### 4. Remove dead `resolveAndLoad` (or actually use it)
 - [x] Confirm `resolveAndLoad` has no callers.
 - [x] Decide between (a) deleting it and the inline reimplementations stay as-is, or (b) refactoring all ~20 commands to use it.
-- [x] Chose (a): deleted from `tooling/satsuma-cli/src/errors.ts` (sl-r39t). Not documented in ARCHITECTURE.md, so no further note needed.
+- [x] Chose (b) after PR 209 review feedback. Introduced `tooling/satsuma-cli/src/load-workspace.ts` exporting `loadWorkspace(pathArg)` → `{ files, index }` and migrated 18 of 21 CLI commands to use it (sl-r39t). `fmt`, `diff`, and `validate` retain custom handling because their resolve-failure semantics genuinely differ. Net ~247 lines of boilerplate removed; per-command directory-rejection integration tests consolidated into `test/load-workspace.test.ts`.
 
 ### 5. Remove or de-mark temporary shims
 - [x] Grep for "temporary", "shim", "migration" in source headers across all packages.
