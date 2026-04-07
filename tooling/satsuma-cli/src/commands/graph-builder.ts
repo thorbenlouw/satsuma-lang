@@ -14,7 +14,7 @@ import { resolve } from "node:path";
 import { canonicalKey, qualifyField } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import { extractAtRefs, classifyRef, resolveRef, resolveAllNLRefs } from "../nl-ref-extract.js";
-import type { WorkspaceIndex, FieldDecl } from "../types.js";
+import type { ExtractedWorkspace, FieldDecl } from "../types.js";
 import type { FullGraph } from "../graph-builder.js";
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ export function emptyGraph(root: string): WorkspaceGraph {
  * Collects nodes (schemas, mappings, metrics, transforms), builds schema-level
  * and field-level edges, applies namespace filtering, and computes stats.
  */
-export function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGraph, root: string, opts: GraphBuildOpts): WorkspaceGraph {
+export function buildWorkspaceGraph(index: ExtractedWorkspace, schemaGraph: FullGraph, root: string, opts: GraphBuildOpts): WorkspaceGraph {
   const nsFilter = opts.namespace ?? null;
   const includeNl = opts.includeNl;
   const schemaOnly = opts.schemaOnly;
@@ -281,7 +281,7 @@ export function buildWorkspaceGraph(index: WorkspaceIndex, schemaGraph: FullGrap
  * Build schema-level edges from the directed graph.
  * Each edge has: from, to, role (source/target/metric_source/nl_ref).
  */
-function buildSchemaEdges(index: WorkspaceIndex, _schemaGraph: FullGraph, includedNodeIds: Set<string>, nsFilter: string | null): SchemaEdge[] {
+function buildSchemaEdges(index: ExtractedWorkspace, _schemaGraph: FullGraph, includedNodeIds: Set<string>, nsFilter: string | null): SchemaEdge[] {
   const edges: SchemaEdge[] = [];
 
   // ── Mapping source/target edges ────────────────────────────────────────────
@@ -362,7 +362,7 @@ function buildSchemaEdges(index: WorkspaceIndex, _schemaGraph: FullGraph, includ
 function extractNlSchemaRefs(
   text: string,
   mappingContext: { sources: string[]; targets: string[]; namespace: string | null },
-  index: WorkspaceIndex,
+  index: ExtractedWorkspace,
 ): string[] {
   const refs = extractAtRefs(text);
   const schemas: string[] = [];
@@ -422,7 +422,7 @@ function extractNlSchemaRefs(
  * parent schema names, attaches transform and NL metadata, and resolves
  * nl-derived edges from @ref mentions.
  */
-function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, nsFilter: string | null, includeNl: boolean): { edges: FieldEdge[]; unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }> } {
+function buildFieldEdges(index: ExtractedWorkspace, includedNodeIds: Set<string>, nsFilter: string | null, includeNl: boolean): { edges: FieldEdge[]; unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }> } {
   const edges: FieldEdge[] = [];
   const unresolvedNl: Array<{ scope: string; arrow: string; text: string; file: string; line: number }> = [];
 
@@ -567,7 +567,7 @@ function buildFieldEdges(index: WorkspaceIndex, includedNodeIds: Set<string>, ns
  * with no field edges (e.g. derived-only), adds edges from the declared
  * source/target lists.
  */
-function aggregateFieldEdgesToSchemaLevel(fieldEdges: FieldEdge[], index: WorkspaceIndex, nsFilter: string | null): FieldEdge[] {
+function aggregateFieldEdgesToSchemaLevel(fieldEdges: FieldEdge[], index: ExtractedWorkspace, nsFilter: string | null): FieldEdge[] {
   const aggregated: FieldEdge[] = [];
   const seen = new Set<string>();
 

@@ -19,7 +19,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { stripNLRefScopePrefix } from "@satsuma/core";
-import type { SyntaxNode, WorkspaceIndex, ParsedFile } from "../types.js";
+import type { SyntaxNode, ExtractedWorkspace, ParsedFile } from "../types.js";
 
 interface Ref {
   kind: string;
@@ -113,7 +113,7 @@ Examples:
 
 // ── Reference gathering ───────────────────────────────────────────────────────
 
-function gatherRefs(name: string, index: WorkspaceIndex, parsedFiles: ParsedFile[], isSchema: boolean, isFragment: boolean, isTransform: boolean): Ref[] {
+function gatherRefs(name: string, index: ExtractedWorkspace, parsedFiles: ParsedFile[], isSchema: boolean, isFragment: boolean, isTransform: boolean): Ref[] {
   const refs: Ref[] = [];
 
   if (isSchema) {

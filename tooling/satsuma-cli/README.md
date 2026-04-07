@@ -91,12 +91,12 @@ src/
   commands/          One module per satsuma sub-command
   extract.js         CST extraction functions (schemas, mappings, arrows, etc.)
   classify.js        Transform classification (structural/nl/mixed/none)
-  index-builder.js   Builds WorkspaceIndex from parsed files
+  index-builder.js   Builds ExtractedWorkspace from parsed files
   nl-extract.js      NL content extraction from CST subtrees
   meta-extract.js    Structured metadata extraction
   normalize.js       Deterministic name normalization for field matching
   validate.js        Structural and semantic validation
-  diff.js            Structural comparison of two WorkspaceIndex instances
+  diff.js            Structural comparison of two ExtractedWorkspace instances
   parser.js          Tree-sitter parser wrapper
   workspace.js       Satsuma file discovery
   errors.js          Shared error handling and exit codes

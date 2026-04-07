@@ -1,11 +1,11 @@
 /**
- * graph-builder.ts — Build a directed schema-level graph from a WorkspaceIndex.
+ * graph-builder.ts — Build a directed schema-level graph from a ExtractedWorkspace.
  *
  * Shared by `satsuma lineage` and `satsuma graph` commands.
  */
 
 import { extractAtRefs, classifyRef, resolveRef } from "./nl-ref-extract.js";
-import type { WorkspaceIndex } from "./types.js";
+import type { ExtractedWorkspace } from "./types.js";
 
 export interface GraphNode {
   type: string;
@@ -20,7 +20,7 @@ export interface FullGraph {
 /**
  * Build a directed graph: edges go from source to target (downstream).
  */
-export function buildFullGraph(index: WorkspaceIndex): FullGraph {
+export function buildFullGraph(index: ExtractedWorkspace): FullGraph {
   const nodes = new Map<string, GraphNode>();
   const edges = new Map<string, Set<string>>();
 

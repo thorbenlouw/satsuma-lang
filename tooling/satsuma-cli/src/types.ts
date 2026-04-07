@@ -187,7 +187,7 @@ export interface ReferenceGraph {
   metricsReferences: Map<string, string[]>;
 }
 
-export interface WorkspaceIndex {
+export interface ExtractedWorkspace {
   schemas: Map<string, SchemaRecord>;
   metrics: Map<string, MetricRecord>;
   mappings: Map<string, MappingRecord>;
@@ -238,7 +238,7 @@ export interface LintDiagnostic {
 export interface LintRule {
   id: string;
   description: string;
-  check: (index: WorkspaceIndex) => LintDiagnostic[];
+  check: (index: ExtractedWorkspace) => LintDiagnostic[];
 }
 
 export type RegisterFn = (rule: LintRule) => void;

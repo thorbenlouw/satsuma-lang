@@ -1,16 +1,16 @@
 /**
- * nl-ref-extract.ts — CLI bridge between WorkspaceIndex and satsuma-core NL refs
+ * nl-ref-extract.ts — CLI bridge between ExtractedWorkspace and satsuma-core NL refs
  *
  * All NL ref logic lives in satsuma-core/src/nl-ref.ts. Per ADR-006, core
  * accepts a DefinitionLookup callback so it can stay independent of any
  * particular index representation. This module's job is to construct that
- * lookup from the CLI's WorkspaceIndex and re-export the resolver functions
+ * lookup from the CLI's ExtractedWorkspace and re-export the resolver functions
  * with the index-shaped signatures CLI commands expect.
  *
  * It also owns countNlDerivedEdgesByMapping, which is index-specific
  * accounting that has no place in core.
  *
- * Owns: WorkspaceIndex → DefinitionLookup adaptation; nl-derived edge counts.
+ * Owns: ExtractedWorkspace → DefinitionLookup adaptation; nl-derived edge counts.
  * Does not own: ref classification, resolution, or NL data extraction
  * (those are pure functions in @satsuma/core).
  */
@@ -30,7 +30,7 @@ import type {
   ResolvedNLRef,
   DefinitionLookup,
 } from "@satsuma/core";
-import type { MappingRecord, NLRefData, WorkspaceIndex } from "./types.js";
+import type { MappingRecord, NLRefData, ExtractedWorkspace } from "./types.js";
 import { expandEntityFields } from "./spread-expand.js";
 import { canonicalKey, qualifyField } from "./index-builder.js";
 
@@ -38,9 +38,9 @@ import { canonicalKey, qualifyField } from "./index-builder.js";
 export { extractAtRefs, classifyRef, extractNLRefData };
 export type { AtRef, RefClassification, Resolution, ResolvedNLRef };
 
-// ── WorkspaceIndex → DefinitionLookup bridge ──────────────────────────────────
+// ── ExtractedWorkspace → DefinitionLookup bridge ──────────────────────────────────
 
-function makeLookup(index: WorkspaceIndex): DefinitionLookup {
+function makeLookup(index: ExtractedWorkspace): DefinitionLookup {
   return {
     hasSchema: (key) => index.schemas.has(key),
     getSchema: (key) => index.schemas.get(key) ?? null,
@@ -62,14 +62,14 @@ interface MappingContext {
 /**
  * Resolve a single @ref against the workspace index.
  */
-export function resolveRef(ref: string, mappingContext: MappingContext, index: WorkspaceIndex): Resolution {
+export function resolveRef(ref: string, mappingContext: MappingContext, index: ExtractedWorkspace): Resolution {
   return _resolveRef(ref, mappingContext, makeLookup(index));
 }
 
 /**
  * Process pre-extracted NL ref data into fully resolved reference records.
  */
-export function resolveAllNLRefs(index: WorkspaceIndex): ResolvedNLRef[] {
+export function resolveAllNLRefs(index: ExtractedWorkspace): ResolvedNLRef[] {
   const nlRefData: NLRefData[] = index.nlRefData ?? [];
   return _resolveAllNLRefs(nlRefData, makeLookup(index));
 }
@@ -96,7 +96,7 @@ export function isSchemaInMappingSources(schemaRef: string, mapping: MappingReco
  * This function is the canonical count used by both `summary --json` and any
  * other consumer that needs a consistent nl-derived arrow tally.
  */
-export function countNlDerivedEdgesByMapping(index: WorkspaceIndex): Map<string, number> {
+export function countNlDerivedEdgesByMapping(index: ExtractedWorkspace): Map<string, number> {
   // ── Step 1: build the set of declared source→target pairs per mapping ──────
   // Pre-qualify all declared arrow source/target fields so they can be compared
   // against canonical nl ref names without re-running the full graph builder.

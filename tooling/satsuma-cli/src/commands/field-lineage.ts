@@ -18,7 +18,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, FieldDecl } from "../types.js";
+import type { ExtractedWorkspace, FieldDecl } from "../types.js";
 
 interface FieldEdgeEntry {
   from: string | null; // canonical field path or null for derived/no-source
@@ -149,7 +149,7 @@ Examples:
  * Build a list of all field-level edges from the workspace index,
  * including both declared arrows and NL-derived references.
  */
-function buildFieldEdgeGraph(index: WorkspaceIndex): FieldEdgeEntry[] {
+function buildFieldEdgeGraph(index: ExtractedWorkspace): FieldEdgeEntry[] {
   const edges: FieldEdgeEntry[] = [];
   const seen = new Set<string>();
 

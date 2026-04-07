@@ -1,5 +1,5 @@
 /**
- * diff.ts — Structural comparison of two WorkspaceIndex instances
+ * diff.ts — Structural comparison of two ExtractedWorkspace instances
  *
  * Compares schemas (fields, types, metadata, notes), mappings (arrows,
  * transforms, notes), metrics (sources, grain, slices, notes), fragments,
@@ -24,11 +24,11 @@ import type {
   SchemaRecord,
   TransformChange,
   TransformRecord,
-  WorkspaceIndex,
+  ExtractedWorkspace,
 } from "./types.js";
 
 /** Collect note texts for a given parent name from an index's notes. */
-function noteTextsForParent(index: WorkspaceIndex, parentName: string): Set<string> {
+function noteTextsForParent(index: ExtractedWorkspace, parentName: string): Set<string> {
   const texts = new Set<string>();
   for (const note of index.notes ?? []) {
     if (note.parent === parentName) texts.add(note.text);
@@ -37,13 +37,13 @@ function noteTextsForParent(index: WorkspaceIndex, parentName: string): Set<stri
 }
 
 /**
- * Compute a structural delta between two WorkspaceIndex instances.
+ * Compute a structural delta between two ExtractedWorkspace instances.
  *
  * Compares every block type (schemas, mappings, metrics, fragments, transforms)
  * plus standalone note blocks. Block-owned note blocks (those with a non-null
  * parent) are compared within their parent block's diff, not at the top level.
  */
-export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta {
+export function diffIndex(indexA: ExtractedWorkspace, indexB: ExtractedWorkspace): Delta {
   // Collect arrows per mapping for detailed comparison
   const arrowsA = collectArrowsByMapping(indexA);
   const arrowsB = collectArrowsByMapping(indexB);
@@ -73,7 +73,7 @@ export function diffIndex(indexA: WorkspaceIndex, indexB: WorkspaceIndex): Delta
 /**
  * Collect arrow records grouped by mapping key.
  */
-function collectArrowsByMapping(index: WorkspaceIndex): Map<string, ArrowRecord[]> {
+function collectArrowsByMapping(index: ExtractedWorkspace): Map<string, ArrowRecord[]> {
   const byMapping = new Map<string, ArrowRecord[]>();
   const seen = new Set<string>();
 

@@ -16,7 +16,7 @@ import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { extractMetadata } from "@satsuma/core";
 import type { MetaEntry } from "@satsuma/core";
 import { findBlockNode } from "../cst-query.js";
-import type { SyntaxNode, WorkspaceIndex, ParsedFile, FieldDecl } from "../types.js";
+import type { SyntaxNode, ExtractedWorkspace, ParsedFile, FieldDecl } from "../types.js";
 import { expandEntityFields } from "../spread-expand.js";
 
 interface MetaResult {
@@ -93,7 +93,7 @@ Examples:
     });
 }
 
-function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {
+function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: ExtractedWorkspace): MetaResult {
   // Determine block type, resolving namespace-qualified keys
   const blockTypes: string[] = [];
   let resolvedName = blockName;
@@ -166,7 +166,7 @@ function extractBlockMeta(blockName: string, parsedFiles: ParsedFile[], index: W
   return { scope: resolvedName, entries: [] };
 }
 
-function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): MetaResult {
+function extractFieldMeta(fieldRef: string, parsedFiles: ParsedFile[], index: ExtractedWorkspace): MetaResult {
   const dot = fieldRef.indexOf(".");
   const entityName = fieldRef.slice(0, dot);
   const fieldPath = fieldRef.slice(dot + 1);

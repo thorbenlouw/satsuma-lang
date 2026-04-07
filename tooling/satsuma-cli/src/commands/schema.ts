@@ -17,7 +17,7 @@ import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { expandEntityFields } from "../spread-expand.js";
 import { canonicalEntityName, extractMetadata } from "@satsuma/core";
-import type { SyntaxNode, WorkspaceIndex, SchemaRecord } from "../types.js";
+import type { SyntaxNode, ExtractedWorkspace, SchemaRecord } from "../types.js";
 
 export function register(program: Command): void {
   program
@@ -184,7 +184,7 @@ function collectFields(bodyNode: SyntaxNode, indent: number = 0): CollectedLine[
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: WorkspaceIndex, opts: { compact?: boolean; fieldsOnly?: boolean }): void {
+function printJson(entry: SchemaRecord, schemaNode: SyntaxNode | null, index: ExtractedWorkspace, opts: { compact?: boolean; fieldsOnly?: boolean }): void {
   const spreadFields = expandEntityFields(entry, entry.namespace ?? null, index);
   const allFields = [...entry.fields, ...spreadFields];
 
