@@ -51,10 +51,10 @@ namespace ecom (note "Shopify e-commerce platform") {
 // --- Warehouse / Hub Layer ---
 namespace warehouse (note "Conformed data layer for unified analytics") {
   schema conformed_store {
-    store_key    BINARY(32)    (pk)
-    store_id     VARCHAR(20)   (required, unique)
-    store_name   VARCHAR(100)
-    region       CHAR(2)
+    store_key   BINARY(32)    (pk)
+    store_id    VARCHAR(20)   (required, unique)
+    store_name  VARCHAR(100)
+    region      CHAR(2)
     ...audit_fields
   }
 
@@ -91,11 +91,7 @@ namespace warehouse (note "Conformed data layer for unified analytics") {
 
 // --- Metrics ---
 namespace analytics (note "Business metrics layer") {
-  schema daily_sales (
-    metric,
-    metric_name "Daily Sales Volume",
-    grain daily
-  ) {
+  schema daily_sales (metric, metric_name "Daily Sales Volume", grain daily) {
     sale_date    DATE
     channel      VARCHAR(20)
     order_count  INTEGER        (measure)

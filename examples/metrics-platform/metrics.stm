@@ -280,7 +280,6 @@ mapping _cart_abandonment_rate_pipeline {
     fact_orders
   }
   target { cart_abandonment_rate }
-
   // --- Cart Abandonment Rate Calculation Logic ---
   // Sessions are filtered to checkout-stage via the schema-level filter, then joined to
   // fact_orders on session_id to determine which sessions resulted in a placed order.
