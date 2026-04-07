@@ -1,164 +1,82 @@
 /**
- * summary.test.js — Unit tests for summary command formatters.
+ * summary.test.ts — Focused CLI coverage for the `satsuma summary` command.
  *
- * Tests the JSON serialisation and compact output by constructing a minimal
- * ExtractedWorkspace directly (no parser or tree-sitter needed).
+ * These tests spawn the built command so the formatter contract, workspace
+ * loading, import following, and JSON/compact flags are checked together.
  */
 
 import assert from "node:assert/strict";
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it } from "node:test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { run as runCli } from "./helpers.js";
 
-// ── Minimal ExtractedWorkspace factory ────────────────────────────────────────────
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI = resolve(__dirname, "../dist/index.js");
+const PLATFORM = resolve(__dirname, "fixtures/platform.stm");
+const IMPORT_ENTRY = resolve(__dirname, "fixtures/import-entry.stm");
 
-function makeIndex({
-  schemas = [] as any[],
-  metrics = [] as any[],
-  mappings = [] as any[],
-  fragments = [] as any[],
-  transforms = [] as any[],
-  warnings = [] as any[],
-  questions = [] as any[],
-  totalErrors = 0,
-}: any = {}) {
-  const toMap = (items: any[]) => new Map(items.map((i: any) => [i.name ?? i.key, i]));
-  return {
-    schemas: toMap(schemas),
-    metrics: toMap(metrics),
-    mappings: toMap(mappings),
-    fragments: toMap(fragments),
-    transforms: toMap(transforms),
-    warnings,
-    questions,
-    referenceGraph: { usedByMappings: new Map(), fragmentsUsedIn: new Map(), metricsReferences: new Map() },
-    totalErrors,
-  };
-}
+const run = (...args: string[]) => runCli(CLI, ...args);
 
-// ── Capture console.log output ────────────────────────────────────────────────
+describe("satsuma summary", () => {
+  it("prints the human overview with all primary entity sections", async () => {
+    // The default text mode is the command's human contract, so it must keep
+    // the major workspace sections visible when the workspace contains them.
+    const { stdout, code } = await run("summary", PLATFORM);
 
-let output: string[] = [];
-let origLog: typeof console.log;
-
-beforeEach(() => {
-  output = [];
-  origLog = console.log;
-  console.log = (...args: any[]) => output.push(args.join(" "));
-});
-
-afterEach(() => {
-  console.log = origLog;
-});
-
-// We import the formatting helpers indirectly by re-implementing them at the
-// minimal level — or we test the JSON structure via a thin wrapper.
-// Since the formatters are not exported, we test the observable JSON shape.
-
-// ── JSON output shape ─────────────────────────────────────────────────────────
-
-describe("summary JSON structure", () => {
-  it("produces valid JSON with expected top-level keys", () => {
-    const index = makeIndex({
-      schemas: [{ name: "orders", note: "Order data", fields: [{ name: "id", type: "INT" }], file: "a.stm", row: 0 }],
-      metrics: [{ name: "mrr", displayName: "MRR", fields: [], grain: "monthly", sources: ["fact_subs"], file: "b.stm", row: 0 }],
-      mappings: [{ name: "migration", key: "migration", sources: ["src"], targets: ["tgt"], arrowCount: 3, file: "c.stm", row: 0 }],
-    });
-
-    // Directly exercise the JSON serialisation logic
-    const out = {
-      schemas: [...index.schemas.values()].map((s) => ({
-        name: s.name,
-        note: s.note,
-        fieldCount: s.fields.length,
-        file: s.file,
-        row: s.row,
-      })),
-      metrics: [...index.metrics.values()].map((m) => ({
-        name: m.name,
-        displayName: m.displayName,
-        fieldCount: m.fields.length,
-        grain: m.grain,
-        sources: m.sources,
-        file: m.file,
-        row: m.row,
-      })),
-      mappings: [...index.mappings.values()].map((m) => ({
-        name: m.name,
-        sources: m.sources,
-        targets: m.targets,
-        arrowCount: m.arrowCount,
-        file: m.file,
-        row: m.row,
-      })),
-      fragments: [],
-      transforms: [],
-      warningCount: 0,
-      questionCount: 0,
-      totalErrors: 0,
-    };
-
-    const json = JSON.parse(JSON.stringify(out));
-    assert.equal(json.schemas.length, 1);
-    assert.equal(json.schemas[0].name, "orders");
-    assert.equal(json.schemas[0].fieldCount, 1);
-    assert.equal(json.metrics.length, 1);
-    assert.equal(json.metrics[0].name, "mrr");
-    assert.equal(json.metrics[0].grain, "monthly");
-    assert.equal(json.mappings.length, 1);
-    assert.equal(json.mappings[0].arrowCount, 3);
-    assert.equal(json.warningCount, 0);
-  });
-});
-
-// ── Compact output logic ──────────────────────────────────────────────────────
-
-describe("summary compact output", () => {
-  it("lists schema names under 'schemas:' header", () => {
-    const index = makeIndex({
-      schemas: [
-        { name: "orders", fields: [], file: "a.stm", row: 0 },
-        { name: "customers", fields: [], file: "a.stm", row: 5 },
-      ],
-    });
-
-    // Replicate compact logic
-    const section = (label: string, items: string[]) => {
-      if (items.length === 0) return;
-      console.log(`${label}:`);
-      for (const name of items) console.log(`  ${name}`);
-    };
-    section("schemas", [...index.schemas.keys()]);
-
-    assert.ok(output.includes("schemas:"));
-    assert.ok(output.includes("  orders"));
-    assert.ok(output.includes("  customers"));
+    assert.equal(code, 0);
+    assert.match(stdout, /Satsuma Workspace/);
+    assert.match(stdout, /Schemas \(/);
+    assert.match(stdout, /Metrics \(/);
+    assert.match(stdout, /Mappings \(/);
+    assert.match(stdout, /Fragments \(/);
+    assert.match(stdout, /Transforms \(/);
   });
 
-  it("skips empty sections", () => {
-    const index = makeIndex({ schemas: [] });
-    const section = (label: string, items: string[]) => {
-      if (items.length === 0) return;
-      console.log(`${label}:`);
-    };
-    section("schemas", [...index.schemas.keys()]);
-    assert.equal(output.length, 0);
+  it("prints compact text as names grouped by entity type", async () => {
+    // Compact output is intentionally names-only; this guards against leaking
+    // detail fields into the mode used by scripts and quick terminal scans.
+    const { stdout, code } = await run("summary", "--compact", PLATFORM);
+
+    assert.equal(code, 0);
+    assert.match(stdout, /^schemas:/m);
+    assert.match(stdout, /^mappings:/m);
+    assert.match(stdout, /^  ::legacy_sqlserver$/m);
+    assert.doesNotMatch(stdout, /\[/);
+    assert.doesNotMatch(stdout, /\/examples\//);
   });
-});
 
-// ── Default output sanity ─────────────────────────────────────────────────────
+  it("emits full JSON with imported schemas and source-target details", async () => {
+    // Full JSON is the programmatic contract; imported definitions and detailed
+    // mapping fields must be present for downstream tools.
+    const { stdout, code } = await run("summary", "--json", IMPORT_ENTRY);
 
-describe("summary default output", () => {
-  it("includes warning and question counts", () => {
-    const index = makeIndex({
-      warnings: [{ text: "w", file: "f", row: 0 }],
-      questions: [{ text: "q", file: "f", row: 1 }, { text: "q2", file: "f", row: 2 }],
-    });
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.fileCount, 2);
+    assert.deepEqual(
+      data.schemas.map((schema: { name: string }) => schema.name).sort(),
+      ["mart::dim_customers", "src::customers"],
+    );
+    assert.equal(data.mappings[0].name, "::build dim_customers");
+    assert.deepEqual(data.mappings[0].sources, ["src::customers"]);
+    assert.deepEqual(data.mappings[0].targets, ["mart::dim_customers"]);
+    assert.equal(typeof data.mappings[0].file, "string");
+    assert.equal(typeof data.mappings[0].line, "number");
+  });
 
-    const notes = [];
-    if (index.warnings.length > 0) notes.push(`${index.warnings.length} warning comment${index.warnings.length !== 1 ? "s" : ""}`);
-    if (index.questions.length > 0) notes.push(`${index.questions.length} question comment${index.questions.length !== 1 ? "s" : ""}`);
-    if (notes.length > 0) console.log(notes.join("  ·  "));
+  it("emits compact JSON without location or source-target details", async () => {
+    // `--json --compact` is a distinct mode, not just pretty compact text; it
+    // keeps counts while omitting verbose details from each entity object.
+    const { stdout, code } = await run("summary", "--json", "--compact", IMPORT_ENTRY);
 
-    assert.ok(output.some((l: string) => l.includes("1 warning comment")));
-    assert.ok(output.some((l: string) => l.includes("2 question comments")));
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.fileCount, 2);
+    assert.deepEqual(Object.keys(data.schemas[0]).sort(), ["fieldCount", "name"]);
+    assert.deepEqual(Object.keys(data.mappings[0]).sort(), ["arrowCount", "name"]);
+    assert.equal(data.warningCount, 0);
+    assert.equal(data.questionCount, 0);
+    assert.equal(data.totalErrors, 0);
   });
 });

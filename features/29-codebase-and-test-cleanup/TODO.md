@@ -78,11 +78,11 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Pick the 10 most load-bearing extraction/classification tests and convert them from per-field `assert.equal` to `assert.deepStrictEqual` against a full expected object. (sl-d20o)
 - [x] Document the convention in a short note at the top of the affected test files. (sl-d20o)
 
-### 15. Grow thin command test files
-- [ ] `summary.test.ts` — cover every flag and both text + JSON output modes.
-- [ ] `warnings.test.ts` — cover the diagnostic categories and severity filtering.
-- [ ] `workspace.test.ts` — cover import-following, missing file handling, namespace resolution at the workspace boundary.
-- [ ] `lineage.test.ts` — cover graph traversal, cycle handling, namespace scoping, and `--from` filtering.
+### 15. Grow thin command test files *(done — sl-pdlh)*
+- [x] `summary.test.ts` — cover every flag and both text + JSON output modes. Replaced formatter-copy tests with real CLI subprocess coverage for default text, `--compact`, `--json`, and `--json --compact`.
+- [x] `warnings.test.ts` — cover the diagnostic categories and severity filtering. Added real CLI coverage for default warning+question text, question-only text, default JSON, question-only JSON, and empty JSON not-found output.
+- [x] `workspace.test.ts` — cover import-following, missing file handling, namespace resolution at the workspace boundary. Added resolver/loader coverage for direct and transitive imports, missing imports, directory rejection, followImports=false, and namespace-qualified loaded schemas.
+- [x] `lineage.test.ts` — cover graph traversal, cycle handling, namespace scoping, and `--from` filtering. Replaced helper-copy tests with real CLI subprocess coverage for `--from`, `--to`, `--depth`, `--compact`, `--json`, namespace-qualified traversal, invalid mixed direction flags, and JSON not-found errors.
 
 ### 16. Strengthen LSP completion tests *(done — sl-yk89)*
 - [x] At minimum double the case count in `completion.test.js`. Grew the suite to 18 tests.
