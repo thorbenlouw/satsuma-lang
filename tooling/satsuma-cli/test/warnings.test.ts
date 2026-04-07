@@ -26,10 +26,10 @@ describe("satsuma warnings", () => {
 
     assert.equal(code, 0);
     assert.match(stdout, /comments-test\.stm/);
-    assert.match(stdout, /:4  \/\/! warning: data quality issue/);
-    assert.match(stdout, /:5  \/\/\? should we rename this\?/);
-    assert.match(stdout, /:12  \/\/! warning: aggregation may be incorrect/);
-    assert.match(stdout, /:13  \/\/\? consider using SUM instead/);
+    assert.match(stdout, /:4 {2}\/\/! warning: data quality issue/);
+    assert.match(stdout, /:5 {2}\/\/\? should we rename this\?/);
+    assert.match(stdout, /:12 {2}\/\/! warning: aggregation may be incorrect/);
+    assert.match(stdout, /:13 {2}\/\/\? consider using SUM instead/);
   });
 
   it("filters text output to questions with --questions", async () => {
@@ -37,8 +37,8 @@ describe("satsuma warnings", () => {
     const { stdout, code } = await run("warnings", "--questions", COMMENTS);
 
     assert.equal(code, 0);
-    assert.match(stdout, /:5  \/\/\? should we rename this\?/);
-    assert.match(stdout, /:13  \/\/\? consider using SUM instead/);
+    assert.match(stdout, /:5 {2}\/\/\? should we rename this\?/);
+    assert.match(stdout, /:13 {2}\/\/\? consider using SUM instead/);
     assert.doesNotMatch(stdout, /warning: data quality issue/);
     assert.doesNotMatch(stdout, /warning: aggregation may be incorrect/);
   });
