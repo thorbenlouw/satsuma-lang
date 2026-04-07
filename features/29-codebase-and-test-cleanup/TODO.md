@@ -24,9 +24,9 @@ parallelisable — there is no enforced ordering except where noted.
 - [ ] For each, decide whether to merge (if they should be one file in core) or rename (if they are genuinely different responsibilities).
 
 ### 4. Remove dead `resolveAndLoad` (or actually use it)
-- [ ] Confirm `resolveAndLoad` has no callers.
-- [ ] Decide between (a) deleting it and the inline reimplementations stay as-is, or (b) refactoring all ~20 commands to use it.
-- [ ] If (b): do it as one PR. If (a): delete and add a one-line note in `ARCHITECTURE.md` if the function was previously documented as the entry point.
+- [x] Confirm `resolveAndLoad` has no callers.
+- [x] Decide between (a) deleting it and the inline reimplementations stay as-is, or (b) refactoring all ~20 commands to use it.
+- [x] Chose (a): deleted from `tooling/satsuma-cli/src/errors.ts` (sl-r39t). Not documented in ARCHITECTURE.md, so no further note needed.
 
 ### 5. Remove or de-mark temporary shims
 - [ ] Grep for "temporary", "shim", "migration" in source headers across all packages.
