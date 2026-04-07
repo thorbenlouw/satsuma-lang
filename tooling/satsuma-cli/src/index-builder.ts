@@ -134,6 +134,42 @@ export function resolveCanonicalKey(canonical: string): string {
   return canonical;
 }
 
+/**
+ * Build an `ExtractedWorkspace` index from a set of parsed Satsuma files.
+ *
+ * This is the central data-collection pass that every command downstream of
+ * parsing depends on (validate, lint, find, where-used, lineage, viz, lsp).
+ * It owns three responsibilities that must be done in one pass to keep the
+ * cost linear in workspace size:
+ *
+ *  1. **Aggregation** — collect schemas, metrics, mappings, fragments,
+ *     transforms, arrows, NL @-refs, notes, warnings, and questions from
+ *     every file into namespace-qualified maps. Definitions of the same
+ *     entity in multiple files are *merged* (fields combined, spreads
+ *     unioned) rather than treated as collisions, because Satsuma allows
+ *     splitting a schema across files for organisational reasons.
+ *
+ *  2. **Duplicate detection** — track every named definition by namespace +
+ *     name and emit `duplicates` records when the same name is used twice
+ *     within a namespace. Cross-kind duplicates (e.g. a schema and a metric
+ *     sharing a name) are flagged too, with one important exception: in v2
+ *     a metric is a `schema_block` decorated with the `metric` tag, so the
+ *     same node legitimately appears in both `fileData.schemas` and
+ *     `fileData.metrics`. We detect this by row equality and skip the
+ *     spurious flag — see the inline comment around the metric loop.
+ *
+ *  3. **Namespace metadata merge** — namespace blocks may be reopened in
+ *     different files (e.g. each file declares `namespace crm { ... }` and
+ *     adds its own definitions). Namespace-level metadata (currently just
+ *     `note`) is collected per namespace; conflicting values across files
+ *     are emitted as `namespace-metadata` duplicates so the user can
+ *     reconcile them.
+ *
+ * The function accepts either pre-extracted `FileData` records or raw
+ * `ParsedFile` objects (which are extracted on the fly). This dual input
+ * lets the LSP cache extracted file data per document and reuse it across
+ * incremental rebuilds without re-walking the CST.
+ */
 export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): ExtractedWorkspace {
   const schemas = new Map<string, SchemaRecord>();
   const duplicates: DuplicateRecord[] = [];

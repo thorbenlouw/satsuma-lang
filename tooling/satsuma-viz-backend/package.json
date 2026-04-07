@@ -22,9 +22,12 @@
     }
   },
   "scripts": {
+    "build:core": "npm --prefix ../satsuma-core run build",
+    "build:viz-model": "npm --prefix ../satsuma-viz-model run build",
+    "prebuild": "npm run build:core && npm run build:viz-model",
     "build": "tsc",
-    "prepare": "tsc",
-    "pretest": "npm --prefix ../satsuma-core run build && tsc",
+    "prepare": "npm run build",
+    "pretest": "npm run prebuild && tsc",
     "test": "node --test test/**/*.test.js",
     "test:coverage": "c8 --reporter=text --reporter=lcov --reporter=json-summary --include='dist/**/*.js' --exclude='dist/**/*.d.ts' node --test test/**/*.test.js"
   },

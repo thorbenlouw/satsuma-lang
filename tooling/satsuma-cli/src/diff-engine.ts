@@ -130,6 +130,17 @@ function diffBlockMap<T, C>(
 
 // ── Schema diff ────────────────────────────────────────────────────────────
 
+/**
+ * Compute the change set for a single schema between two workspaces.
+ *
+ * A schema's "shape" for diff purposes is: its inline `note "..."` label, its
+ * field tree (compared structurally — see `diffFieldList`), and any standalone
+ * `note { ... }` blocks attached to it.
+ *
+ * Note text is compared by string equality rather than fuzzy match because
+ * even small wording changes are typically meaningful for documentation
+ * intent and should be surfaced to the reviewer.
+ */
 function diffSchema(a: SchemaRecord, b: SchemaRecord, notesA: Set<string>, notesB: Set<string>): SchemaChange[] {
   const changes: SchemaChange[] = [];
 
@@ -149,6 +160,23 @@ function diffSchema(a: SchemaRecord, b: SchemaRecord, notesA: Set<string>, notes
 
 // ── Metric diff ────────────────────────────────────────────────────────────
 
+/**
+ * Compute the change set for a single metric between two workspaces.
+ *
+ * A metric is a schema decorated with metric-specific header attributes
+ * (`source`, `grain`, `slice`), so the diff is the union of:
+ *  1. Header attribute changes — emitted as dedicated change kinds so the
+ *     reviewer can see at a glance whether the *definition* of the metric
+ *     moved (e.g. grain changed from `day` to `hour` is a semantic shift
+ *     that affects every downstream chart).
+ *  2. Field changes — same logic as schemas.
+ *  3. Note changes — same logic as schemas.
+ *
+ * Header arrays (sources, slices) are compared by JSON equality so order
+ * matters: reordering `slice { region, segment }` to `slice { segment, region }`
+ * is reported as a change because it can affect serialization order in
+ * downstream consumers.
+ */
 function diffMetric(a: MetricRecord, b: MetricRecord, notesA: Set<string>, notesB: Set<string>): SchemaChange[] {
   const changes: SchemaChange[] = [];
 
@@ -178,12 +206,28 @@ function diffMetric(a: MetricRecord, b: MetricRecord, notesA: Set<string>, notes
 
 // ── Fragment diff ──────────────────────────────────────────────────────────
 
+/**
+ * Compute the change set for a fragment.
+ *
+ * Fragments are field-only — no metadata, no notes, no header attributes —
+ * so the diff reduces to a structural field-list comparison. We still return
+ * `SchemaChange[]` (rather than a fragment-specific kind) so callers can
+ * render fragment changes through the same UI path as schema changes.
+ */
 function diffFragment(a: FragmentRecord, b: FragmentRecord): SchemaChange[] {
   return diffFieldList(a.fields, b.fields);
 }
 
 // ── Transform diff ─────────────────────────────────────────────────────────
 
+/**
+ * Compute the change set for a named transform.
+ *
+ * Transform bodies are NL strings (Feature 28 made everything inside a pipe
+ * step human-interpreted), so we cannot meaningfully diff them structurally.
+ * We compare body text verbatim and emit a single `body-changed` event with
+ * the before/after text — the reviewer reads the diff themselves.
+ */
 function diffTransform(a: TransformRecord, b: TransformRecord): TransformChange[] {
   const changes: TransformChange[] = [];
   if ((a.body ?? "") !== (b.body ?? "")) {
@@ -194,6 +238,24 @@ function diffTransform(a: TransformRecord, b: TransformRecord): TransformChange[
 
 // ── Field list diff ────────────────────────────────────────────────────────
 
+/**
+ * Recursively diff two field trees, qualifying changes by dotted path.
+ *
+ * Match key is the field name within its parent, not the dotted path. This
+ * means a field renamed at depth N is reported as removed-and-added rather
+ * than as a rename — there is no rename detection because Satsuma has no
+ * rename syntax and any "rename" is indistinguishable from a delete + add.
+ *
+ * For each matched pair we report (in order):
+ *  1. Type change      — `type-changed`
+ *  2. Metadata change  — `metadata-changed` (serialized via `serializeMetadata`
+ *                        so reorderings of equivalent metadata do not produce
+ *                        spurious diffs)
+ *  3. Recursive child diff for nested records
+ *
+ * The `prefix` argument carries the dotted path of the parent so leaf changes
+ * are reported as `address.city` rather than just `city`.
+ */
 function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""): SchemaChange[] {
   const changes: SchemaChange[] = [];
   const aMap = new Map<string, FieldDecl>(aFields.map((f) => [f.name, f]));
@@ -232,6 +294,26 @@ function diffFieldList(aFields: FieldDecl[], bFields: FieldDecl[], prefix = ""):
 
 // ── Mapping diff ───────────────────────────────────────────────────────────
 
+/**
+ * Compute the change set for a single mapping between two workspaces.
+ *
+ * A mapping is the most change-rich block type. We report changes in three
+ * categories, each with its own match key:
+ *
+ *  1. Header changes — `arrow-count`, `sources`, `targets`. These are
+ *     summary signals that help a reviewer triage large diffs ("did the
+ *     overall mapping shape change?") before drilling into individual arrows.
+ *
+ *  2. Per-arrow changes — matched by `"src1,src2,...→tgt"` because
+ *     `(sources, target)` uniquely identifies an arrow within a mapping.
+ *     We deliberately do *not* match by line number: arrows reordered without
+ *     semantic change should not produce diffs. The transform body is
+ *     compared after matching so an unchanged arrow with a tweaked transform
+ *     is reported as `arrow-transform-changed` rather than removed+added
+ *     (sl-edrw).
+ *
+ *  3. Note changes — by string equality, same as schemas (sl-van1).
+ */
 function diffMapping(a: MappingRecord, b: MappingRecord, arrowsA: ArrowRecord[], arrowsB: ArrowRecord[], notesA: Set<string>, notesB: Set<string>): MappingChange[] {
   const changes: MappingChange[] = [];
 
