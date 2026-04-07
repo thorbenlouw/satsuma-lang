@@ -4,6 +4,16 @@
  * These tests verify the core extraction API using lightweight mock CST nodes.
  * The full CLI test suite (satsuma-cli/test/extract.test.js and integration
  * tests) provides deeper coverage via the re-export shim.
+ *
+ * Assertion convention (sl-d20o):
+ * The most load-bearing extraction tests in this file assert against a full
+ * expected object via `assert.deepStrictEqual` rather than poking at individual
+ * fields with `assert.equal`. This catches accidental drift in default values,
+ * extra fields creeping into the public shape, and key-omission regressions
+ * (e.g. an optional `metadata` key flipping from absent to `undefined`). New
+ * tests for the canonical/happy-path shape of an extractor's output should
+ * follow the same pattern. Edge-case tests that target a single property may
+ * still use `assert.equal` where a full-object comparison would obscure intent.
  */
 
 import assert from "node:assert/strict";
@@ -106,12 +116,18 @@ describe("extractSchemas()", () => {
     const schemaBlock = n("schema_block", [blockLabel("customers"), body]);
     const root = n("program", [schemaBlock]);
 
-    const result = extractSchemas(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].name, "customers");
-    assert.equal(result[0].namespace, null);
-    assert.equal(result[0].fields.length, 1);
-    assert.equal(result[0].fields[0].name, "id");
+    assert.deepStrictEqual(extractSchemas(root), [
+      {
+        name: "customers",
+        namespace: null,
+        note: null,
+        fields: [{ name: "id", type: "INT", startRow: 0, startColumn: 0 }],
+        hasSpreads: false,
+        spreads: [],
+        row: 0,
+        startColumn: 0,
+      },
+    ]);
   });
 
   it("returns empty array for empty root", () => {
@@ -125,10 +141,18 @@ describe("extractSchemas()", () => {
     const nsBlock = n("namespace_block", [ident("crm"), schemaBlock]);
     const root = n("program", [nsBlock]);
 
-    const result = extractSchemas(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].name, "orders");
-    assert.equal(result[0].namespace, "crm");
+    assert.deepStrictEqual(extractSchemas(root), [
+      {
+        name: "orders",
+        namespace: "crm",
+        note: null,
+        fields: [{ name: "x", type: "INT", startRow: 0, startColumn: 0 }],
+        hasSpreads: false,
+        spreads: [],
+        row: 0,
+        startColumn: 0,
+      },
+    ]);
   });
 });
 
@@ -144,11 +168,17 @@ describe("extractMappings()", () => {
     const mappingBlock = n("mapping_block", [blockLabel("crm_to_dw"), body]);
     const root = n("program", [mappingBlock]);
 
-    const result = extractMappings(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].name, "crm_to_dw");
-    assert.deepEqual(result[0].sources, ["customers"]);
-    assert.deepEqual(result[0].targets, ["dim_customer"]);
+    assert.deepStrictEqual(extractMappings(root), [
+      {
+        name: "crm_to_dw",
+        namespace: null,
+        sources: ["customers"],
+        targets: ["dim_customer"],
+        arrowCount: 0,
+        row: 0,
+        startColumn: 0,
+      },
+    ]);
   });
 });
 
@@ -160,11 +190,17 @@ describe("extractFragments()", () => {
     const fragBlock = n("fragment_block", [blockLabel("audit_fields"), body]);
     const root = n("program", [fragBlock]);
 
-    const result = extractFragments(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].name, "audit_fields");
-    assert.equal(result[0].fields.length, 1);
-    assert.equal(result[0].fields[0].name, "created_at");
+    assert.deepStrictEqual(extractFragments(root), [
+      {
+        name: "audit_fields",
+        namespace: null,
+        fields: [{ name: "created_at", type: "TIMESTAMP", startRow: 0, startColumn: 0 }],
+        hasSpreads: false,
+        spreads: [],
+        row: 0,
+        startColumn: 0,
+      },
+    ]);
   });
 });
 
@@ -178,10 +214,9 @@ describe("extractImports()", () => {
     const importDecl = n("import_decl", [importName, pathNode]);
     const root = n("program", [importDecl]);
 
-    const result = extractImports(root);
-    assert.equal(result.length, 1);
-    assert.deepEqual(result[0].names, ["customers"]);
-    assert.equal(result[0].path, "./platform.stm");
+    assert.deepStrictEqual(extractImports(root), [
+      { names: ["customers"], path: "./platform.stm", row: 0, startColumn: 0 },
+    ]);
   });
 });
 
@@ -334,12 +369,19 @@ describe("extractMetrics()", () => {
     const schemaBlock = n("schema_block", [blockLabel("total_revenue"), meta, body]);
     const root = n("program", [schemaBlock]);
 
-    const result = extractMetrics(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].name, "total_revenue");
-    assert.equal(result[0].namespace, null);
-    assert.equal(result[0].fields.length, 1);
-    assert.equal(result[0].fields[0].name, "revenue");
+    assert.deepStrictEqual(extractMetrics(root), [
+      {
+        name: "total_revenue",
+        namespace: null,
+        displayName: null,
+        sources: [],
+        grain: null,
+        slices: [],
+        fields: [{ name: "revenue", type: "DECIMAL", startRow: 0, startColumn: 0 }],
+        row: 0,
+        startColumn: 0,
+      },
+    ]);
   });
 
   it("extracts source from metric schema metadata", () => {
@@ -386,11 +428,9 @@ describe("extractTransforms()", () => {
     const transformBlock = n("transform_block", [blockLabel("enrich"), pipeChain]);
     const root = n("program", [transformBlock]);
 
-    const result = extractTransforms(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].name, "enrich");
-    assert.equal(result[0].body, "lookup(dim)");
-    assert.equal(result[0].namespace, null);
+    assert.deepStrictEqual(extractTransforms(root), [
+      { name: "enrich", body: "lookup(dim)", namespace: null, row: 0, startColumn: 0 },
+    ]);
   });
 
   it("extracts transform inside namespace", () => {
@@ -413,11 +453,9 @@ describe("extractNotes()", () => {
     const noteBlock = n("note_block", [nlStr]);
     const root = n("program", [noteBlock]);
 
-    const result = extractNotes(root);
-    assert.equal(result.length, 1);
-    assert.equal(result[0].text, "This is a note");
-    assert.equal(result[0].parent, null);
-    assert.equal(result[0].namespace, null);
+    assert.deepStrictEqual(extractNotes(root), [
+      { text: "This is a note", row: 0, startColumn: 0, parent: null, namespace: null },
+    ]);
   });
 
   it("associates note with parent block", () => {
@@ -627,11 +665,17 @@ describe("extractMappings — source/target collection rules (sl-cvs2)", () => {
     const body = n("mapping_body", [n("source_block", [srcEntry]), n("target_block", [tgtEntry])]);
     const block = n("mapping_block", [blockLabel("'customer migration'"), body], "", 20);
     const root = n("source_file", [block]);
-    const result = extractMappings(root);
-    assert.equal(result[0].name, "customer migration");
-    assert.deepEqual(result[0].sources, ["legacy_sqlserver"]);
-    assert.deepEqual(result[0].targets, ["postgres_db"]);
-    assert.equal(result[0].row, 20);
+    assert.deepStrictEqual(extractMappings(root), [
+      {
+        name: "customer migration",
+        namespace: null,
+        sources: ["legacy_sqlserver"],
+        targets: ["postgres_db"],
+        arrowCount: 0,
+        row: 20,
+        startColumn: 0,
+      },
+    ]);
   });
 
   it("uses null for the name of an anonymous mapping", () => {
@@ -725,11 +769,19 @@ describe("extractMetrics — grain extraction (sl-cvs2)", () => {
     const body = n("schema_body", [fieldDecl("value", "DECIMAL(14,2)")]);
     const block = n("schema_block", [blockLabel("mrr"), meta, body], "", 7);
     const root = n("source_file", [block]);
-    const result = extractMetrics(root);
-    assert.equal(result[0].name, "mrr");
-    assert.equal(result[0].grain, "monthly");
-    assert.equal(result[0].row, 7);
-    assert.equal(result[0].fields[0].name, "value");
+    assert.deepStrictEqual(extractMetrics(root), [
+      {
+        name: "mrr",
+        namespace: null,
+        displayName: null,
+        sources: [],
+        grain: "monthly",
+        slices: [],
+        fields: [{ name: "value", type: "DECIMAL(14,2)", startRow: 0, startColumn: 0 }],
+        row: 7,
+        startColumn: 0,
+      },
+    ]);
   });
 });
 
