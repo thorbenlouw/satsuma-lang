@@ -1,6 +1,6 @@
 ---
 id: sl-0ssj
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-04-07T17:28:01Z
@@ -22,3 +22,10 @@ Audit the current viz harness and renderer selector surface before changing test
 - [x] Missing renderer selectors are listed with owning component/file candidates.
 - [x] Any need for harness-only fixtures is explicitly accepted or rejected with rationale.
 - [x] No synthetic-only event test remains as the recommended implementation path.
+
+## Notes
+
+**2026-04-07T17:32:26Z**
+
+Cause: Feature 30 had a planned TODO breakdown but no concrete audit of current Playwright coverage, selector gaps, or fixture ownership for the expanded viz test suite.
+Fix: Added features/30-viz-test-suite-expansion/AUDIT.md classifying every existing harness test, naming selector owner gaps, mapping planned coverage to canonical fixtures, and recommending canonical fixtures over harness-only fixtures unless a later ticket proves isolation is needed. (commit 2a5fccc)
