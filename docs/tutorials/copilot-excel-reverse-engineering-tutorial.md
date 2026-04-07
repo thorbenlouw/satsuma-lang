@@ -28,7 +28,7 @@ read the [BA tutorial](ba-tutorial.md) before you start.
 - **Copilot agent mode** enabled, with at least one strong reasoning model
   available (e.g. Claude Opus 4.6 or GPT-5.4). The workflow works with either,
   but the reasoning step matters for the harder spreadsheets.
-- **The Satsuma VS Code extension** installed from the Marketplace. This gives
+- **The Satsuma VS Code extension** installed (see repo instructions). This gives
   you syntax highlighting, diagnostics, hover, go-to-definition, and the
   Satsuma LSP — without it the generated `.stm` files are much harder to
   review.
@@ -130,13 +130,6 @@ my-mapping-project/
 ├── legacy-mappings/
 └── output/
 ```
-
-> **Pitfall to watch for.** Some skills were written assuming the user has
-> the Satsuma source checkout and runs the CLI via `npx satsuma`. If you
-> installed the published CLI binary, the command is just `satsuma`. Skim
-> the generated `copilot-instructions.md` and the `SKILL.md` files for
-> `npx satsuma` and replace it with `satsuma` so the agent doesn't trip
-> over the wrong invocation.
 
 ### Customise the workspace
 

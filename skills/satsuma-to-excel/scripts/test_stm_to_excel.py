@@ -192,13 +192,13 @@ def _skip_if_no_cli():
     """Skip test if satsuma CLI is not available."""
     try:
         result = subprocess.run(
-            ["npx", "satsuma", "--version"],
+            ["satsuma", "--version"],
             capture_output=True, text=True, timeout=10,
         )
         if result.returncode != 0:
             pytest.skip("satsuma CLI not available")
     except FileNotFoundError:
-        pytest.skip("npx not available")
+        pytest.skip("satsuma CLI not available")
 
 
 def _run_stm_to_excel(stm_files: list[str], output: str, extra_args: list[str] | None = None) -> str:
