@@ -1,6 +1,6 @@
 ---
 id: sl-zv0o
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-07T09:42:54Z
@@ -17,3 +17,9 @@ Grammar produces MISSING nodes on broken input but no integration test verifies 
 
 ≥6 new tests covering recovered-tree behavior; all assert graceful (non-crash) output.
 
+
+## Notes
+
+**2026-04-07T15:38:07Z**
+
+Cause: no integration coverage for CLI/LSP behaviour on recovered (MISSING-node) trees. Fix: added tooling/satsuma-cli/test/recovery.test.ts (3 cases) and tooling/satsuma-lsp/test/recovery.test.js (3 cases) all asserting graceful non-crash behaviour.
