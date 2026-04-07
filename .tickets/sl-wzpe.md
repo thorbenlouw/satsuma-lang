@@ -1,6 +1,6 @@
 ---
 id: sl-wzpe
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-02T15:15:42Z

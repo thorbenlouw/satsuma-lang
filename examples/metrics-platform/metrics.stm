@@ -35,7 +35,11 @@ schema monthly_recurring_revenue (
     **SLA:** Available by 09:00 UTC on the 2nd of each month
     """
 ) {
-  value  DECIMAL(14,2)  (measure additive)
+  value             DECIMAL(14,2)  (measure additive)
+  month             DATE
+  customer_segment  STRING(30)
+  product_line      STRING(50)
+  region            STRING(50)
 }
 
 mapping _monthly_recurring_revenue_pipeline {
@@ -43,20 +47,20 @@ mapping _monthly_recurring_revenue_pipeline {
   target { monthly_recurring_revenue }
 
   // --- MRR Calculation Logic ---
-  Amount -> value {
+  amount -> value {
     to_decimal(14,2)
     | "Normalize to monthly MRR: divide annual amounts by 12, quarterly by 3"
-    | "Exclude subscriptions where @status != active or @is_trial = true"
+    | "Exclude subscriptions where @status != active or @status = trial"
   }
 
-  StartDate -> month {
+  started_at -> month {
     to_date
     | "Extract the month from the subscription start date for grain alignment"
   }
 
-  CustomerSegment -> customer_segment
-  ProductLine -> product_line
-  Region -> region
+  customer_segment -> customer_segment
+  product_line -> product_line
+  region -> region
 }
 
 mapping _customer_lifetime_value_pipeline {
@@ -67,18 +71,18 @@ mapping _customer_lifetime_value_pipeline {
   target { customer_lifetime_value }
 
   // --- CLV Calculation Logic ---
-  total_revenue -> value {
+  total_amount -> value {
     to_decimal(14,2)
     | "Calculate total revenue per customer from fact_orders, including refunds"
     | "Divide by months_active and multiply by expected_lifetime_months from cohort analysis"
   }
 
-  order_count -> order_count {
+  order_id -> order_count {
     count
     | "Count of orders per customer for the period"
   }
 
-  avg_order_value -> avg_order_value {
+  total_amount -> avg_order_value {
     to_decimal(12,2)
     | "Average revenue per order for the customer"
   }
@@ -91,7 +95,11 @@ schema churn_rate (
   grain monthly,
   slice {segment, region, product_line}
 ) {
-  value  DECIMAL(5,4)  (measure non_additive)
+  value         DECIMAL(5,4)  (measure non_additive)
+  month         DATE
+  segment       STRING(30)
+  region        STRING(50)
+  product_line  STRING(50)
 }
 
 mapping _churn_rate_pipeline {
@@ -102,19 +110,15 @@ mapping _churn_rate_pipeline {
   target { churn_rate }
 
   // --- Churn Rate Calculation Logic ---
-  isCancelled -> filter {
-    "Identify churned customers: @isCancelled = true and @cancelled_at within the month"
-    equals true
-  }
-
-  CancelledAt -> month {
+  // Churned customers are identified via @status = cancelled and @cancelled_at within the month.
+  cancelled_at -> month {
     to_date
     | "Extract the month from the cancellation date for grain alignment"
   }
 
-  Segment -> segment
-  Region -> region
-  ProductLine -> product_line
+  segment -> segment
+  region -> region
+  product_line -> product_line
 }
 
 schema customer_lifetime_value (
@@ -136,7 +140,10 @@ schema conversion_rate (
   slice {pipeline_stage, region, account_segment},
   filter "is_deleted = false"
 ) {
-  value  DECIMAL(5,4)  (measure non_additive)  // wins / total by stage
+  value            DECIMAL(5,4)  (measure non_additive)  // wins / total by stage
+  pipeline_stage   STRING(50)
+  region           STRING(50)
+  account_segment  STRING(50)
 }
 
 mapping _conversion_rate_pipeline {
@@ -147,14 +154,10 @@ mapping _conversion_rate_pipeline {
   target { conversion_rate }
 
   // --- Conversion Rate Calculation Logic ---
-  isDeleted -> filter {
-    "Exclude deleted opportunities from the calculation"
-    equals false
-  }
-
-  StageName -> pipeline_stage
-  Region -> region
-  AccountSegment -> account_segment
+  // Deleted opportunities are excluded via the schema-level filter `is_deleted = false`.
+  pipeline_stage -> pipeline_stage
+  region -> region
+  account_segment -> account_segment
   // The actual conversion rate calculation would be implemented in the BI tool or as a derived metric, since it requires counting wins vs total by stage.
 }
 
@@ -170,6 +173,10 @@ schema pipeline_value (
     measure additive,
     note "@arr_value * @probability — use for forecast roll-ups"
   )
+  pipeline_stage      STRING(50)
+  region              STRING(50)
+  account_segment     STRING(50)
+  close_quarter       STRING(6)
 }
 
 mapping _pipeline_value_pipeline {
@@ -177,32 +184,23 @@ mapping _pipeline_value_pipeline {
   target { pipeline_value }
 
   // --- Pipeline Value Calculation Logic ---
-  Amount -> arr_value {
+  // Deleted and closed-stage opportunities are excluded via the schema-level filter.
+  arr_value -> arr_value {
     to_decimal(18,2)
     | "Convert opportunity amount to ARR equivalent based on the subscription term"
   }
 
-  Probability -> weighted_arr_value {
+  probability -> weighted_arr_value {
     to_decimal(18,4)
     | "Calculate weighted ARR for forecasting: @arr_value * @probability"
   }
 
-  StageName -> pipeline_stage
-  Region -> region
-  AccountSegment -> account_segment
-  CloseDate -> close_quarter {
+  pipeline_stage -> pipeline_stage
+  region -> region
+  account_segment -> account_segment
+  close_quarter -> close_quarter {
     to_date
     | "Extract fiscal quarter from the opportunity close date for slicing"
-  }
-
-  isDeleted -> filter {
-    "Exclude deleted opportunities from the calculation"
-    | equals false
-  }
-
-  StageName -> filter {
-    "Focus on open pipeline stages only"
-    | not_in (closed_won, closed_lost)
   }
 }
 
@@ -218,6 +216,10 @@ schema order_revenue (
   order_count      INTEGER        (measure additive)
   units_sold       INTEGER        (measure additive)
   avg_order_value  DECIMAL(12,2)  (measure non_additive)
+  order_channel    STRING(30)
+  ship_country     ISO-3166-a2
+  currency_code    ISO-4217
+  loyalty_tier     STRING(20)
 }
 
 mapping _order_revenue_pipeline {
@@ -229,34 +231,34 @@ mapping _order_revenue_pipeline {
   target { order_revenue }
 
   // --- Order Revenue Calculation Logic ---
-  TotalAmount -> gross_revenue {
+  total_amount -> gross_revenue {
     to_decimal(14,2)
     | "Calculate gross revenue from the order total amount"
-    | "Convert to USD using daily spot rate from @currency_rates based on @currency_code and @order_date"
+    | "Convert to USD using a daily spot rate based on @currency_code and @order_date"
   }
 
   // Net revenue calculation would require joining with fact_adjustments to subtract refunds/chargebacks.
 
-  OrderID -> order_count {
+  order_id -> order_count {
     count
     | "Count of distinct orders for the order_count metric"
   }
 
-  Quantity -> units_sold {
+  quantity -> units_sold {
     sum
     | "Total units sold across all line items in the order"
   }
 
-  TotalAmount -> avg_order_value {
+  total_amount -> avg_order_value {
     to_decimal(12,2)
     | "Average order value calculated as gross_revenue / order_count"
     | "Exclude orders where all line items have @is_gift = true from this calculation"
   }
 
-  OrderChannel -> order_channel
-  ShipCountry -> ship_country
-  CurrencyCode -> currency_code
-  LoyaltyTier -> loyalty_tier
+  order_channel -> order_channel
+  ship_country -> ship_country
+  currency_code -> currency_code
+  loyalty_tier -> loyalty_tier
   // Additional filters (e.g., excluding gift orders from avg_order_value) would be implemented in the BI tool or as derived metrics, since they require line-item level logic.
 }
 
@@ -280,14 +282,7 @@ mapping _cart_abandonment_rate_pipeline {
   target { cart_abandonment_rate }
 
   // --- Cart Abandonment Rate Calculation Logic ---
-  session_type -> filter {
-    "Focus on sessions that reached the checkout stage"
-    equals "checkout"
-  }
-
-  SessionID -> join {
-    "Join fact_sessions with fact_orders on SessionID to identify which sessions resulted in orders"
-    with fact_orders on SessionID
-  }
+  // Sessions are filtered to checkout-stage via the schema-level filter, then joined to
+  // fact_orders on session_id to determine which sessions resulted in a placed order.
   // The actual abandonment rate calculation would require counting sessions with vs without orders.
 }
