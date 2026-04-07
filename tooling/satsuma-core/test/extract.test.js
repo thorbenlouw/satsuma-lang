@@ -46,7 +46,14 @@ function ident(text, row = 0) {
   return n("identifier", [], text, row);
 }
 
+// Build a block_label. Names wrapped in single quotes (e.g. "'my schema'")
+// produce a backtick_name child instead of an identifier — this is how the
+// grammar represents quoted multi-word names.
 function blockLabel(name) {
+  if (name.startsWith("'") && name.endsWith("'")) {
+    const inner = name.slice(1, -1);
+    return n("block_label", [n("backtick_name", [], `\`${inner}\``)]);
+  }
   return n("block_label", [n("identifier", [], name)]);
 }
 
@@ -54,10 +61,40 @@ function schemaBody(fields = []) {
   return n("schema_body", fields);
 }
 
+function fieldName(name) {
+  return n("field_name", [ident(name)]);
+}
+
 function fieldDecl(name, type, row = 0, column = 0) {
-  const nameNode = n("field_name", [ident(name)]);
-  const typeNode = n("type_expr", [], type);
-  return n("field_decl", [nameNode, typeNode], `${name} ${type}`, row, [], column);
+  return n("field_decl", [fieldName(name), n("type_expr", [], type)], `${name} ${type}`, row, [], column);
+}
+
+function nlString(literal) {
+  return n("nl_string", [], `"${literal}"`);
+}
+
+// backtick_name node — the canonical CST representation of a quoted multi-word name.
+function backtickName(inner) {
+  return n("backtick_name", [], `\`${inner}\``);
+}
+
+function sourceRef(nameNode, extraChildren = []) {
+  return n("source_ref", [nameNode, ...extraChildren]);
+}
+
+// Build a record-typed field_decl. The 'record' keyword is encoded as an
+// anonymous child token; metadata and inner body are both optional.
+function recordFieldDecl(name, { body = [], meta = null } = {}) {
+  const named = [fieldName(name)];
+  if (meta) named.push(meta);
+  if (body.length > 0) named.push(n("schema_body", body));
+  return n("field_decl", named, "", 0, ["record"]);
+}
+
+// Build a namespace_block: ident, optional metadata, then child nodes.
+function namespaceBlock(name, { children = [], meta = null, row = 0 } = {}) {
+  const kids = [ident(name), ...(meta ? [meta] : []), ...children];
+  return n("namespace_block", kids, "", row);
 }
 
 // ── extractSchemas ────────────────────────────────────────────────────────────
@@ -442,47 +479,9 @@ describe("extractFieldTree() — nested records", () => {
 // real-file integration tests that exercise parser → extract → buildIndex.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Convenience helpers used by the migrated cases. Mirror the originals from
-// satsuma-cli/test/helpers.ts so the ported test bodies need no rewriting.
-
-function quoted(inner, row = 0) {
-  // backtick_name node — the canonical CST representation of a quoted name
-  return n("backtick_name", [], `'${inner}'`, row);
-}
-
-function str(inner) {
-  // nl_string node wrapping a literal — used inside metadata and import paths
-  return n("nl_string", [], `"${inner}"`);
-}
-
-function blockLabelNode(name) {
-  // block_label wrapping either a backtick_name (when 'quoted') or identifier
-  const inner = name.startsWith("'") ? quoted(name.slice(1, -1)) : ident(name);
-  return n("block_label", [inner]);
-}
-
-function fieldName(name) {
-  return n("field_name", [ident(name)]);
-}
-
-function recordFieldDecl(name, bodyChildren = [], metaNode = null) {
-  // record field_decl: name (metadata)? { schema_body }
-  // The 'record' keyword is encoded as an anonymous child token.
-  const named = [fieldName(name)];
-  if (metaNode) named.push(metaNode);
-  if (bodyChildren.length > 0) named.push(n("schema_body", bodyChildren));
-  return n("field_decl", named, "", 0, ["record"]);
-}
-
-function namespaceBlockNode(name, childNodes = [], metaNode = null, row = 0) {
-  // namespace_block: ident (metadata)? children...
-  const kids = [ident(name), ...(metaNode ? [metaNode] : []), ...childNodes];
-  return n("namespace_block", kids, "", row);
-}
-
-function sourceRef(nameNode, extraChildren = []) {
-  return n("source_ref", [nameNode, ...extraChildren]);
-}
+// All helpers used here (`blockLabel`, `nlString`, `backtickName`, `fieldName`,
+// `sourceRef`, `recordFieldDecl`, `namespaceBlock`) are defined at the top of
+// the file alongside the rest of the mock-CST helpers.
 
 // ── extractSchemas: name forms and metadata edge cases ──────────────────────
 
@@ -491,7 +490,7 @@ describe("extractSchemas — name forms and edge cases (sl-cvs2)", () => {
     // Validates that block_label wrapping a backtick_name yields the inner text
     // without the surrounding backticks — important for grammar's quoted-name path.
     const body = n("schema_body", []);
-    const block = n("schema_block", [blockLabelNode("'my schema'"), body]);
+    const block = n("schema_block", [blockLabel("'my schema'"), body]);
     const root = n("source_file", [block]);
     assert.equal(extractSchemas(root)[0].name, "my schema");
   });
@@ -499,14 +498,14 @@ describe("extractSchemas — name forms and edge cases (sl-cvs2)", () => {
   it("returns note=null when the schema has no metadata block", () => {
     // Validates that the note field defaults to null rather than undefined or "".
     const body = n("schema_body", []);
-    const block = n("schema_block", [blockLabelNode("t"), body]);
+    const block = n("schema_block", [blockLabel("t"), body]);
     const root = n("source_file", [block]);
     assert.equal(extractSchemas(root)[0].note, null);
   });
 
   it("extracts every schema_block at the program root", () => {
     // Validates that the extractor visits all top-level schema_blocks, not just the first.
-    const make = (name) => n("schema_block", [blockLabelNode(name), n("schema_body", [])]);
+    const make = (name) => n("schema_block", [blockLabel(name), n("schema_body", [])]);
     const root = n("source_file", [make("a"), make("b"), make("c")]);
     assert.equal(extractSchemas(root).length, 3);
   });
@@ -517,7 +516,7 @@ describe("extractSchemas — name forms and edge cases (sl-cvs2)", () => {
 describe("FieldDecl metadata enrichment (sl-cvs2)", () => {
   function schemaWith(fieldDecls) {
     const body = n("schema_body", fieldDecls);
-    const block = n("schema_block", [blockLabelNode("test"), body]);
+    const block = n("schema_block", [blockLabel("test"), body]);
     return n("source_file", [block]);
   }
 
@@ -560,7 +559,7 @@ describe("FieldDecl metadata enrichment (sl-cvs2)", () => {
     // Validates that record-field children are walked and their own metadata is preserved.
     const innerMeta = n("metadata_block", [n("tag_token", [], "required")]);
     const innerFd = n("field_decl", [fieldName("street"), n("type_expr", [], "VARCHAR(200)"), innerMeta]);
-    const recField = recordFieldDecl("address", [innerFd]);
+    const recField = recordFieldDecl("address", { body: [innerFd] });
     const result = extractSchemas(schemaWith([recField]));
     assert.deepEqual(result[0].fields[0].children[0].metadata[0], { kind: "tag", tag: "required" });
   });
@@ -569,7 +568,7 @@ describe("FieldDecl metadata enrichment (sl-cvs2)", () => {
     // Validates that metadata on the outer record_field (not its children) is captured.
     const outerMeta = n("metadata_block", [n("tag_token", [], "required")]);
     const innerFd = n("field_decl", [fieldName("id"), n("type_expr", [], "INT")]);
-    const recField = recordFieldDecl("address", [innerFd], outerMeta);
+    const recField = recordFieldDecl("address", { body: [innerFd], meta: outerMeta });
     const result = extractSchemas(schemaWith([recField]));
     assert.deepEqual(result[0].fields[0].metadata[0], { kind: "tag", tag: "required" });
   });
@@ -577,29 +576,36 @@ describe("FieldDecl metadata enrichment (sl-cvs2)", () => {
 
 // ── extractFragments: empty case ────────────────────────────────────────────
 
-describe("extractFragments — empty input (sl-cvs2)", () => {
-  it("returns an empty array when the program has no fragment_blocks", () => {
-    // Validates the no-results path returns [] (not null/undefined), so callers can safely iterate.
-    assert.deepEqual(extractFragments(n("source_file", [])), []);
-  });
-});
-
-// ── extractTransforms: name+row, empty ──────────────────────────────────────
+// ── extractTransforms: name+row ─────────────────────────────────────────────
 
 describe("extractTransforms — name and row (sl-cvs2)", () => {
   it("captures the transform name and the source row from the block_label", () => {
-    // Validates that row is preserved verbatim (0-indexed) from the CST node.
-    const block = n("transform_block", [blockLabelNode("normalize_phone")], "", 10);
+    // Validates that row is preserved verbatim (0-indexed) from the CST node — needed
+    // by downstream tooling that converts to 1-indexed line numbers in user output.
+    const block = n("transform_block", [blockLabel("normalize_phone")], "", 10);
     const root = n("source_file", [block]);
     const result = extractTransforms(root);
     assert.equal(result[0].name, "normalize_phone");
     assert.equal(result[0].row, 10);
   });
+});
 
-  it("returns an empty array when there are no transform_blocks", () => {
-    // Validates the empty-case contract for transform extraction.
-    assert.deepEqual(extractTransforms(n("source_file", [])), []);
-  });
+// ── Empty-input contract for every extractor ────────────────────────────────
+
+describe("every extractor returns [] for an empty source_file (sl-cvs2)", () => {
+  // Each extractor must return an empty array (not null or undefined) when given
+  // a program with no relevant blocks, so callers can iterate safely without guards.
+  const empty = () => n("source_file", []);
+  for (const [name, fn] of [
+    ["extractFragments", extractFragments],
+    ["extractTransforms", extractTransforms],
+    ["extractQuestions", extractQuestions],
+    ["extractImports", extractImports],
+  ]) {
+    it(`${name} returns []`, () => {
+      assert.deepEqual(fn(empty()), []);
+    });
+  }
 });
 
 // ── extractMappings: source/target collection rules ─────────────────────────
@@ -610,7 +616,7 @@ describe("extractMappings — source/target collection rules (sl-cvs2)", () => {
       n("source_block", srcChildren),
       n("target_block", tgtChildren),
     ]);
-    const block = n("mapping_block", [blockLabelNode(name), body]);
+    const block = n("mapping_block", [blockLabel(name), body]);
     return n("source_file", [block]);
   }
 
@@ -619,7 +625,7 @@ describe("extractMappings — source/target collection rules (sl-cvs2)", () => {
     const srcEntry = sourceRef(n("backtick_name", [], "`legacy_sqlserver`"));
     const tgtEntry = sourceRef(n("backtick_name", [], "`postgres_db`"));
     const body = n("mapping_body", [n("source_block", [srcEntry]), n("target_block", [tgtEntry])]);
-    const block = n("mapping_block", [blockLabelNode("'customer migration'"), body], "", 20);
+    const block = n("mapping_block", [blockLabel("'customer migration'"), body], "", 20);
     const root = n("source_file", [block]);
     const result = extractMappings(root);
     assert.equal(result[0].name, "customer migration");
@@ -647,7 +653,7 @@ describe("extractMappings — source/target collection rules (sl-cvs2)", () => {
       n("map_arrow", []),
       n("computed_arrow", []),
     ]);
-    const block = n("mapping_block", [blockLabelNode("m"), body]);
+    const block = n("mapping_block", [blockLabel("m"), body]);
     const root = n("source_file", [block]);
     assert.equal(extractMappings(root)[0].arrowCount, 2);
   });
@@ -717,7 +723,7 @@ describe("extractMetrics — grain extraction (sl-cvs2)", () => {
     const kv = n("tag_with_value", [ident("grain"), kvVal]);
     const meta = n("metadata_block", [tag, kv]);
     const body = n("schema_body", [fieldDecl("value", "DECIMAL(14,2)")]);
-    const block = n("schema_block", [blockLabelNode("mrr"), meta, body], "", 7);
+    const block = n("schema_block", [blockLabel("mrr"), meta, body], "", 7);
     const root = n("source_file", [block]);
     const result = extractMetrics(root);
     assert.equal(result[0].name, "mrr");
@@ -744,7 +750,7 @@ describe("extractWarnings — text shape and nesting (sl-cvs2)", () => {
     const w = n("warning_comment", [], "//! nested warning", 5);
     const field = n("field_decl", [w]);
     const body = n("schema_body", [field]);
-    const block = n("schema_block", [blockLabelNode("t"), body]);
+    const block = n("schema_block", [blockLabel("t"), body]);
     const root = n("source_file", [block]);
     assert.equal(extractWarnings(root).length, 1);
   });
@@ -770,10 +776,6 @@ describe("extractQuestions — row and empty case (sl-cvs2)", () => {
     assert.equal(result[0].row, 8);
   });
 
-  it("returns an empty array when there are no question_comments", () => {
-    // Validates the empty-case contract for question extraction.
-    assert.deepEqual(extractQuestions(n("source_file", [])), []);
-  });
 });
 
 // ── extractNamespaces ───────────────────────────────────────────────────────
@@ -781,7 +783,7 @@ describe("extractQuestions — row and empty case (sl-cvs2)", () => {
 describe("extractNamespaces (sl-cvs2)", () => {
   it("extracts namespace name and row from a namespace_block", () => {
     // Validates the basic namespace extraction: name from the leading identifier, row from the block.
-    const ns = namespaceBlockNode("pos", [], null, 5);
+    const ns = namespaceBlock("pos", { row: 5 });
     const root = n("source_file", [ns]);
     const result = extractNamespaces(root);
     assert.equal(result[0].name, "pos");
@@ -791,16 +793,16 @@ describe("extractNamespaces (sl-cvs2)", () => {
 
   it("extracts the namespace note from its metadata block", () => {
     // Validates that note_tag inside the namespace's metadata becomes the note field.
-    const noteTag = n("note_tag", [str("POS system")]);
+    const noteTag = n("note_tag", [nlString("POS system")]);
     const meta = n("metadata_block", [noteTag]);
-    const ns = namespaceBlockNode("pos", [], meta, 0);
+    const ns = namespaceBlock("pos", { meta });
     const root = n("source_file", [ns]);
     assert.equal(extractNamespaces(root)[0].note, "POS system");
   });
 
   it("extracts every namespace_block at the program root", () => {
     // Validates that multiple top-level namespaces are all collected.
-    const root = n("source_file", [namespaceBlockNode("pos"), namespaceBlockNode("ecom")]);
+    const root = n("source_file", [namespaceBlock("pos"), namespaceBlock("ecom")]);
     assert.equal(extractNamespaces(root).length, 2);
   });
 });
@@ -812,7 +814,7 @@ describe("extractSchemas — namespace propagation (sl-cvs2)", () => {
     // Validates that schemas outside any namespace_block carry an explicit null
     // (not undefined) so consumers can rely on the field being present.
     const body = n("schema_body", [fieldDecl("id", "INT")]);
-    const block = n("schema_block", [blockLabelNode("orders"), body]);
+    const block = n("schema_block", [blockLabel("orders"), body]);
     const root = n("source_file", [block]);
     assert.equal(extractSchemas(root)[0].namespace, null);
   });
@@ -820,8 +822,8 @@ describe("extractSchemas — namespace propagation (sl-cvs2)", () => {
   it("propagates the namespace name to schemas defined inside a namespace_block", () => {
     // Validates that the recursive walker passes the parent namespace name down to children.
     const body = n("schema_body", [fieldDecl("STORE_ID", "VARCHAR(20)")]);
-    const schemaNode = n("schema_block", [blockLabelNode("stores"), body], "", 3);
-    const ns = namespaceBlockNode("pos", [schemaNode]);
+    const schemaNode = n("schema_block", [blockLabel("stores"), body], "", 3);
+    const ns = namespaceBlock("pos", { children: [schemaNode] });
     const root = n("source_file", [ns]);
     const result = extractSchemas(root);
     assert.equal(result[0].name, "stores");
@@ -831,9 +833,9 @@ describe("extractSchemas — namespace propagation (sl-cvs2)", () => {
   it("collects both global and namespaced schemas in document order", () => {
     // Validates that mixing top-level and namespaced schemas in one file
     // produces both kinds in their declared order, each with the right namespace value.
-    const globalSchema = n("schema_block", [blockLabelNode("dim_date"), n("schema_body", [])]);
-    const nsSchema = n("schema_block", [blockLabelNode("stores"), n("schema_body", [])], "", 5);
-    const ns = namespaceBlockNode("pos", [nsSchema]);
+    const globalSchema = n("schema_block", [blockLabel("dim_date"), n("schema_body", [])]);
+    const nsSchema = n("schema_block", [blockLabel("stores"), n("schema_body", [])], "", 5);
+    const ns = namespaceBlock("pos", { children: [nsSchema] });
     const root = n("source_file", [globalSchema, ns]);
     const result = extractSchemas(root);
     assert.equal(result.length, 2);
@@ -853,8 +855,8 @@ describe("extractMappings — namespaced mapping with qualified ref (sl-cvs2)", 
     const srcEntry = sourceRef(qualName);
     const tgtEntry = sourceRef(ident("hub_store"));
     const body = n("mapping_body", [n("source_block", [srcEntry]), n("target_block", [tgtEntry])]);
-    const block = n("mapping_block", [blockLabelNode("load"), body], "", 10);
-    const ns = namespaceBlockNode("vault", [block]);
+    const block = n("mapping_block", [blockLabel("load"), body], "", 10);
+    const ns = namespaceBlock("vault", { children: [block] });
     const root = n("source_file", [ns]);
     const result = extractMappings(root);
     assert.equal(result[0].namespace, "vault");
@@ -869,8 +871,8 @@ describe("extractFragments — namespace propagation (sl-cvs2)", () => {
   it("attaches the enclosing namespace name to fragments declared inside it", () => {
     // Validates that fragment_blocks inside a namespace_block inherit the namespace.
     const body = n("schema_body", [fieldDecl("load_ts", "TIMESTAMP")]);
-    const frag = n("fragment_block", [blockLabelNode("audit_cols"), body], "", 2);
-    const ns = namespaceBlockNode("shared", [frag]);
+    const frag = n("fragment_block", [blockLabel("audit_cols"), body], "", 2);
+    const ns = namespaceBlock("shared", { children: [frag] });
     const root = n("source_file", [ns]);
     const result = extractFragments(root);
     assert.equal(result[0].namespace, "shared");
@@ -889,7 +891,7 @@ describe("extractImports — name forms and arity (sl-cvs2)", () => {
     // Validates the simplest import form: a single unqualified name.
     const imp = n("import_decl", [
       n("import_name", [ident("address_fields")]),
-      n("import_path", [str("common.stm")]),
+      n("import_path", [nlString("common.stm")]),
     ]);
     const root = n("source_file", [imp]);
     const result = extractImports(root);
@@ -902,7 +904,7 @@ describe("extractImports — name forms and arity (sl-cvs2)", () => {
     const imp = n("import_decl", [
       n("import_name", [qualifiedName("src", "customers")]),
       n("import_name", [qualifiedName("mart", "dim_customers")]),
-      n("import_path", [str("source.stm")]),
+      n("import_path", [nlString("source.stm")]),
     ], "", 2);
     const root = n("source_file", [imp]);
     const result = extractImports(root);
@@ -913,9 +915,9 @@ describe("extractImports — name forms and arity (sl-cvs2)", () => {
   it("strips backticks from quoted import names", () => {
     // Validates that backtick-quoted multi-word names are normalised in the names array.
     const imp = n("import_decl", [
-      n("import_name", [quoted("address fields")]),
-      n("import_name", [quoted("audit fields")]),
-      n("import_path", [str("lib/common.stm")]),
+      n("import_name", [backtickName("address fields")]),
+      n("import_name", [backtickName("audit fields")]),
+      n("import_path", [nlString("lib/common.stm")]),
     ]);
     const root = n("source_file", [imp]);
     const result = extractImports(root);
@@ -926,11 +928,11 @@ describe("extractImports — name forms and arity (sl-cvs2)", () => {
     // Validates that distinct import_decls produce distinct entries (not merged).
     const imp1 = n("import_decl", [
       n("import_name", [ident("foo")]),
-      n("import_path", [str("a.stm")]),
+      n("import_path", [nlString("a.stm")]),
     ], "", 0);
     const imp2 = n("import_decl", [
       n("import_name", [ident("bar")]),
-      n("import_path", [str("b.stm")]),
+      n("import_path", [nlString("b.stm")]),
     ], "", 1);
     const root = n("source_file", [imp1, imp2]);
     const result = extractImports(root);
@@ -939,8 +941,4 @@ describe("extractImports — name forms and arity (sl-cvs2)", () => {
     assert.equal(result[1].path, "b.stm");
   });
 
-  it("returns an empty array when there are no import_decls", () => {
-    // Validates the empty-case contract for import extraction.
-    assert.equal(extractImports(n("source_file", [])).length, 0);
-  });
 });
