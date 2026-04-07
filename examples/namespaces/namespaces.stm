@@ -49,17 +49,17 @@ namespace ecom (note "Shopify e-commerce platform") {
 }
 
 // --- Warehouse / Hub Layer ---
-namespace warehouse (note "Data vault hub layer") {
-  schema hub_store {
-    store_hk    BINARY(32)    (pk)
-    store_id    VARCHAR(20)   (required, unique)
-    store_name  VARCHAR(100)
-    region      CHAR(2)
+namespace warehouse (note "Conformed data layer for unified analytics") {
+  schema conformed_store {
+    store_key    BINARY(32)    (pk)
+    store_id     VARCHAR(20)   (required, unique)
+    store_name   VARCHAR(100)
+    region       CHAR(2)
     ...audit_fields
   }
 
-  schema hub_customer {
-    customer_hk     BINARY(32)    (pk)
+  schema conformed_customer {
+    customer_key    BINARY(32)    (pk)
     customer_email  VARCHAR(255)  (required, unique, pii)
     first_name      VARCHAR(100)
     last_name       VARCHAR(100)
@@ -69,9 +69,9 @@ namespace warehouse (note "Data vault hub layer") {
   // Cross-namespace mapping: POS stores into hub
   mapping `load hub_store` {
     source { `pos::stores` }
-    target { `hub_store` }
+    target { conformed_store }
 
-    STORE_ID -> store_hk { md5 STORE_ID }
+    STORE_ID -> store_key { md5(STORE_ID) }
     STORE_ID -> store_id
     STORE_NAME -> store_name { trim }
     REGION_CD -> region
@@ -80,9 +80,9 @@ namespace warehouse (note "Data vault hub layer") {
   // Cross-namespace mapping: e-commerce customers into hub
   mapping `load hub_customer` {
     source { `ecom::customers` }
-    target { `hub_customer` }
+    target { conformed_customer }
 
-    email -> customer_hk { md5 email }
+    email -> customer_key { md5(email) }
     email -> customer_email { trim_and_lower }
     first_name -> first_name { trim }
     last_name -> last_name { trim }
@@ -94,12 +94,21 @@ namespace analytics (note "Business metrics layer") {
   schema daily_sales (
     metric,
     metric_name "Daily Sales Volume",
-    source ecom::orders,
     grain daily
   ) {
     sale_date    DATE
     channel      VARCHAR(20)
     order_count  INTEGER        (measure)
     total_value  DECIMAL(12,2)  (measure)
+  }
+
+  mapping `daily sales pipeline` {
+    source { warehouse::conformed_store }
+    target { analytics::daily_sales }
+
+    order_date -> sale_date
+    store_code -> channel
+    order_id -> order_count { count }
+    total_amount -> total_value { sum }
   }
 }
