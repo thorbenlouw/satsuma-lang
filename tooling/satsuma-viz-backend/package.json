@@ -25,7 +25,8 @@
     "build": "tsc",
     "prepare": "tsc",
     "pretest": "npm --prefix ../satsuma-core run build && tsc",
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test test/**/*.test.js",
+    "test:coverage": "c8 --reporter=text --reporter=lcov --reporter=json-summary --include='dist/**/*.js' --exclude='dist/**/*.d.ts' node --test test/**/*.test.js"
   },
   "dependencies": {
     "@satsuma/core": "file:../satsuma-core",
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "c8": "^11.0.0",
     "typescript": "^5.9.3"
   }
 }

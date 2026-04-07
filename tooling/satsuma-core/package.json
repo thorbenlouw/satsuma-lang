@@ -72,13 +72,15 @@
     "build": "tsc",
     "prepare": "tsc",
     "pretest": "tsc",
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test test/**/*.test.js",
+    "test:coverage": "c8 --reporter=text --reporter=lcov --reporter=json-summary --include='dist/**/*.js' --exclude='dist/**/*.d.ts' node --test test/**/*.test.js"
   },
   "dependencies": {
     "web-tree-sitter": "^0.26.7"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "c8": "^11.0.0",
     "typescript": "^6.0.2"
   }
 }
