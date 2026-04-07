@@ -68,7 +68,7 @@ git -C <repo> log --reverse --format="%ad" --date=short | head -1
 
 ---
 
-## Phase 2: Gather Commits and PRs
+## Phase 2: Gather Commits, PRs, and Tickets
 
 Get all commits strictly after `last_covered_date` up to and including `TARGET_DATE`:
 
@@ -107,6 +107,44 @@ gh pr list --state merged --limit 100 \
 ```
 
 For each PR, use the title and body to understand **what was actually shipped** — PR descriptions contain the real intent, the design decisions, the bugs found, and the acceptance criteria, which commit messages often don't convey. Use the PR body as the primary source of narrative material; use commits to fill gaps. When a PR covers multiple days, attribute it to the day it was merged.
+
+### Gather tk ticket context
+
+Use the local `tk` ticket system as the third narrative source, especially when
+PR bodies are terse or a day is mostly planning/cleanup work. Tickets often carry
+the useful human story: root cause notes, acceptance criteria, feature/epic
+relationships, and what work became ready next.
+
+Start with these commands:
+
+```bash
+tk ready
+tk blocked
+tk dep cycle
+```
+
+Then inspect tickets touched or closed during the target window. Prefer exact IDs
+from commit messages, PR bodies, feature TODO files, and `.tickets/` mtimes:
+
+```bash
+rg -n "<TARGET_DATE>|commit |Cause:|Fix:|status: closed|status: in_progress" .tickets
+tk show <ticket-id>
+tk dep tree <ticket-id> --full
+```
+
+For each ticket, extract:
+
+- ticket ID and title
+- parent epic/feature, if any
+- whether it was opened, closed, or unblocked during the target date
+- root cause and fix from `## Notes`, when present
+- the next-ready ticket(s), if closing it changed the ready queue
+
+Use tickets to improve the diary's judgement, not to dump a ticket list into the
+prose. If a day closes an epic, opens a new feature, or files a suspiciously
+detailed run of tasks, Pip can absolutely comment on that. If tickets merely
+confirm what the PR body already says, let the PR body carry the sentence and
+use the ticket only as backup evidence.
 
 ---
 
@@ -164,7 +202,9 @@ Write the entry in **Pip's voice**. Follow these rules absolutely:
 pick the threads that make an interesting story. Group related commits together.
 Name the thing being worked on in plain terms, then describe what happened to it.
 Where PRs were merged, summarise what the PR was for and any design decisions or
-bugs found that the PR description reveals — this is where the real story lives.>
+bugs found that the PR description reveals. Where tk tickets add better context,
+fold in the root cause/fix or feature-graph movement without turning the entry
+into a ticket report.>
 
 <Closing line. Often Pip filing a mild observation or signing off. Not always a punchline.
 Sometimes just a vibe.>
@@ -248,4 +288,3 @@ without having a meltdown.
 - If there are no commits in the target range at all: note it in `.progress.json` and exit cleanly. Pip can write a "nothing happened" entry if `--force` is set.
 - If the entry file already exists: warn and exit unless `--force` is passed.
 - If `.progress.json` is malformed: warn, show the contents, and ask the user whether to reset it.
-
