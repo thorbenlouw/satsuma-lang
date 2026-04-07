@@ -135,24 +135,58 @@ my-mapping-project/
 
 Once the bootstrap is done, ask Copilot to add a few project-specific
 helpers. These are the things that turn out to matter on every real
-project:
+project. You can ask for them all at once with a single prompt:
 
-- **A reusable "convert one spreadsheet" prompt.** A single chat command
-  that takes a spreadsheet path and runs the full convert → validate → lint
-  pipeline so you don't have to retype it. In VS Code Copilot this lives
-  in `.github/prompts/`.
-- **A "convert a batch" prompt.** Same idea, but takes a glob and converts
-  many spreadsheets in one go, summarising successes and failures per file.
-  Batch mode is the difference between a half-hour exploration and a
-  productive afternoon.
-- **An on-save instruction.** A scoped instruction file (Copilot calls
-  these `.github/instructions/*.instructions.md` with an `applyTo:` glob)
-  that runs `satsuma validate` and `satsuma lint` whenever a `.stm` file
-  is saved, so issues get flagged inline.
-- **A "BA-friendly" agent persona.** A custom agent under `.github/agents/`
-  that explains generated `.stm` files in plain English, focuses on
-  business meaning over syntax, and assumes no CLI knowledge — useful for
-  reviews with stakeholders.
+> Please add the following to this workspace so we can work productively
+> with the Satsuma skills:
+>
+> 1. A reusable Copilot prompt under `.github/prompts/convert-one.prompt.md`
+>    that takes a spreadsheet path as input and runs the full
+>    `excel-to-satsuma` skill end-to-end: survey, generate the `.stm`
+>    file under `output/`, run `satsuma fmt`, then `satsuma validate`,
+>    then `satsuma lint --fix`, and finally write a per-file review
+>    report (suffixed with the input filename so it doesn't clobber
+>    other reports).
+>
+> 2. A second prompt at `.github/prompts/convert-batch.prompt.md` that
+>    takes a glob (e.g. `legacy-mappings/dimensions/*.xlsx`), surveys
+>    every matching file in one planning pass, then runs the same
+>    convert → fmt → validate → lint pipeline for each one. At the end
+>    it should print a summary of which files succeeded, which failed,
+>    and append the successful filenames with timestamps to a top-level
+>    `files-we-have-done.md`.
+>
+> 3. An auto-validate instruction at
+>    `.github/instructions/satsuma-on-save.instructions.md` with
+>    `applyTo: "output/**/*.stm"` that runs `satsuma validate` and
+>    `satsuma lint` against any `.stm` file under `output/` and surfaces
+>    the diagnostics inline.
+>
+> 4. A custom Copilot agent under `.github/agents/satsuma-explainer.md`
+>    aimed at Business Analysts: it should assume no CLI knowledge,
+>    explain a `.stm` file in plain English using business terms, focus
+>    on the meaning of each mapping rather than its syntax, and never
+>    suggest CLI commands to the user.
+>
+> Use the `satsuma agent-reference` output in `AGENTS.md` and the
+> `SKILL.md` files under `skills/` as the source of truth for which
+> commands and skill invocations to call.
+
+Why each one matters:
+
+- **`convert-one`** turns the full convert → validate → lint pipeline
+  into one chat command, so you stop retyping the same flag soup.
+- **`convert-batch`** is the productivity unlock — most of the latency
+  in a single-file conversion is the model's planning pass, and that
+  cost is amortised across the whole batch when you convert many files
+  in one go. It also prevents the agent from forgetting halfway through
+  a long run, because the progress log is durable.
+- **The on-save instruction** means a stale `.stm` file with broken
+  references can never sit unnoticed in the workspace — every save
+  re-runs validation in the background.
+- **The BA-friendly agent** is what you switch to when a stakeholder
+  is in the room. The default Copilot persona will happily talk about
+  CST nodes and lint rules; this one stays in business language.
 
 ---
 
@@ -304,7 +338,7 @@ you'll save yourself dozens of failed validations:
 ## Step 6 — Refactor for human readability
 
 After the first batch you'll typically have a folder of `.stm` files
-with cryptic legacy table names (`TB_`, `DIM_`, `OCR_`, etc). Don't try
+with cryptic legacy table names. Don't try
 to fix this in the first pass — get the conversion done first, then run
 a *second* pass to refactor for readability.
 
@@ -318,7 +352,7 @@ Ask Copilot:
 > not the primary identifier.
 
 The result is a workspace where humans see `customer_dimension` and
-tooling can still resolve it back to `TB_DW_CUSTOMER_DIM`.
+tooling can still resolve it back to `TAB_DWH_CUSTOMER_DIM2`.
 
 You can do the same for fields if their legacy names are particularly
 unfriendly, but in practice the schema-level rename gives most of the
