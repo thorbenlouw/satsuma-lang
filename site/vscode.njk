@@ -31,9 +31,9 @@ permalink: vscode.html
             Download .vsix ({{ site.version }})
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           </a>
-          <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" rel="noopener"
+          <a href="https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/vscode-satsuma-latest.vsix" rel="noopener"
              class="inline-flex items-center gap-2 px-6 py-3 bg-warm-gray/10 text-warm-gray font-medium rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all text-sm">
-            Latest unstable
+            Latest unstable .vsix
           </a>
           <a href="https://github.com/thorbenlouw/satsuma-lang/tree/main/tooling/vscode-satsuma" target="_blank" rel="noopener"
              class="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal font-semibold rounded-xl border border-charcoal/10 hover:border-charcoal/20 transition-all">
@@ -419,14 +419,14 @@ permalink: vscode.html
             <h3 class="text-lg font-bold text-charcoal">From GitHub Release</h3>
             <span class="px-2 py-0.5 bg-green/10 text-green-dark text-xs font-semibold rounded-full">Recommended</span>
           </div>
-          <p class="text-warm-gray text-sm leading-relaxed mb-4">Download <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/{{ site.version_tag }}" target="_blank" class="text-orange hover:underline">vscode-satsuma.vsix</a> from the {{ site.version }} release (or <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/latest" target="_blank" class="text-warm-gray hover:underline">latest unstable</a>), then install:</p>
+          <p class="text-warm-gray text-sm leading-relaxed mb-4">Download <a href="https://github.com/thorbenlouw/satsuma-lang/releases/tag/{{ site.version_tag }}" target="_blank" class="text-orange hover:underline">vscode-satsuma-{{ site.version_tag }}.vsix</a> from the {{ site.version }} release (or the <a href="https://github.com/thorbenlouw/satsuma-lang/releases/download/latest/vscode-satsuma-latest.vsix" class="text-warm-gray hover:underline">latest unstable build</a>), then install:</p>
           <div class="terminal">
             <div class="terminal-header">
               <span class="terminal-dot red"></span>
               <span class="terminal-dot yellow"></span>
               <span class="terminal-dot green"></span>
             </div>
-            <pre><span class="prompt">$</span> code <span class="flag">--install-extension</span> vscode-satsuma.vsix</pre>
+            <pre><span class="prompt">$</span> code <span class="flag">--install-extension</span> vscode-satsuma-{{ site.version_tag }}.vsix</pre>
           </div>
         </div>
 
