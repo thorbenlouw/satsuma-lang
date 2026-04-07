@@ -10,7 +10,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { collectSemanticDiagnostics } from "@satsuma/core";
+import { collectSemanticDiagnostics, validateSemanticWorkspace } from "@satsuma/core";
 
 // ---------- Test helper ----------
 
@@ -420,5 +420,65 @@ describe("ref metadata target diagnostics", () => {
     const diags = collectSemanticDiagnostics(index);
     const refDiags = diags.filter((d) => d.rule === "undefined-ref" && d.message.includes("crm_customers"));
     assert.equal(refDiags.length, 0);
+  });
+});
+
+// ---------- Shared validation entry point ----------
+
+describe("validateSemanticWorkspace", () => {
+  it("computes import reachability and applies the default import-scope rule", () => {
+    // This pins the shared consumer contract: callers pass resolved imports,
+    // core computes reachability, and out-of-scope symbols use the CLI rule.
+    const index = makeIndex({
+      schemas: [
+        { name: "customers", file: "/workspace/customers.stm" },
+      ],
+      mappings: [
+        { name: "load customers", file: "/workspace/load.stm", sources: ["customers"], targets: ["customers"] },
+      ],
+    });
+    const diags = validateSemanticWorkspace(index, {
+      fileImports: new Map([
+        ["/workspace/load.stm", []],
+        ["/workspace/customers.stm", []],
+      ]),
+    });
+
+    assert.equal(diags.length, 2);
+    assert.deepEqual(
+      diags.map((d) => d.rule),
+      ["import-scope", "import-scope"],
+    );
+    assert.ok(
+      diags.every((d) => d.message.includes("customers") && d.severity === "error"),
+      "both mapping refs should be reported as out of import scope",
+    );
+  });
+
+  it("allows consumers to customize import-scope presentation without changing the rule engine", () => {
+    // LSP diagnostics keep their historic public code/message while using the
+    // same reachability algorithm as CLI validation.
+    const index = makeIndex({
+      schemas: [
+        { name: "orders", file: "file:///workspace/orders.stm" },
+      ],
+      mappings: [
+        { name: "load orders", file: "file:///workspace/load.stm", sources: ["orders"], targets: [] },
+      ],
+    });
+    const diags = validateSemanticWorkspace(index, {
+      fileImports: new Map([
+        ["file:///workspace/load.stm", []],
+        ["file:///workspace/orders.stm", []],
+      ]),
+      importScopeDiagnostic: {
+        rule: "missing-import",
+        message: (violation) => `${violation.resolved} from ${violation.definitionFile}`,
+      },
+    });
+
+    assert.equal(diags.length, 1);
+    assert.equal(diags[0].rule, "missing-import");
+    assert.equal(diags[0].message, "orders from file:///workspace/orders.stm");
   });
 });

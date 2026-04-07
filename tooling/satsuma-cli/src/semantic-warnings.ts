@@ -10,7 +10,7 @@
  * separately in commands/validate.ts using collectParseErrors from core.
  */
 
-import { collectSemanticDiagnostics, computeImportReachability } from "@satsuma/core";
+import { validateSemanticWorkspace } from "@satsuma/core";
 import type { SemanticDiagnostic } from "@satsuma/core";
 import type { LintDiagnostic, ExtractedWorkspace } from "./types.js";
 
@@ -23,12 +23,7 @@ import type { LintDiagnostic, ExtractedWorkspace } from "./types.js";
  * import-scope violations are detected (ADR-022).
  */
 export function collectSemanticWarnings(index: ExtractedWorkspace): LintDiagnostic[] {
-  // Compute import-scope reachability when import data is available.
-  // Single-file workspaces or mock indices without fileImports skip the check.
-  const reachability = index.fileImports?.size
-    ? computeImportReachability(index, index.fileImports)
-    : undefined;
-  const semanticDiags = collectSemanticDiagnostics(index, reachability);
+  const semanticDiags = validateSemanticWorkspace(index, { fileImports: index.fileImports });
   return semanticDiags.map(toCLIDiagnostic);
 }
 

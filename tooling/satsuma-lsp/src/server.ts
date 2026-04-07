@@ -30,7 +30,7 @@ import {
   getImportReachableUris,
   createScopedIndex,
 } from "./workspace-index";
-import { computeMissingImportDiagnostics, computeCoreSemanticDiagnostics } from "./semantic-diagnostics";
+import { computeSemanticValidationDiagnostics } from "./semantic-diagnostics";
 import { computeDefinition } from "./definition";
 import { computeReferences } from "./references";
 import { computeCompletions } from "./completion";
@@ -446,8 +446,8 @@ function scopeIndex(uri: string): WorkspaceIndex {
 }
 
 /**
- * Send parse diagnostics merged with cached validate diagnostics,
- * core semantic diagnostics, and missing-import diagnostics.
+ * Send parse diagnostics merged with cached validate diagnostics and the shared
+ * core semantic validation adapter.
  *
  * Core semantic diagnostics run directly against the workspace index (no
  * subprocess). The CLI subprocess (validate-diagnostics.ts) provides
@@ -457,8 +457,7 @@ function scopeIndex(uri: string): WorkspaceIndex {
 function sendMergedDiagnostics(uri: string, tree: Tree): void {
   const parseDiags = computeDiagnostics(tree);
   const validateDiags = validateDiagCache.get(uri) ?? [];
-  const coreSemanticDiags = computeCoreSemanticDiagnostics(uri, scopeIndex(uri));
-  const missingImportDiags = computeMissingImportDiagnostics(tree, uri, wsIndex);
+  const semanticDiags = computeSemanticValidationDiagnostics(uri, wsIndex);
 
   // Deduplicate: core semantic diagnostics may overlap with CLI validate
   // diagnostics. Use rule + line as the dedup key, preferring CLI results
@@ -466,13 +465,13 @@ function sendMergedDiagnostics(uri: string, tree: Tree): void {
   const validateKeys = new Set(
     validateDiags.map((d) => `${d.code}:${d.range.start.line}`),
   );
-  const dedupedCoreDiags = coreSemanticDiags.filter(
+  const dedupedSemanticDiags = semanticDiags.filter(
     (d) => !validateKeys.has(`${d.code}:${d.range.start.line}`),
   );
 
   connection.sendDiagnostics({
     uri,
-    diagnostics: [...parseDiags, ...validateDiags, ...dedupedCoreDiags, ...missingImportDiags],
+    diagnostics: [...parseDiags, ...validateDiags, ...dedupedSemanticDiags],
   });
 }
 

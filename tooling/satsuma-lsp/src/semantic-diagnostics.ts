@@ -1,22 +1,15 @@
 /**
  * semantic-diagnostics.ts — LSP-specific semantic diagnostics
  *
- * Provides two diagnostic sources:
+ * Adapts the LSP/viz-backend workspace index into @satsuma/core's shared
+ * semantic validation contract. Core owns rule order and import reachability;
+ * this module owns only LSP-specific range/severity conversion and the
+ * quick-fix-style message used for out-of-scope imports.
  *
- * 1. **Missing-import diagnostics** (LSP-specific): detects references to symbols
- *    that exist in the workspace but are not reachable via the file's import
- *    graph. Uses satsuma-core's computeImportReachability for symbol-level
- *    scope enforcement (ADR-022): importing a symbol brings only that symbol
- *    and its transitive dependencies into scope, not all symbols from the
- *    imported file.
- *
- * 2. **Core semantic diagnostics** (via adapter): runs a subset of core's
- *    collectSemanticDiagnostics() directly against the LSP workspace index,
- *    providing real-time validation without a CLI subprocess. Arrow-level
- *    checks and NL @ref validation are not available through this path —
- *    those require full arrow extraction that the LSP workspace index does
- *    not currently maintain. The CLI subprocess (validate-diagnostics.ts)
- *    remains as a fallback for those checks on save.
+ * Arrow field checks and NL @ref validation are still incomplete in the live
+ * LSP path because the LSP workspace index does not maintain full arrow/NL
+ * extraction data. The CLI subprocess (validate-diagnostics.ts) remains the
+ * on-save fallback for those full-workspace checks.
  */
 
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -31,8 +24,7 @@ import {
   buildImportSuggestion,
 } from "./workspace-index";
 import {
-  collectSemanticDiagnostics,
-  computeImportReachability,
+  validateSemanticWorkspace,
 } from "@satsuma/core";
 import type {
   SemanticIndex,
@@ -42,6 +34,7 @@ import type {
   SemanticMetric,
   SemanticDiagnostic,
   ResolvedFileImport,
+  ImportScopeViolation,
 } from "@satsuma/core";
 
 // ---------- Missing-import diagnostics (LSP-specific) ----------
@@ -66,75 +59,52 @@ export function computeMissingImportDiagnostics(
   uri: string,
   wsIndex: WorkspaceIndex,
 ): Diagnostic[] {
-  // Build the data structures needed for symbol-level reachability.
-  const fileImports = buildFileImportsMap(wsIndex);
-  const semanticIndex = buildSemanticIndex(wsIndex);
-  const reachability = computeImportReachability(semanticIndex, fileImports);
-  const reachableSymbols = reachability.reachableSymbols.get(uri) ?? new Set<string>();
-
-  const diagnostics: Diagnostic[] = [];
-
-  for (const [name, refs] of wsIndex.references) {
-    // Only consider references that come from this file and are structural
-    // (source/target/spread/metric_source) — not arrow field paths or import names
-    const fileRefs = refs.filter(
-      (r) =>
-        r.uri === uri &&
-        (r.context === "source" ||
-          r.context === "target" ||
-          r.context === "spread" ||
-          r.context === "metric_source"),
-    );
-    if (fileRefs.length === 0) continue;
-
-    const globalDefs = wsIndex.definitions.get(name);
-    // If not defined anywhere, let core semantic validation handle it
-    if (!globalDefs || globalDefs.length === 0) continue;
-
-    // Already reachable via imports (symbol-level check) — no problem
-    if (reachableSymbols.has(name)) continue;
-
-    // Symbol exists in workspace but is not reachable from this file's import graph
-    const defUri = globalDefs[0]!.uri;
-    const suggestion = buildImportSuggestion(uri, name, defUri);
-
-    for (const ref of fileRefs) {
-      diagnostics.push({
-        range: ref.range,
-        severity: DiagnosticSeverity.Error,
-        code: "missing-import",
-        source: "satsuma",
-        message: `'${name}' is not imported. Add: ${suggestion}`,
-      });
-    }
-  }
-
-  return diagnostics;
+  return computeSemanticValidationDiagnostics(uri, wsIndex)
+    .filter((d) => d.code === "missing-import");
 }
 
 // ---------- Core semantic diagnostics (adapter) ----------
 
 /**
- * Run core's collectSemanticDiagnostics() against the LSP workspace index
- * and return LSP Diagnostic[] for the specified file.
- *
- * Coverage: duplicate definitions, undefined fragment spreads, undefined
- * mapping source/target refs, undefined metric source refs, ref metadata
- * targets. Arrow field-not-in-schema and NL @ref checks are NOT covered —
- * the LSP workspace index does not maintain arrow extraction data. The CLI
- * subprocess fallback (validate-diagnostics.ts) covers those on save.
+ * Run the shared core semantic validation pipeline against the LSP workspace
+ * index and return diagnostics for the specified file.
  */
-export function computeCoreSemanticDiagnostics(
+export function computeSemanticValidationDiagnostics(
   uri: string,
   wsIndex: WorkspaceIndex,
 ): Diagnostic[] {
+  const fileImports = buildFileImportsMap(wsIndex);
   const semanticIndex = buildSemanticIndex(wsIndex);
-  const coreDiags = collectSemanticDiagnostics(semanticIndex);
+  const coreDiags = validateSemanticWorkspace(semanticIndex, {
+    fileImports,
+    importScopeDiagnostic: {
+      rule: "missing-import",
+      message: (violation) => missingImportMessage(uri, violation),
+    },
+  });
 
   // Filter to diagnostics for the specified file and convert to LSP format
   return coreDiags
     .filter((d) => d.file === uri)
     .map(semanticDiagToLsp);
+}
+
+/**
+ * Backward-compatible wrapper kept for tests and call sites that still name
+ * the old adapter. It now uses the unified core validation entry point.
+ */
+export function computeCoreSemanticDiagnostics(
+  uri: string,
+  wsIndex: WorkspaceIndex,
+): Diagnostic[] {
+  return computeSemanticValidationDiagnostics(uri, wsIndex)
+    .filter((d) => d.code !== "missing-import");
+}
+
+function missingImportMessage(uri: string, violation: ImportScopeViolation): string {
+  const defUri = violation.definitionFile ?? uri;
+  const suggestion = buildImportSuggestion(uri, violation.resolved, defUri);
+  return `'${violation.resolved}' is not imported. Add: ${suggestion}`;
 }
 
 /** Map a core SemanticDiagnostic to an LSP Diagnostic. */
@@ -247,7 +217,7 @@ function buildSemanticIndex(wsIndex: WorkspaceIndex): SemanticIndex {
           break;
         case "metric":
           if (!metrics.has(name)) {
-            metrics.set(name, defEntryToMetric(entry));
+            metrics.set(name, defEntryToMetric(entry, wsIndex));
           }
           break;
         case "transform":
@@ -336,11 +306,23 @@ function defEntryToMapping(
 }
 
 /** Convert a DefinitionEntry with kind "metric" to a SemanticMetric. */
-function defEntryToMetric(entry: DefinitionEntry): SemanticMetric {
-  // Sources are tracked via metric_source references in the workspace index
+function defEntryToMetric(
+  entry: DefinitionEntry,
+  wsIndex: WorkspaceIndex,
+): SemanticMetric {
+  const sources: string[] = [];
+  for (const [refName, refs] of wsIndex.references) {
+    for (const ref of refs) {
+      if (ref.uri === entry.uri && ref.context === "metric_source" && !sources.includes(refName)) {
+        sources.push(refName);
+      }
+    }
+  }
+
   return {
     namespace: entry.namespace ?? undefined,
     file: entry.uri,
     row: entry.range.start.line,
+    sources,
   };
 }

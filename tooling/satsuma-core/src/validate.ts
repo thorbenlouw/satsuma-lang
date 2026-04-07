@@ -30,7 +30,8 @@ import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
 import type { SpreadEntity } from "./spread-expand.js";
 import { resolveScopedEntityRef } from "./canonical-ref.js";
 import type { FieldDecl, MetaEntry, PipeStep } from "./types.js";
-import type { ImportReachability } from "./import-reachability.js";
+import { computeImportReachability } from "./import-reachability.js";
+import type { ImportReachability, ResolvedFileImport } from "./import-reachability.js";
 
 // ---------- Output type ----------
 
@@ -129,6 +130,62 @@ export interface SemanticDuplicate {
 }
 
 /**
+ * Policy for a single import-scope violation.
+ *
+ * Most consumers should keep the default. Adapters that need a different
+ * public diagnostic contract (for example, LSP quick-fix wording) can override
+ * the rule/message without reimplementing the import reachability check.
+ */
+export interface ImportScopeDiagnosticPolicy {
+  /** Machine-readable rule code for the emitted diagnostic. */
+  rule?: string;
+  /**
+   * Builds the human-readable message. The input carries the resolved symbol
+   * and definition file so callers can produce actionable import suggestions.
+   */
+  message?: (violation: ImportScopeViolation) => string;
+}
+
+/**
+ * Details for a reference that resolved to a workspace symbol but is not
+ * reachable from the referencing file's import declarations.
+ */
+export interface ImportScopeViolation {
+  /** File containing the out-of-scope reference. */
+  file: string;
+  /** 0-indexed row of the entity or arrow that owns the reference. */
+  row: number;
+  /** Kind of entity containing the reference, e.g. "mapping" or "schema". */
+  entityKind: string;
+  /** Name of the entity containing the reference. */
+  entityName: string;
+  /** Kind of referenced symbol, e.g. "source" or "fragment". */
+  refKind: string;
+  /** Reference text as authored. */
+  ref: string;
+  /** Resolved symbol key in the workspace index. */
+  resolved: string;
+  /** File containing the referenced symbol definition, when the index exposes it. */
+  definitionFile: string | null;
+}
+
+/**
+ * Shared entry-point options for semantic validation.
+ *
+ * Callers can pass already-computed reachability, or pass resolved file imports
+ * and let core compute the reachability graph. Passing neither keeps the
+ * legacy single-workspace behaviour and skips import-scope diagnostics.
+ */
+export interface SemanticValidationOptions {
+  /** Resolved imports by file, used to compute import reachability. */
+  fileImports?: Map<string, ResolvedFileImport[]>;
+  /** Precomputed import reachability, useful when a caller already has it. */
+  reachability?: ImportReachability;
+  /** Optional presentation policy for import-scope diagnostics. */
+  importScopeDiagnostic?: ImportScopeDiagnosticPolicy;
+}
+
+/**
  * Minimal workspace index required by the semantic validator.
  * The CLI WorkspaceIndex satisfies this interface structurally.
  * nlRefData and duplicates are optional — absent means "none found".
@@ -163,6 +220,32 @@ export function collectSemanticDiagnostics(
   index: SemanticIndex,
   reachability?: ImportReachability,
 ): SemanticDiagnostic[] {
+  return collectSemanticDiagnosticsWithOptions(index, { reachability });
+}
+
+/**
+ * Validate a semantic workspace using the shared core pipeline.
+ *
+ * This is the preferred consumer entry point: CLI and LSP adapters provide the
+ * same SemanticIndex shape and, when available, the same resolved import map.
+ * Core then owns the rule order and reachability integration in one place.
+ */
+export function validateSemanticWorkspace(
+  index: SemanticIndex,
+  options: SemanticValidationOptions = {},
+): SemanticDiagnostic[] {
+  const reachability = options.reachability
+    ?? (options.fileImports ? computeImportReachability(index, options.fileImports) : undefined);
+  return collectSemanticDiagnosticsWithOptions(index, {
+    ...options,
+    reachability,
+  });
+}
+
+function collectSemanticDiagnosticsWithOptions(
+  index: SemanticIndex,
+  options: SemanticValidationOptions,
+): SemanticDiagnostic[] {
   const diagnostics: SemanticDiagnostic[] = [];
 
   checkDuplicates(index, diagnostics);
@@ -173,7 +256,9 @@ export function collectSemanticDiagnostics(
   checkArrowFieldRefs(index, diagnostics);
   checkTransformSpreads(index, diagnostics);
   checkRefMetadata(index, diagnostics);
-  if (reachability) checkImportScope(index, reachability, diagnostics);
+  if (options.reachability) {
+    checkImportScope(index, options.reachability, diagnostics, options.importScopeDiagnostic);
+  }
 
   return diagnostics;
 }
@@ -631,6 +716,7 @@ function checkImportScope(
   index: SemanticIndex,
   reachability: ImportReachability,
   diagnostics: SemanticDiagnostic[],
+  policy: ImportScopeDiagnosticPolicy = {},
 ): void {
   const allDefinitions = new Map<string, unknown>([
     ...index.schemas as Map<string, unknown>,
@@ -655,14 +741,25 @@ function checkImportScope(
     const reachable = reachability.reachableSymbols.get(file);
     if (!reachable) return; // No reachability data for this file
     if (reachable.has(resolved)) return; // In scope — all good
+    const violation: ImportScopeViolation = {
+      file,
+      row,
+      entityKind,
+      entityName,
+      refKind,
+      ref,
+      resolved,
+      definitionFile: definitionFileFor(lookupMap.get(resolved)),
+    };
 
     diagnostics.push({
       file,
       line: row + 1,
       column: 1,
       severity: "error",
-      rule: "import-scope",
-      message: `${capitalize(entityKind)} '${entityName}' references ${refKind} '${resolved}' which is not reachable from this file's imports`,
+      rule: policy.rule ?? "import-scope",
+      message: policy.message?.(violation)
+        ?? `${capitalize(entityKind)} '${entityName}' references ${refKind} '${resolved}' which is not reachable from this file's imports`,
     });
   }
 
@@ -722,14 +819,29 @@ function checkImportScope(
               line: arrow.line + 1,
               column: 1,
               severity: "error",
-              rule: "import-scope",
-              message: `Arrow in mapping '${arrow.mapping}' references transform '${resolved}' which is not reachable from this file's imports`,
+              rule: policy.rule ?? "import-scope",
+              message: policy.message?.({
+                file: arrow.file,
+                row: arrow.line,
+                entityKind: "arrow",
+                entityName: arrow.mapping ?? "<anonymous>",
+                refKind: "transform",
+                ref: spreadName,
+                resolved,
+                definitionFile: definitionFileFor(index.transforms.get(resolved)),
+              }) ?? `Arrow in mapping '${arrow.mapping}' references transform '${resolved}' which is not reachable from this file's imports`,
             });
           }
         }
       }
     }
   }
+}
+
+function definitionFileFor(definition: unknown): string | null {
+  if (!definition || typeof definition !== "object") return null;
+  const file = (definition as { file?: unknown }).file;
+  return typeof file === "string" ? file : null;
 }
 
 // ---------- Helpers ----------
