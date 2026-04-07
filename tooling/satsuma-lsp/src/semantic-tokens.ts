@@ -5,6 +5,7 @@ import {
   SemanticTokensLegend,
 } from "vscode-languageserver";
 import type { Tree, Query } from "web-tree-sitter";
+import { createAtRefRegex } from "@satsuma/core";
 import { getLanguage, createQuery } from "./parser-utils";
 import type { SyntaxNode } from "./parser-utils";
 
@@ -194,7 +195,7 @@ export function computeSemanticTokens(tree: Tree): { data: number[] } {
 
 // ---------- NL reference extraction ----------
 
-const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+const AT_REF_RE = createAtRefRegex();
 
 /** Unique identity for a CST node (by position). */
 function nodeId(node: SyntaxNode): string {

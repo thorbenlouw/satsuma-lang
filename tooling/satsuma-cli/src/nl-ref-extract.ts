@@ -17,6 +17,7 @@
 
 import {
   extractAtRefs,
+  computeNLRefPosition,
   classifyRef,
   resolveRef as _resolveRef,
   extractNLRefData,
@@ -35,7 +36,7 @@ import { expandEntityFields } from "./spread-expand.js";
 import { canonicalKey, qualifyField } from "./index-builder.js";
 
 // Re-export pure functions and types directly.
-export { extractAtRefs, classifyRef, extractNLRefData };
+export { extractAtRefs, computeNLRefPosition, classifyRef, extractNLRefData };
 export type { AtRef, RefClassification, Resolution, ResolvedNLRef };
 
 // ── ExtractedWorkspace → DefinitionLookup bridge ──────────────────────────────────

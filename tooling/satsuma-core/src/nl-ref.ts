@@ -106,8 +106,68 @@ function canonicalKey(key: string): string {
 
 // ── Extraction ────────────────────────────────────────────────────────────────
 
-// @ref pattern: @identifier, @schema.field, @ns::schema.field, @`backtick`.field
-const AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+// @ref pattern: @identifier, @schema.field, @ns::schema.field, @`backtick`.field.
+//
+// The lookbehind requires the @ to be at start-of-string, after whitespace, or
+// after a small set of opening/separator punctuation. Without it, email-like
+// patterns (`user@example.com`) and SQL LIKE wildcards (`%@test.internal`)
+// produced spurious matches and false-positive unresolved-nl-ref warnings
+// (sl-gl21). The allowed prefix set intentionally excludes `%`, letters,
+// digits, `_` and `.` so that `%@foo` and `user@bar` are not extracted, while
+// `(@foo`, `[@foo`, `, @foo` and start-of-string `@foo` still are.
+//
+// AT_REF_PATTERN is the canonical source. Consumers that need a fresh regex
+// instance (because /g state is mutable) should call createAtRefRegex(); this
+// is the single source of truth shared by core, the LSP, the viz backend and
+// the viz UI to avoid drift between copies.
+export const AT_REF_PATTERN = "(?<=^|[\\s(\\[{,;])@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*";
+
+/**
+ * Build a fresh global @ref regex. Always returns a new instance so callers
+ * never share `lastIndex` state with each other.
+ */
+export function createAtRefRegex(): RegExp {
+  return new RegExp(AT_REF_PATTERN, "g");
+}
+
+const AT_REF_RE = createAtRefRegex();
+
+/**
+ * Compute the 1-based (line, column) of an @ref inside an NL string, given
+ * the string's start position and the byte offset of the @ within the string.
+ *
+ * Multiline NL strings (`"""..."""`) may contain @refs on any line of the body.
+ * A naive `column = startColumn + offset` calculation only works on the first
+ * line — once a newline is crossed, the column resets relative to the start of
+ * that line. This helper handles both cases and is the single source of truth
+ * for diagnostic positions of NL refs (sl-2ji3).
+ *
+ * @param item   The NL ref source item; only `text`, `line`, `column` are read.
+ *               `item.line` and `item.column` are 0-based (CST positions).
+ * @param offset Byte offset of the `@` character within `item.text`.
+ * @returns      1-based `{line, column}` suitable for diagnostic reporting.
+ */
+export function computeNLRefPosition(
+  item: { text: string; line: number; column: number },
+  offset: number,
+): { line: number; column: number } {
+  const textBefore = item.text.slice(0, offset);
+  const newlines = (textBefore.match(/\n/g) ?? []).length;
+  const line = item.line + newlines + 1;
+  let column: number;
+  if (newlines > 0) {
+    // After a newline the column resets — count from the last `\n` in the
+    // prefix to the @ character. The `\n` itself sits at index `lastNl`, so
+    // the next character is column 1, giving `offset - lastNl`.
+    const lastNl = textBefore.lastIndexOf("\n");
+    column = offset - lastNl;
+  } else {
+    // No newline crossed — the @ is on the same line as the string opener,
+    // so add the offset to the string's start column (+1 to make 1-based).
+    column = item.column + offset + 1;
+  }
+  return { line, column };
+}
 
 /**
  * Extract @ref mentions from a single NL string.
@@ -657,16 +717,11 @@ export function resolveAllNLRefs(
       const classification = classifyRef(ref);
       const resolution = resolveRef(ref, mappingContext, lookup);
 
-      const textBefore = item.text.slice(0, offset);
-      const newlines = (textBefore.match(/\n/g) ?? []).length;
-      const line = item.line + newlines;
-      let column: number;
-      if (newlines > 0) {
-        const lastNl = textBefore.lastIndexOf("\n");
-        column = offset - lastNl;
-      } else {
-        column = item.column + 1 + offset;
-      }
+      // Use the shared helper, then convert back to the 0-based line that
+      // ResolvedNLRef has historically returned (consumers add +1 themselves).
+      const pos = computeNLRefPosition(item, offset);
+      const line = pos.line - 1;
+      const column = pos.column;
 
       results.push({
         ref,

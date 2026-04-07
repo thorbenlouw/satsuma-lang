@@ -23,6 +23,7 @@ import {
   entryText,
   extractFieldTree,
   isMetricSchema,
+  createAtRefRegex,
 } from "@satsuma/core";
 import type { FieldDecl } from "@satsuma/core";
 
@@ -681,7 +682,7 @@ function extractArrowFieldName(pathNode: SyntaxNode): string | null {
   return firstSegment || null;
 }
 
-const NL_AT_REF_RE = /@(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*)(?:::(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))?(?:\.(`[^`]+`|[a-zA-Z_][a-zA-Z0-9_-]*))*/g;
+const NL_AT_REF_RE = createAtRefRegex();
 
 function indexNlRefs(
   index: WorkspaceIndex,

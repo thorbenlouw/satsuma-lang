@@ -24,7 +24,7 @@
  */
 
 import { capitalize } from "./string-utils.js";
-import { extractAtRefs, classifyRef, resolveRef, isSchemaInMappingSources, stripNLRefScopePrefix } from "./nl-ref.js";
+import { extractAtRefs, classifyRef, resolveRef, isSchemaInMappingSources, stripNLRefScopePrefix, computeNLRefPosition } from "./nl-ref.js";
 import type { DefinitionLookup } from "./nl-ref.js";
 import { expandSpreads, collectFieldPaths } from "./spread-expand.js";
 import type { SpreadEntity } from "./spread-expand.js";
@@ -339,13 +339,14 @@ function checkNLRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]): v
     for (const { ref, offset } of refs) {
       const classification = classifyRef(ref);
       const resolution = resolveRef(ref, mappingContext, lookup);
+      const { line, column } = computeNLRefPosition(item, offset);
 
       if (!resolution.resolved) {
         // Rule name "unresolved-nl-ref" matches lint-engine.ts for consistency (sl-tslm).
         diagnostics.push({
           file: item.file,
-          line: item.line + 1,
-          column: item.column + offset + 1,
+          line,
+          column,
           severity: "warning",
           rule: "unresolved-nl-ref",
           message: `NL reference \`${ref}\` in ${displayScope} does not resolve to any known identifier`,
@@ -357,8 +358,8 @@ function checkNLRefs(index: SemanticIndex, diagnostics: SemanticDiagnostic[]): v
         if (referencedSchema && !isSchemaInMappingSources(referencedSchema, mapping)) {
           diagnostics.push({
             file: item.file,
-            line: item.line + 1,
-            column: item.column + offset + 1,
+            line,
+            column,
             severity: "warning",
             rule: "nl-ref-not-in-source",
             message: `NL reference \`${ref}\` in mapping '${mappingKey}' is not declared in its source or target list`,

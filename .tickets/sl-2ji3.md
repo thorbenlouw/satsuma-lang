@@ -1,6 +1,6 @@
 ---
 id: sl-2ji3
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-02T15:15:33Z
@@ -30,3 +30,12 @@ nl-ref.ts:664-669 already has a multiline-aware calculation that correctly handl
 - Multiline NL ref tests cover @refs on lines 2+ of triple-quoted strings
 - Existing single-line NL ref diagnostics remain correct
 
+
+## Notes
+
+**2026-04-07T15:21:50Z**
+
+**2026-04-07T15:21:50Z**
+
+Cause: validate.ts and lint-engine.ts computed diagnostic positions for NL @refs as 'item.line + 1, item.column + offset + 1', which ignored newlines inside multiline ("""...""") strings. resolveAllNLRefs already had a multiline-aware calculation but it was duplicated inline.
+Fix: Extracted the calculation into a shared satsuma-core helper computeNLRefPosition(item, offset) returning 1-based {line, column}. validate.ts (both push sites), lint-engine.ts (checkHiddenSourceInNl + checkUnresolvedNlRef), and resolveAllNLRefs all call it now, so positions stay consistent everywhere. New unit tests cover the same-line case, the continuation-line case, and the column-reset behaviour that originally regressed.
