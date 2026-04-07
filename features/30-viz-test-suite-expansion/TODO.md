@@ -10,7 +10,7 @@ commit that implements it.
 
 Epic: `sl-0jva` - Feature 30: viz test suite expansion
 
-### 1. Audit current harness coverage and selector gaps
+### 1. Audit current harness coverage and selector gaps (`sl-0ssj`)
 
 Document the current `tooling/satsuma-viz-harness/test/harness.test.ts`
 coverage and the renderer selectors needed to replace synthetic event tests
@@ -39,7 +39,7 @@ PRD reference:
 - Scope / Stable test hooks for deep rendered content
 - Scope / Fixture matrix
 
-### 2. Fix the harness event recorder contract
+### 2. Fix the harness event recorder contract (`sl-tzx6`)
 
 Update the harness recorder so `window.__satsumaHarness.events` captures real
 production event payloads emitted by `@satsuma/viz`.
@@ -68,7 +68,7 @@ PRD reference:
 - Scope / Harness event contract
 - Acceptance Criteria 1 and 2
 
-### 3. Add renderer test hooks for mapping detail and field coverage
+### 3. Add renderer test hooks for mapping detail and field coverage (`sl-eikr`)
 
 Add stable selectors and attributes needed for high-value Playwright assertions
 without relying on brittle deep shadow DOM queries.
@@ -100,7 +100,7 @@ PRD reference:
 - Scope / Stable test hooks for deep rendered content
 - Scope / Field coverage and highlighting
 
-### 4. Replace synthetic event tests with real interaction tests
+### 4. Replace synthetic event tests with real interaction tests (`sl-j4pw`)
 
 Rewrite the event-oriented harness tests to interact with the actual UI.
 
@@ -125,7 +125,7 @@ PRD reference:
 - Scope / Automated Playwright coverage / Interaction events
 - Acceptance Criteria 1 and 2
 
-### 5. Expand overview coverage across fixture families
+### 5. Expand overview coverage across fixture families (`sl-3c2w`)
 
 Add overview tests for non-namespaced, namespaced, metrics, reports, and larger
 fixtures.
@@ -153,7 +153,7 @@ PRD reference:
 - Scope / Fixture matrix
 - Scope / Automated Playwright coverage / Overview rendering
 
-### 6. Add mapping detail coverage for canonical mappings
+### 6. Add mapping detail coverage for canonical mappings (`sl-ny3r`)
 
 Add detail-view assertions for representative mappings.
 
@@ -192,7 +192,7 @@ PRD reference:
 
 - Scope / Automated Playwright coverage / Mapping detail rendering
 
-### 7. Add field coverage and highlighting tests
+### 7. Add field coverage and highlighting tests (`sl-cca6`)
 
 Assert the visual contracts that make mapping detail useful.
 
@@ -215,7 +215,7 @@ PRD reference:
 
 - Scope / Automated Playwright coverage / Field coverage and highlighting
 
-### 8. Add filter and lineage-mode tests
+### 8. Add filter and lineage-mode tests (`sl-xqd5`)
 
 Cover toolbar filtering and import-reachable model differences.
 
@@ -244,7 +244,7 @@ PRD reference:
 
 - Scope / Automated Playwright coverage / Filters and lineage mode
 
-### 9. Add geometry sanity helpers and tests
+### 9. Add geometry sanity helpers and tests (`sl-e80e`)
 
 Create reusable Playwright helpers for layout sanity assertions.
 
@@ -270,7 +270,7 @@ PRD reference:
 
 - Scope / Automated Playwright coverage / Geometry sanity
 
-### 10. Add screenshot review workflow
+### 10. Add screenshot review workflow (`sl-mm7v`)
 
 Add a deterministic screenshot script or Playwright project that emits named
 review artifacts and a manifest.
@@ -307,7 +307,7 @@ PRD reference:
 - Scope / Screenshot artifacts for human and VLM review
 - Acceptance Criteria 8 and 9
 
-### 11. Update harness docs
+### 11. Update harness docs (`sl-gfo4`)
 
 Update developer-facing documentation for the expanded suite.
 
@@ -331,7 +331,7 @@ PRD reference:
 - Scope / Documentation and workflow
 - Non-Goals
 
-### 12. Verification and cleanup
+### 12. Verification and cleanup (`sl-zowz`)
 
 Run the relevant package checks and close any incidental breakage introduced by
 the expanded suite.
