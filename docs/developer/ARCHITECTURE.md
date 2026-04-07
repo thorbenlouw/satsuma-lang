@@ -1,6 +1,6 @@
 # Satsuma Tooling Architecture
 
-> Last updated: 2026-04-01 — Feature 29 (Viz Harness): extracted `satsuma-viz-backend` shared package from LSP server; added `satsuma-viz-harness` standalone browser harness with Playwright coverage.
+> Last updated: 2026-04-07 — corrected the `satsuma-viz` → `satsuma-core` dependency and replaced ASCII structure diagrams with Mermaid.
 
 See `adrs/` for the architectural decision records that explain the choices made here.
 
@@ -8,7 +8,7 @@ See `adrs/` for the architectural decision records that explain the choices made
 
 ## Package Map
 
-The `tooling/` directory contains eight npm packages:
+The `tooling/` directory contains nine npm packages:
 
 | Package | Role |
 |---------|------|
@@ -16,9 +16,10 @@ The `tooling/` directory contains eight npm packages:
 | `satsuma-core` | Shared extraction, formatting, validation, and analysis library — the foundation |
 | `satsuma-viz-model` | Shared VizModel protocol contract — types for the server→viz JSON payload |
 | `satsuma-viz-backend` | Shared VizModel assembly — `buildVizModel`, `mergeVizModels`, workspace index; used by LSP server and viz harness |
-| `satsuma-cli` | CLI tool (16 commands); consumer of satsuma-core |
-| `vscode-satsuma` | VS Code extension + LSP server; consumer of satsuma-core, satsuma-viz-model, satsuma-viz-backend |
-| `satsuma-viz` | Lit web component that renders VizModel as an interactive diagram |
+| `satsuma-cli` | CLI command suite; consumer of satsuma-core |
+| `satsuma-lsp` | Editor-agnostic LSP server; consumer of satsuma-core, satsuma-viz-model, satsuma-viz-backend |
+| `satsuma-viz` | Lit web component that renders VizModel as an interactive diagram; consumes satsuma-viz-model and small shared helpers from satsuma-core |
+| `vscode-satsuma` | VS Code extension shell; consumer of satsuma-lsp and satsuma-viz |
 | `satsuma-viz-harness` | Standalone HTTP harness for fixture-driven browser testing of satsuma-viz; Playwright tests |
 
 ### Package Dependency Diagram
@@ -29,10 +30,10 @@ graph TD
   CORE[satsuma-core<br/><i>formatter · cst-utils · extract · validate<br/>coverage · parser · spread-expand · nl-ref · types</i>]
   VIZM[satsuma-viz-model<br/><i>VizModel protocol types</i>]
   VIZB[satsuma-viz-backend<br/><i>buildVizModel · mergeVizModels<br/>WorkspaceIndex · indexFile<br/>getImportReachableUris · createScopedIndex</i>]
-  CLI[satsuma-cli<br/><i>16 commands · ExtractedWorkspace</i>]
-  LSP[vscode-satsuma/server<br/><i>DefinitionIndex · semantic tokens<br/>completions · hover · …</i>]
-  EXT[vscode-satsuma/client<br/><i>extension host</i>]
-  VIZ[satsuma-viz<br/><i>Lit web component</i>]
+  CLI[satsuma-cli<br/><i>command suite · ExtractedWorkspace</i>]
+  LSP[satsuma-lsp<br/><i>WorkspaceIndex · semantic tokens<br/>completions · hover · …</i>]
+  EXT[vscode-satsuma<br/><i>extension host</i>]
+  VIZ[satsuma-viz<br/><i>Lit web component<br/>coverage + @ref helpers from core</i>]
   HARNESS[satsuma-viz-harness<br/><i>Node.js HTTP server<br/>browser client<br/>Playwright tests</i>]
 
   TS -- "satsuma.wasm" --> CORE
@@ -42,6 +43,7 @@ graph TD
   CORE --> CLI
   CORE --> VIZB
   CORE --> HARNESS
+  CORE --> VIZ
   VIZM --> VIZB
   VIZM --> VIZ
   VIZB --> LSP
@@ -50,7 +52,7 @@ graph TD
   LSP --> EXT
 ```
 
-`satsuma-core` and `satsuma-viz-model` have no runtime dependencies on any other package in this repo. `satsuma-viz-backend` is the shared boundary between the LSP server and the viz harness — it owns all VizModel assembly logic so neither consumer duplicates it.
+`satsuma-core` and `satsuma-viz-model` have no upward dependencies on consumer packages such as the CLI, LSP, VS Code extension, or viz harness. `satsuma-viz-backend` is the shared boundary between the LSP server and the viz harness — it owns all VizModel assembly logic so neither consumer duplicates it.
 
 ---
 
@@ -68,8 +70,8 @@ flowchart TD
   WI["ExtractedWorkspace\nfully resolved · multi-file"]
   CMDS["CLI commands\ngraph · lineage · field-lineage\nvalidate · lint · nl-refs · …"]
 
-  WSIDX["vscode-satsuma/workspace-index\nindexFile()"]
-  DEFIDX["DefinitionIndex\ngo-to-def · find-refs · completions"]
+  WSIDX["satsuma-lsp/workspace-index\nindexFile()"]
+  DEFIDX["WorkspaceIndex\ngo-to-def · find-refs · completions"]
   VIZB["satsuma-viz-backend\nbuildVizModel() · mergeVizModels()\nindexFile() · getImportReachableUris()"]
   VIZM["VizModel\nrendered by satsuma-viz"]
   HARNESS["satsuma-viz-harness server\n/api/model HTTP endpoint\nserves VizModel JSON"]
@@ -137,34 +139,45 @@ graph LR
 
 ## satsuma-cli Internal Structure
 
-```
-satsuma-cli/src/
-├── index.ts             — CLI entry point (commander setup)
-├── commands/            — One file per CLI command (16 total)
-│   ├── graph.ts         — satsuma graph
-│   ├── field-lineage.ts — satsuma field-lineage
-│   ├── lineage.ts       — satsuma lineage
-│   ├── validate.ts      — satsuma validate
-│   ├── lint.ts          — satsuma lint
-│   └── …
-├── index-builder.ts     — extractFileData(), buildIndex() → ExtractedWorkspace
-│                          Wraps satsuma-core extractions; provides EntityFieldLookup
-│                          and DefinitionLookup factory functions for callbacks
-├── load-workspace.ts    — loadWorkspace(pathArg) → { files, index }
-│                          The one-call workspace loader used by 18 of 21 CLI
-│                          commands; owns the standard "resolve → parse → index"
-│                          pipeline and the shared resolve-error message format.
-│                          fmt, diff, and validate opt out and call resolveInput
-│                          / loadFiles / buildIndex directly (per-file parse
-│                          tolerance, two-path compare, JSON-formatted errors).
-├── nl-ref-extract.ts    — makeDefinitionLookup(ExtractedWorkspace): DefinitionLookup
-│                          Thin adapter; all logic is in satsuma-core/nl-ref
-├── workspace.ts         — resolveInput(): path → .stm file list via import graph
-├── graph-builder.ts     — Builds the graph data structure for satsuma graph
-├── lint-engine.ts       — Lint rule evaluation
-├── validate.ts          — Thin adapter: maps SemanticDiagnostic[] → LintDiagnostic[]
-│                          All validation logic lives in satsuma-core/validate
-└── parser.ts            — initParser(), parseFile() wrappers (delegates to satsuma-core/parser)
+```mermaid
+flowchart TD
+  entry["index.ts<br/>Commander entry point<br/>registers command modules"]
+  runner["command-runner.ts<br/>CommandError + runCommand<br/>single process.exit boundary"]
+  commands["commands/*.ts<br/>graph · field-lineage · lineage<br/>validate · lint · schema · ..."]
+
+  workspace["workspace.ts<br/>resolveInput()<br/>entry path -> import-reachable .stm files"]
+  parser["parser.ts<br/>parseFile()<br/>delegates parser setup to satsuma-core/parser"]
+  loader["load-workspace.ts<br/>loadWorkspace(pathArg)<br/>standard resolve -> parse -> index pipeline"]
+
+  indexBuilder["index-builder.ts<br/>buildIndex() -> ExtractedWorkspace<br/>wraps core extraction results"]
+  extracted["ExtractedWorkspace<br/>schemas · mappings · arrows · metrics<br/>fragments · warnings · notes · nlRefData"]
+
+  nlBridge["nl-ref-extract.ts<br/>DefinitionLookup adapter<br/>ExtractedWorkspace -> core callbacks"]
+  spreadBridge["spread-expand.ts<br/>EntityFieldLookup adapter<br/>ExtractedWorkspace -> core callbacks"]
+  graphBuilder["graph-builder.ts<br/>schema-level graph for graph/lineage"]
+  graphCommandBuilder["commands/graph-builder.ts<br/>rich schema + field graph"]
+  lintEngine["lint-engine.ts<br/>lint rule evaluation"]
+  semanticWarnings["semantic-warnings.ts<br/>validateSemanticWorkspace adapter"]
+
+  core["@satsuma/core<br/>extract* · validateSemanticWorkspace<br/>nl-ref · spread expansion · parser"]
+
+  entry --> commands
+  commands --> runner
+  commands --> loader
+  commands --> workspace
+  commands --> graphBuilder
+  commands --> graphCommandBuilder
+  commands --> lintEngine
+  commands --> semanticWarnings
+  loader --> workspace --> parser --> core
+  loader --> indexBuilder --> extracted
+  parser --> indexBuilder
+  indexBuilder --> core
+  indexBuilder --> nlBridge
+  indexBuilder --> spreadBridge
+  nlBridge --> core
+  spreadBridge --> core
+  semanticWarnings --> core
 ```
 
 `ExtractedWorkspace` (CLI-specific; renamed from `WorkspaceIndex` in sl-erxz to avoid colliding with viz-backend's editor-shaped `WorkspaceIndex`) holds fully resolved, multi-file semantic data:
@@ -178,19 +191,42 @@ satsuma-cli/src/
 
 ---
 
-## vscode-satsuma Server Internal Structure
+## satsuma-lsp Internal Structure
 
-```
-vscode-satsuma/server/src/
-├── server.ts            — LSP server entry: request handlers, lifecycle
-├── parser-utils.ts      — initParser(), parseSource(), nodeRange()
-│                          CST helpers (child, children, etc.) imported from @satsuma/core
-├── workspace-index.ts   — indexFile() → DefinitionIndex
-│                          IDE-oriented: definitions + references for go-to-def
-│                          Delegates file indexing + import resolution to @satsuma/viz-backend
-├── coverage.ts          — computeMappingCoverage() → SchemaCoverageResult
-├── semantic-tokens.ts, hover.ts, definition.ts, references.ts,
-│   completion.ts, symbols.ts, rename.ts, folding.ts, formatting.ts
+```mermaid
+flowchart TD
+  server["server.ts<br/>LSP lifecycle + request routing<br/>document sync + custom requests"]
+  parserUtils["parser-utils.ts<br/>initParser() · parseSource() · nodeRange()<br/>CST helper imports from @satsuma/core"]
+  localIndex["workspace-index.ts<br/>LSP-facing index wrapper<br/>delegates shared indexing to viz-backend"]
+
+  featureHandlers["feature handlers<br/>hover · definition · references<br/>completion · symbols · rename<br/>folding · formatting"]
+  semanticTokens["semantic-tokens.ts<br/>semantic token extraction"]
+  semanticDiagnostics["semantic-diagnostics.ts<br/>in-process core semantic diagnostics"]
+  validateDiagnostics["validate-diagnostics.ts<br/>satsuma validate --json subprocess adapter"]
+  coverage["coverage.ts<br/>mapping coverage and CodeLens data"]
+  customRequests["custom request handlers<br/>vizModel · vizFullLineage · vizLinkedFiles<br/>fieldLocations · mappingCoverage · actionContext"]
+
+  core["@satsuma/core<br/>CST helpers · extraction · formatting<br/>validateSemanticWorkspace · @ref helpers"]
+  vizBackend["@satsuma/viz-backend<br/>WorkspaceIndex · indexFile()<br/>buildVizModel() · mergeVizModels()<br/>getImportReachableUris()"]
+  vizModel["@satsuma/viz-model<br/>VizModel protocol types"]
+  cli["satsuma-cli binary<br/>validate --json"]
+
+  server --> parserUtils --> core
+  server --> localIndex --> vizBackend
+  server --> featureHandlers
+  server --> semanticTokens
+  server --> semanticDiagnostics
+  server --> validateDiagnostics
+  server --> coverage
+  server --> customRequests
+  featureHandlers --> core
+  featureHandlers --> vizBackend
+  semanticTokens --> core
+  semanticDiagnostics --> core
+  validateDiagnostics --> cli
+  coverage --> core
+  customRequests --> vizBackend
+  customRequests --> vizModel
 ```
 
 `VizModel` assembly has been extracted to `@satsuma/viz-backend` (`buildVizModel`,
@@ -198,7 +234,7 @@ vscode-satsuma/server/src/
 harness can build VizModels without depending on the LSP server. The LSP server
 imports from `@satsuma/viz-backend` rather than owning this logic directly.
 
-`DefinitionIndex` (LSP-specific) is the IDE index:
+`WorkspaceIndex` is the IDE-oriented index:
 - `Map<string, DefinitionEntry[]>` — keyed by qualified name
 - `DefinitionEntry` has `{ uri, range, kind, namespace, fields? }` for schema/fragment entries
 
@@ -241,8 +277,8 @@ graph LR
   subgraph satsuma-cli
     WI["ExtractedWorkspace\nadapter closure"]
   end
-  subgraph vscode-satsuma/server
-    DI["DefinitionIndex\nadapter closure"]
+  subgraph satsuma-lsp
+    DI["WorkspaceIndex\nadapter closure"]
   end
 
   WI -- "implements" --> SPR
@@ -275,10 +311,12 @@ No CLI or LSP code needs to be imported.
 |---|---|---|
 | `tree-sitter-satsuma` | `test/corpus/` | tree-sitter corpus tests (parse → CST shape assertions) |
 | `satsuma-core` | `test/*.test.js` | Unit tests against pure functions; no I/O, no WASM required |
-| `satsuma-cli` | `test/*.test.js` | Integration tests via CLI commands; golden snapshot for `graph --json` |
-| `vscode-satsuma/server` | `test/*.test.js` | Unit tests for LSP handlers and extraction adapters |
+| `satsuma-cli` | `test/*.test.ts` | Integration tests via CLI commands and focused command helpers |
+| `satsuma-lsp` | `test/*.test.js` | Unit tests for LSP handlers, diagnostics, custom requests, and extraction adapters |
+| `satsuma-viz-backend` | `test/*.test.js` | Unit tests for VizModel builders and shared workspace-index behaviour |
+| `satsuma-viz-harness` | `tests/*.spec.ts` | Playwright browser tests for the rendered viz component |
 
-The **golden snapshot** (`satsuma-cli/test/fixtures/golden-graph-output.json`) captures the output of `satsuma graph --json examples/` before any migration work begins (ticket sl-8pj3) and is asserted byte-for-byte on every test run. This is the primary regression guard for CLI output correctness throughout the Feature 26 migration.
+Browser-level viz harness tests use the sentinel watcher workflow documented in `AGENTS.md`; agents should not run Playwright directly in the sandbox.
 
 ---
 
@@ -287,4 +325,4 @@ The **golden snapshot** (`satsuma-cli/test/fixtures/golden-graph-output.json`) c
 - `adrs/` — Architectural decision records
 - `SATSUMA-V2-SPEC.md` — Language specification (authoritative)
 - `SATSUMA-CLI.md` — CLI command reference
-- `features/26-extraction-consolidation/PRD.md` — Feature 26 PRD
+- `features/29-codebase-and-test-cleanup/PRD.md` — current Feature 29 cleanup plan

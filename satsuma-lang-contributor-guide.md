@@ -1,8 +1,10 @@
 # Satsuma-Lang: A Contributor's Deep-Dive Guide
 
+Last reviewed: 2026-04-07.
+
 ## What Is This Codebase?
 
-Satsuma is a domain-specific language (DSL) for describing source-to-target data mappings. Think of it as a replacement for the massive Excel spreadsheets and wiki pages that enterprises use to document how data moves between systems. The language has a parser, a CLI with 22 commands, a Language Server Protocol (LSP) implementation, a VS Code extension, and an interactive visualisation component — all in TypeScript, all under `tooling/`.
+Satsuma is a domain-specific language (DSL) for describing source-to-target data mappings. Think of it as a replacement for the massive Excel spreadsheets and wiki pages that enterprises use to document how data moves between systems. The language has a parser, a parser-backed CLI command suite, a Language Server Protocol (LSP) implementation, a VS Code extension, and an interactive visualisation component — all in TypeScript, all under `tooling/`.
 
 The language itself sits at an unusual intersection: schemas and field mappings are deterministically parsed, while natural-language annotations ("trim whitespace, apply business rule X") are preserved verbatim for humans or LLMs to interpret. This duality — structural rigour where possible, NL flexibility where needed — is the central design idea.
 
@@ -32,6 +34,7 @@ graph TD
     lsp --> core
     cli --> core
     viz --> vizModel
+    viz --> core
     vizBackend --> vizModel
     vizBackend --> core
     core --> ts
@@ -41,19 +44,19 @@ The cardinal rule: **core never imports from CLI, LSP, or viz.** The CLI never i
 
 ### Package Responsibilities
 
-**`tree-sitter-satsuma`** — The grammar definition (`grammar.js`, 657 lines). This is the single source of truth for what constitutes valid Satsuma syntax. It generates a WASM parser that every other package consumes. It also owns corpus test fixtures (8,147 lines of test cases) and tree-sitter highlight queries.
+**`tree-sitter-satsuma`** — The grammar definition (`grammar.js`). This is the single source of truth for what constitutes valid Satsuma syntax. It generates a WASM parser that every other package consumes. It also owns corpus test fixtures and tree-sitter highlight queries.
 
-**`satsuma-core`** (~2,700 lines of source) — The semantic extraction library. All pure, no-I/O logic for turning Concrete Syntax Trees (CSTs) into typed domain objects lives here: schema extraction, field tree building, arrow classification, metadata parsing, spread expansion, NL reference resolution, validation, and formatting. This is the heart of the system. It accepts CST nodes and returns plain data — no filesystem, no LSP types, no CLI types.
+**`satsuma-core`** — The semantic extraction library. All pure, no-I/O logic for turning Concrete Syntax Trees (CSTs) into typed domain objects lives here: schema extraction, field tree building, arrow classification, metadata parsing, spread expansion, NL reference resolution, validation, and formatting. This is the heart of the system. It accepts CST nodes and returns plain data — no filesystem, no LSP types, no CLI types.
 
-**`satsuma-cli`** (~9,400 lines) — The command-line tool. 22 commands that orchestrate file discovery, import following, workspace index building, and output formatting. It calls core for all extraction and adds file I/O, a lint engine, a diff engine, and human/JSON output formatting on top.
+**`satsuma-cli`** — The command-line tool. Its commands orchestrate file discovery, import following, workspace index building, and output formatting. It calls core for all extraction and adds file I/O, a lint engine, a diff engine, and human/JSON output formatting on top.
 
-**`satsuma-lsp`** (~4,200 lines) — The Language Server Protocol server. Editor-agnostic (works with VS Code, Neovim, Helix, etc.). Provides hover, completions, go-to-definition, find-references, rename, CodeLens, semantic tokens, diagnostics, and formatting. Delegates all CST extraction to core.
+**`satsuma-lsp`** — The Language Server Protocol server. Editor-agnostic (works with VS Code, Neovim, Helix, etc.). Provides hover, completions, go-to-definition, find-references, rename, CodeLens, semantic tokens, diagnostics, and formatting. Delegates all CST extraction to core.
 
-**`satsuma-viz-backend`** (~2,500 lines) — The shared library for building `VizModel` payloads. Contains the workspace index used by both the LSP and the viz test harness. This is the deduplication point that prevents the LSP and harness from depending on each other.
+**`satsuma-viz-backend`** — The shared library for building `VizModel` payloads. Contains the workspace index used by both the LSP and the viz test harness. This is the deduplication point that prevents the LSP and harness from depending on each other.
 
-**`satsuma-viz-model`** (~260 lines) — Pure TypeScript interfaces defining the `VizModel` JSON contract between server and client. No logic — only types. This is the serialisation boundary between processes.
+**`satsuma-viz-model`** — Pure TypeScript interfaces defining the `VizModel` JSON contract between server and client. No logic — only types. This is the serialisation boundary between processes.
 
-**`satsuma-viz`** (~5,900 lines) — A Lit web component (`<satsuma-viz>`) that renders a VizModel as an interactive schema-mapping diagram. Uses ELK.js for layout and SVG for edge rendering.
+**`satsuma-viz`** — A Lit web component (`<satsuma-viz>`) that renders a VizModel as an interactive schema-mapping diagram. Uses ELK.js for layout and SVG for edge rendering. It consumes `VizModel` JSON and imports small shared helpers from core, such as coverage and NL reference utilities.
 
 **`vscode-satsuma`** — The VS Code extension: extension activation, webview panel management, command registration, and the TextMate grammar for syntax highlighting.
 
@@ -151,7 +154,7 @@ flowchart TD
 | Function / Type | File | What It Does |
 |---|---|---|
 | `createWorkspaceIndex()` / `indexFile()` | `viz-backend/workspace-index.ts` | Creates and incrementally updates the definition/reference index used for IDE features |
-| `buildVizModel(uri, tree, index)` | `viz-backend/viz-model.ts` | Walks a CST and produces the full `VizModel` payload for the viz component (~1,370 lines — the largest single function cluster) |
+| `buildVizModel(uri, tree, index)` | `viz-backend/viz-model.ts` | Walks a CST and produces the full `VizModel` payload for the viz component; this remains the largest single builder cluster |
 | `mergeVizModels(uri, models)` | `viz-backend/viz-model.ts` | Merges per-file VizModels into a cross-file lineage view |
 | `computeDefinition()` | `lsp/definition.ts` | Go-to-definition: finds the definition of a symbol under the cursor |
 | `computeCompletions()` | `lsp/completion.ts` | Auto-complete: suggests schema names, field names, and fragment names in context |
@@ -172,7 +175,7 @@ Each consumer (CLI, LSP, viz-backend) creates these callbacks from its own index
 
 ## Key Design Decisions (ADRs Worth Reading)
 
-The `adrs/` directory has 24 Architecture Decision Records. The most important for a new contributor:
+The `adrs/` directory records the major Architecture Decision Records. The most important for a new contributor:
 
 - **ADR-003 / ADR-020**: Core as the single extraction truth. All CST-to-data logic goes through core. Consumers never do their own extraction.
 - **ADR-005**: Callback abstractions for spread expansion. Core defines minimal callback types; consumers wire them from their own indexes.
@@ -186,21 +189,21 @@ The `adrs/` directory has 24 Architecture Decision Records. The most important f
 
 ## The Test Suite
 
-~21,000 lines of tests across three tiers.
+The test suite is broad and deliberately layered. Avoid duplicating the same invariant across layers: core extraction belongs in core tests, CLI output contracts belong in CLI tests, and LSP protocol behaviour belongs in LSP tests.
 
-**Core tests** (`satsuma-core/test/`, `.js` files, ~2,800 lines): Unit-test extraction, classification, formatting, validation, and NL ref resolution against minimal `.stm` snippets. These are the ground truth — if a behaviour is tested here, consumers should not re-test it.
+**Core tests** (`satsuma-core/test/`, `.js` files): Unit-test extraction, classification, formatting, validation, and NL ref resolution against minimal `.stm` snippets. These are the ground truth — if a behaviour is tested here, consumers should not re-test it.
 
-**CLI tests** (`satsuma-cli/test/`, `.ts` files, ~12,400 lines): Integration tests that exercise the full pipeline from `.stm` source text to command output. The integration test file alone is ~4,000 lines. Tests cover every command, the diff engine, the lint engine, the graph builder, and namespace handling.
+**CLI tests** (`satsuma-cli/test/`, `.ts` files): Integration tests that exercise the full pipeline from `.stm` source text to command output. Tests cover the command suite, the diff engine, the lint engine, graph builders, namespace handling, recovery behaviour, and text/JSON formatting contracts.
 
-**LSP tests** (`satsuma-lsp/test/`, `.js` files, ~3,400 lines): Tests for each LSP feature (hover, completions, definition, references, rename, CodeLens, semantic tokens, diagnostics, formatting, folding) against small `.stm` fixture strings.
+**LSP tests** (`satsuma-lsp/test/`, `.js` files): Tests for each LSP feature (hover, completions, definition, references, rename, CodeLens, semantic tokens, diagnostics, formatting, folding, and custom viz requests) against small `.stm` fixture strings.
 
 **Smoke tests** (`smoke-tests/`): Python/pytest BDD-style tests that invoke the compiled CLI binary and assert on its output. These are the outermost integration layer.
 
-**Grammar corpus** (`tree-sitter-satsuma/test/corpus/`, ~8,100 lines): Tree-sitter's built-in test format — input `.stm` snippets paired with expected CST shapes.
+**Grammar corpus** (`tree-sitter-satsuma/test/corpus/`): Tree-sitter's built-in test format — input `.stm` snippets paired with expected CST shapes. The recovery corpus includes deliberately malformed mid-edit states and should grow with parser recovery work.
 
 ---
 
-## Catalogue of Problems, Surprises, and Inconsistencies
+## Current Rough Edges
 
 ### 1. Duplicated `SyntaxNode` / `Tree` / `FieldDecl` / `PipeStep` / `Classification` Types
 
@@ -210,21 +213,17 @@ These are not re-exports — they are independently maintained copies. The CLI's
 
 **Impact**: Low runtime risk (structural typing means they're compatible), but high cognitive overhead and risk of silent divergence.
 
-### 2. Duplicated `resolveScopedEntityRef`
-
-`resolveScopedEntityRef` — a 12-line function that resolves a namespace-qualified entity reference — exists as an **identical copy** in both `satsuma-core/src/canonical-ref.ts` and `satsuma-cli/src/index-builder.ts`. The CLI version is used by the CLI's spread-expand shim and index builder; the core version is used by core's validator and import reachability. They are byte-for-byte the same logic, both actively called.
-
-### 3. Duplicated `web-tree-sitter.d.ts`
+### 2. Duplicated `web-tree-sitter.d.ts`
 
 The file `web-tree-sitter.d.ts` (213 lines of tree-sitter type declarations) is byte-for-byte identical in `satsuma-cli/src/` and `satsuma-lsp/src/`. It should live in one place (core, or a shared `@types` package).
 
-### 4. Three Different `parser-utils.ts` / `parser.ts` Files
+### 3. Three Different `parser-utils.ts` / `parser.ts` Files
 
 The parser is initialised in core (`satsuma-core/src/parser.ts`), then wrapped with thin file-I/O helpers in the CLI (`satsuma-cli/src/parser.ts`), re-exported with type-casting wrappers in the LSP (`satsuma-lsp/src/parser-utils.ts`), and re-exported again in the viz-backend (`satsuma-viz-backend/src/parser-utils.ts`). Each wrapper adds a `parseSource()` convenience function, a `nodeRange()` helper, and re-exports of `child`, `children`, `labelText`, `stringText`, `walkDescendants` from core — cast to the local `Node` type.
 
 The LSP and viz-backend wrappers are nearly identical (both create `nodeRange` using `vscode-languageserver`'s `Range.create`). The viz-backend version is 32 lines; the LSP version is 91 lines because it also wraps five CST navigation functions purely for type compatibility.
 
-### 5. Two Graph Builders in the CLI
+### 4. Two Graph Builders in the CLI
 
 There are **two** files named `graph-builder.ts` in the CLI:
 
@@ -233,63 +232,55 @@ There are **two** files named `graph-builder.ts` in the CLI:
 
 The smaller one builds a simpler graph; the larger one builds a superset. But they share significant logic (node collection, NL @ref edge derivation) with no code sharing between them. The NL ref edge-promotion logic is duplicated across both files and also in `lint-engine.ts`.
 
-### 6. The `viz-model.ts` Import Dance
+### 5. The `viz-model.ts` Import Dance
 
 In `satsuma-viz-backend/src/viz-model.ts`, every VizModel type is imported **twice** — once as a re-export (`export type { VizModel, ... } from "@satsuma/viz-model"`) and then again as a local import for use within the file (`import type { VizModel, ... } from "@satsuma/viz-model"`). This is 40 lines of pure ceremony. A single `import` plus a barrel re-export would halve this.
 
-### 7. Architecture Diagram vs Reality: `satsuma-viz` Depends on Core
+### 6. Architecture Diagram vs Reality: `satsuma-viz` Depends on Core
 
-The `ARCHITECTURE.md` states: "satsuma-viz has no dependency on core, CLI, or LSP." But `package.json` lists `@satsuma/core` as a direct dependency, and the source imports `buildCoveredFieldSet` and `isCoveredFieldPath` from `@satsuma/core/coverage-paths`. The dependency matrix table in `ARCHITECTURE.md` shows no `*` in the `satsuma-viz` → `core` cell. The documentation is wrong.
+`tooling/ARCHITECTURE.md` still says `satsuma-viz` consumes only `VizModel` JSON and has no dependency on core. That is no longer true: `package.json` lists `@satsuma/core` as a direct dependency, and the source imports shared coverage and NL ref helpers from core. The dependency matrix should show a `satsuma-viz -> core` edge.
 
-### 8. The CLI Bridges Are Permanent (and That Is Fine)
+### 7. The CLI Bridges Are Permanent (and That Is Fine)
 
 Both `satsuma-cli/src/spread-expand.ts` and `satsuma-cli/src/nl-ref-extract.ts` are thin bridge modules that adapt the CLI's `ExtractedWorkspace` to core's callback-based APIs (per ADR-005 / ADR-006). Earlier drafts of this guide called them temporary shims slated for removal in sl-n4wb; that ticket closed and the bridges were rejustified as permanent in sl-y0sz. They are the canonical place where CLI-shaped data meets core's callbacks — exactly one well-named module per callback interface — and they are not technical debt.
 
-### 9. (Resolved) Excessive `process.exit()` — Was 53 Calls
+### 8. (Resolved) Excessive `process.exit()` — Was 53 Calls
 
 Resolved in sl-3291. The CLI used to have 53 inline `process.exit()` calls across 23 command files, making error paths essentially untestable without subprocess spawning. They were replaced with a single dispatcher in `satsuma-cli/src/command-runner.ts`: handlers either return a numeric exit code or throw a `CommandError`, and `runCommand` catches both and exits exactly once via `flushAndExit` (which drains stdout/stderr first — also fixed a latent `--json` truncation past ~64KiB on piped output). `errors.ts` (`loadFiles`, `notFound`) and `load-workspace.ts` throw `CommandError` instead of exiting. Down to two intentional exit sites: the runner itself, and an `unhandledRejection` safety net in `index.ts` for failures *before* dispatch. The `errors.test.ts` and `load-workspace.test.ts` rewrites dropped all `process.exit` stub plumbing in favour of asserting thrown `CommandError`s directly.
 
-### 10. Two Workspace Index Shapes (Now Distinctly Named)
+### 9. Two Workspace Index Shapes (Now Distinctly Named)
 
 The CLI and the viz-backend both need to hold cross-file workspace data, but with very different shapes. The CLI uses `ExtractedWorkspace` (in `satsuma-cli/src/types.ts`) — a flat batch result of `Map<string, SchemaRecord>` entries built once per invocation. The viz-backend uses `WorkspaceIndex` (in `satsuma-viz-backend/src/workspace-index.ts`) — an incrementally updated `Map<string, DefinitionEntry[]>` with LSP `Range` positions used for IDE features. Until sl-erxz both types were called `WorkspaceIndex`, which was a real source of confusion; the rename to `ExtractedWorkspace` makes the CLI type's role as an extraction *result* explicit and removes the collision.
 
-### 11. The LSP Shells Out to the CLI for Validation
+### 10. The LSP Still Shells Out to the CLI for Full Validation
 
-`satsuma-lsp/src/validate-diagnostics.ts` runs `satsuma validate --json` as a **child process** on every file save, parses the JSON stdout, and converts it to LSP diagnostics. This is because the LSP's workspace index doesn't maintain arrow records or NL ref data — those are CLI-only. The LSP also runs a subset of core's `collectSemanticDiagnostics()` directly (via `semantic-diagnostics.ts`), producing overlapping results that must be deduplicated by rule+line.
+`satsuma-lsp/src/validate-diagnostics.ts` runs `satsuma validate --json` as a **child process** on file save, parses the JSON stdout, and converts it to LSP diagnostics. The validation pipeline is less fragmented than it used to be: core now exposes `validateSemanticWorkspace()`, and both the CLI and LSP consume that shared entry point for reachability-aware semantic checks.
 
-This works, but it means validation has **three sources of truth**: parse diagnostics (from tree-sitter errors), core semantic diagnostics (run in-process), and CLI validate diagnostics (run out-of-process). The deduplication logic in `sendMergedDiagnostics()` is fragile — it uses `rule:line` as a dedup key and silently prefers CLI results.
+The remaining gap is that full CLI validation still runs out-of-process from the LSP. That keeps a process boundary, JSON parsing step, timeout, and diagnostic merge logic in the editor path. If the LSP/viz-backend workspace index tracked all data needed by core validation, the LSP could do the full check in-process.
 
-### 12. Hand-Rolled `pathToFileUri` vs. Standard `pathToFileURL`
+### 11. Hand-Rolled `pathToFileUri` vs. Standard `pathToFileURL`
 
 In `validate-diagnostics.ts`, a hand-rolled `pathToFileUri()` function (`"file://" + encodeURI(fsPath).replace(/#/g, "%23")`) converts filesystem paths to URIs. Node.js's standard `url.pathToFileURL()` is available and used elsewhere in the same codebase (e.g., in `server.ts`). The hand-rolled version will break on Windows paths and paths with special characters.
 
-### 13. The 1,370-Line `viz-model.ts` Builder
+### 12. The Large `viz-model.ts` Builder
 
-`satsuma-viz-backend/src/viz-model.ts` is the largest file in the codebase and contains the `buildVizModel()` function plus ~30 helper functions for extracting schema cards, mapping blocks, arrow entries, metric cards, fragment cards, notes, comments, metadata, each-blocks, flatten-blocks, and source-block info from the CST. It does everything: CST walking, core extractor calls, spread expansion, NL @ref resolution, metadata interpretation, and VizModel assembly.
+`satsuma-viz-backend/src/viz-model.ts` is the largest file in the codebase and contains the `buildVizModel()` function plus many helper functions for extracting schema cards, mapping blocks, arrow entries, metric cards, fragment cards, notes, comments, metadata, each-blocks, flatten-blocks, and source-block info from the CST. It does everything: CST walking, core extractor calls, spread expansion, NL @ref resolution, metadata interpretation, and VizModel assembly.
 
-This file is doing the job of a small module system. A contributor needing to modify how schemas are visualised must navigate 1,370 lines to find the right helper. Breaking it into `schema-builder.ts`, `mapping-builder.ts`, `metric-builder.ts`, and `fragment-builder.ts` would make it far more approachable.
+This file is doing the job of a small module system. A contributor needing to modify how schemas are visualised must navigate a large builder file to find the right helper. Breaking it into `schema-builder.ts`, `mapping-builder.ts`, `metric-builder.ts`, and `fragment-builder.ts` would make it far more approachable.
 
-### 14. `as unknown as CommentEntry[]` Cast in viz-model.ts
-
-Line 440 of `viz-model.ts` contains `frag.notes as unknown as CommentEntry[]` — casting fragment notes (which are `NoteBlock[]` from the workspace index) to `CommentEntry[]`, a completely different type. This is a type error hidden behind a double cast. It appears to work because both types have a `text` field, but their other fields (`isMultiline`/`location` vs. `kind`/`location`) are incompatible.
-
-### 15. Duplicated `AT_REF_RE` Regex in satsuma-viz
-
-`satsuma-viz/src/markdown.ts` contains a hand-copied `AT_REF_RE` regular expression with an explicit comment: "mirrors AT_REF_RE from @satsuma/core/nl-ref." This is a copy-paste synchronisation hazard — if the regex changes in core, the viz copy will silently diverge. The regex should be exported from core and imported by the viz component (which already depends on core anyway).
-
-### 16. Inconsistent Import Style: Barrel vs. Subpath
+### 13. Inconsistent Import Style: Barrel vs. Subpath
 
 Most packages import from the barrel export (`import { format } from "@satsuma/core"`), but the CLI's `format.ts` imports via a subpath (`from "@satsuma/core/format"`) and the viz component imports via subpaths (`from "@satsuma/core/coverage-paths"`). This inconsistency signals that the barrel export might be missing some entries, or that the subpath convention is not agreed-upon.
 
-### 17. Inconsistent Test File Extensions
+### 14. Inconsistent Test File Extensions
 
 Core tests are `.js` files. CLI tests are `.ts` files. LSP tests are `.js` files. There's no documented reason for this inconsistency. The core and LSP tests import from compiled output (`../src/index.js`); the CLI tests import from TypeScript source via `tsx`. This means you need different mental models for running tests in different packages (`node --test` for core/LSP, `node --import tsx/esm --test` for CLI).
 
-### 18. The Lint Engine Has Only 3 Rules
+### 15. The Lint Engine Has Only 3 Rules
 
 `lint-engine.ts` defines a full rule registry, runner, and fix-application framework — but currently houses only 3 rules. The framework is well-designed (rules receive an `ExtractedWorkspace` and return `LintDiagnostic[]` with optional auto-fix functions), but the validation logic in `core/validate.ts` (9 check categories, ~900 lines) was not built on top of this framework. The result is two parallel validation systems with overlapping coverage: `validate` produces `SemanticDiagnostic` objects, while `lint` produces `LintDiagnostic` objects.
 
-### 19. NL Ref Edge-Counting Logic Is Triplicated
+### 16. NL Ref Edge-Counting Logic Is Triplicated
 
 The logic for counting NL-derived edges appears in three places:
 
@@ -323,7 +314,7 @@ Resolved in sl-3291. The CLI now has a single dispatcher (`src/command-runner.ts
 
 ### 5. Break Up `viz-model.ts`
 
-Split the 1,370-line VizModel builder into per-entity-type modules: `build-schema-card.ts`, `build-mapping-block.ts`, `build-metric-card.ts`, `build-fragment-card.ts`, plus a top-level `build-viz-model.ts` orchestrator. Each module becomes independently testable and navigable.
+Split the large VizModel builder into per-entity-type modules: `build-schema-card.ts`, `build-mapping-block.ts`, `build-metric-card.ts`, `build-fragment-card.ts`, plus a top-level `build-viz-model.ts` orchestrator. Each module becomes independently testable and navigable.
 
 ### 6. Consolidate the Two Graph Builders
 
@@ -351,15 +342,15 @@ The `nodeRange()` function and `parseSource()` convenience wrapper are duplicate
 
 ### 12. Property-Based and Fuzz Testing for the Grammar
 
-The grammar has 8,100 lines of corpus tests, but they are all hand-crafted positive cases. Adding property-based tests (generate random valid `.stm` files from the grammar, assert that parse → extract → format → re-parse produces the same extraction) would catch an entire class of round-trip bugs. Tree-sitter's fuzzing support could also be leveraged.
+The grammar has a large hand-crafted corpus, but no property-based generator. Adding property-based tests (generate random valid `.stm` files from the grammar, assert that parse → extract → format → re-parse produces the same extraction) would catch an entire class of round-trip bugs. Tree-sitter's fuzzing support could also be leveraged.
 
 ### 13. Telemetry / Performance Baselines
 
 The architecture notes say "full re-parse is <5ms" and "operations complete in <100ms" — but there are no benchmarks in the repo to verify this or detect regressions. A small benchmark suite (parse 100 files, build index, run validation, format all) with CI tracking would establish and protect these guarantees.
 
-### 14. Comprehensive Error Recovery Testing
+### 14. Keep Expanding Error Recovery Testing
 
-The ARCHITECTURE.md states "parsing never fails — CST always produced, errors embedded" and "IDE features should be partially available even when the workspace has errors." But there is no systematic test suite for error-recovery scenarios (mid-edit states, broken imports, half-written schemas). Adding a corpus of deliberately malformed files with expected degraded-but-not-crashed behaviour would make this guarantee real.
+The ARCHITECTURE.md states "parsing never fails — CST always produced, errors embedded" and "IDE features should be partially available even when the workspace has errors." Feature 29 added focused recovery corpus, CLI recovery, and LSP recovery coverage. Keep growing that suite whenever new recovery-sensitive behaviour lands; malformed input tests are now part of the expected implementation surface.
 
 ---
 
@@ -406,7 +397,7 @@ Landed: `src/command-runner.ts` exposes `CommandError` + `runCommand`. Every com
 `src/graph-builder.ts` (113 lines) builds schema-level graphs. `src/commands/graph-builder.ts` (618 lines) builds schema+field-level graphs. They share node-collection and NL-ref-edge-promotion logic with no code sharing. Merge into a single module with a `schemaOnly` option. Extract the NL-ref edge promotion into a shared function and reuse it in `lint-engine.ts` and `nl-ref-extract.ts::countNlDerivedEdgesByMapping` as well, eliminating the triplication.
 
 **R9. Break up `viz-model.ts`.**
-The 1,370-line monolith in `satsuma-viz-backend` can be split into `build-schema-card.ts`, `build-mapping-block.ts`, `build-metric-card.ts`, `build-fragment-card.ts`, and an orchestrating `build-viz-model.ts`. Each builder becomes independently navigable and testable. The `buildVizModel` function remains the public API — it just delegates internally.
+The large `satsuma-viz-backend` builder can be split into `build-schema-card.ts`, `build-mapping-block.ts`, `build-metric-card.ts`, `build-fragment-card.ts`, and an orchestrating `build-viz-model.ts`. Each builder becomes independently navigable and testable. The `buildVizModel` function remains the public API — it just delegates internally.
 
 **R10. Fix the `pathToFileUri` hand-roll.**
 Replace the hand-rolled URI conversion in `validate-diagnostics.ts` with Node.js's standard `url.pathToFileURL()`. The current implementation will break on Windows paths and paths with certain special characters.
@@ -474,13 +465,13 @@ I'd put all coverage computation in core behind a single function: `computeCover
 
 ### 8. The NL ref regex would be a grammar rule, not a hand-written regex
 
-The `@ref` pattern (matching `@identifier`, `@schema.field`, `@ns::schema.field`, `` @`backtick` `` variants) is implemented as a hand-written regex (`AT_REF_RE`) that's duplicated between `satsuma-core/src/nl-ref.ts` and `satsuma-viz/src/markdown.ts`. But this pattern is part of the language's semantics — it defines what constitutes a cross-reference inside natural language text.
+The `@ref` pattern (matching `@identifier`, `@schema.field`, `@ns::schema.field`, `` @`backtick` `` variants) is implemented as a hand-written regex factory in core (`createAtRefRegex`) and reused by consumers. This avoids copy-paste drift, but the pattern is still part of the language's semantics — it defines what constitutes a cross-reference inside natural language text.
 
-I'd make `@ref` a first-class grammar construct inside `nl_string` and `multiline_string` nodes, so tree-sitter parses them structurally. The extractor would then walk `at_ref` CST nodes instead of running a regex over string content. This eliminates the regex duplication, makes @ref parsing testable via the grammar corpus, and enables syntax highlighting of @refs in the TextMate grammar for free.
+I'd make `@ref` a first-class grammar construct inside `nl_string` and `multiline_string` nodes, so tree-sitter parses them structurally. The extractor would then walk `at_ref` CST nodes instead of running a regex over string content. This makes @ref parsing testable via the grammar corpus and enables syntax highlighting of @refs in the TextMate grammar for free.
 
 ### 9. Tests would use a snapshot pattern, not assert-per-field
 
-The CLI test suite is ~12,400 lines, much of which is `assert.equal(data.schemas[0].name, "foo")` / `assert.equal(data.schemas[0].fields.length, 3)` — testing one field at a time. Snapshot testing (`assert.deepStrictEqual(data, expectedSnapshot)`) would cut the test line count dramatically while increasing coverage (a snapshot catches unexpected extra fields; individual asserts don't). Jest snapshots or inline snapshot objects both work. The tradeoff is readability of failure messages, but for structured data extraction, snapshots are almost always the right call.
+The CLI test suite still contains many assertions of the form `assert.equal(data.schemas[0].name, "foo")` / `assert.equal(data.schemas[0].fields.length, 3)` — testing one field at a time. Snapshot-style assertions (`assert.deepStrictEqual(data, expectedSnapshot)`) can reduce maintenance while increasing coverage (a snapshot catches unexpected extra fields; individual asserts don't). Jest snapshots or inline snapshot objects both work. The tradeoff is readability of failure messages, but for structured data extraction, snapshots are often the right call.
 
 ### 10. Incremental parsing from the start
 
