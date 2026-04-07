@@ -1,21 +1,9 @@
 /**
- * Direct unit tests for the per-builder extract* helpers in viz-model.ts.
- *
- * These tests bypass the full buildVizModel pipeline and call each builder
- * directly against a parsed CST node, asserting the complete returned shape
- * via deepStrictEqual. The goal is to pin down the contract of each builder
- * — name, type, location, defaults — independent of the orchestration code
- * in buildVizModel.
- *
- * The existing viz-model.test.js exercises the public buildVizModel API
- * (orchestration, namespace grouping, spread resolution, merge). This file
- * complements that by exercising each leaf builder in isolation, so a
- * regression in one builder is reported against that builder rather than
- * masquerading as a buildVizModel failure.
- *
- * Note: the extract* helpers are private to viz-model.ts. They are exposed
- * via the `_testInternals` export, which exists solely for this test
- * suite — see the comment in viz-model.ts for the rationale.
+ * Direct unit tests for the per-builder extract* helpers in viz-model.ts,
+ * accessed via the `_testInternals` export. Complements viz-model.test.js
+ * (which exercises the full buildVizModel pipeline) by pinning each builder's
+ * shape in isolation, so a regression is reported against the builder rather
+ * than the orchestration.
  */
 const { describe, it, before } = require("node:test");
 const assert = require("node:assert/strict");
@@ -184,10 +172,8 @@ describe("extractFragment (direct)", () => {
 // ==================================================================
 
 describe("extractMapping (direct)", () => {
-  // Bare mapping with one straight-copy arrow. Pins the MappingBlock shape
-  // including the resolved sourceRefs/targetRef, the empty each/flatten/note
-  // arrays, and the structured sourceBlock object that extractSourceBlock
-  // returned.
+  // Pins the MappingBlock defaults (empty each/flatten/note/comments arrays
+  // and structured sourceBlock) for the simplest possible mapping shape.
   it("returns the canonical MappingBlock shape for a one-arrow mapping", () => {
     const src = "schema s { a INT }\nschema t { b INT }\n" +
       "mapping m {\n  source { s }\n  target { t }\n  a -> b\n}";
@@ -224,10 +210,9 @@ describe("extractMapping (direct)", () => {
 // ==================================================================
 
 describe("extractMetric (direct)", () => {
-  // A metric is a schema_block decorated with `metric` metadata. The full
-  // shape pins label (from metric_name), source/grain/slices/filter (from
-  // extractMetricMetadata), and a measure field with measure: "additive"
-  // (from extractMetricFields → extractMeasure).
+  // Drives every collaborator in extractMetric: label (metric_name tag),
+  // source/grain/slices/filter (extractMetricMetadata), and a measure field
+  // (extractMetricFields → extractMeasure).
   it("returns the canonical MetricCard shape for a basic metric", () => {
     const src =
       'schema mrr (\n' +
