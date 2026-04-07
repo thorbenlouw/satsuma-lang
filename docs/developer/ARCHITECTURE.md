@@ -1,8 +1,10 @@
 # Satsuma Tooling Architecture
 
-> Last updated: 2026-04-07 — corrected the `satsuma-viz` → `satsuma-core` dependency and replaced ASCII structure diagrams with Mermaid.
+> Last updated: 2026-04-07 — canonicalised this document as the single tooling architecture reference.
 
-See `adrs/` for the architectural decision records that explain the choices made here.
+This document is the canonical architecture reference for the Satsuma language tooling — the packages under `tooling/` that parse, analyse, format, validate, visualize, and provide IDE support for `.stm` files. The design is influenced by [rust-analyzer's architecture](https://rust-analyzer.github.io/book/contributing/architecture.html), adapted for a tree-sitter-backed DSL rather than a full programming language compiler.
+
+See `adrs/` for the architectural decision records that explain the choices made here. `tooling/ARCHITECTURE.md` is intentionally kept as a short pointer to this document so package-local links do not become a second source of truth.
 
 ---
 
@@ -53,6 +55,42 @@ graph TD
 ```
 
 `satsuma-core` and `satsuma-viz-model` have no upward dependencies on consumer packages such as the CLI, LSP, VS Code extension, or viz harness. `satsuma-viz-backend` is the shared boundary between the LSP server and the viz harness — it owns all VizModel assembly logic so neither consumer duplicates it.
+
+---
+
+## Design Principles
+
+### 1. Dependencies flow downward
+
+`satsuma-core` never imports from `satsuma-cli`, `satsuma-lsp`, `vscode-satsuma`, or the viz harness. The LSP never imports from the CLI. The CLI never imports from the LSP. `satsuma-viz-backend` is shared by the LSP server and the viz harness — neither imports from the other.
+
+### 2. Parsing never fails
+
+The tree-sitter parser always produces a CST, even for broken or incomplete input. Error nodes are embedded in the tree rather than aborting. Downstream code operates on partial results plus diagnostics so the IDE remains useful while a file is mid-edit.
+
+### 3. Core is pure computation with no I/O
+
+`satsuma-core` has no file-system access, no network calls, no process spawning, no LSP types, and no CLI types. It accepts CST nodes or callback functions and returns plain data. Consumers handle I/O and adapt core results into CLI output, LSP protocol objects, or VizModel payloads.
+
+### 4. Extraction happens once, in core
+
+Every entity type — schema, mapping, fragment, metric, transform, arrow, field, metadata, import, namespace — is extracted from the CST in `satsuma-core`. Consumers call core extractors and adapt the output to their needs. Grammar shape changes should be fixed once in core, not separately in every tool.
+
+### 5. Decouple through callbacks, not shared index types
+
+Core's cross-file operations need access to workspace-wide facts, but each consumer has a different index shape. Core defines minimal callback interfaces such as `EntityFieldLookup`, `DefinitionLookup`, and `SemanticIndex`; CLI and LSP adapters build those callbacks from their own indexes. This keeps core stable without forcing a universal workspace index.
+
+### 6. Keep protocol types out of analysis
+
+Core types such as `FieldDecl`, `ExtractedSchema`, `MetaEntry`, and `Classification` are not serialized directly over LSP or treated as CLI output contracts. Consumers map them explicitly into protocol-facing or display-facing types.
+
+### 7. Test at the right boundary
+
+Extraction logic is tested in core with minimal Satsuma snippets. Consumer tests cover adapter wiring, CLI output, LSP protocol behavior, viz rendering, and end-to-end flows. A consumer test that is really asserting pure extraction belongs in core.
+
+### 8. Graceful degradation over hard failures
+
+An error in one file should not prevent completions, hover, or local navigation elsewhere. Missing workspace data should produce an empty result or diagnostic, not an exception.
 
 ---
 
@@ -317,6 +355,24 @@ No CLI or LSP code needs to be imported.
 | `satsuma-viz-harness` | `tests/*.spec.ts` | Playwright browser tests for the rendered viz component |
 
 Browser-level viz harness tests use the sentinel watcher workflow documented in `AGENTS.md`; agents should not run Playwright directly in the sandbox.
+
+---
+
+## Dependency Matrix
+
+| Package | tree-sitter | core | viz-model | viz-backend | cli | lsp | viz | vscode | viz-harness |
+|---|---|---|---|---|---|---|---|---|---|
+| `tree-sitter-satsuma` | - | - | - | - | - | - | - | - | - |
+| `satsuma-core` | yes | - | - | - | - | - | - | - | - |
+| `satsuma-viz-model` | - | - | - | - | - | - | - | - | - |
+| `satsuma-viz-backend` | yes | yes | yes | - | - | - | - | - | - |
+| `satsuma-cli` | yes | yes | - | - | - | - | - | - | - |
+| `satsuma-lsp` | yes | yes | yes | yes | - | - | - | - | - |
+| `satsuma-viz` | - | yes | yes | - | - | - | - | - | - |
+| `vscode-satsuma` | - | - | - | - | - | yes | yes | - | - |
+| `satsuma-viz-harness` | yes | yes | - | yes | - | - | yes | - | - |
+
+The dependency graph is acyclic by construction. `satsuma-viz-backend` is the shared boundary between the LSP server and the viz harness.
 
 ---
 
