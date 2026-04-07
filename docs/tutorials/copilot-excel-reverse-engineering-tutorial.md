@@ -316,22 +316,25 @@ Add these as bullet points under a `## Converting Excel to Satsuma`
 section in your project's `AGENTS.md`. The agent will read them on every
 run.
 
-### Syntax mistakes that catch every model
+### A note on common syntax pitfalls
 
-These are pitfalls Copilot (with either Opus or GPT) will fall into
-repeatedly until you tell it not to. Add them to `AGENTS.md` once and
-you'll save yourself dozens of failed validations:
+There are a handful of Satsuma syntax mistakes that every model — Opus,
+GPT, and others — used to fall into repeatedly: confusing `::` (which
+joins a namespace to a schema) with `.` (which joins a schema to a
+field), preferring `kebab-case` names that need backticks, and dropping
+`@ref` markers inside natural-language transform strings (which makes
+them invisible to lineage tooling).
 
-- **`::` is for namespaces, not field access.** The syntax is
-  `namespace::schema.field.inner_field`. Use `::` only between a
-  namespace and a schema. Field access is always `.`.
-- **Prefer `lower_snake_case`** for schemas, namespaces, mappings, and
-  fragments. It avoids the constant need to backtick-quote
-  `kebab-cased-names`.
-- **`@ref` is mandatory inside NL strings.** Bare field names inside
-  `"..."` are invisible to lineage tooling — every reference to a field
-  or schema inside a natural-language transform must be `@field` or
-  `@schema.field`.
+The good news is that the `satsuma agent-reference` output you wrote
+into `AGENTS.md` in step 1 already calls each of these out — there's a
+dedicated *Path syntax — :: vs .* section, a *snake_case is preferred*
+note, an `@ref in NL strings (CRITICAL)` section, and they all reappear
+in the *Common mistakes* table at the bottom. So as long as your
+`AGENTS.md` is current, you don't need to add them again.
+
+If you find yourself fighting one of these recurring mistakes anyway,
+the most likely cause is that `AGENTS.md` is out of date. Re-run
+`satsuma agent-reference > AGENTS.md` and try again.
 
 ---
 
