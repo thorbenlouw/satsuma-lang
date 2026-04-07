@@ -1,6 +1,6 @@
 ---
 id: sl-bxzg
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-04-07T09:42:54Z
@@ -17,3 +17,9 @@ Validation logic is split across core semantic diagnostics, CLI validate, and LS
 
 Single unified validation interface; CLI integration tests unchanged.
 
+## Notes
+
+**2026-04-07T15:36:50Z**
+
+Cause: Validation orchestration still lived in consumer adapters: the CLI computed import reachability before calling core, while the LSP combined a partial core semantic adapter with its own missing-import pass.
+Fix: Added `validateSemanticWorkspace` in `@satsuma/core` as the shared reachability-aware semantic validation entry point, updated CLI and LSP adapters to use it, and pinned the contract with core/LSP/CLI checks. (commit 94eefc5)
