@@ -1,6 +1,6 @@
 ---
 id: sl-tzx6
-status: open
+status: in_progress
 deps: [sl-0ssj]
 links: []
 created: 2026-04-07T17:28:01Z
