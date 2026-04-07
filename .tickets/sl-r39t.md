@@ -1,6 +1,6 @@
 ---
 id: sl-r39t
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-04-07T09:42:36Z
@@ -17,3 +17,9 @@ resolveAndLoad has no callers; ~20 commands reimplement workspace loading inline
 
 No dead resolveAndLoad in tree, OR all command sites use it.
 
+
+## Notes
+
+**2026-04-07T10:47:13Z**
+
+Cause: resolveAndLoad was added as a planned helper but never adopted; ~20 CLI commands kept inlining workspace loading. Fix: deleted resolveAndLoad from satsuma-cli/src/errors.ts since it had zero callers.

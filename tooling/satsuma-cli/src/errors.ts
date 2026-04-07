@@ -74,28 +74,3 @@ export function notFound(kind: string, name: string, available: string[]): never
   }
   process.exit(EXIT_NOT_FOUND);
 }
-
-/**
- * Resolve a path argument and load files, exiting on errors.
- * Combines resolveInput + loadFiles with consistent error handling.
- */
-export async function resolveAndLoad(
-  pathArg: string | undefined,
-  resolveInputFn: (path: string) => Promise<string[]>,
-  parseFileFn: (filePath: string) => ParsedFile,
-): Promise<ParsedFile[]> {
-  let files: string[];
-  try {
-    files = await resolveInputFn(pathArg ?? ".");
-  } catch (err: unknown) {
-    console.error(`Error resolving path '${pathArg}': ${(err as Error).message}`);
-    return process.exit(EXIT_PARSE_ERROR);
-  }
-
-  if (files.length === 0) {
-    console.error("No .stm files found.");
-    process.exit(EXIT_NOT_FOUND);
-  }
-
-  return loadFiles(files, parseFileFn);
-}
