@@ -1,6 +1,6 @@
 ---
 id: sl-0ssj
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-04-07T17:28:01Z
@@ -16,10 +16,9 @@ Audit the current viz harness and renderer selector surface before changing test
 
 ## Acceptance Criteria
 
-- [ ] Audit notes are recorded in the ticket notes or a short feature-folder doc.
-- [ ] Every existing harness Playwright test is classified by what risk it actually covers.
-- [ ] Every planned Playwright test maps to a specific fixture and one user-visible invariant.
-- [ ] Missing renderer selectors are listed with owning component/file candidates.
-- [ ] Any need for harness-only fixtures is explicitly accepted or rejected with rationale.
-- [ ] No synthetic-only event test remains as the recommended implementation path.
-
+- [x] Audit notes are recorded in the ticket notes or a short feature-folder doc.
+- [x] Every existing harness Playwright test is classified by what risk it actually covers.
+- [x] Every planned Playwright test maps to a specific fixture and one user-visible invariant.
+- [x] Missing renderer selectors are listed with owning component/file candidates.
+- [x] Any need for harness-only fixtures is explicitly accepted or rejected with rationale.
+- [x] No synthetic-only event test remains as the recommended implementation path.
