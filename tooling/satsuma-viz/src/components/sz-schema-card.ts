@@ -551,8 +551,12 @@ export class SzSchemaCard extends LitElement {
 
   private _renderNotes(notes: import("../model.js").NoteBlock[]) {
     return html`
-      <div class="notes-section">
-        <div class="notes-toggle" @click=${this._toggleNotes}>
+      <div class="notes-section" data-testid=${`${this.testIdPrefix}-notes`}>
+        <div
+          class="notes-toggle"
+          data-testid=${`${this.testIdPrefix}-notes-toggle`}
+          @click=${this._toggleNotes}
+        >
           <span class="arrow" ?data-expanded=${this._notesExpanded}>&#9654;</span>
           <span>&#128221; ${notes.length === 1 ? "Note" : `${notes.length} Notes`}</span>
         </div>
@@ -578,12 +582,16 @@ export class SzSchemaCard extends LitElement {
     const hlClass = isHighlighted
       ? `hl ${this.highlightColor === "target" ? "hl-target" : "hl-source"}`
       : "";
-    const fieldTestId = `${this.testIdPrefix}-field-${sanitizeTestIdSegment(f.name)}`;
+    // Use the dotted path so nested customer.email is distinguishable from a
+    // sibling top-level email field (sl-eikr).
+    const fieldTestId = `${this.testIdPrefix}-field-${sanitizeTestIdSegment(fieldPath)}`;
+    const coverageState = isMapped ? "mapped" : "unmapped";
 
     return html`
       <div
         class="field-row ${depth > 0 ? "nested" : ""} ${hlClass}"
         data-testid=${fieldTestId}
+        data-coverage=${coverageState}
         style=${depth > 0 ? `padding-left: ${12 + depth * 20}px` : ""}
         @click=${() => this._navigate(f.location)}
         @mouseenter=${() => this._onFieldHover(fieldPath)}

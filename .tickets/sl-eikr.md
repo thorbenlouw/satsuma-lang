@@ -1,6 +1,6 @@
 ---
 id: sl-eikr
-status: open
+status: closed
 deps: [sl-0ssj]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -24,3 +24,10 @@ Add stable data-testid hooks and state attributes needed for high-value Playwrig
 - [ ] Nested field rows include enough identity to distinguish dotted paths such as customer.email from another email field.
 - [ ] @satsuma/viz package tests are updated where selector rendering is already covered.
 
+
+## Notes
+
+**2026-04-07T22:37:22Z**
+
+Cause: Playwright assertions for mapping detail needed stable selectors plus disambiguation across source vs target schemas, nested field paths, and nested each/flatten arrows.
+Fix: Distinct testIdPrefix for source/target schema-cards in sz-mapping-detail, column test ids, section-prefixed arrow row ids, each/flatten section ids, dotted-path field ids and data-coverage attribute in sz-schema-card; added viz tests.

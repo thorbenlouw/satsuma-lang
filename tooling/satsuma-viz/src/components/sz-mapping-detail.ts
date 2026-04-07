@@ -519,9 +519,15 @@ export class SzMappingDetail extends LitElement {
     const sourceHL = this._sourceHighlightFields;
     const targetHL = this._targetHighlightFields;
 
+    // Distinct test-id prefixes for source vs target schema cards keep
+    // Playwright selectors unambiguous when the same schema id appears as both
+    // a source somewhere and a target elsewhere (sl-eikr).
+    const sourcePrefix = `${this.testIdPrefix}-source-schema-card`;
+    const targetPrefix = `${this.testIdPrefix}-target-schema-card`;
+
     return html`
       <div class="layout" data-testid=${this.testIdPrefix}>
-        <div class="column">
+        <div class="column" data-testid=${`${this.testIdPrefix}-source-column`}>
           <div class="column-header">Sources</div>
           ${this.sourceSchemas.map((s) => html`
             <sz-schema-card
@@ -529,18 +535,19 @@ export class SzMappingDetail extends LitElement {
               .mappedFields=${this.sourceMappedFields.get(s.qualifiedId) ?? new Set()}
               .highlightFields=${sourceHL.get(s.qualifiedId) ?? new Set()}
               highlightColor="source"
+              test-id-prefix=${`${sourcePrefix}-${sanitizeTestIdSegment(s.qualifiedId)}`}
               content-width
             ></sz-schema-card>
           `)}
         </div>
 
-        <div class="column">
+        <div class="column" data-testid=${`${this.testIdPrefix}-mapping-column`}>
           <div class="column-header">Mapping</div>
           ${this._renderMappingHeader(m)}
           ${this._renderArrowTable(m)}
         </div>
 
-        <div class="column">
+        <div class="column" data-testid=${`${this.testIdPrefix}-target-column`}>
           <div class="column-header">Target</div>
           ${this.targetSchema
             ? html`<sz-schema-card
@@ -548,6 +555,7 @@ export class SzMappingDetail extends LitElement {
                 .mappedFields=${this.targetMappedFields}
                 .highlightFields=${targetHL}
                 highlightColor="target"
+                test-id-prefix=${`${targetPrefix}-${sanitizeTestIdSegment(this.targetSchema.qualifiedId)}`}
                 content-width
               ></sz-schema-card>`
             : nothing}
@@ -611,24 +619,29 @@ export class SzMappingDetail extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${m.arrows.map((a) => this._renderArrowRow(a))}
-            ${m.eachBlocks.map((eb) => this._renderEachSection(eb))}
-            ${m.flattenBlocks.map((fb) => this._renderFlattenSection(fb))}
+            ${m.arrows.map((a) => this._renderArrowRow(a, ""))}
+            ${m.eachBlocks.map((eb) => this._renderEachSection(eb, ""))}
+            ${m.flattenBlocks.map((fb) => this._renderFlattenSection(fb, ""))}
           </tbody>
         </table>
       </div>
     `;
   }
 
-  private _renderArrowRow(a: ArrowEntry): TemplateResult {
+  // sectionPrefix disambiguates arrow rows that share a target field across
+  // nested each/flatten sections (sl-eikr). Empty string for top-level rows.
+  private _renderArrowRow(a: ArrowEntry, sectionPrefix: string): TemplateResult {
     const hl = this._isArrowHighlighted(a) ? "hl" : "";
     const noteEntry = a.metadata.find((m) => m.key === "note");
     const targetId = sanitizeTestIdSegment(a.targetField);
+    const rowTestId = sectionPrefix
+      ? `${this.testIdPrefix}-arrow-row-${sectionPrefix}-${targetId}`
+      : `${this.testIdPrefix}-arrow-row-${targetId}`;
 
     return html`
       <tr
         class="arrow-row ${hl}"
-        data-testid=${`${this.testIdPrefix}-arrow-row-${targetId}`}
+        data-testid=${rowTestId}
         @click=${() => this._navigate(a.location)}
         @mouseenter=${() => { this._hoveredArrow = a; this._hoveredCardField = null; }}
         @mouseleave=${() => { this._hoveredArrow = null; }}
@@ -645,7 +658,10 @@ export class SzMappingDetail extends LitElement {
         <td><span class="field-ref">${a.targetField}</span></td>
       </tr>
       ${noteEntry
-        ? html`<tr class="arrow-note-row"><td colspan="4"><span class="arrow-note">${unsafeHTML(highlightAtRefs(noteEntry.value))}</span></td></tr>`
+        ? html`<tr
+            class="arrow-note-row"
+            data-testid=${`${rowTestId}-note`}
+          ><td colspan="4"><span class="arrow-note">${unsafeHTML(highlightAtRefs(noteEntry.value))}</span></td></tr>`
         : ""}
     `;
   }
@@ -661,9 +677,14 @@ export class SzMappingDetail extends LitElement {
     return html`<span class="transform-nl">${unsafeHTML(highlightAtRefs(t.text))}</span>`;
   }
 
-  private _renderEachSection(eb: EachBlock): TemplateResult {
+  private _renderEachSection(eb: EachBlock, parentPrefix: string): TemplateResult {
+    const sectionId = sanitizeTestIdSegment(`each-${eb.targetField}`);
+    const sectionPrefix = parentPrefix ? `${parentPrefix}-${sectionId}` : sectionId;
     return html`
-      <tr class="scope-section">
+      <tr
+        class="scope-section"
+        data-testid=${`${this.testIdPrefix}-${sectionPrefix}`}
+      >
         <td colspan="4">
           <div class="scope-label">
             <span class="scope-tag">each</span>
@@ -671,14 +692,19 @@ export class SzMappingDetail extends LitElement {
           </div>
         </td>
       </tr>
-      ${eb.arrows.map((a) => this._renderArrowRow(a))}
-      ${eb.nestedEach.map((ne) => this._renderEachSection(ne))}
+      ${eb.arrows.map((a) => this._renderArrowRow(a, sectionPrefix))}
+      ${eb.nestedEach.map((ne) => this._renderEachSection(ne, sectionPrefix))}
     `;
   }
 
-  private _renderFlattenSection(fb: FlattenBlock): TemplateResult {
+  private _renderFlattenSection(fb: FlattenBlock, parentPrefix: string): TemplateResult {
+    const sectionId = sanitizeTestIdSegment(`flatten-${fb.sourceField}`);
+    const sectionPrefix = parentPrefix ? `${parentPrefix}-${sectionId}` : sectionId;
     return html`
-      <tr class="scope-section">
+      <tr
+        class="scope-section"
+        data-testid=${`${this.testIdPrefix}-${sectionPrefix}`}
+      >
         <td colspan="4">
           <div class="scope-label">
             <span class="scope-tag">flatten</span>
@@ -686,7 +712,7 @@ export class SzMappingDetail extends LitElement {
           </div>
         </td>
       </tr>
-      ${fb.arrows.map((a) => this._renderArrowRow(a))}
+      ${fb.arrows.map((a) => this._renderArrowRow(a, sectionPrefix))}
     `;
   }
 
