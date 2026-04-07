@@ -161,12 +161,12 @@ Follow these rules strictly:
 
 ### Step 2.3 — Validation
 
-After writing each `.stm` file, validate with tree-sitter:
+After writing each `.stm` file, validate with the Satsuma CLI:
 ```bash
-tree-sitter parse --wasm -p tooling/tree-sitter-satsuma <file.stm> --quiet
+satsuma validate <file.stm>
 ```
 
-If it reports errors, fix them before proceeding. If tree-sitter is unavailable, perform heuristic checks:
+If it reports errors, fix them before proceeding. If the `satsuma` CLI is unavailable, perform heuristic checks:
 - Balanced braces
 - All mappings reference declared schemas
 - No duplicate schema names

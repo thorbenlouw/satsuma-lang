@@ -353,7 +353,7 @@ def _run_satsuma(args: list[str]) -> str:
     stdout contains usable output.  We only fail if there is *no*
     stdout at all and the exit code is non-zero.
     """
-    cmd = ["npx", "satsuma"] + args
+    cmd = ["satsuma"] + args
     result = subprocess.run(
         cmd,
         capture_output=True,
