@@ -168,4 +168,183 @@ mapping \`test\` {
     );
     assert.equal(items.length, 0);
   });
+
+  // ── Additional source/target/pipe/metadata coverage ─────────────────────────
+
+  it("source block completions include schemas defined in other workspace files", () => {
+    // Verifies cross-file workspace indexing reaches the source-block context.
+    const items = complete(
+      {
+        "file:///defs.stm": "schema customers { id UUID }\nschema orders { id UUID }",
+        "file:///b.stm": "mapping `m` {\n  source { x }\n  target { y }\n  id -> id\n}",
+      },
+      "file:///b.stm",
+      1,
+      12,
+    );
+    const labels = items.map((i) => i.label);
+    assert.ok(labels.includes("customers"));
+    assert.ok(labels.includes("orders"));
+  });
+
+  it("target block completions exclude fragments and transforms", () => {
+    // Source/target only allow schema names — fragments and transforms must
+    // not appear or the user will pick a non-schema and produce broken mapping.
+    const items = complete(
+      {
+        "file:///a.stm":
+          "fragment audit { ts TIMESTAMP }\n" +
+          "transform `clean` { trim }\n" +
+          "schema dim { id UUID }\n" +
+          "mapping `m` { source { dim } target { d } id -> id }",
+      },
+      "file:///a.stm",
+      3,
+      35, // cursor inside target { d }
+    );
+    const labels = items.map((i) => i.label);
+    assert.ok(labels.includes("dim"));
+    assert.ok(!labels.includes("audit"), "fragment must not appear in target block");
+    assert.ok(!labels.includes("clean"), "transform must not appear in target block");
+  });
+
+  it("pipe chain completions are not contaminated by schema names", () => {
+    // Pipe chains list transform functions only — surfacing schemas here would
+    // be confusing because schemas are not callable in a pipe.
+    const items = complete(
+      {
+        "file:///a.stm":
+          "schema customers { id UUID }\ntransform `clean` {\n  trim | lowercase\n}",
+      },
+      "file:///a.stm",
+      2,
+      10,
+    );
+    const labels = items.map((i) => i.label);
+    assert.ok(labels.includes("trim"), "expected pipe-chain context to surface transform functions");
+    assert.ok(!labels.includes("customers"), "schema names must not leak into pipe completions");
+  });
+
+  it("metadata completions surface SCD subkinds, not just top-level tags", () => {
+    // The metadata vocabulary includes SCD-typing keywords such as `scd`; the
+    // user must be able to discover them in a single completion popup.
+    const items = complete(
+      { "file:///a.stm": "schema dim {\n  id UUID (s)\n}" },
+      "file:///a.stm",
+      1,
+      12,
+    );
+    const labels = items.map((i) => i.label);
+    assert.ok(labels.includes("scd"));
+    assert.ok(labels.includes("required"));
+  });
+
+  // ── Namespace/import contexts ────────────────────────────────────────────────
+
+  it("import-name completions include schemas from the target file's namespace", () => {
+    // The import { … } completion list is built from the union of indexed
+    // block names; namespace-qualified blocks should be discoverable too.
+    const items = complete(
+      {
+        "file:///defs.stm":
+          "namespace crm {\n  schema customers { id UUID }\n}\n",
+        "file:///entry.stm": 'import { c } from "defs.stm"',
+      },
+      "file:///entry.stm",
+      0,
+      10,
+    );
+    const labels = items.map((i) => i.label);
+    // Either "customers" or the qualified "crm::customers" must be offered.
+    assert.ok(
+      labels.some((l) => l === "customers" || l === "crm::customers"),
+      "namespace-qualified schema must be discoverable in import completions",
+    );
+  });
+
+  it("arrow target completions surface fields from the target schema", () => {
+    // Symmetric to the existing arrow_source test — covers the tgt_path branch
+    // of detectCompletionContext.
+    const items = complete(
+      {
+        "file:///a.stm":
+          `schema src {
+  id UUID
+  name VARCHAR
+}
+schema dim {
+  id UUID
+  label VARCHAR
+}
+mapping \`m\` {
+  source { src }
+  target { dim }
+  name -> label
+}`,
+      },
+      "file:///a.stm",
+      11,
+      11, // cursor inside "label" of the tgt_path on the arrow line
+    );
+    const labels = items.map((i) => i.label);
+    assert.ok(
+      labels.includes("label") || labels.includes("id"),
+      "target field completion should include fields from the dim schema",
+    );
+  });
+
+  // ── MISSING-node (parser recovery) cases ─────────────────────────────────────
+
+  it("source-block schema completions tag every item with the Class kind", () => {
+    // Clients filter completions by kind (icon, ranking). All schema-context
+    // entries must carry CompletionItemKind.Class (= 7) regardless of which
+    // file the schema came from.
+    const items = complete(
+      {
+        "file:///defs.stm": "schema customers { id UUID }\nschema orders { id UUID }",
+        "file:///b.stm": "mapping `m` {\n  source { x }\n  target { y }\n  id -> id\n}",
+      },
+      "file:///b.stm",
+      1,
+      12,
+    );
+    assert.ok(items.length >= 2);
+    assert.ok(items.every((i) => i.kind === 7), "every schema completion must use CompletionItemKind.Class");
+  });
+
+  it("does not crash on completions inside an unterminated source block (MISSING-node tree)", () => {
+    // The user is mid-typing — the closing brace of source { is missing, so
+    // tree-sitter recovers a MISSING node. The handler must return an array
+    // (possibly empty) without throwing — the edit-time UX must never be
+    // blocked by transient parse errors.
+    let items;
+    assert.doesNotThrow(() => {
+      items = complete(
+        {
+          "file:///a.stm": "schema customers { id UUID }\nschema orders { id UUID }",
+          "file:///b.stm": "mapping `m` {\n  source { c",
+        },
+        "file:///b.stm",
+        1,
+        11,
+      );
+    });
+    assert.ok(Array.isArray(items));
+  });
+
+  it("does not crash on completions when a metadata closing paren is missing", () => {
+    // Recovered tree from `id UUID (p` — the parser inserts a MISSING `)`.
+    // The completion context detector walks the cursor's ancestors and must
+    // gracefully return an array even if the surrounding production is broken.
+    let items;
+    assert.doesNotThrow(() => {
+      items = complete(
+        { "file:///a.stm": "schema test {\n  id UUID (p\n}" },
+        "file:///a.stm",
+        1,
+        12,
+      );
+    });
+    assert.ok(Array.isArray(items));
+  });
 });
