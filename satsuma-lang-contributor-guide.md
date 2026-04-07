@@ -131,8 +131,8 @@ flowchart TD
 | `classifyTransform(steps)` | `classify.ts` | Returns `"nl"` if the pipe chain has steps, `"none"` if empty. Trivially simple after Feature 28 removed structural transforms |
 | `expandEntityFields(entity, ns, resolver, lookup)` | `spread-expand.ts` | Expands fragment `...spread` references into concrete fields, using callbacks to resolve cross-file fragments |
 | `resolveRef(ref, context, lookup)` | `nl-ref.ts` | Resolves a single `@ref` token from an NL transform string against the workspace, returning resolution status and target |
-| `collectSemanticDiagnostics(index)` | `validate.ts` | Runs 9 categories of semantic checks (duplicates, unresolved spreads, bad arrow paths, NL ref validation, import scoping, etc.) against a `SemanticIndex` |
-| `format(source)` | `format.ts` | Canonical code formatter — parses, re-emits with consistent indentation and spacing |
+| `validateSemanticWorkspace(index, opts)` | `validate.ts` | Runs shared semantic checks (duplicates, unresolved spreads, bad arrow paths, NL ref validation, import scoping, etc.) against a `SemanticIndex` |
+| `format(tree, source)` | `format.ts` | Canonical code formatter — re-emits a parsed tree with consistent indentation and spacing |
 | `canonicalRef(ns, schema, field?)` | `canonical-ref.ts` | Builds the canonical `ns::schema.field` reference string used everywhere |
 | `SyntaxNode` | `types.ts` | The tree-sitter node interface — the universal input type for all core functions |
 | `FieldDecl` | `types.ts` | The extracted field shape — name, type, children, isList, metadata, spreads, position |
@@ -141,12 +141,12 @@ flowchart TD
 
 | Function / Type | File | What It Does |
 |---|---|---|
-| `loadWorkspace(pathArg)` | `load-workspace.ts` | The one-call workspace loader used by 18 of 21 CLI commands — resolves the path argument, parses the files, builds the index, and reports any resolve failure with a single consistent `Error resolving path '<arg>': ...` message. Returns `{ files, index }`. |
+| `loadWorkspace(pathArg)` | `load-workspace.ts` | The one-call workspace loader used by most CLI commands — resolves the path argument, parses the files, builds the index, and reports any resolve failure with a single consistent `Error resolving path '<arg>': ...` message. Returns `{ files, index }`. |
 | `buildIndex(parsedFiles)` | `index-builder.ts` | The big assembler — takes parsed files, calls every core extractor, builds the full `ExtractedWorkspace` with deduplication and cross-reference graph. Usually invoked indirectly via `loadWorkspace`. |
 | `ExtractedWorkspace` | `types.ts` | The CLI's workspace model — maps of schemas, metrics, mappings, fragments, transforms, plus arrows, notes, warnings, NL ref data, duplicates |
 | `resolveInput(pathArg)` | `workspace.ts` | Lower-level primitive — takes a `.stm` path, follows imports transitively, returns all reachable file paths. Called directly only by `fmt` / `diff` / `validate` (which have custom error handling) and by `loadWorkspace` itself. |
-| `buildFullGraph(index)` | `graph-builder.ts` | Constructs a schema-level directed graph (nodes + edges) from the workspace index, including NL-derived edges |
-| `diffIndex(indexA, indexB)` | `diff.ts` | Structural comparison of two workspace snapshots — field additions/removals, type changes, arrow changes |
+| `buildFullGraph(index)` | `schema-graph.ts` | Constructs a schema-level directed graph (nodes + edges) from the workspace index, including NL-derived edges |
+| `diffIndex(indexA, indexB)` | `diff-engine.ts` | Structural comparison of two workspace snapshots — field additions/removals, type changes, arrow changes |
 | `RULES` | `lint-engine.ts` | The lint rule registry — currently 3 rules (hidden-source-in-nl, unresolved-nl-ref, duplicate-definition) |
 
 ### In `satsuma-lsp` / `satsuma-viz-backend`
@@ -183,7 +183,7 @@ The `adrs/` directory records the major Architecture Decision Records. The most 
 - **ADR-008**: Fragment spread expansion semantics — how `...fragment_name` resolves.
 - **ADR-022**: File-based workspace model with transitive imports. The workspace boundary is defined by a single entry file and its import graph, not by directory scanning.
 - **ADR-010**: LSP server architecture.
-- **ADR-021**: Extraction of `satsuma-viz-backend` from the LSP to enable shared workspace indexing.
+- **ADR-021**: Extraction of `satsuma-lsp` as an editor-agnostic package.
 
 ---
 
@@ -205,152 +205,92 @@ The test suite is broad and deliberately layered. Avoid duplicating the same inv
 
 ## Current Rough Edges
 
-### 1. Duplicated `SyntaxNode` / `Tree` / `FieldDecl` / `PipeStep` / `Classification` Types
+These are current as of the last review. Resolved items are intentionally not listed here.
 
-The CLI defines its **own** `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, and `Classification` interfaces in `satsuma-cli/src/types.ts` that are structurally identical to the ones in `satsuma-core/src/types.ts`. The CLI's `SyntaxNode` is even slightly divergent (it lacks the optional `childForFieldName?` method that core has).
+### 1. The CLI Still Re-Declares Core-Facing Types
 
-These are not re-exports — they are independently maintained copies. The CLI's `FieldDecl` imports `MetaEntry` from core (creating a cross-type dependency), but the top-level shape is re-declared. This is the single largest source of conceptual confusion for a new contributor: which `FieldDecl` am I looking at?
+`satsuma-cli/src/types.ts` still declares its own `SyntaxNode`, `Tree`, `Parser`, `FieldDecl`, `PipeStep`, and `Classification` instead of importing or re-exporting the core definitions. The shapes are close enough for TypeScript structural typing, but they are not identical: the CLI's `SyntaxNode` lacks core's optional `childForFieldName?`, and the CLI's `FieldDecl` lacks core's source-position fields.
 
-**Impact**: Low runtime risk (structural typing means they're compatible), but high cognitive overhead and risk of silent divergence.
+This is low runtime risk but high cognitive overhead. A new contributor has to learn which `FieldDecl` is the public extraction shape, which one is CLI-local, and why `MetaEntry` comes from core while the enclosing field type is copied.
 
-### 2. Duplicated `web-tree-sitter.d.ts`
+### 2. `web-tree-sitter.d.ts` Is Still Duplicated
 
-The file `web-tree-sitter.d.ts` (213 lines of tree-sitter type declarations) is byte-for-byte identical in `satsuma-cli/src/` and `satsuma-lsp/src/`. It should live in one place (core, or a shared `@types` package).
+The 213-line `web-tree-sitter.d.ts` file is byte-for-byte identical in `satsuma-cli/src/` and `satsuma-lsp/src/`. This should be a single declaration source, most likely in core or a shared types package.
 
-### 3. Three Different `parser-utils.ts` / `parser.ts` Files
+### 3. Parser Adapters Are Mostly Cleaned Up, But Still Split by Consumer
 
-The parser is initialised in core (`satsuma-core/src/parser.ts`), then wrapped with thin file-I/O helpers in the CLI (`satsuma-cli/src/parser.ts`), re-exported with type-casting wrappers in the LSP (`satsuma-lsp/src/parser-utils.ts`), and re-exported again in the viz-backend (`satsuma-viz-backend/src/parser-utils.ts`). Each wrapper adds a `parseSource()` convenience function, a `nodeRange()` helper, and re-exports of `child`, `children`, `labelText`, `stringText`, `walkDescendants` from core — cast to the local `Node` type.
+Core owns the parser singleton and the shared CST helpers now. The remaining split is narrower: the CLI keeps legitimate file-I/O helpers in `satsuma-cli/src/parser.ts`, while the LSP and viz-backend each keep a `parser-utils.ts` adapter for `vscode-languageserver` `Range` conversion and concrete `web-tree-sitter` node typing.
 
-The LSP and viz-backend wrappers are nearly identical (both create `nodeRange` using `vscode-languageserver`'s `Range.create`). The viz-backend version is 32 lines; the LSP version is 91 lines because it also wraps five CST navigation functions purely for type compatibility.
+The surprising part is small but real: `nodeRange()` is duplicated between the LSP and viz-backend adapters, and the LSP wraps core CST helper functions purely to cast them back to its concrete `Node` type.
 
-### 4. Two Graph Builders in the CLI
+### 4. Graph Assembly and NL-Derived Edges Are Still Split
 
-There are **two** files named `graph-builder.ts` in the CLI:
+The CLI no longer has two same-named `graph-builder.ts` files, but it still has two graph builders:
 
-- `satsuma-cli/src/graph-builder.ts` (113 lines) — builds a schema-level `FullGraph` (nodes + edges). Used by the `lineage` and `graph` commands.
-- `satsuma-cli/src/commands/graph-builder.ts` (618 lines) — builds a richer `WorkspaceGraph` with both schema-level and field-level edges, NL text, and namespace filtering. Used only by the `graph` command.
+- `satsuma-cli/src/schema-graph.ts` builds the schema-level `FullGraph` used by `lineage` and as input to `graph`.
+- `satsuma-cli/src/commands/graph-builder.ts` builds the richer `WorkspaceGraph` used by `satsuma graph`.
 
-The smaller one builds a simpler graph; the larger one builds a superset. But they share significant logic (node collection, NL @ref edge derivation) with no code sharing between them. The NL ref edge-promotion logic is duplicated across both files and also in `lint-engine.ts`.
+They still duplicate NL `@ref` schema-edge promotion logic. Field-level NL-derived edge deduplication also appears in the graph command and in `nl-ref-extract.ts::countNlDerivedEdgesByMapping` for summary counts. The rules are close enough that a future bug fix could easily land in one path but not the others.
 
-### 5. The `viz-model.ts` Import Dance
+### 5. `viz-model.ts` Is Still a Large Builder Module
 
-In `satsuma-viz-backend/src/viz-model.ts`, every VizModel type is imported **twice** — once as a re-export (`export type { VizModel, ... } from "@satsuma/viz-model"`) and then again as a local import for use within the file (`import type { VizModel, ... } from "@satsuma/viz-model"`). This is 40 lines of pure ceremony. A single `import` plus a barrel re-export would halve this.
+`satsuma-viz-backend/src/viz-model.ts` is about 1,600 lines. It owns schema cards, mapping blocks, arrow entries, metric cards, fragment cards, notes, comments, metadata, each-blocks, flatten-blocks, source-block info, imported-schema stubs, spread expansion, NL `@ref` resolution, and VizModel assembly.
 
-### 6. Architecture Diagram vs Reality: `satsuma-viz` Depends on Core
+It also re-exports VizModel protocol types from `@satsuma/viz-model` and imports the same types locally for use inside the builder. That import/re-export ceremony is harmless, but it adds to the sense that this file wants to be a small module tree.
 
-`tooling/ARCHITECTURE.md` still says `satsuma-viz` consumes only `VizModel` JSON and has no dependency on core. That is no longer true: `package.json` lists `@satsuma/core` as a direct dependency, and the source imports shared coverage and NL ref helpers from core. The dependency matrix should show a `satsuma-viz -> core` edge.
+### 6. Full LSP Validation Still Falls Back to the CLI
 
-### 7. The CLI Bridges Are Permanent (and That Is Fine)
+The LSP now runs core's `validateSemanticWorkspace()` in-process for the checks its `WorkspaceIndex` can support. That is a real improvement. The remaining gap is that the LSP/viz-backend index does not store full arrow records or NL ref extraction data, so on save the LSP still runs `satsuma validate --json` as a child process, parses stdout, caches diagnostics, and deduplicates against in-process semantic diagnostics by `code:line`.
 
-Both `satsuma-cli/src/spread-expand.ts` and `satsuma-cli/src/nl-ref-extract.ts` are thin bridge modules that adapt the CLI's `ExtractedWorkspace` to core's callback-based APIs (per ADR-005 / ADR-006). Earlier drafts of this guide called them temporary shims slated for removal in sl-n4wb; that ticket closed and the bridges were rejustified as permanent in sl-y0sz. They are the canonical place where CLI-shaped data meets core's callbacks — exactly one well-named module per callback interface — and they are not technical debt.
+This fallback is also where `validate-diagnostics.ts` still has a hand-rolled `pathToFileUri()` implementation instead of Node's `pathToFileURL()`.
 
-### 8. (Resolved) Excessive `process.exit()` — Was 53 Calls
+### 7. Validation and Lint Are Parallel Diagnostic Systems
 
-Resolved in sl-3291. The CLI used to have 53 inline `process.exit()` calls across 23 command files, making error paths essentially untestable without subprocess spawning. They were replaced with a single dispatcher in `satsuma-cli/src/command-runner.ts`: handlers either return a numeric exit code or throw a `CommandError`, and `runCommand` catches both and exits exactly once via `flushAndExit` (which drains stdout/stderr first — also fixed a latent `--json` truncation past ~64KiB on piped output). `errors.ts` (`loadFiles`, `notFound`) and `load-workspace.ts` throw `CommandError` instead of exiting. Down to two intentional exit sites: the runner itself, and an `unhandledRejection` safety net in `index.ts` for failures *before* dispatch. The `errors.test.ts` and `load-workspace.test.ts` rewrites dropped all `process.exit` stub plumbing in favour of asserting thrown `CommandError`s directly.
+Core validation is the main semantic diagnostic pipeline: `validateSemanticWorkspace()` covers duplicates, unresolved spreads, bad arrow paths, NL ref validation, import scoping, and related checks. The CLI lint engine separately defines a rule registry, fix model, and three lint rules.
 
-### 9. Two Workspace Index Shapes (Now Distinctly Named)
+Both systems are useful, but their separation is now the surprising part: one has broad semantic coverage, the other has the extensible/fixable rule framework. New diagnostics have to choose a home instead of plugging into one obvious diagnostic model.
 
-The CLI and the viz-backend both need to hold cross-file workspace data, but with very different shapes. The CLI uses `ExtractedWorkspace` (in `satsuma-cli/src/types.ts`) — a flat batch result of `Map<string, SchemaRecord>` entries built once per invocation. The viz-backend uses `WorkspaceIndex` (in `satsuma-viz-backend/src/workspace-index.ts`) — an incrementally updated `Map<string, DefinitionEntry[]>` with LSP `Range` positions used for IDE features. Until sl-erxz both types were called `WorkspaceIndex`, which was a real source of confusion; the rename to `ExtractedWorkspace` makes the CLI type's role as an extraction *result* explicit and removes the collision.
+### 8. Coverage Is Shared at the Utility Level, Not the Result Level
 
-### 10. The LSP Still Shells Out to the CLI for Full Validation
+Core owns shared coverage types and path utilities (`coverage.ts`, `coverage-paths.ts`). The LSP still computes mapping coverage from its `WorkspaceIndex`, while the viz component computes mapped-field sets from `VizModel`. They share path semantics, but there is not one canonical `computeCoverage(...)` result object that both consumers use.
 
-`satsuma-lsp/src/validate-diagnostics.ts` runs `satsuma validate --json` as a **child process** on file save, parses the JSON stdout, and converts it to LSP diagnostics. The validation pipeline is less fragmented than it used to be: core now exposes `validateSemanticWorkspace()`, and both the CLI and LSP consume that shared entry point for reachability-aware semantic checks.
+### 9. Monorepo Tooling Is Still Manual
 
-The remaining gap is that full CLI validation still runs out-of-process from the LSP. That keeps a process boundary, JSON parsing step, timeout, and diagnostic merge logic in the editor path. If the LSP/viz-backend workspace index tracked all data needed by core validation, the LSP could do the full check in-process.
-
-### 11. Hand-Rolled `pathToFileUri` vs. Standard `pathToFileURL`
-
-In `validate-diagnostics.ts`, a hand-rolled `pathToFileUri()` function (`"file://" + encodeURI(fsPath).replace(/#/g, "%23")`) converts filesystem paths to URIs. Node.js's standard `url.pathToFileURL()` is available and used elsewhere in the same codebase (e.g., in `server.ts`). The hand-rolled version will break on Windows paths and paths with special characters.
-
-### 12. The Large `viz-model.ts` Builder
-
-`satsuma-viz-backend/src/viz-model.ts` is the largest file in the codebase and contains the `buildVizModel()` function plus many helper functions for extracting schema cards, mapping blocks, arrow entries, metric cards, fragment cards, notes, comments, metadata, each-blocks, flatten-blocks, and source-block info from the CST. It does everything: CST walking, core extractor calls, spread expansion, NL @ref resolution, metadata interpretation, and VizModel assembly.
-
-This file is doing the job of a small module system. A contributor needing to modify how schemas are visualised must navigate a large builder file to find the right helper. Breaking it into `schema-builder.ts`, `mapping-builder.ts`, `metric-builder.ts`, and `fragment-builder.ts` would make it far more approachable.
-
-### 13. Inconsistent Import Style: Barrel vs. Subpath
-
-Most packages import from the barrel export (`import { format } from "@satsuma/core"`), but the CLI's `format.ts` imports via a subpath (`from "@satsuma/core/format"`) and the viz component imports via subpaths (`from "@satsuma/core/coverage-paths"`). This inconsistency signals that the barrel export might be missing some entries, or that the subpath convention is not agreed-upon.
-
-### 14. Inconsistent Test File Extensions
-
-Core tests are `.js` files. CLI tests are `.ts` files. LSP tests are `.js` files. There's no documented reason for this inconsistency. The core and LSP tests import from compiled output (`../src/index.js`); the CLI tests import from TypeScript source via `tsx`. This means you need different mental models for running tests in different packages (`node --test` for core/LSP, `node --import tsx/esm --test` for CLI).
-
-### 15. The Lint Engine Has Only 3 Rules
-
-`lint-engine.ts` defines a full rule registry, runner, and fix-application framework — but currently houses only 3 rules. The framework is well-designed (rules receive an `ExtractedWorkspace` and return `LintDiagnostic[]` with optional auto-fix functions), but the validation logic in `core/validate.ts` (9 check categories, ~900 lines) was not built on top of this framework. The result is two parallel validation systems with overlapping coverage: `validate` produces `SemanticDiagnostic` objects, while `lint` produces `LintDiagnostic` objects.
-
-### 16. NL Ref Edge-Counting Logic Is Triplicated
-
-The logic for counting NL-derived edges appears in three places:
-
-1. `satsuma-cli/src/graph-builder.ts` — when building the schema-level graph
-2. `satsuma-cli/src/commands/graph-builder.ts` — when building the field-level graph
-3. `satsuma-cli/src/nl-ref-extract.ts` (`countNlDerivedEdgesByMapping`) — for the `summary` command
-
-Each reimplements the same deduplication rules (skip self-references, skip if a declared arrow already covers the source→target pair). A single canonical function in core, taking callbacks, would eliminate this.
+The repo has useful scripts (`install:all`, `scripts/run-repo-checks.sh`, `test:coverage`), but it is still not an npm-workspaces-style monorepo. Each package has its own lockfile and scripts, there is no dependency graph-aware task runner, and there is no plain root `npm test` equivalent to the full repo check.
 
 ---
 
 ## What It Would Take to Be World-Class
 
-The codebase is already better-structured than most projects its size. The layered architecture is sound, the ADRs are thoughtful, the test coverage is strong, and the documentation (ARCHITECTURE.md, AGENTS.md, lessons/) is exceptional. Here is what separates it from truly world-class:
+The architecture is in good shape: core owns extraction, consumers are layered cleanly, and the test suite is broad. The remaining step up is less about new features and more about making the package boundaries impossible to misunderstand.
 
-### 1. Collapse the Type Duplication
+### 1. Make Core the Single Owner of Shared Types
 
-Define `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, `Classification`, and all other shared types **once** in `satsuma-core/src/types.ts` and import them everywhere. The CLI's `types.ts` should contain only CLI-specific types (`SchemaRecord`, `ArrowRecord`, `ExtractedWorkspace`, etc.) and re-export core types. Delete the duplicated `web-tree-sitter.d.ts`. This is the single highest-leverage cleanup: it eliminates an entire category of "which type am I looking at?" confusion.
+`SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, `Classification`, and tree-sitter declaration types should be defined once and imported everywhere. Consumer packages should define only consumer-specific records and protocol types.
 
-### 2. (Resolved) The CLI Bridges Are Permanent
+### 2. Remove the LSP Validation Subprocess
 
-An earlier version of this guide listed "kill the shims" as a target. After sl-n4wb closed and the modules were rejustified in sl-y0sz, the conclusion is the opposite: `spread-expand.ts` and `nl-ref-extract.ts` are the canonical CLI ↔ core callback adapters and should stay. No action.
+Either teach the LSP/viz-backend `WorkspaceIndex` to store the arrow and NL-ref data needed by `validateSemanticWorkspace()`, or introduce a shared core workspace index that both CLI and LSP can build. The editor path should not need to exec the CLI and merge JSON diagnostics back into LSP diagnostics.
 
-### 3. (Resolved) `WorkspaceIndex` Naming Collision
+### 3. Make NL-Derived Edge Logic a Core API
 
-The CLI's batch result type was renamed from `WorkspaceIndex` to `ExtractedWorkspace` in sl-erxz. The viz-backend keeps `WorkspaceIndex` because it is the naturally editor-shaped index. No further action.
+The CLI graph, lineage, and summary paths all care about related variants of the same question: when does an NL `@ref` imply a new lineage edge, and when is it redundant with a declared arrow? That rule should exist once, with tests at the core boundary. The lint rules can keep using the same shared ref classification and resolution helpers without owning edge construction.
 
-### 4. (Resolved) Replace `process.exit()` with Typed Errors
+### 4. Unify Diagnostics Without Losing Fixes
 
-Resolved in sl-3291. The CLI now has a single dispatcher (`src/command-runner.ts`) with a `CommandError` class and a `runCommand` wrapper around every Commander `.action()`. Handlers return a numeric exit code or throw `CommandError`; the runner catches both, prints to the requested stream, drains stdout/stderr, and exits once. See "Resolved Issue 9" above.
+Core validation has the broad semantic knowledge. CLI lint has the pluggable rule/fix model. World-class would combine those strengths into one diagnostic rule framework with explicit inputs, stable rule IDs, and optional fixes where safe.
 
-### 5. Break Up `viz-model.ts`
+### 5. Split VizModel Assembly by Entity Type
 
-Split the large VizModel builder into per-entity-type modules: `build-schema-card.ts`, `build-mapping-block.ts`, `build-metric-card.ts`, `build-fragment-card.ts`, plus a top-level `build-viz-model.ts` orchestrator. Each module becomes independently testable and navigable.
+Keep `buildVizModel()` as the public API, but move schema-card, mapping-block, metric-card, fragment-card, note/comment, and imported-stub assembly into focused modules. The current tests can follow the module boundaries instead of treating one file as the whole subsystem.
 
-### 6. Consolidate the Two Graph Builders
+### 6. Add Monorepo and Dependency Enforcement
 
-The 113-line `src/graph-builder.ts` and the 618-line `src/commands/graph-builder.ts` should be merged into a single module with options for schema-only vs. field-level output. The shared NL-ref edge promotion logic should be a single function.
+Move from hand-wired package installs and checks to workspaces plus a task runner or equivalent dependency graph. Add CI-visible dependency rules so "core never imports consumers" is mechanically enforced, not only reviewed.
 
-### 7. Unify the Validation Pipeline
+### 7. Add Generated Grammar Constants and Benchmarks
 
-Merge the lint engine and the semantic validator into a single diagnostic framework. Rules should be pluggable (the lint engine's `LintRule` interface is good). The current split — `validate.ts` in core producing `SemanticDiagnostic`, `lint-engine.ts` in CLI producing `LintDiagnostic`, and the LSP running both plus a CLI subprocess — has too many moving parts. A single `DiagnosticRule` interface in core, with a registry that both CLI and LSP can query, would simplify the entire stack.
-
-### 8. Move Arrow Extraction to the LSP Workspace Index
-
-The LSP shells out to the CLI for validation because its workspace index doesn't store arrow records. If the viz-backend's workspace index also tracked arrows (via core's `extractArrowRecords`), the LSP could run the full semantic validator in-process, eliminating the subprocess, the JSON parsing, the deduplication, and the 15-second timeout. This is the biggest architectural gap.
-
-### 9. Add Build-Time Dependency Enforcement
-
-The layering rules are enforced by convention. A tool like `dependency-cruiser` or `eslint-plugin-import` with forbidden-pattern rules could catch violations at CI time. Also: fix the `ARCHITECTURE.md` dependency matrix to reflect that `satsuma-viz` depends on `satsuma-core`.
-
-### 10. Standardise Test Infrastructure
-
-Pick one extension (`.ts` with `tsx` runner, or `.js` with pre-compiled imports) and use it everywhere. Add a top-level `npm test` that runs all packages. Consider a monorepo tool (Turborepo, Nx) to manage the multi-package build graph with proper caching.
-
-### 11. Extract `nodeRange` and Parser Wrappers
-
-The `nodeRange()` function and `parseSource()` convenience wrapper are duplicated between the LSP and viz-backend `parser-utils.ts` files. Move them to `satsuma-core` (or a new `satsuma-shared` package) since they depend only on `vscode-languageserver` types, which the viz-backend already imports.
-
-### 12. Property-Based and Fuzz Testing for the Grammar
-
-The grammar has a large hand-crafted corpus, but no property-based generator. Adding property-based tests (generate random valid `.stm` files from the grammar, assert that parse → extract → format → re-parse produces the same extraction) would catch an entire class of round-trip bugs. Tree-sitter's fuzzing support could also be leveraged.
-
-### 13. Telemetry / Performance Baselines
-
-The architecture notes say "full re-parse is <5ms" and "operations complete in <100ms" — but there are no benchmarks in the repo to verify this or detect regressions. A small benchmark suite (parse 100 files, build index, run validation, format all) with CI tracking would establish and protect these guarantees.
-
-### 14. Keep Expanding Error Recovery Testing
-
-The ARCHITECTURE.md states "parsing never fails — CST always produced, errors embedded" and "IDE features should be partially available even when the workspace has errors." Feature 29 added focused recovery corpus, CLI recovery, and LSP recovery coverage. Keep growing that suite whenever new recovery-sensitive behaviour lands; malformed input tests are now part of the expected implementation surface.
+Generate `NodeTypes` constants from `tree-sitter-satsuma/src/node-types.json` so CST node-type renames fail at compile time. Add small performance benchmarks and property/fuzz tests around parse → extract → format → re-parse so architectural performance claims and grammar edge cases are protected.
 
 ---
 
@@ -360,58 +300,42 @@ These are concrete, incremental improvements ordered by impact-to-effort ratio. 
 
 ### Tier 1 — High Impact, Low Risk (do first)
 
-**R1. Delete the CLI's duplicate type declarations.**
-The CLI's `types.ts` defines its own `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, and `Classification` that shadow core's. Replace them with re-exports from `@satsuma/core`. The CLI-only types (`SchemaRecord`, `ExtractedWorkspace`, `ArrowRecord`, `LintDiagnostic`, etc.) stay. This is a search-and-replace job — structural typing means nothing breaks at runtime — but it eliminates the biggest "which type am I looking at?" trap for every future contributor. A single PR, zero behavioural change.
+**R1. Replace CLI duplicate core-facing types with core imports.**
+Keep CLI-only records in `satsuma-cli/src/types.ts`, but import or re-export shared core types instead of copying them. Start with `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, and `Classification`; make sure the CLI's source-position assumptions still hold after switching to core `FieldDecl`.
 
-**R2. ~~Delete the dead `resolveAndLoad` function or wire it up.~~ (Wired up — sl-r39t)**
-`errors.ts` previously exported a `resolveAndLoad()` convenience wrapper with zero callers. Rather than delete it, sl-r39t introduced a small dedicated module — `satsuma-cli/src/load-workspace.ts` — that owns the canonical "resolve a path argument → parse files → build the workspace index" pipeline. 18 of the 21 CLI commands now call `loadWorkspace(pathArg)` and consume `{ files, index }` directly, eliminating ~140 lines of duplicated `try { resolveInput } catch { print; exit } / parseFile / buildIndex` boilerplate and giving the whole CLI one consistent error message format. The three commands that opt out — `fmt` (per-file parse-error tolerance), `diff` (two-path comparison with `followImports: false`), and `validate` (JSON-formatted resolve errors) — have genuinely different error semantics; pushing their needs into option flags on the loader would just shift complexity rather than reduce it.
+**R2. Deduplicate `web-tree-sitter.d.ts`.**
+Move the duplicated declaration file to a single shared location and update both CLI and LSP imports. This is a no-behaviour-change cleanup with an easy correctness check: the two current files compare byte-for-byte identical.
 
-**R3. ~~Collapse the shim modules.~~ (Won't do — sl-y0sz)**
-`satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` were rejustified in sl-y0sz as permanent CLI ↔ core callback bridges (ADR-005 / ADR-006). The previous header comments claiming they would be removed in sl-n4wb were stale; they have been rewritten to describe the modules' permanent role.
-
-**R4. Deduplicate `web-tree-sitter.d.ts`.**
-The 213-line type declaration file is byte-for-byte identical in CLI and LSP. Move it to `satsuma-core` (or a shared `@types` directory) and import from there.
-
-**R5. Fix the `ARCHITECTURE.md` dependency matrix.**
-The matrix claims `satsuma-viz` has no dependency on `satsuma-core`. It does — for `coverage-paths`. Update the table and the prose. This is a one-line documentation fix but it prevents a new contributor from building a wrong mental model.
+**R3. Replace the LSP's hand-rolled file URI conversion.**
+In `satsuma-lsp/src/validate-diagnostics.ts`, replace `pathToFileUri()` with `pathToFileURL(fsPath).toString()` from `node:url`. Add a targeted test for paths containing `#`, spaces, and Windows-style input if the test environment can cover it cleanly.
 
 ### Tier 2 — Medium Impact, Moderate Effort
 
-**R6. ~~Extract a command harness to kill the per-command boilerplate.~~ (Partially done — sl-r39t)**
-The "resolve → parse → build index" half of this dance is now owned by `load-workspace.ts`'s `loadWorkspace()`, which 18 commands call in a single line. Typical usage:
+**R4. Consolidate graph assembly and NL-derived edge rules.**
+Either merge `schema-graph.ts` and `commands/graph-builder.ts`, or extract a shared graph core that both call. Put NL-derived edge promotion and deduplication in one tested helper rather than keeping schema-level and field-level variants scattered across graph and summary code.
 
-```typescript
-async function schemaCommand(name: string, pathArg: string | undefined) {
-  const { files, index } = await loadWorkspace(pathArg);
-  const resolved = resolveIndexKey(name, index.schemas);
-  // … look up entity, handle not-found, print
-}
-```
+**R5. Break up `viz-model.ts`.**
+Split the large VizModel builder into focused modules (`schema-card`, `mapping-block`, `metric-card`, `fragment-card`, `notes-comments`, `imported-stubs`) with `buildVizModel()` left as the orchestrator and public API.
 
-The "entity lookup + not-found + suggestion" half is still per-command because the error formatting varies meaningfully across the 16 commands (different JSON shapes, different kinds of suggestion). A full `CommandContext` harness would be the next step; now that R7 has landed (sl-3291) every command throws `CommandError` consistently, so the harness shape is no longer blocked on the exit-policy decision.
+**R6. Unify diagnostic rule plumbing.**
+Design a shared diagnostic rule contract in core, then migrate semantic validation and the CLI lint rules into it. Preserve lint's fix capability as optional rule metadata rather than keeping a separate diagnostic system forever.
 
-**R7. (Done — sl-3291) Replace `process.exit()` with typed errors.**
-Landed: `src/command-runner.ts` exposes `CommandError` + `runCommand`. Every command's `.action()` is wrapped, every handler either returns a numeric exit code or throws `CommandError`, and the runner is the single place that calls `process.exit`. The integration tests continue to work unchanged. Two intentional exit sites remain (runner + pre-dispatch safety net), both documented in their files.
-
-**R8. Merge the two graph builders.**
-`src/graph-builder.ts` (113 lines) builds schema-level graphs. `src/commands/graph-builder.ts` (618 lines) builds schema+field-level graphs. They share node-collection and NL-ref-edge-promotion logic with no code sharing. Merge into a single module with a `schemaOnly` option. Extract the NL-ref edge promotion into a shared function and reuse it in `lint-engine.ts` and `nl-ref-extract.ts::countNlDerivedEdgesByMapping` as well, eliminating the triplication.
-
-**R9. Break up `viz-model.ts`.**
-The large `satsuma-viz-backend` builder can be split into `build-schema-card.ts`, `build-mapping-block.ts`, `build-metric-card.ts`, `build-fragment-card.ts`, and an orchestrating `build-viz-model.ts`. Each builder becomes independently navigable and testable. The `buildVizModel` function remains the public API — it just delegates internally.
-
-**R10. Fix the `pathToFileUri` hand-roll.**
-Replace the hand-rolled URI conversion in `validate-diagnostics.ts` with Node.js's standard `url.pathToFileURL()`. The current implementation will break on Windows paths and paths with certain special characters.
+**R7. Move full validation data into the LSP index.**
+Index arrow records and NL ref data in the LSP/viz-backend workspace index so `validateSemanticWorkspace()` can run the full set of checks in-process. This unlocks removal of the CLI subprocess fallback and the diagnostic deduplication layer in `server.ts`.
 
 ### Tier 3 — High Impact, High Effort (plan carefully)
 
-**R11. Unify the validation pipeline.**
-The codebase has three diagnostic producers that partially overlap: tree-sitter parse errors, core's `collectSemanticDiagnostics`, and the CLI's lint engine. The LSP runs all three plus a CLI subprocess, then deduplicates by `rule:line`. Redesign this as a single `DiagnosticRule` interface in core with a registry. Each rule declares its inputs (CST only, CST + index, CST + index + arrows). The CLI and LSP query the registry with whatever data they have. Rules that need arrows only run when arrows are available. This eliminates the subprocess, the deduplication, and the two-parallel-systems problem.
+**R8. Design a shared core workspace index.**
+If the CLI and LSP keep needing the same semantic data in different shapes, introduce a core index abstraction that supports both batch construction and incremental updates. This is larger than R7, but it would remove the deepest reason validation, graph, and callback adaptation keep diverging.
 
-**R12. Add arrow records to the LSP workspace index.**
-The viz-backend's workspace index tracks definitions and references but not arrow records. This is why the LSP shells out to the CLI for full validation. If the workspace index also stored `ExtractedArrow` data (via core's `extractArrowRecords`), the LSP could run the full semantic validator in-process, eliminating the 15-second-timeout subprocess, the JSON stdout parsing, and the fragile deduplication logic.
+**R9. Move to real monorepo tooling.**
+Adopt npm workspaces or an equivalent task graph, collapse redundant install/lockfile mechanics where possible, and add an obvious full-repo `npm test` or `npm run check`. Keep `scripts/run-repo-checks.sh` if it remains useful, but make the package graph explicit.
 
-**R13. ~~Rename the two `WorkspaceIndex` types.~~ (Done — sl-erxz)**
-The CLI's batch type was renamed to `ExtractedWorkspace`; viz-backend's editor index keeps `WorkspaceIndex`. The naming collision is gone.
+**R10. Generate CST node-type constants.**
+Generate a typed `NodeTypes` module from `tree-sitter-satsuma/src/node-types.json` and migrate string literals like `"schema_block"`, `"field_decl"`, and `"source_ref"` to it. This is mechanically large but pays off whenever the grammar changes.
+
+**R11. Add grammar fuzzing and performance baselines.**
+Keep the hand-crafted corpus, but add property/fuzz tests for parser recovery and round-tripping. Add a small benchmark suite for parse, extract, validate, format, and workspace-index operations so performance assumptions become measured contracts.
 
 ---
 
@@ -427,72 +351,68 @@ From scratch, I'd define **one** workspace index type in core with a clear inter
 
 This one change would eliminate: the two parallel workspace types, the CLI ↔ core callback bridges, the missing-arrow-records gap that forces the LSP to subprocess, and the divergent duplicate-detection logic.
 
-### 2. Result types, not `process.exit()`
-
-From day one, every function that can fail would return `Result<T, SatsumaError>` (or throw a typed error — either pattern works in TypeScript). No function would ever call `process.exit()`. The CLI entry point would be a thin shell that calls the real logic, catches errors, and maps them to exit codes and stderr messages. This makes every piece of logic testable without subprocess spawning, and it makes the CLI embeddable as a library (which matters for the VS Code extension integration and for programmatic consumers). The throw-typed-error half of this landed retroactively in sl-3291 — see `src/command-runner.ts`.
-
-### 3. The grammar would own the node-type string constants
+### 2. The grammar would own the node-type string constants
 
 Currently, CST node type strings like `"schema_block"`, `"mapping_block"`, `"field_decl"`, `"pipe_step"`, `"source_ref"` appear as string literals scattered across every package. A typo in any of them is a silent bug. I'd generate a `NodeTypes` enum or const object from `tree-sitter-satsuma/src/node-types.json` at build time and use it everywhere. A grammar change that renames a node type would then produce compile errors instead of silent breakage.
 
-### 4. Commands as pure functions, not Commander registrations
+### 3. Commands as pure functions, not Commander registrations
 
-Each CLI command currently mixes three concerns: Commander option parsing, workspace orchestration (resolve files, build index), and business logic (query index, format output). I'd separate these completely:
+The CLI is much better than it used to be: command actions go through `runCommand()`, and most commands use `loadWorkspace()`. From scratch, though, I'd separate the last remaining concerns completely:
 
 - **Command functions** are pure: `(index: ExtractedWorkspace, options: SchemaOpts) → SchemaResult`. No I/O, no side effects. Trivially testable.
 - **Formatters** convert results to human text or JSON: `(result: SchemaResult, format: "text" | "json") → string`.
 - **CLI wiring** handles Commander registration, file resolution, index building, and output writing. One thin orchestrator per command, or even a single generic one.
 
-This would eliminate the 200+ lines of per-command boilerplate, make unit testing straightforward (no subprocess spawning needed), and allow the CLI logic to be consumed as a library by the LSP extension (instead of shelling out to the CLI binary for validation).
+This would make command behaviour easier to test directly and would make CLI logic easier to reuse from the LSP without shelling out.
 
-### 5. A monorepo tool from the start
+### 4. A monorepo tool from the start
 
-The current setup is a manual monorepo: 9 packages with independent `package.json` files, no workspace-level `npm test`, a 500-character `install:all` script that serially installs each package. There's no build caching, no dependency graph-aware task runner, no way to run "tests affected by this change."
+The current setup is a manual monorepo: 9 packages with independent lockfiles and package scripts, plus a root `install:all` script and a repo-check shell script. There's no build caching, no dependency graph-aware task runner, and no way to run "tests affected by this change."
 
 From scratch I'd use `npm workspaces` (or Turborepo/Nx) from the beginning. Benefits: single `npm install`, automatic workspace symlinks, parallel builds with caching, `turbo run test --filter=...[HEAD~1]` for affected-only CI, and a single lockfile. The layered dependency graph is already clean enough to benefit immediately.
 
-### 6. The viz-model contract would use JSON Schema, not TypeScript interfaces
+### 5. The VizModel contract would use JSON Schema, not TypeScript interfaces
 
 `satsuma-viz-model` defines the serialisation boundary between the server (LSP/harness) and the client (web component) as TypeScript interfaces. But this contract crosses a process boundary — the server serialises JSON, the client parses it. TypeScript interfaces provide no runtime validation.
 
 I'd define the VizModel as a JSON Schema (or Zod schema, or similar) with generated TypeScript types. This gives: runtime validation at the boundary (catch contract violations before they become rendering bugs), auto-generated documentation, and the ability to version the schema independently of the TypeScript code.
 
-### 7. Coverage logic in one place
+### 6. Coverage logic in one place
 
-Field coverage logic is currently scattered across four files in three packages: `core/coverage.ts` (path prefix expansion), `core/coverage-paths.ts` (covered-field-set building), `viz/field-coverage.ts` (mapping-level coverage for the web component), and `lsp/coverage.ts` (per-field coverage for CodeLens decorations). Each reimplements parts of the same "which fields are covered by arrows?" question.
+Field coverage logic is now partly shared through core path utilities, but higher-level result construction still lives separately in the LSP and viz component. Each consumer still answers its own version of "which fields are covered by arrows?"
 
 I'd put all coverage computation in core behind a single function: `computeCoverage(schema, arrows, fragments) → CoverageResult`. The result would include per-field coverage status, coverage percentage, and uncovered field paths. The viz component and LSP would consume this result object instead of each re-deriving coverage from raw data.
 
-### 8. The NL ref regex would be a grammar rule, not a hand-written regex
+### 7. NL `@ref` handling would not be hybrid
 
-The `@ref` pattern (matching `@identifier`, `@schema.field`, `@ns::schema.field`, `` @`backtick` `` variants) is implemented as a hand-written regex factory in core (`createAtRefRegex`) and reused by consumers. This avoids copy-paste drift, but the pattern is still part of the language's semantics — it defines what constitutes a cross-reference inside natural language text.
+The grammar now has a structural `at_ref` node for bare pipe text and metadata value text. Quoted `nl_string` and `multiline_string` content remains opaque to the grammar, so core still uses the canonical `createAtRefRegex()` path to find refs inside those strings.
 
-I'd make `@ref` a first-class grammar construct inside `nl_string` and `multiline_string` nodes, so tree-sitter parses them structurally. The extractor would then walk `at_ref` CST nodes instead of running a regex over string content. This makes @ref parsing testable via the grammar corpus and enables syntax highlighting of @refs in the TextMate grammar for free.
+From scratch, I'd avoid the hybrid. Either `@ref` is structural everywhere, including inside quoted and multiline NL strings, or quoted strings are explicitly opaque and never produce lineage refs. The current compromise is practical, but it means both grammar corpus tests and regex tests are needed to understand the full rule.
 
-### 9. Tests would use a snapshot pattern, not assert-per-field
+### 8. Tests would use a snapshot pattern for structured outputs
 
 The CLI test suite still contains many assertions of the form `assert.equal(data.schemas[0].name, "foo")` / `assert.equal(data.schemas[0].fields.length, 3)` — testing one field at a time. Snapshot-style assertions (`assert.deepStrictEqual(data, expectedSnapshot)`) can reduce maintenance while increasing coverage (a snapshot catches unexpected extra fields; individual asserts don't). Jest snapshots or inline snapshot objects both work. The tradeoff is readability of failure messages, but for structured data extraction, snapshots are often the right call.
 
-### 10. Incremental parsing from the start
+### 9. Incremental parsing from the start
 
-The architecture notes say "full re-parse is <5ms" and "incremental computation is not needed." This is true today with small files. But it's a decision that becomes harder to reverse as adoption grows. Tree-sitter natively supports incremental parsing (you pass the old tree + the edit range, and it only re-parses the changed region). I'd wire this up from the beginning in the LSP, not because it's needed now, but because it's essentially free (tree-sitter does the work) and it future-proofs the architecture for larger files.
+The current implementation gets away with full re-parsing because Satsuma files are small. But that decision becomes harder to reverse as adoption grows. Tree-sitter natively supports incremental parsing (you pass the old tree + the edit range, and it only re-parses the changed region). I'd wire this up from the beginning in the LSP, not because it's needed now, but because it's essentially free (tree-sitter does the work) and it future-proofs the architecture for larger files.
 
 ---
 
 ## Summary: What a New Contributor Should Know
 
-1. **Start in `satsuma-core`**. Read `types.ts`, then `extract.ts`, then `cst-utils.ts`. These three files define the vocabulary of the entire system.
+1. **Start in `satsuma-core`**. Read `types.ts`, then `extract.ts`, then `cst-utils.ts`. These files define the CST and extraction vocabulary used everywhere else.
 
-2. **Understand the callback pattern**. Core uses `EntityRefResolver`, `SpreadEntityLookup`, `DefinitionLookup`, and `SemanticIndex` to stay decoupled from consumers. When you see a function taking a callback, the consumer is expected to wire it from its own index.
+2. **The grammar and spec are the authorities.** Use `docs/developer/SATSUMA-V2-SPEC.md`, `tooling/tree-sitter-satsuma/grammar.js`, and the corpus fixtures when syntax or CST shape is unclear.
 
-3. **The CLI and LSP have different workspace types.** The CLI's `ExtractedWorkspace` stores flat record maps (a batch extraction result). The viz-backend's `WorkspaceIndex` stores definition/reference entries with LSP ranges (an incremental editor index). They serve different consumers; the names now signal the difference.
+3. **All extraction logic should go through core.** If CLI, LSP, or viz code needs to walk CST nodes for domain extraction, first ask whether that logic belongs in core instead.
 
-4. **The grammar is the source of truth.** If you want to understand what a CST node type means, read `tree-sitter-satsuma/grammar.js`. The corpus tests in `test/corpus/` are the best documentation of expected parse shapes.
+4. **The CLI and LSP workspace models are intentionally different today.** The CLI's `ExtractedWorkspace` is a batch extraction result. The viz-backend `WorkspaceIndex` is an incremental editor index with ranges. The naming collision is gone, but the data gap still matters: the LSP index does not yet hold everything needed for full in-process validation.
 
-5. **All extraction logic goes through core.** If you find yourself writing CST-walking code in the CLI or LSP, stop — it belongs in core.
+5. **The CLI bridge files are intentional.** `satsuma-cli/src/spread-expand.ts` and `satsuma-cli/src/nl-ref-extract.ts` adapt `ExtractedWorkspace` to core callback APIs. Do not treat them as dead shims.
 
-6. **The CLI bridge files are permanent.** `satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` are the canonical adapters from the CLI's `ExtractedWorkspace` to core's callback APIs (ADR-005 / ADR-006). Earlier versions of this guide called them transitional; that was wrong.
+6. **The main rough edges are duplicated types, graph/NL-edge duplication, the LSP validation subprocess, and the large VizModel builder.** Older rough edges around mass `process.exit()` calls and the `WorkspaceIndex` name collision have been addressed.
 
-7. **Read the ADRs.** They explain *why* decisions were made, not just what was decided. ADR-005, ADR-006, ADR-020, and ADR-022 are essential context.
+7. **Read the ADRs before changing boundaries.** ADR-005, ADR-006, ADR-020, ADR-021, and ADR-022 explain why core callbacks, editor-agnostic LSP packaging, and file-based workspaces look the way they do.
 
-8. **Test at the right level.** Core extraction → test in core. CLI output formatting → test in CLI. LSP protocol behaviour → test in LSP. Don't duplicate coverage across layers.
+8. **Test at the right level.** Core extraction belongs in core tests. CLI formatting and JSON contracts belong in CLI tests. LSP protocol behaviour belongs in LSP tests. Do not duplicate the same invariant across layers unless the consumer integration is the thing under test.
