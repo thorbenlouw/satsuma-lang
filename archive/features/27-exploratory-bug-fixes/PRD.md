@@ -1,6 +1,6 @@
 # Feature 27 — Exploratory Bug Fixes: CLI Correctness and Consistency
 
-> **Status: PLANNED** (2026-03-31). 48 bugs found via 8-agent exploratory QA session. After triage: 3 closed (2 deferred — function classification moot due to planned language simplification; 1 closed — not a bug per ADR-008). **45 remaining bugs** organised into 8 implementation waves.
+> **Status: COMPLETE** (2026-04-07). 48 bugs found via 8-agent exploratory QA session. After triage: 3 closed at intake (2 deferred — function classification moot due to language simplification; 1 not-a-bug per ADR-008). All 45 implementation tickets across waves 1–8 are closed; the only remaining open ticket is `sl-cf9t` (symbol-level import reachability, in progress). Audit verified against `.tickets/` and git log on 2026-04-07.
 
 ## Goal
 
