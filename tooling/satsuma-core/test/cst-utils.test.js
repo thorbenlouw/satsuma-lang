@@ -271,6 +271,12 @@ describe("sourceRefText()", () => {
     assert.equal(sourceRefText(ref), "crm::orders");
   });
 
+  it("falls back to qualified_name text when a recovered tree has an incomplete qualified child", () => {
+    const qn = n("qualified_name", [ident("crm")], "crm::");
+    const ref = n("source_ref", [qn], "crm::");
+    assert.equal(sourceRefText(ref), "crm::");
+  });
+
   it("strips backticks from a source_ref with a backtick_name child", () => {
     const ref = n("source_ref", [backtick("my entity")], "`my entity`");
     assert.equal(sourceRefText(ref), "my entity");
@@ -298,6 +304,12 @@ describe("sourceRefStructuralText()", () => {
     const qn = n("qualified_name", [ident("crm"), ident("orders")], "crm::orders");
     const ref = n("source_ref", [qn], "crm::orders");
     assert.equal(sourceRefStructuralText(ref), "crm::orders");
+  });
+
+  it("falls back to recovered qualified_name text for structural source refs", () => {
+    const qn = n("qualified_name", [ident("crm")], "crm::");
+    const ref = n("source_ref", [qn], "crm::");
+    assert.equal(sourceRefStructuralText(ref), "crm::");
   });
 
   it("ignores nl_string join descriptions inside a source_ref", () => {

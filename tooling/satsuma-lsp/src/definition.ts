@@ -1,5 +1,5 @@
 import { Location } from "vscode-languageserver";
-import { createAtRefRegex } from "@satsuma/core";
+import { createAtRefRegex, fieldNameText, qualifiedNameText, sourceRefText } from "@satsuma/core";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, children, labelText } from "./parser-utils";
 import {
@@ -128,7 +128,7 @@ function tryContext(node: SyntaxNode): NodeContext | null {
     }
 
     case "field_name": {
-      const name = fieldNameTextDef(node);
+      const name = fieldNameText(node);
       if (!name) return null;
       const block = findEnclosingBlock(node);
       const blockName = block ? labelText(block) : null;
@@ -372,27 +372,9 @@ function findEnclosingBlock(node: SyntaxNode): SyntaxNode | null {
 
 // ---------- Text extraction ----------
 
-function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  if (id) return id.text;
-  const ns = child(ref, "nl_string");
-  if (ns) return ns.text.slice(1, -1);
-  return null;
-}
-
-function qualifiedNameText(qn: SyntaxNode): string {
-  const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-  if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-  return qn.text;
-}
-
 function spreadLabelText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
+  if (qn) return qualifiedNameText(qn) ?? qn.text;
   const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   const ids = node.namedChildren.filter((c) => c.type === "identifier");
@@ -402,7 +384,7 @@ function spreadLabelText(node: SyntaxNode): string | null {
 
 function importNameText(node: SyntaxNode): string | null {
   const qn = child(node, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
+  if (qn) return qualifiedNameText(qn) ?? qn.text;
   const quoted = child(node, "backtick_name");
   if (quoted) return quoted.text.slice(1, -1);
   const id = child(node, "identifier");
@@ -415,13 +397,6 @@ function importPathText(node: SyntaxNode): string | null {
   const text = node.text;
   if (text.startsWith('"') && text.endsWith('"')) return text.slice(1, -1);
   return text;
-}
-
-function fieldNameTextDef(node: SyntaxNode): string | null {
-  const inner = node.namedChildren[0];
-  if (!inner) return node.text;
-  if (inner.type === "backtick_name") return inner.text.slice(1, -1);
-  return inner.text;
 }
 
 // ---------- Arrow field helpers ----------

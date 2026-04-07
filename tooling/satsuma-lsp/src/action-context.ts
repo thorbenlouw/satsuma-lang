@@ -2,6 +2,7 @@ import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, children, labelText } from "./parser-utils";
 import { findNodeContext, type NodeContext } from "./definition";
 import type { WorkspaceIndex } from "./workspace-index";
+import { sourceRefText } from "@satsuma/core";
 
 export interface ActionContext {
   schemaName: string | null;
@@ -70,20 +71,6 @@ function extractTargetSchema(mappingNode: SyntaxNode): string | null {
       }
     }
   }
-  return null;
-}
-
-function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) {
-    const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-    if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-    if (ids.length === 1 && ids[0]) return ids[0].text;
-  }
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  if (id) return id.text;
   return null;
 }
 

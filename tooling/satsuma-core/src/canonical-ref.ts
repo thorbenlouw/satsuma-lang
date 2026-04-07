@@ -42,6 +42,36 @@ export function canonicalEntityName(entity: { namespace?: string | null; name: s
 }
 
 /**
+ * Qualify a raw mapping field path by prepending the mapping's primary schema.
+ *
+ * Handles the field forms emitted by arrow and NL-ref extraction:
+ * - `.field` paths inherit the first schema and drop the leading dot.
+ * - `schema.field` and `ns::schema.field` paths are already qualified.
+ * - Bare fields are attached to the first schema in the mapping side.
+ */
+export function qualifyField(field: string, schemas: string[]): string {
+  if (schemas.length === 0) return field;
+  if (field.includes("::")) return field;
+
+  if (field.startsWith(".")) {
+    return `${schemas[0]}.${field.slice(1)}`;
+  }
+
+  const dotIdx = field.indexOf(".");
+  if (dotIdx > 0) {
+    const prefix = field.slice(0, dotIdx);
+    if (schemas.includes(prefix)) return field;
+    for (const schema of schemas) {
+      const nsIdx = schema.indexOf("::");
+      const bare = nsIdx !== -1 ? schema.slice(nsIdx + 2) : schema;
+      if (bare === prefix) return field;
+    }
+  }
+
+  return `${schemas[0]}.${field}`;
+}
+
+/**
  * Resolve an entity reference against a namespace-keyed entity map.
  *
  * Resolution order:

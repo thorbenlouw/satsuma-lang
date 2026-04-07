@@ -24,7 +24,7 @@ import type { SyntaxNode, Tree } from "./parser-utils";
 import { child, children, labelText } from "./parser-utils";
 import type { FieldInfo, WorkspaceIndex } from "./workspace-index";
 import { resolveDefinition } from "./workspace-index";
-import { addPathAndPrefixes, isCoveredFieldPath } from "@satsuma/core";
+import { addPathAndPrefixes, isCoveredFieldPath, sourceRefStructuralText } from "@satsuma/core";
 
 // Re-export shared types from core so existing LSP code that imports from
 // this module continues to work without import path changes.
@@ -237,7 +237,7 @@ function getSchemaIdsFromBlock(body: SyntaxNode, blockType: "source_block" | "ta
     if (node.type === blockType) {
       const ids: string[] = [];
       for (const ref of children(node, "source_ref")) {
-        const name = sourceRefText(ref);
+        const name = sourceRefStructuralText(ref);
         if (name) ids.push(name);
       }
       return ids;
@@ -258,18 +258,4 @@ function resolveSchema(
 function pathText(node: SyntaxNode): string {
   const text = node.text;
   return text.startsWith("`") && text.endsWith("`") ? text.slice(1, -1) : text;
-}
-
-function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) {
-    const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-    if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-    if (ids.length === 1 && ids[0]) return ids[0].text;
-    return qn.text;
-  }
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  return id ? id.text : null;
 }

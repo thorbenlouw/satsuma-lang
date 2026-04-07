@@ -9,10 +9,10 @@ parallelisable — there is no enforced ordering except where noted.
 ## Code cleanup
 
 ### 1. Consolidate duplicated utilities into `satsuma-core`
-- [ ] Audit `satsuma-cli/src/` and `satsuma-lsp/src/` for utilities that exist in both. Produce a list with line counts.
-- [ ] For each duplicate, move the canonical implementation (with its tests) into `satsuma-core` and update both consumers to import from core.
-- [ ] Delete the consumer-side copies and their now-redundant tests.
-- [ ] Verify the dependency graph is unchanged (no consumer → consumer imports introduced).
+- [x] Audit `satsuma-cli/src/` and `satsuma-lsp/src/` for utilities that exist in both. Produced list (sl-znn1): LSP `sourceRefText` copies in `action-context.ts` (~14 lines), `completion.ts` (~16), `coverage.ts` (~14), `codelens.ts` (~13), and `definition.ts` (~11); LSP `qualifiedNameText` copy in `definition.ts` (~5); LSP `fieldNameText` / `fieldNameTextDef` copies in `symbols.ts` and `definition.ts` (~6 each); LSP `walkDescendants` local copy in `codelens.ts` (~6); CLI `qualifyField` copies in `index-builder.ts` (~35) and `field-lineage.ts` (~21); CLI `findFieldByPath` / `collectAllFieldNames` copies in `arrows.ts` (~25 combined) and `field-lineage.ts` (~22 combined).
+- [x] For each duplicate, move the canonical implementation (with its tests) into `satsuma-core` and update both consumers to import from core. `sourceRefText`, `sourceRefStructuralText`, `qualifiedNameText`, `fieldNameText`, `walkDescendants`, and `resolveScopedEntityRef` already lived in core and consumers now import them; `qualifyField`, `findFieldByPath`, and `collectFieldNames` now live in core with focused tests.
+- [x] Delete the consumer-side copies and their now-redundant tests. Deleted the consumer helper bodies; existing consumer tests remain because they exercise command/LSP behaviour, not duplicate helper units.
+- [x] Verify the dependency graph is unchanged (no consumer → consumer imports introduced). CLI and LSP import from `@satsuma/core`; no new consumer-to-consumer imports were added.
 
 ### 2. Resolve `WorkspaceIndex` naming collision
 - [x] Identify the two `WorkspaceIndex` types and document what each represents. (CLI's was an extraction-result struct: schemas/mappings/arrows/etc. produced by running extractors. viz-backend's is a definition/reference cross-file index used by the LSP and viz harness for navigation.)

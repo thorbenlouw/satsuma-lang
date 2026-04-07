@@ -100,7 +100,7 @@ export function qualifiedNameText(node: SyntaxNode | null | undefined): string |
 export function sourceRefText(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
   const qn = child(node, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
+  if (qn) return qualifiedNameText(qn) ?? qn.text;
   const bn = child(node, "backtick_name");
   if (bn) return bn.text.slice(1, -1);
   const id = child(node, "identifier");
@@ -120,7 +120,7 @@ export function sourceRefText(node: SyntaxNode | null | undefined): string | nul
 export function sourceRefStructuralText(node: SyntaxNode | null | undefined): string | null {
   if (!node) return null;
   const qn = child(node, "qualified_name");
-  if (qn) return qualifiedNameText(qn);
+  if (qn) return qualifiedNameText(qn) ?? qn.text;
   const bn = child(node, "backtick_name");
   if (bn) return bn.text.slice(1, -1);
   const id = child(node, "identifier");

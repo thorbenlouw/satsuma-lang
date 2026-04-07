@@ -4,8 +4,8 @@ import {
   Range,
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
-import { nodeRange, child, children, labelText } from "./parser-utils";
-import { isMetricSchema } from "@satsuma/core";
+import { nodeRange, child, children, labelText, walkDescendants } from "./parser-utils";
+import { isMetricSchema, sourceRefStructuralText } from "@satsuma/core";
 import {
   WorkspaceIndex,
   findReferences,
@@ -193,7 +193,7 @@ function extractRefNames(body: SyntaxNode, blockType: string): string[] {
     if (block.type !== blockType) continue;
     for (const ref of block.namedChildren) {
       if (ref.type === "source_ref") {
-        const text = sourceRefText(ref);
+        const text = sourceRefStructuralText(ref);
         if (text) names.push(text);
       }
     }
@@ -217,20 +217,6 @@ function countArrows(body: SyntaxNode): number {
   return count;
 }
 
-function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) {
-    const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-    if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-    return qn.text;
-  }
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  if (id) return id.text;
-  return null;
-}
-
 function lineRange(node: SyntaxNode): Range {
   return Range.create(
     node.startPosition.row,
@@ -238,11 +224,4 @@ function lineRange(node: SyntaxNode): Range {
     node.startPosition.row,
     node.startPosition.column,
   );
-}
-
-function walkDescendants(node: SyntaxNode, fn: (n: SyntaxNode) => void): void {
-  for (const ch of node.namedChildren) {
-    fn(ch);
-    walkDescendants(ch, fn);
-  }
 }

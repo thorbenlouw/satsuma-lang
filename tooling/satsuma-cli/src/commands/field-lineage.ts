@@ -18,7 +18,8 @@ import { runCommand, CommandError, EXIT_NOT_FOUND, EXIT_PARSE_ERROR } from "../c
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { ExtractedWorkspace, FieldDecl } from "../types.js";
+import { collectFieldNames, findFieldByPath, qualifyField } from "@satsuma/core";
+import type { ExtractedWorkspace } from "../types.js";
 
 interface FieldEdgeEntry {
   from: string | null; // canonical field path or null for derived/no-source
@@ -89,8 +90,8 @@ Examples:
       const schema = resolvedSchema.entry;
       const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
       const allFields = [...schema.fields, ...spreadFields];
-      const fieldExists = findFieldByPath(allFields, fieldName) ||
-        collectAllFieldNames(allFields).includes(fieldName);
+      const fieldExists = findFieldByPath(allFields, fieldName) !== null ||
+        collectFieldNames(allFields).includes(fieldName);
       if (!fieldExists) {
         throw new CommandError(
           `Field '${fieldName}' not found in schema '${schemaName}'.`,
@@ -223,27 +224,6 @@ function buildFieldEdgeGraph(index: ExtractedWorkspace): FieldEdgeEntry[] {
   return edges;
 }
 
-/**
- * Qualify a bare field name with its schema, handling leading dots (nested fields)
- * and already-qualified paths.
- */
-function qualifyField(field: string, schemas: string[]): string {
-  if (schemas.length === 0) return field;
-  if (field.includes("::")) return field; // already canonical
-  if (field.startsWith(".")) return `${schemas[0]}.${field.slice(1)}`;
-  const dotIdx = field.indexOf(".");
-  if (dotIdx > 0) {
-    const prefix = field.slice(0, dotIdx);
-    if (schemas.includes(prefix)) return field;
-    for (const s of schemas) {
-      const nsIdx = s.indexOf("::");
-      const bare = nsIdx !== -1 ? s.slice(nsIdx + 2) : s;
-      if (bare === prefix) return field;
-    }
-  }
-  return `${schemas[0]}.${field}`;
-}
-
 // ── Traversal ─────────────────────────────────────────────────────────────────
 
 /**
@@ -308,32 +288,6 @@ function traceDownstream(
       queue.push({ field: edge.to, depth: depth + 1 });
     }
   }
-}
-
-// ── Schema/field helpers ──────────────────────────────────────────────────────
-
-function findFieldByPath(fields: FieldDecl[], path: string): boolean {
-  const segments = path.split(".");
-  let current = fields;
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    const field = current.find((f) => f.name === seg);
-    if (!field) return false;
-    if (i < segments.length - 1) {
-      if (!field.children || field.children.length === 0) return false;
-      current = field.children;
-    }
-  }
-  return true;
-}
-
-function collectAllFieldNames(fields: FieldDecl[]): string[] {
-  const names: string[] = [];
-  for (const f of fields) {
-    names.push(f.name);
-    if (f.children) names.push(...collectAllFieldNames(f.children));
-  }
-  return names;
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
