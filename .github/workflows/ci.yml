@@ -317,14 +317,26 @@ jobs:
         working-directory: tooling/satsuma-lsp
         run: npx tsc
 
-      - name: Run LSP server tests
+      - name: Run LSP server tests with coverage
         working-directory: tooling/satsuma-lsp
         run: |
           mkdir -p ../../test-results
-          node --test \
-            --test-reporter=spec --test-reporter-destination=stdout \
-            --test-reporter=junit --test-reporter-destination=../../test-results/lsp.xml \
-            test/**/*.test.js
+          npx c8 --reporter=text --reporter=lcov --reporter=json-summary \
+            --include='dist/**/*.js' --exclude='dist/**/*.d.ts' \
+            node --test \
+              --test-reporter=spec --test-reporter-destination=stdout \
+              --test-reporter=junit --test-reporter-destination=../../test-results/lsp.xml \
+              test/**/*.test.js
+
+      - name: Post LSP coverage to step summary
+        if: always()
+        working-directory: tooling/satsuma-lsp
+        run: |
+          echo '## Satsuma LSP Coverage' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npx c8 report --reporter=text 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         if: always()
@@ -332,6 +344,15 @@ jobs:
         with:
           name: test-results-vscode
           path: test-results/lsp.xml
+
+      - name: Upload LSP coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-lsp
+          path: |
+            tooling/satsuma-lsp/coverage/lcov.info
+            tooling/satsuma-lsp/coverage/coverage-summary.json
 
   cli-pack-smoke-test:
     name: CLI pack smoke-test
@@ -463,10 +484,139 @@ jobs:
           name: test-results-excel-skill
           path: test-results/excel-skill.xml
 
+  tooling-modules:
+    name: Tooling modules (core, viz-backend, viz-model, viz)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - uses: actions/cache/restore@v5
+        with:
+          path: |
+            node_modules
+            tooling/satsuma-cli/node_modules
+            tooling/satsuma-cli/src/generated
+            tooling/satsuma-cli/dist
+            tooling/satsuma-core/node_modules
+            tooling/satsuma-core/dist
+            tooling/satsuma-viz-backend/node_modules
+            tooling/satsuma-viz-backend/dist
+            tooling/satsuma-viz-model/node_modules
+            tooling/satsuma-viz-model/dist
+            tooling/satsuma-viz/node_modules
+            tooling/satsuma-viz/dist
+            tooling/tree-sitter-satsuma/node_modules
+            tooling/tree-sitter-satsuma/build
+            tooling/tree-sitter-satsuma/tree-sitter-satsuma.wasm
+            tooling/vscode-satsuma/node_modules
+            tooling/satsuma-lsp/node_modules
+          key: workspace-${{ github.sha }}
+
+      # Each module is run separately so a failure in one is reported against
+      # that module specifically. Coverage artifacts are uploaded per-module so
+      # the coverage-report job can post one PR comment per module.
+
+      - name: satsuma-core — test:coverage
+        working-directory: tooling/satsuma-core
+        run: npm run test:coverage
+
+      - name: satsuma-core — post coverage to step summary
+        if: always()
+        working-directory: tooling/satsuma-core
+        run: |
+          echo '## Satsuma Core Coverage' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npx c8 report --reporter=text 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload satsuma-core coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-core
+          path: |
+            tooling/satsuma-core/coverage/lcov.info
+            tooling/satsuma-core/coverage/coverage-summary.json
+
+      - name: satsuma-viz-model — test:coverage
+        working-directory: tooling/satsuma-viz-model
+        run: npm run test:coverage
+
+      - name: satsuma-viz-model — post coverage to step summary
+        if: always()
+        working-directory: tooling/satsuma-viz-model
+        run: |
+          echo '## Satsuma Viz-Model Coverage' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npx c8 report --reporter=text 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload satsuma-viz-model coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-viz-model
+          path: |
+            tooling/satsuma-viz-model/coverage/lcov.info
+            tooling/satsuma-viz-model/coverage/coverage-summary.json
+
+      - name: satsuma-viz-backend — test:coverage
+        working-directory: tooling/satsuma-viz-backend
+        run: npm run test:coverage
+
+      - name: satsuma-viz-backend — post coverage to step summary
+        if: always()
+        working-directory: tooling/satsuma-viz-backend
+        run: |
+          echo '## Satsuma Viz-Backend Coverage' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npx c8 report --reporter=text 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload satsuma-viz-backend coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-viz-backend
+          path: |
+            tooling/satsuma-viz-backend/coverage/lcov.info
+            tooling/satsuma-viz-backend/coverage/coverage-summary.json
+
+      - name: satsuma-viz — test:coverage
+        working-directory: tooling/satsuma-viz
+        run: npm run test:coverage
+
+      - name: satsuma-viz — post coverage to step summary
+        if: always()
+        working-directory: tooling/satsuma-viz
+        run: |
+          echo '## Satsuma Viz Coverage' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npx c8 report --reporter=text 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload satsuma-viz coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-viz
+          path: |
+            tooling/satsuma-viz/coverage/lcov.info
+            tooling/satsuma-viz/coverage/coverage-summary.json
+
   coverage-report:
     name: Coverage report
     if: always() && github.event_name == 'pull_request'
-    needs: [satsuma-cli]
+    needs: [satsuma-cli, tooling-modules, vscode-extension]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -474,16 +624,81 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Each module's coverage is downloaded into its own directory and posted
+      # as a separate sticky PR comment. davelosert/vitest-coverage-report-action
+      # uses the `name` field to identify each comment, so distinct names give
+      # us one comment per module that updates in place on subsequent runs.
+
       - uses: actions/download-artifact@v8
         with:
           name: coverage-cli
-          path: coverage
+          path: coverage-cli
 
-      - name: Post coverage to PR
+      - name: Post Satsuma CLI coverage
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           name: Satsuma CLI Coverage
-          json-summary-path: coverage/coverage-summary.json
+          json-summary-path: coverage-cli/coverage-summary.json
+          json-final-path: ""
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage-core
+          path: coverage-core
+
+      - name: Post Satsuma Core coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Satsuma Core Coverage
+          json-summary-path: coverage-core/coverage-summary.json
+          json-final-path: ""
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage-viz-model
+          path: coverage-viz-model
+
+      - name: Post Satsuma Viz-Model coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Satsuma Viz-Model Coverage
+          json-summary-path: coverage-viz-model/coverage-summary.json
+          json-final-path: ""
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage-viz-backend
+          path: coverage-viz-backend
+
+      - name: Post Satsuma Viz-Backend coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Satsuma Viz-Backend Coverage
+          json-summary-path: coverage-viz-backend/coverage-summary.json
+          json-final-path: ""
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage-viz
+          path: coverage-viz
+
+      - name: Post Satsuma Viz coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Satsuma Viz Coverage
+          json-summary-path: coverage-viz/coverage-summary.json
+          json-final-path: ""
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage-lsp
+          path: coverage-lsp
+
+      - name: Post Satsuma LSP coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Satsuma LSP Coverage
+          json-summary-path: coverage-lsp/coverage-summary.json
           json-final-path: ""
 
   test-report:

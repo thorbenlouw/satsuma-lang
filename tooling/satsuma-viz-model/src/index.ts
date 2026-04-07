@@ -214,6 +214,8 @@ export interface FragmentCard {
   /** Fragment names spread into this fragment (resolved before sending to the client). */
   spreads: string[];
   notes: NoteBlock[];
+  /** Warning/question comments (//! and //?) attached to the fragment block. */
+  comments: CommentEntry[];
   location: SourceLocation;
 }
 

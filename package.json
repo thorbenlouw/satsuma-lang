@@ -11,7 +11,8 @@
     "lint:js": "eslint .",
     "lint:md": "markdownlint-cli2",
     "lint:yaml": "yamllint .github/workflows/",
-    "lint:python": "ruff check scripts/ tooling/tree-sitter-satsuma/scripts/ skills/ smoke-tests/"
+    "lint:python": "ruff check scripts/ tooling/tree-sitter-satsuma/scripts/ skills/ smoke-tests/",
+    "test:coverage": "npm --prefix tooling/satsuma-core run test:coverage && npm --prefix tooling/satsuma-viz-model run test:coverage && npm --prefix tooling/satsuma-viz-backend run test:coverage && npm --prefix tooling/satsuma-viz run test:coverage && npm --prefix tooling/satsuma-lsp run test:coverage && npm --prefix tooling/satsuma-cli run test:coverage"
   },
   "overrides": {
     "smol-toml": "^1.6.1"

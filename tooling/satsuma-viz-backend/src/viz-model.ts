@@ -437,7 +437,7 @@ function findPrecedingBlock(
     if (prev.type === "fragment_block") {
       const name = labelText(prev);
       const frag = globalNs.fragments.find((f) => f.id === name);
-      if (frag) return frag.notes as unknown as CommentEntry[];
+      if (frag) return frag.comments;
     }
   }
   return null;
@@ -526,6 +526,7 @@ function extractFragment(uri: string, node: SyntaxNode, namespace: string | null
     fields: body ? extractFieldEntries(uri, body) : [],
     spreads: body ? extractSpreads(body) : [],
     notes: extractNotes(uri, node),
+    comments: extractComments(uri, node),
     location: nodeLocation(uri, node),
   };
 }
@@ -1370,3 +1371,34 @@ export function mergeVizModels(
 
   return { uri: primaryUri, fileNotes, namespaces };
 }
+
+// ---------- Test-only exports ----------
+//
+// These re-exports give the test suite direct access to the per-builder
+// extract* helpers so each can be exercised in isolation against a parsed
+// CST node, rather than only via the full buildVizModel pipeline. They are
+// not part of the package's public API and must not be imported by
+// production code — the leading underscore is the convention.
+export const _testInternals = {
+  extractSchema,
+  extractFragment,
+  extractMapping,
+  extractMetric,
+  extractMetricMetadata,
+  extractMetricFields,
+  extractMeasure,
+  extractFieldEntries,
+  extractSpreads,
+  extractSchemaLabel,
+  extractSourceBlock,
+  extractArrow,
+  extractComputedArrow,
+  extractTransform,
+  extractEachBlock,
+  extractFlattenBlock,
+  extractNoteBlock,
+  extractNotes,
+  extractComments,
+  extractCommentText,
+  extractMetadataEntries,
+};
