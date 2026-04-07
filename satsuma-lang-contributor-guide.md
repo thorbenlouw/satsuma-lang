@@ -72,14 +72,14 @@ flowchart TD
     files[".stm files on disk"]
     ws["workspace.ts<br/>resolve entry, follow imports"]
     parser["parser.ts<br/>WASM parse via core"]
-    idx["index-builder.ts<br/>core extract*() → WorkspaceIndex"]
+    idx["index-builder.ts<br/>core extract*() → ExtractedWorkspace"]
     shims["shims<br/>spread-expand, nl-ref-extract"]
     cmd["command handler<br/>query index, format output"]
 
     files --> ws --> parser --> idx --> shims --> cmd
 ```
 
-The CLI's `WorkspaceIndex` (defined in `types.ts`) is a flat collection of `Map<string, Record>` objects — schemas, metrics, mappings, fragments, transforms, plus arrays for notes, warnings, arrows, and NL ref data. It is rebuilt from scratch on every invocation (files are small; full re-parse takes <100ms).
+The CLI's `ExtractedWorkspace` (defined in `types.ts` — renamed from `WorkspaceIndex` in sl-erxz to make its role as an extraction *result* explicit and avoid the name clash with viz-backend's editor index) is a flat collection of `Map<string, Record>` objects — schemas, metrics, mappings, fragments, transforms, plus arrays for notes, warnings, arrows, and NL ref data. It is rebuilt from scratch on every invocation (files are small; full re-parse takes <100ms).
 
 ### Path 2: LSP — Document Change to IDE Feature
 
@@ -98,7 +98,7 @@ flowchart TD
     wsIdx --> req --> handler --> coreCall --> mapTypes --> resp
 ```
 
-The LSP's `WorkspaceIndex` (defined in viz-backend) is structurally different from the CLI's: it stores `DefinitionEntry` and `ReferenceEntry` objects with LSP `Range` positions, keyed by symbol name. It is updated incrementally per-file.
+The LSP's `WorkspaceIndex` (defined in viz-backend) is a different shape entirely: it stores `DefinitionEntry` and `ReferenceEntry` objects with LSP `Range` positions, keyed by symbol name, and is updated incrementally per-file. It kept the `WorkspaceIndex` name in sl-erxz because it is the naturally editor-shaped index; the CLI's batch result type was the one that got renamed (to `ExtractedWorkspace`).
 
 ### Path 3: Viz — Server to Rendering
 
@@ -138,8 +138,8 @@ flowchart TD
 
 | Function / Type | File | What It Does |
 |---|---|---|
-| `buildIndex(parsedFiles)` | `index-builder.ts` | The big assembler — takes parsed files, calls every core extractor, builds the full `WorkspaceIndex` with deduplication and cross-reference graph |
-| `WorkspaceIndex` | `types.ts` | The CLI's workspace model — maps of schemas, metrics, mappings, fragments, transforms, plus arrows, notes, warnings, NL ref data, duplicates |
+| `buildIndex(parsedFiles)` | `index-builder.ts` | The big assembler — takes parsed files, calls every core extractor, builds the full `ExtractedWorkspace` with deduplication and cross-reference graph |
+| `ExtractedWorkspace` | `types.ts` | The CLI's workspace model — maps of schemas, metrics, mappings, fragments, transforms, plus arrows, notes, warnings, NL ref data, duplicates |
 | `resolveInput(pathArg)` | `workspace.ts` | File discovery — takes a `.stm` path, follows imports transitively, returns all reachable file paths |
 | `buildFullGraph(index)` | `graph-builder.ts` | Constructs a schema-level directed graph (nodes + edges) from the workspace index, including NL-derived edges |
 | `diffIndex(indexA, indexB)` | `diff.ts` | Structural comparison of two workspace snapshots — field additions/removals, type changes, arrow changes |
@@ -165,7 +165,7 @@ Core's cross-file operations need workspace data but must not depend on any spec
 - `DefinitionLookup` — full lookup interface for NL ref resolution (hasSchema, getSchema, expandSpreads, etc.)
 - `SemanticIndex` — provides all entities for validation
 
-Each consumer (CLI, LSP, viz-backend) creates these callbacks from its own index type in 3–5 lines. The CLI does this in `spread-expand.ts` and `nl-ref-extract.ts` — these are thin "shim" modules that bridge `WorkspaceIndex` to core's callbacks.
+Each consumer (CLI, LSP, viz-backend) creates these callbacks from its own index type in 3–5 lines. The CLI does this in `spread-expand.ts` and `nl-ref-extract.ts` — permanent (per ADR-005/006) thin bridge modules that adapt `ExtractedWorkspace` to core's callback APIs.
 
 ---
 
@@ -240,9 +240,9 @@ In `satsuma-viz-backend/src/viz-model.ts`, every VizModel type is imported **twi
 
 The `ARCHITECTURE.md` states: "satsuma-viz has no dependency on core, CLI, or LSP." But `package.json` lists `@satsuma/core` as a direct dependency, and the source imports `buildCoveredFieldSet` and `isCoveredFieldPath` from `@satsuma/core/coverage-paths`. The dependency matrix table in `ARCHITECTURE.md` shows no `*` in the `satsuma-viz` → `core` cell. The documentation is wrong.
 
-### 8. The Shims Are Acknowledged Technical Debt
+### 8. The CLI Bridges Are Permanent (and That Is Fine)
 
-Both `satsuma-cli/src/spread-expand.ts` and `satsuma-cli/src/nl-ref-extract.ts` have header comments saying they "will be collapsed when all callers are migrated in sl-n4wb." These shim modules exist solely to preserve the old `WorkspaceIndex`-based API while core uses callbacks. They work, but they are an extra indirection layer that a new contributor will puzzle over. They use `as unknown as Map<string, unknown>` casts (7 occurrences) to bridge the type gap — a code smell that would vanish if the CLI adopted core's callback types directly.
+Both `satsuma-cli/src/spread-expand.ts` and `satsuma-cli/src/nl-ref-extract.ts` are thin bridge modules that adapt the CLI's `ExtractedWorkspace` to core's callback-based APIs (per ADR-005 / ADR-006). Earlier drafts of this guide called them temporary shims slated for removal in sl-n4wb; that ticket closed and the bridges were rejustified as permanent in sl-y0sz. They are the canonical place where CLI-shaped data meets core's callbacks — exactly one well-named module per callback interface — and they are not technical debt.
 
 ### 9. Excessive `process.exit()` — 74 Calls
 
@@ -250,9 +250,9 @@ The CLI has 74 `process.exit()` calls scattered across command handlers and erro
 
 A conventional pattern would be to throw typed errors and have a single top-level catch in `index.ts` that maps error types to exit codes.
 
-### 10. Two Completely Different `WorkspaceIndex` Types
+### 10. Two Workspace Index Shapes (Now Distinctly Named)
 
-The CLI's `WorkspaceIndex` (in `satsuma-cli/src/types.ts`) and the viz-backend's `WorkspaceIndex` (in `satsuma-viz-backend/src/workspace-index.ts`) are **structurally unrelated types that share the same name**. The CLI version stores flat `Map<string, SchemaRecord>` entries. The viz-backend version stores `Map<string, DefinitionEntry[]>` with LSP `Range` positions. They serve different consumers (batch processing vs. incremental IDE updates), but the name collision is a source of confusion, especially since the LSP re-exports the viz-backend version under the same `WorkspaceIndex` name.
+The CLI and the viz-backend both need to hold cross-file workspace data, but with very different shapes. The CLI uses `ExtractedWorkspace` (in `satsuma-cli/src/types.ts`) — a flat batch result of `Map<string, SchemaRecord>` entries built once per invocation. The viz-backend uses `WorkspaceIndex` (in `satsuma-viz-backend/src/workspace-index.ts`) — an incrementally updated `Map<string, DefinitionEntry[]>` with LSP `Range` positions used for IDE features. Until sl-erxz both types were called `WorkspaceIndex`, which was a real source of confusion; the rename to `ExtractedWorkspace` makes the CLI type's role as an extraction *result* explicit and removes the collision.
 
 ### 11. The LSP Shells Out to the CLI for Validation
 
@@ -288,7 +288,7 @@ Core tests are `.js` files. CLI tests are `.ts` files. LSP tests are `.js` files
 
 ### 18. The Lint Engine Has Only 3 Rules
 
-`lint-engine.ts` defines a full rule registry, runner, and fix-application framework — but currently houses only 3 rules. The framework is well-designed (rules receive a `WorkspaceIndex` and return `LintDiagnostic[]` with optional auto-fix functions), but the validation logic in `core/validate.ts` (9 check categories, ~900 lines) was not built on top of this framework. The result is two parallel validation systems with overlapping coverage: `validate` produces `SemanticDiagnostic` objects, while `lint` produces `LintDiagnostic` objects.
+`lint-engine.ts` defines a full rule registry, runner, and fix-application framework — but currently houses only 3 rules. The framework is well-designed (rules receive an `ExtractedWorkspace` and return `LintDiagnostic[]` with optional auto-fix functions), but the validation logic in `core/validate.ts` (9 check categories, ~900 lines) was not built on top of this framework. The result is two parallel validation systems with overlapping coverage: `validate` produces `SemanticDiagnostic` objects, while `lint` produces `LintDiagnostic` objects.
 
 ### 19. NL Ref Edge-Counting Logic Is Triplicated
 
@@ -308,15 +308,15 @@ The codebase is already better-structured than most projects its size. The layer
 
 ### 1. Collapse the Type Duplication
 
-Define `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, `Classification`, and all other shared types **once** in `satsuma-core/src/types.ts` and import them everywhere. The CLI's `types.ts` should contain only CLI-specific types (`SchemaRecord`, `ArrowRecord`, `WorkspaceIndex`, etc.) and re-export core types. Delete the duplicated `web-tree-sitter.d.ts`. This is the single highest-leverage cleanup: it eliminates an entire category of "which type am I looking at?" confusion.
+Define `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, `Classification`, and all other shared types **once** in `satsuma-core/src/types.ts` and import them everywhere. The CLI's `types.ts` should contain only CLI-specific types (`SchemaRecord`, `ArrowRecord`, `ExtractedWorkspace`, etc.) and re-export core types. Delete the duplicated `web-tree-sitter.d.ts`. This is the single highest-leverage cleanup: it eliminates an entire category of "which type am I looking at?" confusion.
 
-### 2. Kill the Shims
+### 2. (Resolved) The CLI Bridges Are Permanent
 
-Migrate all CLI callers of `spread-expand.ts` and `nl-ref-extract.ts` to call core's callback-based APIs directly — creating the callbacks inline at call sites (it's 3–5 lines each). Delete the shim modules. Remove the `as unknown as` casts. The tracked ticket (`sl-n4wb`) already identifies this work.
+An earlier version of this guide listed "kill the shims" as a target. After sl-n4wb closed and the modules were rejustified in sl-y0sz, the conclusion is the opposite: `spread-expand.ts` and `nl-ref-extract.ts` are the canonical CLI ↔ core callback adapters and should stay. No action.
 
-### 3. Unify or Clearly Differentiate the Two WorkspaceIndex Types
+### 3. (Resolved) `WorkspaceIndex` Naming Collision
 
-Either rename them (`BatchIndex` / `IncrementalIndex`, or `CLIIndex` / `EditorIndex`), or consolidate to a single type. Given the different use cases (batch CLI vs. incremental LSP), renaming is probably the right call. Make it impossible for a contributor to confuse them.
+The CLI's batch result type was renamed from `WorkspaceIndex` to `ExtractedWorkspace` in sl-erxz. The viz-backend keeps `WorkspaceIndex` because it is the naturally editor-shaped index. No further action.
 
 ### 4. Replace `process.exit()` with Typed Errors
 
@@ -371,13 +371,13 @@ These are concrete, incremental improvements ordered by impact-to-effort ratio. 
 ### Tier 1 — High Impact, Low Risk (do first)
 
 **R1. Delete the CLI's duplicate type declarations.**
-The CLI's `types.ts` defines its own `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, and `Classification` that shadow core's. Replace them with re-exports from `@satsuma/core`. The CLI-only types (`SchemaRecord`, `WorkspaceIndex`, `ArrowRecord`, `LintDiagnostic`, etc.) stay. This is a search-and-replace job — structural typing means nothing breaks at runtime — but it eliminates the biggest "which type am I looking at?" trap for every future contributor. A single PR, zero behavioural change.
+The CLI's `types.ts` defines its own `SyntaxNode`, `Tree`, `FieldDecl`, `PipeStep`, and `Classification` that shadow core's. Replace them with re-exports from `@satsuma/core`. The CLI-only types (`SchemaRecord`, `ExtractedWorkspace`, `ArrowRecord`, `LintDiagnostic`, etc.) stay. This is a search-and-replace job — structural typing means nothing breaks at runtime — but it eliminates the biggest "which type am I looking at?" trap for every future contributor. A single PR, zero behavioural change.
 
-**R2. Delete the dead `resolveAndLoad` function or wire it up.**
-`errors.ts` exports `resolveAndLoad()` — a convenience wrapper that combines `resolveInput` + `loadFiles` + error handling. It is called by exactly zero commands. Every one of the 20 command files that needs this functionality re-implements it inline (resolve input, catch error, print message, exit). Either delete the dead code, or — better — migrate the 20 commands to use it. The latter would remove ~200 lines of copy-pasted boilerplate and make error handling consistent.
+**R2. ~~Delete the dead `resolveAndLoad` function or wire it up.~~ (Done — sl-r39t)**
+`errors.ts` previously exported a `resolveAndLoad()` convenience wrapper with zero callers. Per Feature 29 the helper was deleted in sl-r39t rather than retrofitted into the 20 command files; CLI commands continue to inline `resolveInput` + `loadFiles`.
 
-**R3. Collapse the shim modules.**
-`satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` exist solely to bridge core's callback-based APIs to the CLI's `WorkspaceIndex`. Their own headers say they're temporary ("will be collapsed in sl-n4wb"). Each shim is ~80 lines of forwarding + `as unknown as` casts. Inline the 3–5-line callback construction at each call site, delete the shims, and the casts disappear.
+**R3. ~~Collapse the shim modules.~~ (Won't do — sl-y0sz)**
+`satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` were rejustified in sl-y0sz as permanent CLI ↔ core callback bridges (ADR-005 / ADR-006). The previous header comments claiming they would be removed in sl-n4wb were stale; they have been rewritten to describe the modules' permanent role.
 
 **R4. Deduplicate `web-tree-sitter.d.ts`.**
 The 213-line type declaration file is byte-for-byte identical in CLI and LSP. Move it to `satsuma-core` (or a shared `@types` directory) and import from there.
@@ -393,9 +393,10 @@ Every command does the same dance: parse path argument, resolve imports, load fi
 ```typescript
 async function withIndex(
   pathArg: string | undefined,
-  fn: (index: WorkspaceIndex, files: ParsedFile[]) => void,
+  fn: (index: ExtractedWorkspace, files: ParsedFile[]) => void,
 ): Promise<void> {
-  const files = await resolveAndLoad(pathArg ?? ".", resolveInput, parseFile);
+  const paths = await resolveInput(pathArg ?? ".");
+  const files = await loadFiles(paths, parseFile);
   const index = buildIndex(files.map(extractFileData));
   fn(index, files);
 }
@@ -421,8 +422,8 @@ The codebase has three diagnostic producers that partially overlap: tree-sitter 
 **R12. Add arrow records to the LSP workspace index.**
 The viz-backend's workspace index tracks definitions and references but not arrow records. This is why the LSP shells out to the CLI for full validation. If the workspace index also stored `ExtractedArrow` data (via core's `extractArrowRecords`), the LSP could run the full semantic validator in-process, eliminating the 15-second-timeout subprocess, the JSON stdout parsing, and the fragile deduplication logic.
 
-**R13. Rename the two `WorkspaceIndex` types.**
-The CLI's `WorkspaceIndex` and the viz-backend's `WorkspaceIndex` are structurally unrelated types that share a name. Rename one — e.g., `CLIWorkspaceIndex` vs. `EditorWorkspaceIndex`, or `BatchIndex` vs. `IncrementalIndex`. This costs a large but mechanical rename across many files, but permanently eliminates the most common "which one?" confusion.
+**R13. ~~Rename the two `WorkspaceIndex` types.~~ (Done — sl-erxz)**
+The CLI's batch type was renamed to `ExtractedWorkspace`; viz-backend's editor index keeps `WorkspaceIndex`. The naming collision is gone.
 
 ---
 
@@ -432,11 +433,11 @@ If I were designing this system with today's knowledge and a blank slate, here's
 
 ### 1. One workspace index, not two
 
-The biggest structural tension in the codebase is that the CLI and the LSP each have their own workspace index with different shapes, different update semantics, and different data. The CLI's is a flat `Map<string, Record>` structure rebuilt from scratch on every invocation. The LSP's is an incremental `Map<string, DefinitionEntry[]>` that tracks LSP `Range` positions.
+The biggest structural tension in the codebase is that the CLI and the LSP each have their own workspace data structure with different shapes, different update semantics, and different data. The CLI's `ExtractedWorkspace` is a flat `Map<string, Record>` structure rebuilt from scratch on every invocation. The viz-backend's `WorkspaceIndex` is an incremental `Map<string, DefinitionEntry[]>` that tracks LSP `Range` positions.
 
 From scratch, I'd define **one** workspace index type in core with a clear interface: `addFile(uri, tree)`, `removeFile(uri)`, `getSchema(name)`, `getArrows(mappingName)`, `iterateAll()`. The index would store core extraction results (the `Extracted*` types) enriched with source positions. The CLI would build it in batch mode (add all files, query, discard). The LSP would build it incrementally (add/update on change, query on request). The index type would live in core and would not contain any LSP-specific types like `Range` — consumers would convert positions at the boundary.
 
-This one change would eliminate: the two `WorkspaceIndex` types, the shim modules, the callback bridges, the `as unknown as` casts, the missing-arrow-records gap that forces the LSP to subprocess, and the divergent duplicate-detection logic.
+This one change would eliminate: the two parallel workspace types, the CLI ↔ core callback bridges, the missing-arrow-records gap that forces the LSP to subprocess, and the divergent duplicate-detection logic.
 
 ### 2. Result types, not `process.exit()`
 
@@ -450,7 +451,7 @@ Currently, CST node type strings like `"schema_block"`, `"mapping_block"`, `"fie
 
 Each CLI command currently mixes three concerns: Commander option parsing, workspace orchestration (resolve files, build index), and business logic (query index, format output). I'd separate these completely:
 
-- **Command functions** are pure: `(index: WorkspaceIndex, options: SchemaOpts) → SchemaResult`. No I/O, no side effects. Trivially testable.
+- **Command functions** are pure: `(index: ExtractedWorkspace, options: SchemaOpts) → SchemaResult`. No I/O, no side effects. Trivially testable.
 - **Formatters** convert results to human text or JSON: `(result: SchemaResult, format: "text" | "json") → string`.
 - **CLI wiring** handles Commander registration, file resolution, index building, and output writing. One thin orchestrator per command, or even a single generic one.
 
@@ -496,13 +497,13 @@ The architecture notes say "full re-parse is <5ms" and "incremental computation 
 
 2. **Understand the callback pattern**. Core uses `EntityRefResolver`, `SpreadEntityLookup`, `DefinitionLookup`, and `SemanticIndex` to stay decoupled from consumers. When you see a function taking a callback, the consumer is expected to wire it from its own index.
 
-3. **The CLI and LSP have different index types with the same name.** The CLI's `WorkspaceIndex` stores flat record maps. The viz-backend's `WorkspaceIndex` stores definition/reference entries with LSP ranges. Don't confuse them.
+3. **The CLI and LSP have different workspace types.** The CLI's `ExtractedWorkspace` stores flat record maps (a batch extraction result). The viz-backend's `WorkspaceIndex` stores definition/reference entries with LSP ranges (an incremental editor index). They serve different consumers; the names now signal the difference.
 
 4. **The grammar is the source of truth.** If you want to understand what a CST node type means, read `tree-sitter-satsuma/grammar.js`. The corpus tests in `test/corpus/` are the best documentation of expected parse shapes.
 
 5. **All extraction logic goes through core.** If you find yourself writing CST-walking code in the CLI or LSP, stop — it belongs in core.
 
-6. **The shim files are transitional.** `satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` exist to bridge old APIs. They will be removed.
+6. **The CLI bridge files are permanent.** `satsuma-cli/src/spread-expand.ts` and `nl-ref-extract.ts` are the canonical adapters from the CLI's `ExtractedWorkspace` to core's callback APIs (ADR-005 / ADR-006). Earlier versions of this guide called them transitional; that was wrong.
 
 7. **Read the ADRs.** They explain _why_ decisions were made, not just what was decided. ADR-005, ADR-006, ADR-020, and ADR-022 are essential context.
 

@@ -29,7 +29,7 @@ graph TD
   CORE[satsuma-core<br/><i>formatter · cst-utils · extract · validate<br/>coverage · parser · spread-expand · nl-ref · types</i>]
   VIZM[satsuma-viz-model<br/><i>VizModel protocol types</i>]
   VIZB[satsuma-viz-backend<br/><i>buildVizModel · mergeVizModels<br/>WorkspaceIndex · indexFile<br/>getImportReachableUris · createScopedIndex</i>]
-  CLI[satsuma-cli<br/><i>16 commands · WorkspaceIndex</i>]
+  CLI[satsuma-cli<br/><i>16 commands · ExtractedWorkspace</i>]
   LSP[vscode-satsuma/server<br/><i>DefinitionIndex · semantic tokens<br/>completions · hover · …</i>]
   EXT[vscode-satsuma/client<br/><i>extension host</i>]
   VIZ[satsuma-viz<br/><i>Lit web component</i>]
@@ -65,7 +65,7 @@ flowchart TD
   RECORDS["Per-file extracted records\nExtractedSchema[] · ExtractedMapping[]\nExtractedArrow[] · ExtractedMetric[] · …"]
 
   IDXB["satsuma-cli/index-builder\nextractFileData() + buildIndex()"]
-  WI["WorkspaceIndex\nfully resolved · multi-file"]
+  WI["ExtractedWorkspace\nfully resolved · multi-file"]
   CMDS["CLI commands\ngraph · lineage · field-lineage\nvalidate · lint · nl-refs · …"]
 
   WSIDX["vscode-satsuma/workspace-index\nindexFile()"]
@@ -127,7 +127,7 @@ graph LR
 | `Resolution` | `types.ts` | `{ resolved: boolean, resolvedTo: { kind, name } \| null }` |
 | `EntityFieldLookup` | `spread-expand.ts` | Callback for spread resolution: `(name, ns) => { fields } \| null` |
 | `DefinitionLookup` | `nl-ref.ts` | Callback for @-ref resolution: `(name, ns) => { kind, fields? } \| null` |
-| `SemanticIndex` | `validate.ts` | Minimal structural interface accepted by `collectSemanticDiagnostics`; satisfied by CLI `WorkspaceIndex` |
+| `SemanticIndex` | `validate.ts` | Minimal structural interface accepted by `collectSemanticDiagnostics`; satisfied by CLI `ExtractedWorkspace` |
 | `SemanticDiagnostic` | `validate.ts` | `{ file, line, column, severity, rule, message }` — one semantic warning or error |
 | `FieldCoverageEntry` | `coverage.ts` | `{ path, mapped: boolean }` — coverage status for one field path |
 | `SchemaCoverageResult` | `coverage.ts` | Per-schema list of `FieldCoverageEntry` records |
@@ -147,10 +147,10 @@ satsuma-cli/src/
 │   ├── validate.ts      — satsuma validate
 │   ├── lint.ts          — satsuma lint
 │   └── …
-├── index-builder.ts     — extractFileData(), buildIndex() → WorkspaceIndex
+├── index-builder.ts     — extractFileData(), buildIndex() → ExtractedWorkspace
 │                          Wraps satsuma-core extractions; provides EntityFieldLookup
 │                          and DefinitionLookup factory functions for callbacks
-├── nl-ref-extract.ts    — makeDefinitionLookup(WorkspaceIndex): DefinitionLookup
+├── nl-ref-extract.ts    — makeDefinitionLookup(ExtractedWorkspace): DefinitionLookup
 │                          Thin adapter; all logic is in satsuma-core/nl-ref
 ├── workspace.ts         — File discovery, parsing, index building for a workspace dir
 ├── graph-builder.ts     — Builds the graph data structure for satsuma graph
@@ -160,7 +160,7 @@ satsuma-cli/src/
 └── parser.ts            — initParser(), parseFile() wrappers (delegates to satsuma-core/parser)
 ```
 
-`WorkspaceIndex` (CLI-specific) holds fully resolved, multi-file semantic data:
+`ExtractedWorkspace` (CLI-specific; renamed from `WorkspaceIndex` in sl-erxz to avoid colliding with viz-backend's editor-shaped `WorkspaceIndex`) holds fully resolved, multi-file semantic data:
 - `schemas: Map<string, SchemaRecord>`
 - `mappings: Map<string, MappingRecord>`
 - `arrows: ArrowRecord[]`
@@ -232,7 +232,7 @@ graph LR
     NL["nl-ref\nDefinitionLookup"]
   end
   subgraph satsuma-cli
-    WI["WorkspaceIndex\nadapter closure"]
+    WI["ExtractedWorkspace\nadapter closure"]
   end
   subgraph vscode-satsuma/server
     DI["DefinitionIndex\nadapter closure"]
