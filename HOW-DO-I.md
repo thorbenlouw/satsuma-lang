@@ -15,6 +15,9 @@ Read the [Data Engineer Tutorial](docs/tutorials/data-engineer-tutorial.md) — 
 **How do I use Satsuma as an integration engineer?**
 Read the [Integration Engineer Tutorial](docs/tutorials/integration-engineer-tutorial.md) — covers using Satsuma for ESBs, APIs, message queues, and iPaaS platforms.
 
+**How do I reverse-engineer a folder of legacy Excel mapping spreadsheets into Satsuma?**
+Read the [Copilot + Excel reverse-engineering tutorial](docs/tutorials/copilot-excel-reverse-engineering-tutorial.md) — an end-to-end workflow for bootstrapping a fresh project in VS Code with GitHub Copilot agent mode, the Satsuma CLI, and the `excel-to-satsuma` skill.
+
 **How do I look up the full syntax?**
 Read the [language specification](docs/developer/SATSUMA-V2-SPEC.md). For a compact reference, see [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md) or run `satsuma agent-reference`.
 

@@ -249,7 +249,7 @@ Start with Lesson 01 or jump to a [suggested reading path](lessons/README.md#sug
 - [PROJECT-OVERVIEW.md](docs/product-owner/PROJECT-OVERVIEW.md): problem statement, vision, and roadmap
 - [SATSUMA-CLI.md](SATSUMA-CLI.md): CLI command reference (21 commands for structural extraction, analysis, and validation)
 - [AI-AGENT-REFERENCE.md](AI-AGENT-REFERENCE.md): compact grammar and quick reference for agents (also available via `satsuma agent-reference`)
-- [docs/tutorials/](docs/tutorials/): role-based tutorials (BA, data engineer, integration engineer)
+- [docs/tutorials/](docs/tutorials/): role-based tutorials (BA, data engineer, integration engineer) plus a [Copilot + Excel reverse-engineering workflow](docs/tutorials/copilot-excel-reverse-engineering-tutorial.md)
 - [USE_CASES.md](docs/product-owner/USE_CASES.md): practical scenarios and personas
 - [HOW-DO-I.md](HOW-DO-I.md): question-based index to all guides and conventions
 - [ROADMAP.md](docs/product-owner/ROADMAP.md): deferred work items, ideas, and convention docs still to write
