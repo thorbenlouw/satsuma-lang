@@ -2,14 +2,17 @@
 // Fact and dimension tables referenced by metrics.stm
 
 schema fact_subscriptions (note "Active and historical subscription records") {
-  subscription_id  STRING(36)     (pk)
-  customer_id      STRING(36)     (ref @dim_customer.customer_id)
-  product_line     STRING(50)
-  amount           DECIMAL(14,2)
-  billing_period   STRING(10)     (enum {monthly, quarterly, annual})
-  status           STRING(20)     (enum {active, cancelled, trial})
-  started_at       TIMESTAMPTZ
-  cancelled_at     TIMESTAMPTZ
+  subscription_id   STRING(36)     (pk)
+  customer_id       STRING(36)     (ref @dim_customer.customer_id)
+  product_line      STRING(50)
+  customer_segment  STRING(30)
+  region            STRING(50)
+  segment           STRING(30)
+  amount            DECIMAL(14,2)
+  billing_period    STRING(10)     (enum {monthly, quarterly, annual})
+  status            STRING(20)     (enum {active, cancelled, trial})
+  started_at        TIMESTAMPTZ
+  cancelled_at      TIMESTAMPTZ
 }
 
 schema fact_orders (note "Commerce order header records") {
@@ -19,6 +22,7 @@ schema fact_orders (note "Commerce order header records") {
   order_channel  STRING(30)
   currency_code  ISO-4217
   total_amount   DECIMAL(14,2)
+  quantity       INTEGER
   is_gift        BOOLEAN        (default false)
   ship_country   ISO-3166-a2
   loyalty_tier   STRING(20)
