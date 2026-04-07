@@ -141,6 +141,8 @@ The long-term tooling model is parser-first:
 5. editor support
 6. visualizers and generators
 
+For the package map, dependency graph, and design principles behind the tooling, see [Satsuma Tooling Architecture](docs/developer/ARCHITECTURE.md).
+
 For agent workflows specifically, the model is:
 
 1. author or generate `.stm`
