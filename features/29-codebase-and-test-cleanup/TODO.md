@@ -29,8 +29,8 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Chose (a): deleted from `tooling/satsuma-cli/src/errors.ts` (sl-r39t). Not documented in ARCHITECTURE.md, so no further note needed.
 
 ### 5. Remove or de-mark temporary shims
-- [ ] Grep for "temporary", "shim", "migration" in source headers across all packages.
-- [ ] For each: either delete the shim and update callers, or remove the temporary marker and add a comment justifying its continued existence.
+- [x] Grep for "temporary", "shim", "migration" in source headers across all packages.
+- [x] For each: either delete the shim and update callers, or remove the temporary marker and add a comment justifying its continued existence. (sl-y0sz: rejustified `nl-ref-extract.ts` and `spread-expand.ts` as permanent WorkspaceIndex→core-callback bridges; the stale "will be collapsed in sl-n4wb" claim is gone — sl-n4wb is closed and the bridges remain by design.)
 
 ### 6. Reduce `process.exit()` usage in CLI commands *(stretch — may split)*
 - [ ] Count current `process.exit()` calls and bucket them by reason (validation failure, IO error, unknown command, etc.).
@@ -50,8 +50,8 @@ parallelisable — there is no enforced ordering except where noted.
 - [ ] `index-builder.ts` `buildIndex` — add a function-level doc-comment explaining the assembly order and why it cannot be reordered.
 
 ### 9. Reconcile `ARCHITECTURE.md` claims with reality
-- [ ] Find every claim in `ARCHITECTURE.md` of the form "consumers never X" and verify it.
-- [ ] Either fix the violation (preferred) or update the doc to describe reality.
+- [x] Find every claim in `ARCHITECTURE.md` of the form "consumers never X" and verify it.
+- [x] Either fix the violation (preferred) or update the doc to describe reality. (sl-rovp: cardinal dependency rule verified — no upward imports exist. The "consumer tests never duplicate core extraction tests" claim is currently violated by `extract.test.ts` / `classify.test.ts`; softened to "should not" with a Known Violation note pointing at sl-cvs2, which will fix the underlying duplication.)
 
 ## Test cleanup
 

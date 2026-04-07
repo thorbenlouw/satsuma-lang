@@ -282,9 +282,13 @@ Satsuma snippets. Consumer test suites validate only:
   viz rendering.
 - **Integration** — end-to-end flows (file to parse to index to feature output).
 
-Consumer tests never duplicate core extraction tests. If a consumer test is
-really testing "does `extractSchemas` return the right fields for a schema with
-spreads," that test belongs in core.
+Consumer tests should not duplicate core extraction tests. If a consumer test
+is really testing "does `extractSchemas` return the right fields for a schema
+with spreads," that test belongs in core.
+
+> **Known violation:** `tooling/satsuma-cli/test/extract.test.ts` and
+> `classify.test.ts` currently re-test logic already covered by core's own
+> extraction and classification suites. De-duplication is tracked in `sl-cvs2`.
 
 ### 8. Graceful degradation over hard failures
 

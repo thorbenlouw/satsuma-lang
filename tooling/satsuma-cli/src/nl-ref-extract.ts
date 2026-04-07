@@ -1,12 +1,18 @@
 /**
- * nl-ref-extract.ts — CLI shim for satsuma-core NL ref extraction
+ * nl-ref-extract.ts — CLI bridge between WorkspaceIndex and satsuma-core NL refs
  *
- * All logic now lives in satsuma-core/src/nl-ref.ts. This shim provides the
- * original WorkspaceIndex-based API so existing CLI callers need no changes.
- * It will be collapsed in sl-n4wb when all callers are updated.
+ * All NL ref logic lives in satsuma-core/src/nl-ref.ts. Per ADR-006, core
+ * accepts a DefinitionLookup callback so it can stay independent of any
+ * particular index representation. This module's job is to construct that
+ * lookup from the CLI's WorkspaceIndex and re-export the resolver functions
+ * with the index-shaped signatures CLI commands expect.
  *
- * Architecture note (ADR-006): satsuma-core uses DefinitionLookup callbacks
- * to avoid depending on WorkspaceIndex. This shim bridges the gap.
+ * It also owns countNlDerivedEdgesByMapping, which is index-specific
+ * accounting that has no place in core.
+ *
+ * Owns: WorkspaceIndex → DefinitionLookup adaptation; nl-derived edge counts.
+ * Does not own: ref classification, resolution, or NL data extraction
+ * (those are pure functions in @satsuma/core).
  */
 
 import {
