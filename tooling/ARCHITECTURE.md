@@ -146,8 +146,9 @@ This is the serialisation boundary between server and client. Changes to
 ### satsuma-viz
 
 A Lit web component that renders `VizModel` as an interactive diagram. Owns
-layout (ELK.js), edge rendering (SVG), and card components. Consumes only
-`VizModel` JSON — has no dependency on core, CLI, or LSP.
+layout (ELK.js), edge rendering (SVG), and card components. Consumes `VizModel`
+JSON plus small shared helpers from `satsuma-core` for coverage and NL `@ref`
+rendering. It has no dependency on the CLI or LSP.
 
 ### satsuma-viz-backend
 
@@ -402,7 +403,7 @@ satsuma-viz-model        -         -       -           -         -    -    -    
 satsuma-viz-backend      *         *       *           -         -    -    -     -          -
 satsuma-cli              *         *       -           -         -    -    -     -          -
 satsuma-lsp              *         *       *           *         -    -    -     -          -
-satsuma-viz              -         -       *           -         -    -    -     -          -
+satsuma-viz              -         *       *           -         -    -    -     -          -
 vscode-satsuma           -         -       -           -         -    *    *     -          -
 satsuma-viz-harness      *         *       -           *         -    -    *     -          -
 ```
