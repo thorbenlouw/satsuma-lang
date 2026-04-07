@@ -12,7 +12,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { collectSemanticWarnings } from "#src/validate.js";
+import { collectSemanticWarnings } from "#src/semantic-warnings.js";
 import { extractSchemas, extractMetrics } from "@satsuma/core";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────

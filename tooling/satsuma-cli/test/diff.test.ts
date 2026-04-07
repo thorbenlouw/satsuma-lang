@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { diffIndex } from "#src/diff.js";
+import { diffIndex } from "#src/diff-engine.js";
 
 function makeIndex(schemas: any = {}, mappings: any = {}, { metrics = {}, fragments = {}, transforms = {}, notes = [] as any[], fieldArrows = {} }: any = {}) {
   return {

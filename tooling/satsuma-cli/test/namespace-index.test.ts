@@ -15,7 +15,7 @@ import { before, describe, it } from "node:test";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex } from "#src/index-builder.js";
-import { collectSemanticWarnings } from "#src/validate.js";
+import { collectSemanticWarnings } from "#src/semantic-warnings.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EXAMPLES = resolve(__dirname, "../../../examples");

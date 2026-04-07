@@ -19,9 +19,9 @@ parallelisable — there is no enforced ordering except where noted.
 - [x] Rename one — preferring the more specific name — so the two types no longer collide in IDE search/symbol navigation. (sl-erxz: renamed CLI's type to `ExtractedWorkspace`. viz-backend keeps `WorkspaceIndex` since it is the natural editor-style index. 25 files updated; all 876 CLI tests pass.)
 - [x] Update all references and re-export sites.
 
-### 3. Resolve duplicate filenames across packages
-- [ ] List the three filenames that appear in multiple package locations.
-- [ ] For each, decide whether to merge (if they should be one file in core) or rename (if they are genuinely different responsibilities).
+### 3. Resolve duplicate filenames across packages *(done — sl-2513)*
+- [x] List the three filenames that appear in multiple package locations. (Three intra-`satsuma-cli` collisions where the implementation file shared a name with its `commands/` wrapper: `validate.ts`, `diff.ts`, `graph-builder.ts`.)
+- [x] Decide rename vs merge per file. (All three were genuinely different responsibilities — rename was correct. Renamed `cli/validate.ts` → `cli/semantic-warnings.ts`, `cli/diff.ts` → `cli/diff-engine.ts`, `cli/graph-builder.ts` → `cli/schema-graph.ts`. Importers and tests updated.)
 
 ### 4. Remove dead `resolveAndLoad` (or actually use it)
 - [x] Confirm `resolveAndLoad` has no callers.
@@ -61,10 +61,10 @@ parallelisable — there is no enforced ordering except where noted.
 - [ ] Cover at least: schema enrichment, mapping field-coverage annotations, namespace propagation, NL-derived edge promotion in arrow extraction, each/flatten nesting.
 - [ ] Replace the `as unknown as CommentEntry[]` cast with a properly typed accessor while you're in the file.
 
-### 11. De-duplicate core ↔ CLI extraction tests
-- [ ] Diff `satsuma-core/test/extract.test.js` against `satsuma-cli/test/extract.test.ts`. List overlapping cases.
-- [ ] Delete the CLI duplicates. Keep CLI tests only for things core does not test (CLI metadata edge cases, backtick handling at the command boundary).
-- [ ] Repeat for `classify.test.ts`.
+### 11. De-duplicate core ↔ CLI extraction tests *(done — sl-cvs2)*
+- [x] Diff `satsuma-core/test/extract.test.js` against `satsuma-cli/test/extract.test.ts`. (CLI was the broader of the two — its mock-based suite covered name forms, metadata enrichment, mapping source/target rules, namespace propagation, and import arity that core had not yet picked up.)
+- [x] Migrate the missing cases into core rather than just deleting them. (Added 32 cases to `satsuma-core/test/extract.test.js` as a clearly-labelled "migrated from CLI sl-cvs2" appendix; trimmed `satsuma-cli/test/extract.test.ts` to its real-file integration suite only.)
+- [x] Repeat for `classify.test.ts`. (CLI's `classify.test.ts` was a pure re-test of `@satsuma/core` `classifyTransform`/`classifyArrow` with no CLI-specific behaviour — every case was already covered by core's own `classify.test.js`. Deleted outright.) ARCHITECTURE.md "Known violation" note removed.
 
 ### 12. Add error-recovery integration tests
 - [ ] Add at least 3 CLI integration tests that run `satsuma schema`, `satsuma validate`, and `satsuma fields` against a `.stm` fixture with a missing closing brace, asserting graceful output (non-crash, partial results, sensible diagnostics).

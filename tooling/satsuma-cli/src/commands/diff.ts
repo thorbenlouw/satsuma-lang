@@ -14,7 +14,7 @@ import { runCommand, CommandError, EXIT_PARSE_ERROR } from "../command-runner.js
 import { resolveInput } from "../workspace.js";
 import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
-import { diffIndex } from "../diff.js";
+import { diffIndex } from "../diff-engine.js";
 import type { Delta, BlockDelta, SchemaChange, MappingChange, TransformChange } from "../types.js";
 
 /** Union of all change kind strings across schema, mapping, and transform changes. */

@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { collectSemanticWarnings } from "#src/validate.js";
+import { collectSemanticWarnings } from "#src/semantic-warnings.js";
 
 /** Build a minimal ExtractedWorkspace with nlRefData for testing. */
 function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
