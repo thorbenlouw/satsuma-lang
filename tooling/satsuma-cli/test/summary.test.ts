@@ -41,7 +41,7 @@ describe("satsuma summary", () => {
     assert.equal(code, 0);
     assert.match(stdout, /^schemas:/m);
     assert.match(stdout, /^mappings:/m);
-    assert.match(stdout, /^  ::legacy_sqlserver$/m);
+    assert.match(stdout, /^ {2}::legacy_sqlserver$/m);
     assert.doesNotMatch(stdout, /\[/);
     assert.doesNotMatch(stdout, /\/examples\//);
   });

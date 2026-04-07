@@ -26,9 +26,9 @@ describe("satsuma lineage", () => {
     const { stdout, code } = await run("lineage", "--from", "source_a", LINEAGE_CHAIN);
 
     assert.equal(code, 0);
-    assert.match(stdout, /^::source_a  \[schema\]/m);
-    assert.match(stdout, /^  ::a_to_b  \[mapping\]/m);
-    assert.match(stdout, /^    ::intermediate_b  \[schema\]/m);
+    assert.match(stdout, /^::source_a {2}\[schema\]/m);
+    assert.match(stdout, /^ {2}::a_to_b {2}\[mapping\]/m);
+    assert.match(stdout, /^ {4}::intermediate_b {2}\[schema\]/m);
   });
 
   it("prints upstream text paths for --to", async () => {
@@ -76,7 +76,7 @@ describe("satsuma lineage", () => {
     const { stdout, code } = await run("lineage", "--from", "cycle_a", LINEAGE_CYCLE);
 
     assert.equal(code, 0);
-    assert.match(stdout, /::cycle_a  \[schema\] \(cycle\)/);
+    assert.match(stdout, /::cycle_a {2}\[schema\] \(cycle\)/);
     assert.ok(stdout.trim().split(/\r?\n/).length <= 5);
   });
 
