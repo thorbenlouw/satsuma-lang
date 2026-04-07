@@ -16,8 +16,8 @@ All tooling is parser-backed. Downstream tools should be built on the tree-sitte
 - `ROADMAP.md`: deferred work items, ideas, and convention docs still to write
 - `examples/`: canonical `.stm` examples and fixtures (v2 syntax)
 - `archive/v1/`: archived v1 specification and examples — for historical reference only, not for new work
-- `archive/features/`: completed feature specs (20 features) — for historical reference only
-- `features/`: active feature plans (5 features with open work)
+- `archive/features/`: completed feature specs (22 features) — for historical reference only
+- `features/`: active feature plans (1 feature with open work)
 - `useful-prompts/`: self-contained system prompts for web LLMs (Excel-to-Satsuma, Satsuma-to-Excel)
 - `skills/`: Agent Skills following the [agentskills.io](https://agentskills.io) standard (Excel-to-Satsuma conversion skill, Satsuma-to-Excel export skill)
 - `scripts/`: utility scripts used during development

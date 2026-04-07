@@ -1,6 +1,6 @@
 # Feature 28 — Pipeline Simplification: All Pipe Steps Are NL
 
-> **Status: PLANNED** (2026-03-31)
+> **Status: COMPLETE** (2026-04-07). All 9 implementation tickets (sl-3tv5, sl-95f9, sl-sp7g, sl-cxei, sl-owen, sl-thqe, sl-uu90, sl-nk6g, sl-bbuh) are closed. Audit verified against `.tickets/` and git log on 2026-04-07.
 
 ## Goal
 

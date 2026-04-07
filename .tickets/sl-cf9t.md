@@ -1,6 +1,6 @@
 ---
 id: sl-cf9t
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-31T08:29:54Z
@@ -59,3 +59,10 @@ Fix: Added import-reachability.ts to satsuma-core with computeSymbolDependencies
 
 Cause: The PR branch still had unused locals in `tooling/satsuma-cli/test/import-reachability.test.ts`, so the root `eslint .` step failed even though the functional change was already correct.
 Fix: Removed two dead test fixtures and renamed intentionally ignored CLI exit-code bindings to `_code` so the test file remains explicit without tripping `@typescript-eslint/no-unused-vars`. Re-ran the focused import-reachability tests and the full root lint suite.
+
+**2026-04-07T09:48:34Z**
+
+**2026-04-07T00:00:00Z**
+
+Cause: buildIndex merged transitively reachable files into a flat scope, with no enforcement that imported symbols only bring their exact transitive dependencies into scope (ADR-022).
+Fix: Symbol-level reachability now lives in satsuma-core (computeImportReachability + computeSymbolDependencies) and is consumed by both the CLI validator (collectSemanticWarnings) and the LSP (computeMissingImportDiagnostics in tooling/satsuma-lsp/src/semantic-diagnostics.ts), so the two consumers cannot drift. Original repro covered by tooling/satsuma-cli/test/import-reachability.test.ts:243 (\"sl-cf9t repro\"). Verified via audit on 2026-04-07.
