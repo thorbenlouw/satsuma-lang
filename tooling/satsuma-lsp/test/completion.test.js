@@ -293,8 +293,6 @@ mapping \`m\` {
     );
   });
 
-  // ── MISSING-node (parser recovery) cases ─────────────────────────────────────
-
   it("source-block schema completions tag every item with the Class kind", () => {
     // Clients filter completions by kind (icon, ranking). All schema-context
     // entries must carry CompletionItemKind.Class (= 7) regardless of which
@@ -311,6 +309,8 @@ mapping \`m\` {
     assert.ok(items.length >= 2);
     assert.ok(items.every((i) => i.kind === 7), "every schema completion must use CompletionItemKind.Class");
   });
+
+  // ── MISSING-node (parser recovery) cases ─────────────────────────────────────
 
   it("does not crash on completions inside an unterminated source block (MISSING-node tree)", () => {
     // The user is mid-typing — the closing brace of source { is missing, so
