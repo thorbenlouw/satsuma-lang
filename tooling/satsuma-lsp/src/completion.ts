@@ -4,6 +4,7 @@ import {
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { child } from "./parser-utils";
+import { sourceRefStructuralText } from "@satsuma/core";
 import {
   WorkspaceIndex,
   allBlockNames,
@@ -311,7 +312,7 @@ function findMappingSchemasFromBody(
       // Extract source_ref children
       for (const ref of ch.namedChildren) {
         if (ref.type === "source_ref") {
-          const name = sourceRefText(ref);
+          const name = sourceRefStructuralText(ref);
           if (name) schemas.push(name);
         }
       }
@@ -319,22 +320,6 @@ function findMappingSchemasFromBody(
   }
 
   return schemas;
-}
-
-function sourceRefText(ref: SyntaxNode): string | null {
-  const qn = child(ref, "qualified_name");
-  if (qn) {
-    const ids = qn.namedChildren.filter((c) => c.type === "identifier");
-    if (ids.length >= 2 && ids[0] && ids[1]) return `${ids[0].text}::${ids[1].text}`;
-    return qn.text;
-  }
-  const bn = child(ref, "backtick_name");
-  if (bn) return bn.text.slice(1, -1);
-  const id = child(ref, "identifier");
-  if (id) return id.text;
-  const ns = child(ref, "nl_string");
-  if (ns) return ns.text.slice(1, -1);
-  return null;
 }
 
 function isInsideNode(inner: SyntaxNode, outer: SyntaxNode): boolean {

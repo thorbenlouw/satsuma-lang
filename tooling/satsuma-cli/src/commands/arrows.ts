@@ -17,7 +17,8 @@ import { runCommand, CommandError, EXIT_NOT_FOUND, EXIT_PARSE_ERROR } from "../c
 import { resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { ExtractedWorkspace, ArrowRecord, FieldDecl } from "../types.js";
+import { collectFieldNames, findFieldByPath } from "@satsuma/core";
+import type { ExtractedWorkspace, ArrowRecord } from "../types.js";
 
 export function register(program: Command): void {
   program
@@ -78,11 +79,11 @@ Examples:
       const schema = resolvedSchema.entry;
       const spreadFields = expandEntityFields(schema, schema.namespace ?? null, index);
       const allFields = [...schema.fields, ...spreadFields];
-      const fieldExists = findFieldByPath(allFields, fieldName) ||
-        collectAllFieldNames(allFields).includes(fieldName);
+      const fieldExists = findFieldByPath(allFields, fieldName) !== null ||
+        collectFieldNames(allFields).includes(fieldName);
       if (!fieldExists) {
         // Suggest close matches from top-level and nested fields
-        const allNames = collectAllFieldNames(allFields);
+        const allNames = collectFieldNames(allFields);
         const close = allNames.find(
           (n) => n.toLowerCase() === fieldName.toLowerCase(),
         );
@@ -117,7 +118,7 @@ Examples:
           const pathExistsInSchema = (rawPath: string): boolean => {
             const bare = rawPath.replace(/^\./, "");
             const path = bare.startsWith(schemaKey + ".") ? bare.slice(schemaKey.length + 1) : bare;
-            return findFieldByPath(allFields, path) || collectAllFieldNames(allFields).includes(path);
+            return findFieldByPath(allFields, path) !== null || collectFieldNames(allFields).includes(path);
           };
 
           const asSourceMatch = mapping.sources.includes(schemaKey) &&
@@ -359,35 +360,6 @@ function findFieldArrows(fieldKey: string, index: ExtractedWorkspace): ArrowReco
     }
   }
   return results;
-}
-
-/**
- * Check if a field exists at a given path, supporting dotted notation
- * for nested record/list children (e.g. "address.street").
- */
-function findFieldByPath(fields: FieldDecl[], path: string): boolean {
-  const segments = path.split(".");
-  let current = fields;
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    const field = current.find((f) => f.name === seg);
-    if (!field) return false;
-    if (i < segments.length - 1) {
-      if (!field.children || field.children.length === 0) return false;
-      current = field.children;
-    }
-  }
-  return true;
-}
-
-/** Collect all field names including nested children (bare names only). */
-function collectAllFieldNames(fields: FieldDecl[]): string[] {
-  const names: string[] = [];
-  for (const f of fields) {
-    names.push(f.name);
-    if (f.children) names.push(...collectAllFieldNames(f.children));
-  }
-  return names;
 }
 
 /**

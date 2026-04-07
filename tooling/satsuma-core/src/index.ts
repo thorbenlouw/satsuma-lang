@@ -1,4 +1,6 @@
 export { capitalize, normalizeName } from "./string-utils.js";
+export { findFieldByPath, collectFieldNames } from "./field-utils.js";
+export type { FieldTreeNode } from "./field-utils.js";
 export { collectSemanticDiagnostics, validateSemanticWorkspace } from "./validate.js";
 export { computeImportReachability, computeSymbolDependencies } from "./import-reachability.js";
 export type { ResolvedFileImport, ImportReachability } from "./import-reachability.js";
@@ -27,7 +29,7 @@ export { format } from "./format.js";
 export type { SyntaxNode, Tree, Classification, PipeStep, MetaEntry, MetaEntryTag, MetaEntryKV, MetaEntryEnum, MetaEntryNote, MetaEntrySlice, FieldDecl } from "./types.js";
 export { child, children, allDescendants, labelText, stringText, entryText, qualifiedNameText, sourceRefText, sourceRefStructuralText, fieldNameText, walkDescendants } from "./cst-utils.js";
 export { classifyTransform, classifyArrow } from "./classify.js";
-export { canonicalRef, canonicalEntityName, resolveScopedEntityRef } from "./canonical-ref.js";
+export { canonicalRef, canonicalEntityName, qualifyField, resolveScopedEntityRef } from "./canonical-ref.js";
 export { extractMetadata } from "./meta-extract.js";
 export {
   extractFieldTree,

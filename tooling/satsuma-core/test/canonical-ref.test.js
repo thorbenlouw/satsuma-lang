@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { canonicalRef, canonicalEntityName } from "../dist/canonical-ref.js";
+import { canonicalRef, canonicalEntityName, qualifyField } from "../dist/canonical-ref.js";
 
 describe("canonicalRef()", () => {
   it("returns ::schema.field when no namespace", () => {
@@ -43,5 +43,23 @@ describe("canonicalEntityName()", () => {
 
   it("returns :: when name is null", () => {
     assert.equal(canonicalEntityName({ name: null }), "::");
+  });
+});
+
+describe("qualifyField()", () => {
+  it("prefixes a bare field with the mapping side's primary schema", () => {
+    assert.equal(qualifyField("customer_id", ["orders"]), "orders.customer_id");
+  });
+
+  it("qualifies leading-dot nested paths without retaining the synthetic dot", () => {
+    assert.equal(qualifyField(".address.street", ["customers"]), "customers.address.street");
+  });
+
+  it("leaves fields qualified by a namespace-qualified schema name unchanged", () => {
+    assert.equal(qualifyField("customers.id", ["crm::customers"]), "customers.id");
+  });
+
+  it("leaves fully namespace-qualified field paths unchanged", () => {
+    assert.equal(qualifyField("crm::customers.id", ["crm::customers"]), "crm::customers.id");
   });
 });

@@ -4,7 +4,7 @@ import {
 } from "vscode-languageserver";
 import type { SyntaxNode, Tree } from "./parser-utils";
 import { nodeRange, child, children, labelText, stringText } from "./parser-utils";
-import { isMetricSchema } from "@satsuma/core";
+import { fieldNameText, isMetricSchema } from "@satsuma/core";
 
 /** Map of CST block type → LSP SymbolKind. */
 const BLOCK_SYMBOL_KIND: Record<string, SymbolKind> = {
@@ -232,13 +232,6 @@ function symbolDetail(node: SyntaxNode): string | undefined {
     }
   }
   return undefined;
-}
-
-function fieldNameText(nameNode: SyntaxNode): string | null {
-  const inner = nameNode.namedChildren[0];
-  if (!inner) return nameNode.text;
-  if (inner.type === "backtick_name") return inner.text;
-  return inner.text;
 }
 
 function spreadLabelText(node: SyntaxNode): string | null {
