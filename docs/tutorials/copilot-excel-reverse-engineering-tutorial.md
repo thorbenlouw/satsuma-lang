@@ -1,7 +1,7 @@
 # Reverse-Engineering Legacy Excel Mapping Specs with Satsuma, VS Code, and GitHub Copilot
 
 This tutorial walks through a real workflow for taking a stack of legacy Excel
-data-mapping documents (DMDs) and reverse-engineering them into a clean Satsuma
+data-mapping documents and reverse-engineering them into a clean Satsuma
 workspace, using VS Code with GitHub Copilot in agent mode. It's written for the
 common situation where you have:
 
@@ -304,7 +304,7 @@ and an afternoon of cleanup:
 - **Self-contained `.stm` files.** Assume the original spreadsheets will
   be lost, archived, or moved at some point. The Satsuma file must
   *contain* every transform rule it needs — no "see the SQL in the
-  original DMD" cop-outs. If the agent finds itself wanting to write
+  original spreadsheet" cop-outs. If the agent finds itself wanting to write
   that, it should write a natural-language transform with `@ref`s
   instead.
 - **Multi-source NL transforms should declare their inputs.** When a
