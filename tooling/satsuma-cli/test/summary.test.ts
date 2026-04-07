@@ -2,13 +2,13 @@
  * summary.test.js — Unit tests for summary command formatters.
  *
  * Tests the JSON serialisation and compact output by constructing a minimal
- * WorkspaceIndex directly (no parser or tree-sitter needed).
+ * ExtractedWorkspace directly (no parser or tree-sitter needed).
  */
 
 import assert from "node:assert/strict";
 import { describe, it, beforeEach, afterEach } from "node:test";
 
-// ── Minimal WorkspaceIndex factory ────────────────────────────────────────────
+// ── Minimal ExtractedWorkspace factory ────────────────────────────────────────────
 
 function makeIndex({
   schemas = [] as any[],

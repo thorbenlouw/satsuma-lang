@@ -1,13 +1,13 @@
 /**
- * spread-expand.ts — CLI bridge between WorkspaceIndex and satsuma-core spreads
+ * spread-expand.ts — CLI bridge between ExtractedWorkspace and satsuma-core spreads
  *
  * Spread expansion logic lives in satsuma-core/src/spread-expand.ts. Per
  * ADR-005, core uses EntityRefResolver and SpreadEntityLookup callbacks so
- * it never has to know about WorkspaceIndex. This module's job is to build
- * those callbacks from a WorkspaceIndex and expose expand* functions with
+ * it never has to know about ExtractedWorkspace. This module's job is to build
+ * those callbacks from an ExtractedWorkspace and expose expand* functions with
  * the index-shaped signatures CLI callers expect.
  *
- * Owns: WorkspaceIndex → callback adaptation.
+ * Owns: ExtractedWorkspace → callback adaptation.
  * Does not own: the spread expansion algorithm itself (that is in core).
  */
 
@@ -23,13 +23,13 @@ import type {
   ExpandedField,
 } from "@satsuma/core";
 import { resolveScopedEntityRef } from "./index-builder.js";
-import type { FieldDecl, WorkspaceIndex } from "./types.js";
+import type { FieldDecl, ExtractedWorkspace } from "./types.js";
 
 // Re-export the pure function directly.
 export { collectFieldPaths } from "@satsuma/core";
 export type { SpreadDiagnostic, ExpandedField };
 
-// ── WorkspaceIndex → callback adapters ────────────────────────────────────────
+// ── ExtractedWorkspace → callback adapters ────────────────────────────────────────
 
 function makeIndexRefResolver(currentNs: string | null, entityMap: Map<string, unknown>) {
   return (ref: string, _ns: string | null) => resolveScopedEntityRef(ref, currentNs, entityMap);
@@ -42,7 +42,7 @@ function makeIndexRefResolver(currentNs: string | null, entityMap: Map<string, u
 export function expandSpreads(
   schemaKeys: string[],
   currentNs: string | null,
-  index: WorkspaceIndex,
+  index: ExtractedWorkspace,
   fieldPaths: Set<string>,
   diagnostics: SpreadDiagnostic[] = [],
 ): boolean {
@@ -59,7 +59,7 @@ export function expandSpreads(
 export function expandEntityFields(
   entity: SpreadEntity | null | undefined,
   currentNs: string | null,
-  index: WorkspaceIndex,
+  index: ExtractedWorkspace,
 ): ExpandedField[] {
   const resolveRef = makeIndexRefResolver(currentNs, index.fragments as unknown as Map<string, unknown>);
   const lookupFragment = (key: string) => index.fragments.get(key) as SpreadEntity | undefined;
@@ -73,7 +73,7 @@ export function expandEntityFields(
 export function expandNestedSpreads(
   fields: FieldDecl[],
   currentNs: string | null,
-  index: WorkspaceIndex,
+  index: ExtractedWorkspace,
 ): void {
   const resolveRef = makeIndexRefResolver(currentNs, index.fragments as unknown as Map<string, unknown>);
   const lookupFragment = (key: string) => index.fragments.get(key) as SpreadEntity | undefined;

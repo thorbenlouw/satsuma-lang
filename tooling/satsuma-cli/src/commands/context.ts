@@ -25,7 +25,7 @@ import { buildIndex } from "../index-builder.js";
 import { extractAtRefs } from "../nl-ref-extract.js";
 import { extractNLContent } from "../nl-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, ParsedFile, SyntaxNode, FieldDecl } from "../types.js";
+import type { ExtractedWorkspace, ParsedFile, SyntaxNode, FieldDecl } from "../types.js";
 
 interface ScoredCandidate {
   name: string;
@@ -135,7 +135,7 @@ function scoreText(text: string, terms: string[]): number {
  * Score all blocks in the index against terms.
  * Returns [{name, type, score, file, line}]
  */
-function scoreAll(index: WorkspaceIndex, terms: string[], parsedFiles: ParsedFile[]): ScoredCandidate[] {
+function scoreAll(index: ExtractedWorkspace, terms: string[], parsedFiles: ParsedFile[]): ScoredCandidate[] {
   const results: ScoredCandidate[] = [];
 
   // Collect NL content (comments, notes) grouped by parent block name
@@ -248,7 +248,7 @@ function estimateTokens(text: string): number {
 }
 
 /** Render a block as a compact string for output. */
-function renderBlock(index: WorkspaceIndex, candidate: ScoredCandidate, compact?: boolean): string {
+function renderBlock(index: ExtractedWorkspace, candidate: ScoredCandidate, compact?: boolean): string {
   const { name, type } = candidate;
   const lines: string[] = [];
 

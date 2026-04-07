@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { runLint, applyFixes } from "#src/lint-engine.js";
-import type { WorkspaceIndex } from "#src/types.js";
+import type { ExtractedWorkspace } from "#src/types.js";
 
 /** Shape of a mock schema passed to makeIndex. */
 interface MockSchema {
@@ -36,12 +36,12 @@ interface MockNLRef {
   column: number;
 }
 
-/** Build a minimal WorkspaceIndex for lint testing. */
+/** Build a minimal ExtractedWorkspace for lint testing. */
 function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
   schemas?: MockSchema[];
   mappings?: MockMapping[];
   nlRefData?: MockNLRef[];
-} = {}): WorkspaceIndex {
+} = {}): ExtractedWorkspace {
   const schemaMap = new Map<string, any>();
   for (const s of schemas) {
     schemaMap.set(s.name, { ...s, file: s.file ?? "test.stm", row: s.row ?? 0 });
@@ -65,7 +65,7 @@ function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
     nlRefData,
     duplicates: [],
     totalErrors: 0,
-  } as any as WorkspaceIndex;
+  } as any as ExtractedWorkspace;
 }
 
 // ── hidden-source-in-nl ────────────────────────────────────────────────────

@@ -20,9 +20,9 @@ import { buildIndex, canonicalKey } from "../index-builder.js";
 import { expandEntityFields } from "../spread-expand.js";
 import { countNlDerivedEdgesByMapping } from "../nl-ref-extract.js";
 import { canonicalEntityName } from "@satsuma/core";
-import type { FieldDecl, WorkspaceIndex } from "../types.js";
+import type { FieldDecl, ExtractedWorkspace } from "../types.js";
 
-function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: WorkspaceIndex): number {
+function totalFieldCount(schema: { fields: FieldDecl[]; namespace?: string | null }, index: ExtractedWorkspace): number {
   const expanded = expandEntityFields(schema as Parameters<typeof expandEntityFields>[0], schema.namespace ?? null, index);
   return schema.fields.length + expanded.length;
 }
@@ -91,7 +91,7 @@ Examples:
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean): void {
+function printJson(index: ExtractedWorkspace, fileCount: number, compact?: boolean): void {
   const displayName = canonicalEntityName;
   const nlDerivedCounts = countNlDerivedEdgesByMapping(index);
 
@@ -131,7 +131,7 @@ function printJson(index: WorkspaceIndex, fileCount: number, compact?: boolean):
   console.log(JSON.stringify(out, null, 2));
 }
 
-function printCompact(index: WorkspaceIndex): void {
+function printCompact(index: ExtractedWorkspace): void {
   const section = (label: string, items: string[]): void => {
     if (items.length === 0) return;
     console.log(`${label}:`);
@@ -149,7 +149,7 @@ function plural(n: number, word: string): string {
   return `${n} ${word}${n !== 1 ? "s" : ""}`;
 }
 
-function printDefault(index: WorkspaceIndex, fileCount: number): void {
+function printDefault(index: ExtractedWorkspace, fileCount: number): void {
   const schemas = [...index.schemas.values()];
   const metrics = [...index.metrics.values()];
   const mappings = [...index.mappings.values()];

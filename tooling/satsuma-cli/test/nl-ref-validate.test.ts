@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { collectSemanticWarnings } from "#src/validate.js";
 
-/** Build a minimal WorkspaceIndex with nlRefData for testing. */
+/** Build a minimal ExtractedWorkspace with nlRefData for testing. */
 function makeIndex({ schemas = [], mappings = [], nlRefData = [] }: {
   schemas?: any[];
   mappings?: any[];

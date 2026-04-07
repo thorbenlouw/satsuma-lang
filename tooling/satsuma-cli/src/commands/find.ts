@@ -21,7 +21,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex } from "../index-builder.js";
 import { findBlockNode } from "../cst-query.js";
 import { resolveScopedEntityRef } from "../index-builder.js";
-import type { WorkspaceIndex, ParsedFile, SyntaxNode } from "../types.js";
+import type { ExtractedWorkspace, ParsedFile, SyntaxNode } from "../types.js";
 
 interface Match {
   blockType: string;
@@ -104,7 +104,7 @@ Examples:
 /**
  * Search for fields whose metadata contains the given tag/key.
  */
-function searchTag(index: WorkspaceIndex, parsedFiles: ParsedFile[], tag: string, scope: string): Match[] {
+function searchTag(index: ExtractedWorkspace, parsedFiles: ParsedFile[], tag: string, scope: string): Match[] {
   const matches: Match[] = [];
   const fileMap = new Map<string, ParsedFile>(parsedFiles.map((p) => [p.filePath, p]));
 
@@ -292,7 +292,7 @@ function renderMetadataValue(valueNode: SyntaxNode | undefined): string {
 function collectSpreadFieldMatches(
   schemaName: string,
   schema: { spreads?: string[]; namespace?: string | null; file: string; row: number },
-  index: WorkspaceIndex,
+  index: ExtractedWorkspace,
   fileMap: Map<string, ParsedFile>,
   tag: string,
   acc: Match[],

@@ -17,7 +17,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey, canonicalKey } from "../index-builder.js";
 import { resolveAllNLRefs } from "../nl-ref-extract.js";
 import { expandEntityFields } from "../spread-expand.js";
-import type { WorkspaceIndex, ArrowRecord, FieldDecl } from "../types.js";
+import type { ExtractedWorkspace, ArrowRecord, FieldDecl } from "../types.js";
 
 export function register(program: Command): void {
   program
@@ -358,7 +358,7 @@ function arrowPathMatches(arrowPath: string | null, requestedPath: string): bool
  * Accepts either a schema-qualified key ("schema.field") or bare field name.
  * Deduplicates since an arrow with source === target gets indexed under both.
  */
-function findFieldArrows(fieldKey: string, index: WorkspaceIndex): ArrowRecord[] {
+function findFieldArrows(fieldKey: string, index: ExtractedWorkspace): ArrowRecord[] {
   if (!index.fieldArrows.has(fieldKey)) return [];
   const seen = new Set<string>();
   const results: ArrowRecord[] = [];
@@ -410,7 +410,7 @@ function collectAllFieldNames(fields: FieldDecl[]): string[] {
  *   query string, so that mapping source/target lookups hit correctly even
  *   when the user queried with a bare unqualified name (sl-ltv6).
  */
-function printDefault(fieldRef: string, arrows: ArrowRecord[], index: WorkspaceIndex, resolvedSchemaKey: string): void {
+function printDefault(fieldRef: string, arrows: ArrowRecord[], index: ExtractedWorkspace, resolvedSchemaKey: string): void {
   const dot = fieldRef.indexOf(".");
   const schemaName = resolvedSchemaKey;
   const fieldPath = dot >= 0 ? fieldRef.slice(dot + 1) : fieldRef;

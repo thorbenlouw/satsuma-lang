@@ -49,7 +49,7 @@ function kvPair(key: any, valNode: any) {
   return n("tag_with_value", [ident(key), valText]);
 }
 
-/** Build a minimal WorkspaceIndex for testing semantic warnings. */
+/** Build a minimal ExtractedWorkspace for testing semantic warnings. */
 function makeIndex({ schemas = [], mappings = [], metrics = [], fragments = [], fieldArrows = [] }: {
   schemas?: any[];
   mappings?: any[];

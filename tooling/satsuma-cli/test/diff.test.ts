@@ -2,7 +2,7 @@
  * diff.test.js — Unit tests for src/diff.js
  *
  * Tests the structural comparison logic that powers `satsuma diff`. Each test
- * constructs minimal WorkspaceIndex stubs and asserts that the correct change
+ * constructs minimal ExtractedWorkspace stubs and asserts that the correct change
  * kinds are emitted.
  */
 

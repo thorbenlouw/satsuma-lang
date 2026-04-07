@@ -16,7 +16,7 @@ import { parseFile } from "../parser.js";
 import { buildIndex, resolveIndexKey } from "../index-builder.js";
 import { expandEntityFields, expandNestedSpreads } from "../spread-expand.js";
 import { addPathAndPrefixes } from "@satsuma/core";
-import type { WorkspaceIndex, FieldDecl, ParsedFile, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
+import type { ExtractedWorkspace, FieldDecl, ParsedFile, SchemaRecord, FragmentRecord, MetricRecord } from "../types.js";
 
 interface FieldWithTags extends FieldDecl {
   tags?: string[];
@@ -147,7 +147,7 @@ function deepCopyFields(fields: FieldDecl[]): FieldWithTags[] {
  * Get the set of field names from the given schema that participate in arrows
  * for the specified mapping — checking both source and target sides.
  */
-function getMappedFieldNames(mappingName: string, schemaName: string, index: WorkspaceIndex): Set<string> {
+function getMappedFieldNames(mappingName: string, schemaName: string, index: ExtractedWorkspace): Set<string> {
   const mapped = new Set<string>();
   const mapping = index.mappings.get(mappingName);
   if (!mapping) return mapped;

@@ -15,9 +15,9 @@ parallelisable — there is no enforced ordering except where noted.
 - [ ] Verify the dependency graph is unchanged (no consumer → consumer imports introduced).
 
 ### 2. Resolve `WorkspaceIndex` naming collision
-- [ ] Identify the two `WorkspaceIndex` types (one in CLI, one in LSP) and document what each represents.
-- [ ] Rename one — preferring the more specific name — so the two types no longer collide in IDE search/symbol navigation.
-- [ ] Update all references and re-export sites.
+- [x] Identify the two `WorkspaceIndex` types and document what each represents. (CLI's was an extraction-result struct: schemas/mappings/arrows/etc. produced by running extractors. viz-backend's is a definition/reference cross-file index used by the LSP and viz harness for navigation.)
+- [x] Rename one — preferring the more specific name — so the two types no longer collide in IDE search/symbol navigation. (sl-erxz: renamed CLI's type to `ExtractedWorkspace`. viz-backend keeps `WorkspaceIndex` since it is the natural editor-style index. 25 files updated; all 876 CLI tests pass.)
+- [x] Update all references and re-export sites.
 
 ### 3. Resolve duplicate filenames across packages
 - [ ] List the three filenames that appear in multiple package locations.

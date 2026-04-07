@@ -12,7 +12,7 @@
 
 import { collectSemanticDiagnostics, computeImportReachability } from "@satsuma/core";
 import type { SemanticDiagnostic } from "@satsuma/core";
-import type { LintDiagnostic, WorkspaceIndex } from "./types.js";
+import type { LintDiagnostic, ExtractedWorkspace } from "./types.js";
 
 /**
  * Run semantic checks against a workspace index, returning CLI LintDiagnostic objects.
@@ -22,7 +22,7 @@ import type { LintDiagnostic, WorkspaceIndex } from "./types.js";
  * computes per-file symbol reachability and passes it to core so that
  * import-scope violations are detected (ADR-022).
  */
-export function collectSemanticWarnings(index: WorkspaceIndex): LintDiagnostic[] {
+export function collectSemanticWarnings(index: ExtractedWorkspace): LintDiagnostic[] {
   // Compute import-scope reachability when import data is available.
   // Single-file workspaces or mock indices without fileImports skip the check.
   const reachability = index.fileImports?.size

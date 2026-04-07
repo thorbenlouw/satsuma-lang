@@ -17,7 +17,7 @@ import { extractNLContent } from "../nl-extract.js";
 import type { NLItem } from "../nl-extract.js";
 import { labelText } from "@satsuma/core";
 import { findBlockNode } from "../cst-query.js";
-import type { SyntaxNode, WorkspaceIndex, ParsedFile, FieldDecl } from "../types.js";
+import type { SyntaxNode, ExtractedWorkspace, ParsedFile, FieldDecl } from "../types.js";
 
 interface NLItemWithFile extends NLItem {
   file: string;
@@ -101,7 +101,7 @@ function extractFromAll(parsedFiles: ParsedFile[]): NLItemWithFile[] {
   return items;
 }
 
-function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): NLItemWithFile[] {
+function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: ExtractedWorkspace): NLItemWithFile[] {
   // Check if it's a schema, mapping, metric, or transform (resolving namespace-qualified keys)
   const schemaResolved = resolveIndexKey(blockName, index.schemas);
   const mappingResolved = resolveIndexKey(blockName, index.mappings);
@@ -149,7 +149,7 @@ function extractFromBlock(blockName: string, parsedFiles: ParsedFile[], index: W
   return items;
 }
 
-function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: WorkspaceIndex): NLItemWithFile[] {
+function extractFromField(fieldRef: string, parsedFiles: ParsedFile[], index: ExtractedWorkspace): NLItemWithFile[] {
   const dot = fieldRef.indexOf(".");
   const schemaName = fieldRef.slice(0, dot);
   const fieldPath = fieldRef.slice(dot + 1);

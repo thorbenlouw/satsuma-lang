@@ -2,7 +2,7 @@
  * lint-engine.ts — Lint rule registry, runner, and fix applier
  *
  * Provides a policy-oriented linting layer on top of the shared
- * parser/index pipeline.  Rules receive a WorkspaceIndex and return
+ * parser/index pipeline.  Rules receive a ExtractedWorkspace and return
  * LintDiagnostic objects.  Fixable rules additionally supply a LintFix
  * whose `apply` function rewrites source text deterministically.
  */
@@ -15,7 +15,7 @@ import {
   isSchemaInMappingSources,
 } from "./nl-ref-extract.js";
 import { resolveCanonicalKey } from "./index-builder.js";
-import type { LintDiagnostic, LintFix, LintRule, WorkspaceIndex } from "./types.js";
+import type { LintDiagnostic, LintFix, LintRule, ExtractedWorkspace } from "./types.js";
 
 // ── Rule registry ──────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ export const RULES: LintRule[] = [
 
 // ── Rule implementations ───────────────────────────────────────────────────
 
-function checkHiddenSourceInNl(index: WorkspaceIndex): LintDiagnostic[] {
+function checkHiddenSourceInNl(index: ExtractedWorkspace): LintDiagnostic[] {
   const diagnostics: LintDiagnostic[] = [];
   if (!index.nlRefData) return diagnostics;
 
@@ -343,7 +343,7 @@ const KNOWN_PIPELINE_FUNCTIONS = new Set([
   "title_case", "escape_html", "truncate", "to_number", "prepend", "max_length",
 ]);
 
-function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
+function checkUnresolvedNlRef(index: ExtractedWorkspace): LintDiagnostic[] {
   const diagnostics: LintDiagnostic[] = [];
   if (!index.nlRefData) return diagnostics;
 
@@ -432,7 +432,7 @@ function checkUnresolvedNlRef(index: WorkspaceIndex): LintDiagnostic[] {
   return diagnostics;
 }
 
-function checkDuplicateDefinition(index: WorkspaceIndex): LintDiagnostic[] {
+function checkDuplicateDefinition(index: ExtractedWorkspace): LintDiagnostic[] {
   const diagnostics: LintDiagnostic[] = [];
   if (!index.duplicates) return diagnostics;
 
@@ -466,9 +466,9 @@ interface LintOptions {
 }
 
 /**
- * Run all (or selected) lint rules against a WorkspaceIndex.
+ * Run all (or selected) lint rules against a ExtractedWorkspace.
  */
-export function runLint(index: WorkspaceIndex, opts: LintOptions = {}): LintDiagnostic[] {
+export function runLint(index: ExtractedWorkspace, opts: LintOptions = {}): LintDiagnostic[] {
   let rules: LintRule[] = RULES;
   if (opts.select?.length) {
     const set = new Set(opts.select);

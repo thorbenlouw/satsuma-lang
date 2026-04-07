@@ -1,5 +1,5 @@
 /**
- * index-builder.ts — Build a WorkspaceIndex from parsed Satsuma files.
+ * index-builder.ts — Build a ExtractedWorkspace from parsed Satsuma files.
  *
  * Merges extraction results from all files in a workspace into a single
  * in-memory index with a cross-reference graph.
@@ -37,7 +37,7 @@ import type {
   SchemaRecord,
   TransformRecord,
   WarningRecord,
-  WorkspaceIndex,
+  ExtractedWorkspace,
 } from "./types.js";
 
 /**
@@ -182,7 +182,7 @@ export function resolveScopedEntityRef(ref: string, currentNs: string | null, en
   return null;
 }
 
-export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): WorkspaceIndex {
+export function buildIndex(parsedFiles: (ParsedFile | FileData)[]): ExtractedWorkspace {
   const schemas = new Map<string, SchemaRecord>();
   const duplicates: DuplicateRecord[] = [];
   const metrics = new Map<string, MetricRecord>();
