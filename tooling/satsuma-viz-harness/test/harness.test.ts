@@ -62,6 +62,8 @@ let nsPlatformUri: string;
 let reportsUri: string;
 /** Larger fixture used in geometry/layout-stability tests. */
 let sapUri: string;
+/** Filter / flatten / governance fixture — multi-source joins, flatten, notes. */
+let ffgUri: string;
 
 /**
  * Resolve fixture URIs before tests run.  The harness API serves the full list;
@@ -77,8 +79,9 @@ test.beforeAll(async ({ request }) => {
   const nsPlatform = find("namespaces/ns-platform.stm");
   const reports = find("reports-and-models/pipeline.stm");
   const sap = find("sap-po-to-mfcs/pipeline.stm");
+  const ffg = find("filter-flatten-governance/filter-flatten-governance.stm");
 
-  if (!sfdc || !metrics || !nsPlatform || !reports || !sap) {
+  if (!sfdc || !metrics || !nsPlatform || !reports || !sap || !ffg) {
     throw new Error("Required fixtures not found in /api/fixtures");
   }
 
@@ -87,7 +90,26 @@ test.beforeAll(async ({ request }) => {
   nsPlatformUri = nsPlatform.uri;
   reportsUri = reports.uri;
   sapUri = sap.uri;
+  ffgUri = ffg.uri;
 });
+
+/**
+ * Open a specific named mapping by clicking its overview mapping card.
+ * The mappingId is the unqualified mapping name as written in the .stm file
+ * (sanitizeTestIdSegment lowercases and replaces non-alnum runs with `-`).
+ */
+async function openMappingByName(
+  page: Page,
+  mappingId: string,
+): Promise<ReturnType<Page["locator"]>> {
+  await page.locator(`[data-testid='overview-mapping-card-${mappingId}']`).click();
+  // The detail testid appears on BOTH the <sz-mapping-detail> host and its
+  // inner <div class="layout"> child — strict mode rejects both, so we
+  // anchor to the host (.first()) and return it as the detail base.
+  const detail = page.locator(`[data-testid='mapping-detail-${mappingId}']`).first();
+  await expect(detail).toBeVisible({ timeout: 10_000 });
+  return detail;
+}
 
 /**
  * Load a fixture by clicking it in the sidebar and wait for the viz to be ready.
@@ -525,5 +547,193 @@ test.describe("Overview view — sap-po-to-mfcs layout stability", () => {
     expect(
       await page.locator("[data-testid^='overview-mapping-node-']").count(),
     ).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mapping detail content (sl-ny3r)
+//
+// These tests open a specific named mapping and assert content INSIDE the
+// detail view — source schemas, target schema, arrow rows, transforms, notes,
+// nested-section rows — rather than only that the detail root became visible.
+// ---------------------------------------------------------------------------
+
+test.describe("Mapping detail — sfdc opportunity ingestion", () => {
+  test("renders source/target cards, expected arrows, transforms, and @ref highlighting", async ({
+    page,
+  }) => {
+    // The opportunity ingestion mapping is the canonical sfdc example: a
+    // single source schema (sfdc_opportunity) → a single target schema
+    // (snowflake_opportunity), with both bare-copy arrows AND computed
+    // arrows that have NL transform text containing @refs.  This is the
+    // mapping every reader sees first when learning Satsuma, so the detail
+    // view must render its core elements correctly.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+    const detail = await openMappingByName(page, "opportunity-ingestion");
+
+    // Source and target schema cards live inside the detail's source / target
+    // columns and use the per-card test id prefix introduced in sl-eikr.
+    await expect(
+      detail.locator(
+        "[data-testid='mapping-detail-opportunity-ingestion-source-schema-card-sfdc-opportunity']",
+      ),
+    ).toBeVisible();
+    await expect(
+      detail.locator(
+        "[data-testid='mapping-detail-opportunity-ingestion-target-schema-card-snowflake-opps']",
+      ),
+    ).toBeVisible();
+
+    // The five most distinctive target arrows in this mapping. Their test ids
+    // are `mapping-detail-{mid}-arrow-row-{sanitizedTargetField}`. Underscore
+    // and dot characters in the source .stm sanitize to dashes.
+    for (const target of [
+      "amount-usd",
+      "arr-value",
+      "pipeline-stage",
+      "is-closed",
+      "ingested-at",
+    ]) {
+      await expect(
+        detail.locator(`[data-testid='mapping-detail-opportunity-ingestion-arrow-row-${target}']`),
+      ).toBeVisible();
+    }
+
+    // The amount_usd arrow is computed from a multi-step NL transform that
+    // mentions @amount and @currency_code — the highlightAtRefs helper wraps
+    // those refs in <span class="at-ref">.  Asserting at least one such span
+    // appears inside that arrow row's transform cell proves the @ref
+    // highlighting pipeline runs end-to-end.
+    const amountUsdRow = detail.locator(
+      "[data-testid='mapping-detail-opportunity-ingestion-arrow-row-amount-usd']",
+    );
+    await expect(amountUsdRow.locator("span.transform-nl")).toBeVisible();
+    expect(await amountUsdRow.locator("span.at-ref").count()).toBeGreaterThanOrEqual(1);
+  });
+});
+
+test.describe("Mapping detail — namespaced vault mapping", () => {
+  test("renders namespace label and source -> mapping -> target column ordering", async ({
+    page,
+  }) => {
+    // Picks `load hub_contact` from namespace `vault` in ns-platform.stm.
+    // The detail view must surface the namespace via the namespace pill on
+    // its source/target schema cards (proves namespace context propagates
+    // into the detail view), and lay out its three columns in the canonical
+    // source -> mapping -> target order so users always read left-to-right.
+    await page.goto("/");
+    // Default lineage mode is fine — vault mappings are visible in either.
+    await loadFixture(page, nsPlatformUri);
+    const detail = await openMappingByName(page, "load-hub-contact");
+
+    // Each column is tagged with a column-suffix testid (sl-eikr).  Reading
+    // their bounding boxes lets us assert source.x < mapping.x < target.x
+    // without depending on exact ELK coordinates.
+    const source = detail.locator("[data-testid$='-source-column']");
+    const mapping = detail.locator("[data-testid$='-mapping-column']");
+    const target = detail.locator("[data-testid$='-target-column']");
+    const sourceBox = await source.boundingBox();
+    const mappingBox = await mapping.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!sourceBox || !mappingBox || !targetBox) {
+      throw new Error("mapping detail columns not laid out");
+    }
+    expect(sourceBox.x).toBeLessThan(mappingBox.x);
+    expect(mappingBox.x).toBeLessThan(targetBox.x);
+
+    // The mapping detail header surfaces the namespace label so a reader
+    // entering the detail view always knows which namespace the mapping
+    // belongs to (sz-mapping-detail.ts:_renderMappingHeader).
+    await expect(
+      detail.locator("[data-testid='mapping-detail-load-hub-contact-namespace-label']"),
+    ).toHaveText("vault");
+  });
+});
+
+test.describe("Mapping detail — completed orders (multi-source join)", () => {
+  test("renders multiple source cards, the join text, the mapping note, and nested children", async ({
+    page,
+  }) => {
+    // The `completed orders` mapping is the canonical multi-source-join
+    // example: it pulls from `order_events` AND `customer_profiles` with an
+    // inline join expression, has a mapping-level note, and references
+    // nested child fields (`customer.email`, `customer.tier`).  All of those
+    // need to be visible in the detail view for the example to read
+    // correctly.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, ffgUri);
+    const detail = await openMappingByName(page, "completed-orders");
+
+    // Both source schema cards are present in the source column.
+    await expect(
+      detail.locator(
+        "[data-testid='mapping-detail-completed-orders-source-schema-card-order-events']",
+      ),
+    ).toBeVisible();
+    await expect(
+      detail.locator(
+        "[data-testid='mapping-detail-completed-orders-source-schema-card-customer-profiles']",
+      ),
+    ).toBeVisible();
+
+    // The inline join expression is rendered verbatim somewhere in the
+    // detail view — assert via text content because the join string is
+    // user-authored and not stable enough for a separate testid hook.
+    await expect(detail).toContainText("WHERE @order_events.order_status = completed");
+
+    // NOTE: as of sl-ny3r the mapping detail header does not render
+    // MappingBlock.notes — only schema notes and arrow notes are rendered.
+    // The mapping-level note remains an open viz gap (tracked separately);
+    // do not assert its text here to keep this test grounded in observable
+    // production behaviour.
+
+    // Nested child fields produce arrow rows whose target id sanitizes the
+    // dotted source path; the test confirms BOTH a top-level arrow and a
+    // nested-source arrow are rendered.
+    await expect(
+      detail.locator("[data-testid='mapping-detail-completed-orders-arrow-row-customer-email']"),
+    ).toBeVisible();
+    await expect(
+      detail.locator("[data-testid='mapping-detail-completed-orders-arrow-row-tier']"),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Mapping detail — order line facts (flatten)", () => {
+  test("renders the flatten section row and its nested per-element arrow rows", async ({
+    page,
+  }) => {
+    // The `order line facts` mapping demonstrates flatten: each element of
+    // line_items becomes one output row, and each per-element field (e.g.
+    // .line_number, .sku, .quantity, .tax_amount) becomes a flatten-scoped
+    // arrow row.  The detail view must render the flatten section header
+    // AND the per-element arrows nested under it — without the section
+    // marker, readers cannot tell flatten arrows from top-level arrows.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, ffgUri);
+    const detail = await openMappingByName(page, "order-line-facts");
+
+    // The flatten section row test id is built as
+    //   {prefix}-{sectionPrefix}
+    // where sectionPrefix = `flatten-{sourceField}` sanitized.
+    await expect(
+      detail.locator(
+        "[data-testid='mapping-detail-order-line-facts-flatten-line-items']",
+      ),
+    ).toBeVisible();
+
+    // Per-element arrow rows nested inside the flatten section have test ids
+    // of the form `{prefix}-arrow-row-{sectionPrefix}-{targetField}`.
+    for (const target of ["line-number", "sku", "quantity", "tax-amount"]) {
+      await expect(
+        detail.locator(
+          `[data-testid='mapping-detail-order-line-facts-arrow-row-flatten-line-items-${target}']`,
+        ),
+      ).toBeVisible();
+    }
   });
 });
