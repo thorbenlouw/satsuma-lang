@@ -1,6 +1,6 @@
 ---
 id: sl-ny3r
-status: open
+status: closed
 deps: [sl-tzx6, sl-eikr]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -23,3 +23,12 @@ Add mapping detail assertions for representative canonical mappings. Cover oppor
 - [ ] order line facts asserts a flatten section row, nested source child fields, and target rows line_number, sku, quantity, and line_total.
 - [ ] Tests stay fixture-grounded and do not duplicate VizModel unit-test semantics.
 
+
+## Notes
+
+**2026-04-09T16:17:34Z**
+
+**2026-04-09T00:00:00Z**
+
+Cause: existing detail tests only checked the detail-root visibility — content of canonical mappings (sfdc opportunity ingestion, namespaced vault mappings, multi-source completed orders, flatten order line facts) was not asserted.
+Fix: added one describe block per canonical mapping with content assertions for source/target cards, expected arrows, transform @ref highlighting, namespaced header label (with new mapping-detail namespace-label testid), join expression, nested child arrows, and flatten section + flatten arrows. Skipped MappingBlock.notes assertion because the renderer does not currently surface mapping-level notes (open viz gap).

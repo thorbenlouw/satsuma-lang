@@ -571,7 +571,11 @@ export class SzMappingDetail extends LitElement {
       <div class="mapping-header" data-testid=${`${this.testIdPrefix}-header`}>
         ${this.namespaceLabel
           ? html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
-              <span class="meta-tag" style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
+              <span
+                class="meta-tag"
+                data-testid=${`${this.testIdPrefix}-namespace-label`}
+                style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);"
+              >${this.namespaceLabel}</span>
             </div>`
           : nothing}
         <div class="mapping-title" @click=${() => this._navigate(m.location)}>
