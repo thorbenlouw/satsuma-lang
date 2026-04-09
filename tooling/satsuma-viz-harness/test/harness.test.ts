@@ -178,7 +178,14 @@ test.describe("Hover and highlight interaction", () => {
     await openFirstMappingDetail(page);
     await page.evaluate(() => window.__satsumaHarness.clearEvents());
 
-    await page.locator("[data-testid='schema-card-field-id']").first().hover();
+    // After sl-eikr the source/target schema cards inside the mapping detail
+    // use prefixes like `mapping-detail-<mid>-source-schema-card-<sid>` so the
+    // top-level `schema-card-field-id` selector no longer matches.  Locate the
+    // `Id` field row inside the source column instead — robust to mapping IDs.
+    await page
+      .locator("[data-testid$='-source-column'] [data-testid$='-field-id']")
+      .first()
+      .hover();
 
     await expect.poll(async () => recordedEvents(page, "field-hover")).toContainEqual(
       expect.objectContaining({
@@ -209,9 +216,14 @@ test.describe("Cross-file lineage expansion", () => {
   test("expand-lineage events from the viz are captured in the harness event log", async ({
     page,
   }) => {
-    // The current fixture does not expose a stable expand-lineage control yet,
-    // so this remains a recorder-level compatibility test.  It uses a
-    // production-shaped Event property rather than CustomEvent.detail.
+    // RECORDER COMPATIBILITY TEST (the only synthetic-event test in this suite).
+    // SzExpandLineageEvent is defined in @satsuma/viz but no UI control
+    // currently dispatches it — it exists for future "expand to lineage from
+    // here" affordances.  Until that control lands we still want to guarantee
+    // the harness recorder normalizes the production Event-property shape
+    // (not CustomEvent.detail), so this test dispatches a production-shaped
+    // Event directly on <satsuma-viz>.  Replace with a real interaction once
+    // an expand-lineage control exists in the UI.
     await page.goto("/");
     await page.locator(".toggle-btn[data-mode='single']").click();
     await loadFixture(page, metricsUri);
@@ -268,13 +280,45 @@ test.describe("Navigation intent", () => {
     await openFirstMappingDetail(page);
     await page.evaluate(() => window.__satsumaHarness.clearEvents());
 
-    const fieldRow = page.locator("[data-testid='schema-card-field-id']").first();
+    // Same selector update as the field-hover test: source column scoped, then
+    // the `-field-id` row, then the per-field lineage button (suffix `-lineage`).
+    const fieldRow = page
+      .locator("[data-testid$='-source-column'] [data-testid$='-field-id']")
+      .first();
     await fieldRow.hover();
-    await fieldRow.locator("[data-testid='schema-card-field-id-lineage']").click();
+    await fieldRow.locator("[data-testid$='-field-id-lineage']").click();
 
     await expect.poll(async () => recordedEvents(page, "field-lineage")).toContainEqual(
       expect.objectContaining({
         detail: { schemaId: "sfdc_opportunity", fieldName: "Id" },
+      }),
+    );
+  });
+
+  test("clicking an arrow row in the mapping detail records a navigate event", async ({
+    page,
+  }) => {
+    // Each arrow row in the mapping detail table is wired to _navigate(arrow.location)
+    // (sz-mapping-detail.ts:645). A real click must therefore round-trip through
+    // SzNavigateEvent and surface as a `navigate` event in the harness recorder
+    // with the source location of that specific arrow row.  This validates the
+    // arrow-row → navigation production path end-to-end without any synthetic
+    // event dispatch.
+    await openFirstMappingDetail(page);
+    await page.evaluate(() => window.__satsumaHarness.clearEvents());
+
+    await page
+      .locator("[data-testid^='mapping-detail-'][data-testid*='-arrow-row-']")
+      .first()
+      .click();
+
+    await expect.poll(async () => recordedEvents(page, "navigate")).toContainEqual(
+      expect.objectContaining({
+        detail: expect.objectContaining({
+          uri: expect.stringContaining("sfdc-to-snowflake/pipeline.stm"),
+          line: expect.any(Number),
+          character: expect.any(Number),
+        }),
       }),
     );
   });

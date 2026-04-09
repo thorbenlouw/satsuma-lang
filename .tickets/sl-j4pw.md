@@ -1,6 +1,6 @@
 ---
 id: sl-j4pw
-status: open
+status: closed
 deps: [sl-tzx6, sl-eikr]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -24,3 +24,12 @@ Rewrite event-oriented harness tests so the main Playwright suite clicks and hov
 - [ ] Failures produce actionable Playwright assertions tied to visible UI controls.
 - [ ] Every new test() block opens with a purpose comment or behaviour-focused description per repo standards.
 
+
+## Notes
+
+**2026-04-09T16:04:07Z**
+
+**2026-04-09T00:00:00Z**
+
+Cause: arrow-row click was untested and two field interaction tests still used the old top-level schema-card prefix that no longer exists after sl-eikr re-prefixed mapping-detail schema cards.
+Fix: added a real arrow-row click test asserting the navigate event payload, updated the field-hover and field-lineage selectors to scope through the source-column suffix, and labelled the expand-lineage test as the lone recorder-compatibility test.
