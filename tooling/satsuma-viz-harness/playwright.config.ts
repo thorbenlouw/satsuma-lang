@@ -36,6 +36,19 @@ export default defineConfig({
       // the choice of browser does not affect what the tests validate.
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
+      // Semantic pass/fail suite only — *.test.ts. Screenshot review specs
+      // live in *.spec.ts and run under the dedicated screenshots project so
+      // a contributor can choose to run only one or the other.
+      testMatch: /.*\.test\.ts$/,
+    },
+    {
+      // Screenshot review project — emits the named PNG artifacts plus
+      // screenshots/manifest.json described in features/30-viz-test-suite-
+      // expansion/PRD.md §"Screenshot artifacts for human and VLM review".
+      // Artifacts are review-only, NOT golden baselines (see sl-mm7v).
+      name: "screenshots",
+      use: { ...devices["Desktop Firefox"] },
+      testMatch: /.*\.spec\.ts$/,
     },
   ],
   /* Start the harness server before tests, shut it down after */
