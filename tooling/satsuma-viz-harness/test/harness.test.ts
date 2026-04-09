@@ -967,6 +967,198 @@ test.describe("Toolbar file filter — metrics-platform lineage mode", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Geometry sanity helpers (sl-e80e)
+//
+// Reusable helpers for asserting layout invariants without depending on
+// exact ELK coordinates. Each helper is small and named after the property
+// it asserts so a failing test points at the broken invariant directly.
+// ---------------------------------------------------------------------------
+
+interface CardBox {
+  /** Test id of the card whose bounding box was read. */
+  testId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Read bounding boxes for every overview schema card visible in the viz.
+ * Returns boxes sorted by test id so order is deterministic across runs.
+ */
+async function readOverviewCardBoxes(page: Page): Promise<CardBox[]> {
+  // Wait for at least one schema card to attach so the page evaluation
+  // does not race the first render after fixture load.
+  await page
+    .locator("[data-testid^='overview-schema-card-']")
+    .first()
+    .waitFor({ state: "attached", timeout: 10_000 });
+  const boxes = await page
+    .locator("[data-testid^='overview-schema-card-']")
+    .evaluateAll((els) =>
+      (els as HTMLElement[]).map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          testId: el.getAttribute("data-testid") ?? "",
+          x: r.x,
+          y: r.y,
+          width: r.width,
+          height: r.height,
+        };
+      }),
+    );
+  return boxes.sort((a, b) => a.testId.localeCompare(b.testId));
+}
+
+/** Assert every box has positive width/height and finite coordinates. */
+function assertBoxesAreSane(boxes: CardBox[]): void {
+  expect(boxes.length).toBeGreaterThan(0);
+  for (const box of boxes) {
+    expect(Number.isFinite(box.x), `${box.testId} x not finite`).toBe(true);
+    expect(Number.isFinite(box.y), `${box.testId} y not finite`).toBe(true);
+    expect(box.width, `${box.testId} width not positive`).toBeGreaterThan(0);
+    expect(box.height, `${box.testId} height not positive`).toBeGreaterThan(0);
+  }
+}
+
+/**
+ * Assert no two boxes overlap by more than `tolerance` pixels in both axes.
+ * A small tolerance is permitted because Playwright bounding boxes are
+ * subpixel and adjacent cards can share a 1px border without visually
+ * overlapping.
+ */
+function assertBoxesDoNotOverlap(boxes: CardBox[], tolerance = 1): void {
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i];
+      const b = boxes[j];
+      const overlapX =
+        Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const overlapY =
+        Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+      const overlapping = overlapX > tolerance && overlapY > tolerance;
+      expect(
+        overlapping,
+        `cards ${a.testId} and ${b.testId} overlap by ${overlapX.toFixed(1)}x${overlapY.toFixed(1)}`,
+      ).toBe(false);
+    }
+  }
+}
+
+test.describe("Geometry sanity — overview layout invariants", () => {
+  test("sfdc cards have finite, positive dimensions and do not overlap", async ({ page }) => {
+    // Non-namespaced fixture: validates the baseline layout invariants on
+    // a small, well-known card set.  Failing this points at a layout
+    // regression in the non-namespaced card-height path.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+    const boxes = await readOverviewCardBoxes(page);
+    assertBoxesAreSane(boxes);
+    assertBoxesDoNotOverlap(boxes);
+  });
+
+  test("ns-platform namespaced cards have sane geometry and clear the namespace pill", async ({
+    page,
+  }) => {
+    // Namespaced fixture: the namespace pill adds vertical padding to each
+    // card, so we additionally assert that every namespace pill sits
+    // strictly inside its card's vertical extent — proves the pill height
+    // is included in the card-height calculation rather than clipping the
+    // card content.
+    await page.goto("/");
+    await loadFixture(page, nsPlatformUri);
+
+    const boxes = await readOverviewCardBoxes(page);
+    assertBoxesAreSane(boxes);
+
+    // Each namespace pill must render with positive dimensions (i.e. its
+    // height contributes to the card's layout) and sit inside the union
+    // bounding box of all overview cards.  Walking shadow DOM ancestors
+    // would cross shadow-root boundaries unreliably, so instead we assert
+    // every pill is contained within at least one card's box — proves the
+    // pill height is included in the card-height calculation rather than
+    // being clipped or rendered outside its host card.
+    const pillBoxes = await page
+      .locator("[data-testid$='-namespace-pill']")
+      .evaluateAll((els) =>
+        (els as HTMLElement[]).map((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            testId: el.getAttribute("data-testid") ?? "",
+            x: r.x,
+            y: r.y,
+            w: r.width,
+            h: r.height,
+          };
+        }),
+      );
+    expect(pillBoxes.length).toBeGreaterThan(0);
+    for (const pill of pillBoxes) {
+      expect(pill.w, `${pill.testId} width not positive`).toBeGreaterThan(0);
+      expect(pill.h, `${pill.testId} height not positive`).toBeGreaterThan(0);
+      const containingCard = boxes.find(
+        (card) =>
+          pill.x >= card.x - 1 &&
+          pill.y >= card.y - 1 &&
+          pill.x + pill.w <= card.x + card.width + 1 &&
+          pill.y + pill.h <= card.y + card.height + 1,
+      );
+      expect(
+        containingCard,
+        `${pill.testId} not contained in any overview schema card box`,
+      ).toBeDefined();
+    }
+  });
+
+  test("sfdc overview mapping node sits horizontally between source and target schema cards", async ({
+    page,
+  }) => {
+    // For the canonical sfdc-to-snowflake fixture there is exactly one
+    // mapping connecting sfdc_opportunity → snowflake_opps.  The mapping
+    // node's horizontal centre must lie strictly between the source card's
+    // right edge and the target card's left edge — proves the overview
+    // connector reads left-to-right.  We use a single, well-known mapping
+    // here so the assertion is unambiguous; broader fixtures (e.g. metrics)
+    // place mapping nodes in fixture-specific layouts and would need
+    // per-mapping geometry expectations rather than a global rule.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+
+    const sourceBox = await page
+      .locator("[data-testid='overview-schema-card-sfdc-opportunity']")
+      .boundingBox();
+    const targetBox = await page
+      .locator("[data-testid='overview-schema-card-snowflake-opps']")
+      .boundingBox();
+    const mappingNodeBox = await page
+      .locator("[data-testid^='overview-mapping-node-']")
+      .first()
+      .boundingBox();
+
+    if (!sourceBox || !targetBox || !mappingNodeBox) {
+      throw new Error("expected sfdc source, target, and mapping-node bounding boxes");
+    }
+    const mappingCx = mappingNodeBox.x + mappingNodeBox.width / 2;
+    expect(mappingCx).toBeGreaterThan(sourceBox.x + sourceBox.width);
+    expect(mappingCx).toBeLessThan(targetBox.x);
+  });
+
+  test("sap-po-to-mfcs cards have sane geometry on a more complex fixture", async ({ page }) => {
+    // Complex fixture sanity check: same baseline invariants on the larger
+    // sap fixture catch geometry regressions that only surface with more
+    // schemas or denser arrows than the small canonical fixtures expose.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sapUri);
+    const boxes = await readOverviewCardBoxes(page);
+    assertBoxesAreSane(boxes);
+  });
+});
+
 // NOTE (sl-xqd5): the PRD also asks for a test that asserts an
 // imported-source card is visible only in lineage mode.  Empirically the
 // current viz harness renders the same overview card set for these fixtures
