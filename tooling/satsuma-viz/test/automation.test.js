@@ -68,15 +68,6 @@ describe("viz automation helpers", () => {
       children: [],
       location: { uri: "file:///t.stm", line: 2, character: 0 },
     };
-    const parent = {
-      name: "customer",
-      type: "STRUCT",
-      constraints: [],
-      notes: [],
-      comments: [],
-      children: [child],
-      location: { uri: "file:///t.stm", line: 1, character: 0 },
-    };
     const childTpl = card._renderField(child, 1, "customer");
     const serialized = [...childTpl.strings, ...childTpl.values.map(String)].join(" ");
     assert.match(serialized, /src-customers-field-customer-email/);
