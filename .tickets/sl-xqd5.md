@@ -1,6 +1,6 @@
 ---
 id: sl-xqd5
-status: open
+status: closed
 deps: [sl-tzx6, sl-eikr]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -24,3 +24,12 @@ Cover toolbar filtering and lineage-mode model differences through real controls
 - [ ] Tests wait on viz ready state after each filter or mode transition.
 - [ ] Assertions are based on visible cards and mapping nodes.
 
+
+## Notes
+
+**2026-04-09T16:25:25Z**
+
+**2026-04-09T00:00:00Z**
+
+Cause: namespace filter, file filter, and lineage-mode card visibility were not exercised through the real toolbar controls.
+Fix: added namespace-filter test (ns-platform: selecting mart hides raw, reset restores), file-filter test (metrics-platform lineage: selecting metrics.stm vs metric_sources.stm restricts visible cards). Inline-noted that the imported-source-only-in-lineage-mode assertion is not implementable today because the harness renders the same overview card set in both modes — a real viz behaviour gap rather than a test gap; left a TODO comment pointing future work at the right place when the renderer is tightened.
