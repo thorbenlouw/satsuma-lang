@@ -1378,7 +1378,12 @@ export class SatsumaViz extends LitElement {
                 <div class="positioned-card" data-node-id=${m.qualifiedId} style="left: ${node.x}px; top: ${node.y}px; width: ${node.width}px;"
                   @mouseenter=${() => this._onOverviewNodeHover(m.qualifiedId)}
                   @mouseleave=${() => this._onOverviewNodeLeave()}>
-                  <sz-metric-card .metric=${m} .namespaceLabel=${ns.name} compact></sz-metric-card>
+                  <sz-metric-card
+                    data-testid=${`overview-metric-card-${sanitizeTestIdSegment(m.qualifiedId)}`}
+                    .metric=${m}
+                    .namespaceLabel=${ns.name}
+                    compact
+                  ></sz-metric-card>
                 </div>
               `;
             }),
