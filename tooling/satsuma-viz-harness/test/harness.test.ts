@@ -1147,6 +1147,82 @@ test.describe("Geometry sanity — overview layout invariants", () => {
     expect(mappingCx).toBeLessThan(targetBox.x);
   });
 
+  test("sfdc overview edge endpoints anchor to source card right edge and target card left edge", async ({
+    page,
+  }) => {
+    // Regression guard for f3vt-qb8u. A 24px coordinate-system mismatch
+    // between the SVG overview edge-layer host and the .card-layer caused
+    // every overview edge endpoint to draw 24px to the right of where the
+    // matching card edge actually rendered. The existing geometry checks
+    // (positive dimensions, source < mapping < target ordering, non-overlap)
+    // did not catch this; the screenshot review workflow (sl-mm7v) did,
+    // because in dense lineage layouts the gap became visible while in
+    // sfdc/namespaces it was camouflaged inside the gap or hidden behind
+    // card bodies.
+    //
+    // The assertion is intentionally tight: at least one anchor dot must
+    // land on the source card's right edge and at least one on the target
+    // card's left edge, both within a small tolerance for sub-pixel
+    // rendering and the dot's own radius. A 24px regression of the
+    // original kind would push every dot well outside the tolerance.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+
+    // Tolerance budget = anchor-dot radius (3.5px) + edge stroke width
+    // (3px) + sub-pixel rounding slack. Anything past this is the bug.
+    const ANCHOR_TOLERANCE_PX = 6;
+
+    const sourceBox = await page
+      .locator("[data-testid='overview-schema-card-sfdc-opportunity']")
+      .boundingBox();
+    const targetBox = await page
+      .locator("[data-testid='overview-schema-card-snowflake-opps']")
+      .boundingBox();
+    if (!sourceBox || !targetBox) {
+      throw new Error("expected sfdc source and target overview card bounding boxes");
+    }
+
+    // Anchor dots are rendered inside <sz-overview-edge-layer>'s shadow
+    // DOM as <circle class="anchor-dot"> at the first and last point of
+    // each routed edge. Playwright locators pierce shadow DOM, so we
+    // collect every dot's centre in viewport coordinates.
+    const dotCentres = await page
+      .locator("sz-overview-edge-layer circle.anchor-dot")
+      .evaluateAll((els) =>
+        (els as SVGCircleElement[]).map((c) => {
+          const r = c.getBoundingClientRect();
+          return { cx: r.x + r.width / 2, cy: r.y + r.height / 2 };
+        }),
+      );
+    expect(dotCentres.length).toBeGreaterThanOrEqual(2);
+
+    const sourceRightX = sourceBox.x + sourceBox.width;
+    const targetLeftX = targetBox.x;
+
+    const anchoredOnSource = dotCentres.some(
+      (p) => Math.abs(p.cx - sourceRightX) <= ANCHOR_TOLERANCE_PX,
+    );
+    const anchoredOnTarget = dotCentres.some(
+      (p) => Math.abs(p.cx - targetLeftX) <= ANCHOR_TOLERANCE_PX,
+    );
+
+    if (!anchoredOnSource) {
+      throw new Error(
+        `no overview anchor dot landed within ${ANCHOR_TOLERANCE_PX}px of the sfdc_opportunity ` +
+          `right edge (x=${sourceRightX.toFixed(1)}). Dot xs: ` +
+          dotCentres.map((p) => p.cx.toFixed(1)).join(", "),
+      );
+    }
+    if (!anchoredOnTarget) {
+      throw new Error(
+        `no overview anchor dot landed within ${ANCHOR_TOLERANCE_PX}px of the snowflake_opps ` +
+          `left edge (x=${targetLeftX.toFixed(1)}). Dot xs: ` +
+          dotCentres.map((p) => p.cx.toFixed(1)).join(", "),
+      );
+    }
+  });
+
   test("sap-po-to-mfcs cards have sane geometry on a more complex fixture", async ({ page }) => {
     // Complex fixture sanity check: same baseline invariants on the larger
     // sap fixture catch geometry regressions that only surface with more
