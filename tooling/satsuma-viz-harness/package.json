@@ -14,6 +14,7 @@
     "build": "mkdir -p dist/client && npm run build:server && npm run build:client && npm run build:wasm && npm run build:viz",
     "dev": "npm run build && node dist/server.js",
     "test": "playwright test",
+    "screenshots": "playwright test --project=screenshots",
     "pretest": "npm run build"
   },
   "dependencies": {

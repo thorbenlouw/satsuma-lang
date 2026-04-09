@@ -1,6 +1,6 @@
 ---
 id: sl-mm7v
-status: open
+status: closed
 deps: [sl-3c2w, sl-ny3r, sl-xqd5, sl-e80e]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -23,3 +23,12 @@ Add a deterministic screenshot script or Playwright project that emits named hum
 - [ ] Screenshots are documented and implemented as review artifacts, not golden pass/fail baselines.
 - [ ] Workflow supports human markup and VLM review by pairing screenshots with manifest context.
 
+
+## Notes
+
+**2026-04-09T19:32:18Z**
+
+**2026-04-09T19:32:18Z**
+
+Cause: Feature 30 needed a deterministic, named screenshot workflow for human/VLM review separate from semantic pass/fail tests.
+Fix: Added a dedicated 'screenshots' Playwright project (testMatch *.spec.ts) plus tooling/satsuma-viz-harness/test/screenshots.spec.ts which loads each PRD-required fixture, drives the harness into the documented UI state, captures all 10 named PNGs into screenshots/, and writes screenshots/manifest.json (file, fixture, viewMode, uiState, viewport, timestamp, step). Added an npm 'screenshots' script and gitignored screenshots/ — review artifacts, not golden baselines.
