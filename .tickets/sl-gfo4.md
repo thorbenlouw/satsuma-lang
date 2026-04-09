@@ -1,6 +1,6 @@
 ---
 id: sl-gfo4
-status: open
+status: closed
 deps: [sl-mm7v]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -24,3 +24,12 @@ Update developer-facing documentation for the expanded viz harness suite. Docume
 - [ ] Docs state that Playwright remains local-only and is not part of GitHub Actions for this feature.
 - [ ] Docs mention the known browser limitation and Firefox default local target.
 
+
+## Notes
+
+**2026-04-09T19:33:31Z**
+
+**2026-04-09T19:33:31Z**
+
+Cause: The expanded viz harness suite had no contributor-facing documentation; the sentinel watcher protocol, fixture matrix rationale, and screenshot workflow lived only in CLAUDE.md and the PRD.
+Fix: Added tooling/satsuma-viz-harness/README.md covering: the sentinel watcher workflow with the absolute-path reminder for agents, the Firefox-only / local-only constraint, the six-fixture matrix and why each one is included, the distinction between semantic assertions (harness.test.ts) and screenshot review (screenshots.spec.ts), the screenshots/ output directory and manifest shape, and the local checks expected before opening a PR.
