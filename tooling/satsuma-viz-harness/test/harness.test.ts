@@ -56,6 +56,12 @@ let sfdcUri: string;
  * so lineage mode will produce schemas from both files — more than any single file alone.
  */
 let metricsUri: string;
+/** Multi-namespace platform entry point — qualified IDs and namespace pills. */
+let nsPlatformUri: string;
+/** Reports + models fixture — report card metadata coverage. */
+let reportsUri: string;
+/** Larger fixture used in geometry/layout-stability tests. */
+let sapUri: string;
 
 /**
  * Resolve fixture URIs before tests run.  The harness API serves the full list;
@@ -65,13 +71,22 @@ test.beforeAll(async ({ request }) => {
   const res = await request.get("/api/fixtures");
   const fixtures = await res.json() as Array<{ name: string; uri: string }>;
 
-  const sfdc = fixtures.find((f) => f.name === "sfdc-to-snowflake/pipeline.stm");
-  const metrics = fixtures.find((f) => f.name === "metrics-platform/metrics.stm");
+  const find = (name: string) => fixtures.find((f) => f.name === name);
+  const sfdc = find("sfdc-to-snowflake/pipeline.stm");
+  const metrics = find("metrics-platform/metrics.stm");
+  const nsPlatform = find("namespaces/ns-platform.stm");
+  const reports = find("reports-and-models/pipeline.stm");
+  const sap = find("sap-po-to-mfcs/pipeline.stm");
 
-  if (!sfdc || !metrics) throw new Error("Required fixtures not found in /api/fixtures");
+  if (!sfdc || !metrics || !nsPlatform || !reports || !sap) {
+    throw new Error("Required fixtures not found in /api/fixtures");
+  }
 
   sfdcUri = sfdc.uri;
   metricsUri = metrics.uri;
+  nsPlatformUri = nsPlatform.uri;
+  reportsUri = reports.uri;
+  sapUri = sap.uri;
 });
 
 /**
@@ -341,33 +356,174 @@ test.describe("Navigation intent", () => {
   });
 });
 
-test.describe("Larger fixture — layout stability", () => {
-  test("sap-po-to-mfcs renders to ready state without layout failure", async ({ page }) => {
-    // This fixture is one of the larger canonical examples.  The test validates
-    // that the viz can handle more complex schemas without falling back to the
-    // error/fallback rendering mode.
+// ---------------------------------------------------------------------------
+// Fixture matrix overview coverage (sl-3c2w)
+//
+// One describe block per fixture family.  Each block clicks the appropriate
+// view-mode toggle, loads the fixture, then asserts overview content that is
+// specific to that fixture's category — vanilla schemas + mappings, namespaced
+// cards with namespace pills, metric cards merged across imports, report card
+// metadata, and large-fixture layout stability beyond data-ready-state=ready.
+// ---------------------------------------------------------------------------
+
+test.describe("Overview view — sfdc-to-snowflake single-file mode", () => {
+  test("renders the canonical vanilla schema cards and mapping card", async ({ page }) => {
+    // Single-file mode on sfdc-to-snowflake exercises the non-namespaced card
+    // height path: each schema renders without a namespace pill and the
+    // pipeline's single mapping renders both as an overview mapping card and
+    // as a connector mapping node. This is the baseline we compare the
+    // namespaced fixture against.
     await page.goto("/");
-    const fixtures = await page.evaluate(async () => {
-      const res = await fetch("/api/fixtures");
-      return (await res.json()) as Array<{ name: string; uri: string }>;
-    });
-    const sapFixture = fixtures.find((f) => f.name === "sap-po-to-mfcs/pipeline.stm");
-    if (!sapFixture) {
-      test.skip(true, "sap-po-to-mfcs fixture not found");
-      return;
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+
+    const schemaCards = page.locator("[data-testid^='overview-schema-card-']");
+    await expect(schemaCards).toHaveCount(4);
+
+    // None of the sfdc schemas live inside a namespace, so the namespace pill
+    // hook (sl-3c2w) must not appear anywhere in the overview.
+    await expect(
+      page.locator("[data-testid$='-namespace-pill']"),
+    ).toHaveCount(0);
+
+    await expect(
+      page.locator("[data-testid^='overview-mapping-card-']"),
+    ).toHaveCount(1);
+  });
+});
+
+test.describe("Overview view — namespaces/ns-platform lineage mode", () => {
+  test("renders qualified namespaced cards, mapping nodes, and namespace labels", async ({
+    page,
+  }) => {
+    // ns-platform.stm declares schemas and mappings inside `raw`, `vault`,
+    // `mart`, and `analytics` namespaces.  In lineage mode the overview must
+    // render every namespace's cards with namespace-qualified test ids
+    // (proving qualified rendering) and emit a namespace pill for each card
+    // (proving the namespace card-height path is hit).
+    await page.goto("/");
+    // Default mode is lineage; explicitly assert it for clarity.
+    await expect(page.locator(".toggle-btn[data-mode='lineage']")).toHaveClass(/active/);
+    await loadFixture(page, nsPlatformUri);
+
+    // Every namespace declared in the fixture should produce at least one
+    // card with a namespace-qualified test id.  `analytics` only contains
+    // metric schemas (rendered via <sz-metric-card>), so we look for metric
+    // cards there instead of schema cards.  Test id segments are produced by
+    // sanitizeTestIdSegment, which lowercases and replaces non-alnum runs
+    // (`::`) with a single `-`, so e.g. `raw::crm_contacts` → `raw-crm-contacts`.
+    for (const ns of ["raw", "vault", "mart"]) {
+      await expect(
+        page.locator(`[data-testid^='overview-schema-card-${ns}-']`).first(),
+      ).toBeVisible();
+    }
+    await expect(
+      page.locator("[data-testid^='overview-metric-card-analytics-']").first(),
+    ).toBeVisible();
+
+    // Each namespaced schema card carries the namespace pill hook.
+    const pills = page.locator("[data-testid$='-namespace-pill']");
+    expect(await pills.count()).toBeGreaterThanOrEqual(4);
+
+    // Mapping node ids are built as `mapping:<namespace>:<id>` (see
+    // _overviewMappingNodeId in satsuma-viz.ts), then sanitized — so a vault
+    // mapping becomes a test id starting with `overview-mapping-node-mapping-vault-`.
+    // The vault layer is the densest mapping zone in this fixture.
+    await expect(
+      page
+        .locator("[data-testid^='overview-mapping-node-mapping-vault-']")
+        .first(),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Overview view — metrics-platform lineage mode", () => {
+  test("merges metric cards with imported source cards", async ({ page }) => {
+    // metrics.stm declares metric schemas and imports fact/dim sources from
+    // metric_sources.stm.  In lineage mode the overview must contain the
+    // headline metric cards AND at least one imported source card — proving
+    // the lineage merge produced cards from BOTH files, not just the entry
+    // point.
+    await page.goto("/");
+    await expect(page.locator(".toggle-btn[data-mode='lineage']")).toHaveClass(/active/);
+    await loadFixture(page, metricsUri);
+
+    // Metric schemas render via <sz-metric-card>, not <sz-schema-card>, so we
+    // look for the metric-card test id.  sanitizeTestIdSegment turns
+    // underscores into dashes, so `monthly_recurring_revenue` →
+    // `monthly-recurring-revenue`.
+    for (const metric of [
+      "monthly-recurring-revenue",
+      "churn-rate",
+      "customer-lifetime-value",
+    ]) {
+      await expect(
+        page.locator(`[data-testid='overview-metric-card-${metric}']`),
+      ).toBeVisible();
     }
 
-    await page.locator(".toggle-btn[data-mode='single']").click();
-    await loadFixture(page, sapFixture.uri);
+    // Imported source from metric_sources.stm — proves the lineage merge
+    // pulled in cards from a file other than the entry point.
+    await expect(
+      page.locator("[data-testid='overview-schema-card-fact-subscriptions']"),
+    ).toBeVisible();
+  });
+});
 
-    // The viz must NOT be in fallback mode after rendering a larger fixture.
-    await expect(page.locator("[data-testid='viz-root']")).not.toHaveAttribute(
-      "data-ready-state",
-      "fallback",
-    );
-    await expect(page.locator("[data-testid='viz-root']")).toHaveAttribute(
-      "data-ready-state",
-      "ready",
-    );
+test.describe("Overview view — reports-and-models", () => {
+  test("renders report and model cards alongside their source facts", async ({ page }) => {
+    // reports-and-models/pipeline.stm declares fact tables, model schemas
+    // (churn_predictor) and report schemas (weekly_sales_dashboard,
+    // customer_risk_report, daily_order_summary).  The overview must surface
+    // each as a stable schema card so downstream tools can navigate to
+    // report/model targets the same way they navigate to ordinary schemas.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, reportsUri);
+
+    // sanitizeTestIdSegment lowercases and turns each underscore into `-`.
+    for (const id of [
+      "fact-orders",
+      "dim-customer",
+      "weekly-sales-dashboard",
+      "churn-predictor",
+      "customer-risk-report",
+      "daily-order-summary",
+    ]) {
+      await expect(
+        page.locator(`[data-testid='overview-schema-card-${id}']`),
+      ).toBeVisible();
+    }
+  });
+});
+
+test.describe("Overview view — sap-po-to-mfcs layout stability", () => {
+  test("renders without falling back and surfaces the larger schema set", async ({ page }) => {
+    // The SAP-PO fixture is one of the larger canonical examples.  Reaching
+    // data-ready-state=ready proves layout completed; we additionally assert
+    // it did NOT fall back to the error renderer AND that a non-trivial
+    // number of schema cards became visible — guarding against an "empty
+    // ready" regression where layout completes but emits no cards.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sapUri);
+
+    const vizRoot = page.locator("[data-testid='viz-root']");
+    await expect(vizRoot).not.toHaveAttribute("data-ready-state", "fallback");
+    await expect(vizRoot).toHaveAttribute("data-ready-state", "ready");
+
+    // The SAP fixture is "larger" in field volume rather than card count
+    // (only a handful of top-level schemas).  We therefore guard against an
+    // empty-but-ready regression by asserting BOTH that at least the source
+    // and target cards exist AND that the mapping connector node was laid
+    // out — these are the smallest invariants that distinguish "rendered"
+    // from "ready but blank".
+    const SAP_MIN_OVERVIEW_CARDS = 2;
+    expect(
+      await page.locator("[data-testid^='overview-schema-card-']").count(),
+    ).toBeGreaterThanOrEqual(SAP_MIN_OVERVIEW_CARDS);
+    expect(
+      await page.locator("[data-testid^='overview-mapping-node-']").count(),
+    ).toBeGreaterThanOrEqual(1);
   });
 });

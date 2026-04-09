@@ -472,8 +472,18 @@ export class SzSchemaCard extends LitElement {
 
   private _renderNamespacePill() {
     if (this.namespaceLabel) {
-      return html`<div style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);">
-          <span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);">${this.namespaceLabel}</span>
+      // The namespace pill is the only visual marker that distinguishes a
+      // namespaced schema card from a vanilla one. Expose a stable test id
+      // (sl-3c2w) so Playwright can assert qualified namespace rendering
+      // without text matching against a positioned <span>.
+      return html`<div
+          style="padding: 8px 12px 0; background: var(--sz-orange, #F2913D);"
+          data-testid=${`${this.testIdPrefix}-namespace-pill`}
+        >
+          <span
+            data-testid=${`${this.testIdPrefix}-namespace-label`}
+            style="display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,0.88);color:var(--sz-orange-dark, #D97726);"
+          >${this.namespaceLabel}</span>
         </div>`;
     }
     if (this.compact) {
