@@ -737,3 +737,116 @@ test.describe("Mapping detail — order line facts (flatten)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Field coverage and hover highlighting (sl-cca6)
+//
+// These tests prove the visual contracts a reader relies on inside the
+// mapping detail view: every target field row carries data-coverage
+// (mapped|unmapped) so an unmapped target stands out, and hovering an arrow
+// row / source field / target field highlights the right partner rows via
+// the .hl class.  Both non-nested and nested fixtures are exercised.
+// ---------------------------------------------------------------------------
+
+test.describe("Field coverage indicators", () => {
+  test("target fields with arrows are mapped, target fields without arrows are unmapped", async ({
+    page,
+  }) => {
+    // sfdc opportunity ingestion writes nine target fields and leaves
+    // `source_system` (which has a default) untouched.  data-coverage
+    // therefore distinguishes the two cases — this is the contract that
+    // makes coverage circles meaningful in the UI.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+    const detail = await openMappingByName(page, "opportunity-ingestion");
+
+    const targetCardPrefix =
+      "mapping-detail-opportunity-ingestion-target-schema-card-snowflake-opps";
+
+    // A field with an explicit arrow must report mapped coverage.
+    await expect(
+      detail.locator(`[data-testid='${targetCardPrefix}-field-amount-usd']`),
+    ).toHaveAttribute("data-coverage", "mapped");
+
+    // The default-only target field has no arrow and must report unmapped.
+    await expect(
+      detail.locator(`[data-testid='${targetCardPrefix}-field-source-system']`),
+    ).toHaveAttribute("data-coverage", "unmapped");
+  });
+
+  test("nested flatten target rows are matched by dotted path, not just leaf name", async ({
+    page,
+  }) => {
+    // The order line facts mapping flattens line_items into per-element
+    // arrows.  All target fields end up mapped, but the test is about
+    // dotted-path identity: the sku field carries its full nested path in
+    // the test id and reports mapped coverage even though `sku` would
+    // collide with any other top-level sku in the same schema.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, ffgUri);
+    const detail = await openMappingByName(page, "order-line-facts");
+
+    const targetCardPrefix =
+      "mapping-detail-order-line-facts-target-schema-card-order-line-facts-parquet";
+
+    await expect(
+      detail.locator(`[data-testid='${targetCardPrefix}-field-sku']`),
+    ).toHaveAttribute("data-coverage", "mapped");
+    await expect(
+      detail.locator(`[data-testid='${targetCardPrefix}-field-line-number']`),
+    ).toHaveAttribute("data-coverage", "mapped");
+  });
+});
+
+test.describe("Hover highlighting between arrows and field rows", () => {
+  test("hovering an arrow row highlights the matching source and target field rows", async ({
+    page,
+  }) => {
+    // The amount_usd arrow connects sfdc_opportunity.Amount to
+    // snowflake_opps.amount_usd.  Hovering the arrow row must add the .hl
+    // class to BOTH the source field row and the target field row so the
+    // reader sees which fields participate in this arrow.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+    const detail = await openMappingByName(page, "opportunity-ingestion");
+
+    await detail
+      .locator("[data-testid='mapping-detail-opportunity-ingestion-arrow-row-amount-usd']")
+      .hover();
+
+    const sourceField = detail.locator(
+      "[data-testid='mapping-detail-opportunity-ingestion-source-schema-card-sfdc-opportunity-field-amount']",
+    );
+    const targetField = detail.locator(
+      "[data-testid='mapping-detail-opportunity-ingestion-target-schema-card-snowflake-opps-field-amount-usd']",
+    );
+
+    await expect(sourceField).toHaveClass(/\bhl\b/);
+    await expect(targetField).toHaveClass(/\bhl\b/);
+  });
+
+  test("hovering a target field highlights the upstream source field", async ({ page }) => {
+    // Reverse direction: hovering the target field row must propagate
+    // highlight back to the upstream source field row through the same
+    // shared highlight state.  Verifies that the highlight pipeline is
+    // bidirectional and not arrow-row-only.
+    await page.goto("/");
+    await page.locator(".toggle-btn[data-mode='single']").click();
+    await loadFixture(page, sfdcUri);
+    const detail = await openMappingByName(page, "opportunity-ingestion");
+
+    await detail
+      .locator(
+        "[data-testid='mapping-detail-opportunity-ingestion-target-schema-card-snowflake-opps-field-amount-usd']",
+      )
+      .hover();
+
+    const sourceField = detail.locator(
+      "[data-testid='mapping-detail-opportunity-ingestion-source-schema-card-sfdc-opportunity-field-amount']",
+    );
+    await expect(sourceField).toHaveClass(/\bhl\b/);
+  });
+});

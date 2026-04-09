@@ -1,6 +1,6 @@
 ---
 id: sl-cca6
-status: open
+status: closed
 deps: [sl-tzx6, sl-eikr]
 links: []
 created: 2026-04-07T17:28:02Z
@@ -24,3 +24,12 @@ Assert the visual contracts that make mapping detail useful: mapped and unmapped
 - [ ] Hovering a target field visibly highlights upstream source fields for a multi-source mapping.
 - [ ] Nested child fields are matched by dotted path identity, not only leaf field name.
 
+
+## Notes
+
+**2026-04-09T16:19:28Z**
+
+**2026-04-09T00:00:00Z**
+
+Cause: nothing asserted that target field rows surface the mapped/unmapped distinction or that hovering arrows/fields propagated highlight to partner rows — both are visual contracts users rely on.
+Fix: added two coverage tests (sfdc opportunity ingestion mapped vs source_system unmapped, and order line facts nested flatten leaf coverage) plus two highlight tests (arrow-row hover highlights both source and target field rows; reverse direction target hover highlights upstream source). Uses the existing data-coverage attribute and .hl class — no renderer changes required.
